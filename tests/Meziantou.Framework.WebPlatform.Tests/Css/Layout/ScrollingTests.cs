@@ -256,6 +256,20 @@ public sealed class ScrollingTests : IDisposable
         Assert.Equal((100, 100), (Get(document, "outer2").ScrollWidth, Get(document, "outer2").ScrollHeight));
     }
 
+    [Theory]
+    [InlineData("<div><div style='margin-left: 8px; width: 0; height: 50px'></div></div>", 5, 100)]
+    [InlineData("<div><div style='margin-left: 8px; width: 1px; height: 0'></div></div>", 5, 100)]
+    [InlineData("<div><div style='margin-left: 8px; width: 1px; height: 50px'></div></div>", 9, 100)]
+    [InlineData("<div style='margin-left: 8px; width: 0; height: 50px'></div>", 8, 100)]
+    [InlineData("<div style='height: 20px'><div style='position: relative; top: 130px; width: 1px; height: 0'></div></div>", 5, 100)]
+    public void ScrollableOverflow_IgnoresTheBoxesWithZeroArea(string contents, int scrollWidth, int scrollHeight)
+    {
+        // As in Blink, a box with a zero size in one axis does not extend the scrollable overflow of its ancestors; the in-flow
+        // children of the scroll container extend it with their margin boxes
+        var document = Parse($"<div id=s style='overflow: hidden; width: 5px; height: 100px'>{contents}</div>");
+        Assert.Equal((scrollWidth, scrollHeight), (Get(document, "s").ScrollWidth, Get(document, "s").ScrollHeight));
+    }
+
     [Fact]
     public void ScrollTop_ScrollsTheContents()
     {

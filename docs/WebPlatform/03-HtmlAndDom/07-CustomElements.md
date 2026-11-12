@@ -70,5 +70,8 @@ its custom states ([States](cref:Meziantou.Framework.WebPlatform.Dom.ElementInte
 
 [Window.CustomElements](cref:Meziantou.Framework.WebPlatform.Dom.Window.CustomElements) is the global registry of a window: custom elements need a browsing context, or a registry given
 to the parser with [HtmlParserOptions.CustomElementRegistry](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.CustomElementRegistry). Scoped registries (`new CustomElementRegistry()`) define
-elements for a part of the document only. The scripts of a page can define custom elements too, with
+elements for a part of the document only. As in the browsers, an element parsed with the `customelementregistry`
+attribute, and the elements parsed inside it, have no registry (`customElementRegistry` is `null`): they are never
+upgraded, until a script gives them a registry with `CustomElementRegistry.initialize()`. Adding the attribute after the
+element is parsed has no effect. The scripts of a page can define custom elements too, with
 `customElements.define()`, when the browsing context has a [script engine](../06-Scripting/01-Overview.md).

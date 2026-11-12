@@ -52,7 +52,12 @@ internal sealed class WholeInputParser<TResult> : ImageParser<TResult>
         consumed = buffer.Length;
 
         // The decode is synchronous: it reads the bytes of the driver (the caller's span, or the read buffer of a stream) in
-        // place, pinned until it returns, instead of a copy. The driver already charged them to the encoded-byte limit
+        // place, pinned until it returns, instead of a copy. The driver already charged them to the encoded-byte limit.
+        // A pointer is the only way to reach the bytes of a span from the input object: Image.Load(ReadOnlySpan<byte>) has no
+        // Memory<byte>, and a copy would double the memory of these formats, which buffer the whole input. The input is
+        // disposed before the bytes are unpinned, and a disposed input throws instead of reading them, so a decode that
+        // keeps the source (for instance in a lazily decoded image) cannot read unpinned memory. The decoders join their
+        // workers before they return: nothing reads the input after the decode returns.
         unsafe
         {
             fixed (byte* data = buffer)

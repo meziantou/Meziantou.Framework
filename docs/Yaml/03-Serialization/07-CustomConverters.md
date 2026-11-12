@@ -83,7 +83,7 @@ A converter applies where it is registered:
 
 A converter registered for a type that is also used as a dictionary key converts the values of the dictionary, not its
 keys: keys of the [supported key types](03-SupportedTypes.md#collections-and-dictionaries) are always written as
-scalars.
+scalars. The keys of any other type are written and read by the converter of that type, which must write a scalar.
 
 ## Generic types
 

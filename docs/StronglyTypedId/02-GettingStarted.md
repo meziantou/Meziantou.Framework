@@ -68,8 +68,8 @@ Assert.Equal("42", json);
 ```
 <!-- endref -->
 
-The System.Text.Json converter is generated for every ID, and the Newtonsoft.Json and MongoDB converters when the
-project references these libraries. See [Integrations](09-Integrations/01-Overview.md).
+The System.Text.Json converter is generated for every ID, and the Newtonsoft.Json, MongoDB, YAML and TOML converters
+when the project references these libraries. See [Integrations](09-Integrations/01-Overview.md).
 
 ## Next steps
 

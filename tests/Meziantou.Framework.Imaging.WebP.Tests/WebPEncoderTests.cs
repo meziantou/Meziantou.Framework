@@ -760,6 +760,27 @@ public sealed class WebPEncoderTests
         Assert.True(source.AsSpan().SequenceEqual(decoded.Argb));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LsbBitWriterRejectsWritesAfterDispose(bool counting)
+    {
+        // A write of a few bits only adds pending bits, and a counting writer never rents: every write still fails
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var writer = counting ? LsbBitWriter.CreateCounter(scope) : new LsbBitWriter(scope);
+        writer.WriteBits(1, 3);
+        writer.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => writer.WriteBits(1, 1));
+        Assert.Throws<ObjectDisposedException>(() => writer.WriteBits(0, 0));
+        Assert.Throws<ObjectDisposedException>(() => writer.WriteBits(uint.MaxValue, 32));
+        Assert.Throws<ObjectDisposedException>(() => writer.Finish());
+        Assert.Throws<ObjectDisposedException>(() => writer.WriteAlignedBytes([1, 2]));
+        Assert.Throws<ObjectDisposedException>(() => { _ = writer.WrittenSpan; });
+        Assert.Throws<ObjectDisposedException>(() => { _ = writer.WrittenMemory; });
+        Assert.Equal(0L, scope.LiveBytes);
+    }
+
     [Fact]
     public void LosslessWorkingMemoryIsBounded()
     {

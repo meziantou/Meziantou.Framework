@@ -2113,6 +2113,142 @@ public sealed class JpegXlDecoderTests
         }
     }
 
+    /// <summary>
+    /// A codestream may declare more extra channels than the 256 of level 10, as libjxl decodes: a frame is blended over the
+    /// one below with the second alpha channel, whatever the number of the other channels.
+    /// </summary>
+    [Theory]
+    [InlineData(2)]
+    [InlineData(JpegXlFormat.MaxStackChannels + 1)]
+    [InlineData(300)]
+    public void FramesAreBlendedWithManyExtraChannels(int extraChannelCount)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(FramesAreBlendedWithManyExtraChannels));
+        using var writer = new LsbBitWriter(scope);
+
+        // An 8x8 sRGB image whose extra channels are all 8-bit alpha channels
+        writer.WriteBits(0x0AFF, 16);
+        writer.WriteBool(true);
+        writer.WriteBits(0, 5);
+        writer.WriteBits(0, 3);
+        writer.WriteBits(0, 5);
+        writer.WriteBool(false);
+        writer.WriteBool(false);
+        writer.WriteBool(false);
+        writer.WriteU32(8, 8, 0, 10, 0, 12, 0, 1, 6);
+        writer.WriteBool(false);
+        writer.WriteU32((uint)extraChannelCount, 0, 0, 1, 0, 2, 4, 1, 12);
+        for (var i = 0; i < extraChannelCount; i++)
+        {
+            writer.WriteBool(true);
+        }
+
+        writer.WriteBool(false);
+        writer.WriteBool(true);
+        writer.WriteU64(0);
+        writer.WriteBool(true);
+        writer.ZeroPadToByte();
+
+        // A red frame kept as reference 0, then a blue frame blended over it with the second alpha channel
+        WriteFrame(isLast: false, red: 200, blue: 0, secondAlpha: 255);
+        WriteFrame(isLast: true, red: 0, blue: 200, secondAlpha: 64);
+        writer.Finish();
+
+        using var image = Image.Load<Rgba32>(writer.WrittenSpan.ToArray());
+        var pixels = new Rgba32[64];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        Assert.All(pixels, pixel => Assert.Equal(new Rgba32(150, 0, 50, 255), pixel));
+
+        void WriteFrame(bool isLast, int red, int blue, int secondAlpha)
+        {
+            // A Modular frame of one group, without restoration filters
+            writer.WriteBool(false);
+            writer.WriteBits(JpegXlFrameHeader.TypeRegular, 2);
+            writer.WriteBool(true);
+            writer.WriteU64(0);
+            writer.WriteBool(false);
+            writer.WriteBits(0, 2);
+            for (var i = 0; i < extraChannelCount; i++)
+            {
+                writer.WriteBits(0, 2);
+            }
+
+            writer.WriteBits(1, 2);
+            writer.WriteU32(1, 1, 0, 2, 0, 3, 0, 4, 3);
+            writer.WriteBool(false);
+            if (isLast)
+            {
+                // The colors are blended with the extra channel 1 over the reference 0
+                writer.WriteU32(JpegXlBlendingInfo.ModeBlend, 0, 0, 1, 0, 2, 0, 3, 2);
+                writer.WriteU32(1, 0, 0, 1, 0, 2, 0, 3, 3);
+                writer.WriteBool(false);
+                writer.WriteBits(0, 2);
+            }
+            else
+            {
+                writer.WriteU32(JpegXlBlendingInfo.ModeReplace, 0, 0, 1, 0, 2, 0, 3, 2);
+            }
+
+            for (var i = 0; i < extraChannelCount; i++)
+            {
+                writer.WriteU32(JpegXlBlendingInfo.ModeReplace, 0, 0, 1, 0, 2, 0, 3, 2);
+            }
+
+            writer.WriteBool(isLast);
+            if (!isLast)
+            {
+                // Saved as reference 0, after its color transform
+                writer.WriteBits(0, 2);
+                writer.WriteBool(false);
+            }
+
+            writer.WriteU32(0, 0, 0, 0, 4, 16, 5, 48, 10);
+            writer.WriteBool(false);
+            writer.WriteBool(false);
+            writer.WriteBits(0, 2);
+            writer.WriteU64(0);
+            writer.WriteU64(0);
+
+            // The only section: LfGlobal with the default LF dequantization, no global tree, and the whole image
+            using var section = new LsbBitWriter(scope);
+            section.WriteBool(true);
+            section.WriteBool(false);
+            using (var modular = new JpegXlModularImage(8))
+            {
+                for (var c = 0; c < 3 + extraChannelCount; c++)
+                {
+                    var sample = c switch
+                    {
+                        0 => red,
+                        2 => blue,
+                        3 => 255,
+                        4 => secondAlpha,
+                        _ => 0,
+                    };
+                    modular.AddChannel(8, 8, 0, 0);
+                    var channel = modular.Channels[^1];
+                    channel.Allocate(scope);
+                    channel.Samples.Fill(sample);
+                }
+
+                JpegXlModularEncoder.Encode(section, modular, colorChannelCount: 3, effort: 1, scope, TestContext.Current.CancellationToken);
+            }
+
+            section.Finish();
+            JpegXlHeaderWriter.WriteToc(writer, [section.WrittenSpan.Length]);
+            writer.WriteAlignedBytes(section.WrittenSpan);
+        }
+    }
+
+    [Fact]
+    public void ManyExtraChannelsAreDecodedAsLibjxlDoes()
+    {
+        using var image = Image.Load<Rgba32>(JpegXlTestFiles.ManyExtraChannels);
+        var pixels = new Rgba32[64];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        Assert.All(pixels, pixel => Assert.Equal(new Rgba32(150, 0, 50, 255), pixel));
+    }
+
     private static Rgba64[] GetPixels(ImageFrame<Rgba64> frame)
     {
         var pixels = new Rgba64[frame.Width * frame.Height];

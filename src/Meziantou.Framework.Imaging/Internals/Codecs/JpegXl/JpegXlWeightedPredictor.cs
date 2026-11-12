@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -255,6 +256,7 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
         var previousErrors = errors.Previous;
         var currentErrors = errors.Current;
         var currentSubErrors = errors.CurrentSub;
+        Debug.Assert(errors.PreviousSub.Length >= width * SubPredictorCount);
         ref var previousSubErrors = ref unsafe(MemoryMarshal.GetReference(errors.PreviousSub));
         Vector128<uint> subN;
         Vector128<uint> subNE;

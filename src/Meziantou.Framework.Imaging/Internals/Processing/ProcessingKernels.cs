@@ -61,8 +61,10 @@ internal static class ProcessingKernels
         }
 
         // Destination column dx comes from source row sy(dx) and destination row dy from source column sx(dy). Go through
-        // square tiles so that each source and destination row is fetched once per tile instead of once per pixel.
-        Span<TPixel> tile = stackalloc TPixel[TileSize * TileSize];
+        // square tiles so that each source and destination row is fetched once per tile instead of once per pixel. The tile
+        // (up to 16 KB) is rented: every pixel of it that is read was written for the same tile.
+        using var tileBuffer = destination.Storage.Owner.Scope.Rent(TileSize * TileSize * Unsafe.SizeOf<TPixel>(), AllocationKind.Temporary, clear: false);
+        var tile = unsafe(MemoryMarshal.Cast<byte, TPixel>(tileBuffer.Span))[..(TileSize * TileSize)];
         var transposeBlocks = !Resampler.TestForceScalar && CanTransposeBlocks<TPixel>();
         for (var tileY = 0; tileY < outputHeight; tileY += TileSize)
         {
@@ -678,7 +680,7 @@ internal static class ProcessingKernels
             var alpha = GetByteRange(color.A, tolerance);
             var minimum = Vector128.Create((uint)(first.Minimum | (green.Minimum << 8) | (third.Minimum << 16) | (alpha.Minimum << 24))).AsByte();
             var maximum = Vector128.Create((uint)(first.Maximum | (green.Maximum << 8) | (third.Maximum << 16) | (alpha.Maximum << 24))).AsByte();
-            var value = Vector128.Create(unsafe(Unsafe.As<TPixel, uint>(ref replacement))).AsByte();
+            var value = Vector128.Create(unsafe(Unsafe.BitCast<TPixel, uint>(replacement))).AsByte();
             var bytes = unsafe(MemoryMarshal.AsBytes(row));
             for (; i + 4 <= row.Length; i += 4)
             {
@@ -695,7 +697,7 @@ internal static class ProcessingKernels
             var (red, green, blue, alpha) = (GetRange(color.R, tolerance), GetRange(color.G, tolerance), GetRange(color.B, tolerance), GetRange(color.A, tolerance));
             var minimum = Vector128.Create(red.Minimum, green.Minimum, blue.Minimum, alpha.Minimum, red.Minimum, green.Minimum, blue.Minimum, alpha.Minimum);
             var maximum = Vector128.Create(red.Maximum, green.Maximum, blue.Maximum, alpha.Maximum, red.Maximum, green.Maximum, blue.Maximum, alpha.Maximum);
-            var value = Vector128.Create(unsafe(Unsafe.As<TPixel, ulong>(ref replacement))).AsUInt16();
+            var value = Vector128.Create(unsafe(Unsafe.BitCast<TPixel, ulong>(replacement))).AsUInt16();
             var samples = unsafe(MemoryMarshal.Cast<TPixel, ushort>(row));
             for (; i + 2 <= row.Length; i += 2)
             {

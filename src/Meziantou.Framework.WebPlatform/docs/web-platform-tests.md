@@ -19,11 +19,12 @@
   the browsers), then windows-1252. The style sheets are
   loaded as bytes too (the CSS rules determine their encoding), as are the JSON modules, the text modules and the scripts that are not ASCII
   (the BOM, the `charset` of the `Content-Type`, the `charset` attribute, then the encoding of the document). The response
-  of an external script, a style sheet, an image or a font is delayed by the `pipe=trickle(d<seconds>)` query parameter
-  (using the virtual clock): a parser-blocking script pauses the parser. The document of a navigation (a file or the
-  response of a handler) whose URL has a `trickle()` pipe is sent as wptserve sends it: the headers at once, then the
-  parts of the body after their delays (`<bytes>`, `d<seconds>`, a final `r<n>` that repeats the parts), as chunks
-  that the parser parses as they arrive. The browsing context enables the speculative
+  of an external script, a style sheet, an image, a font, a document of a navigation (a file or the response of a
+  handler) or a request of `fetch()` and `XMLHttpRequest` whose URL has a `trickle()` pipe is sent as wptserve sends it
+  (using the virtual clock): the headers at once, then the parts of the body after their delays (`<bytes>`,
+  `d<seconds>`, a final `r<n>` that repeats the parts), as chunks that the parser of a document parses as they arrive (the
+  library waits for the end of the body of a script: a parser-blocking script pauses the parser). The media resources get
+  the whole response after the delays, and so does a synchronous `XMLHttpRequest` of a window, which is not delayed. The browsing context enables the speculative
   parsing of the library, as in a browser.
 - The requests of `fetch()` and `XMLHttpRequest` (`RequestDestination.Empty`) are answered as by wptserve: the files of
   the test suite with their status, status message and headers (plus `Content-Length`; a missing file is a `404`
@@ -48,10 +49,16 @@
     request that is not a GET request, `Referer`, the `Content-Type` of a submitted form), plus the headers of the network
     layer (`Host`, `User-Agent`, `Accept-Encoding`, `Accept-Language`, `Cookie`).
   - The response (`WptHandlerResponse`) has a status, headers, a body and a delay (`time.sleep()`, measured by the virtual
-    clock). The pipes of the URL apply to it, as for the files. The streamed responses (chunks, `trickle.py`) are sent at
-    once after their delays, except the documents of the navigations and the content of the templates with a `src`
-    attribute, which are parsed as their chunks arrive (`WptHandlerResponse.Chunks`, `DocumentResource.RemainingContentBytes`),
-    the media resources, the bodies of `fetch()` (`DocumentRequest.StreamsResponseBody`, e.g. `fetch/api/resources/trickle.py`,
+    clock), after interim responses (`WptHandlerResponse.InterimResponses`: the `103` responses that the `handle_headers`
+    function of the `.h2.py` handlers of `loading/early-hints/resources` sends, `WptPythonHandlers.EarlyHints.cs`, reported
+    with `DocumentRequest.ReportInterimResponse`), and its headers can wait for another request
+    (`WptHandlerResponse.HeadersCondition`). The pipes of the URL apply to it, as for the files. The streamed responses
+    (chunks, `trickle.py`) are sent as their chunks arrive (the library waits for the end of the body of most requests, but
+    the time of the headers is the `responseStart` of their timing), except the chunks that wait for another request or are
+    sent again, which are sent at once after their delays to the requests that do not read the body as it arrives. The
+    documents of the navigations and the content of the templates with a `src`
+    attribute are parsed as their chunks arrive (`WptHandlerResponse.Chunks`, `DocumentResource.RemainingContentBytes`),
+    and so are the media resources, the bodies of `fetch()` and `XMLHttpRequest` (`DocumentRequest.StreamsResponseBody`, e.g. `fetch/api/resources/trickle.py`,
     and `bad-chunk-encoding.py`, whose body fails after its chunks: `WptHandlerResponse.ChunksError`), and the event streams
     (`text/event-stream`), whose events are dispatched as their chunks arrive (a port of a handler that writes a part of
     the body, sleeps, then writes the rest, sends the parts as chunks); the connection of a body read as it arrives is
@@ -105,8 +112,8 @@
     `css/css-values/urls/support` (`image-`, `font-`, `stylesheet-` and `svg-filter-referrer-policy.py`, whose response depends
     on the `Referer` header of the request), the handlers of `resource-timing` (e.g.
     `TAOResponse.py`, `multi_redirect.py`, `status-code.py`, `SyntheticResponse.py`, whose delays and chunks use the
-    virtual clock; the interim responses of
-    `header-delay.py` are not sent, as the loader does not expose them) and of `navigation-timing` (`respond-slowly.py`
+    virtual clock; the interim responses of `header-delay.py` and of `SyntheticResponse.py` are reported to the library,
+    `WptHandlerResponse.InterimResponses`) and of `navigation-timing` (`respond-slowly.py`
     streams its document over one second), `import-maps/static-import.py`, the handlers of `navigation-api` whose
     response depends on the previous requests (`cross-origin-redirect-on-second-visit.py`,
     `204-205-download-on-second-visit.py`) and `slow-no-store.py`, and the event streams of

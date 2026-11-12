@@ -9,17 +9,16 @@ description: "The results of the web-platform-tests of client-hints, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 121 | 132 | 0 | 92% |
+| [Stable](#stable-tests) | 122 | 132 | 0 | 92% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **121** | **132** | **0** | **92%** |
+| **All** | **122** | **132** | **0** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 9
-- **NOT IMPLEMENTED**: 1
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -66,7 +65,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`accept-ch-stickiness/same-origin-subresource.https.html`](https://wpt.fyi/results/client-hints/accept-ch-stickiness/same-origin-subresource.https.html) | Pass | 3 / 3 |  |  |
 | [`accept-ch.wildcard.https.sub.html`](https://wpt.fyi/results/client-hints/accept-ch.wildcard.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`accept-ch/answers.sub.https.html`](https://wpt.fyi/results/client-hints/accept-ch/answers.sub.https.html) | Pass | 2 / 2 |  |  |
-| [`accept-ch/cache-revalidation.https.html`](https://wpt.fyi/results/client-hints/accept-ch/cache-revalidation.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `stale-while-revalidate` directive of the HTTP cache: the stale response (`Cache-Control: private, max-age=0, stale-while-revalidate=60`) is validated before it is used, instead of being used while it is revalidated in the background |
+| [`accept-ch/cache-revalidation.https.html`](https://wpt.fyi/results/client-hints/accept-ch/cache-revalidation.https.html) | Pass | 1 / 1 |  |  |
 | [`accept-ch/meta/resource-in-markup-accept-ch.https.html`](https://wpt.fyi/results/client-hints/accept-ch/meta/resource-in-markup-accept-ch.https.html) | Fail | 0 / 1 | TEST BUG | the `<meta http-equiv="Accept-CH">` element follows two `script` elements that have executed: the Delegate-CH algorithm of the spec (whose rules the library applies to the `accept-ch` pragma, which is not specified anymore) ignores the element once a `link`, `style` or `script` element has begun to execute; only Chromium applies it |
 | [`accept-ch/meta/resource-in-markup-delegate-ch.https.html`](https://wpt.fyi/results/client-hints/accept-ch/meta/resource-in-markup-delegate-ch.https.html) | Fail | 0 / 1 | TEST BUG | the `<meta http-equiv="Delegate-CH">` element follows two `script` elements that have executed: step 2 of the Delegate-CH algorithm of the spec ignores the element once a `link`, `style` or `script` element has begun to execute; only Chromium applies it |
 | [`accept-ch/no-feature-policy.sub.https.html`](https://wpt.fyi/results/client-hints/accept-ch/no-feature-policy.sub.https.html) | Pass | 2 / 2 |  |  |

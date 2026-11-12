@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -133,6 +134,7 @@ public closed partial class BlockedBloomFilter
         for (var i = 0; i < _hashCount; i++)
         {
             var bit = (int)(seed >> 55);
+            Debug.Assert((bit >> 6) < WordsPerBlock);
             ref var word = ref unsafe(Unsafe.Add(ref block, bit >> 6));
             Interlocked.Or(ref word, 1UL << bit);
             seed = (seed * LcgMultiplier) + LcgIncrement;
@@ -147,6 +149,7 @@ public closed partial class BlockedBloomFilter
         for (var i = 0; i < _hashCount; i++)
         {
             var bit = (int)(seed >> 55);
+            Debug.Assert((bit >> 6) < WordsPerBlock);
             ref var word = ref unsafe(Unsafe.Add(ref block, bit >> 6));
             if ((Volatile.Read(ref word) & (1UL << bit)) == 0)
                 return false;
@@ -164,6 +167,7 @@ public closed partial class BlockedBloomFilter
     {
         var blockIndex = BloomFilterHash.Reduce(hash, _blockCount);
         var segment = _segments[(int)(blockIndex >> SegmentBlockShift)];
+        Debug.Assert((long)segment.Offset + ((long)(blockIndex & SegmentBlockMask) * WordsPerBlock) + WordsPerBlock <= segment.Words.Length);
         ref var baseRef = ref unsafe(MemoryMarshal.GetArrayDataReference(segment.Words));
         return ref unsafe(Unsafe.Add(ref baseRef, segment.Offset + ((nint)(blockIndex & SegmentBlockMask) * WordsPerBlock)));
     }

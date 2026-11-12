@@ -138,24 +138,27 @@ internal static class MorphologyFilter
     {
         if (typeof(TSample) == typeof(byte))
         {
-            var value = (byte)Math.Max(0, unsafe(Unsafe.As<TSample, byte>(ref a)) - unsafe(Unsafe.As<TSample, byte>(ref b)));
-            return unsafe(Unsafe.As<byte, TSample>(ref value));
+            var value = (byte)Math.Max(0, unsafe(Unsafe.BitCast<TSample, byte>(a)) - unsafe(Unsafe.BitCast<TSample, byte>(b)));
+            return unsafe(Unsafe.BitCast<byte, TSample>(value));
         }
 
         if (typeof(TSample) == typeof(ushort))
         {
-            var value = (ushort)Math.Max(0, unsafe(Unsafe.As<TSample, ushort>(ref a)) - unsafe(Unsafe.As<TSample, ushort>(ref b)));
-            return unsafe(Unsafe.As<ushort, TSample>(ref value));
+            var value = (ushort)Math.Max(0, unsafe(Unsafe.BitCast<TSample, ushort>(a)) - unsafe(Unsafe.BitCast<TSample, ushort>(b)));
+            return unsafe(Unsafe.BitCast<ushort, TSample>(value));
         }
 
         if (typeof(TSample) == typeof(Half))
         {
-            var value = (Half)((float)unsafe(Unsafe.As<TSample, Half>(ref a)) - (float)unsafe(Unsafe.As<TSample, Half>(ref b)));
-            return unsafe(Unsafe.As<Half, TSample>(ref value));
+            var value = (Half)((float)unsafe(Unsafe.BitCast<TSample, Half>(a)) - (float)unsafe(Unsafe.BitCast<TSample, Half>(b)));
+            return unsafe(Unsafe.BitCast<Half, TSample>(value));
         }
 
-        var difference = unsafe(Unsafe.As<TSample, float>(ref a)) - unsafe(Unsafe.As<TSample, float>(ref b));
-        return unsafe(Unsafe.As<float, TSample>(ref difference));
+        if (typeof(TSample) != typeof(float))
+            throw UnsupportedType.Create<TSample>();
+
+        var difference = unsafe(Unsafe.BitCast<TSample, float>(a)) - unsafe(Unsafe.BitCast<TSample, float>(b));
+        return unsafe(Unsafe.BitCast<float, TSample>(difference));
     }
 
     private static void Filter<TSample, TKey, TOperator>(PixelStorage storage, MorphologyPlan plan, CancellationToken cancellationToken)

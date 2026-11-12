@@ -19,6 +19,11 @@ public sealed class CssMinifyFormatterTests
     [InlineData("a { width: calc(1px + 2em); height: calc(2 * var(--x)) }", "a{width:calc(2em + 1px);height:calc(2*var(--x))}")]
     [InlineData("a { --x:  { a  b } ; color: var(--x,  red) }", "a{--x:{ a  b };color:var(--x,red)}")]
     [InlineData("a { background: url( 'x y.png' ) no-repeat }", "a{background:url(\"x y.png\") no-repeat}")]
+    [InlineData("a { margin: var(--m); margin-top: 1px }", "a{margin:var(--m);margin-top:1px}")]
+    [InlineData("a { border: var(--w) solid !important; border-color: red; border-left-color: blue !important }", "a{border:var(--w) solid!important;border-left-color:blue!important}")]
+    [InlineData("a { color: red; all: var(--x); color: blue }", "a{all:var(--x);color:blue}")]
+    [InlineData("a { font: menu; font-style: italic }", "a{font:menu;font-style:italic}")]
+    [InlineData("a { margin: var(--a); padding: var(--b); margin-left: 0; padding-left: 0 }", "a{margin:var(--a);padding:var(--b);margin-left:0px;padding-left:0px}")]
     // Colors and numbers
     [InlineData("a { color: #ff0000; background-color: rgb(18, 52, 86); border-color: rgba(0, 0, 0, 0.5) }", "a{color:#f00;background-color:#123456;border-color:rgba(0,0,0,.5)}")]
     [InlineData("a { transition: opacity 0.5s, color -0.25s; opacity: 0.5 }", "a{transition:opacity .5s,color 0s -.25s;opacity:.5}")]

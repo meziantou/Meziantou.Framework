@@ -55,6 +55,24 @@ public sealed class ModuleScriptTests : IDisposable
     }
 
     [Fact]
+    public void SvgModuleScripts_AreDeferredAndUseTheImportMap()
+    {
+        AddScript("https://example.com/vendor/lib.js", "export default 'mapped';");
+        var document = Load("""
+            <script>window.log = [];</script>
+            <svg>
+              <script type=importmap>{ "imports": { "lib": "/vendor/lib.js" } }</script>
+              <script type=module>import value from 'lib'; window.log.push('module ' + value + ' ' + (document.currentScript === null));</script>
+              <script>window.log.push('classic');</script>
+            </svg>
+            <script>document.addEventListener('DOMContentLoaded', () => document.title = window.log.join('|'));</script>
+            """);
+
+        Assert.Equal("classic|module mapped true", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void ImportMap_MapsTheBareSpecifiers()
     {
         AddScript("https://example.com/vendor/lib.js", "export default 'mapped';");

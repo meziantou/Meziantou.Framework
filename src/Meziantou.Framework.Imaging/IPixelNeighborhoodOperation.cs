@@ -18,6 +18,6 @@ public interface IPixelNeighborhoodOperation<TPixel>
     /// <summary>Computes one row.</summary>
     /// <param name="y">The index of the row in the frame.</param>
     /// <param name="source">The pixels of the frame before the operation, in rows. Valid until the method returns.</param>
-    /// <param name="destination">The row to write. Its initial content is unspecified: write every pixel. Valid until the method returns.</param>
+    /// <param name="destination">The row to write. It initially holds the pixels of the row before the operation. Valid until the method returns.</param>
     void Invoke(int y, PixelRowSource<TPixel> source, Span<TPixel> destination);
 }

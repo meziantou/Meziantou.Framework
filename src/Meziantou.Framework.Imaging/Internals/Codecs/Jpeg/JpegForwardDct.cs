@@ -621,6 +621,10 @@ internal static class JpegForwardDct
     internal static void TransformAndQuantizeAvx512<T>(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<T> coefficients)
         where T : unmanaged
     {
+        // The coefficients are stored as 16-bit or 32-bit integers: no other element type may be reinterpreted as either
+        if (typeof(T) != typeof(short) && typeof(T) != typeof(int))
+            throw new NotSupportedException($"The coefficients must be {nameof(Int16)} or {nameof(Int32)} values.");
+
         samples = samples[..((7 * stride) + 8)];
         divisors = divisors[..64];
         coefficients = coefficients[..64];

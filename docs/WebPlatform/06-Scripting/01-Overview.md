@@ -65,3 +65,5 @@ browser, and the functions that you add.
   add .NET functions to the pages.
 - [Running untrusted pages](04-RunningUntrustedPages.md): the limits of the engine and the requests of the pages.
 - [WebAssembly](05-WebAssembly.md): run the WebAssembly modules of the pages with Wasmtime.
+- [Calling the tools of a page (WebMCP)](06-WebMcpTools.md): list the tools that a page registers with WebMCP, and
+  execute them from .NET.

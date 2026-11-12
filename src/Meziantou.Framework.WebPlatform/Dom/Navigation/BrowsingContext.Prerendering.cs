@@ -248,7 +248,7 @@ public sealed partial class BrowsingContext
             }
         }
 
-        Activate(document, window, historyHandling, srcdoc: null, parameters: parameters, prerenderActivation: true);
+        Activate(document, window, historyHandling, srcdoc: null, parameters: parameters, prerenderedEntry: prerenderedEntry);
 
         // The state of the entry of the prerendered document, and the histories of its child navigables
         var entry = ActiveEntry;

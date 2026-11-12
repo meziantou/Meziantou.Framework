@@ -82,14 +82,14 @@ internal static class MedianFilter
         where TSample : unmanaged
     {
         if (typeof(TSample) == typeof(byte))
-            return unsafe(Unsafe.As<TSample, byte>(ref sample));
+            return unsafe(Unsafe.BitCast<TSample, byte>(sample));
 
         if (typeof(TSample) == typeof(ushort))
-            return unsafe(Unsafe.As<TSample, ushort>(ref sample));
+            return unsafe(Unsafe.BitCast<TSample, ushort>(sample));
 
         if (typeof(TSample) == typeof(Half))
         {
-            uint bits = BitConverter.HalfToUInt16Bits(unsafe(Unsafe.As<TSample, Half>(ref sample)));
+            uint bits = BitConverter.HalfToUInt16Bits(unsafe(Unsafe.BitCast<TSample, Half>(sample)));
             if ((bits & 0x7FFF) > 0x7C00)
             {
                 bits &= 0x7FFF;
@@ -98,7 +98,10 @@ internal static class MedianFilter
             return (bits & 0x8000) != 0 ? ~bits & 0xFFFF : bits | 0x8000;
         }
 
-        var value = BitConverter.SingleToUInt32Bits(unsafe(Unsafe.As<TSample, float>(ref sample)));
+        if (typeof(TSample) != typeof(float))
+            throw UnsupportedType.Create<TSample>();
+
+        var value = BitConverter.SingleToUInt32Bits(unsafe(Unsafe.BitCast<TSample, float>(sample)));
         if ((value & 0x7FFF_FFFF) > 0x7F80_0000)
         {
             value &= 0x7FFF_FFFF;
@@ -115,23 +118,26 @@ internal static class MedianFilter
         if (typeof(TSample) == typeof(byte))
         {
             var b = (byte)key;
-            return unsafe(Unsafe.As<byte, TSample>(ref b));
+            return unsafe(Unsafe.BitCast<byte, TSample>(b));
         }
 
         if (typeof(TSample) == typeof(ushort))
         {
             var s = (ushort)key;
-            return unsafe(Unsafe.As<ushort, TSample>(ref s));
+            return unsafe(Unsafe.BitCast<ushort, TSample>(s));
         }
 
         if (typeof(TSample) == typeof(Half))
         {
             var h = BitConverter.UInt16BitsToHalf((ushort)((key & 0x8000) != 0 ? key & 0x7FFF : ~key & 0xFFFF));
-            return unsafe(Unsafe.As<Half, TSample>(ref h));
+            return unsafe(Unsafe.BitCast<Half, TSample>(h));
         }
 
+        if (typeof(TSample) != typeof(float))
+            throw UnsupportedType.Create<TSample>();
+
         var f = BitConverter.UInt32BitsToSingle((key & 0x8000_0000) != 0 ? key & 0x7FFF_FFFF : ~key);
-        return unsafe(Unsafe.As<float, TSample>(ref f));
+        return unsafe(Unsafe.BitCast<float, TSample>(f));
     }
 
     private static void Apply<TSample>(PixelStorage storage, MedianPlan plan, CancellationToken cancellationToken)
@@ -195,7 +201,8 @@ internal static class MedianFilter
         var channels = plan.Channels;
         var output = keys.Slice((diameter + (2 * radius)) * plan.PaddedLength, width * channels);
         var rank = plan.Rank;
-        Span<int> rows = diameter <= 1024 ? stackalloc int[diameter] : new int[diameter];
+        // On the stack up to 1 KB: a band runs on a worker thread, whose stack can be small
+        Span<int> rows = diameter <= 256 ? stackalloc int[diameter] : new int[diameter];
 
         // The group of keys each low-bits tree counts (32-bit keys), none yet
         Span<int> active = stackalloc int[channels];

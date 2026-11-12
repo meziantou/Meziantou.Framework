@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -607,13 +608,17 @@ internal static class Jpeg2000Dwt
         var low = row[..lowCount];
         var high = row[lowCount..];
         var i = 0;
-        if (useVectors && Unsafe.SizeOf<T>() == sizeof(uint) && (AdvSimd.Arm64.IsSupported || Sse2.IsSupported))
+        // The samples are reinterpreted as 32-bit words: only the element types the transforms use
+        if (useVectors && (typeof(T) == typeof(int) || typeof(T) == typeof(float)) && (AdvSimd.Arm64.IsSupported || Sse2.IsSupported))
         {
             // The samples of "first" and "second" alternate (zip, unpack). The row starts with a sample of "first", which
             // has as many samples as "second" or one more
             var first = parity == 0 ? low : high;
             var second = parity == 0 ? high : low;
             line = line[..row.Length];
+
+            // The loop reads and writes as many samples of "first" as of "second", and twice as many of the line
+            Debug.Assert(first.Length >= second.Length);
             ref var firstStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(first)));
             ref var secondStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(second)));
             ref var lineStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(line)));
@@ -707,12 +712,16 @@ internal static class Jpeg2000Dwt
         var low = row[..lowCount];
         var high = row[lowCount..];
         var i = 0;
-        if (useVectors && Unsafe.SizeOf<T>() == sizeof(uint) && (AdvSimd.Arm64.IsSupported || Sse.IsSupported))
+        // The samples are reinterpreted as 32-bit words: only the element types the transforms use
+        if (useVectors && (typeof(T) == typeof(int) || typeof(T) == typeof(float)) && (AdvSimd.Arm64.IsSupported || Sse.IsSupported))
         {
             // The reverse of Interleave: the samples at even positions of the line go to "first" (unzip, shuffle)
             var first = parity == 0 ? low : high;
             var second = parity == 0 ? high : low;
             line = line[..row.Length];
+
+            // The loop reads and writes as many samples of "first" as of "second", and twice as many of the line
+            Debug.Assert(first.Length >= second.Length);
             ref var firstStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(first)));
             ref var secondStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(second)));
             ref var lineStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(line)));

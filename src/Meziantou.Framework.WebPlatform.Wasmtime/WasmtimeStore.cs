@@ -879,6 +879,75 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     // GC objects
     // ----------------------------------------------------------------------------------------------------------------
 
+    public override int GetArrayLength(WasmGcObject array)
+    {
+        using var context = EnterContext();
+        WasmtimeRef arrayReference;
+        GetArrayReference(context.Value, array, &arrayReference);
+        try
+        {
+            uint length;
+            ThrowIfError(NativeMethods.wasmtime_arrayref_len(context.Value, &arrayReference, &length), static message => new WasmTrapException(message));
+            return (int)length;
+        }
+        finally
+        {
+            NativeMethods.wasmtime_arrayref_unroot(&arrayReference);
+        }
+    }
+
+    public override WasmValue GetArrayElement(WasmGcObject array, int index)
+    {
+        using var context = EnterContext();
+        WasmtimeRef arrayReference;
+        GetArrayReference(context.Value, array, &arrayReference);
+        try
+        {
+            WasmtimeVal value;
+            ThrowIfError(NativeMethods.wasmtime_arrayref_get(context.Value, &arrayReference, (uint)index, &value), static message => new WasmTrapException(message));
+            try
+            {
+                return FromNative(ref value);
+            }
+            finally
+            {
+                Unroot(ref value);
+            }
+        }
+        finally
+        {
+            NativeMethods.wasmtime_arrayref_unroot(&arrayReference);
+        }
+    }
+
+    public override void SetArrayElement(WasmGcObject array, int index, WasmValue value, WasmValueType type)
+    {
+        using var context = EnterContext();
+        WasmtimeRef arrayReference;
+        GetArrayReference(context.Value, array, &arrayReference);
+        var native = ToNative(value, type);
+        try
+        {
+            ThrowIfError(NativeMethods.wasmtime_arrayref_set(context.Value, &arrayReference, (uint)index, &native), static message => new WasmTrapException(message));
+        }
+        finally
+        {
+            Unroot(ref native);
+            NativeMethods.wasmtime_arrayref_unroot(&arrayReference);
+        }
+    }
+
+    /// <summary>Converts an array of the store to a rooted <c>wasmtime_arrayref_t</c>, which the caller unroots.</summary>
+    private void GetArrayReference(nint context, WasmGcObject array, WasmtimeRef* result)
+    {
+        if (array is not WasmtimeGcObject { IsArray: true } gcObject || gcObject.Store != this)
+            throw new WasmTrapException("The value is not an array of the store");
+
+        using var reference = gcObject.EnterReference();
+        if (!NativeMethods.wasmtime_anyref_as_array(context, (WasmtimeRef*)reference.Value, result))
+            throw new WasmTrapException("The value is not an array");
+    }
+
     /// <summary>Returns the object of a struct or of an array, the same object for the same struct or array. The reference is borrowed.</summary>
     private WasmtimeGcObject GetGcObject(WasmtimeRef* reference, bool isArray)
     {

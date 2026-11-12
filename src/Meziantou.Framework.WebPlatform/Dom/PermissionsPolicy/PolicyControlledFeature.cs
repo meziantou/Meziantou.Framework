@@ -87,6 +87,9 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature SyncXhr { get; } = new("sync-xhr", isAllowedForAllByDefault: true);
 
+    /// <summary>https://webmachinelearning.github.io/webmcp/#permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature Tools { get; } = new("tools", isAllowedForAllByDefault: false);
+
     public static PolicyControlledFeature Unload { get; } = new("unload", isAllowedForAllByDefault: true);
 
     public static PolicyControlledFeature WebShare { get; } = new("web-share", isAllowedForAllByDefault: false);
@@ -136,6 +139,7 @@ internal sealed partial class PolicyControlledFeature
         new("serial", isAllowedForAllByDefault: false),
         SpeakerSelection,
         SyncXhr,
+        Tools,
         Unload,
         new("usb", isAllowedForAllByDefault: false),
         WebShare,

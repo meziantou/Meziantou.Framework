@@ -9,17 +9,16 @@ description: "The results of the web-platform-tests of trusted-types, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 216 | 224 | 0 | 96% |
+| [Stable](#stable-tests) | 221 | 224 | 0 | 99% |
 | [Tentative](#tentative-tests) | 6 | 9 | 0 | 67% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **223** | **234** | **0** | **95%** |
+| **All** | **228** | **234** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
-- **NOT IMPLEMENTED**: 8
+- **NOT IMPLEMENTED**: 4
 - **TEST RUNNER**: 2
 
 ## Stable tests
@@ -112,7 +111,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`block-string-assignment-to-attribute-via-attribute-node.html`](https://wpt.fyi/results/trusted-types/block-string-assignment-to-attribute-via-attribute-node.html) | Pass | 7 / 7 |  |  |
 | [`block-string-assignment-to-text-and-url-sinks.html`](https://wpt.fyi/results/trusted-types/block-string-assignment-to-text-and-url-sinks.html) | Pass | 11 / 11 |  |  |
 | [`block-text-node-insertion-into-script-element.html`](https://wpt.fyi/results/trusted-types/block-text-node-insertion-into-script-element.html) | Pass | 10 / 10 |  |  |
-| [`block-text-node-insertion-into-svg-script-element.html`](https://wpt.fyi/results/trusted-types/block-text-node-insertion-into-svg-script-element.html) | Fail | 8 / 9 | NOT IMPLEMENTED | module and import map scripts in SVG `<script>` elements (only classic scripts run) |
+| [`block-text-node-insertion-into-svg-script-element.html`](https://wpt.fyi/results/trusted-types/block-text-node-insertion-into-svg-script-element.html) | Pass | 9 / 9 |  |  |
 | [`csp-block-eval.html`](https://wpt.fyi/results/trusted-types/csp-block-eval.html) | Pass | 2 / 2 |  |  |
 | [`default-policy-callback-arguments.html`](https://wpt.fyi/results/trusted-types/default-policy-callback-arguments.html) | Pass | 5 / 5 |  |  |
 | [`default-policy-report-only.html`](https://wpt.fyi/results/trusted-types/default-policy-report-only.html) | Pass | 19 / 19 |  |  |
@@ -160,11 +159,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`script-enforcement-004.html`](https://wpt.fyi/results/trusted-types/script-enforcement-004.html) | Pass | 31 / 31 |  |  |
 | [`script-enforcement-005.html`](https://wpt.fyi/results/trusted-types/script-enforcement-005.html) | Pass | 4 / 4 |  |  |
 | [`script-enforcement-006.html`](https://wpt.fyi/results/trusted-types/script-enforcement-006.html) | Pass | 4 / 4 |  |  |
-| [`script-enforcement-007.html`](https://wpt.fyi/results/trusted-types/script-enforcement-007.html) | Fail | 1 / 4 | NOT IMPLEMENTED | module and import map scripts in SVG `<script>` elements (only classic scripts run) |
+| [`script-enforcement-007.html`](https://wpt.fyi/results/trusted-types/script-enforcement-007.html) | Pass | 4 / 4 |  |  |
 | [`script-enforcement-008.https.html`](https://wpt.fyi/results/trusted-types/script-enforcement-008.https.html) | Pass | 5 / 5 |  |  |
-| [`script-enforcement-009.https.html`](https://wpt.fyi/results/trusted-types/script-enforcement-009.https.html) | Fail | 2 / 5 | NOT IMPLEMENTED | module and import map scripts in SVG `<script>` elements (only classic scripts run) |
+| [`script-enforcement-009.https.html`](https://wpt.fyi/results/trusted-types/script-enforcement-009.https.html) | Pass | 5 / 5 |  |  |
 | [`script-enforcement-010.html`](https://wpt.fyi/results/trusted-types/script-enforcement-010.html) | Pass | 2 / 2 |  |  |
-| [`script-enforcement-011.html`](https://wpt.fyi/results/trusted-types/script-enforcement-011.html) | Fail | 1 / 2 | NOT IMPLEMENTED | module and import map scripts in SVG `<script>` elements (only classic scripts run) |
+| [`script-enforcement-011.html`](https://wpt.fyi/results/trusted-types/script-enforcement-011.html) | Pass | 2 / 2 |  |  |
 | [`script-enforcement-012.html`](https://wpt.fyi/results/trusted-types/script-enforcement-012.html) | Pass | 1 / 1 |  |  |
 | [`script-enforcement-013.html`](https://wpt.fyi/results/trusted-types/script-enforcement-013.html) | Pass | 1 / 1 |  |  |
 | [`script-enforcement-014.html`](https://wpt.fyi/results/trusted-types/script-enforcement-014.html) | Pass | 1 / 1 |  |  |
@@ -193,7 +192,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`trusted-types-eval-reporting-no-unsafe-eval.html`](https://wpt.fyi/results/trusted-types/trusted-types-eval-reporting-no-unsafe-eval.html) | Pass | 3 / 3 |  |  |
 | [`trusted-types-eval-reporting-report-only.html`](https://wpt.fyi/results/trusted-types/trusted-types-eval-reporting-report-only.html) | Pass | 3 / 3 |  |  |
 | [`trusted-types-event-handlers.html`](https://wpt.fyi/results/trusted-types/trusted-types-event-handlers.html) | Fail | 113 / 115 | NOT IMPLEMENTED | the `onfullscreenchange` and `onfullscreenerror` event handler content attributes of the elements (Fullscreen API) |
-| [`trusted-types-navigation.html`](https://wpt.fyi/results/trusted-types/trusted-types-navigation.html) | Timeout | 9 / 36 | BUG | the report-only cases: the navigation started by the script of the `javascript:` URL replaces the document before the task of the `securitypolicyviolation` event runs (the loader of the runner completes synchronously and the new document is loaded at once), so the listeners of the previous document do not run (it is not fully active) and the violation is not posted to the opener; the next cases do not run |
+| [`trusted-types-navigation.html`](https://wpt.fyi/results/trusted-types/trusted-types-navigation.html) | Pass | 36 / 36 |  |  |
 | [`trusted-types-report-only.html`](https://wpt.fyi/results/trusted-types/trusted-types-report-only.html) | Pass | 5 / 5 |  |  |
 | [`trusted-types-reporting-check-report-DedicatedWorker-create-policy.html`](https://wpt.fyi/results/trusted-types/trusted-types-reporting-check-report-DedicatedWorker-create-policy.html) | Pass | 4 / 4 |  |  |
 | [`trusted-types-reporting-check-report-DedicatedWorker-sink-mismatch.html`](https://wpt.fyi/results/trusted-types/trusted-types-reporting-check-report-DedicatedWorker-sink-mismatch.html) | Pass | 5 / 5 |  |  |

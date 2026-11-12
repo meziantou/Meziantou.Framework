@@ -254,6 +254,29 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void CountProcessorsStopsAtAnEntryTooSmallForItsGroupMasks()
+    {
+        var buffer = new List<byte>();
+        AddProcessorEntry(buffer, LOGICAL_PROCESSOR_RELATIONSHIP.RelationProcessorCore, groupMask: 0b0011);
+
+        // GroupCount says the masks continue past the entry, into the next one and past the end of the buffer
+        AddProcessorEntry(buffer, LOGICAL_PROCESSOR_RELATIONSHIP.RelationProcessorCore, groupMask: 0b1100, groupCount: 1000);
+        AddProcessorEntry(buffer, LOGICAL_PROCESSOR_RELATIONSHIP.RelationProcessorCore, groupMask: 0b0001);
+
+        var bytes = buffer.ToArray();
+        unsafe
+        {
+            fixed (byte* ptr = bytes)
+            {
+                WindowsCpuInfoProvider.CountProcessors(ptr, (uint)bytes.Length, out var physicalProcessorCount, out var physicalCoreCount, out var logicalCoreCount);
+                Assert.Equal(0, physicalProcessorCount);
+                Assert.Equal(1, physicalCoreCount);
+                Assert.Equal(2, logicalCoreCount);
+            }
+        }
+    }
+
+    [Fact]
     public void CountProcessorsWalksVariableSizedEntries()
     {
         var buffer = new List<byte>();
@@ -277,16 +300,6 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
             }
         }
 
-        static void AddProcessorEntry(List<byte> buffer, LOGICAL_PROCESSOR_RELATIONSHIP relationship, nuint groupMask)
-        {
-            var entry = default(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX);
-            entry.Relationship = relationship;
-            entry.Size = (uint)sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX);
-            entry.Anonymous.Processor.GroupCount = 1;
-            entry.Anonymous.Processor.GroupMask[0].Mask = groupMask;
-            buffer.AddRange(unsafe(MemoryMarshal.AsBytes(new ReadOnlySpan<SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(in entry))));
-        }
-
         static void AddOpaqueEntry(List<byte> buffer, LOGICAL_PROCESSOR_RELATIONSHIP relationship, uint size)
         {
             var entry = new byte[size];
@@ -294,5 +307,15 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
             BitConverter.TryWriteBytes(entry.AsSpan(sizeof(int)), size);
             buffer.AddRange(entry);
         }
+    }
+
+    private static void AddProcessorEntry(List<byte> buffer, LOGICAL_PROCESSOR_RELATIONSHIP relationship, nuint groupMask, ushort groupCount = 1)
+    {
+        var entry = default(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX);
+        entry.Relationship = relationship;
+        entry.Size = (uint)sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX);
+        entry.Anonymous.Processor.GroupCount = groupCount;
+        entry.Anonymous.Processor.GroupMask[0].Mask = groupMask;
+        buffer.AddRange(unsafe(MemoryMarshal.AsBytes(new ReadOnlySpan<SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(in entry))));
     }
 }

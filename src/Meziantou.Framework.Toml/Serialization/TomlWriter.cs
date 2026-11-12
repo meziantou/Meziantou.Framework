@@ -315,8 +315,12 @@ public sealed class TomlWriter
         WriteValue(value);
     }
 
-    // Writes the decimal as a TOML float without going through double, which would lose digits
-    internal void WriteDecimalValue(decimal value)
+    /// <summary>
+    /// Writes a decimal value as a TOML float.
+    /// </summary>
+    /// <remarks>The value is not converted to <see cref="double"/>, which would lose digits. <see cref="TomlReader.GetDecimal"/> reads it back.</remarks>
+    /// <param name="value">The value.</param>
+    public void WriteDecimalValue(decimal value)
     {
         WriteValue(value);
     }

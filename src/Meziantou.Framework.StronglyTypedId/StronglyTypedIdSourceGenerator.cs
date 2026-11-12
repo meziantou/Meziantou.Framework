@@ -141,7 +141,9 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                     GetConstructorArgument("addCodeGeneratedAttribute", arguments[4]),
                     GetNamedProperty<StringComparison>(attribute, "StringComparison"),
                     GetNamedProperty<bool>(attribute, "GenerateToStringAsRecord"),
-                    GetNamedProperty<GuidGenerationStrategy>(attribute, GuidGenerationStrategyPropertyName));
+                    GetNamedProperty<GuidGenerationStrategy>(attribute, GuidGenerationStrategyPropertyName),
+                    GetNamedProperty<bool>(attribute, "GenerateYamlConverter"),
+                    GetNamedProperty<bool>(attribute, "GenerateTomlConverter"));
 
                 bool? GetConstructorArgument(string parameterName, TypedConstant value)
                 {
@@ -175,7 +177,9 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                     GetNamedProperty<bool>(attribute, "AddCodeGeneratedAttribute"),
                     GetNamedProperty<StringComparison>(attribute, "StringComparison"),
                     GetNamedProperty<bool>(attribute, "GenerateToStringAsRecord"),
-                    GetNamedProperty<GuidGenerationStrategy>(attribute, GuidGenerationStrategyPropertyName)));
+                    GetNamedProperty<GuidGenerationStrategy>(attribute, GuidGenerationStrategyPropertyName),
+                    GetNamedProperty<bool>(attribute, "GenerateYamlConverter"),
+                    GetNamedProperty<bool>(attribute, "GenerateTomlConverter")));
             }
 
             return options;
@@ -328,6 +332,16 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             {
                 writer.WriteLine($"[global::Newtonsoft.Json.JsonConverterAttribute(typeof({attribute.NewtonsoftJsonConverterTypeName}))]");
             }
+
+            if (attribute.CanGenerateYamlConverter())
+            {
+                writer.WriteLine($"[global::Meziantou.Framework.Yaml.Serialization.YamlConverterAttribute(typeof({attribute.YamlConverterTypeName}))]");
+            }
+
+            if (attribute.CanGenerateTomlConverter())
+            {
+                writer.WriteLine($"[global::Meziantou.Framework.Toml.Serialization.TomlConverterAttribute(typeof({attribute.TomlConverterTypeName}))]");
+            }
         }
 
         var indentation = BeginPartialContext(writer, attribute.PartialTypeContext, WriteAttributes, baseTypes);
@@ -336,6 +350,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         GenerateSystemTextJsonConverter(writer, attribute);
         GenerateMongoDBBsonSerializationConverter(writer, attribute);
         GenerateNewtonsoftJsonConverter(writer, attribute);
+        GenerateYamlConverter(writer, attribute);
+        GenerateTomlConverter(writer, attribute);
         for (var i = 0; i < indentation; i++)
         {
             writer.EndBlock();
@@ -645,6 +661,10 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             SupportSystemTextJsonConverter = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1") is not null;
             SupportNewtonsoftJsonConverter = compilation.GetTypeByMetadataName("Newtonsoft.Json.JsonConverter") is not null;
             SupportMongoDbConverter = compilation.GetTypeByMetadataName("MongoDB.Bson.Serialization.Serializers.SerializerBase`1") is not null;
+            SupportYamlConverter = compilation.GetTypeByMetadataName("Meziantou.Framework.Yaml.Serialization.YamlConverter`1") is not null;
+            var tomlWriterSymbol = compilation.GetTypeByMetadataName("Meziantou.Framework.Toml.Serialization.TomlWriter");
+            SupportTomlConverter = compilation.GetTypeByMetadataName("Meziantou.Framework.Toml.Serialization.TomlConverter`1") is not null && tomlWriterSymbol is not null;
+            SupportTomlWriteDecimalValue = tomlWriterSymbol is not null && tomlWriterSymbol.GetMembers("WriteDecimalValue").Any(member => member is IMethodSymbol { IsStatic: false, DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type.SpecialType: SpecialType.System_Decimal }] });
             UserDeclaredConverters = GetUserDeclaredConverters(typeSymbol, TypeName);
             SupportNotNullWhenAttribute = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") is { } type && compilation.IsSymbolAccessibleWithin(type, compilation.Assembly);
             SupportStaticInterfaces = compilation.SyntaxTrees.FirstOrDefault()?.Options is CSharpParseOptions { LanguageVersion: >= (LanguageVersion)1100 };
@@ -690,6 +710,12 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
                 if (!typeSymbol.GetTypeMembers(typeName + MongoDbConverterSuffix, arity: 0).IsEmpty)
                     result |= StronglyTypedIdConverters.MongoDB_Bson_Serialization;
+
+                if (!typeSymbol.GetTypeMembers(typeName + YamlConverterSuffix, arity: 0).IsEmpty)
+                    result |= StronglyTypedIdConverters.Meziantou_Framework_Yaml;
+
+                if (!typeSymbol.GetTypeMembers(typeName + TomlConverterSuffix, arity: 0).IsEmpty)
+                    result |= StronglyTypedIdConverters.Meziantou_Framework_Toml;
 
                 return result;
             }
@@ -774,6 +800,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             AddConverter(Options.GenerateNewtonsoftJsonConverter, StronglyTypedIdConverters.Newtonsoft_Json);
             AddConverter(Options.GenerateSystemComponentModelTypeConverter, StronglyTypedIdConverters.System_ComponentModel_TypeConverter);
             AddConverter(Options.GenerateMongoDBBsonSerialization, StronglyTypedIdConverters.MongoDB_Bson_Serialization);
+            AddConverter(Options.GenerateYamlConverter, StronglyTypedIdConverters.Meziantou_Framework_Yaml);
+            AddConverter(Options.GenerateTomlConverter, StronglyTypedIdConverters.Meziantou_Framework_Toml);
 
             Converters = converters;
             AddCodeGeneratedAttribute = Options.AddCodeGeneratedAttribute ?? true;
@@ -835,6 +863,11 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool SupportSystemTextJsonConverter { get; }
         public bool SupportNewtonsoftJsonConverter { get; }
         public bool SupportMongoDbConverter { get; }
+        public bool SupportYamlConverter { get; }
+        public bool SupportTomlConverter { get; }
+
+        /// <summary>Gets a value indicating whether <c>TomlWriter.WriteDecimalValue(decimal)</c> is public. Older versions of Meziantou.Framework.Toml do not expose it.</summary>
+        public bool SupportTomlWriteDecimalValue { get; }
         public bool SupportNotNullWhenAttribute { get; }
         public bool SupportReadOnlySpanChar { get; }
         public bool SupportIStronglyTypedId { get; }
@@ -847,11 +880,15 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         private const string SystemTextJsonConverterSuffix = "JsonConverter";
         private const string NewtonsoftJsonConverterSuffix = "NewtonsoftJsonConverter";
         private const string MongoDbConverterSuffix = "BsonConverter";
+        private const string YamlConverterSuffix = "YamlConverter";
+        private const string TomlConverterSuffix = "TomlConverter";
 
         public string TypeConverterTypeName => TypeName + TypeConverterSuffix;
         public string SystemTextJsonConverterTypeName => TypeName + SystemTextJsonConverterSuffix;
         public string NewtonsoftJsonConverterTypeName => TypeName + NewtonsoftJsonConverterSuffix;
         public string MongoDbConverterTypeName => TypeName + MongoDbConverterSuffix;
+        public string YamlConverterTypeName => TypeName + YamlConverterSuffix;
+        public string TomlConverterTypeName => TypeName + TomlConverterSuffix;
 
         /// <summary>Gets the converters whose nested type is already declared by the user.</summary>
         public StronglyTypedIdConverters UserDeclaredConverters { get; }
@@ -927,6 +964,9 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && SupportSystemTextJsonConverter == other.SupportSystemTextJsonConverter
                 && SupportNewtonsoftJsonConverter == other.SupportNewtonsoftJsonConverter
                 && SupportMongoDbConverter == other.SupportMongoDbConverter
+                && SupportYamlConverter == other.SupportYamlConverter
+                && SupportTomlConverter == other.SupportTomlConverter
+                && SupportTomlWriteDecimalValue == other.SupportTomlWriteDecimalValue
                 && UserDeclaredConverters == other.UserDeclaredConverters
                 && SupportNotNullWhenAttribute == other.SupportNotNullWhenAttribute
                 && SupportReadOnlySpanChar == other.SupportReadOnlySpanChar
@@ -988,6 +1028,9 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hashcode.Add(SupportSystemTextJsonConverter);
             hashcode.Add(SupportNewtonsoftJsonConverter);
             hashcode.Add(SupportMongoDbConverter);
+            hashcode.Add(SupportYamlConverter);
+            hashcode.Add(SupportTomlConverter);
+            hashcode.Add(SupportTomlWriteDecimalValue);
             hashcode.Add(UserDeclaredConverters);
             hashcode.Add(SupportNotNullWhenAttribute);
             hashcode.Add(SupportReadOnlySpanChar);
@@ -1051,6 +1094,16 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool CanGenerateMongoDbConverter()
         {
             return SupportMongoDbConverter && (Converters & StronglyTypedIdConverters.MongoDB_Bson_Serialization) == StronglyTypedIdConverters.MongoDB_Bson_Serialization;
+        }
+
+        public bool CanGenerateYamlConverter()
+        {
+            return SupportYamlConverter && (Converters & StronglyTypedIdConverters.Meziantou_Framework_Yaml) == StronglyTypedIdConverters.Meziantou_Framework_Yaml;
+        }
+
+        public bool CanGenerateTomlConverter()
+        {
+            return SupportTomlConverter && (Converters & StronglyTypedIdConverters.Meziantou_Framework_Toml) == StronglyTypedIdConverters.Meziantou_Framework_Toml;
         }
 
         public bool MustImplementComparable()
@@ -1128,9 +1181,11 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         bool? AddCodeGeneratedAttribute,
         StringComparison? StringComparison,
         bool? GenerateToStringAsRecord,
-        GuidGenerationStrategy? GuidGenerationStrategy)
+        GuidGenerationStrategy? GuidGenerationStrategy,
+        bool? GenerateYamlConverter,
+        bool? GenerateTomlConverter)
     {
-        public static StronglyTypedIdOptions Empty { get; } = new(null, null, null, null, null, null, null, null);
+        public static StronglyTypedIdOptions Empty { get; } = new(null, null, null, null, null, null, null, null, null, null);
 
         /// <summary>Returns the current options where the options that are not set use the values from <paramref name="defaults"/>.</summary>
         public StronglyTypedIdOptions Merge(StronglyTypedIdOptions defaults)
@@ -1143,7 +1198,9 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 AddCodeGeneratedAttribute ?? defaults.AddCodeGeneratedAttribute,
                 StringComparison ?? defaults.StringComparison,
                 GenerateToStringAsRecord ?? defaults.GenerateToStringAsRecord,
-                GuidGenerationStrategy ?? defaults.GuidGenerationStrategy);
+                GuidGenerationStrategy ?? defaults.GuidGenerationStrategy,
+                GenerateYamlConverter ?? defaults.GenerateYamlConverter,
+                GenerateTomlConverter ?? defaults.GenerateTomlConverter);
         }
     }
 
@@ -1190,6 +1247,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         Newtonsoft_Json = 0x2,
         System_ComponentModel_TypeConverter = 0x4,
         MongoDB_Bson_Serialization = 0x8,
+        Meziantou_Framework_Yaml = 0x10,
+        Meziantou_Framework_Toml = 0x20,
     }
 
     internal enum GuidGenerationStrategy

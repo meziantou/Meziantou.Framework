@@ -18,7 +18,6 @@ description: "The results of the web-platform-tests of css/css-properties-values
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 4
 
@@ -141,7 +140,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation/custom-property-transition-transform-function-none.tentative.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-transition-transform-function-none.tentative.html) | Pass | 1 / 1 |  |  |
 | [`animation/custom-property-transition-transform-list-box-size.tentative.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-transition-transform-list-box-size.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the interpolation of the `<transform-function>` and `<transform-list>` registered custom properties with a matrix fallback (`mix()`) |
 | [`animation/custom-property-transition-transform-list-none.tentative.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-transition-transform-list-none.tentative.html) | Pass | 1 / 1 |  |  |
-| [`font-property-unit-cycles.tentative.html`](https://wpt.fyi/results/css/css-properties-values-api/font-property-unit-cycles.tentative.html) | Fail | 58 / 95 | BUG, TEST BUG | font-relative units in `calc()` in the font properties resolve against the element's own font instead of the parent's (csswg-drafts#8169), and registered `<length>` values give 0 in `font-size`; the `<integer>` registered custom properties with `ex` and `cap` are rounded but compared with the unrounded length (0.1 tolerance): they pass only when the x-height and the cap height of the default font are whole numbers of px |
+| [`font-property-unit-cycles.tentative.html`](https://wpt.fyi/results/css/css-properties-values-api/font-property-unit-cycles.tentative.html) | Fail | 88 / 95 | TEST BUG | `font-size: var(--x)` with a registered `<length>` `--x` whose value uses a font-relative unit (here in `atan2()` in `calc()`) is a dependency cycle (https://drafts.css-houdini.org/css-properties-values-api/#dependency-cycles-via-relative-units): both are invalid at computed-value time (`--x` is `0px`), as css/css-properties-values-api/unit-cycles.html requires and as in Chromium (Edge gets 0 too); the tentative test expects the parent's font instead (the 5 `font-size ... registered custom property` subtests); the `<integer>` registered custom properties with `ex` and `cap` are rounded but compared with the unrounded length (0.1 tolerance): they pass only when the x-height and the cap height of the default font are whole numbers of px |
 
 ## Reftests
 

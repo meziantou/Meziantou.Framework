@@ -153,13 +153,14 @@ public static class XmlDocumentParser
         }
 
         // As the HTML fragment parsing algorithm, and as in the browsers, the elements get the custom element registry of the
-        // target (adopting them gives them the effective global registry of the document, which is null for a scoped registry)
+        // target (adopting them gives them the effective global registry of the document, which is null for a scoped registry).
+        // An element with the customelementregistry attribute, and its descendants, have the null registry.
         var registry = CustomElementRegistry.LookUp(target);
         for (Node? node = fragment.FirstChild; node is not null; node = node.GetNextInTreeOrder(fragment))
         {
             if (node is Element element)
             {
-                element.CustomElementRegistry = registry;
+                element.CustomElementRegistry = element.HasAttribute("customelementregistry") ? null : element.ParentNode is Element parentElement ? parentElement.CustomElementRegistry : registry;
             }
         }
 

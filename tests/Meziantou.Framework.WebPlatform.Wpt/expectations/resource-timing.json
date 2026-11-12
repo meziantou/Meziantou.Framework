@@ -228,26 +228,10 @@
     "total": 1
   },
   "resource-timing/interim-response-times.h2.html": {
-    "total": 12,
-    "failures": {
-      "Fetch from cross-origin-with-TAO with early hints, with 100 response": "FAIL",
-      "Fetch from cross-origin-with-TAO with early hints, without 100 response": "FAIL",
-      "Fetch from cross-origin-with-TAO without early hints, with 100 response": "FAIL",
-      "Fetch from same-origin with early hints, with 100 response": "FAIL",
-      "Fetch from same-origin with early hints, without 100 response": "FAIL",
-      "Fetch from same-origin without early hints, with 100 response": "FAIL"
-    }
+    "total": 12
   },
   "resource-timing/interim-response-times.html": {
-    "total": 12,
-    "failures": {
-      "Fetch from cross-origin-with-TAO with early hints, with 100 response": "FAIL",
-      "Fetch from cross-origin-with-TAO with early hints, without 100 response": "FAIL",
-      "Fetch from cross-origin-with-TAO without early hints, with 100 response": "FAIL",
-      "Fetch from same-origin with early hints, with 100 response": "FAIL",
-      "Fetch from same-origin with early hints, without 100 response": "FAIL",
-      "Fetch from same-origin without early hints, with 100 response": "FAIL"
-    }
+    "total": 12
   },
   "resource-timing/internal-resources-not-counted.html": {
     "total": 1
@@ -329,17 +313,7 @@
     "total": 1
   },
   "resource-timing/resource-timing-level1.sub.html": {
-    "total": 21,
-    "failures": {
-      "'iframe 250ms delay in headers does not affect responseStart'": "FAIL",
-      "'iframe: 250ms delay before 'responseStart', another 250ms delay before 'responseEnd'.": "FAIL",
-      "'link 250ms delay in headers does not affect responseStart'": "FAIL",
-      "'link: 250ms delay before 'responseStart', another 250ms delay before 'responseEnd'.": "FAIL",
-      "'script 250ms delay in headers does not affect responseStart'": "FAIL",
-      "'script: 250ms delay before 'responseStart', another 250ms delay before 'responseEnd'.": "FAIL",
-      "'xmlhttprequest 250ms delay in headers does not affect responseStart'": "FAIL",
-      "'xmlhttprequest: 250ms delay before 'responseStart', another 250ms delay before 'responseEnd'.": "FAIL"
-    }
+    "total": 21
   },
   "resource-timing/resource_connection_reuse_mixed_content.html": {
     "total": 8

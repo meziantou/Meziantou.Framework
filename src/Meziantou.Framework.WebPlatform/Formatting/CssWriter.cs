@@ -85,7 +85,7 @@ public class CssWriter
     internal void WriteDeclarationBlock(CssRule? parentRule, List<CssDeclarationEntry> declarations)
     {
         _blocks.Push(new BlockState(BlockKind.Root));
-        foreach (var declaration in CssStyleDeclaration.GetSerializedDeclarations(declarations))
+        foreach (var declaration in GetDeclarationsToWrite(CssStyleDeclaration.GetSerializedDeclarations(declarations)))
         {
             WriteDeclaration(parentRule, declaration.Name, declaration.Value, declaration.Important);
         }
@@ -192,10 +192,45 @@ public class CssWriter
 
     private void WriteDeclarations(CssRule rule)
     {
-        foreach (var declaration in rule.GetDeclarations())
+        foreach (var declaration in GetDeclarationsToWrite(rule.GetDeclarations()))
         {
             WriteDeclaration(rule, declaration.Name, declaration.Value, declaration.Important);
         }
+    }
+
+    /// <summary>
+    /// Whether the longhands whose value is only known through the shorthand that set them (e.g. the longhands of
+    /// <c>border: var(--width) solid</c> followed by <c>border-right-color: red</c>) are written as that shorthand, at the
+    /// position of the first of them, instead of a declaration with an empty value: the CSSOM serialization writes
+    /// <c>border-top-width: ;</c>, as the browsers, which is invalid and is not parsed again.
+    /// </summary>
+    internal virtual bool WritePendingLonghandsAsShorthand => false;
+
+    private List<CssSerializedDeclaration> GetDeclarationsToWrite(List<CssSerializedDeclaration> declarations)
+    {
+        if (!WritePendingLonghandsAsShorthand || !declarations.Exists(declaration => declaration.PendingShorthandName is not null))
+            return declarations;
+
+        // Parsing the shorthand sets its longhands again, followed by the declarations that override some of them: they are
+        // after the longhands set by the shorthand, as the parser moves the declaration of a property to the end of the block
+        var result = new List<CssSerializedDeclaration>(declarations.Count);
+        var writtenShorthands = new HashSet<(string Name, string Value, bool Important)>();
+        foreach (var declaration in declarations)
+        {
+            if (declaration is { PendingShorthandName: { } name, PendingShorthandValue: { } value })
+            {
+                if (writtenShorthands.Add((name, value, declaration.Important)))
+                {
+                    result.Add(new CssSerializedDeclaration(name, value, declaration.Important));
+                }
+
+                continue;
+            }
+
+            result.Add(declaration);
+        }
+
+        return result;
     }
 
     /// <summary>

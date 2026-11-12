@@ -79,6 +79,26 @@ public sealed class SpeculativeParsingTests : IDisposable
         Assert.Contains("Style https://example.com/dir/c.css", Requests);
     }
 
+    [Fact]
+    public void WhileTheParserWaitsForAScript_TheImportsOfTheStyleElementsArePreloaded()
+    {
+        var document = Navigate("""
+            <script src=block.js></script>
+            <style>@import url("a.css"); @import 'b.css' print; @import url(c.css) supports(foo: bar); p { color: red } @import "d.css";</style>
+            <img src=e.png>
+            """);
+
+        // The @import rules whose media and supports conditions match are preloaded: they are not speculative requests
+        Assert.Equal(["Script https://example.com/dir/block.js", "Style https://example.com/dir/a.css"], Requests);
+        Assert.Equal(["Image https://example.com/dir/e.png"], SpeculativeRequests);
+
+        // The @import rule consumes the preload when the parser reaches the style element
+        _loader.CompleteBlockingScript("");
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Single(Requests, request => request == "Style https://example.com/dir/a.css");
+        Assert.NotNull(document.QuerySelector("img"));
+    }
+
     /// <summary>Navigates to a document whose bytes arrive over time: the first bytes, then the ones written to <paramref name="chunks"/>.</summary>
     private Document NavigateStreamed(string firstBytes, System.Threading.Channels.Channel<ReadOnlyMemory<byte>> chunks, KeyValuePair<string, string>[]? headers = null)
     {

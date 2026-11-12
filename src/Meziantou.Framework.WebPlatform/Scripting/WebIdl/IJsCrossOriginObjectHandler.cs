@@ -54,4 +54,27 @@ public interface IJsWindowProxyHandler<TValue> : IJsCrossOriginObjectHandler<TVa
 
     /// <summary>Returns the WindowProxy of the document-tree child navigable at <paramref name="index"/>, or null.</summary>
     TValue? GetChild(int index);
+
+    /// <summary>
+    /// Whether the [[Get]] and [[Set]] internal methods of the WindowProxy must report the access for the code of the current
+    /// realm (https://html.spec.whatwg.org/multipage/browsers.html#coop-check-access-report): the windows are in different
+    /// virtual browsing context groups and an opener policy reports the accesses. The engine then calls
+    /// <see cref="ReportAccess"/> with the name of the property.
+    /// </summary>
+    bool ShouldReportAccess() => false;
+
+    /// <summary>
+    /// Whether <paramref name="name"/> is a named property of the window (https://html.spec.whatwg.org/multipage/nav-history-apis.html#named-access-on-the-window-object):
+    /// a named child navigable, or a named element when the window is same origin-domain with the current realm.
+    /// </summary>
+    /// <param name="name">The name of the property.</param>
+    bool IsNamedProperty(string name) => false;
+
+    /// <summary>
+    /// Reports an access to the window by the code of the current realm (https://html.spec.whatwg.org/multipage/browsers.html#coop-check-access-report).
+    /// </summary>
+    /// <param name="propertyName">The name of a cross-origin accessible window property, <c>indexed</c> for a child navigable, or <c>named</c> for a named property.</param>
+    void ReportAccess(string propertyName)
+    {
+    }
 }

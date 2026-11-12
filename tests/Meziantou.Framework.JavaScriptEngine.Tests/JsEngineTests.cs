@@ -503,6 +503,47 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void HostResizedBuffers_CallTheHostToResize()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var data = new byte[] { 1, 2 };
+        var resizes = new List<int>();
+        var buffer = realm.CreateResizableArrayBuffer(data.AsMemory(), 8, "key", (target, newByteLength) =>
+        {
+            resizes.Add(newByteLength);
+            if (newByteLength % 2 != 0)
+                throw realm.CreateException(JsErrorType.RangeError, "odd");
+
+            var newData = new byte[newByteLength];
+            data.CopyTo(newData, 0);
+            data = newData;
+            JsBinaryData.SetArrayBufferMemory(target, data.AsMemory());
+        });
+        realm.GlobalObject.SetProperty("buffer", buffer);
+        Assert.Equal("true,8,2", realm.Execute("[buffer.resizable, buffer.maxByteLength, new Uint8Array(buffer).length].join()").AsString());
+
+        realm.Execute("const view = new Uint8Array(buffer); buffer.resize(4); view[3] = 9;");
+        Assert.Equal([1, 2, 0, 9], data);
+        Assert.Equal("RangeError,RangeError,TypeError", realm.Execute("[5, 10].map(n => { try { buffer.resize(n); } catch (e) { return e.name; } }).concat((() => { try { buffer.transfer(); } catch (e) { return e.name; } })()).join()").AsString());
+        Assert.Equal([4, 5], resizes);
+
+        var growable = realm.Execute("new SharedArrayBuffer(4, { maxByteLength: 16 })");
+        var block = JsBinaryData.GetSharedDataBlock(growable)!;
+        var grows = new List<int>();
+        realm.GlobalObject.SetProperty("fixed", realm.CreateSharedArrayBuffer(block, 4));
+        realm.GlobalObject.SetProperty("growable", realm.CreateGrowableSharedArrayBuffer(block, (_, newByteLength) =>
+        {
+            grows.Add(newByteLength);
+            Assert.True(block.TryGrow(newByteLength));
+        }));
+        Assert.Equal("false,true,8,4,16", realm.Execute("growable.grow(8); [fixed.growable, growable.growable, growable.byteLength, fixed.byteLength, growable.maxByteLength].join()").AsString());
+        Assert.Equal([8], grows);
+        Assert.Throws<JsException>(() => realm.Execute("fixed.grow(8)"));
+    }
+
+    [Fact]
     public void BufferViewsCreatedByTheHostAreAlignedAndInBounds()
     {
         using var engine = new JsEngine();
@@ -2980,6 +3021,34 @@ public sealed class JsEngineTests
             // Construct(constructor, arguments): new Map([["a", 1]])
             var map = engine.Construct(realm.GlobalObject.GetProperty("Map"), [realm.CreateArray([realm.CreateArray(["a", 1])])]).AsObject();
             Assert.Equal(1, map.GetProperty("size").AsNumber());
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_FunctionSourceLocation()
+    {
+        #region JavaScriptEngine_FunctionSourceLocation
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("""
+            // Handlers
+            function onSave() {}
+            globalThis.handler = onSave.bind(null);
+            """, url: "https://example.com/app.js");
+
+        using (engine.Enter())
+        {
+            // The target function of a bound function, its script, and the position of its source text
+            var location = realm.GlobalObject.GetProperty("handler").AsObject().GetFunctionSourceLocation()!.Value;
+            Assert.Equal("onSave", location.Name);
+            Assert.Equal("https://example.com/app.js", location.Url);
+            Assert.Equal(12, location.Position);
+            Assert.Equal(2, location.Line);
+            Assert.Equal(1, location.Column);
+
+            // A built-in function has no source location
+            Assert.Null(realm.GlobalObject.GetProperty("parseInt").AsObject().GetFunctionSourceLocation());
         }
         #endregion
     }

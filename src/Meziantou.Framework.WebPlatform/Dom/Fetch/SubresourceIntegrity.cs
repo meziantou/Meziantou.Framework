@@ -44,6 +44,35 @@ internal static class SubresourceIntegrity
     }
 
     /// <summary>
+    /// https://wicg.github.io/signature-based-sri/#verify-unencoded-digest-assertions: whether the body of a response matches
+    /// the digests of its <c>Unencoded-Digest</c> header, a structured dictionary of byte sequences by algorithm: every
+    /// digest of a supported algorithm (<c>sha-256</c>, <c>sha-512</c>) must match. A response without a valid header matches.
+    /// </summary>
+    public static bool MatchesUnencodedDigest(IReadOnlyList<KeyValuePair<string, string>> headers, ReadOnlySpan<byte> body)
+    {
+        if (StructuredFields.GetDictionary(headers, "Unencoded-Digest") is not { } dictionary)
+            return true;
+
+        foreach (var (algorithm, member) in dictionary)
+        {
+            byte[]? digest = algorithm switch
+            {
+                "sha-256" => System.Security.Cryptography.SHA256.HashData(body),
+                "sha-512" => System.Security.Cryptography.SHA512.HashData(body),
+                _ => null,
+            };
+
+            if (digest is null)
+                continue;
+
+            if (member.Item?.Value is not byte[] expected || !digest.AsSpan().SequenceEqual(expected))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// https://w3c.github.io/webappsec-subresource-integrity/#parse-metadata: the set of the hash expressions of the supported
     /// algorithms (<c>algorithm-value</c>, without their options). It is empty when there is no metadata.
     /// </summary>

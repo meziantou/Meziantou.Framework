@@ -171,6 +171,13 @@ internal static class ArrayBufferBuiltins
         if (newByteLength > maxByteLength)
             return ThrowHelper.ThrowRangeError<JsValue>("The new byte length exceeds the maximum byte length of the ArrayBuffer");
 
+        // HostResizeArrayBuffer: the embedding resizes the buffer
+        if (buffer.HostResize is { } hostResize)
+        {
+            hostResize(buffer, (int)newByteLength);
+            return JsValue.Undefined;
+        }
+
         buffer.Resize((int)newByteLength);
         return JsValue.Undefined;
     }
@@ -339,10 +346,21 @@ internal static class ArrayBufferBuiltins
     /// <summary>SharedArrayBuffer.prototype.grow(newLength)</summary>
     private static JsValue Grow(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        if (thisValue.Cell is not JsArrayBuffer { SharedBlock: { IsGrowable: true } block })
+        if (thisValue.Cell is not JsArrayBuffer { SharedBlock: { IsGrowable: true } block, IsFixedLength: false } buffer)
             return ThrowHelper.ThrowTypeError<JsValue>($"Method SharedArrayBuffer.prototype.grow called on incompatible receiver {JsOperations.DescribeForError(thisValue)}");
 
         var newByteLength = JsOperations.ToIndex(Arg(arguments, 0));
+
+        // HostGrowSharedArrayBuffer: the embedding grows the buffer
+        if (buffer.HostResize is { } hostGrow)
+        {
+            if (newByteLength > BinaryDataOperations.MaxByteLength)
+                return ThrowHelper.ThrowRangeError<JsValue>("Invalid length for SharedArrayBuffer.prototype.grow");
+
+            hostGrow(buffer, (int)newByteLength);
+            return JsValue.Undefined;
+        }
+
         if (newByteLength > BinaryDataOperations.MaxByteLength || !block.TryGrow((int)newByteLength))
             return ThrowHelper.ThrowRangeError<JsValue>("Invalid length for SharedArrayBuffer.prototype.grow");
 

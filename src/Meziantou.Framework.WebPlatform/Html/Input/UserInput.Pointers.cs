@@ -16,6 +16,12 @@ public sealed partial class UserInput
     private Node? _mouseOverTarget;
     private bool _mouseNeedsOverEvent;
 
+    /// <summary>The legacy mouse pointer equivalent of <see cref="PointerInput.DetachedPreviousTarget"/>.</summary>
+    private Node? _mouseDetachedTarget;
+
+    /// <summary>The legacy mouse pointer equivalent of <see cref="PointerInput.EnteredAncestors"/>.</summary>
+    private List<Node>? _mouseEnteredAncestors;
+
     internal void Move(PointerInput pointer, double x, double y, PointerInputProperties? properties)
     {
         if (properties is not null)
@@ -907,8 +913,12 @@ public sealed partial class UserInput
         if (ReferenceEquals(previous, target) && !needsOverEvent)
             return;
 
+        var detachedPrevious = pointer.DetachedPreviousTarget;
+        var enteredAncestors = pointer.EnteredAncestors;
         pointer.PreviousTarget = target;
         pointer.NeedsOverEvent = false;
+        pointer.DetachedPreviousTarget = null;
+        pointer.EnteredAncestors = target is null ? null : GetInclusiveAncestors(target);
         if (target is not null)
         {
             (target as Document ?? target.NodeDocument).HasPointerTargets = true;
@@ -922,7 +932,7 @@ public sealed partial class UserInput
             _browsingContext.Document.OnPointerOverForSpeculation(target);
         }
 
-        SendBoundaryEvents(pointer, previous, needsOverEvent, target, mouse: false, button);
+        SendBoundaryEvents(pointer, previous, needsOverEvent, target, mouse: false, button, detachedPrevious, previous is null ? null : enteredAncestors);
     }
 
     /// <summary>Moves the legacy mouse pointer over a target: the mouseout, mouseleave, mouseover and mouseenter events.</summary>
@@ -933,14 +943,18 @@ public sealed partial class UserInput
         if (ReferenceEquals(previous, target) && !needsOverEvent)
             return;
 
+        var detachedPrevious = _mouseDetachedTarget;
+        var enteredAncestors = _mouseEnteredAncestors;
         _mouseOverTarget = target;
         _mouseNeedsOverEvent = false;
+        _mouseDetachedTarget = null;
+        _mouseEnteredAncestors = target is null ? null : GetInclusiveAncestors(target);
         if (target is not null)
         {
             (target as Document ?? target.NodeDocument).HasPointerTargets = true;
         }
 
-        SendBoundaryEvents(pointer, previous, needsOverEvent, target, mouse: true, button: 0);
+        SendBoundaryEvents(pointer, previous, needsOverEvent, target, mouse: true, button: 0, detachedPrevious, previous is null ? null : enteredAncestors);
     }
 
     /// <summary>
@@ -951,8 +965,35 @@ public sealed partial class UserInput
     /// flat tree. In the documents of the ancestor browsing contexts, the pointer is over the container of the nested browsing
     /// context.
     /// </summary>
-    private void SendBoundaryEvents(PointerInput pointer, Node? previous, bool previousRemoved, Node? target, bool mouse, short button)
+    /// <remarks>
+    /// As the web-platform-tests expect (pointerevents/pointerevent_after_target_removed_from_slot.html), the pointer leaves a
+    /// previous target that left the flat tree but stays connected (<paramref name="detachedPrevious"/>: its slot was removed),
+    /// and it does not enter again the elements it entered before (<paramref name="enteredAncestors"/>) when the flat tree
+    /// changed (the slot assignment of the previous target changed).
+    /// </remarks>
+    private void SendBoundaryEvents(PointerInput pointer, Node? previous, bool previousRemoved, Node? target, bool mouse, short button, Node? detachedPrevious, List<Node>? enteredAncestors)
     {
+        // The node the pointer leaves is the related target of the over and enter events (the event path of an event whose
+        // related target is the parent of the slot would stop before its shadow host)
+        Node? leftNode = null;
+        if (detachedPrevious is { IsConnected: true } && !ReferenceEquals(detachedPrevious, target))
+        {
+            leftNode = detachedPrevious;
+            FireBoundaryEvent(pointer, mouse ? "mouseout" : "pointerout", detachedPrevious, target, button);
+            var previousAncestors = GetInclusiveAncestors(previous);
+            var targetAncestors = GetInclusiveAncestors(target);
+            foreach (var ancestor in GetInclusiveAncestors(detachedPrevious))
+            {
+                if (previousAncestors.Contains(ancestor) || targetAncestors.Contains(ancestor))
+                    break;
+
+                if (ancestor.IsConnected)
+                {
+                    FireBoundaryEvent(pointer, mouse ? "mouseleave" : "pointerleave", ancestor, target, button);
+                }
+            }
+        }
+
         var previousChain = GetFrameChain(previous);
         var targetChain = GetFrameChain(target);
         var i = previousChain.Count - 1;
@@ -968,7 +1009,7 @@ public sealed partial class UserInput
             // The same target: a pointerover event is needed after the removal of the previous target
             if (target is { IsConnected: true })
             {
-                FireBoundaryEvent(pointer, mouse ? "mouseover" : "pointerover", target, previous, button);
+                FireBoundaryEvent(pointer, mouse ? "mouseover" : "pointerover", target, leftNode ?? previous, button);
             }
 
             return;
@@ -1031,8 +1072,13 @@ public sealed partial class UserInput
 
         void Enter(Node to, Node? from)
         {
-            var related = from;
+            var related = leftNode is not null && ReferenceEquals(from, previous) ? leftNode : from;
             var fromAncestors = GetInclusiveAncestors(from);
+            if (enteredAncestors is not null)
+            {
+                fromAncestors.AddRange(enteredAncestors);
+            }
+
             var toAncestors = GetInclusiveAncestors(to);
             if (to.IsConnected)
             {
@@ -1113,6 +1159,8 @@ public sealed partial class UserInput
         ProcessPendingPointerCapture(pointer);
         pointer.PreviousTarget = null;
         pointer.NeedsOverEvent = false;
+        pointer.DetachedPreviousTarget = null;
+        pointer.EnteredAncestors = null;
         pointer.PreventMouseEvent = false;
         operation.Update(HitTest(pointer.X, pointer.Y), GetDragState(pointer, operation.SourceNode));
     }

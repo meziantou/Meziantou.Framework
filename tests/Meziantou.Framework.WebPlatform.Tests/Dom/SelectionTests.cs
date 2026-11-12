@@ -291,4 +291,49 @@ public sealed class SelectionTests : IDisposable
         _contexts.EventLoop.RunUntilIdle();
         Assert.Equal(2, events.Count);
     }
+
+    [Fact]
+    public void ToString_ExcludesTheTextThatCannotBeSelected()
+    {
+        var document = Load("""
+            <div id=basic>a<span style="user-select: none">b</span>c</div>
+            <div id=nested>start <span style="user-select: none">unselectable <b>nested</b> text</span> end</div>
+            <div id=container style="user-select: none"><span style="user-select: text">selectable</span> unselectable <span style="user-select: text">text</span></div>
+            """);
+        var selection = document.GetSelection()!;
+
+        selection.SelectAllChildren(document.GetElementById("basic")!);
+        Assert.Equal("ac", selection.ToString());
+
+        selection.SelectAllChildren(document.GetElementById("nested")!);
+        Assert.Equal("start  end", selection.ToString());
+
+        selection.SelectAllChildren(document.GetElementById("container")!);
+        Assert.Equal("selectabletext", selection.ToString());
+        Assert.Equal("selectable unselectable text", ((HtmlElement)document.GetElementById("container")!).InnerText);
+    }
+
+    [Fact]
+    public void Collapse_FocusesTheEditingHost()
+    {
+        var document = Load("<button id=button></button><div contenteditable id=host1>a</div><div contenteditable id=host2>b<span contenteditable=false>c</span></div>");
+        var button = (HtmlElement)document.GetElementById("button")!;
+        var host1 = document.GetElementById("host1")!;
+        var host2 = document.GetElementById("host2")!;
+        var selection = document.GetSelection()!;
+        button.Focus();
+
+        selection.Collapse(host1, 0);
+        Assert.Same(host1, document.ActiveElement);
+
+        selection.SetBaseAndExtent(host2.FirstChild!, 0, host2.FirstChild!, 1);
+        Assert.Same(host2, document.ActiveElement);
+
+        // The selection that is not in an editing host does not move the focus
+        button.Focus();
+        selection.Collapse(document.Body, 0);
+        Assert.Same(button, document.ActiveElement);
+        selection.Collapse(host2.LastChild!, 0);
+        Assert.Same(button, document.ActiveElement);
+    }
 }

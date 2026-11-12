@@ -119,10 +119,13 @@ public class PerformanceResourceTiming : PerformanceEntry
     [IdlMember("finalResponseHeadersStart", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-finalresponseheadersstart")]
     public double FinalResponseHeadersStart => _timingInfo.FinalNetworkResponseStartTime;
 
-    /// <summary>Gets the time the first interim response (1xx) was received: 0, as the interim responses are not exposed by the loader.</summary>
+    /// <summary>
+    /// Gets the time the first interim response (1xx, e.g. <c>103 Early Hints</c>) was received, or 0 when the loader reported
+    /// none (see <see cref="DocumentRequest.ReportInterimResponse"/>).
+    /// </summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-firstinterimresponsestart"/>
     [IdlMember("firstInterimResponseStart", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-firstinterimresponsestart")]
-    public double FirstInterimResponseStart => 0;
+    public double FirstInterimResponseStart => _timingInfo.FirstInterimNetworkResponseStartTime;
 
     /// <summary>Gets the time the response started: <see cref="FirstInterimResponseStart"/> if it is not 0, otherwise <see cref="FinalResponseHeadersStart"/>.</summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-responsestart"/>

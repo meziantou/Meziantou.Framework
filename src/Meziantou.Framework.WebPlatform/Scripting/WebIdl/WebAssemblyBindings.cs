@@ -42,8 +42,8 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
                 throw r.CreateWasmError("CompileError", WebIdlRealm<TAdapter, TValue>.WasmCompilationBlockedMessage);
 
             var module = r.WasmCall(() => r.WebAssemblyRuntime!.Compile(bytes));
-            if (!WebIdlRealm<TAdapter, TValue>.AreValidBuiltinSetNames(options.BuiltinSets))
-                throw r.CreateWasmError("CompileError", "The builtin set names are not valid");
+            if (!WebIdlRealm<TAdapter, TValue>.ValidateWasmBuiltinsAndImportedStrings(module, options.BuiltinSets, options.ImportedStringModule))
+                throw r.CreateWasmError("CompileError", "The builtins or the imported string constants of the module are not valid");
 
             return new WebAssemblyModuleObject(module, options.BuiltinSets, options.ImportedStringModule);
         },
@@ -69,8 +69,9 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
                 if (a.Length < 1)
                     throw r.NotEnoughArguments("imports", 1, a.Length);
 
-                var module = r.ToInterface<WebAssemblyModuleObject>(a[0], "Module").Module;
-                return r.CreateArray([.. module.Imports.Select(import =>
+                // The imports of the builtin sets and the imported string constants are not reflected
+                var moduleObject = r.ToInterface<WebAssemblyModuleObject>(a[0], "Module");
+                return r.CreateArray([.. moduleObject.Module.Imports.Where(import => !WebIdlRealm<TAdapter, TValue>.IsReflectedAsWasmBuiltinOrStringImport(import, moduleObject.BuiltinSets, moduleObject.ImportedStringModule)).Select(import =>
                 {
                     var descriptor = r.CreateObject();
                     r.SetMember(descriptor, "kind", r.Adapter.FromString(import.Type.KindName));
@@ -178,30 +179,11 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
                     throw r.NotEnoughArguments("grow", 1, a.Length);
 
                 var delta = r.ToWasmAddress(a[0], memoryObject.Is64);
-                if (memoryObject.Memory is not { } memory)
-                    return GrowSharedMemory(r, memoryObject, delta);
-
-                var previousBuffer = memoryObject.BufferObject;
-                var previousSize = r.WasmCall(() => memory.Grow(delta));
-
-                // https://webassembly.github.io/spec/js-api/#grow-the-memory-buffer: the buffer is refreshed, even when the memory did not move
-                if (ReferenceEquals(previousBuffer, memoryObject.BufferObject))
-                {
-                    r.RefreshWasmMemoryBuffer(memoryObject);
-                }
-
-                return r.FromWasmAddress(previousSize, memoryObject.Is64);
+                return r.FromWasmAddress(r.GrowWasmMemory(memoryObject, delta), memoryObject.Is64);
             });
-            r.DefineOperation(instanceTarget, "toFixedLengthBuffer", 0, static (r, t, _) => (TValue)r.This<WebAssemblyMemoryObject>(t, Memory!).BufferObject!);
-            r.DefineOperation(instanceTarget, "toResizableBuffer", 0, static (r, t, _) =>
-            {
-                var memoryObject = r.This<WebAssemblyMemoryObject>(t, Memory!);
-                if (memoryObject.Memory is { Type.Maximum: null })
-                    throw r.CreateTypeError("The memory has no maximum");
-
-                throw r.CreateTypeError("The resizable buffers of the memories are not supported");
-            });
-            r.DefineAttribute(instanceTarget, "buffer", static (r, t) => (TValue)r.This<WebAssemblyMemoryObject>(t, Memory!).BufferObject!, setter: null);
+            r.DefineOperation(instanceTarget, "toFixedLengthBuffer", 0, static (r, t, _) => r.ToWasmFixedLengthMemoryBuffer(r.This<WebAssemblyMemoryObject>(t, Memory!)));
+            r.DefineOperation(instanceTarget, "toResizableBuffer", 0, static (r, t, _) => r.ToWasmResizableMemoryBuffer(r.This<WebAssemblyMemoryObject>(t, Memory!)));
+            r.DefineAttribute(instanceTarget, "buffer", static (r, t) => r.GetWasmMemoryBuffer(r.This<WebAssemblyMemoryObject>(t, Memory!)), setter: null);
         },
     };
 
@@ -212,7 +194,10 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
         return !r.Adapter.IsUndefined(address) && r.ToEnumerationValue(address, "AddressType", ["i32", "i64"]) == "i64";
     }
 
-    /// <summary>A shared memory: a growable SharedArrayBuffer (the runtimes do not support the shared memories).</summary>
+    /// <summary>
+    /// A shared memory: a growable shared data block of the script engine (the runtimes do not support the shared memories),
+    /// whose buffer is a fixed-length <c>SharedArrayBuffer</c>.
+    /// </summary>
     private static WebAssemblyMemoryObject CreateSharedMemory(WebIdlRealm<TAdapter, TValue> r, ulong initial, ulong maximum, bool is64)
     {
         if (r.SharedArrayBufferConstructor is not { } constructor || maximum * 65536 > (ulong)Array.MaxLength)
@@ -221,20 +206,12 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
         var options = r.CreateObject();
         r.SetMember(options, "maxByteLength", r.Adapter.FromNumber(maximum * 65536));
         var buffer = r.Adapter.RunInRealm(r.EngineRealm, () => r.Adapter.Construct(constructor, [r.Adapter.FromNumber(initial * 65536), options], constructor));
-        return new WebAssemblyMemoryObject(buffer, is64);
-    }
+        if (r.Adapter.GetSharedDataBlock(buffer) is not { } dataBlock)
+            throw r.CreateRangeError("The shared memory cannot be allocated");
 
-    private static TValue GrowSharedMemory(WebIdlRealm<TAdapter, TValue> r, WebAssemblyMemoryObject memoryObject, ulong delta)
-    {
-        var buffer = (TValue)memoryObject.BufferObject!;
-        var byteLength = (ulong)r.Adapter.ToNumber(r.Adapter.Get(buffer, r.Adapter.FromString("byteLength")));
-        var maxByteLength = (ulong)r.Adapter.ToNumber(r.Adapter.Get(buffer, r.Adapter.FromString("maxByteLength")));
-        if (delta > (maxByteLength - byteLength) / 65536)
-            throw r.CreateRangeError("The memory cannot grow");
-
-        var grow = r.Adapter.Get(buffer, r.Adapter.FromString("grow"));
-        r.Adapter.Call(grow, buffer, [r.Adapter.FromNumber(byteLength + (delta * 65536))]);
-        return r.FromWasmAddress(byteLength / 65536, memoryObject.Is64);
+        var memoryObject = new WebAssemblyMemoryObject(dataBlock, maximum, is64);
+        memoryObject.BufferObject = r.CreateWasmSharedMemoryBuffer(memoryObject, resizable: false);
+        return memoryObject;
     }
 
     // ----------------------------------------------------------------------------------------------------------------

@@ -27,7 +27,7 @@ public sealed partial class YamlSerializerContextGenerator
         }
 
         var source = GenerateContextSource(compilation, model, validationResult.DerivedTypeMappings, validationResult.ResolvedTypes, validationResult.IndexByType);
-        context.AddSource($"{model.TypeName}.g.cs", SourceText.From(source, Encoding.UTF8));
+        context.AddSource(GetHintName(model.ContextSymbol), SourceText.From(source, Encoding.UTF8));
         return true;
     }
 
@@ -57,21 +57,42 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine();
         }
 
+        // A context nested in other types is declared in the declarations of its containing types
+        var containingTypes = new List<INamedTypeSymbol>();
+        for (var containingType = model.ContextSymbol.ContainingType; containingType is not null; containingType = containingType.ContainingType)
+        {
+            containingTypes.Insert(0, containingType);
+        }
+
+        foreach (var containingType in containingTypes)
+        {
+            builder.Append("partial ").Append(GetTypeDeclarationKeyword(containingType)).Append(' ').Append(EscapeIdentifier(containingType.Name));
+            if (containingType.TypeParameters.Length > 0)
+            {
+                builder.Append('<').Append(string.Join(", ", containingType.TypeParameters.Select(parameter => EscapeIdentifier(parameter.Name)))).Append('>');
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("{");
+        }
+
+        // A name can be a keyword, such as @class
+        var contextTypeName = EscapeIdentifier(model.TypeName);
         AppendGeneratedTypeAttributes(builder, string.Empty);
-        builder.Append("partial class ").Append(model.TypeName).AppendLine();
+        builder.Append("partial class ").Append(contextTypeName).AppendLine();
         builder.AppendLine("{");
         EmitSourceGenerationConverterFields(builder, model.SourceGenerationOptions);
         EmitRuntimeCustomConverterHelpers(builder, model.SourceGenerationOptions, runtimeCustomConverterTypes);
         builder.AppendLine();
-        builder.Append("    public static ").Append(model.TypeName).AppendLine(" Default { get; } = new(CreateDefaultOptions(), isDefault: true);");
+        builder.Append("    public static ").Append(contextTypeName).AppendLine(" Default { get; } = new(CreateDefaultOptions(), isDefault: true);");
         builder.AppendLine();
         if (!model.ContextSymbol.InstanceConstructors.Any(static ctor => ctor.Parameters.Length == 0 && !ctor.IsImplicitlyDeclared))
         {
-            builder.Append("    public ").Append(model.TypeName).AppendLine("() : base() { }");
+            builder.Append("    public ").Append(contextTypeName).AppendLine("() : base() { }");
             builder.AppendLine();
         }
 
-        builder.Append("    private ").Append(model.TypeName).AppendLine("(global::Meziantou.Framework.Yaml.YamlSerializerOptions options, bool isDefault) : base(options)");
+        builder.Append("    private ").Append(contextTypeName).AppendLine("(global::Meziantou.Framework.Yaml.YamlSerializerOptions options, bool isDefault) : base(options)");
         builder.AppendLine("    {");
         builder.AppendLine("        _runtimeConverters = new RuntimeCustomConverterCache(options);");
         builder.AppendLine("    }");
@@ -230,7 +251,57 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append(pendingMembers);
         accessors.Emit(builder);
         builder.AppendLine("}");
+        for (var i = 0; i < containingTypes.Count; i++)
+        {
+            builder.AppendLine("}");
+        }
+
         return builder.ToString();
+    }
+
+    private static string GetTypeDeclarationKeyword(INamedTypeSymbol type)
+    {
+        return (type.IsRecord, type.TypeKind) switch
+        {
+            (true, TypeKind.Struct) => "record struct",
+            (true, _) => "record",
+            (_, TypeKind.Struct) => "struct",
+            (_, TypeKind.Interface) => "interface",
+            _ => "class",
+        };
+    }
+
+    // Two contexts can have the same name in different namespaces or containing types. The name is the metadata name of
+    // the context, which keeps the arity of the generic types (Outer`1) and separates the containing types with '+', so
+    // that two different contexts never get the same name.
+    private static string GetHintName(INamedTypeSymbol contextSymbol)
+    {
+        var builder = new StringBuilder();
+        AppendNamespace(builder, contextSymbol.ContainingNamespace);
+        AppendTypeName(builder, contextSymbol);
+        return builder.Append(".g.cs").ToString();
+
+        static void AppendNamespace(StringBuilder builder, INamespaceSymbol? symbol)
+        {
+            if (symbol is null || symbol.IsGlobalNamespace)
+            {
+                return;
+            }
+
+            AppendNamespace(builder, symbol.ContainingNamespace);
+            builder.Append(symbol.MetadataName).Append('.');
+        }
+
+        static void AppendTypeName(StringBuilder builder, INamedTypeSymbol symbol)
+        {
+            if (symbol.ContainingType is { } containingType)
+            {
+                AppendTypeName(builder, containingType);
+                builder.Append('+');
+            }
+
+            builder.Append(symbol.MetadataName);
+        }
     }
 
     /// <summary>Gets the metadata type exposed for <paramref name="type"/>.</summary>

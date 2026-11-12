@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-pseudo, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 43 | 51 | 0 | 84% |
 | [Tentative](#tentative-tests) | 10 | 12 | 0 | 83% |
-| [Reftests](#reftests) | 262 | 279 | 0 | 94% |
-| **All** | **315** | **342** | **0** | **92%** |
+| [Reftests](#reftests) | 263 | 279 | 0 | 94% |
+| **All** | **316** | **342** | **0** | **92%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 9
-- **NOT IMPLEMENTED**: 17
+- **NOT IMPLEMENTED**: 16
 
 ## Stable tests
 
@@ -326,7 +326,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`selection-background-color-revert.html`](https://wpt.fyi/results/css/css-pseudo/selection-background-color-revert.html) | Pass | 1 / 1 |  |  |
 | [`selection-background-color-transparent.html`](https://wpt.fyi/results/css/css-pseudo/selection-background-color-transparent.html) | Pass | 1 / 1 |  |  |
 | [`selection-background-painting-order.html`](https://wpt.fyi/results/css/css-pseudo/selection-background-painting-order.html) | Pass | 1 / 1 |  |  |
-| [`selection-contenteditable-011.html`](https://wpt.fyi/results/css/css-pseudo/selection-contenteditable-011.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `Selection.addRange()` in a `contenteditable` element does not move the focus to the editing host, as the browsers do: the reference, which focuses the element, has a focus ring (`outline: auto`) that the test does not have |
+| [`selection-contenteditable-011.html`](https://wpt.fyi/results/css/css-pseudo/selection-contenteditable-011.html) | Pass | 1 / 1 |  |  |
 | [`selection-input-011.html`](https://wpt.fyi/results/css/css-pseudo/selection-input-011.html) | Fail | 0 / 1 | TEST BUG | the selection of the value is highlighted with `::selection` as in the reference, but the reference focuses its `input` (it is painted with a focus ring): the test relies on `select()` giving the focus to the control, as in Chrome, which the standard does not specify (the only different pixels are the ones of the focus ring); Firefox and Safari fail too |
 | [`selection-intercharacter-011.html`](https://wpt.fyi/results/css/css-pseudo/selection-intercharacter-011.html) | Pass | 1 / 1 |  |  |
 | [`selection-intercharacter-012.html`](https://wpt.fyi/results/css/css-pseudo/selection-intercharacter-012.html) | Pass | 1 / 1 |  |  |

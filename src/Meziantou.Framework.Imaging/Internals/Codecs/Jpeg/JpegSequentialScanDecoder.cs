@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -211,6 +212,7 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         scanComponent.Predictor = dc;
 
         // AC: run-length/size symbols in zig-zag order (T.81 F.2.2.2)
+        Debug.Assert(_block.Length >= 64 && scanComponent.ZigZagQuantization.Length >= 64);
         ref var block = ref unsafe(MemoryMarshal.GetArrayDataReference(_block));
         ref var zigZagQuantization = ref unsafe(MemoryMarshal.GetArrayDataReference(scanComponent.ZigZagQuantization));
 

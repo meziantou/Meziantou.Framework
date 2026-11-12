@@ -139,7 +139,14 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
 - A document is displayed whatever its status (a 404 page is a page). A script or a style sheet whose status is not in the
   200-299 range is a network error.
 - The library reads the headers that change the document: `Content-Security-Policy`, `Referrer-Policy`, `Refresh`,
-  `Link` (preloads), `X-Frame-Options`, `Content-Language`, `Document-Policy`... The other headers are ignored.
+  `Link`, `X-Frame-Options`, `Content-Language`, `Document-Policy`... The other headers are ignored.
+- The `Link` header of a page preloads (`preload`, `modulepreload`) and prefetches (`prefetch`) its resources. As in
+  Firefox, its `stylesheet` and `icon` links are requested, but the style sheet does not apply and the icon is not
+  rendered. As in Chromium, the `preload` links of the `Link` headers of the style sheets, images, scripts and fonts are
+  preloaded too: their URLs are relative to the resource, and the requests have no `Referer` header.
+- The responses are stored in an HTTP cache shared by the browsing contexts of the loader, as in a browser: a fresh
+  response is used without a request, a stale one is revalidated with `If-None-Match` and `If-Modified-Since`, and a stale
+  response within its `stale-while-revalidate` window is used while a request revalidates it in the background.
 - [Document Policy](https://wicg.github.io/document-policy/) is applied as in Chromium: `Document-Policy: sync-xhr=?0`
   makes the synchronous `XMLHttpRequest` requests fail, and `Document-Policy-Report-Only` reports them
   (`document-policy-violation` reports). A page requires a policy from the pages of its frames with the
@@ -147,10 +154,40 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   in the `Sec-Required-Document-Policy` header, and a frame whose `Document-Policy` header is less strict is blocked. The
   library supports the `sync-xhr` and `force-load-at-top` features. Disable it with
   [DocumentPolicyEnabled](cref:Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures.DocumentPolicyEnabled).
+- The `Cross-Origin-Opener-Policy` and `Cross-Origin-Opener-Policy-Report-Only` headers of a page report to the endpoint
+  of their `report-to` parameter (an endpoint of the `Reporting-Endpoints` header, or of the legacy `Report-To` header):
+  the navigations that switch, or would switch, the browsing context group of a page that shares it with other windows
+  (`navigation-to-response` and `navigation-from-response` reports, also for the redirects), and, as in Chromium, the
+  accesses between two windows that a report-only policy would separate (`access-from-coop-page-to-openee` and the other
+  `access-*` reports, with the name of the property). The `ReportingObserver`s of the page that performs the access
+  receive its report as a `coop-access-violation` report.
+- The scripts, the style sheets and the preloads check the hashes of their `integrity` attribute
+  ([Subresource Integrity](https://w3c.github.io/webappsec-subresource-integrity/)): a resource whose body does not match
+  is a network error (the element fires `error`, the script does not run, the style sheet does not apply), and so is a
+  cross-origin resource with hashes fetched without CORS. A response whose `Unencoded-Digest` header (`sha-256`,
+  `sha-512`) does not match its body is a network error too, except the responses that `fetch()` streams. The
+  `Integrity-Policy` header of a page blocks its scripts and style sheets (`blocked-destinations=(script style)`) that have
+  no hash or are not CORS requests; `Integrity-Policy-Report-Only` only reports them (`integrity-violation` reports, sent to
+  the `endpoints` of the policy). The documents that inherit the policies of the page (its `srcdoc` and `about:blank`
+  frames and popups) inherit both policies too.
+- As in the browsers, a request whose URL has both a newline or a tab and a `<` (e.g. `<img src='https://evil.example/?`
+  whose quote is not closed, which captures the markup that follows it) is blocked: the dangling markup mitigation.
 - The `Content-DPR` header of an image gives its density: its natural size is divided by it (`Content-DPR: 2` displays a
   100x100 image at 50x50 CSS pixels), in the `img` elements (where it replaces the density of the `srcset` candidate), the
   CSS images, the SVG `image` elements, the video posters and the image buttons.
-- [RemainingContentBytes](cref:Meziantou.Framework.WebPlatform.Dom.DocumentResource.RemainingContentBytes) streams a body that arrives over time: the HTML of a navigation is parsed as its chunks arrive.
+- [RemainingContentBytes](cref:Meziantou.Framework.WebPlatform.Dom.DocumentResource.RemainingContentBytes) streams a body that arrives over time: the HTML of a navigation is parsed as its chunks arrive,
+  the body of `fetch()` is a stream, and an asynchronous `XMLHttpRequest` fires its `readystatechange` and `progress`
+  events as the chunks arrive (at most every 50 ms; its `responseText` has every chunk received so far). Return the
+  response once its headers are received: the time the loader returns it is the `responseStart` of the resource timing
+  entry, and the end of the body its `responseEnd`.
+- [ReportInterimResponse](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.ReportInterimResponse) reports an
+  interim response (`100 Continue`, `103 Early Hints`...) before the final response: its time is the
+  `firstInterimResponseStart` of the resource timing entry, and the `Link` headers of the first `103` response of the
+  navigation of a page (not a frame) preload their resources, which the page uses (their timing entries have the
+  `early-hints` initiator type), as in Chromium. `HttpClient` does not expose the interim responses: the loader of
+  `DocumentLoader.Create()` does not report them. A loader that sends a request to another loader with a new
+  `DocumentRequest` forwards them with
+  [InterimResponseHandler](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.InterimResponseHandler).
 
 The requests are canceled when the navigation is aborted (another navigation, the removal of the `iframe`) and when the
 browsing context is disposed: pass the `CancellationToken` to your I/O.

@@ -74,37 +74,71 @@ internal sealed unsafe class LinearMemory
     }
 
     /// <summary><c>wasmtime_memory_get_callback_t</c></summary>
+    /// <remarks>
+    /// The array is pinned (allocated in the pinned object heap) and the memory keeps it alive until it is replaced, so its
+    /// address stays valid while wasmtime uses it. The handle is weak: no memory (a null pointer) when the memory was
+    /// collected, which does not happen while its store is alive.
+    /// </remarks>
     [UnmanagedCallersOnly]
     private static byte* GetMemory(nint env, nuint* byteSize, nuint* byteCapacity)
     {
-        var memory = (LinearMemory)GCHandle.FromIntPtr(env).Target!;
-        var data = memory._data;
-        *byteSize = (nuint)data.Length;
-        *byteCapacity = (nuint)data.Length;
-        return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(data));
+        try
+        {
+            if (GCHandle.FromIntPtr(env).Target is LinearMemory memory)
+            {
+                var data = memory._data;
+                *byteSize = (nuint)data.Length;
+                *byteCapacity = (nuint)data.Length;
+                return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(data));
+            }
+        }
+        catch
+        {
+            // An exception must not cross the native frames
+        }
+
+        *byteSize = 0;
+        *byteCapacity = 0;
+        return null;
     }
 
     /// <summary><c>wasmtime_memory_grow_callback_t</c>: an error makes the growth fail (memory.grow returns -1).</summary>
     [UnmanagedCallersOnly]
     private static nint GrowMemory(nint env, nuint newSize)
     {
+        LinearMemory memory;
+        nint previousPointer;
         try
         {
-            var memory = (LinearMemory)GCHandle.FromIntPtr(env).Target!;
+            if (GCHandle.FromIntPtr(env).Target is not LinearMemory target)
+                return NativeErrors.CreateError("The memory was collected");
+
+            memory = target;
             if ((ulong)newSize > memory._maximumByteSize)
                 return NativeErrors.CreateError("The memory cannot grow");
 
-            var previousPointer = memory.DataPointer;
+            previousPointer = memory.DataPointer;
             var data = GC.AllocateArray<byte>(checked((int)newSize), pinned: true);
             memory._data.AsSpan().CopyTo(data);
             memory._data = data;
-            memory.Moved?.Invoke(memory, previousPointer);
-            return 0;
         }
         catch (Exception ex)
         {
             return NativeErrors.CreateError(ex.Message);
         }
+
+        // The memory moved: the growth succeeded, whatever the outcome of the notification (wasmtime reads the new size
+        // from GetMemory). The store updates its index of the memories before it notifies the wrapper of the memory.
+        try
+        {
+            memory.Moved?.Invoke(memory, previousPointer);
+        }
+        catch
+        {
+            // An exception must not cross the native frames
+        }
+
+        return 0;
     }
 
     [UnmanagedCallersOnly]

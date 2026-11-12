@@ -1,0 +1,4 @@
+Cache-Control: max-age=10, must-revalidate, stale-while-revalidate=100
+Pragma: no-cache
+
+Cache-Control: max-stale

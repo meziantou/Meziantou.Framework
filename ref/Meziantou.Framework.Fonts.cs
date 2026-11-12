@@ -531,6 +531,7 @@ namespace Meziantou.Framework.Fonts
         public int GetLeftSideBearing(int glyphId) => throw null;
         public int GetLegacyKerning(int left, int right) => throw null;
         public int GetLigatureCarets(int glyphId, System.Span<int> carets) => throw null;
+        public Meziantou.Framework.Fonts.FontLineMetrics GetLineMetrics() => throw null;
         public int GetMathConstant(Meziantou.Framework.Fonts.MathConstant constant) => throw null;
         public Meziantou.Framework.Fonts.MathGlyphConstruction? GetMathGlyphConstruction(int glyphId, bool isVertical) => throw null;
         public string? GetName(int nameId) => throw null;
@@ -569,6 +570,25 @@ namespace Meziantou.Framework.Fonts
         public System.ReadOnlySpan<int> Coordinates { get => throw null; }
         public int NameId { get => throw null; }
         public int PostScriptNameId { get => throw null; }
+    }
+
+    public readonly struct FontLineMetrics : System.IEquatable<Meziantou.Framework.Fonts.FontLineMetrics>
+    {
+        public int Ascender { get => throw null; init { } }
+        public int Descender { get => throw null; init { } }
+        public int LineGap { get => throw null; init { } }
+        public FontLineMetrics(int Ascender, int Descender, int LineGap) { }
+        public void Deconstruct(out int Ascender, out int Descender, out int LineGap) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.FontLineMetrics other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.FontLineMetrics left, Meziantou.Framework.Fonts.FontLineMetrics right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.FontLineMetrics left, Meziantou.Framework.Fonts.FontLineMetrics right) => throw null;
     }
 
     public static class FontLoader
@@ -969,6 +989,27 @@ namespace Meziantou.Framework.Fonts
         public static bool operator !=(Meziantou.Framework.Fonts.ShapingFeature left, Meziantou.Framework.Fonts.ShapingFeature right) => throw null;
     }
 
+    public readonly struct ShapingRun : System.IEquatable<Meziantou.Framework.Fonts.ShapingRun>
+    {
+        public byte BidiLevel { get => throw null; init { } }
+        public int Index { get => throw null; init { } }
+        public bool IsRightToLeft { get => throw null; }
+        public int Length { get => throw null; init { } }
+        public Meziantou.Framework.UnicodeScript Script { get => throw null; init { } }
+        public ShapingRun(int Index, int Length, Meziantou.Framework.UnicodeScript Script, byte BidiLevel) { }
+        public void Deconstruct(out int Index, out int Length, out Meziantou.Framework.UnicodeScript Script, out byte BidiLevel) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.ShapingRun other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.ShapingRun left, Meziantou.Framework.Fonts.ShapingRun right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.ShapingRun left, Meziantou.Framework.Fonts.ShapingRun right) => throw null;
+    }
+
     public sealed class SystemFontCollection
     {
         public static Meziantou.Framework.Fonts.SystemFontCollection Default { get => throw null; }
@@ -1007,6 +1048,7 @@ namespace Meziantou.Framework.Fonts
         public static void AddText(Meziantou.Framework.Fonts.GlyphBuffer buffer, System.ReadOnlySpan<char> text, int clusterOffset = 0) { }
         public static bool IsSynthesizedSpace(int codePoint) => throw null;
         public static void Shape(Meziantou.Framework.Fonts.GlyphBuffer buffer, Meziantou.Framework.Fonts.FontFace face, Meziantou.Framework.UnicodeScript script, System.ReadOnlySpan<uint> languages, bool isRightToLeft, System.ReadOnlySpan<Meziantou.Framework.Fonts.ShapingFeature> features, bool isVertical = false, Meziantou.Framework.Fonts.GlyphScratch? scratch = null, Meziantou.Framework.Fonts.ShapingCache? cache = null, bool areCharactersMirrored = false, double pointSize = 0d) { }
+        public static Meziantou.Framework.Fonts.ShapingRun[] SplitRuns(System.ReadOnlySpan<char> text, Meziantou.Framework.UnicodeBidiDirection direction = Meziantou.Framework.UnicodeBidiDirection.Auto) => throw null;
     }
 
     public sealed class TrueTypeGlyphOutlines

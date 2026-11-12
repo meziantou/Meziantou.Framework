@@ -21,7 +21,7 @@ Assert.Equal<int>([2, 6], positions[..count]); // hy-phen-ation
 <!-- endref -->
 
 - [Hyphenate](cref:Meziantou.Framework.Hyphenator.Hyphenate) takes one word, in any case, and writes the indexes before which a hyphen can be inserted. It does not
-  allocate. Use [Unicode.EnumerateWordBoundaries](cref:Meziantou.Framework.Unicode.EnumerateWordBoundaries) to find the words of a text (see
+  allocate: the working buffers of a word longer than 64 UTF-16 code units are rented from the shared array pool. Use [Unicode.EnumerateWordBoundaries](cref:Meziantou.Framework.Unicode.EnumerateWordBoundaries) to find the words of a text (see
   [Text segmentation](07-TextSegmentation.md#words)).
 - A break is never inside a grapheme cluster.
 - The patterns match code points: pass the word in the normalization form of the patterns, usually NFC (see

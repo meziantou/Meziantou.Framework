@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -656,6 +657,8 @@ internal static class JpegXlModularDecoder
         var previousErrors = errors.Previous;
         var currentErrors = errors.Current;
         var currentSubErrors = errors.CurrentSub;
+        Debug.Assert(width >= 3);
+        Debug.Assert(errors.PreviousSub.Length >= width * 4);
         ref var previousSubErrors = ref unsafe(System.Runtime.InteropServices.MemoryMarshal.GetReference(errors.PreviousSub));
         Vector128<uint> subN;
         Vector128<uint> subNE;

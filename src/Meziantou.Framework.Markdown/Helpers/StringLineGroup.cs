@@ -54,6 +54,10 @@ public struct StringLineGroup : IEnumerable
     /// <summary>
     /// Gets the lines.
     /// </summary>
+    /// <remarks>
+    /// The array can be rented from a pool, and it is returned to the pool when the group grows: do not keep it, nor a
+    /// copy of this group, after lines are added to the group.
+    /// </remarks>
     public StringLine[] Lines { get; private set; }
 
     /// <summary>
@@ -150,7 +154,7 @@ public struct StringLineGroup : IEnumerable
         }
 
         // Else use a builder
-        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         int previousStartOfLine = 0;
         var newLine = NewLine.None;
         for (int i = 0; i < Count; i++)
@@ -287,7 +291,7 @@ public struct StringLineGroup : IEnumerable
             return new StringSlice(text, start, first.Start + (span.End - offset));
         }
 
-        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         builder.Append(text.AsSpan(start, first.Start + firstLength - start));
         offset += firstLength;
         for (i++; ; i++)

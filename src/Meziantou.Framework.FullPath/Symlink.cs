@@ -154,9 +154,9 @@ internal static partial class Symlink
         private static int GetReparseDataHeaderLength()
         {
             var buffer = default(REPARSE_DATA_BUFFER);
-            return (int)Unsafe.ByteOffset(
+            return unsafe((int)Unsafe.ByteOffset(
                 ref Unsafe.As<REPARSE_DATA_BUFFER, byte>(ref buffer),
-                ref Unsafe.As<char, byte>(ref buffer.SymbolicLinkReparseBuffer.PathBuffer.e0));
+                ref Unsafe.As<char, byte>(ref buffer.SymbolicLinkReparseBuffer.PathBuffer.e0)));
         }
 
         public static bool TryGetSymLinkTarget(string path, [NotNullWhen(true)] out string? target)
@@ -256,7 +256,8 @@ internal static partial class Symlink
 
                     // The rented array is always at least as long as the fixed part of the structure, so the header can be
                     // read in place. Only the fields before PathBuffer are touched until the payload length is validated.
-                    ref var header = ref Unsafe.As<byte, REPARSE_DATA_BUFFER>(ref MemoryMarshal.GetArrayDataReference(buffer)).SymbolicLinkReparseBuffer;
+                    ref var reparseData = ref unsafe(Unsafe.As<byte, REPARSE_DATA_BUFFER>(ref MemoryMarshal.GetArrayDataReference(buffer)));
+                    ref var header = ref reparseData.SymbolicLinkReparseBuffer;
 
                     // we only care about SubstituteName.
                     // Per https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/b41f1cbf-10df-4a47-98d4-1c52a833d913 print name is only valid for displaying to the user

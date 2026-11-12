@@ -55,6 +55,19 @@ public sealed class GridFormattingContextTests : IDisposable
         Assert.Equal("20px 20px", GetComputed(document, "g", "grid-template-columns"));
     }
 
+    [Theory]
+    [InlineData("overflow: auto; height: 100px; aspect-ratio: 2/1", "0px 100px")]
+    [InlineData("overflow: auto", "0px 100px")]
+    [InlineData("min-width: 40px", "40px 100px")]
+    [InlineData("overflow: auto; width: 200px", "200px 100px")]
+    [InlineData("height: 100px; aspect-ratio: 2/1", "200px 100px")]
+    public void AutoTracks_UnderMinContentConstraint_UseTheMinimumSizeThatIsNotContentBased(string style, string expected)
+    {
+        // As in Blink, an item whose minimum size is not content-based does not contribute its contents to the min-content size
+        var document = Parse($"<div id=g style='display: grid; width: min-content; grid-auto-flow: column'><div style='{style}'><div style='width: 150px'></div></div><div style='width: 100px'></div></div>");
+        Assert.Equal(expected, GetComputed(document, "g", "grid-template-columns"));
+    }
+
     [Fact]
     public void FitContentTrack_IsClampedByItsArgument()
     {

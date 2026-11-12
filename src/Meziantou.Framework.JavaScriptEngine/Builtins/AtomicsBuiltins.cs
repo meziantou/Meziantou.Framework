@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
@@ -212,6 +213,18 @@ internal static class AtomicsBuiltins
         }
     }
 
+    /// <summary>
+    /// The location of an element of a shared block, for the atomic operations that read it as a value of
+    /// <paramref name="size"/> bytes: the element is within the block, and aligned (ValidateAtomicAccess checks that the
+    /// index is in the typed array, whose byte offset is a multiple of the element size; the block is 16-byte aligned).
+    /// </summary>
+    private static ref byte GetLocation(JsSharedDataBlock block, int byteIndex, int size)
+    {
+        Debug.Assert(size is 1 or 2 or 4 or 8);
+        Debug.Assert(byteIndex % size == 0);
+        return ref block.GetReference(byteIndex, size);
+    }
+
     /// <summary>GetModifySetValueInBuffer(arrayBuffer, byteIndex, type, value, op): returns the bits of the previous value.</summary>
     private static ulong GetModifySetValueInBuffer(JsArrayBuffer buffer, int byteIndex, int size, ulong operand, Operation operation)
     {
@@ -223,7 +236,7 @@ internal static class AtomicsBuiltins
             return current;
         }
 
-        ref var location = ref block.GetReference(byteIndex);
+        ref var location = ref GetLocation(block, byteIndex, size);
         switch (size)
         {
             case 1:
@@ -319,7 +332,7 @@ internal static class AtomicsBuiltins
             return current;
         }
 
-        ref var location = ref block.GetReference(byteIndex);
+        ref var location = ref GetLocation(block, byteIndex, size);
         return size switch
         {
             1 => Interlocked.CompareExchange(ref location, (byte)replacement, (byte)expected),
@@ -335,7 +348,7 @@ internal static class AtomicsBuiltins
         if (buffer.SharedBlock is not { } block)
             return ReadBits(buffer.GetSpan()[byteIndex..], size);
 
-        ref var location = ref block.GetReference(byteIndex);
+        ref var location = ref GetLocation(block, byteIndex, size);
         return size switch
         {
             1 => Volatile.Read(ref location),
@@ -354,7 +367,7 @@ internal static class AtomicsBuiltins
             return;
         }
 
-        ref var location = ref block.GetReference(byteIndex);
+        ref var location = ref GetLocation(block, byteIndex, size);
         switch (size)
         {
             case 1:

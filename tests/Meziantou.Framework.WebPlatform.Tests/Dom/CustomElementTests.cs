@@ -97,6 +97,26 @@ public sealed class CustomElementTests : IDisposable
     }
 
     [Fact]
+    public void HtmlParser_CustomElementRegistryAttributeGivesTheNullRegistry()
+    {
+        var registry = new CustomElementRegistry();
+        var document = HtmlDocumentParser.ParseDocument("<body><div id=a customelementregistry><x-foo id=b><span id=c></span></x-foo></div><div id=d></div>", new HtmlParserOptions { CustomElementRegistry = registry });
+
+        Assert.Null(document.GetElementById("a")!.CustomElementRegistry);
+        Assert.Null(document.GetElementById("b")!.CustomElementRegistry);
+        Assert.Null(document.GetElementById("c")!.CustomElementRegistry);
+        Assert.Same(registry, document.GetElementById("d")!.CustomElementRegistry);
+
+        // The fragment parser too, but setting the attribute later has no effect
+        var target = document.GetElementById("d")!;
+        target.InnerHtml = "<p customelementregistry></p><p></p>";
+        Assert.Null(target.FirstElementChild!.CustomElementRegistry);
+        Assert.Same(registry, target.LastElementChild!.CustomElementRegistry);
+        target.LastElementChild.SetAttribute("customelementregistry", "");
+        Assert.Same(registry, target.LastElementChild.CustomElementRegistry);
+    }
+
+    [Fact]
     public void Initialize_UpgradesTheElementsOfADocumentWithoutRegistry()
     {
         var document = HtmlDocumentParser.ParseDocument("<x-foo></x-foo><x-bar></x-bar>");

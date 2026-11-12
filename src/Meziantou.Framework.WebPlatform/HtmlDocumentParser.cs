@@ -679,7 +679,11 @@ public sealed class HtmlDocumentParser
             };
         }
 
-        builder.SetupFragmentCase(context, rootInsertionTarget, referenceChild, CustomElementRegistry.LookUp(target), streaming);
+        // The children of a template are its template contents, whose node document (the template contents owner document) has
+        // no registry: the elements parsed in the context of a template element have the null registry, also when they are not
+        // inserted in its template contents (e.g. Range.createContextualFragment()), as in the browsers
+        var registry = context.IsHtml(TagId.Template) ? null : CustomElementRegistry.LookUp(target);
+        builder.SetupFragmentCase(context, rootInsertionTarget, referenceChild, registry, streaming);
         return (builder, tokenizer);
     }
 

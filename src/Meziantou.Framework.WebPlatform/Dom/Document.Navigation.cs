@@ -8,9 +8,9 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public partial class Document
 {
     private bool _parsingFinished;
-    private List<HtmlScriptElement>? _scriptsToExecuteAsSoonAsPossible;
-    private List<HtmlScriptElement>? _scriptsToExecuteInOrderAsSoonAsPossible;
-    private List<HtmlScriptElement>? _scriptsToExecuteWhenParsingFinished;
+    private List<ScriptElementCore>? _scriptsToExecuteAsSoonAsPossible;
+    private List<ScriptElementCore>? _scriptsToExecuteInOrderAsSoonAsPossible;
+    private List<ScriptElementCore>? _scriptsToExecuteWhenParsingFinished;
     private bool _loadEventQueued;
 
     /// <summary>The media elements that play a media resource for the document: their players are released when the document is destroyed.</summary>
@@ -393,6 +393,13 @@ public partial class Document
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#concept-document-coop</summary>
     internal OpenerPolicy OpenerPolicy { get; set; } = OpenerPolicy.Default;
 
+    /// <summary>
+    /// The document whose opener policy this document inherited (the top-level document of the creator of an initial
+    /// about:blank document, or of the initiator of an about:blank navigation), or null: as in Chromium, the switches of
+    /// browsing context group are reported with its URL and its reporting endpoints.
+    /// </summary>
+    internal Document? OpenerPolicyReportingDocument { get; set; }
+
     /// <summary>The embedder policy of the policy container of the document (https://html.spec.whatwg.org/multipage/browsers.html#policy-container-embedder-policy).</summary>
     internal EmbedderPolicy EmbedderPolicy { get; set; } = EmbedderPolicy.Default;
 
@@ -469,21 +476,28 @@ public partial class Document
         if (BrowsingContext is not { } browsingContext)
             return;
 
-        browsingContext.EventLoop.QueueTask(() =>
+        browsingContext.EventLoop.QueueTask(() => RunGlobalTask(task));
+    }
+
+    /// <summary>
+    /// Runs a global task of the document, from a task of its event loop (see <see cref="QueueGlobalTask"/>): the task runs
+    /// at once if the document is fully active, once the document is reactivated if it is in the back/forward cache, and once
+    /// it is resumed if it is frozen.
+    /// </summary>
+    internal void RunGlobalTask(Action task)
+    {
+        if (IsFrozen)
         {
-            if (IsFrozen)
-            {
-                DeferTaskUntilReactivated(task);
-            }
-            else if (IsFullyActive)
-            {
-                task();
-            }
-            else if (IsInBackForwardCache)
-            {
-                DeferTaskUntilReactivated(task);
-            }
-        });
+            DeferTaskUntilReactivated(task);
+        }
+        else if (IsFullyActive)
+        {
+            task();
+        }
+        else if (IsInBackForwardCache)
+        {
+            DeferTaskUntilReactivated(task);
+        }
     }
 
     /// <summary>
@@ -695,16 +709,16 @@ public partial class Document
     private Html.Parsing.ScriptingParser? _activeParser;
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#pending-parsing-blocking-script</summary>
-    internal HtmlScriptElement? PendingParsingBlockingScript { get; set; }
+    internal ScriptElementCore? PendingParsingBlockingScript { get; set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#set-of-scripts-that-will-execute-as-soon-as-possible</summary>
-    internal List<HtmlScriptElement> ScriptsToExecuteAsSoonAsPossible => _scriptsToExecuteAsSoonAsPossible ??= [];
+    internal List<ScriptElementCore> ScriptsToExecuteAsSoonAsPossible => _scriptsToExecuteAsSoonAsPossible ??= [];
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#list-of-scripts-that-will-execute-in-order-as-soon-as-possible</summary>
-    internal List<HtmlScriptElement> ScriptsToExecuteInOrderAsSoonAsPossible => _scriptsToExecuteInOrderAsSoonAsPossible ??= [];
+    internal List<ScriptElementCore> ScriptsToExecuteInOrderAsSoonAsPossible => _scriptsToExecuteInOrderAsSoonAsPossible ??= [];
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#list-of-scripts-that-will-execute-when-the-document-has-finished-parsing</summary>
-    internal List<HtmlScriptElement> ScriptsToExecuteWhenParsingFinished => _scriptsToExecuteWhenParsingFinished ??= [];
+    internal List<ScriptElementCore> ScriptsToExecuteWhenParsingFinished => _scriptsToExecuteWhenParsingFinished ??= [];
 
     /// <summary>The number of script elements whose "delaying the load event" is true (https://html.spec.whatwg.org/multipage/scripting.html#concept-script-delay-load).</summary>
     internal int ScriptsDelayingTheLoadEvent { get; set; }
@@ -779,7 +793,12 @@ public partial class Document
     }
 
     /// <summary>Queues the load task once the parsing is finished and nothing delays the load event (https://html.spec.whatwg.org/multipage/parsing.html#the-end).</summary>
-    internal void TryQueueLoadEvent()
+    /// <param name="runNow">
+    /// Whether the load task runs at once, from the current task of the event loop of the document: as in the browsers, the
+    /// load event of a document whose last child navigable finished loading is fired in the task that completes the loading
+    /// of the child (the tasks queued meanwhile, e.g. a timer started by the load event listener of the container, run after it).
+    /// </param>
+    internal void TryQueueLoadEvent(bool runNow = false)
     {
         if (!_parsingFinished || _loadEventQueued || IsLoadEventDelayed())
             return;
@@ -796,7 +815,7 @@ public partial class Document
 
         _loadEventQueued = true;
         var childNavigables = ChildNavigables is { Count: > 0 } children ? new HashSet<BrowsingContext>(children) : null;
-        QueueGlobalTask(() =>
+        void LoadTask()
         {
             // https://html.spec.whatwg.org/multipage/parsing.html#the-end (steps 8–9): the end spins the event loop until nothing
             // delays the load event, so the tasks queued before the load task run first: the load event is delayed by the
@@ -882,7 +901,16 @@ public partial class Document
             // https://html.spec.whatwg.org/multipage/nav-history-apis.html#fire-a-page-transition-event
             window.FireLegacyTargetOverrideEvent(new PageTransitionEvent("pageshow", new PageTransitionEventInit { Persisted = false, Bubbles = true, Cancelable = true }));
             CompletelyFinishLoading(isContainerLoadEventFired, isNavigatingAway);
-        });
+        }
+
+        if (runNow)
+        {
+            RunGlobalTask(LoadTask);
+        }
+        else
+        {
+            QueueGlobalTask(LoadTask);
+        }
     }
 
     /// <summary>Whether an svg element was inserted in the document (see <see cref="FireSvgLoadEvents"/>).</summary>
@@ -958,7 +986,7 @@ public partial class Document
             }
 
             ReadyForPostLoadTasks = true;
-            container.NodeDocument.TryQueueLoadEvent();
+            container.NodeDocument.TryQueueLoadEvent(runNow: true);
         });
     }
 

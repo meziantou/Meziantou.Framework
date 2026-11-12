@@ -277,9 +277,24 @@ the `_blank` links). `BrowsingContextOptions.BrowsingContextCreated` is invoked 
   context, without opener nor name, that the windows of the previous group cannot reach: the `WindowProxy` they hold keeps
   the previous window (`closed` is true), and the popups it opened lose their opener. A nested document that is
   cross-origin with its top-level document opens its popups without opener when the top-level document has the
-  `same-origin` policy. The `Cross-Origin-Opener-Policy-Report-Only` header and the COOP reports (`report-to`) are not
-  sent: HTML queues them for the endpoint of the policy "with" the URL of the response, which the Reporting API does not
-  define.
+  `same-origin` policy. The switches are reported as `coop` reports to the endpoint named by the `report-to` parameter
+  (see [Reporting API](#reporting-api)) when other top-level browsing contexts are in the group, and so are the switches
+  that the `Cross-Origin-Opener-Policy-Report-Only` header would cause (disposition `reporting`): a
+  `navigation-to-response` report for the policy of the new response and a `navigation-from-response` report for the
+  policy of the current document (or of the previous redirect). HTML queues them for the endpoint "with" the URL of the
+  response, which the Reporting API does not define: the report is sent to the endpoint of the `Reporting-Endpoints` (or
+  `Report-To`) header of that response or document, from a task of the navigable. As in Chromium, an initial
+  `about:blank` document reports with the URL and the endpoints of the document whose policy it inherited (its opener),
+  and the URL of the next response is exposed when that document initiated the navigation. A navigation whose report-only
+  policy would switch the group gives the browsing context a new virtual browsing context group: the accesses to the
+  cross-origin accessible properties of a window of another virtual group (`blur()`, `closed`, `postMessage()`...,
+  the child windows as `indexed` and the named properties as `named`, as in Chromium; the only reported assignment is the one
+  of `location`) are reported to the report-only endpoints of the top-level documents of the two windows, unless a frame of
+  either window is cross-origin with its top-level document. The reports have the types and members of Chromium
+  (`access-from-coop-page-to-openee`, `access-to-coop-page-from-opener`, `-to-opener`, `-to-other`..., with `property`,
+  `openerURL`, `openeeURL`, `otherDocumentURL`, `initialPopupURL`, `referrer`, and the location of the script for the
+  accessing window): the `ReportingObserver`s of the accessing window receive its report as a `coop-access-violation`
+  report.
 - The `Cross-Origin-Embedder-Policy` header (`require-corp`, `credentialless`) is enforced for the cross-origin no-cors
   subresources (`fetch()`, images, scripts, style sheets...) with the `Cross-Origin-Resource-Policy` check, and for the
   documents of the iframes, which must have an embedder policy themselves (except in a `credentialless` iframe). A
@@ -899,7 +914,7 @@ Each window and each worker has a performance timeline ([Performance Timeline](h
 the performance observers of the windows (see [Layout shifts](layout.md#layout-shifts-csslayoutlayoutshifttrackercs)), and
 `paint`, `largest-contentful-paint`, `element`, `container`, `soft-navigation` and `interaction-contentful-paint` (see
 [Paint timing](rendering.md#paint-timing)), the entry types of the user input of the windows, `event` and `first-input`,
-and the `longtask` entries of the windows, described below. The `navigationId` of the entries is the one of the document, or of its last soft navigation. The times are measured
+and the `longtask` and `long-animation-frame` entries of the windows, described below. The `navigationId` of the entries is the one of the document, or of its last soft navigation. The times are measured
 with the `TimeProvider` of the event loop, relative to the time origin of the global object, and coarsened to 100 µs.
 
 **[Resource Timing](https://w3c.github.io/resource-timing/)**: the requests sent to the loader for the subresources (the
@@ -914,11 +929,13 @@ each connection of an `EventSource`, reported when its response ends). A fetch t
 entry (see [Preloads](#preloads)).
 
 - The fetch algorithm records the fetch timing info (`FetchRequest.Timing`): the start, the redirects (`redirectStart`,
-  `redirectEnd`, `fetchStart`), the time the request is sent to the loader (`requestStart`) and the time the loader completes
-  (`responseStart`); `responseEnd` is the time the response is processed. The loader does not report the timing of the
-  connection, of the first byte nor of the interim responses: the connection times are `fetchStart` (a reused connection),
-  `nextHopProtocol` is `http/1.1` (the empty string for a response given by a service worker) and
-  `firstInterimResponseStart` is 0.
+  `redirectEnd`, `fetchStart`), the time the request is sent to the loader (`requestStart`), the time of the first interim
+  response that the loader reports (`firstInterimResponseStart`, see `DocumentRequest.ReportInterimResponse`, 0 without
+  interim response) and the time the loader returns the response, its headers (`finalResponseHeadersStart`; `responseStart`
+  is the first of the two); `responseEnd` is the time the response is processed, after the end of a body that arrives over
+  time (`DocumentResource.RemainingContentBytes`). The loader does not report the timing of the connection: the connection
+  times are `fetchStart` (a reused connection), and `nextHopProtocol` is `http/1.1` (the empty string for a response given
+  by a service worker).
 - The timing allow check (https://fetch.spec.whatwg.org/#concept-tao-check) runs for every response of the fetch, the
   redirects included: when one of them is cross-origin (or the request was redirected through another origin) without a
   `Timing-Allow-Origin` header that allows the origin of the request, or for a network error, the entry only has
@@ -1050,6 +1067,26 @@ reports the cross-origin descendants), or `window`. The durations are whole mill
 and the work of the user agent outside of the tasks are not reported; a synchronous `XMLHttpRequest` lasts as long as the
 `DocumentLoader` takes.
 
+**[Long Animation Frames](https://w3c.github.io/long-animation-frames/)** (a draft that Chromium implements): the tasks of
+a window that run scripts, until the rendering update when one is scheduled (the frame then ends with the rendering update,
+whose `renderStart` and `styleAndLayoutStart`, the time after the animation frame callbacks, are set), that last 50 ms or
+more, are reported as a `PerformanceLongAnimationFrameTiming` entry to the window (buffer of 200 entries, also in
+`getEntries()`). The frames are per window: a frame of an iframe is reported to the iframe, and the scripts that a
+same-origin descendant runs in the rendering update are also in the frame of its topmost same-origin ancestor. `scripts`
+lists the script entry points that lasted more than 5 ms, until the microtask checkpoint that follows them (the scripts
+that they run, e.g. the listeners of an event dispatched synchronously, are in them): the classic and module script blocks
+(their URL, before the redirects for a classic script), the event listeners (`IMG#id.onload`, `XMLHttpRequest.onload`...),
+the callback functions (the name of their IDL callback, e.g. `FrameRequestCallback`, `TimerHandler:setTimeout`) and the
+settled promises of the platform (`Promise.then`, `Promise.catch`; `import.then` for `import()`), with the window of the
+script, its attribution (`self`, `descendant`, `ancestor`, `same-page`, `other`) and the name, URL and position of the
+function of a callback (hidden for a script whose errors are muted). `blockingDuration` sums the time of the tasks beyond
+50 ms (the rendering update is added to the longest task), and `firstUIEventTimestamp` is the time stamp of the first UI
+event of the frame. The frames are timed like the long tasks: a fake clock is never read for them, the times are the last
+times the event loop read the clock. Not done: `styleDuration`, `layoutDuration` and the forced style and layout durations
+of the scripts are 0, `presentationTime` is null, the promises have no creation-time attribution, and the evaluation of a
+module imported by `import()` is reported in the `import.then` script. As in the specification, the frames of a hidden
+document are not reported.
+
 ### Speculative parsing
 
 When `BrowsingContextOptions.SpeculativeParsing` is true, the HTML parser fetches the resources of the rest of the
@@ -1068,7 +1105,14 @@ When the document is parsed as its bytes arrive (see [the document loader](#the-
 also parses the chunks that arrive while the parser waits for the script, and the bytes received while the encoding
 sniffing algorithm waits for the bytes that determine the encoding (the parser has not started yet).
 
-The responses of the speculative requests are ignored: the parser requests the resources again when it reaches the
+The rest of the input is also parsed speculatively while a script waits for the style sheets that block it. The `@import` rules at
+the start of a `style` element found speculatively (whose `type` is `text/css` and whose `media` matches) are
+preloaded, as by the preload scanners of the browsers: the request is sent at once, without `DocumentRequest.IsSpeculative`,
+with a resource timing entry (`initiatorType` is `css`), and the `@import` rule consumes its response when the parser
+reaches the element (see [Preloads](#preloads)), so the imported style sheet does not wait for the style sheet that
+blocks the script.
+
+The responses of the other speculative requests are ignored: the parser requests the resources again when it reaches the
 elements, so the loader should cache the responses to benefit from them (a `<link rel=preload>` found speculatively is
 requested speculatively, then by its element; the element that uses the resource consumes the preload). A service worker
 that controls the document gets a single `fetch` event for a speculative request and the request of the parser that
@@ -1105,9 +1149,25 @@ response blocked by a check included; a `404` response is not a network error, a
 - **`Link` headers**: the `preload` links of the response of a document are preloaded when the document is created
   (`as`, `crossorigin`, `integrity`, `referrerpolicy`, `nonce`, `type`, `media`, `imagesrcset`, `imagesizes`; the
   target is resolved against the URL of the document). As in the browsers, the `modulepreload` links are fetched too
-  (the specification makes them do nothing). The links that have a `media` attribute are evaluated at once (the
-  specification waits for the viewport `meta` element), the `Link` headers of the responses of the subresources are not
-  processed (Chromium and WebKit do it; it is not specified), and there are no early hints (`103` responses).
+  (the specification makes them do nothing). As in Firefox, the `prefetch` links are prefetched, and the `stylesheet`
+  (destination `style`) and `icon` (the empty destination, without resource timing entry) links are fetched in `no-cors`
+  mode, but their responses are not used: the style sheet does not apply and the icon is not rendered. The links that
+  have a `media` attribute are evaluated at once (the specification waits for the viewport `meta` element).
+- **`Link` headers of the subresources**: as in Chromium and WebKit (it is not specified), the `preload` links of the
+  responses of the style sheets, images, scripts, fonts and tracks of a document are preloaded into its map of preloaded
+  resources. The target is resolved against the URL of the response (a cross-origin style sheet preloads from its own
+  origin), and, as in Chromium, the request has no referrer: the `referrerpolicy` parameter is ignored, so that a
+  cross-origin subresource cannot learn the URL of the document. The `Link` headers of the responses of these preloads,
+  of a consumed preload and of a speculative request are not processed.
+- **Early hints** (https://html.spec.whatwg.org/multipage/semantics.html#early-hints): the `preload` and `modulepreload`
+  links of the first `103` response that the loader reports (`DocumentRequest.ReportInterimResponse`) for the navigation
+  of a top-level browsing context are fetched at once (`EarlyHintPreloads`), with the content security policies and the
+  referrer policy of the `103` response; the next `103` responses are ignored. The new document adds them to its map of
+  preloaded resources, and their resource timing entries have the `early-hints` initiator type. As in Chromium, the child
+  navigables ignore the early hints, a cross-origin redirect discards the preloads (the `103` response of the next
+  response is then processed), and so does a document of another origin (e.g. an error document) or of another embedder
+  policy than the `103` response. The links with a `media` attribute are ignored (there is no document to evaluate it),
+  and a module preload of a worker must be same-origin.
 - **`<link rel=modulepreload>`** fetches a module script into the module map of the window
   (`ScriptEngine.PreloadModuleScript`, see [scripting.md](scripting.md#module-scripts)), without fetching its
   dependencies (the specification makes it optional) nor running it: the module scripts and the imports of the URL do
@@ -1292,11 +1352,12 @@ WebIDL bindings, because their bodies are streams (see [scripting.md](scripting.
 the headers are received, and its body is a `ReadableStream` that pulls the chunks of the response as it is read
 (`DocumentRequest.StreamsResponseBody` asks the loader for `DocumentResource.RemainingContentBytes`; one chunk is read
 ahead, so the end or the failure of the body errors or closes the stream without a pending read): a body that fails
-after the response errors the stream, and aborting the fetch or canceling the stream stops reading the body. The other
-responses are processed once their body is fully received (so an `XMLHttpRequest` fires a single `progress` event; the
-fetch algorithm waits for the end of `DocumentResource.RemainingContentBytes`), except the document of a navigation,
-the event stream of an `EventSource` and the media resources, and the body of a request created from a `ReadableStream`
-is read before the request is sent. A synchronous
+after the response errors the stream, and aborting the fetch or canceling the stream stops reading the body. The body of
+an asynchronous `XMLHttpRequest` is read as it arrives too: each chunk fires the `readystatechange` and `progress` events
+(at most every 50 ms, https://xhr.spec.whatwg.org/#dom-xmlhttprequest-send), and the timeout applies until the end of the
+body. The other responses are processed once their body is fully received (the fetch algorithm waits for the end of
+`DocumentResource.RemainingContentBytes`), except the document of a navigation, the event stream of an `EventSource` and
+the media resources, and the body of a request created from a `ReadableStream` is read before the request is sent. A synchronous
 `XMLHttpRequest` blocks the event loop until the loader completes (`DocumentRequest.IsSynchronous` is true): the loader
 must not wait for a task of the event loop.
 
@@ -1310,9 +1371,16 @@ response with `Pragma: no-cache` is validated unless it is `immutable`, as in th
 with `If-None-Match` and `If-Modified-Since`, and a `304` response updates its headers. `Vary` selects the stored
 response, and a successful response to an unsafe method invalidates the URL and its `Location` and `Content-Location`. The
 `cache` option of `fetch()` sets the cache mode (`default`, `no-store`, `reload`, `no-cache`, `force-cache`,
-`only-if-cached`). A body read as it arrives is stored once it is fully read. The partial responses (`206`), the
-`stale-while-revalidate` and `No-Vary-Search` headers are not supported. The requests are handled by the service workers
-(see [Service workers](#service-workers)), and checked by the `connect-src` directive of the content security policies (see [Content security policy](#content-security-policy)).
+`only-if-cached`). A body read as it arrives is stored once it is fully read. A stale response within its
+`stale-while-revalidate` window ([RFC 5861](https://httpwg.org/specs/rfc5861.html)) is used, and a copy of the request
+revalidates it in the background (one at a time per request), unless the response must be revalidated or the request
+sets a maximum age (e.g. the `no-cache` mode): as in the browsers, the revalidation is not handled by the service workers,
+is not checked by the content security policies and has no resource timing entry. The partial responses (`206`) and the
+`No-Vary-Search` header are not supported. As in the browsers (memory cache), a style sheet already fetched by a `link`
+element of the document is not fetched again; once the document is loaded, a style sheet whose response has
+`no-store`, `no-cache` or an explicit freshness that expired goes through the HTTP cache again. The requests are handled
+by the service workers (see [Service workers](#service-workers)), and checked by the `connect-src` directive of the
+content security policies (see [Content security policy](#content-security-policy)).
 
 The fetches of a document are aborted when it is aborted (`window.stop()`) or destroyed, except the `keepalive` requests
 (https://fetch.spec.whatwg.org/#request-keepalive-flag), which are still sent by the loader of the browsing context after
@@ -1789,7 +1857,7 @@ an `http:` image upgraded to `https:` is reported by a report-only `img-src http
 
 The [Reporting API](https://w3c.github.io/reporting/) collects the reports generated by a window or a worker (its global
 object): the `csp-violation` and `csp-hash` reports of [Content Security Policy](#violation-reports), the `coep` reports
-of the embedder policy, the `permissions-policy-violation` reports of [Permissions Policy](#permissions-policy), and the
+of the embedder policy, the `coop` reports of the opener policy, the `permissions-policy-violation` reports of [Permissions Policy](#permissions-policy), and the
 `test` reports of the Generate Test Report WebDriver command.
 
 - The endpoints of a window or a worker are the members of the `Reporting-Endpoints` header (a structured field
@@ -1799,8 +1867,8 @@ of the embedder policy, the `permissions-policy-violation` reports of [Permissio
   `include_subdomains`, the priorities and the weights are ignored, and the endpoints belong to the document, not to the
   origin). A response that is not potentially trustworthy has no endpoint.
 - `ReportingObserver` (`observe()`, `disconnect()`, `takeRecords()`, the `types` and `buffered` options) receives the
-  reports of its global object whose type is visible to the observers (`csp-violation`, `coep`,
-  `permissions-policy-violation`, `potential-permissions-policy-violation`, `test`), from a task.
+  reports of its global object whose type is visible to the observers (`csp-violation`, `coep`, `coop-access-violation`,
+  `permissions-policy-violation`, `potential-permissions-policy-violation`, `document-policy-violation`, `test`), from a task.
   The report buffer of the global object keeps the last 100 reports of each type for the `buffered` observers. As
   specified (w3c/reporting#284), `Report` and the report bodies are dictionaries: the observers get plain objects
   (`JSON.stringify()` serializes them), without the `toJSON()` method and the `Report` interface of the browsers. The
@@ -1812,8 +1880,10 @@ of the embedder policy, the `permissions-policy-violation` reports of [Permissio
   global object as client (its cookies, as in the browsers; the specification has no client) and the keepalive flag, so
   that the reports of a document that is unloaded are sent. A `410` response removes the endpoint, the failures are
   counted, and nothing is retried. The reports whose destination names no endpoint are only observed.
+- The `coop` reports of the opener policies are described in [Auxiliary browsing contexts](#auxiliary-browsing-contexts) (the `Cross-Origin-Opener-Policy`
+  header); the reports of the navigations are delivered without document, so they are not observed.
 - No `deprecation` or `intervention` report is generated (no feature of the library is deprecated), nor are the reports
-  of Document Policy, COOP and the Crash Reporting API (`crashReport`). The `permissions-policy-violation` reports are
+  of the Crash Reporting API (`crashReport`). The `permissions-policy-violation` reports are
   described in [Permissions Policy](#permissions-policy).
 
 ## Permissions Policy
@@ -4232,6 +4302,7 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `UserTimingEnabled` | `PerformanceMark`, `PerformanceMeasure`, `performance.mark()`, `measure()`, `clearMarks()`, `clearMeasures()` and the `mark` and `measure` entry types |
 | `NavigationTimingEnabled` | `PerformanceNavigationTiming`, `PerformanceTiming`, `PerformanceNavigation`, `performance.timing`, `performance.navigation` and the `navigation` entry type |
 | `LongTasksEnabled` | `PerformanceLongTaskTiming`, `TaskAttributionTiming` and the `longtask` entry type: no task is reported |
+| `LongAnimationFramesEnabled` | `PerformanceLongAnimationFrameTiming`, `PerformanceScriptTiming` and the `long-animation-frame` entry type: no frame is reported |
 | `ScrollDrivenAnimationsEnabled` | `ScrollTimeline`, `ViewTimeline`, `Animation.rangeStart` and `Animation.rangeEnd`; the scroll and view timelines of `animation-timeline` are then no timeline |
 | `SvgAnimationsEnabled` | The SVG animations (SMIL): the `animate`, `set`, `animateMotion` and `animateTransform` elements have no effect and fire no event, and `TimeEvent` is hidden |
 | `MediaSourceEnabled` | The [Media Source Extensions](#media-source-extensions): `MediaSource`, `MediaSourceHandle`, `SourceBuffer`, `SourceBufferList`, `ManagedMediaSource`, `ManagedSourceBuffer`, `BufferedChangeEvent` and the `sourceBuffer` attribute of the tracks |

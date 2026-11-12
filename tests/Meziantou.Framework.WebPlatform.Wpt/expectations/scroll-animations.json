@@ -709,7 +709,7 @@
     "total": 1
   },
   "scroll-animations/responsive/repaint-after-finished.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "scroll-animations/scroll-timelines/animation-with-animatable-interface.html": {
     "reftest": "PASS"
@@ -1003,12 +1003,7 @@
     "total": 1
   },
   "scroll-animations/view-timelines/view-timeline-sticky-inline-ancestor.html": {
-    "total": 3,
-    "failures": {
-      "A sticky inline ancestor adjusts the timeline like a sticky block ancestor at scrollTop 280": "FAIL",
-      "A sticky inline ancestor adjusts the timeline like a sticky block ancestor at scrollTop 300": "FAIL",
-      "A sticky inline ancestor adjusts the timeline like a sticky block ancestor at scrollTop 320": "FAIL"
-    }
+    "total": 3
   },
   "scroll-animations/view-timelines/view-timeline-sticky-inline.html": {
     "total": 1

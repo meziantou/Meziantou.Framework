@@ -35,6 +35,12 @@ public partial class HtmlTrackElement
     private string _trackUrl = "";
 
     /// <summary>
+    /// The URL record of the track URL, or null when it is the empty string: the fetch uses it, as its serialization does not
+    /// keep its flags (the potentially dangling markup flag, which blocks the fetch of a URL whose input had a newline and a "&lt;").
+    /// </summary>
+    private Urls.UrlRecord? _trackUrlRecord;
+
+    /// <summary>
     /// The blob URL entry of the track URL, resolved when the <c>src</c> attribute is set (https://url.spec.whatwg.org/#concept-url-blob-entry):
     /// the blob is fetched even if the URL is revoked before the track processing model fetches it.
     /// </summary>
@@ -92,10 +98,9 @@ public partial class HtmlTrackElement
                 // empty string. The specification keeps the track URL when the attribute is removed; an element without
                 // attribute has no track URL here, so that the removal aborts the load of the previous URL (WPT
                 // track-element-src-change-error.html)
-                _trackUrl = string.IsNullOrEmpty(value) ? "" : Reflection.EncodingParseAndSerializeUrl(NodeDocument, value) ?? "";
-                _trackUrlBlobEntry = _trackUrl.StartsWith("blob:", StringComparison.Ordinal) && Urls.UrlParser.Parse(_trackUrl, baseUrl: null) is { } trackUrl
-                    ? FileApi.BlobUrlStore.Get(NodeDocument).Resolve(trackUrl)
-                    : null;
+                _trackUrlRecord = string.IsNullOrEmpty(value) ? null : Reflection.EncodingParseUrl(NodeDocument, value);
+                _trackUrl = _trackUrlRecord?.Serialize() ?? "";
+                _trackUrlBlobEntry = _trackUrlRecord is { Scheme: "blob" } trackUrl ? FileApi.BlobUrlStore.Get(NodeDocument).Resolve(trackUrl) : null;
 
                 // Whenever the src attribute is set, changed, or removed, the list of cues of the text track is emptied
                 Track.ClearCues();
@@ -238,10 +243,11 @@ public partial class HtmlTrackElement
             var track = Track;
             track.ReadinessState = TextTrackReadinessState.Loading;
             _loadedUrl = _trackUrl;
+            var loadedUrlRecord = _trackUrlRecord;
             var blobUrlEntry = _trackUrlBlobEntry;
             var media = ParentNode as HtmlMediaElement;
             var document = NodeDocument;
-            if (_loadedUrl.Length == 0 || Urls.UrlParser.Parse(_loadedUrl, baseUrl: null) is not { } url || !Fetch(generation, document, url, blobUrlEntry, media))
+            if (_loadedUrl.Length == 0 || loadedUrlRecord?.Clone() is not { } url || !Fetch(generation, document, url, blobUrlEntry, media))
             {
                 // The URL is the empty string, or nothing can be fetched: the readiness state changes to failed to load and
                 // an error event is fired at the element, in a task

@@ -10,9 +10,9 @@ description: "The results of the web-platform-tests of editing, and why the test
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 73 | 128 | 0 | 57% |
-| [Tentative](#tentative-tests) | 26 | 61 | 0 | 43% |
+| [Tentative](#tentative-tests) | 27 | 61 | 0 | 44% |
 | [Reftests](#reftests) | 1 | 2 | 0 | 50% |
-| **All** | **100** | **191** | **0** | **52%** |
+| **All** | **101** | **191** | **0** | **53%** |
 
 ## Failure reasons
 
@@ -20,8 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 33
 - **TEST BUG**: 53
-- **NOT IMPLEMENTED**: 23
-- **TEST RUNNER**: 1
+- **NOT IMPLEMENTED**: 22
 
 ## Stable tests
 
@@ -209,7 +208,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`other/removing-inline-style-specified-by-parent-block.tentative.html`](https://wpt.fyi/results/editing/other/removing-inline-style-specified-by-parent-block.tentative.html) | Pass | 12 / 12 |  |  |
 | [`other/typing-around-link-element-at-collapsed-selection.tentative.html`](https://wpt.fyi/results/editing/other/typing-around-link-element-at-collapsed-selection.tentative.html) | Fail | 234 / 268 | BUG | 34 of 268 subtests (variants with a `<b>` or `<i>` in the link); none passes in Chrome or Firefox. 16 pass in Safari only: the text typed at a boundary of `<a href><b>abc</b></a>` is expected in a `<b>` that is moved around the link (`<p><b>XY<a href="about:blank">abc</a></b></p>`), where the library keeps the link as it is and gives the text the formatting of the caret (`<p><a href="about:blank"><b>abc</b></a><b>XY</b></p>`, or `<b><i>XY</i><a ...>` instead of `<b><i>XY<a ...>`). 18 fail in every browser (e.g. after the deletion of the character before `<a href><b>abc</b></a>`, the text is expected in a new `<b>` around the link: the library inserts it before the link, unformatted). |
 | [`other/typing-around-link-element-at-non-collapsed-selection.tentative.html`](https://wpt.fyi/results/editing/other/typing-around-link-element-at-non-collapsed-selection.tentative.html) | Pass | 188 / 188 |  |  |
-| [`other/typing-space-in-editable-button.tentative.html`](https://wpt.fyi/results/editing/other/typing-space-in-editable-button.tentative.html) | Fail | 3 / 4 | NOT IMPLEMENTED, TEST RUNNER | `Selection.collapse()` into an editing host does not focus it: in the first subtest the caret is put in `<button contenteditable>` without `focus()`, so the Space key is dispatched to the body and no `click` is fired on the button (Safari fails this subtest too).; the emulated Space key is inserted as text in the editable content when the focused element is an editable `<button>`: the label of the focused button in `<div contenteditable>` becomes ` HelloWorld`, where the browsers let the button handle the key (a `click` is fired and the label is unchanged). |
+| [`other/typing-space-in-editable-button.tentative.html`](https://wpt.fyi/results/editing/other/typing-space-in-editable-button.tentative.html) | Pass | 4 / 4 |  |  |
 | [`other/typing-space-in-editable-summary.tentative.html`](https://wpt.fyi/results/editing/other/typing-space-in-editable-summary.tentative.html) | Pass | 4 / 4 |  |  |
 | [`whitespaces/chrome-compat/delete-img.tentative.html`](https://wpt.fyi/results/editing/whitespaces/chrome-compat/delete-img.tentative.html) | Pass | 7 / 7 |  |  |
 | [`whitespaces/chrome-compat/delete-to-join-blocks.tentative.html`](https://wpt.fyi/results/editing/whitespaces/chrome-compat/delete-to-join-blocks.tentative.html) | Fail | 12 / 18 | TEST BUG | 6 of 18 subtests expect the structure that only Chrome produces when a child block is joined with the text of its parent (`<div>a<div>[]&nbsp;&nbsp;&nbsp;b</div></div>` expects the outer `<div>` to be removed: `a&nbsp; &nbsp;b`; `<div><div>a</div>[]&nbsp;&nbsp;&nbsp;b</div>` expects the inner one to be removed); the library keeps the blocks, as Firefox and Safari (the white space is the expected one). |

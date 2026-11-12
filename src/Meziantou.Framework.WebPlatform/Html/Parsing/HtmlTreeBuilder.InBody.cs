@@ -1021,62 +1021,75 @@ internal sealed partial class HtmlTreeBuilder
 
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inforeign (an SVG script end tag): the element is
-    /// popped, and the SVG script element is processed (it runs when the browsing context has a script engine). As for the
-    /// HTML script elements, the scripts parsed by the fragment parsing algorithm never run. Unlike the specification, the
-    /// parser pause flag is not set while the script is processed, as in the browsers: the characters written by
-    /// <c>document.write()</c> are parsed (and their scripts run) during the write, as for an HTML script element.
+    /// popped, and the SVG script element is processed. As in the browsers, it is prepared as an HTML script element (see
+    /// <see cref="PrepareParsedScript"/>): a classic external script without <c>async</c> or <c>defer</c> attribute blocks
+    /// the parser, and a module script is deferred.
     /// </summary>
     private void ProcessSvgScriptEndTag()
     {
-        var script = CurrentNode;
-        PopCurrentNode();
-
-        // https://w3c.github.io/trusted-types/dist/spec/#setting-slot-values-from-parser
-        if (script is SvgScriptElement parsedScript)
+        var element = CurrentNode;
+        if (element is SvgScriptElement)
         {
-            parsedScript.ScriptText = TakeParsedScriptText(parsedScript);
+            PerformMicrotaskCheckpointBeforeScript();
         }
 
-        var runsScripts = ContextElement is null || (IsStreaming && ScriptingMode == ParserScriptingMode.Fragment);
-        if (runsScripts && script is SvgScriptElement svgScript)
+        PopCurrentNode();
+        if (element is SvgScriptElement script)
         {
-            // As for an HTML script element whose parser document is not its node document, a script moved to another
-            // document while it was parsed does not run (https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element:
-            // the check comes after the one of the connected elements, so a script of the template contents is not marked)
-            if (svgScript.IsConnected && !IsInScriptDocument(svgScript))
+            // https://w3c.github.io/trusted-types/dist/spec/#setting-slot-values-from-parser
+            script.ScriptText = TakeParsedScriptText(script);
+            PrepareParsedScript(script.Core);
+        }
+    }
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/parsing.html#scriptEndTag: prepares the script element whose end tag was parsed,
+    /// with the insertion point just before the next input character and the script nesting level incremented. The parser
+    /// pauses when the script is the pending parsing-blocking script.
+    /// </summary>
+    private void PrepareParsedScript(ScriptElementCore script)
+    {
+        // The scripts streamed with runScripts run when their end tag is parsed, as the scripts inserted by a script
+        // (approximating https://whatpr.org/html/12758/parsing.html#scriptEndTag, which pauses the parser)
+        if (IsStreaming && ScriptingMode == ParserScriptingMode.Fragment)
+        {
+            // A script moved to another document while it was parsed, or created in the new node document of an adopted
+            // target, does not run: its node document is not the document of the stream (the parser document of the other
+            // parsed scripts)
+            if (script.Element.IsConnected && !IsInScriptDocument(script.Element))
             {
-                svgScript.MarkAsAlreadyProcessed();
+                script.AlreadyStarted = true;
                 return;
             }
 
-            // The streamed scripts run as the scripts inserted by a script (see the end tag of an HTML script element)
-            if (IsStreaming)
-            {
-                svgScript.IsParserInserted = false;
-            }
+            script.ParserDocument = null;
+            (_streamedScripts ??= []).Add(script);
+        }
 
-            PerformMicrotaskCheckpointBeforeScript();
-            var oldInsertionPoint = InsertionPoint;
-            InsertionPoint = _tokenizer.PositionFromEnd;
-            ScriptNestingLevel++;
+        // The characters written by the script are inserted just before the next input character
+        var oldInsertionPoint = InsertionPoint;
+        InsertionPoint = _tokenizer.PositionFromEnd;
+        ScriptNestingLevel++;
+        script.Prepare();
+        ScriptNestingLevel--;
+        if (ScriptNestingLevel == 0)
+        {
+            ParserPauseFlag = false;
+        }
 
-            // An external script written by a running script waits until that script returns, and pauses the parsing of the
-            // characters written after it
-            var pendingScripts = ScriptNestingLevel > 1 ? PendingSvgScripts ??= [] : null;
-            var pendingCount = pendingScripts?.Count ?? 0;
-            svgScript.Process(pendingScripts);
-            ScriptNestingLevel--;
-            if (ScriptNestingLevel == 0)
-            {
-                ParserPauseFlag = false;
-            }
-            else if (pendingScripts is not null && pendingScripts.Count > pendingCount)
+        InsertionPoint = oldInsertionPoint;
+
+        // The parser pauses until the pending parsing-blocking script is executed (see ScriptingParser)
+        if (_document.PendingParsingBlockingScript is not null)
+        {
+            if (ScriptNestingLevel != 0)
             {
                 ParserPauseFlag = true;
             }
-
-            InsertionPoint = oldInsertionPoint;
-            RunPendingSvgScripts();
+            else
+            {
+                _pausedForScript = true;
+            }
         }
     }
 

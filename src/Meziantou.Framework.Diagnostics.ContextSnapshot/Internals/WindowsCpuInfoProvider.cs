@@ -94,6 +94,11 @@ internal static class WindowsCpuInfoProvider
                     break;
 
                 case LOGICAL_PROCESSOR_RELATIONSHIP.RelationProcessorCore:
+                    // GroupMask is a variable-length array of GroupCount items: they must all be inside the entry
+                    var groupMaskOffset = (uint)((byte*)&info->Anonymous.Processor.GroupMask - (byte*)info);
+                    if (info->Size < groupMaskOffset || (info->Size - groupMaskOffset) / (uint)sizeof(GROUP_AFFINITY) < info->Anonymous.Processor.GroupCount)
+                        return;
+
                     physicalCoreCount++;
                     logicalCoreCount += CountLogicalProcessors(ref info->Anonymous.Processor);
                     break;
@@ -103,6 +108,7 @@ internal static class WindowsCpuInfoProvider
         }
     }
 
+    // The caller checks that the GroupCount items of GroupMask are inside the entry
     private static int CountLogicalProcessors(ref PROCESSOR_RELATIONSHIP processor)
     {
         var count = 0;

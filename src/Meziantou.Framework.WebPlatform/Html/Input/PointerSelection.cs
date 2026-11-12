@@ -146,7 +146,7 @@ namespace Meziantou.Framework.WebPlatform.Html
             {
                 if (ReferenceEquals(anchorNode.GetRoot(), node.GetRoot()) && (!selection.IsCollapsed || Selection.FireSelectStart(anchorNode)))
                 {
-                    selection.SetBaseAndExtent(anchorNode, selection.AnchorOffset, node, offset);
+                    selection.SetBaseAndExtentCore(anchorNode, selection.AnchorOffset, node, offset);
                     if (primary)
                     {
                         topDocument.PointerSelectionState = new State(document) { AnchorNode = anchorNode, AnchorOffset = selection.AnchorOffset };
@@ -171,7 +171,7 @@ namespace Meziantou.Framework.WebPlatform.Html
             if (!Selection.FireSelectStart(node) || !node.IsConnected)
                 return;
 
-            selection.Collapse(node, Math.Min(offset, DomRange.GetNodeLength(node)));
+            selection.CollapseCore(node, Math.Min(offset, DomRange.GetNodeLength(node)));
             if (primary)
             {
                 topDocument.PointerSelectionState = new State(document) { AnchorNode = node, AnchorOffset = offset, PressedElement = pressedElement };
@@ -241,7 +241,7 @@ namespace Meziantou.Framework.WebPlatform.Html
                 return;
             }
 
-            selection.SetBaseAndExtent(anchorNode, Math.Min(state.AnchorOffset, DomRange.GetNodeLength(anchorNode)), node, offset);
+            selection.SetBaseAndExtentCore(anchorNode, Math.Min(state.AnchorOffset, DomRange.GetNodeLength(anchorNode)), node, offset);
         }
 
         /// <summary>The default action of a mouseup event of the primary button: the selection that is being made ends.</summary>
@@ -253,7 +253,7 @@ namespace Meziantou.Framework.WebPlatform.Html
             topDocument.PointerSelectionState = null;
             if (state is { InSelection: true, AnchorNode: { IsConnected: true } node } && state.Document.GetSelection() is { } selection && Selection.FireSelectStart(node))
             {
-                selection.Collapse(node, Math.Min(state.AnchorOffset, DomRange.GetNodeLength(node)));
+                selection.CollapseCore(node, Math.Min(state.AnchorOffset, DomRange.GetNodeLength(node)));
             }
         }
 

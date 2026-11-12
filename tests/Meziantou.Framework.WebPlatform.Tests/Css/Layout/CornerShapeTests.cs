@@ -204,19 +204,25 @@ public sealed class CornerShapeTests : IDisposable
     }
 
     [Theory]
-    [InlineData("corner", "10px bevel", "10px bevel")]
-    [InlineData("corner", "round 30%", "30% round")]
-    [InlineData("corner", "normal", "normal")]
-    [InlineData("corner", "0px round", "normal")]
-    [InlineData("corner", "0px notch", "0px notch")]
-    [InlineData("corner", "4px 2% round / bevel 1em / normal", "4px 2% round / 1em bevel / normal")]
-    [InlineData("corner", "10px round / 10px round", "10px round")]
-    [InlineData("corner-top", "round 10% / 2rem squircle", "10% round / 2rem squircle")]
-    [InlineData("corner-top-left", "superellipse(-0.5) 30% 10px", "30% 10px superellipse(-0.5)")]
-    [InlineData("corner", "10px", "")]
-    [InlineData("corner", "scoop", "")]
+    [InlineData("corner", "10px bevel", "bevel 10px")]
+    [InlineData("corner", "round 30%", "30%")]
+    [InlineData("corner", "round", "0px")]
+    [InlineData("corner", "0px round", "0px")]
+    [InlineData("corner", "0px notch", "notch")]
+    [InlineData("corner", "0% bevel", "bevel 0%")]
+    [InlineData("corner", "10px", "10px")]
+    [InlineData("corner", "scoop", "scoop")]
+    [InlineData("corner", "bevel square bevel square 10px / 100%", "bevel square 10px / 100%")]
+    [InlineData("corner-top", "round 10% / 2rem", "10% / 2rem")]
+    [InlineData("corner-top", "10px 20px / 5px bevel scoop", "bevel scoop 10px 20px / 5px")]
+    [InlineData("corner-top-left", "superellipse(-0.5) 30% 10px", "superellipse(-0.5) 30% 10px")]
+    [InlineData("corner-top-left", "10px / 5px notch", "notch 10px 5px")]
+    [InlineData("corner", "normal", "")]
     [InlineData("corner", "3% normal", "")]
+    [InlineData("corner", "10px round / 20px bevel", "")]
+    [InlineData("corner", "10px round 5px", "")]
     [InlineData("corner-top-left", "round / 4px", "")]
+    [InlineData("corner-top-left", "10px 5px / 3px", "")]
     public void CornerShorthands_AreParsedAndSerialized(string property, string value, string expected)
     {
         var document = Parse("<div id=box></div>");
@@ -228,19 +234,19 @@ public sealed class CornerShapeTests : IDisposable
     [Fact]
     public void CornerShorthands_SetTheRadiiAndTheShapes()
     {
-        var document = Parse("<div id=box style='corner: 4px 2% round / 1em bevel / normal'></div>");
+        var document = Parse("<div id=box style='corner-shape: notch; corner: 4px 2% 1em / 3px round bevel'></div>");
         var style = ((HtmlElement)document.GetElementById("box")!).Style;
-        Assert.Equal("4px 2%", style.GetPropertyValue("border-top-left-radius"));
+        Assert.Equal("4px 3px", style.GetPropertyValue("border-top-left-radius"));
         Assert.Equal("round", style.GetPropertyValue("corner-top-left-shape"));
-        Assert.Equal("1em", style.GetPropertyValue("border-top-right-radius"));
+        Assert.Equal("2% 3px", style.GetPropertyValue("border-top-right-radius"));
         Assert.Equal("bevel", style.GetPropertyValue("corner-top-right-shape"));
-        Assert.Equal("0px", style.GetPropertyValue("border-bottom-right-radius"));
+        Assert.Equal("1em 3px", style.GetPropertyValue("border-bottom-right-radius"));
         Assert.Equal("round", style.GetPropertyValue("corner-bottom-right-shape"));
-        Assert.Equal("1em", style.GetPropertyValue("border-bottom-left-radius"));
+        Assert.Equal("2% 3px", style.GetPropertyValue("border-bottom-left-radius"));
         Assert.Equal("bevel", style.GetPropertyValue("corner-bottom-left-shape"));
 
         var computed = document.DefaultView!.GetComputedStyle(document.GetElementById("box")!);
-        Assert.Equal("4px 2% superellipse(1) / 16px superellipse(0) / normal", computed.GetPropertyValue("corner"));
+        Assert.Equal("superellipse(1) superellipse(0) 4px 2% 16px / 3px", computed.GetPropertyValue("corner"));
     }
 
     [Theory]

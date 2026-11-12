@@ -50,6 +50,8 @@ public sealed partial class UserInput
         pointer.PreventMouseEvent = false;
         pointer.PreviousTarget = null;
         pointer.NeedsOverEvent = false;
+        pointer.DetachedPreviousTarget = null;
+        pointer.EnteredAncestors = null;
         pointer.CaptureTarget = null;
         pointer.PendingCaptureTarget = null;
         pointer.DownX = pointer.X;
@@ -255,6 +257,8 @@ public sealed partial class UserInput
         pointer.PendingCaptureTarget = null;
         pointer.PreviousTarget = null;
         pointer.NeedsOverEvent = false;
+        pointer.DetachedPreviousTarget = null;
+        pointer.EnteredAncestors = null;
         pointer.PreventMouseEvent = false;
         pointer.DownTargets?.Clear();
         pointer.TouchTarget = null;

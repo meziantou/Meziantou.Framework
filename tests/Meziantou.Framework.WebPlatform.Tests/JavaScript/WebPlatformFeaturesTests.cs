@@ -65,6 +65,7 @@ public sealed class WebPlatformFeaturesTests : IDisposable
           SoftNavigationsEnabled: typeof PerformanceSoftNavigation + typeof InteractionContentfulPaint + PerformanceObserver.supportedEntryTypes.includes('soft-navigation') + PerformanceObserver.supportedEntryTypes.includes('interaction-contentful-paint'),
           UserTimingEnabled: typeof PerformanceMark + typeof PerformanceMeasure + typeof performance.mark + typeof performance.measure + PerformanceObserver.supportedEntryTypes.includes('mark'),
           LongTasksEnabled: typeof PerformanceLongTaskTiming + typeof TaskAttributionTiming + PerformanceObserver.supportedEntryTypes.includes('longtask'),
+          LongAnimationFramesEnabled: typeof PerformanceLongAnimationFrameTiming + typeof PerformanceScriptTiming + PerformanceObserver.supportedEntryTypes.includes('long-animation-frame'),
           InputPendingEnabled: typeof navigator.scheduling + typeof Scheduling + ('scheduling' in navigator),
           NavigationTimingEnabled: typeof PerformanceNavigationTiming + typeof PerformanceTiming + typeof PerformanceNavigation + typeof performance.timing + PerformanceObserver.supportedEntryTypes.includes('navigation') + ('navigation' in Performance.prototype),
           ScrollDrivenAnimationsEnabled: typeof ScrollTimeline + typeof ViewTimeline + ('rangeStart' in Animation.prototype),
@@ -91,6 +92,7 @@ public sealed class WebPlatformFeaturesTests : IDisposable
           FileSystemEnabled: typeof FileSystemHandle + typeof FileSystemFileHandle + typeof FileSystemDirectoryHandle + typeof FileSystemWritableFileStream + String(typeof StorageManager !== 'undefined' && 'getDirectory' in StorageManager.prototype),
           VisibilityStateEntryEnabled: typeof VisibilityStateEntry + PerformanceObserver.supportedEntryTypes.includes('visibility-state'),
           CssParserApiEnabled: typeof CSS.parseStylesheet + typeof CSS.parseRuleList + typeof CSS.parseRule + typeof CSS.parseDeclarationList + typeof CSS.parseDeclaration + typeof CSS.parseValue + typeof CSS.parseValueList + typeof CSS.parseCommaValueList + ('parseValue' in CSS) + typeof CSSParserRule + typeof CSSParserAtRule + typeof CSSParserQualifiedRule + typeof CSSParserDeclaration + typeof CSSParserValue + typeof CSSParserBlock + typeof CSSParserFunction,
+          WebMcpEnabled: typeof document.modelContext + typeof ModelContext + typeof Tool + typeof ToolActivatedEvent + typeof ToolCancelEvent + ('modelContext' in document),
           CanvasEnabled: typeof CanvasRenderingContext2D + typeof CanvasGradient + typeof CanvasPattern + typeof TextMetrics + typeof Path2D + typeof OffscreenCanvas + typeof OffscreenCanvasRenderingContext2D + ('transferControlToOffscreen' in HTMLCanvasElement.prototype),
         };
         document.title = JSON.stringify(probes);

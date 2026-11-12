@@ -51,6 +51,8 @@ public sealed partial class Window : GlobalScope
 
     internal override void QueueGlobalTask(Action task) => Document.QueueGlobalTask(task);
 
+    internal override void RunGlobalTask(Action task) => Document.RunGlobalTask(task);
+
     internal override TimeSpan SuspendedDuration => Document.GetSuspendedDuration();
 
     internal override bool AreTimersSuspended => Document.IsSuspended;

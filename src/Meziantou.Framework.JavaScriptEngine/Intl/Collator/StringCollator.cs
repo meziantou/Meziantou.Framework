@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.JavaScriptEngine.Intl.Data;
@@ -452,23 +453,25 @@ internal sealed class StringCollator
             return 0;
 
         // The other levels
+        // The elements of short texts are on the stack (up to 1 KB), the others in a rented array
         var xCount = CountFastElements(x);
         var yCount = CountFastElements(y);
-        if (xCount + yCount <= 512)
+        ulong[]? rented = null;
+        var elements = xCount + yCount <= 128 ? stackalloc ulong[xCount + yCount] : (rented = ArrayPool<ulong>.Shared.Rent(xCount + yCount));
+        try
         {
-            Span<ulong> xElements = stackalloc ulong[xCount];
-            Span<ulong> yElements = stackalloc ulong[yCount];
+            var xElements = elements[..xCount];
+            var yElements = elements.Slice(xCount, yCount);
             FillFastElements(x, xElements);
             FillFastElements(y, yElements);
             return CompareElements(xElements, yElements, comparePrimaries: false);
         }
-        else
+        finally
         {
-            var xElements = new ulong[xCount];
-            var yElements = new ulong[yCount];
-            FillFastElements(x, xElements);
-            FillFastElements(y, yElements);
-            return CompareElements(xElements, yElements, comparePrimaries: false);
+            if (rented is not null)
+            {
+                ArrayPool<ulong>.Shared.Return(rented);
+            }
         }
     }
 

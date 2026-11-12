@@ -59,6 +59,8 @@ public sealed class CssPrettyFormatter : CssFormatter
 
         private bool _isFirstLine = true;
 
+        internal override bool WritePendingLonghandsAsShorthand => true;
+
         protected override void WritePrelude(CssRule rule, string prelude)
         {
             StartItem();

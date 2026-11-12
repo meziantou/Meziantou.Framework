@@ -142,6 +142,30 @@ public sealed class CssFormatterTests
             """, sheet.ToCss(new CssPrettyFormatter()));
     }
 
+    [Fact]
+    public void Formatters_WriteTheShorthandOfTheLonghandsWithPendingSubstitutionValues()
+    {
+        // The longhands set by a shorthand with var() and not serialized as the shorthand have no value in the CSSOM (as in
+        // the browsers): the formatters write the shorthand, followed by the declaration that overrides one of its longhands
+        var sheet = new CssStyleSheet();
+        sheet.ReplaceSync(".a { border: var(--w) solid currentcolor; border-right-color: transparent }");
+        Assert.StartsWith(".a { border-top-width: ; border-right-width: ;", sheet.CssRules[0].CssText, StringComparison.Ordinal);
+
+        var minified = sheet.ToCss(new CssMinifyFormatter());
+        Assert.Equal(".a{border:var(--w) solid currentcolor;border-right-color:transparent}", minified);
+        var minifiedSheet = new CssStyleSheet();
+        minifiedSheet.ReplaceSync(minified);
+        Assert.Equal(sheet.CssRules[0].CssText, minifiedSheet.CssRules[0].CssText);
+        Assert.Equal(minified, minifiedSheet.ToCss(new CssMinifyFormatter()));
+
+        Assert.Equal("""
+            .a {
+              border: var(--w) solid currentcolor;
+              border-right-color: transparent;
+            }
+            """, sheet.ToCss(new CssPrettyFormatter()));
+    }
+
     [Theory]
     [InlineData(":root { --x: calc(1px /* a", ":root { --x: calc(1px /* a*/); }")]
     [InlineData(":root { --x: f(a /* ) */ /* )", ":root { --x: f(a /* ) */ /* )*/); }")]

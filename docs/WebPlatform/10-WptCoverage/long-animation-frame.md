@@ -9,76 +9,77 @@ description: "The results of the web-platform-tests of long-animation-frame, and
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 40 | 40 | – |
-| [Tentative](#tentative-tests) | 0 | 13 | 13 | – |
+| [Stable](#stable-tests) | 32 | 40 | 0 | 80% |
+| [Tentative](#tentative-tests) | 1 | 13 | 0 | 8% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **53** | **53** | **–** |
+| **All** | **33** | **53** | **0** | **62%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 53
+- **NOT IMPLEMENTED**: 18
+- **TEST RUNNER**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`loaf-basic.html`](https://wpt.fyi/results/long-animation-frame/loaf-basic.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-blocking-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-blocking-duration.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-bound-function-opaque-sanitization.html`](https://wpt.fyi/results/long-animation-frame/loaf-bound-function-opaque-sanitization.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-buffered.html`](https://wpt.fyi/results/long-animation-frame/loaf-buffered.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-container-queries.html`](https://wpt.fyi/results/long-animation-frame/loaf-container-queries.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-cross-origin-isolated.https.html`](https://wpt.fyi/results/long-animation-frame/loaf-cross-origin-isolated.https.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-duration-clamping.html`](https://wpt.fyi/results/long-animation-frame/loaf-duration-clamping.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-event-blocking-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-event-blocking-duration.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-event-listener.html`](https://wpt.fyi/results/long-animation-frame/loaf-event-listener.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-first-ui-event.html`](https://wpt.fyi/results/long-animation-frame/loaf-first-ui-event.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-forced-layout-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-forced-layout-duration.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-forced-style-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-forced-style-duration.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-idle.html`](https://wpt.fyi/results/long-animation-frame/loaf-idle.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-iframe-crossorigin.html`](https://wpt.fyi/results/long-animation-frame/loaf-iframe-crossorigin.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-iframe-same-origin.html`](https://wpt.fyi/results/long-animation-frame/loaf-iframe-same-origin.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-iframe-self.html`](https://wpt.fyi/results/long-animation-frame/loaf-iframe-self.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-layout-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-layout-duration.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-onmessage.html`](https://wpt.fyi/results/long-animation-frame/loaf-onmessage.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-paint-mixin.html`](https://wpt.fyi/results/long-animation-frame/loaf-paint-mixin.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-pause-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-pause-duration.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-pointer-without-render-iframe.html`](https://wpt.fyi/results/long-animation-frame/loaf-pointer-without-render-iframe.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-pointer-without-render.html`](https://wpt.fyi/results/long-animation-frame/loaf-pointer-without-render.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-popup.html`](https://wpt.fyi/results/long-animation-frame/loaf-popup.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-promise-scheduled-render.html`](https://wpt.fyi/results/long-animation-frame/loaf-promise-scheduled-render.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-promise.html`](https://wpt.fyi/results/long-animation-frame/loaf-promise.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-script-block.html`](https://wpt.fyi/results/long-animation-frame/loaf-script-block.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-script-detached-window.html`](https://wpt.fyi/results/long-animation-frame/loaf-script-detached-window.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-script-nested-callback.html`](https://wpt.fyi/results/long-animation-frame/loaf-script-nested-callback.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-script-window-attribution.html`](https://wpt.fyi/results/long-animation-frame/loaf-script-window-attribution.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-source-location-redirect.html`](https://wpt.fyi/results/long-animation-frame/loaf-source-location-redirect.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-source-location.html`](https://wpt.fyi/results/long-animation-frame/loaf-source-location.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-stream.html`](https://wpt.fyi/results/long-animation-frame/loaf-stream.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-style-and-layout-duration-bounds.html`](https://wpt.fyi/results/long-animation-frame/loaf-style-and-layout-duration-bounds.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-style-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-style-duration.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-supportedEntryTypes.html`](https://wpt.fyi/results/long-animation-frame/loaf-supportedEntryTypes.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-timeline.html`](https://wpt.fyi/results/long-animation-frame/loaf-timeline.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-toJSON.html`](https://wpt.fyi/results/long-animation-frame/loaf-toJSON.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-ui-event-render-start.html`](https://wpt.fyi/results/long-animation-frame/loaf-ui-event-render-start.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-user-callback.html`](https://wpt.fyi/results/long-animation-frame/loaf-user-callback.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-visibility.html`](https://wpt.fyi/results/long-animation-frame/loaf-visibility.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
+| [`loaf-basic.html`](https://wpt.fyi/results/long-animation-frame/loaf-basic.html) | Pass | 5 / 5 |  |  |
+| [`loaf-blocking-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-blocking-duration.html) | Pass | 4 / 4 |  |  |
+| [`loaf-bound-function-opaque-sanitization.html`](https://wpt.fyi/results/long-animation-frame/loaf-bound-function-opaque-sanitization.html) | Pass | 1 / 1 |  |  |
+| [`loaf-buffered.html`](https://wpt.fyi/results/long-animation-frame/loaf-buffered.html) | Pass | 2 / 2 |  |  |
+| [`loaf-container-queries.html`](https://wpt.fyi/results/long-animation-frame/loaf-container-queries.html) | Pass | 6 / 6 |  |  |
+| [`loaf-cross-origin-isolated.https.html`](https://wpt.fyi/results/long-animation-frame/loaf-cross-origin-isolated.https.html) | Pass | 1 / 1 |  |  |
+| [`loaf-duration-clamping.html`](https://wpt.fyi/results/long-animation-frame/loaf-duration-clamping.html) | Pass | 1 / 1 |  |  |
+| [`loaf-event-blocking-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-event-blocking-duration.html) | Pass | 1 / 1 |  |  |
+| [`loaf-event-listener.html`](https://wpt.fyi/results/long-animation-frame/loaf-event-listener.html) | Pass | 5 / 5 |  |  |
+| [`loaf-first-ui-event.html`](https://wpt.fyi/results/long-animation-frame/loaf-first-ui-event.html) | Fail | 4 / 5 | TEST RUNNER | `test_driver.send_keys()` dispatches the key events synchronously, while the script that calls it runs: the `keydown` listener runs in the script entry point of that script (https://w3c.github.io/long-animation-frames/#create-script-entry-point records nothing while a script is pending), so no `INPUT.onkeydown` script is reported; a browser dispatches them from the task of the user interaction |
+| [`loaf-forced-layout-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-forced-layout-duration.html) | Fail | 5 / 6 | NOT IMPLEMENTED | the subtest `forcedLayoutDuration and forcedStyleAndLayoutDuration are strictly positive after heavy forced layout work`: the library does not measure the time it spends on the styles and the layout: `styleDuration`, `layoutDuration` and the `forced*Duration` of the scripts are 0 (with the virtual clock of the runner, which only advances when it is read, they would be 0 anyway) |
+| [`loaf-forced-style-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-forced-style-duration.html) | Fail | 4 / 5 | NOT IMPLEMENTED | the subtest `forcedStyleDuration and forcedStyleAndLayoutDuration are strictly positive after heavy forced style work`: the library does not measure the time it spends on the styles and the layout: `styleDuration`, `layoutDuration` and the `forced*Duration` of the scripts are 0 (with the virtual clock of the runner, which only advances when it is read, they would be 0 anyway) |
+| [`loaf-idle.html`](https://wpt.fyi/results/long-animation-frame/loaf-idle.html) | Pass | 1 / 1 |  |  |
+| [`loaf-iframe-crossorigin.html`](https://wpt.fyi/results/long-animation-frame/loaf-iframe-crossorigin.html) | Pass | 2 / 2 |  |  |
+| [`loaf-iframe-same-origin.html`](https://wpt.fyi/results/long-animation-frame/loaf-iframe-same-origin.html) | Pass | 2 / 2 |  |  |
+| [`loaf-iframe-self.html`](https://wpt.fyi/results/long-animation-frame/loaf-iframe-self.html) | Pass | 3 / 3 |  |  |
+| [`loaf-layout-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-layout-duration.html) | Fail | 7 / 8 | NOT IMPLEMENTED | the subtest `Heavy render-phase layout produces strictly positive layoutDuration`: the library does not measure the time it spends on the styles and the layout: `styleDuration`, `layoutDuration` and the `forced*Duration` of the scripts are 0 (with the virtual clock of the runner, which only advances when it is read, they would be 0 anyway) |
+| [`loaf-onmessage.html`](https://wpt.fyi/results/long-animation-frame/loaf-onmessage.html) | Pass | 6 / 6 |  |  |
+| [`loaf-paint-mixin.html`](https://wpt.fyi/results/long-animation-frame/loaf-paint-mixin.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the library has no presentation time: the `presentationTime` of the frames is null (https://w3c.github.io/paint-timing/#dom-painttimingmixin-presentationtime), and the test expects it after `paintTime` |
+| [`loaf-pause-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-pause-duration.html) | Fail | 1 / 2 | TEST RUNNER | a synchronous request of a window blocks the thread that advances the virtual clock: the runner answers `delay.py?ms=180` without delay, so the synchronous `XMLHttpRequest` does not pause the script (`pauseDuration` is 0) and the script does not last 360 ms |
+| [`loaf-pointer-without-render-iframe.html`](https://wpt.fyi/results/long-animation-frame/loaf-pointer-without-render-iframe.html) | Pass | 1 / 1 |  |  |
+| [`loaf-pointer-without-render.html`](https://wpt.fyi/results/long-animation-frame/loaf-pointer-without-render.html) | Pass | 1 / 1 |  |  |
+| [`loaf-popup.html`](https://wpt.fyi/results/long-animation-frame/loaf-popup.html) | Pass | 1 / 1 |  |  |
+| [`loaf-promise-scheduled-render.html`](https://wpt.fyi/results/long-animation-frame/loaf-promise-scheduled-render.html) | Pass | 1 / 1 |  |  |
+| [`loaf-promise.html`](https://wpt.fyi/results/long-animation-frame/loaf-promise.html) | Pass | 5 / 5 |  |  |
+| [`loaf-script-block.html`](https://wpt.fyi/results/long-animation-frame/loaf-script-block.html) | Fail | 9 / 10 | NOT IMPLEMENTED | the subtest of the module imported by `import()`: the engine evaluates the imported module in a reaction of the promise of the import, without a host hook, so its evaluation is reported in the `resolve-promise` script of the import (`import.then`), not as a `module-script` |
+| [`loaf-script-detached-window.html`](https://wpt.fyi/results/long-animation-frame/loaf-script-detached-window.html) | Pass | 1 / 1 |  |  |
+| [`loaf-script-nested-callback.html`](https://wpt.fyi/results/long-animation-frame/loaf-script-nested-callback.html) | Pass | 2 / 2 |  |  |
+| [`loaf-script-window-attribution.html`](https://wpt.fyi/results/long-animation-frame/loaf-script-window-attribution.html) | Pass | 7 / 7 |  |  |
+| [`loaf-source-location-redirect.html`](https://wpt.fyi/results/long-animation-frame/loaf-source-location-redirect.html) | Pass | 12 / 12 |  |  |
+| [`loaf-source-location.html`](https://wpt.fyi/results/long-animation-frame/loaf-source-location.html) | Pass | 5 / 5 |  |  |
+| [`loaf-stream.html`](https://wpt.fyi/results/long-animation-frame/loaf-stream.html) | Pass | 3 / 3 |  |  |
+| [`loaf-style-and-layout-duration-bounds.html`](https://wpt.fyi/results/long-animation-frame/loaf-style-and-layout-duration-bounds.html) | Pass | 3 / 3 |  |  |
+| [`loaf-style-duration.html`](https://wpt.fyi/results/long-animation-frame/loaf-style-duration.html) | Fail | 9 / 10 | NOT IMPLEMENTED | the subtest `Heavy render-phase style recalculation produces strictly positive styleDuration`: the library does not measure the time it spends on the styles and the layout: `styleDuration`, `layoutDuration` and the `forced*Duration` of the scripts are 0 (with the virtual clock of the runner, which only advances when it is read, they would be 0 anyway) |
+| [`loaf-supportedEntryTypes.html`](https://wpt.fyi/results/long-animation-frame/loaf-supportedEntryTypes.html) | Pass | 1 / 1 |  |  |
+| [`loaf-timeline.html`](https://wpt.fyi/results/long-animation-frame/loaf-timeline.html) | Pass | 1 / 1 |  |  |
+| [`loaf-toJSON.html`](https://wpt.fyi/results/long-animation-frame/loaf-toJSON.html) | Pass | 1 / 1 |  |  |
+| [`loaf-ui-event-render-start.html`](https://wpt.fyi/results/long-animation-frame/loaf-ui-event-render-start.html) | Pass | 1 / 1 |  |  |
+| [`loaf-user-callback.html`](https://wpt.fyi/results/long-animation-frame/loaf-user-callback.html) | Pass | 10 / 10 |  |  |
+| [`loaf-visibility.html`](https://wpt.fyi/results/long-animation-frame/loaf-visibility.html) | Pass | 2 / 2 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`conditional-measure-iframe-time-origin.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-measure-iframe-time-origin.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`conditional-measure-time-resolve.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-measure-time-resolve.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`conditional-user-timing-basic.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-basic.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`conditional-user-timing-buffer-limit.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-buffer-limit.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`conditional-user-timing-cross-origin-measure.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-cross-origin-measure.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`conditional-user-timing-cross-origin.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-cross-origin.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`conditional-user-timing-detached-window.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-detached-window.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`conditional-user-timing-same-origin.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-same-origin.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-congested-moment-worker.tentative.html`](https://wpt.fyi/results/long-animation-frame/loaf-congested-moment-worker.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-promise-import.tentative.html`](https://wpt.fyi/results/long-animation-frame/loaf-promise-import.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-script-count.tentative.html`](https://wpt.fyi/results/long-animation-frame/loaf-script-count.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`loaf-stream-source-location.tentative.html`](https://wpt.fyi/results/long-animation-frame/loaf-stream-source-location.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
-| [`performance-bind.tentative.html`](https://wpt.fyi/results/long-animation-frame/performance-bind.tentative.html) | Disabled | – | NOT IMPLEMENTED | Long Animation Frames API |
+| [`conditional-measure-iframe-time-origin.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-measure-iframe-time-origin.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | the conditional user timing of the long animation frames (`performance.markConditional()`, `performance.measureConditional()` and `userTimingEntries`), a Chromium experiment that the specification does not define |
+| [`conditional-measure-time-resolve.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-measure-time-resolve.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | the conditional user timing of the long animation frames (`performance.markConditional()`, `performance.measureConditional()` and `userTimingEntries`), a Chromium experiment that the specification does not define |
+| [`conditional-user-timing-basic.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-basic.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | the conditional user timing of the long animation frames (`performance.markConditional()`, `performance.measureConditional()` and `userTimingEntries`), a Chromium experiment that the specification does not define |
+| [`conditional-user-timing-buffer-limit.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-buffer-limit.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | the conditional user timing of the long animation frames (`performance.markConditional()`, `performance.measureConditional()` and `userTimingEntries`), a Chromium experiment that the specification does not define |
+| [`conditional-user-timing-cross-origin-measure.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-cross-origin-measure.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | the conditional user timing of the long animation frames (`performance.markConditional()`, `performance.measureConditional()` and `userTimingEntries`), a Chromium experiment that the specification does not define |
+| [`conditional-user-timing-cross-origin.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-cross-origin.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | the conditional user timing of the long animation frames (`performance.markConditional()`, `performance.measureConditional()` and `userTimingEntries`), a Chromium experiment that the specification does not define |
+| [`conditional-user-timing-detached-window.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-detached-window.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | the conditional user timing of the long animation frames (`performance.markConditional()`, `performance.measureConditional()` and `userTimingEntries`), a Chromium experiment that the specification does not define |
+| [`conditional-user-timing-same-origin.tentative.html`](https://wpt.fyi/results/long-animation-frame/conditional-user-timing-same-origin.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | the conditional user timing of the long animation frames (`performance.markConditional()`, `performance.measureConditional()` and `userTimingEntries`), a Chromium experiment that the specification does not define |
+| [`loaf-congested-moment-worker.tentative.html`](https://wpt.fyi/results/long-animation-frame/loaf-congested-moment-worker.tentative.html) | Timeout | 0 / 5 | NOT IMPLEMENTED | the long animation frames of the dedicated workers (the congested moments), a Chromium experiment (`LongAnimationFrameWorker`) that the specification does not define |
+| [`loaf-promise-import.tentative.html`](https://wpt.fyi/results/long-animation-frame/loaf-promise-import.tentative.html) | Pass | 1 / 1 |  |  |
+| [`loaf-script-count.tentative.html`](https://wpt.fyi/results/long-animation-frame/loaf-script-count.tentative.html) | Fail | 0 / 2 | NOT IMPLEMENTED | `scriptCount`, a Chromium experiment (`LongAnimationFrameWorker`) that the specification does not define |
+| [`loaf-stream-source-location.tentative.html`](https://wpt.fyi/results/long-animation-frame/loaf-stream-source-location.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the promises of the platform have no creation-time attribution (optional, https://w3c.github.io/long-animation-frames/#webidl-monkey-patches): the reactions of the promises of the streams are reported as `Promise.then`, without source location, not as `StreamPromise.resolve.then` |
+| [`performance-bind.tentative.html`](https://wpt.fyi/results/long-animation-frame/performance-bind.tentative.html) | Fail | 0 / 4 | NOT IMPLEMENTED | `performance.bind()` (the `user-entry-point` scripts), a Chromium experiment that the specification does not define |

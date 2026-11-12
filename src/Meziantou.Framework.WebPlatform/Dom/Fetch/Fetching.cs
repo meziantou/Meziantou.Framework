@@ -402,11 +402,26 @@ internal static class Fetching
         if (!response.IsNetworkError && request.Integrity.Length > 0 && !SubresourceIntegrity.Matches(response.Body ?? [], response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect, request.Integrity))
             return FetchResponse.NetworkError();
 
+        // The digests of the Unencoded-Digest header of the response (https://wicg.github.io/signature-based-sri/#verify-unencoded-digest-assertions):
+        // a response whose body arrives over time is not checked (the body of the resource of the loader is only read when
+        // the response has the header)
+        if (!response.IsNetworkError && HeaderList.Get(internalResponse.HeaderList, "Unencoded-Digest") is not null && internalResponse.Resource?.RemainingContentBytes is null
+            && !SubresourceIntegrity.MatchesUnencodedDigest(internalResponse.HeaderList, internalResponse.Body ?? []))
+        {
+            return FetchResponse.NetworkError();
+        }
+
         // Step 19: a null body status, or a HEAD or CONNECT request, has no body
         if (!response.IsNetworkError && (internalResponse.Status is 101 or 103 or 204 or 205 or 304 || request.Method is "HEAD" or "CONNECT"))
         {
             internalResponse.Body = null;
             response.Body = null;
+        }
+
+        // As in Chromium and WebKit, the Link headers of the response of a subresource preload their resources
+        if (!response.IsNetworkError)
+        {
+            LinkPreload.ProcessSubresourceLinkHeaders(request, internalResponse);
         }
 
         return response;
@@ -418,17 +433,27 @@ internal static class Fetching
     /// the navigations of the top-level navigables are not mixed content, the navigations of the child navigables are) or
     /// the enforced content security policies of the client, whose violations are reported (https://w3c.github.io/webappsec-csp/#should-block-request;
     /// the report-only policies are checked before the URL is upgraded, step 4; the policies of a speculative fetch are
-    /// checked by the speculative parser, without reporting).
+    /// checked by the speculative parser, without reporting), and the integrity policies of the client.
     /// </summary>
     private static bool IsBlocked(FetchRequest request)
     {
         // The three checks run: the violations of the content security policies are also reported for a request that is
         // blocked as mixed content (e.g. a ws: WebSocket of a secure context whose policy has connect-src 'none'), as in the browsers
         var blocked = !request.IsSpeculative && ContentSecurityPolicy.ShouldBlockRequest(request);
+
+        // https://w3c.github.io/webappsec-subresource-integrity/#should-request-be-blocked-by-integrity-policy: the violations
+        // are reported (a speculative fetch is checked when its response is used)
+        blocked |= !request.IsSpeculative && IntegrityPolicy.ShouldBlockRequest(request);
+
         var url = request.CurrentUrl;
         if (url.Scheme is "http" or "https")
         {
             if (BadPorts.Contains(url.Port >= 0 ? url.Port : url.Scheme == "https" ? 443 : 80))
+                return true;
+
+            // The dangling markup mitigation (https://github.com/whatwg/fetch/pull/519): a URL whose input had a tab or a
+            // newline and a "<" is likely made of the markup that follows an attribute whose quote is not closed
+            if (url.PotentiallyDanglingMarkup)
                 return true;
 
             if (request.Client is { } mixedContentClient && !(request.Mode == RequestMode.Navigate && request.Destination == RequestDestination.Document) && MixedContent.ShouldBlockFetch(mixedContentClient, url))
@@ -899,8 +924,17 @@ internal static class Fetching
             storedResponse = cache.Select(cacheKey!, includeCredentials, headers);
             if (storedResponse is not null)
             {
-                if (cacheMode is "force-cache" or "only-if-cached" || HttpCache.IsFresh(storedResponse, headers, now))
+                var freshness = cacheMode is "force-cache" or "only-if-cached" ? HttpCacheFreshness.Fresh : HttpCache.GetFreshness(storedResponse, headers, now);
+                if (freshness == HttpCacheFreshness.Fresh)
                     return CreateCachedResponse(request, storedResponse, includeCredentials);
+
+                // https://httpwg.org/specs/rfc5861.html#n-the-stale-while-revalidate-cache-control-extension: the stale
+                // response is used, and it is revalidated in the background
+                if (freshness == HttpCacheFreshness.StaleWhileRevalidate && cacheMode == "default" && !requestDirectives.ContainsKey("only-if-cached"))
+                {
+                    RevalidateInBackground(request, cache, cacheKey!, storedResponse, headers, includeCredentials);
+                    return CreateCachedResponse(request, storedResponse, includeCredentials);
+                }
 
                 // A stale response is validated with its validators (https://httpwg.org/specs/rfc9111.html#validation.sent);
                 // a response without validator is fetched again. A request whose Cache-Control has only-if-cached does not
@@ -985,6 +1019,70 @@ internal static class Fetching
         }
 
         return response;
+    }
+
+    /// <summary>
+    /// The background revalidation of a stored response used within its <c>stale-while-revalidate</c> window
+    /// (https://httpwg.org/specs/rfc5861.html#n-the-stale-while-revalidate-cache-control-extension): a copy of the request is
+    /// sent to the network with the validators of the stored response, and its response updates the HTTP cache once its
+    /// <c>Clear-Site-Data</c> header is processed, as the response of the network of a fetch. As in the
+    /// browsers, the revalidation is not handled by the service workers, is not checked by the content security policies and
+    /// has no resource timing; a single revalidation of a request is in progress at a time.
+    /// </summary>
+    private static void RevalidateInBackground(FetchRequest request, HttpCache cache, string key, HttpCacheEntry storedResponse, List<KeyValuePair<string, string>> requestHeaders, bool includeCredentials)
+    {
+        if (!cache.TryBeginRevalidation(key, includeCredentials))
+            return;
+
+        var revalidationRequest = request.Clone();
+        revalidationRequest.Synchronous = false;
+        revalidationRequest.StreamsBody = false;
+        revalidationRequest.ProcessEarlyHintsResponse = null;
+        _ = RevalidateAsync(revalidationRequest, cache, key, storedResponse, requestHeaders, includeCredentials);
+
+        static async Task RevalidateAsync(FetchRequest request, HttpCache cache, string key, HttpCacheEntry storedResponse, List<KeyValuePair<string, string>> requestHeaders, bool includeCredentials)
+        {
+            try
+            {
+                var headers = new List<KeyValuePair<string, string>>(requestHeaders);
+                var etag = HeaderList.Get(storedResponse.Headers, "ETag");
+                var lastModified = HeaderList.Get(storedResponse.Headers, "Last-Modified");
+                if (etag is not null)
+                {
+                    headers.Add(new("If-None-Match", etag));
+                }
+
+                if (lastModified is not null)
+                {
+                    headers.Add(new("If-Modified-Since", lastModified));
+                }
+
+                var requestTime = GetHttpCacheTime(request);
+                var response = await NetworkFetchAsync(request, headers, includeCredentials, CancellationToken.None).ConfigureAwait(false);
+                if (!response.IsNetworkError)
+                {
+                    // As the response of the network of HttpNetworkOrCacheFetchAsync (the loader stored its cookies, and the
+                    // continuation runs on the event loop of the request): the Clear-Site-Data header is processed before
+                    // the HTTP cache is updated, and a response that clears the cache is not stored
+                    var clearedCache = ClearSiteData.ProcessResponse(request, response, includeCredentials, HttpCache.GetPartition(key));
+                    if (!clearedCache || response.Status == 304)
+                    {
+                        UpdateHttpCache(request, response, cache, key, requestHeaders, includeCredentials, etag is not null || lastModified is not null ? storedResponse : null, requestTime, GetHttpCacheTime(request));
+                    }
+
+                    ClientHints.ProcessResponse(request, response);
+                }
+            }
+#pragma warning disable CA1031 // A failure of the revalidation keeps the stored response
+            catch (Exception)
+#pragma warning restore CA1031
+            {
+            }
+            finally
+            {
+                cache.EndRevalidation(key, includeCredentials);
+            }
+        }
     }
 
     /// <summary>
@@ -1149,8 +1247,10 @@ internal static class Fetching
         }
         var origin = GetLoaderOrigin(request);
         var cookieContext = request.CookieContext;
+        var interimResponses = new InterimResponses(request, eventLoop);
         var documentRequest = new DocumentRequest(request.CurrentUrl.Serialize())
         {
+            InterimResponseHandler = interimResponses.Process,
             CookieJar = cookieContext is null ? request.Client?.CookieJar : cookieContext.CookieJar,
             SiteForCookies = cookieContext is null ? request.Client?.SiteForCookies : cookieContext.SiteForCookies,
             TopLevelOrigin = cookieContext is null ? request.Client?.TopLevelOriginForCookies : cookieContext.TopLevelOrigin,
@@ -1186,6 +1286,14 @@ internal static class Fetching
         var isWebSocket = request.Mode == RequestMode.WebSocket;
         var resource = await LoadAsync(eventLoop, isWebSocket ? loader.ConnectWebSocketAsync : loader.LoadAsync, documentRequest, request.Synchronous, cancellationToken).ConfigureAwait(false);
 
+        // https://fetch.spec.whatwg.org/#fetch-timing-info-final-network-response-start-time: the headers of the final response
+        // are received (the rest of a body that arrives over time is received later)
+        interimResponses.Complete();
+        if (request.Timing.IsRecorded)
+        {
+            request.Timing.FinalNetworkResponseStart = eventLoop.TimeProvider.GetTimestamp();
+        }
+
         // A body that arrives over time is interpreted as its bytes arrive by the HTML document of a navigation, by an event
         // source, by the media and track elements and by fetch() (a ReadableStream); the other requests, the redirects and
         // the responses without body wait for the complete body
@@ -1195,15 +1303,20 @@ internal static class Fetching
         {
             resource = await LoadAsync(eventLoop, (_, token) => new ValueTask<DocumentResource?>(ReadCompleteBodyAsync(streamedResource, token)), documentRequest, request.Synchronous, cancellationToken).ConfigureAwait(false);
         }
-        if (request.Timing.IsRecorded)
-        {
-            request.Timing.FinalNetworkResponseStart = eventLoop.TimeProvider.GetTimestamp();
-        }
 
         if (cancellationToken.IsCancellationRequested)
         {
             DisposeConnection(resource);
             return FetchResponse.NetworkError(aborted: true);
+        }
+
+        // An interim response whose headers are not valid is a network error (the HTTP parser fails), and so is a final
+        // response whose status is the one of an interim response: the loader reported it as the final response, and the
+        // connection ended before the final response (https://fetch.spec.whatwg.org/#http-network-fetch)
+        if (resource is not null && (interimResponses.Failed || resource.StatusCode is >= 100 and <= 199 and not 101))
+        {
+            DisposeConnection(resource);
+            resource = null;
         }
 
         request.LoaderFailed = resource is null;
@@ -1247,6 +1360,70 @@ internal static class Fetching
 
         response.UrlList = [.. request.UrlList];
         return response;
+    }
+
+    /// <summary>
+    /// The interim responses of a request sent to the loader (https://fetch.spec.whatwg.org/#http-network-fetch, step 17):
+    /// the time of the first one is the first interim network-response start time of the timing info, and the first
+    /// <c>103</c> response is given to the process early hints response steps of the request (a navigation), from a task of
+    /// the event loop. The loader reports them from any thread, before the final response.
+    /// </summary>
+    private sealed class InterimResponses(FetchRequest request, DomEventLoop eventLoop)
+    {
+        private readonly Lock _lock = new();
+        private bool _completed;
+
+        /// <summary>Whether an interim response had an invalid header: the request is a network error.</summary>
+        public bool Failed { get; private set; }
+
+        public void Process(int status, IReadOnlyList<KeyValuePair<string, string>> headers)
+        {
+            var normalizedHeaders = new List<KeyValuePair<string, string>>(headers.Count);
+            var valid = true;
+            foreach (var (name, value) in headers)
+            {
+                var normalizedValue = FetchHeaders.Normalize(value);
+                if (!FetchHeaders.IsHeaderName(name) || !FetchHeaders.IsHeaderValue(normalizedValue))
+                {
+                    valid = false;
+                    break;
+                }
+
+                normalizedHeaders.Add(new(name, normalizedValue));
+            }
+
+            lock (_lock)
+            {
+                if (_completed || Failed)
+                    return;
+
+                if (!valid)
+                {
+                    Failed = true;
+                    return;
+                }
+
+                if (request.Timing.IsRecorded && request.Timing.FirstInterimNetworkResponseStart == 0)
+                {
+                    request.Timing.FirstInterimNetworkResponseStart = eventLoop.TimeProvider.GetTimestamp();
+                }
+            }
+
+            if (status == 103 && request.ProcessEarlyHintsResponse is not null)
+            {
+                request.AddPendingEarlyHints(normalizedHeaders);
+                eventLoop.QueueTask(request.ProcessPendingEarlyHints);
+            }
+        }
+
+        /// <summary>The final response is received: the interim responses reported later are ignored.</summary>
+        public void Complete()
+        {
+            lock (_lock)
+            {
+                _completed = true;
+            }
+        }
     }
 
     /// <summary>

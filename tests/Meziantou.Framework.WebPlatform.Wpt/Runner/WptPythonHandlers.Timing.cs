@@ -346,13 +346,15 @@ internal static partial class WptPythonHandlers
     }
 
     // resource-timing/SyntheticResponse.py: the commands of the query (separated by '&') build the response: a delay
-    // ("100ms"), a redirect ("redirect:<url>"), a header ("mime:<type>"), a status ("status:<code>") and a part of the body
-    // ("send:<text>"). The interim responses (1xx statuses) are not exposed by the loader.
+    // ("100ms"), a redirect ("redirect:<url>"), a header ("mime:<type>"), a status ("status:<code>", an interim response for
+    // a 1xx status) and a part of the body ("send:<text>"). The status line of a final status is sent at once: the response
+    // starts then (the runner sends its headers with it), and the next delays delay the body.
     private static void SyntheticResponse(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
     {
         // sleep.py sleeps for at least the delay, plus a padding of 15 ms
         const double SleepPadding = 15;
         var sent = false;
+        var statusSent = false;
         var pendingDelay = TimeSpan.Zero;
         foreach (var argument in request.Query.Split('&'))
         {
@@ -380,12 +382,18 @@ internal static partial class WptPythonHandlers
             else if (argument.StartsWith("send:", StringComparison.Ordinal))
             {
                 var text = Encoding.UTF8.GetBytes(Uri.UnescapeDataString(argument[5..]));
-                if (!sent)
+                if (!sent && !statusSent)
                 {
                     sent = true;
                     response.Streamed = true;
                     response.Delay += pendingDelay;
                     response.Body = text;
+                }
+                else if (!sent)
+                {
+                    sent = true;
+                    response.Streamed = true;
+                    response.Chunks.Add((pendingDelay, text));
                 }
                 else
                 {
@@ -397,9 +405,20 @@ internal static partial class WptPythonHandlers
             else if (argument.StartsWith("status:", StringComparison.Ordinal))
             {
                 var code = int.Parse(Uri.UnescapeDataString(argument[7..]), CultureInfo.InvariantCulture);
-                if (code / 100 != 1)
+                if (code / 100 == 1)
+                {
+                    response.InterimResponses.Add((pendingDelay, code, []));
+                    pendingDelay = TimeSpan.Zero;
+                }
+                else
                 {
                     response.Status = code;
+                    if (!sent && !statusSent)
+                    {
+                        statusSent = true;
+                        response.Delay += pendingDelay;
+                        pendingDelay = TimeSpan.Zero;
+                    }
                 }
             }
         }
@@ -542,12 +561,21 @@ internal static partial class WptPythonHandlers
         response.Content = "MAYBE NOT";
     }
 
-    // resource-timing/resources/header-delay.py: the headers are sent after the delay, and after each interim response
+    // resource-timing/resources/header-delay.py: the interim responses (100 and 103) and the headers are each sent after the delay
     private static void HeaderDelay(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
     {
         var delay = Milliseconds(request.Get("delay") ?? throw new InvalidOperationException("The delay parameter is missing"), 0);
-        var steps = 1 + (request.Has("with100") ? 1 : 0) + (request.Has("with103") ? 1 : 0);
-        response.Delay = delay * steps;
+        if (request.Has("with100"))
+        {
+            response.InterimResponses.Add((delay, 100, []));
+        }
+
+        if (request.Has("with103"))
+        {
+            response.InterimResponses.Add((delay, 103, [new("Link", "<resources/empty.js>;rel=preload;as=script")]));
+        }
+
+        response.Delay = delay;
         if (request.Has("tao"))
         {
             response.Set("timing-allow-origin", "*");

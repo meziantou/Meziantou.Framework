@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Numerics;
 using LineBreak = Meziantou.Framework.UnicodeLineBreakClass;
 
@@ -38,6 +39,8 @@ public sealed class LineBreakDictionary
 {
     /// <summary>The greatest length, in UTF-16 code units, of the text that is segmented at once.</summary>
     internal const int PieceLength = 1024;
+
+    private const int StackallocPieceLength = 128;
 
     // The words and the uncovered characters of a piece that start before this position are final when the text continues after the piece.
     private const int KeptLength = PieceLength / 2;
@@ -286,7 +289,8 @@ public sealed class LineBreakDictionary
     /// <returns>The number of positions written; 0 when the text has no word of the dictionary after its start.</returns>
     /// <remarks>
     /// The remarks of <see cref="LineBreakDictionary"/> specify the segmentation. A break is never at the start or at the end
-    /// of the text, inside a grapheme cluster, or before a combining mark. The method does not allocate, whatever the length of the text.
+    /// of the text, inside a grapheme cluster, or before a combining mark. The method does not allocate, whatever the length of the text:
+    /// the working buffers of a text longer than 128 UTF-16 code units are rented from <see cref="System.Buffers.ArrayPool{T}.Shared"/>.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="breakPositions"/> is too small.</exception>
     public int FindBreaks(ReadOnlySpan<char> text, Span<int> breakPositions)
@@ -334,14 +338,35 @@ public sealed class LineBreakDictionary
     /// <returns>The length of the part of <paramref name="text"/> that is segmented: the next piece starts after it. It is not 0 unless <paramref name="text"/> is empty.</returns>
     internal int SegmentPiece(ReadOnlySpan<char> text, Span<ulong> wordStarts, Span<ulong> boundaries, ref int boundaryLength)
     {
+        // The choices and the costs take 6 bytes per code unit: a piece longer than StackallocPieceLength rents them,
+        // so that the stack stays under 1 KB.
+        var limit = Math.Min(text.Length, PieceLength);
+        if (limit <= StackallocPieceLength)
+            return SegmentPiece(text, wordStarts, boundaries, ref boundaryLength, stackalloc ushort[StackallocPieceLength + 1], stackalloc int[StackallocPieceLength + 1]);
+
+        var rentedChoices = ArrayPool<ushort>.Shared.Rent(limit + 1);
+        var rentedCosts = ArrayPool<int>.Shared.Rent(limit + 1);
+        try
+        {
+            return SegmentPiece(text, wordStarts, boundaries, ref boundaryLength, rentedChoices, rentedCosts);
+        }
+        finally
+        {
+            ArrayPool<ushort>.Shared.Return(rentedChoices);
+            ArrayPool<int>.Shared.Return(rentedCosts);
+        }
+    }
+
+    private int SegmentPiece(ReadOnlySpan<char> text, Span<ulong> wordStarts, Span<ulong> boundaries, ref int boundaryLength, Span<ushort> choiceBuffer, Span<int> costBuffer)
+    {
         wordStarts.Clear();
 
         // The choice at a boundary is the length of the word that starts there, or 0 when the cluster that starts
         // there is uncovered. The cost of a boundary is the cost of the best segmentation of the text from that
         // boundary to the end of the piece: its number of uncovered code units, then its number of words.
         var limit = Math.Min(text.Length, PieceLength);
-        Span<ushort> choices = stackalloc ushort[limit + 1];
-        Span<int> costs = stackalloc int[limit + 1];
+        var choices = choiceBuffer[..(limit + 1)];
+        var costs = costBuffer[..(limit + 1)];
         choices.Fill(NotBoundary);
 
         // The pieces overlap: the clusters at the start of this one were read by the previous one.

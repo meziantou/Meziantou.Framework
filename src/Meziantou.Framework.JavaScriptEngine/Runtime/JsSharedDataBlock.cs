@@ -78,9 +78,19 @@ public sealed class JsSharedDataBlock
     public Span<byte> GetSpan() => _data.AsSpan(_offset, ByteLength);
 
     /// <summary>Gets a reference to a byte of the block (for the atomic operations); the index is less than the byte length.</summary>
-    public ref byte GetReference(int byteIndex)
+    public ref byte GetReference(int byteIndex) => ref GetReference(byteIndex, byteCount: 1);
+
+    /// <summary>
+    /// Gets a reference to the first byte of a range of the block, for an access of <paramref name="byteCount"/> bytes (e.g. an
+    /// atomic operation on a 64-bit value); the range is within the byte length. The first byte of the block is 16-byte
+    /// aligned, so the alignment of the reference is the alignment of <paramref name="byteIndex"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is not positive, or the range is outside the block.</exception>
+    public ref byte GetReference(int byteIndex, int byteCount)
     {
-        if ((uint)byteIndex >= (uint)ByteLength)
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(byteCount);
+        var byteLength = ByteLength;
+        if ((uint)byteIndex > (uint)byteLength || byteCount > byteLength - byteIndex)
             throw new ArgumentOutOfRangeException(nameof(byteIndex));
 
         return ref _data[_offset + byteIndex];
@@ -102,6 +112,33 @@ public sealed class JsSharedDataBlock
                 return false;
 
             _data.AsSpan(_offset + current, newByteLength - current).Clear();
+            Volatile.Write(ref _byteLength, newByteLength);
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Grows the block by <paramref name="deltaByteLength"/> bytes, and returns its previous byte length, atomically (e.g.
+    /// the <c>grow(delta)</c> of a shared <c>WebAssembly.Memory</c>: the concurrent calls of several agents each grow the
+    /// block by their delta). False when the delta is negative or the new length is greater than the maximum byte length.
+    /// The new bytes are zeroed before the new length is published.
+    /// </summary>
+    /// <param name="deltaByteLength">The number of bytes to add to the block.</param>
+    /// <param name="previousByteLength">The byte length of the block before it grew; the current byte length when the block cannot grow.</param>
+    public bool TryGrowBy(int deltaByteLength, out int previousByteLength)
+    {
+        lock (_growLock)
+        {
+            var current = _byteLength;
+            previousByteLength = current;
+            if (deltaByteLength == 0)
+                return true;
+
+            if (deltaByteLength < 0 || MaxByteLength is not { } max || deltaByteLength > max - current)
+                return false;
+
+            var newByteLength = current + deltaByteLength;
+            _data.AsSpan(_offset + current, deltaByteLength).Clear();
             Volatile.Write(ref _byteLength, newByteLength);
             return true;
         }

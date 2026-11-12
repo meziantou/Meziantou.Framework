@@ -248,6 +248,17 @@ public sealed class ServiceWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task Navigation_RedirectedOutOfTheScope_IsNotControlled()
+    {
+        AddScript("https://example.com/dir/sw.js", "self.addEventListener('fetch', e => {});");
+        _loader.Resources["https://example.com/dir/controlled.html"] = new DocumentResource("") { StatusCode = 302, Headers = [new("Location", "/other/page.html")] };
+        AddPage("https://example.com/other/page.html", "<p>out of scope</p>");
+        var document = Load(RegisterAndReload);
+
+        Assert.Equal("out of scope|false", await WaitForTitleAsync(document));
+    }
+
+    [Fact]
     public async Task SoftUpdate_RunsAfterTheDelay_OnceTheNavigationIsLoaded()
     {
         var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));

@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of wasm, and why the tests t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 326 | 342 | 0 | 95% |
-| [Tentative](#tentative-tests) | 15 | 70 | 0 | 21% |
+| [Stable](#stable-tests) | 334 | 342 | 0 | 98% |
+| [Tentative](#tentative-tests) | 20 | 70 | 0 | 29% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **341** | **412** | **0** | **83%** |
+| **All** | **354** | **412** | **0** | **86%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 67
+- **NOT IMPLEMENTED**: 54
 
 ## Stable tests
 
@@ -305,19 +305,19 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`jsapi/instance/exports.any.js`](https://wpt.fyi/results/wasm/jsapi/instance/exports.any.js) | Pass | 8 / 8 |  |  |
 | [`jsapi/instance/toString.any.js`](https://wpt.fyi/results/wasm/jsapi/instance/toString.any.js) | Pass | 4 / 4 |  |  |
 | [`jsapi/interface.any.js`](https://wpt.fyi/results/wasm/jsapi/interface.any.js) | Pass | 144 / 144 |  |  |
-| [`jsapi/js-string/basic.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/basic.any.js) | Error | 0 / 0 | NOT IMPLEMENTED | the JS String Builtins (the `builtins` and `importedStringConstants` compile options) |
-| [`jsapi/js-string/constants.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/constants.any.js) | Fail | 0 / 80 | NOT IMPLEMENTED | the JS String Builtins (the `builtins` and `importedStringConstants` compile options) |
-| [`jsapi/js-string/imports.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/imports.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the JS String Builtins (the `builtins` and `importedStringConstants` compile options) |
-| [`jsapi/jspi/js-promise-integration.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/js-promise-integration.any.js) | Fail | 2 / 26 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`) |
-| [`jsapi/jspi/notraps.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/notraps.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`) |
-| [`jsapi/jspi/rejects.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/rejects.any.js) | Fail | 0 / 10 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`) |
+| [`jsapi/js-string/basic.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/basic.any.js) | Pass | 10 / 10 |  |  |
+| [`jsapi/js-string/constants.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/constants.any.js) | Pass | 80 / 80 |  |  |
+| [`jsapi/js-string/imports.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/imports.any.js) | Pass | 2 / 2 |  |  |
+| [`jsapi/jspi/js-promise-integration.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/js-promise-integration.any.js) | Fail | 2 / 26 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run, and some subtests also use the legacy exception handling instructions (`try`, `catch`) that Wasmtime does not support |
+| [`jsapi/jspi/notraps.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/notraps.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run, and some subtests also use the legacy exception handling instructions (`try`, `catch`) that Wasmtime does not support |
+| [`jsapi/jspi/rejects.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/rejects.any.js) | Fail | 0 / 10 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run, and some subtests also use the legacy exception handling instructions (`try`, `catch`) that Wasmtime does not support |
 | [`jsapi/memory/buffer.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/buffer.any.js) | Pass | 8 / 8 |  |  |
 | [`jsapi/memory/constructor.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/constructor.any.js) | Pass | 48 / 48 |  |  |
-| [`jsapi/memory/grow.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/grow.any.js) | Fail | 36 / 38 | NOT IMPLEMENTED | the threads of WebAssembly: a shared `WebAssembly.Memory` is only a growable `SharedArrayBuffer` (the shared memories of Wasmtime are not .NET arrays), which is not serializable |
-| [`jsapi/memory/to-fixed-length-buffer-shared.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/to-fixed-length-buffer-shared.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the threads of WebAssembly: a shared `WebAssembly.Memory` is only a growable `SharedArrayBuffer` (the shared memories of Wasmtime are not .NET arrays), which is not serializable |
-| [`jsapi/memory/to-fixed-length-buffer.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/to-fixed-length-buffer.any.js) | Fail | 2 / 4 | NOT IMPLEMENTED | the resizable buffers of the memories (`toResizableBuffer()`): the `ArrayBuffer` of the script engine adapters cannot share the bytes of a memory when it is resized |
-| [`jsapi/memory/to-resizable-buffer-shared.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/to-resizable-buffer-shared.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the threads of WebAssembly: a shared `WebAssembly.Memory` is only a growable `SharedArrayBuffer` (the shared memories of Wasmtime are not .NET arrays), which is not serializable; the resizable buffers of the memories (`toResizableBuffer()`): the `ArrayBuffer` of the script engine adapters cannot share the bytes of a memory when it is resized |
-| [`jsapi/memory/to-resizable-buffer.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/to-resizable-buffer.any.js) | Fail | 2 / 10 | NOT IMPLEMENTED | the resizable buffers of the memories (`toResizableBuffer()`): the `ArrayBuffer` of the script engine adapters cannot share the bytes of a memory when it is resized |
+| [`jsapi/memory/grow.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/grow.any.js) | Pass | 38 / 38 |  |  |
+| [`jsapi/memory/to-fixed-length-buffer-shared.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/to-fixed-length-buffer-shared.any.js) | Pass | 2 / 2 |  |  |
+| [`jsapi/memory/to-fixed-length-buffer.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/to-fixed-length-buffer.any.js) | Pass | 4 / 4 |  |  |
+| [`jsapi/memory/to-resizable-buffer-shared.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/to-resizable-buffer-shared.any.js) | Pass | 6 / 6 |  |  |
+| [`jsapi/memory/to-resizable-buffer.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/to-resizable-buffer.any.js) | Pass | 10 / 10 |  |  |
 | [`jsapi/memory/toString.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/toString.any.js) | Pass | 4 / 4 |  |  |
 | [`jsapi/module/constructor.any.js`](https://wpt.fyi/results/wasm/jsapi/module/constructor.any.js) | Pass | 20 / 20 |  |  |
 | [`jsapi/module/customSections.any.js`](https://wpt.fyi/results/wasm/jsapi/module/customSections.any.js) | Pass | 22 / 22 |  |  |
@@ -401,7 +401,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`jsapi/gc/exported-object.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/gc/exported-object.tentative.any.js) | Pass | 38 / 38 |  |  |
 | [`jsapi/gc/i31.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/gc/i31.tentative.any.js) | Pass | 12 / 12 |  |  |
 | [`jsapi/global/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/global/type.tentative.any.js) | Fail | 0 / 26 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
-| [`jsapi/memory/constructor-shared.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/constructor-shared.tentative.any.js) | Fail | 4 / 6 | NOT IMPLEMENTED | the threads of WebAssembly: a shared `WebAssembly.Memory` is only a growable `SharedArrayBuffer` (the shared memories of Wasmtime are not .NET arrays), which is not serializable |
+| [`jsapi/memory/constructor-shared.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/constructor-shared.tentative.any.js) | Pass | 6 / 6 |  |  |
 | [`jsapi/memory/constructor-types.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/constructor-types.tentative.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
 | [`jsapi/memory/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/type.tentative.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
 | [`jsapi/module/moduleSource.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/module/moduleSource.tentative.any.js) | Pass | 8 / 8 |  |  |
@@ -412,11 +412,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`jsapi/tag/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/tag/type.tentative.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
 | [`proposals/wide-arithmetic/core/wide-arithmetic.wast.js.tentative.html`](https://wpt.fyi/results/wasm/proposals/wide-arithmetic/core/wide-arithmetic.wast.js.tentative.html) | Pass | 123 / 123 |  |  |
 | [`serialization/memory/clone-error.tentative.https.any.js`](https://wpt.fyi/results/wasm/serialization/memory/clone-error.tentative.https.any.js) | Pass | 16 / 16 |  |  |
-| [`serialization/memory/messageport-via-sharedworker-success.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/messageport-via-sharedworker-success.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the threads of WebAssembly: a shared `WebAssembly.Memory` is only a growable `SharedArrayBuffer` (the shared memories of Wasmtime are not .NET arrays), which is not serializable |
+| [`serialization/memory/messageport-via-sharedworker-success.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/messageport-via-sharedworker-success.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`serialization/memory/no-transferring.tentative.html`](https://wpt.fyi/results/wasm/serialization/memory/no-transferring.tentative.html) | Pass | 6 / 6 |  |  |
-| [`serialization/memory/window-nested-dedicated-worker-failure.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/window-nested-dedicated-worker-failure.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the threads of WebAssembly: a shared `WebAssembly.Memory` is only a growable `SharedArrayBuffer` (the shared memories of Wasmtime are not .NET arrays), which is not serializable |
-| [`serialization/memory/window-sharedworker-failure.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/window-sharedworker-failure.tentative.https.html) | Fail | 1 / 3 | NOT IMPLEMENTED | the threads of WebAssembly: a shared `WebAssembly.Memory` is only a growable `SharedArrayBuffer` (the shared memories of Wasmtime are not .NET arrays), which is not serializable |
-| [`serialization/memory/window-success.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/window-success.tentative.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the threads of WebAssembly: a shared `WebAssembly.Memory` is only a growable `SharedArrayBuffer` (the shared memories of Wasmtime are not .NET arrays), which is not serializable |
+| [`serialization/memory/window-nested-dedicated-worker-failure.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/window-nested-dedicated-worker-failure.tentative.https.html) | Pass | 1 / 1 |  |  |
+| [`serialization/memory/window-sharedworker-failure.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/window-sharedworker-failure.tentative.https.html) | Pass | 3 / 3 |  |  |
+| [`serialization/memory/window-success.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/window-success.tentative.https.html) | Pass | 3 / 3 |  |  |
 | [`webapi/esm-integration/execute-start.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/execute-start.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
 | [`webapi/esm-integration/exported-names.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/exported-names.tentative.html) | Timeout | 0 / 0 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
 | [`webapi/esm-integration/invalid-bytecode.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/invalid-bytecode.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |

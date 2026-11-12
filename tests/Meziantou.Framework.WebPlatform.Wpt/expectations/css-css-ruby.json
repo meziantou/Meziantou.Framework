@@ -21,7 +21,7 @@
     "reftest": "PASS"
   },
   "css/css-ruby/block-ruby-005.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-ruby/br-clear-all-000.html": {
     "total": 1
@@ -272,7 +272,7 @@
     "reftest": "FAIL"
   },
   "css/css-ruby/ruby-intrinsic-isize-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-ruby/ruby-justification-001.html": {
     "reftest": "FAIL"

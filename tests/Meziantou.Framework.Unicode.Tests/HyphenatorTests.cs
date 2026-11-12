@@ -221,6 +221,22 @@ public sealed class HyphenatorTests
         Assert.Empty(GetBreaks(hyphenator, "aaaaaaa"));
     }
 
+    [Theory]
+    [InlineData(64)]
+    [InlineData(65)]
+    [InlineData(4096)]
+    public void Hyphenate_LongWord(int length)
+    {
+        // The working buffers of a word longer than 64 code units are rented instead of being on the stack
+        var options = new HyphenatorOptions { LeftHyphenMin = 1, RightHyphenMin = 1, MaxWordLength = 4096 };
+        var word = new string('a', length);
+        var expected = Enumerable.Range(1, length - 1).ToArray();
+
+        Assert.Equal(expected, GetBreaks(Hyphenator.Parse("a1a", options: options), word));
+        Assert.Equal(expected, GetBreaks(Hyphenator.Parse("a1a", "b-b", options), new string('A', length)));
+        Assert.Equal(new[] { 1 }, GetBreaks(Hyphenator.Parse("a1a", "b-b", options), "BB"));
+    }
+
     [Fact]
     public void Hyphenate_NeverBreaksInsideAGraphemeCluster()
     {

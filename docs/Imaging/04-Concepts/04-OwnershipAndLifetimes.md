@@ -172,6 +172,9 @@ public static void ProcessRentedBuffer(int width, int height)
   to release it: an image has no finalizer.
 - Your memory is not charged to [MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes),
   and its content is used as it is.
+- The stride does not need to be a multiple of the pixel size. With a 16-bit or floating-point pixel format, a stride or
+  an address that is not a multiple of the size of a component (2 or 4 bytes) makes the library read and write the
+  components at unaligned addresses: this works, but it can be slower. Align them when you can.
 
 ## Memory accounting
 

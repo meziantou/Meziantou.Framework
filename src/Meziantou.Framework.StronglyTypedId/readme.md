@@ -91,6 +91,31 @@ public partial struct ProjectId :
 
 <!-- generated code -->
 
+When the project references Meziantou.Framework.Yaml or Meziantou.Framework.Toml, the ID also gets a `ProjectIdYamlConverter` or a `ProjectIdTomlConverter`, registered with `[YamlConverter]` or `[TomlConverter]`. They write the value of the ID:
+
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_JsonModel;format=md-fenced-code-block;dedent=true -->
+```csharp
+public sealed record OrderLine(ProductId ProductId, ProjectId ProjectId, int Quantity);
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_Yaml;format=md-fenced-code-block;dedent=true -->
+```csharp
+var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+
+var yaml = Meziantou.Framework.Yaml.YamlSerializer.Serialize(line);
+Assert.Equal("""
+    ProductId: 0f8fad5b-d9cb-469f-a165-70867728950e
+    ProjectId: 42
+    Quantity: 3
+
+    """, yaml);
+
+var deserialized = Meziantou.Framework.Yaml.YamlSerializer.Deserialize<OrderLine>(yaml);
+Assert.Equal(line, deserialized);
+```
+<!-- endref -->
+
 The converters are public, so you can use them where the attributes are not read, such as `JsonSerializerOptions.Converters` for a source-generated `JsonSerializerContext`. To choose another accessibility, declare the converter in the ID (for instance `internal sealed partial class ProjectIdJsonConverter;`): the generator keeps your modifiers.
 
 Parsing and formatting are culture-invariant: the `IFormatProvider` arguments of the interface members are ignored and `CultureInfo.InvariantCulture` is always used. `IUtf8SpanParsable<T>`, `IFormattable`, `ISpanFormattable` and `IUtf8SpanFormattable` are implemented explicitly, so the type doesn't expose overloads with an `IFormatProvider` parameter.
@@ -153,7 +178,9 @@ You can configure the code generation using the `[StronglyTypedIdAttribute]` att
                  generateNewtonsoftJsonConverter: true,
                  generateSystemComponentModelTypeConverter: true,
                  generateMongoDBBsonSerialization: true,
-                 addCodeGeneratedAttribute: true
+                 addCodeGeneratedAttribute: true,
+                 GenerateYamlConverter = true,
+                 GenerateTomlConverter = true
                  )]
 public partial struct ShipmentId { }
 ```

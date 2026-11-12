@@ -398,8 +398,25 @@ internal static class PaintOrder
     /// or in the stacking context of an ancestor of a column spanner (see <see cref="GetSpannerStackingContext"/>).
     /// </summary>
     private static bool IsPaintedInInlineLayer(BoxFragment fragment)
-        => (fragment.Box.SplitInlineParent is not null && IsSplitOutOfInline(fragment) && !IsLayer(fragment) && ReferenceEquals(fragment.Box.FirstFragment, fragment) && GetSplitInlineLayerBox(fragment.Box) is not null)
+        => (fragment.Box.SplitInlineParent is not null && IsSplitOutOfInline(fragment) && !IsLayer(fragment) && GetSplitInlineLayerBox(fragment.Box) is { } layerBox
+                && (ReferenceEquals(fragment.Box.FirstFragment, fragment) || PaintsAllFragmentsOfSplitBlocks(layerBox)))
             || GetSpannerStackingContext(fragment) is not null;
+
+    /// <summary>
+    /// Whether all the fragments of the blocks split out of an inline box are painted in its layer (only their first fragments
+    /// otherwise): the inline box has mask layers, which also apply to the blocks it contains (as in the browsers, where the
+    /// fragment of the inline box in the line of a block-in-inline contains the block: WPT css/css-masking/mask-image/mask-image-ib-split-2.html),
+    /// see <see cref="GetSplitBlocksMaskedByInline"/>.
+    /// </summary>
+    private static bool PaintsAllFragmentsOfSplitBlocks(ContainerBox inline)
+        => !IsCompositedAsOneGroup(inline) && inline.Style.GetComputedValue("mask-image") is not ("none" or "");
+
+    /// <summary>
+    /// Returns the fragments of the blocks split out of an inline box that are painted in the layer of its first fragment and
+    /// masked by its mask layers (see <see cref="PaintsAllFragmentsOfSplitBlocks"/>), or null.
+    /// </summary>
+    internal static List<BoxFragment>? GetSplitBlocksMaskedByInline(BoxFragment layer)
+        => PaintsAllFragmentsOfSplitBlocks(layer.Box) ? GetSplitBlocksPaintedInInlineLayer(layer) : null;
 
     /// <summary>Returns the box of the layer where a fragment painted in another layer is painted (see <see cref="IsPaintedInInlineLayer"/>).</summary>
     private static ContainerBox GetInlineLayerBox(BoxFragment fragment) => GetSpannerStackingContext(fragment)?.Box ?? GetSplitInlineLayerBox(fragment.Box)!;
@@ -498,6 +515,16 @@ internal static class PaintOrder
             if (sibling is ContainerBox { SplitInlineParent: not null, FirstFragment: BoxFragment fragment } block && IsPaintedInInlineLayer(fragment) && ReferenceEquals(GetSplitInlineLayerBox(block), box))
             {
                 (blocks ??= []).Add(fragment);
+                if (PaintsAllFragmentsOfSplitBlocks(box))
+                {
+                    for (var next = fragment.NextFragmentOfBox; next is BoxFragment nextFragment; next = next.NextFragmentOfBox)
+                    {
+                        if (!nextFragment.IsHiddenForPaint)
+                        {
+                            blocks.Add(nextFragment);
+                        }
+                    }
+                }
             }
         }
 

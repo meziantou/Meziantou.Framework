@@ -1309,114 +1309,22 @@
     "total": 72
   },
   "wasm/jsapi/js-string/basic.any.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 5
   },
   "wasm/jsapi/js-string/basic.any.js#dedicatedworker": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 5
   },
   "wasm/jsapi/js-string/constants.any.js": {
-    "total": 40,
-    "failures": {
-      "constants": "FAIL",
-      "constants 1": "FAIL",
-      "constants 10": "FAIL",
-      "constants 11": "FAIL",
-      "constants 12": "FAIL",
-      "constants 13": "FAIL",
-      "constants 14": "FAIL",
-      "constants 15": "FAIL",
-      "constants 16": "FAIL",
-      "constants 17": "FAIL",
-      "constants 18": "FAIL",
-      "constants 19": "FAIL",
-      "constants 2": "FAIL",
-      "constants 20": "FAIL",
-      "constants 21": "FAIL",
-      "constants 22": "FAIL",
-      "constants 23": "FAIL",
-      "constants 24": "FAIL",
-      "constants 25": "FAIL",
-      "constants 26": "FAIL",
-      "constants 27": "FAIL",
-      "constants 28": "FAIL",
-      "constants 29": "FAIL",
-      "constants 3": "FAIL",
-      "constants 30": "FAIL",
-      "constants 31": "FAIL",
-      "constants 32": "FAIL",
-      "constants 33": "FAIL",
-      "constants 34": "FAIL",
-      "constants 35": "FAIL",
-      "constants 36": "FAIL",
-      "constants 37": "FAIL",
-      "constants 38": "FAIL",
-      "constants 39": "FAIL",
-      "constants 4": "FAIL",
-      "constants 5": "FAIL",
-      "constants 6": "FAIL",
-      "constants 7": "FAIL",
-      "constants 8": "FAIL",
-      "constants 9": "FAIL"
-    }
+    "total": 40
   },
   "wasm/jsapi/js-string/constants.any.js#dedicatedworker": {
-    "total": 40,
-    "failures": {
-      "constants": "FAIL",
-      "constants 1": "FAIL",
-      "constants 10": "FAIL",
-      "constants 11": "FAIL",
-      "constants 12": "FAIL",
-      "constants 13": "FAIL",
-      "constants 14": "FAIL",
-      "constants 15": "FAIL",
-      "constants 16": "FAIL",
-      "constants 17": "FAIL",
-      "constants 18": "FAIL",
-      "constants 19": "FAIL",
-      "constants 2": "FAIL",
-      "constants 20": "FAIL",
-      "constants 21": "FAIL",
-      "constants 22": "FAIL",
-      "constants 23": "FAIL",
-      "constants 24": "FAIL",
-      "constants 25": "FAIL",
-      "constants 26": "FAIL",
-      "constants 27": "FAIL",
-      "constants 28": "FAIL",
-      "constants 29": "FAIL",
-      "constants 3": "FAIL",
-      "constants 30": "FAIL",
-      "constants 31": "FAIL",
-      "constants 32": "FAIL",
-      "constants 33": "FAIL",
-      "constants 34": "FAIL",
-      "constants 35": "FAIL",
-      "constants 36": "FAIL",
-      "constants 37": "FAIL",
-      "constants 38": "FAIL",
-      "constants 39": "FAIL",
-      "constants 4": "FAIL",
-      "constants 5": "FAIL",
-      "constants 6": "FAIL",
-      "constants 7": "FAIL",
-      "constants 8": "FAIL",
-      "constants 9": "FAIL"
-    }
+    "total": 40
   },
   "wasm/jsapi/js-string/imports.any.js": {
-    "total": 1,
-    "failures": {
-      "imports": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/js-string/imports.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "imports": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/jspi/js-promise-integration.any.js": {
     "total": 13,
@@ -1495,16 +1403,10 @@
     "total": 4
   },
   "wasm/jsapi/memory/constructor-shared.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "Shared memory": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/constructor-shared.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Shared memory": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/constructor-types.tentative.any.js": {
     "total": 3,
@@ -1529,74 +1431,34 @@
     "total": 24
   },
   "wasm/jsapi/memory/grow.any.js": {
-    "total": 19,
-    "failures": {
-      "Growing shared memory does not detach old buffer": "FAIL"
-    }
+    "total": 19
   },
   "wasm/jsapi/memory/grow.any.js#dedicatedworker": {
-    "total": 19,
-    "failures": {
-      "Growing shared memory does not detach old buffer": "FAIL"
-    }
+    "total": 19
   },
   "wasm/jsapi/memory/to-fixed-length-buffer-shared.any.js": {
-    "total": 1,
-    "failures": {
-      "toFixedLengthBuffer caching behavior": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/memory/to-fixed-length-buffer-shared.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "toFixedLengthBuffer caching behavior": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/memory/to-fixed-length-buffer.any.js": {
-    "total": 2,
-    "failures": {
-      "toFixedLengthBuffer caching behavior": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/memory/to-fixed-length-buffer.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "toFixedLengthBuffer caching behavior": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/memory/to-resizable-buffer-shared.any.js": {
-    "total": 3,
-    "failures": {
-      "Resizing a Memory's resizable buffer": "FAIL",
-      "toResizableBuffer caching behavior": "FAIL",
-      "toResizableBuffer max size": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/to-resizable-buffer-shared.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Resizing a Memory's resizable buffer": "FAIL",
-      "toResizableBuffer caching behavior": "FAIL",
-      "toResizableBuffer max size": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/to-resizable-buffer.any.js": {
-    "total": 5,
-    "failures": {
-      "Resizable buffers from Memory cannot be detached by JS": "FAIL",
-      "Resizing a Memory's resizable buffer": "FAIL",
-      "toResizableBuffer caching behavior": "FAIL",
-      "toResizableBuffer max size": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/memory/to-resizable-buffer.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "Resizable buffers from Memory cannot be detached by JS": "FAIL",
-      "Resizing a Memory's resizable buffer": "FAIL",
-      "toResizableBuffer caching behavior": "FAIL",
-      "toResizableBuffer max size": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/memory/toString.any.js": {
     "total": 2
@@ -1779,34 +1641,19 @@
     "total": 5
   },
   "wasm/serialization/memory/messageport-via-sharedworker-success.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Shared WebAssembly.Memory cloned through a MessagePort that round-tripped via a SharedWorker": "FAIL"
-    }
+    "total": 1
   },
   "wasm/serialization/memory/no-transferring.tentative.html": {
     "total": 6
   },
   "wasm/serialization/memory/window-nested-dedicated-worker-failure.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Shared WebAssembly.Memory sent to a dedicated worker in a SharedWorker's agent cluster fires messageerror": "FAIL"
-    }
+    "total": 1
   },
   "wasm/serialization/memory/window-sharedworker-failure.tentative.https.html": {
-    "total": 3,
-    "failures": {
-      "Shared WebAssembly.Memory from SharedWorker to window fires messageerror on the window": "FAIL",
-      "Shared WebAssembly.Memory from window to SharedWorker fires messageerror on the SharedWorker": "FAIL"
-    }
+    "total": 3
   },
   "wasm/serialization/memory/window-success.tentative.https.html": {
-    "total": 3,
-    "failures": {
-      "Cloning a shared WebAssembly.Memory through a MessageChannel": "FAIL",
-      "postMessaging a shared WebAssembly.Memory to a dedicated worker": "FAIL",
-      "postMessaging a shared WebAssembly.Memory to a same-origin iframe": "FAIL"
-    }
+    "total": 3
   },
   "wasm/serialization/module/broadcastchannel-success-and-failure.html": {
     "total": 1

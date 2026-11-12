@@ -225,11 +225,11 @@ internal static class Editing
                 (node, offset) = (parent, 0);
             }
 
-            selection.Collapse(node, offset);
+            selection.CollapseCore(node, offset);
             return;
         }
 
-        selection.Collapse(editingHost, 0);
+        selection.CollapseCore(editingHost, 0);
     }
 
     /// <summary>The first element of an editing host, in tree order, that is not editable (e.g. <c>contenteditable="false"</c>) or is an hr element.</summary>
@@ -614,7 +614,7 @@ internal static class Editing
             if (selection.RangeOrNull is { } extended)
             {
                 var target = algorithms.GetTargetRange(extended.StartContainer, (int)extended.StartOffset, extended.EndContainer, (int)extended.EndOffset, startContainer, (int)startOffset, deletion, backward, character);
-                selection.Collapse(startContainer, startOffset);
+                selection.CollapseCore(startContainer, startOffset);
                 return [new StaticRange(new StaticRangeInit { StartContainer = target.StartNode, StartOffset = (uint)target.StartOffset, EndContainer = target.EndNode, EndOffset = (uint)target.EndOffset })];
             }
         }
@@ -673,7 +673,7 @@ internal static class Editing
 
         var index = (uint)inert.GetIndex();
         var offset = selection.Direction == "backward" ? index + 1 : index;
-        selection.SetBaseAndExtent(anchor, selection.AnchorOffset, inertParent, offset);
+        selection.SetBaseAndExtentCore(anchor, selection.AnchorOffset, inertParent, offset);
     }
 
     private static Element? GetActiveRangeEditingHost(Document document)
@@ -708,7 +708,7 @@ internal static class Editing
         target ??= (Node?)document.Body ?? document.DocumentElement;
         if (target is not null)
         {
-            selection.SelectAllChildren(target);
+            selection.SelectAllChildrenCore(target);
         }
     }
 

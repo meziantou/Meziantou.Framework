@@ -287,7 +287,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("if (zeroBuffer)");
         AppendLine("{");
         indent++;
-        AppendLine("AsUnsafeFullSpan().Clear();");
+        AppendLine("AsFullSpan().Clear();");
         indent--;
         AppendLine("}");
         AppendLine();
@@ -440,7 +440,19 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine();
         if (target.ImplementsIFixedStringNonGeneric)
         {
-            AppendLine("Span<char> global::Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => AsUnsafeFullSpan();");
+            // Unlike AsSpan, this one has to launder the ref: an interface member cannot be [UnscopedRef]. That is the
+            // escape hatch IFixedString.GetUnsafeFullSpan is documented to be, and why that interface member is
+            // declared unsafe: its callers need an unsafe context under the updated memory safety rules. The explicit
+            // implementation itself stays safe (a safe member may implement an unsafe one), so it compiles whether or
+            // not the referenced IFixedString declares the member unsafe and whatever the rules of the compilation.
+            // Under the updated memory safety rules, the Unsafe and MemoryMarshal methods laundering the ref require
+            // an unsafe context, hence the unsafe expression around them. The unsafe expression does not exist in
+            // older language versions, so it is only emitted when the compilation opted into the rules. The
+            // generated code never uses this laundered span itself: it uses the [UnscopedRef] AsFullSpan.
+            const string FullSpanExpression = "MemoryMarshal.CreateSpan(ref Unsafe.As<Storage, char>(ref Unsafe.AsRef(in _storage)), MaxLength)";
+            AppendLine(target.UsesUpdatedMemorySafetyRules
+                ? $"Span<char> global::Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => unsafe({FullSpanExpression});"
+                : $"Span<char> global::Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => {FullSpanExpression};");
             AppendLine();
         }
 
@@ -470,21 +482,11 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
-        // Unlike AsSpan, this one has to launder the ref: the explicit IFixedString.GetUnsafeFullSpan
-        // implementation returns it, and an interface member cannot be [UnscopedRef]. That is the escape hatch
-        // IFixedString.GetUnsafeFullSpan is documented to be, and why that interface member is declared unsafe: its
-        // callers need an unsafe context under the updated memory safety rules. The explicit implementation itself
-        // stays safe (a safe member may implement an unsafe one), so it compiles whether or not the referenced
-        // IFixedString declares the member unsafe and whatever the rules of the compilation. Under the updated memory
-        // safety rules, the Unsafe and MemoryMarshal methods laundering the ref require an unsafe context, hence the
-        // unsafe expression around them. The unsafe expression does not exist in older
-        // language versions, so it is only emitted when the compilation opted into the rules.
-        const string FullSpanExpression = "MemoryMarshal.CreateSpan(ref Unsafe.As<Storage, char>(ref Unsafe.AsRef(in _storage)), MaxLength)";
-        AppendLine(target.UsesUpdatedMemorySafetyRules
-            ? $"private Span<char> AsUnsafeFullSpan() => unsafe({FullSpanExpression});"
-            : $"private Span<char> AsUnsafeFullSpan() => {FullSpanExpression};");
+        AppendLine("[UnscopedRef]");
+        AppendLine("private Span<char> AsFullSpan() => _storage;");
         AppendLine();
-        AppendLine("private Span<char> AsRemainingSpan() => AsUnsafeFullSpan().Slice(_length);");
+        AppendLine("[UnscopedRef]");
+        AppendLine("private Span<char> AsRemainingSpan() => AsFullSpan().Slice(_length);");
         AppendLine();
 
         AppendLine("private void AppendOrInsertAlignment(int startPosition, int alignment)");
@@ -533,7 +535,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("{");
         indent++;
         AppendLine("var endPositionFill = startPosition + numberOfCharsToAppendOrInsert;");
-        AppendLine("var span = AsUnsafeFullSpan();");
+        AppendLine("var span = AsFullSpan();");
         AppendLine("if (length > 0)");
         AppendLine("{");
         indent++;

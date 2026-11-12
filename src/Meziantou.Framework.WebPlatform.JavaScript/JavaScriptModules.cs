@@ -370,9 +370,22 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
 
         Load(window, url!, type, fetchOptions ?? new ModuleFetchOptions(), referrer, initiator: null, isDynamicImport: request.IsDynamicImport, onLoaded: entry =>
         {
+            // https://w3c.github.io/long-animation-frames/#record-module-script-execution-start-time: the module imported by
+            // import() is evaluated, then the reactions of the promise of import() run
+            var scriptWindow = request.IsDynamicImport && !window.EventLoop.HasPendingScriptEntryPoint ? window as Window : null;
             if (entry.Module is { } module)
             {
+                if (scriptWindow is not null)
+                {
+                    scriptWindow.EventLoop.RecordScriptBlock(scriptWindow, ScriptInvokerType.ModuleScript, entry.Url, mutedErrors: false);
+                }
+
                 request.Complete(module);
+                if (scriptWindow is not null)
+                {
+                    scriptWindow.EventLoop.FinishScriptEntryPoint();
+                    scriptWindow.EventLoop.RecordPromiseResolverScript(scriptWindow, rejected: false, "import");
+                }
             }
             else if (entry.FetchFailed)
             {

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -76,6 +77,7 @@ public static class Adler32
         while (data.Length >= 32)
         {
             var run = data[..Math.Min(RunLength, data.Length & ~31)];
+            Debug.Assert(run.Length % 32 == 0, "The loads of 32 bytes must stay in the run");
             ref var start = ref unsafe(MemoryMarshal.GetReference(run));
             var sums = Vector128<uint>.Zero;
             var prefixes = Vector128<uint>.Zero;
@@ -120,6 +122,7 @@ public static class Adler32
         while (data.Length >= 32)
         {
             var run = data[..Math.Min(RunLength, data.Length & ~31)];
+            Debug.Assert(run.Length % 32 == 0, "The loads of 32 bytes must stay in the run");
             ref var start = ref unsafe(MemoryMarshal.GetReference(run));
             var sums = Vector256<uint>.Zero;
             var prefixes = Vector256<uint>.Zero;
@@ -150,6 +153,7 @@ public static class Adler32
         while (data.Length >= 32)
         {
             var run = data[..Math.Min(RunLength, data.Length & ~31)];
+            Debug.Assert(run.Length % 32 == 0, "The loads of 32 bytes must stay in the run");
             ref var start = ref unsafe(MemoryMarshal.GetReference(run));
             var sums = Vector128<uint>.Zero;
             var prefixes = Vector128<uint>.Zero;
@@ -183,6 +187,7 @@ public static class Adler32
         while (data.Length >= 16)
         {
             var run = data[..Math.Min(RunLength, data.Length & ~15)];
+            Debug.Assert(run.Length % 16 == 0, "The loads of 16 bytes must stay in the run");
             ref var start = ref unsafe(MemoryMarshal.GetReference(run));
             var sums = Vector128<uint>.Zero;
             var prefixes = Vector128<uint>.Zero;

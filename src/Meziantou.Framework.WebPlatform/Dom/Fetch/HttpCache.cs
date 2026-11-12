@@ -14,8 +14,8 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// have their own entries. The freshness is computed with the clock of the event loop of the request.
 /// </summary>
 /// <remarks>
-/// The partial responses (<c>206</c>) are not stored, the <c>stale-while-revalidate</c> directive is not supported, and a
-/// <c>HEAD</c> request does not use the stored response of a <c>GET</c> request. The cache is used by the threads of the workers.
+/// The partial responses (<c>206</c>) are not stored, and a <c>HEAD</c> request does not use the stored response of a
+/// <c>GET</c> request. The cache is used by the threads of the workers.
 /// </remarks>
 internal sealed class HttpCache
 {
@@ -35,6 +35,7 @@ internal sealed class HttpCache
 
     private readonly Lock _lock = new();
     private readonly Dictionary<string, List<HttpCacheEntry>> _entries = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _revalidations = new(StringComparer.Ordinal);
 
     /// <summary>The HTTP cache of the requests sent by a loader.</summary>
     public static HttpCache Get(DocumentLoader loader) => Caches.GetValue(loader, static _ => new HttpCache());
@@ -111,6 +112,30 @@ internal sealed class HttpCache
             _entries.Remove(key);
         }
     }
+
+    /// <summary>
+    /// Starts the background revalidation of a stored response used within its <c>stale-while-revalidate</c> window
+    /// (https://httpwg.org/specs/rfc5861.html#n-the-stale-while-revalidate-cache-control-extension). Returns false when a
+    /// revalidation of the same request is already in progress: the stored response is used without another one.
+    /// </summary>
+    public bool TryBeginRevalidation(string key, bool includeCredentials)
+    {
+        lock (_lock)
+        {
+            return _revalidations.Add(GetRevalidationKey(key, includeCredentials));
+        }
+    }
+
+    /// <summary>Ends a background revalidation started by <see cref="TryBeginRevalidation"/>.</summary>
+    public void EndRevalidation(string key, bool includeCredentials)
+    {
+        lock (_lock)
+        {
+            _revalidations.Remove(GetRevalidationKey(key, includeCredentials));
+        }
+    }
+
+    private static string GetRevalidationKey(string key, bool includeCredentials) => (includeCredentials ? "1" : "0") + key;
 
     /// <summary>The partition of a key (<see cref="GetKey"/>): the top-level site and the cross-site bit.</summary>
     public static string GetPartition(string key) => key[..key.IndexOf('\n', StringComparison.Ordinal)];
@@ -257,39 +282,53 @@ internal sealed class HttpCache
         return hasExplicitFreshness || responseDirectives.ContainsKey("public") || responseDirectives.ContainsKey("private") || HeuristicallyCacheableStatuses.Contains(status);
     }
 
+    /// <summary>Whether a stored response can be used without validation (<see cref="GetFreshness"/> is <see cref="HttpCacheFreshness.Fresh"/>).</summary>
+    public static bool IsFresh(HttpCacheEntry entry, IReadOnlyList<KeyValuePair<string, string>> requestHeaders, DateTimeOffset now)
+        => GetFreshness(entry, requestHeaders, now) == HttpCacheFreshness.Fresh;
+
     /// <summary>
     /// Whether a stored response can be used without validation (https://httpwg.org/specs/rfc9111.html#expiration.model),
     /// given the directives of the request (https://httpwg.org/specs/rfc9111.html#cache-request-directive): its current age
     /// is less than its freshness lifetime, and the <c>max-age</c>, <c>min-fresh</c> and <c>max-stale</c> directives of the
-    /// request are satisfied. A <c>no-cache</c> directive (or <c>Pragma: no-cache</c>) always requires a validation.
+    /// request are satisfied. A <c>no-cache</c> directive (or <c>Pragma: no-cache</c>) always requires a validation. A
+    /// stale response whose staleness is within its <c>stale-while-revalidate</c> window
+    /// (https://httpwg.org/specs/rfc5861.html#n-the-stale-while-revalidate-cache-control-extension) can be used while it is
+    /// revalidated in the background, unless it must be revalidated or the request constrains its age.
     /// </summary>
-    public static bool IsFresh(HttpCacheEntry entry, IReadOnlyList<KeyValuePair<string, string>> requestHeaders, DateTimeOffset now)
+    public static HttpCacheFreshness GetFreshness(HttpCacheEntry entry, IReadOnlyList<KeyValuePair<string, string>> requestHeaders, DateTimeOffset now)
     {
         var requestDirectives = ParseCacheControl(requestHeaders);
         if (requestDirectives.ContainsKey("no-cache") || (requestDirectives.Count == 0 && HeaderList.Get(requestHeaders, "Pragma") is { } pragma && pragma.Contains("no-cache", StringComparison.OrdinalIgnoreCase)))
-            return false;
+            return HttpCacheFreshness.Stale;
 
         // As in the browsers, a response with Pragma: no-cache is always validated, unless it is immutable
         var responseDirectives = ParseCacheControl(entry.Headers);
         if (responseDirectives.ContainsKey("no-cache") || (!responseDirectives.ContainsKey("immutable") && HeaderList.Get(entry.Headers, "Pragma") is { } responsePragma && responsePragma.Contains("no-cache", StringComparison.OrdinalIgnoreCase)))
-            return false;
+            return HttpCacheFreshness.Stale;
 
         var lifetime = GetFreshnessLifetime(entry, responseDirectives);
         var age = GetCurrentAge(entry, now);
         if (GetDeltaSeconds(requestDirectives, "max-age") is { } maxAge && age > maxAge)
-            return false;
+            return HttpCacheFreshness.Stale;
 
         if (GetDeltaSeconds(requestDirectives, "min-fresh") is { } minFresh && lifetime - age < minFresh)
-            return false;
+            return HttpCacheFreshness.Stale;
 
         if (lifetime > age)
-            return true;
+            return HttpCacheFreshness.Fresh;
 
-        // A stale response is used with max-stale, unless the response must be revalidated
-        if (!requestDirectives.TryGetValue("max-stale", out var maxStaleValue) || responseDirectives.ContainsKey("must-revalidate"))
-            return false;
+        if (responseDirectives.ContainsKey("must-revalidate"))
+            return HttpCacheFreshness.Stale;
 
-        return maxStaleValue is null || (TryParseDeltaSeconds(maxStaleValue, out var maxStale) && age - lifetime <= maxStale);
+        // A stale response is used with max-stale
+        if (requestDirectives.TryGetValue("max-stale", out var maxStaleValue) && (maxStaleValue is null || (TryParseDeltaSeconds(maxStaleValue, out var maxStale) && age - lifetime <= maxStale)))
+            return HttpCacheFreshness.Fresh;
+
+        // As in the browsers, a request that sets a maximum age (e.g. the "no-cache" mode of fetch()) waits for the validation
+        if (!requestDirectives.ContainsKey("max-age") && GetDeltaSeconds(responseDirectives, "stale-while-revalidate") is { } staleWhileRevalidate && age - lifetime <= staleWhileRevalidate)
+            return HttpCacheFreshness.StaleWhileRevalidate;
+
+        return HttpCacheFreshness.Stale;
     }
 
     /// <summary>https://httpwg.org/specs/rfc9111.html#calculating.freshness.lifetime (a private cache), in seconds.</summary>
@@ -423,6 +462,19 @@ internal sealed class HttpCache
 
         return DateTimeOffset.TryParseExact(value.Trim(), HttpDateFormats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowInnerWhite, out var date) ? date : null;
     }
+}
+
+/// <summary>Whether a stored response of the <see cref="HttpCache"/> can be used (<see cref="HttpCache.GetFreshness"/>).</summary>
+internal enum HttpCacheFreshness
+{
+    /// <summary>The stored response must be validated before it is used.</summary>
+    Stale,
+
+    /// <summary>The stored response is used without validation.</summary>
+    Fresh,
+
+    /// <summary>The stored response is used, and it is revalidated in the background (<c>stale-while-revalidate</c>).</summary>
+    StaleWhileRevalidate,
 }
 
 /// <summary>A stored response of the <see cref="HttpCache"/>, with the headers of its request (for <c>Vary</c>) and the times of the request and of the response.</summary>

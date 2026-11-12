@@ -712,13 +712,22 @@ internal sealed class ExrHeader
         return [.. channels];
     }
 
+    // The order of the UTF-8 bytes is the order of the scalar values; an invalid UTF-16 sequence is encoded as U+FFFD, which
+    // EnumerateRunes also yields
     private static int CompareNames(string left, string right)
     {
-        Span<byte> leftBytes = stackalloc byte[Encoding.UTF8.GetMaxByteCount(ExrFormat.LongNameMaxLength)];
-        Span<byte> rightBytes = stackalloc byte[Encoding.UTF8.GetMaxByteCount(ExrFormat.LongNameMaxLength)];
-        var leftLength = Encoding.UTF8.GetBytes(left, leftBytes);
-        var rightLength = Encoding.UTF8.GetBytes(right, rightBytes);
-        return leftBytes[..leftLength].SequenceCompareTo(rightBytes[..rightLength]);
+        var rightRunes = right.EnumerateRunes();
+        foreach (var leftRune in left.EnumerateRunes())
+        {
+            if (!rightRunes.MoveNext())
+                return 1;
+
+            var comparison = leftRune.Value.CompareTo(rightRunes.Current.Value);
+            if (comparison != 0)
+                return comparison;
+        }
+
+        return rightRunes.MoveNext() ? -1 : 0;
     }
 
     private static ExrBox ReadBox(string name, ReadOnlySpan<byte> value)

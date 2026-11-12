@@ -126,17 +126,22 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
         T[] buffer;
         int count;
+        bool isPooled;
         if (items is ICollection<T> collection)
         {
             count = collection.Count;
             if (count is 0)
                 return;
 
-            buffer = ArrayPool<T>.Shared.Rent(count);
+            // CopyTo is caller code: it must not receive a pooled array (it could keep it or write fewer items than Count,
+            // which would merge stale pooled values). Unwritten slots of a fresh array are default values.
+            buffer = new T[count];
             collection.CopyTo(buffer, 0);
+            isPooled = false;
         }
         else
         {
+            isPooled = true;
             buffer = ArrayPool<T>.Shared.Rent(16);
             count = 0;
             foreach (var item in items)
@@ -192,7 +197,10 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
         }
         finally
         {
-            ReturnBuffer(buffer);
+            if (isPooled)
+            {
+                ReturnBuffer(buffer);
+            }
         }
 
         static void ReturnBuffer(T[] buffer) => ArrayPool<T>.Shared.Return(buffer, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());

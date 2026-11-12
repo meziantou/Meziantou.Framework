@@ -32,7 +32,9 @@ public partial class JsObject
     // The storage of a large array is in the large object heap, where the allocations count toward a gen2 collection. The
     // storages of this size come from the shared array pools, and the storage that a growth replaces goes back to them
     // (nothing else references it: the storage never leaves the object). The growth doubles the length, so the sizes are
-    // the powers of two of the pools.
+    // the powers of two of the pools. A rented array may be longer than requested: the capacity is the length of the
+    // array, and every slot of it is initialized. A returned array is cleared: the pools are shared with the rest of the
+    // process, which must not read the values of the scripts.
     private const int PooledStorageMinBytes = 85_000;
     private const int PooledStorageMaxLength = 1 << 24;
 
@@ -196,15 +198,15 @@ public partial class JsObject
     {
         JsEngine.EnsureCurrentCanAllocate((long)length * elementSize);
 
-        // A rented array is not cleared: the caller writes every element
+        // A rented array is not cleared and may be longer than requested: the caller writes every element of the array
         return IsPooledStorageLength(length, elementSize) ? ArrayPool<T>.Shared.Rent(length) : new T[length];
     }
 
-    private static void ReleaseStorage<T>(T[] storage, int elementSize, bool hasReferences)
+    private static void ReleaseStorage<T>(T[] storage, int elementSize)
     {
         if (IsPooledStorageLength(storage.Length, elementSize))
         {
-            ArrayPool<T>.Shared.Return(storage, clearArray: hasReferences);
+            ArrayPool<T>.Shared.Return(storage, clearArray: true);
         }
     }
 
@@ -212,14 +214,14 @@ public partial class JsObject
     /// Copies the elements (from the start) to a new storage, after <paramref name="front"/> free slots, with room for
     /// <paramref name="capacity"/> elements (at least the current capacity): the other slots are holes.
     /// </summary>
-    private static T[] CopyStorage<T>(T[] storage, int start, int front, int capacity, int elementSize, bool hasReferences, T hole)
+    private static T[] CopyStorage<T>(T[] storage, int start, int front, int capacity, int elementSize, T hole)
     {
         var copy = AllocateStorage<T>(front + capacity, elementSize);
         var elements = storage.AsSpan(start);
         copy.AsSpan(0, front).Fill(hole);
         elements.CopyTo(copy.AsSpan(front));
         copy.AsSpan(front + elements.Length).Fill(hole);
-        ReleaseStorage(storage, elementSize, hasReferences);
+        ReleaseStorage(storage, elementSize);
         return copy;
     }
 
@@ -228,9 +230,9 @@ public partial class JsObject
     {
         _elements = _elementKind switch
         {
-            ElementKind.Number => CopyStorage((double[])_elements!, _elementStart, front, capacity, elementSize: 8, hasReferences: false, NumberHole),
-            ElementKind.Reference => CopyStorage((CellSlot[])_elements!, _elementStart, front, capacity, elementSize: 8, hasReferences: true, new CellSlot(HoleCell.Instance)),
-            _ => CopyStorage((JsValue[])_elements!, _elementStart, front, capacity, elementSize: 16, hasReferences: true, JsValue.Hole),
+            ElementKind.Number => CopyStorage((double[])_elements!, _elementStart, front, capacity, elementSize: 8, NumberHole),
+            ElementKind.Reference => CopyStorage((CellSlot[])_elements!, _elementStart, front, capacity, elementSize: 8, new CellSlot(HoleCell.Instance)),
+            _ => CopyStorage((JsValue[])_elements!, _elementStart, front, capacity, elementSize: 16, JsValue.Hole),
         };
 
         _elementStart = front;
@@ -263,7 +265,7 @@ public partial class JsObject
                         mixed[i] = BitConverter.DoubleToInt64Bits(number) == NumberHoleBits ? JsValue.Hole : new JsValue(number);
                     }
 
-                    ReleaseStorage(numbers, elementSize: 8, hasReferences: false);
+                    ReleaseStorage(numbers, elementSize: 8);
                     break;
                 }
 
@@ -275,7 +277,7 @@ public partial class JsObject
                         mixed[i] = new JsValue(cells[start + i].Cell);
                     }
 
-                    ReleaseStorage(cells, elementSize: 8, hasReferences: true);
+                    ReleaseStorage(cells, elementSize: 8);
                     break;
                 }
 
@@ -283,7 +285,7 @@ public partial class JsObject
                 {
                     var values = ((JsValue[])_elements!);
                     Array.Copy(values, start, mixed, 0, capacity);
-                    ReleaseStorage(values, elementSize: 16, hasReferences: true);
+                    ReleaseStorage(values, elementSize: 16);
                     break;
                 }
         }
@@ -350,7 +352,7 @@ public partial class JsObject
             _elementKind = ElementKind.Mixed;
         }
 
-        FillDenseHoles(values.Length, length - values.Length);
+        FillDenseHoles(values.Length, StorageLength - values.Length);
         _denseCount = values.Length;
     }
 
@@ -666,7 +668,7 @@ public partial class JsObject
                 _elementKind = ElementKind.Reference;
             }
 
-            FillDenseHoles(0, newLength);
+            FillDenseHoles(0, StorageLength);
         }
         else if ((_elementKind == ElementKind.Number && !value.IsNumber) || (_elementKind == ElementKind.Reference && value.IsNumber))
         {

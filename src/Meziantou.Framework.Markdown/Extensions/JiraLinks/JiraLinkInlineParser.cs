@@ -98,7 +98,7 @@ public class JiraLinkInlineParser : InlineParser
         };
 
         // Builds the Url
-        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         builder.Append(_baseUrl);
         builder.Append('/');
         builder.Append(jiraLink.ProjectKey.AsSpan());

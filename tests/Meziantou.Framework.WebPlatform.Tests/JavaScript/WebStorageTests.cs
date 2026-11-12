@@ -91,6 +91,23 @@ public sealed class WebStorageTests : IDisposable
     }
 
     [Fact]
+    public void LocalStorage_ThirdPartyIframe_IsPartitionedByTheTopLevelSite()
+    {
+        var shed = new StorageShed();
+        _loader.Resources["https://embed.example/frame.html"] = new DocumentResource("<script>parent.postMessage(String(localStorage.getItem('key')) + ',' + String(sessionStorage.getItem('key')), '*'); localStorage.setItem('key', 'third-party');</script>") { Headers = [new("Content-Type", "text/html")] };
+        Load("<script>localStorage.setItem('key', 'first-party'); sessionStorage.setItem('key', 'first-party');</script>", shed, "https://embed.example/");
+        var document = Load("""
+            <script>window.onmessage = e => document.title = e.data;</script>
+            <iframe src="https://embed.example/frame.html"></iframe>
+            """, shed, "https://top.example/");
+
+        // The storage of the origin embedded by another site is not the first-party storage of the origin
+        Assert.Equal("null,null", document.Title);
+        Assert.Equal([new KeyValuePair<string, string>("key", "first-party")], shed.GetItems("https://embed.example"));
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void SetItem_FiresStorageEventsAtTheOtherWindowsOfTheSameOrigin()
     {
         var document = Load("""

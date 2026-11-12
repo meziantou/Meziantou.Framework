@@ -114,112 +114,157 @@ internal static partial class CssPropertyRules
     private static Dictionary<string, string>? ExpandBorderRadius(CssPropertyDefinition shorthand, List<CssComponentValue> significant)
     {
         var corners = CssPropertyRegistry.GetLonghandsRecursive(shorthand);
-        var slash = significant.FindIndex(value => value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.Token.IsDelim('/'));
-        var horizontal = ExpandRadii(significant[..(slash < 0 ? significant.Count : slash)], corners.Count);
-        var vertical = slash < 0 ? horizontal : ExpandRadii(significant[(slash + 1)..], corners.Count);
-        if (horizontal is null || vertical is null)
+        if (ExpandRadii(significant, corners.Count) is not { } radii)
             return null;
 
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
         for (var i = 0; i < corners.Count; i++)
         {
-            result[corners[i]] = horizontal[i] == vertical[i] ? horizontal[i] : horizontal[i] + " " + vertical[i];
+            result[corners[i]] = radii[i];
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Returns the radius of each corner from the radii of a shorthand: the horizontal radii, then the vertical radii after a
+    /// slash. The radius of a single corner is one or two lengths, or a horizontal and a vertical length separated by a slash
+    /// (&lt;border-radius&gt;).
+    /// </summary>
+    private static string[]? ExpandRadii(List<CssComponentValue> values, int count)
+    {
+        var slash = values.FindIndex(value => value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.Token.IsDelim('/'));
+        var horizontalValues = values[..(slash < 0 ? values.Count : slash)].ConvertAll(SerializeRadius);
+        var verticalValues = slash < 0 ? null : values[(slash + 1)..].ConvertAll(SerializeRadius);
+        if (count == 1)
+        {
+            if (verticalValues is null && horizontalValues.Count == 2)
+            {
+                verticalValues = [horizontalValues[1]];
+                horizontalValues.RemoveAt(1);
+            }
+
+            if (horizontalValues.Count != 1 || verticalValues is not (null or { Count: 1 }))
+                return null;
+        }
+
+        var horizontal = ExpandCornerValues(horizontalValues, count);
+        var vertical = verticalValues is null ? horizontal : ExpandCornerValues(verticalValues, count);
+        if (horizontal is null || vertical is null)
+            return null;
+
+        var result = new string[count];
+        for (var i = 0; i < count; i++)
+        {
+            result[i] = horizontal[i] == vertical[i] ? horizontal[i] : horizontal[i] + " " + vertical[i];
         }
 
         return result;
 
-        static string[]? ExpandRadii(List<CssComponentValue> values, int count)
-        {
-            if (values.Count < 1 || values.Count > count)
-                return null;
-
-            var radii = values.ConvertAll(value => value is CssPreservedToken { Type: CssTokenType.Number, Token.NumericValue: 0 } ? "0px" : CssSerializer.SerializeValue([value], property: null));
-            if (count == 2)
-                return [radii[0], radii.Count > 1 ? radii[1] : radii[0]];
-
-            var top = radii[0];
-            var right = radii.Count > 1 ? radii[1] : top;
-            var bottom = radii.Count > 2 ? radii[2] : top;
-            var left = radii.Count > 3 ? radii[3] : right;
-            return [top, right, bottom, left];
-        }
+        static string SerializeRadius(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Number, Token.NumericValue: 0 } ? "0px" : CssSerializer.SerializeValue([value], property: null);
     }
 
     /// <summary>
-    /// The corner shorthands (https://drafts.csswg.org/css-borders-4/#corner-shorthands): corner-top-left sets the radius and the
-    /// shape of a corner, corner-top the ones of the two corners of a side and corner the ones of the four corners (as the
-    /// values of margin: top left, top right, bottom right, bottom left). The corners are separated by slashes; each one is
-    /// <c>normal</c> (no radius, round) or a radius (one or two &lt;length-percentage&gt;) and a shape, in any order.
+    /// Serializes the radii of corners as border-radius: the horizontal radii, then the vertical radii after a slash when they
+    /// differ. The radius of a single corner is its value.
+    /// </summary>
+    private static string? SerializeRadii(string[] radii)
+    {
+        if (radii.Length == 1)
+            return radii[0];
+
+        var horizontal = new string[radii.Length];
+        var vertical = new string[radii.Length];
+        for (var i = 0; i < radii.Length; i++)
+        {
+            var parts = Cascade.CssValueComputer.SplitComponents(radii[i]);
+            if (parts.Length is < 1 or > 2)
+                return null;
+
+            horizontal[i] = parts[0];
+            vertical[i] = parts.Length == 2 ? parts[1] : parts[0];
+        }
+
+        var h = SerializeCornerValues(horizontal);
+        var v = SerializeCornerValues(vertical);
+        return h == v ? h : h + " / " + v;
+    }
+
+    /// <summary>
+    /// The corner shorthands (https://drafts.csswg.org/css-borders-4/#corner-shorthands): <c>corner</c> is
+    /// <c>&lt;'corner-shape'&gt; || &lt;'border-radius'&gt;</c>, <c>corner-top</c> is
+    /// <c>&lt;'corner-top-shape'&gt; || &lt;'border-top-radius'&gt;</c> and <c>corner-top-left</c> is
+    /// <c>&lt;'corner-top-left-shape'&gt; || &lt;'border-top-left-radius'&gt;</c>: the omitted component is reset to its
+    /// initial value (no radius, round). The grammar ensures that the shapes and the radii are not interleaved.
     /// </summary>
     private static Dictionary<string, string>? ExpandCorner(CssPropertyDefinition shorthand, List<CssComponentValue> significant)
     {
         var (radiusLonghands, shapeLonghands) = GetCornerLonghands(shorthand);
-        var corners = new List<(string Radius, string Shape)>();
-        var current = new List<CssComponentValue>();
+        var count = radiusLonghands.Count;
+        if (shapeLonghands.Count != count)
+            return null;
+
+        var shapes = new List<string>(count);
+        var radii = new List<CssComponentValue>(significant.Count);
         foreach (var value in significant)
         {
-            if (value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.Token.IsDelim('/'))
+            switch (value)
             {
-                if (ParseCorner(current) is not { } parsed)
-                    return null;
+                case CssPreservedToken { Type: CssTokenType.Ident } ident:
+                    shapes.Add(InfraAscii.ToAsciiLowercase(ident.Token.Value));
+                    break;
 
-                corners.Add(parsed);
-                current = [];
-            }
-            else
-            {
-                current.Add(value);
+                case CssFunction function when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "superellipse"):
+                    shapes.Add(CssSerializer.SerializeValue([value], property: null));
+                    break;
+
+                default:
+                    radii.Add(value);
+                    break;
             }
         }
 
-        if (ParseCorner(current) is not { } last)
-            return null;
-
-        corners.Add(last);
-        var count = radiusLonghands.Count;
-        if (corners.Count > count || shapeLonghands.Count != count)
+        var cornerShapes = shapes.Count == 0 ? [.. Enumerable.Repeat("round", count)] : ExpandCornerValues(shapes, count);
+        var cornerRadii = radii.Count == 0 ? [.. Enumerable.Repeat("0px", count)] : ExpandRadii(radii, count);
+        if (cornerShapes is null || cornerRadii is null)
             return null;
 
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
         for (var i = 0; i < count; i++)
         {
-            // The missing values are the ones of the opposite corner, then of the first one
-            var corner = i < corners.Count ? corners[i] : count == 4 && i == 3 && corners.Count > 1 ? corners[1] : corners[0];
-            result[radiusLonghands[i]] = corner.Radius;
-            result[shapeLonghands[i]] = corner.Shape;
+            result[radiusLonghands[i]] = cornerRadii[i];
+            result[shapeLonghands[i]] = cornerShapes[i];
         }
 
         return result;
-
-        static (string Radius, string Shape)? ParseCorner(List<CssComponentValue> values)
-        {
-            if (values is [CssPreservedToken { Type: CssTokenType.Ident } normal] && normal.Token.IsIdent("normal"))
-                return ("0px", "round");
-
-            var radii = new List<string>(2);
-            string? shape = null;
-            foreach (var value in values)
-            {
-                if (value is CssPreservedToken { Type: CssTokenType.Ident } || (value is CssFunction function && InfraAscii.EqualsIgnoreAsciiCase(function.Name, "superellipse")))
-                {
-                    if (shape is not null)
-                        return null;
-
-                    shape = value is CssPreservedToken ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : CssSerializer.SerializeValue([value], property: null);
-                }
-                else
-                {
-                    radii.Add(value is CssPreservedToken { Type: CssTokenType.Number, Token.NumericValue: 0 } ? "0px" : CssSerializer.SerializeValue([value], property: null));
-                }
-            }
-
-            if (shape is null || radii.Count is < 1 or > 2)
-                return null;
-
-            return (radii.Count == 2 && radii[0] != radii[1] ? radii[0] + " " + radii[1] : radii[0], shape);
-        }
     }
 
+    /// <summary>
+    /// Returns the value of each corner from the values of a corner shorthand: the four corners take the values as the sides
+    /// of margin (top left, top right, bottom right, bottom left), the two corners of a side take one or two values.
+    /// </summary>
+    private static string[]? ExpandCornerValues(List<string> values, int count)
+    {
+        if (values.Count < 1 || values.Count > count)
+            return null;
+
+        if (count == 1)
+            return [values[0]];
+
+        if (count == 2)
+            return [values[0], values.Count > 1 ? values[1] : values[0]];
+
+        var top = values[0];
+        var right = values.Count > 1 ? values[1] : top;
+        var bottom = values.Count > 2 ? values[2] : top;
+        var left = values.Count > 3 ? values[3] : right;
+        return [top, right, bottom, left];
+    }
+
+    /// <summary>
+    /// Serializes a corner shorthand: the shapes first, omitted when every corner is round, then the radii (as border-radius),
+    /// omitted when no corner has a radius (0px) and a shape is not round.
+    /// </summary>
     private static string? SerializeCorner(CssPropertyDefinition shorthand, Dictionary<string, string> lookup)
     {
         var (radiusLonghands, shapeLonghands) = GetCornerLonghands(shorthand);
@@ -227,81 +272,81 @@ internal static partial class CssPropertyRules
         if (shapeLonghands.Count != count)
             return null;
 
-        var corners = new List<string>(count);
+        var radii = new string[count];
+        var shapes = new string[count];
         for (var i = 0; i < count; i++)
         {
             if (!lookup.TryGetValue(radiusLonghands[i], out var radius) || !lookup.TryGetValue(shapeLonghands[i], out var shape))
                 return null;
 
-            // A corner without radius whose shape is round is normal
-            corners.Add(IsNormalCorner(radius, shape) ? "normal" : radius + " " + shape);
+            radii[i] = radius;
+            shapes[i] = shape;
         }
 
-        // The shortest list of corners
-        if (count == 4 && corners[3] == corners[1])
-        {
-            corners.RemoveAt(3);
-            if (corners[2] == corners[0])
-            {
-                corners.RemoveAt(2);
-            }
-        }
+        if (SerializeRadii(radii) is not { } radiiValue)
+            return null;
 
-        if (corners.Count == 2 && corners[1] == corners[0])
-        {
-            corners.RemoveAt(1);
-        }
+        if (Array.TrueForAll(shapes, shape => shape is "round" or "superellipse(1)"))
+            return radiiValue;
 
-        return string.Join(" / ", corners);
+        var shapesValue = SerializeCornerValues(shapes);
+        return Array.TrueForAll(radii, radius => radius is "0px" or "0") ? shapesValue : shapesValue + " " + radiiValue;
     }
 
     /// <summary>
-    /// Returns the values of the longhands of a corner shorthand where the corners that are serialized as <c>normal</c> (no
-    /// radius, round) have the values that <c>normal</c> sets (0px and round), or the values when the property is not a corner
-    /// shorthand or has no such corner: the serialization of the shorthand sets these values back.
+    /// Returns the values of the longhands of a corner shorthand where the components that its serialization omits have the
+    /// values that its expansion sets back: the shapes are round when they all are (superellipse(1) when computed), and the
+    /// radii are 0px when they all are zero (0 when specified). Returns the values when the property is not a corner shorthand.
     /// </summary>
-    public static Dictionary<string, string> GetNormalCornerLonghands(CssPropertyDefinition shorthand, Dictionary<string, string> lookup)
+    public static Dictionary<string, string> GetOmittedCornerLonghands(CssPropertyDefinition shorthand, Dictionary<string, string> lookup)
     {
-        if (!shorthand.Name.StartsWith("corner", StringComparison.Ordinal) || !ShorthandRules.TryGetValue(shorthand.Name, out var rules) || rules.Expand != ExpandCorner)
+        if (!ShorthandRules.TryGetValue(shorthand.Name, out var rules) || rules.Expand != ExpandCorner)
             return lookup;
 
         var (radiusLonghands, shapeLonghands) = GetCornerLonghands(shorthand);
-        var result = lookup;
-        for (var i = 0; i < radiusLonghands.Count && i < shapeLonghands.Count; i++)
+        var allRound = shapeLonghands.TrueForAll(name => lookup.TryGetValue(name, out var shape) && shape is "round" or "superellipse(1)");
+        var allZero = radiusLonghands.TrueForAll(name => lookup.TryGetValue(name, out var radius) && radius is "0px" or "0");
+        if (!allRound && !allZero)
+            return lookup;
+
+        var result = new Dictionary<string, string>(lookup, StringComparer.Ordinal);
+        if (allRound)
         {
-            if (lookup.TryGetValue(radiusLonghands[i], out var radius) && lookup.TryGetValue(shapeLonghands[i], out var shape) && IsNormalCorner(radius, shape) && (radius != "0px" || shape != "round"))
+            foreach (var name in shapeLonghands)
             {
-                result = ReferenceEquals(result, lookup) ? new Dictionary<string, string>(lookup, StringComparer.Ordinal) : result;
-                result[radiusLonghands[i]] = "0px";
-                result[shapeLonghands[i]] = "round";
+                result[name] = "round";
+            }
+        }
+
+        if (allZero)
+        {
+            foreach (var name in radiusLonghands)
+            {
+                result[name] = "0px";
             }
         }
 
         return result;
     }
 
-    /// <summary>Whether a corner has no radius (a zero length or percentage: 0px, 0%, 0rem) and is round.</summary>
-    private static bool IsNormalCorner(string radius, string shape)
+    /// <summary>The shortest list of values of the corners (the reverse of <see cref="ExpandCornerValues"/>).</summary>
+    private static string SerializeCornerValues(string[] values)
     {
-        if (shape is not ("round" or "superellipse(1)"))
-            return false;
+        if (values.Length == 1)
+            return values[0];
 
-        var index = 0;
-        while (index < radius.Length && radius[index] is '0' or '.' or '+' or '-')
+        if (values.Length == 2)
+            return values[0] == values[1] ? values[0] : values[0] + " " + values[1];
+
+        if (values[1] == values[3])
         {
-            index++;
+            if (values[0] == values[2])
+                return values[0] == values[1] ? values[0] : values[0] + " " + values[1];
+
+            return values[0] + " " + values[1] + " " + values[2];
         }
 
-        if (index == 0 || !radius.AsSpan(0, index).Contains('0'))
-            return false;
-
-        for (var i = index; i < radius.Length; i++)
-        {
-            if (radius[i] is not ('%' or (>= 'a' and <= 'z') or (>= 'A' and <= 'Z')))
-                return false;
-        }
-
-        return true;
+        return string.Join(' ', values);
     }
 
     /// <summary>Returns the radius longhands and the shape longhands of a corner shorthand, in the order of its corners.</summary>
@@ -320,40 +365,16 @@ internal static partial class CssPropertyRules
     private static string? SerializeBorderRadius(CssPropertyDefinition shorthand, Dictionary<string, string> lookup)
     {
         var corners = CssPropertyRegistry.GetLonghandsRecursive(shorthand);
-        var horizontal = new string[corners.Count];
-        var vertical = new string[corners.Count];
+        var radii = new string[corners.Count];
         for (var i = 0; i < corners.Count; i++)
         {
             if (!lookup.TryGetValue(corners[i], out var corner))
                 return null;
 
-            var parts = Cascade.CssValueComputer.SplitComponents(corner);
-            if (parts.Length is < 1 or > 2)
-                return null;
-
-            horizontal[i] = parts[0];
-            vertical[i] = parts.Length == 2 ? parts[1] : parts[0];
+            radii[i] = corner;
         }
 
-        var h = SerializeRadii(horizontal);
-        var v = SerializeRadii(vertical);
-        return h == v ? h : h + " / " + v;
-
-        static string SerializeRadii(string[] radii)
-        {
-            if (radii.Length == 2)
-                return radii[0] == radii[1] ? radii[0] : radii[0] + " " + radii[1];
-
-            if (radii[1] == radii[3])
-            {
-                if (radii[0] == radii[2])
-                    return radii[0] == radii[1] ? radii[0] : radii[0] + " " + radii[1];
-
-                return radii[0] + " " + radii[1] + " " + radii[2];
-            }
-
-            return string.Join(' ', radii);
-        }
+        return SerializeRadii(radii);
     }
 
     /// <summary>will-change (https://drafts.csswg.org/css-will-change/#will-change): the identifiers of the list cannot be auto, will-change, none, all or a CSS-wide keyword.</summary>

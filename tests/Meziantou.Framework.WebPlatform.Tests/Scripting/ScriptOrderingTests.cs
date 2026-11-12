@@ -96,6 +96,34 @@ public sealed class ScriptOrderingTests : IDisposable
     }
 
     [Fact]
+    public void SvgScripts_AreOrderedAsTheHtmlScripts()
+    {
+        var document = Parse("<svg><script async href=c.js></script><script href=a.js></script><script defer href=b.js></script><script>inline()</script></svg><p id=after></p>");
+        Assert.Null(document.GetElementById("after"));
+
+        _loader.Complete("c.js", "c()");
+        RunUntilIdle();
+        Assert.Equal(["c loading"], _log);
+
+        _loader.Complete("a.js", "a()");
+        RunUntilIdle();
+        Assert.NotNull(document.GetElementById("after"));
+        Assert.Equal(["c loading", "a loading", "inline loading"], _log);
+
+        _loader.Complete("b.js", "b()");
+        RunUntilIdle();
+        Assert.Equal(["c loading", "a loading", "inline loading", "b interactive", "DOMContentLoaded", "load"], _log);
+
+        var scripts = document.GetElementsByTagName("script").Cast<SvgScriptElement>().ToArray();
+#pragma warning disable WEBPLATEXP0020 // The async IDL attribute of the SVG scripts is not defined by SVG 2
+        Assert.False(scripts[1].Async);
+        Assert.True(scripts[0].Async);
+        scripts[0].RemoveAttribute("async");
+        Assert.False(scripts[0].Async);
+#pragma warning restore WEBPLATEXP0020
+    }
+
+    [Fact]
     public void ScriptInsertedScripts_WithAsyncFalse_RunInInsertionOrder()
     {
         var document = Parse("<body>");

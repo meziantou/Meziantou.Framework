@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 using Meziantou.Framework.WebPlatform.Dom.FileApi;
@@ -14,8 +15,9 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// context of the window that created the object. The events are fired by the tasks of the event loop of the window.
 /// </summary>
 /// <remarks>
-/// The response body is received at once: the <c>progress</c> event is fired once, when the body is received. A
-/// synchronous request blocks the event loop until the loader completes. An object created without window (e.g. from .NET
+/// The body of the response of an asynchronous request is read as it arrives (<see cref="DocumentResource.RemainingContentBytes"/>):
+/// the <c>readystatechange</c> and <c>progress</c> events are fired for its chunks, at most every 50 ms. A synchronous
+/// request blocks the event loop until the loader completes. An object created without window (e.g. from .NET
 /// without script engine) cannot send requests: they are network errors.
 /// </remarks>
 /// <seealso href="https://xhr.spec.whatwg.org/#interface-xmlhttprequest"/>
@@ -66,6 +68,8 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     private bool _uploadListener;
     private bool _timedOut;
     private FetchResponse _response = FetchResponse.NetworkError();
+    // The received bytes (https://xhr.spec.whatwg.org/#received-bytes): read with ReceivedBytes, which copies the bytes of a
+    // body read as it arrives from _receivedBuffer
     private byte[] _receivedBytes = [];
     private XmlHttpRequestResponseType _responseType;
     private object? _responseObject;
@@ -78,9 +82,16 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     private IDisposable? _fetchGroupRecord;
     private long _fetchStart;
 
-    // The fetch of the current request, complete once the whole response is received (the done flag of the request)
+    // The fetch of the current request, complete once the headers of the response are received
     private Task<FetchResponse>? _fetchTask;
     private long _lastProgressLoaded = -1;
+
+    // The body of a response that arrives over time (see FetchBodyReader): the bytes received so far, the time the events of
+    // its last chunk were fired, and the timing of the request, reported at the end of the body
+    private FetchBodyReader? _bodyReader;
+    private ArrayBufferWriter<byte>? _receivedBuffer;
+    private long _lastChunkEventsTimestamp;
+    private ResourceTiming? _bodyTiming;
 
     /// <summary>Creates a request object in the <see cref="Unsent"/> state.</summary>
     /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest"/>
@@ -202,6 +213,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         _authorRequestHeaders = [];
         _response = FetchResponse.NetworkError();
         _receivedBytes = [];
+        _receivedBuffer = null;
         _lastProgressLoaded = -1;
         ResetResponseObject();
         if (ReadyState != Opened)
@@ -328,6 +340,9 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             UseUrlCredentials = _requestUrl!.IncludesCredentials,
             BlobUrlEntry = _requestBlobUrlEntry,
             Synchronous = _synchronous,
+
+            // The body of the response of an asynchronous request is read as it arrives (https://xhr.spec.whatwg.org/#dom-xmlhttprequest-send, processBodyChunk)
+            StreamsBody = !_synchronous,
         };
 
         _uploadComplete = false;
@@ -358,6 +373,10 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         _fetchController = controller;
         FetchResponse response;
         var timing = environment is not null && RelevantGlobal is { } relevantGlobal ? ResourceTiming.Start(relevantGlobal, request, "xmlhttprequest") : null;
+
+        // https://w3c.github.io/long-animation-frames/#record-pause-duration: the running script is paused while the request is waited for
+        var pausedEventLoop = RelevantWindow?.EventLoop;
+        var pauseStart = pausedEventLoop?.GetPauseStartTimestamp() ?? 0;
         try
         {
             response = environment is null ? FetchResponse.NetworkError() : Fetching.FetchAsync(request, controller.Token).GetAwaiter().GetResult();
@@ -366,6 +385,8 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         {
             response = FetchResponse.NetworkError();
         }
+
+        pausedEventLoop?.RecordPauseDuration(pauseStart);
 
         _fetchController = null;
         if (fetchId != _fetchId)
@@ -437,7 +458,16 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
                 // The request body is transmitted, then the response is processed, by the tasks of the networking task source
                 QueueFetchTask(fetchId, () =>
                 {
-                    timing?.Report(completed.Result);
+                    // The timing of a body that arrives over time is reported at the end of the body
+                    if (!completed.Result.IsNetworkError && completed.Result.Resource is { RemainingContentBytes: not null })
+                    {
+                        _bodyTiming = timing;
+                    }
+                    else
+                    {
+                        timing?.Report(completed.Result);
+                    }
+
                     // The body of a request answered by a service worker is not transmitted: the upload has no progress events
                     if (!_uploadComplete && !completed.Result.IsNetworkError && !request.IsAnsweredByServiceWorker)
                     {
@@ -470,6 +500,16 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         if (ReadyState != HeadersReceived || fetchId != _fetchId)
             return;
 
+        // A body that arrives over time is read chunk by chunk
+        if (_fetchController is { } controller && FetchBodyReader.Create(_response, controller.Token) is { } reader)
+        {
+            _bodyReader = reader;
+            _receivedBuffer = new ArrayBufferWriter<byte>();
+            _lastChunkEventsTimestamp = 0;
+            ReadBodyChunk(fetchId, reader, GetContentLength(_response.HeaderList));
+            return;
+        }
+
         if (_response.Body is not { } body)
         {
             HandleResponseEndOfBody();
@@ -496,10 +536,108 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             if (fetchId != _fetchId)
                 return;
 
-            FireProgressEvent("progress", _receivedBytes.Length, length);
-            _lastProgressLoaded = _receivedBytes.Length;
+            FireProgressEvent("progress", body.Length, length);
+            _lastProgressLoaded = body.Length;
             QueueFetchTask(fetchId, HandleResponseEndOfBody);
         });
+    }
+
+    /// <summary>Reads the next chunk of a body that arrives over time: it is processed by a task of the fetch.</summary>
+    private void ReadBodyChunk(int fetchId, FetchBodyReader reader, long length)
+    {
+        Task<ReadOnlyMemory<byte>?> read;
+        try
+        {
+            read = reader.ReadAsync();
+        }
+#pragma warning disable CA1031 // A failure of the body is a network error
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            read = Task.FromException<ReadOnlyMemory<byte>?>(ex);
+        }
+
+        var eventLoop = RelevantGlobal?.EventLoop;
+        eventLoop?.BeginOperation();
+        _ = read.ContinueWith(
+            completed =>
+            {
+                QueueFetchTask(fetchId, () => ProcessBodyChunk(fetchId, reader, completed, length));
+                eventLoop?.EndOperation();
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
+    /// <summary>
+    /// The processBodyChunk steps of send() (https://xhr.spec.whatwg.org/#dom-xmlhttprequest-send, step 11.9.6): the bytes are
+    /// appended to the received bytes, and the <c>readystatechange</c> and <c>progress</c> events are fired, unless the events
+    /// of the previous chunk were fired less than 50 ms ago. The end of the body is the end-of-body steps, and a failure of
+    /// the body is a network error.
+    /// </summary>
+    private void ProcessBodyChunk(int fetchId, FetchBodyReader reader, Task<ReadOnlyMemory<byte>?> read, long length)
+    {
+        if (!ReferenceEquals(reader, _bodyReader) || _receivedBuffer is not { } buffer)
+            return;
+
+        if (!read.IsCompletedSuccessfully || read.Result is not { } chunk)
+        {
+            _bodyReader = null;
+            var bodyTiming = _bodyTiming;
+            _bodyTiming = null;
+            if (!read.IsCompletedSuccessfully)
+            {
+                _response = FetchResponse.NetworkError();
+            }
+
+            bodyTiming?.ReportEndOfBody(_response, reader.Length);
+            HandleResponseEndOfBody();
+            return;
+        }
+
+        // The bytes are received (responseText has them), even when the events are not fired
+        buffer.Write(chunk.Span);
+        var clock = RelevantGlobal?.EventLoop.TimeProvider ?? TimeProvider.System;
+        var now = clock.GetTimestamp();
+        if (_lastChunkEventsTimestamp == 0 || clock.GetElapsedTime(_lastChunkEventsTimestamp, now) >= TimeSpan.FromMilliseconds(50))
+        {
+            _lastChunkEventsTimestamp = now;
+            if (ReadyState == HeadersReceived)
+            {
+                ReadyState = Loading;
+            }
+
+            FireEvent(new Event("readystatechange"));
+            if (fetchId != _fetchId)
+                return;
+
+            var loaded = buffer.WrittenCount;
+            FireProgressEvent("progress", loaded, length);
+            if (fetchId != _fetchId)
+                return;
+
+            _lastProgressLoaded = loaded;
+        }
+
+        ReadBodyChunk(fetchId, reader, length);
+    }
+
+    /// <summary>
+    /// The received bytes (https://xhr.spec.whatwg.org/#received-bytes): the bytes of a body read as it arrives are the ones of
+    /// all its chunks received so far, including the chunks whose events were not fired (they are fired at most every 50 ms).
+    /// </summary>
+    private byte[] ReceivedBytes
+    {
+        get
+        {
+            if (_receivedBuffer is { } buffer && _receivedBytes.Length != buffer.WrittenCount)
+            {
+                _receivedBytes = buffer.WrittenSpan.ToArray();
+            }
+
+            return _receivedBytes;
+        }
     }
 
     /// <summary>https://xhr.spec.whatwg.org/#handle-response-end-of-body</summary>
@@ -509,8 +647,13 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         if (_response.IsNetworkError)
             return;
 
-        _receivedBytes = _response.Body ?? [];
-        var transmitted = _receivedBytes.Length;
+        // The bytes of a body read as it arrived were received by its chunks
+        if (_receivedBuffer is null)
+        {
+            _receivedBytes = _response.Body ?? [];
+        }
+
+        var transmitted = ReceivedBytes.Length;
         var length = GetContentLength(_response.HeaderList);
 
         // The body is received at once: the progress event of its chunk was already fired
@@ -688,11 +831,11 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             switch (_responseType)
             {
                 case XmlHttpRequestResponseType.ArrayBuffer:
-                    _responseObject = _receivedBytes.ToArray();
+                    _responseObject = ReceivedBytes.ToArray();
                     break;
                 case XmlHttpRequestResponseType.Blob:
                     // https://xhr.spec.whatwg.org/#blob-response: the type is the serialized final MIME type (not normalized as by the Blob constructor)
-                    _responseObject = Blob.Create(_receivedBytes.ToArray(), GetFinalMimeType().ToString());
+                    _responseObject = Blob.Create(ReceivedBytes.ToArray(), GetFinalMimeType().ToString());
                     break;
                 case XmlHttpRequestResponseType.Document:
                     SetDocumentResponse();
@@ -701,7 +844,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
                     if (_response.Body is null)
                         return null;
 
-                    _responseObject = new Scripting.JsonText(DecodeUtf8WithoutBom(_receivedBytes));
+                    _responseObject = new Scripting.JsonText(DecodeUtf8WithoutBom(ReceivedBytes));
                     break;
             }
 
@@ -763,16 +906,16 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     /// <summary>https://xhr.spec.whatwg.org/#text-response</summary>
     private string GetTextResponse()
     {
-        if (_response.Body is null || _receivedBytes.Length == 0)
+        if (_response.Body is null || ReceivedBytes.Length == 0)
             return "";
 
         WebEncodingId? encoding = GetFinalCharset() is { } charset && WebEncodingRegistry.TryGetEncoding(charset, out var charsetEncoding) ? charsetEncoding : null;
         if (_responseType == XmlHttpRequestResponseType.Default && encoding is null && GetFinalMimeType().IsXml)
         {
-            encoding = GetXmlEncoding(_receivedBytes);
+            encoding = GetXmlEncoding(ReceivedBytes);
         }
 
-        return Decode(_receivedBytes, encoding ?? WebEncodingId.Utf8);
+        return Decode(ReceivedBytes, encoding ?? WebEncodingId.Utf8);
     }
 
     /// <summary>https://xhr.spec.whatwg.org/#document-response</summary>
@@ -804,14 +947,14 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             // The final charset, else the prescan, else UTF-8. The encoding is tentative, as for a navigation (a meta element of
             // the head after the first 1024 bytes changes it), as in the browsers (tested by WPT html/syntax/charset/xhr.html).
             // The encoding is not detected from the content (https://xhr.spec.whatwg.org/#document-response).
-            document = new HtmlDocumentParser(new HtmlParserOptions { Url = url, TransportEncoding = charset, DefaultEncoding = "UTF-8", EncodingDetector = null, AllowDeclarativeShadowRoots = false, OriginDocument = environment }).Parse(_receivedBytes);
+            document = new HtmlDocumentParser(new HtmlParserOptions { Url = url, TransportEncoding = charset, DefaultEncoding = "UTF-8", EncodingDetector = null, AllowDeclarativeShadowRoots = false, OriginDocument = environment }).Parse(ReceivedBytes);
         }
         else
         {
-            var encoding = charset is not null && WebEncodingRegistry.TryGetEncoding(charset, out var charsetEncoding) ? charsetEncoding : GetXmlEncoding(_receivedBytes) ?? WebEncodingId.Utf8;
+            var encoding = charset is not null && WebEncodingRegistry.TryGetEncoding(charset, out var charsetEncoding) ? charsetEncoding : GetXmlEncoding(ReceivedBytes) ?? WebEncodingId.Utf8;
             try
             {
-                document = XmlDocumentParser.ParseDocument(Decode(_receivedBytes, encoding), new XmlParserOptions { Url = url, ContentType = finalMimeType.Essence });
+                document = XmlDocumentParser.ParseDocument(Decode(ReceivedBytes, encoding), new XmlParserOptions { Url = url, ContentType = finalMimeType.Essence });
             }
             catch (System.Xml.XmlException)
             {
@@ -960,6 +1103,9 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     {
         _fetchId++;
         ReleaseFetchGroupRecord();
+        _bodyReader?.Cancel();
+        _bodyReader = null;
+        _bodyTiming = null;
         if (_fetchController is { } controller)
         {
             _fetchController = null;
@@ -1005,7 +1151,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         // received (req's done flag is set)
         window.EventLoop.QueueTimer(TimeSpan.FromMilliseconds(timeout) - elapsed, () => QueueFetchTask(fetchId, () =>
         {
-            if (!_sendFlag || _timeout != timeout || _fetchTask is { IsCompletedSuccessfully: true })
+            if (!_sendFlag || _timeout != timeout || (_fetchTask is { IsCompletedSuccessfully: true } fetchTask && _bodyReader is null && fetchTask.Result.Resource is not { RemainingContentBytes: not null }))
                 return;
 
             _timedOut = true;

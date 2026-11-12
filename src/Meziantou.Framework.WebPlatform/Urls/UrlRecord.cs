@@ -42,6 +42,14 @@ internal sealed class UrlRecord
 
     public string? Fragment { get; set; }
 
+    /// <summary>
+    /// Whether the input of the parser had an ASCII tab or newline (removed by the parser) and a <c>&lt;</c>, after the
+    /// leading and trailing C0 controls and spaces are trimmed: the URL is likely made of dangling markup (e.g. an attribute
+    /// whose quote is not closed, which captures the markup that follows it), and the fetches of its HTTP(S) URL are blocked
+    /// (the dangling markup mitigation, https://github.com/whatwg/fetch/pull/519).
+    /// </summary>
+    public bool PotentiallyDanglingMarkup { get; set; }
+
     public bool HasOpaquePath => OpaquePath is not null;
 
     public bool IsSpecial => UrlSchemes.IsSpecial(Scheme);
@@ -64,6 +72,7 @@ internal sealed class UrlRecord
             Path = [.. Path],
             Query = Query,
             Fragment = Fragment,
+            PotentiallyDanglingMarkup = PotentiallyDanglingMarkup,
         };
     }
 

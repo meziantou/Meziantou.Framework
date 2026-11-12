@@ -26,8 +26,8 @@ URL.
   `New()` for `Guid`, `==`, `Parse`, `TryParse`, `IParsable<T>`, `ISpanFormattable`...
 - **Validate the values** and replace any generated member by your own. See
   [Validation and custom members](06-ValidationAndCustomMembers.md).
-- **Serialize and bind IDs** with System.Text.Json, Newtonsoft.Json, MongoDB, `TypeConverter`, ASP.NET Core and
-  Entity Framework Core. See [Integrations](09-Integrations/01-Overview.md).
+- **Serialize and bind IDs** with System.Text.Json, Newtonsoft.Json, MongoDB, YAML, TOML, `TypeConverter`, ASP.NET Core
+  and Entity Framework Core. See [Integrations](09-Integrations/01-Overview.md).
 - **Configure the generated code** per type or for the whole assembly. See [Options](07-Options.md) and
   [Assembly-wide defaults](08-AssemblyDefaults.md).
 - **Write code that works with any ID** through the [IStronglyTypedId](cref:Meziantou.Framework.IStronglyTypedId) interfaces. See
@@ -43,7 +43,8 @@ URL.
 - **Your code wins.** When you write a member that the generator would generate, such as the constructor or
   `ToString`, the generator uses yours instead.
 - **Converters follow your references.** A converter is generated only when the project can use it: the Newtonsoft.Json
-  converter needs a reference to Newtonsoft.Json, the MongoDB serializer one to MongoDB.Bson.
+  converter needs a reference to Newtonsoft.Json, the MongoDB serializer one to MongoDB.Bson, and the YAML and TOML
+  converters one to Meziantou.Framework.Yaml and Meziantou.Framework.Toml.
 
 ## Packages and namespaces
 

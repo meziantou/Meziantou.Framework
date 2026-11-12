@@ -314,6 +314,27 @@ public sealed class PositionedLayoutTests : IDisposable
     }
 
     [Fact]
+    public void Sticky_InlineBoxMovesTheBlocksSplitOutOfIt()
+    {
+        // As in Blink, the sticky inline box sticks as one box with the block it contains: its sticky box is the bounding box of
+        // its fragments and of the block, which follows its offset
+        var document = Parse("""
+            <div id=s style='overflow: hidden; height: 100px'>
+              <div style='height: 300px'></div><span id=a style='position: sticky; top: 40px'><div id=b style='height: 50px'></div></span><div style='height: 20px'></div>
+            </div>
+            """);
+        document.GetElementById("s")!.ScrollTop = 270;
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(40, GetRect(document, "b").Y);
+        Assert.Equal(new PhysicalOffset(0, 10), GetFragment(document, "b").StickyOffset);
+
+        // The block stays in the containing block of the inline box (its bottom edge at the bottom of the contents)
+        document.GetElementById("a")!.SetAttribute("style", "position: sticky; top: 80px");
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(50, GetRect(document, "b").Y);
+    }
+
+    [Fact]
     public void Sticky_OverconstrainedStartEdgeWins()
     {
         // The sticky view rectangle (20px to 100px) is smaller than the box: the bottom edge moves the box up, then the top edge

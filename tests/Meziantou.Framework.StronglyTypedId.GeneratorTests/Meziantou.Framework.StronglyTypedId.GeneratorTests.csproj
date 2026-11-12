@@ -25,6 +25,10 @@
     <ProjectReference Include="../../src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.StronglyTypedId.Interfaces/Meziantou.Framework.StronglyTypedId.Interfaces.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Toml/Meziantou.Framework.Toml.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Toml.SourceGenerator/Meziantou.Framework.Toml.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
 
 </Project>

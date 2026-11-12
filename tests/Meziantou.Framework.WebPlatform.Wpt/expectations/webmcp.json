@@ -1,0 +1,207 @@
+{
+  "webmcp/idlharness.https.window.js": {
+    "total": 38
+  },
+  "webmcp/imperative/detached-frame-executeTool.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/detached-frame-getTools.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/detached-frame-modelContext.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/detached-frame-registerTool.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/detached-frame-waitForToolsUntil.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/duplicate_tool_registration.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/executeTool-abort.https.html": {
+    "total": 7,
+    "failures": {
+      "concurrent executions of the same tool have independent AbortSignals": "FAIL",
+      "executeTool() provides a non-aborted default AbortSignal when called without options": "FAIL"
+    }
+  },
+  "webmcp/imperative/executeTool-across-trees.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/executeTool-caller-navigate-abort.https.html": {
+    "total": 4
+  },
+  "webmcp/imperative/executeTool-detach-toolactivated.https.html": {
+    "total": 2
+  },
+  "webmcp/imperative/executeTool-detach-toolcancel.https.html": {
+    "total": 2
+  },
+  "webmcp/imperative/executeTool-error-window-onerror.https.html": {
+    "total": 2
+  },
+  "webmcp/imperative/executeTool-events.https.html": {
+    "total": 3,
+    "failures": {
+      "toolactivated is dispatched at the ModelContext of the tool target document": "FAIL"
+    }
+  },
+  "webmcp/imperative/executeTool-invalid-dictionary.https.html": {
+    "total": 2
+  },
+  "webmcp/imperative/executeTool-reentrant-cancellation.https.html": {
+    "total": 3
+  },
+  "webmcp/imperative/executeTool-signal-cross-origin.https.html": {
+    "total": 3
+  },
+  "webmcp/imperative/executeTool-target-detachment.https.html": {
+    "total": 4
+  },
+  "webmcp/imperative/executeTool-target-navigation.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/executeTool-unregister-resolution-race.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/exposedTo-cross-origin-child.https.html": {
+    "total": 5,
+    "failures": {
+      "Cross-origin child exposes tool to parent": "FAIL",
+      "Iframe exposes tool to origin that is neither its own nor its parent's": "FAIL",
+      "Parent exposes tool to cross-origin child": "FAIL",
+      "Parent exposes tool to origin that is neither its own nor its iframe's": "FAIL"
+    }
+  },
+  "webmcp/imperative/exposedTo-defaults-cross-origin.https.html": {
+    "total": 4
+  },
+  "webmcp/imperative/exposedTo-defaults-same-origin.https.html": {
+    "total": 4,
+    "failures": {
+      "Parent tool with empty `exposedTo` array is visible to same-origin iframe": "FAIL",
+      "Parent tool with missing `exposedTo` array is visible to same-origin iframe": "FAIL",
+      "Same-origin iframe tool with default exposure is visible to parent": "FAIL",
+      "Same-origin iframe tool with empty exposedTo array is visible to parent": "FAIL"
+    }
+  },
+  "webmcp/imperative/exposedTo-invalid-origins.https.html": {
+    "total": 12,
+    "failures": {
+      "Aborting a signal from a rejected registration must not unregister a later valid tool with the same name": "FAIL"
+    }
+  },
+  "webmcp/imperative/exposedTo-multiple-children.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/exposedTo-window-open.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/getTools-filtering.https.html": {
+    "total": 2
+  },
+  "webmcp/imperative/getTools-imperative-annotations.https.html": {
+    "total": 4
+  },
+  "webmcp/imperative/getTools-imperative-schema.https.html": {
+    "total": 2
+  },
+  "webmcp/imperative/getTools.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/initial-about-blank-replacement-register-tool.https.html": {
+    "total": 1,
+    "failures": {
+      "The about:blank document that replaces the initial about:blank document can register tools": "FAIL"
+    }
+  },
+  "webmcp/imperative/initial-about-blank-replacement-removes-tools.https.html": {
+    "total": 1,
+    "failures": {
+      "Tools registered by the initial about:blank document are removed when about:blank replaces it": "FAIL"
+    }
+  },
+  "webmcp/imperative/initial-about-blank-shared-tool.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/javascript-url-document-replacement.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/model_context.https.html": {
+    "total": 4,
+    "failures": {
+      "createHTMLDocument().modelContext rejects tool operations with InvalidStateError, with active document first": "FAIL",
+      "createHTMLDocument().modelContext rejects tool operations with InvalidStateError, with inactive document first": "FAIL"
+    }
+  },
+  "webmcp/imperative/non-secure.html": {
+    "total": 1
+  },
+  "webmcp/imperative/object-arguments.https.html": {
+    "total": 1,
+    "failures": {
+      "tool execution requires a JSON Object input argument; and Arrays are Objects": "FAIL"
+    }
+  },
+  "webmcp/imperative/opaque-origin-tools.https.html": {
+    "total": 2
+  },
+  "webmcp/imperative/permissions-policy.https.html": {
+    "total": 8,
+    "failures": {
+      "resumeTool() throws NotAllowedError in iframe when permissions policy is disabled": "FAIL"
+    }
+  },
+  "webmcp/imperative/register-tool-input-schema-registers-same-name.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/register-tool-title.https.html": {
+    "total": 3
+  },
+  "webmcp/imperative/register_tool_invalid_json_schema.https.html": {
+    "total": 8
+  },
+  "webmcp/imperative/register_tool_name_validation.https.html": {
+    "total": 2
+  },
+  "webmcp/imperative/register_tool_no_schema.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/register_tool_signal.https.html": {
+    "total": 4
+  },
+  "webmcp/imperative/register_tool_toolchange.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/register_tool_with_empty_annotation.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/register_tool_with_schema.https.html": {
+    "total": 4
+  },
+  "webmcp/imperative/same-origin-iframe-registerTool-regression.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/tool-re-registration-race.https.html": {
+    "total": 1
+  },
+  "webmcp/imperative/unregister-during-executeTool.https.html": {
+    "total": 4,
+    "failures": {
+      "Pending executeTool() Promise resolves successfully when target same-document tool is unregistered mid-execution": "FAIL",
+      "Pending executeTool() Promise resolves successfully when the target cross-origin tool is unregistered mid-execution": "FAIL",
+      "unregistering both outer and inner imperative tools during re-entrant executeTool() allows in-flight executions to settle": "FAIL"
+    }
+  },
+  "webmcp/imperative/wait-for-tools-until.https.html": {
+    "total": 4
+  },
+  "webmcp/tool-activated-event.https.html": {
+    "total": 4
+  },
+  "webmcp/tool-cancel-event.https.html": {
+    "total": 4
+  }
+}

@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Benchmarks.Workloads;
 
@@ -58,6 +59,19 @@ internal static class ImageWorkloads
     public static long JpegDecodeResizeEncode(byte[] input, Size size, MemoryStream output, ImageConfiguration? configuration = null)
     {
         using var image = Image.Load<Rgb24>(input, configuration is null ? null : new ImageDecodeOptions { Configuration = configuration });
+        image.Resize(new ResizeOptions(size) { Mode = ResizeMode.Contain });
+        return Encode(image, BenchmarkInputs.JpegEncoder, output);
+    }
+
+    /// <summary>
+    /// Upload-style request for a phone photo: decode a JPEG, turn it upright from its EXIF orientation, convert it from its
+    /// ICC profile to sRGB, resize it to fit <paramref name="size"/> (Catmull-Rom), encode a JPEG.
+    /// </summary>
+    public static long JpegPhotoToSrgbThumbnail(byte[] input, Size size, MemoryStream output, ImageConfiguration? configuration = null)
+    {
+        using var image = Image.Load<Rgb24>(input, configuration is null ? null : new ImageDecodeOptions { Configuration = configuration });
+        image.AutoOrient();
+        image.ConvertColorProfile(IccProfile.Srgb);
         image.Resize(new ResizeOptions(size) { Mode = ResizeMode.Contain });
         return Encode(image, BenchmarkInputs.JpegEncoder, output);
     }

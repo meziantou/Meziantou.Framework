@@ -707,28 +707,16 @@
     "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=fetch-handler-synthetic": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-synthetic)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=fetch-handler-to-fallback": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-to-fallback)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=no-fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=out-in&sw=fetch-handler": {
     "total": 1
@@ -933,28 +921,16 @@
     "total": 1
   },
   "speculation-rules/prerender/navigation-api-location-replace.https.html": {
-    "total": 1,
-    "failures": {
-      "navigation.entries() and navigation.activation should be updated on activation and handle replacing correctly": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/navigation-api-multiple-entries.https.html": {
-    "total": 1,
-    "failures": {
-      "navigation.entries() and navigation.activation should be updated on activation - multiple entries": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/navigation-api-redirect.https.html": {
-    "total": 1,
-    "failures": {
-      "NavigationPrecommitHandler.redirect() converting a navigation to push during prerender": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/navigation-api.https.html": {
-    "total": 1,
-    "failures": {
-      "navigation.entries() and navigation.activation should be updated on activation": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/navigation-intercepted-by-service-worker.https.html": {
     "total": 1

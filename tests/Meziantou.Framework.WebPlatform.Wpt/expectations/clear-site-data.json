@@ -21,10 +21,7 @@
     "total": 4
   },
   "clear-site-data/no-cors-fetch-iframe.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Clearing site data via no-cors cross-site request should work on partitioned data.": "FAIL"
-    }
+    "total": 1
   },
   "clear-site-data/no-cors-fetch-window.https.sub.html": {
     "total": 1

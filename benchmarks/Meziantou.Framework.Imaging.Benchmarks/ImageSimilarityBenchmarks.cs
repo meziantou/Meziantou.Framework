@@ -5,9 +5,9 @@ using Meziantou.Framework.Imaging.Benchmarks.Workloads;
 namespace Meziantou.Framework.Imaging.Benchmarks;
 
 /// <summary>
-/// SSIM and hash distances of a 1920x1080 source with transparency against a copy with a 100x100 square of a different
-/// color, as a visual regression test compares a screenshot with its reference. The 16-bit cases measure the conversion to
-/// 8-bit rows.
+/// SSIM, perceptual metrics and hash distances of a 1920x1080 source with transparency against a copy with a 100x100 square
+/// of a different color, as a visual regression test compares a screenshot with its reference. The 16-bit cases measure the
+/// conversion to 8-bit rows. SSIMULACRA 2 and Butteraugli are the metrics of the codec quality reports.
 /// </summary>
 [Config(typeof(WorkloadConfig))]
 public class ImageSimilarityBenchmarks
@@ -58,6 +58,14 @@ public class ImageSimilarityBenchmarks
     [Benchmark]
     [Workload("1920x1080 Rgba64 PSNR (16-bit samples)")]
     public double Psnr64SixteenBit() => ImageSimilarity.ComputePsnr(_expected64.Frames[0], _actual64.Frames[0], new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit });
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 SSIMULACRA 2")]
+    public double Ssimulacra2() => ImageSimilarity.ComputeSsimulacra2(_expected.Frames[0], _actual.Frames[0]);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 Butteraugli distance")]
+    public double Butteraugli() => ImageSimilarity.ComputeButteraugliDistance(_expected.Frames[0], _actual.Frames[0]).MaxDistance;
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 SSIM difference map")]

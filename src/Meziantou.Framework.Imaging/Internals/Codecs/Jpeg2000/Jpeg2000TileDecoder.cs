@@ -455,7 +455,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         }
 
         // The codeword segments: the contributions of the packets between two terminations of the coder
-        Span<Jpeg2000CodeBlockSegment> segments = stackalloc Jpeg2000CodeBlockSegment[MaxSegments];
+        var segments = worker.Segments.Span;
         var segmentCount = 0;
         var data = body;
         var first = contributions[block.FirstContribution];
@@ -788,6 +788,16 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             try
             {
                 Samples = Av1PooledArray<int>.Rent(scope, MaxBlockSamples, clear: false);
+                try
+                {
+                    // Every segment of a code-block is assigned before it is read
+                    Segments = Av1PooledArray<Jpeg2000CodeBlockSegment>.Rent(scope, MaxSegments, clear: false);
+                }
+                catch
+                {
+                    Samples.Dispose();
+                    throw;
+                }
             }
             catch
             {
@@ -797,6 +807,9 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         }
 
         public Jpeg2000Tier1Decoder Tier1 { get; }
+
+        /// <summary>Gets the codeword segments of the code-block being decoded (1.5 KB: too large for the stack of each code-block).</summary>
+        public Av1PooledArray<Jpeg2000CodeBlockSegment> Segments { get; }
 
         /// <summary>Gets the coefficients of the code-block being decoded.</summary>
         public Av1PooledArray<int> Samples { get; }
@@ -841,6 +854,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             _highThroughputDecoder?.Dispose();
             _highThroughputDecoder = null;
             Samples.Dispose();
+            Segments.Dispose();
             Scratch?.Dispose();
             Scratch = null;
             _data?.Dispose();

@@ -17,7 +17,7 @@ internal static class ServiceWorkerFetchHandling
             return false;
 
         var registry = ServiceWorkerRegistry.Get(browsingContext);
-        var registration = registry.Match(ServiceWorkerRegistry.GetStorageKey(url.SerializeOrigin(), browsingContext.IsCredentiallessNavigable, browsingContext), url);
+        var registration = registry.Match(ServiceWorkerRegistry.GetStorageKey(url, browsingContext.IsCredentiallessNavigable, browsingContext, isNavigable: true), url);
         lock (registry.Lock)
         {
             return registration?.Active is not null;
@@ -62,7 +62,7 @@ internal static class ServiceWorkerFetchHandling
 
             var registry = ServiceWorkerRegistry.Get(browsingContext);
             var credentialless = request.Navigable is { } navigable ? navigable.IsCredentiallessNavigable : request.Client?.IsCredentialless ?? false;
-            registration = registry.Match(ServiceWorkerRegistry.GetStorageKey(url.SerializeOrigin(), credentialless, browsingContext), url);
+            registration = registry.Match(ServiceWorkerRegistry.GetStorageKey(url, credentialless, browsingContext, isNavigable: request.Navigable is not null), url);
             ServiceWorkerRecord? activeWorker;
             lock (registry.Lock)
             {
@@ -234,7 +234,7 @@ internal static class ServiceWorkerFetchHandling
             return null;
 
         var coordinator = (options.CacheStorage ?? registration.Registry.GroupOwner.CacheStorageBackend).Coordinator;
-        var origin = registration.StorageKey.Origin;
+        var origin = registration.StorageKey.Serialize();
         var query = new CachedRequest { Method = request.Method, Url = request.CurrentUrl.Serialize(), Headers = request.HeaderList };
         CacheEntry? entry = null;
         foreach (var name in coordinator.Keys(origin))

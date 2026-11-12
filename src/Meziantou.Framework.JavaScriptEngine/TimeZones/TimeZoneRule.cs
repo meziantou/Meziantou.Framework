@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.JavaScriptEngine.TimeZones;
 
 /// <summary>How the day of a rule is given (the ON field of a tz Rule line).</summary>
@@ -70,8 +72,17 @@ internal readonly record struct TimeZoneRuleEntry(byte Month, TimeZoneRuleDayKin
 /// </summary>
 internal sealed class TimeZoneRecurringRule
 {
+    /// <summary>
+    /// The maximum number of entries: the transitions of a year are computed on the stack. The zones of the tz database
+    /// have 2 recurring rules (the start and the end of the daylight saving time).
+    /// </summary>
+    public const int MaxEntryCount = 32;
+
     public TimeZoneRecurringRule(int firstYear, int standardOffsetSeconds, TimeZoneRuleEntry[] entries)
     {
+        if (entries.Length > MaxEntryCount)
+            throw new InvalidDataException($"A time zone cannot have more than {MaxEntryCount} recurring rules");
+
         FirstYear = firstYear;
         StandardOffsetSeconds = standardOffsetSeconds;
         Entries = entries;
@@ -90,6 +101,7 @@ internal sealed class TimeZoneRecurringRule
     {
         var entries = Entries;
         var count = entries.Length;
+        Debug.Assert(count <= MaxEntryCount);
         Span<long> localTimes = stackalloc long[count];
         Span<int> order = stackalloc int[count];
 

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -102,6 +103,15 @@ internal sealed class PaletteQuantizer : IDisposable
     // The largest number of k-means passes that refine the palette of the median cut
     private const int RefinementPasses = 8;
 
+    // The scratch of the palette build, after the other state: the sums of the items of each entry (ComputeEntries), the
+    // coordinates of each entry, and the counts of the radix sort (SortKeys); too large for the stack
+    private const int EntryTotalsLength = 256 * 8 * sizeof(long);
+    private const int EntryCoordinatesLength = 256 * 4 * sizeof(int);
+    private const int BuildScratchLength = EntryTotalsLength + EntryCoordinatesLength + (SortKeysCountsLength * sizeof(int));
+
+    /// <summary>The number of counts that <see cref="SortKeys"/> needs: one per byte value of each of the three bytes of a key.</summary>
+    internal const int SortKeysCountsLength = 3 * 256;
+
     // The histogram counts and the median cut arrays are only used until the palette is built, and the cells only afterward:
     // they share their memory. A quantizer of translucent colors has twice as many buckets (the opaque ones, then the
     // translucent ones) and the sums of the translucent buckets (alpha-weighted colors and alpha)
@@ -114,6 +124,7 @@ internal sealed class PaletteQuantizer : IDisposable
     private readonly int _exactOffset;
     private readonly int _exactCountsOffset;
     private readonly int _vectorPaletteOffset;
+    private readonly int _buildScratchOffset;
     private readonly int _stateLength;
 
     private readonly int[] _palette = new int[256];
@@ -166,7 +177,8 @@ internal sealed class PaletteQuantizer : IDisposable
         _exactOffset = _translucentSumsOffset + (translucent ? Buckets * 4 * sizeof(long) : 0);
         _exactCountsOffset = _exactOffset + (ExactSlots * sizeof(int));
         _vectorPaletteOffset = _exactCountsOffset + (ExactSlots * sizeof(int));
-        _stateLength = _vectorPaletteOffset + (3 * VectorPlaneLength * sizeof(int));
+        _buildScratchOffset = _vectorPaletteOffset + (3 * VectorPlaneLength * sizeof(int));
+        _stateLength = _buildScratchOffset + BuildScratchLength;
         _state = scope.Rent(_stateLength, AllocationKind.Temporary, clear: false);
     }
 
@@ -450,6 +462,7 @@ internal sealed class PaletteQuantizer : IDisposable
         var items = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_itemsOffset, _bucketCount * sizeof(int))));
         var colors = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_colorsOffset, _bucketCount * sizeof(int))));
         var sortKeys = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_sortKeysOffset, _bucketCount * sizeof(int))));
+        var sortCounts = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_buildScratchOffset + EntryTotalsLength + EntryCoordinatesLength, SortKeysCountsLength * sizeof(int))));
 
         // Items: the non-empty buckets, opaque ones first, in bucket order, at their mean color (kept by bucket: the items are
         // reordered). An opaque item has the alpha 255; a translucent one has its premultiplied mean color and its mean alpha
@@ -524,7 +537,7 @@ internal sealed class PaletteQuantizer : IDisposable
                 sortKeys[i] = (((colors[items[i]] >> shift) & 0xFF) << 16) | items[i];
             }
 
-            SortKeys(sortKeys[start..end], items[start..end]);
+            SortKeys(sortKeys[start..end], items[start..end], sortCounts);
             for (var i = start; i < end; i++)
             {
                 items[i] = sortKeys[i] & 0xFFFF;
@@ -552,7 +565,9 @@ internal sealed class PaletteQuantizer : IDisposable
             }
         }
 
-        Span<int> coordinates = stackalloc int[256 * 4];
+        // An entry that owns no item keeps its coordinates: they start at zero
+        var coordinates = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_buildScratchOffset + EntryTotalsLength, EntryCoordinatesLength)));
+        coordinates.Clear();
         Span<bool> entryTranslucent = stackalloc bool[256];
         ComputeEntries(boxes, itemCount, counts, items, owners, sums, translucentSums, exact, coordinates, entryTranslucent);
         if (boxes > 1 && colorCount > 1)
@@ -666,7 +681,10 @@ internal sealed class PaletteQuantizer : IDisposable
 
         // The smallest (distance, index) pair over the candidates, as one number: a distance is at most 3 * 255^2 (18 bits).
         // The candidates are evaluated four at a time without a branch (the list is padded with its last entry): which one
-        // is the nearest is not predictable, and most cells have at most four of them
+        // is the nearest is not predictable, and most cells have at most four of them. The candidates are bytes, below the
+        // 256 entries of the planes, and the padded groups end within the cell
+        Debug.Assert(count <= MaxCellCandidates && (count + CellGroup - 1) / CellGroup * CellGroup < CellStride);
+        AssertPalettePlanes(256);
         ref var reds = ref unsafe(MemoryMarshal.GetArrayDataReference(_paletteRed));
         ref var greens = ref unsafe(MemoryMarshal.GetArrayDataReference(_paletteGreen));
         ref var blues = ref unsafe(MemoryMarshal.GetArrayDataReference(_paletteBlue));
@@ -796,6 +814,9 @@ internal sealed class PaletteQuantizer : IDisposable
     /// </remarks>
     private int GetCellBoundVector(int first, int last, int lowRed, int lowGreen, int lowBlue, int bound)
     {
+        // The whole blocks of 16 entries are loaded: they end at most at the last block of the planes
+        Debug.Assert(first >= 0 && first <= last);
+        AssertPalettePlanes((last + 15) & ~15);
         var lowReds = Vector128.Create((byte)lowRed);
         var lowGreens = Vector128.Create((byte)lowGreen);
         var lowBlues = Vector128.Create((byte)lowBlue);
@@ -860,6 +881,9 @@ internal sealed class PaletteQuantizer : IDisposable
     /// </summary>
     private int AddCellCandidatesVector(int first, int last, int lowRed, int lowGreen, int lowBlue, int bound, Span<byte> cell)
     {
+        // The whole blocks of 16 entries are loaded: they end at most at the last block of the planes
+        Debug.Assert(first >= 0 && first <= last);
+        AssertPalettePlanes((last + 15) & ~15);
         var lowReds = Vector128.Create((byte)lowRed);
         var lowGreens = Vector128.Create((byte)lowGreen);
         var lowBlues = Vector128.Create((byte)lowBlue);
@@ -952,6 +976,10 @@ internal sealed class PaletteQuantizer : IDisposable
     internal int FindNearestSorted(int red, int green, int blue, int hint)
     {
         var count = _opaqueCount;
+
+        // The walk reads the entries [0, count), from the first one whose red sample is at least "red"
+        AssertPalettePlanes(count);
+        Debug.Assert(_redStart[red] <= count);
         ref var reds = ref unsafe(MemoryMarshal.GetArrayDataReference(_paletteRed));
         ref var greens = ref unsafe(MemoryMarshal.GetArrayDataReference(_paletteGreen));
         ref var blues = ref unsafe(MemoryMarshal.GetArrayDataReference(_paletteBlue));
@@ -1175,7 +1203,7 @@ internal sealed class PaletteQuantizer : IDisposable
     /// </summary>
     private void ComputeEntries(int entries, int itemCount, ReadOnlySpan<int> counts, ReadOnlySpan<int> items, ReadOnlySpan<int> owners, ReadOnlySpan<long> sums, ReadOnlySpan<long> translucentSums, ReadOnlySpan<int> exact, Span<int> coordinates, Span<bool> entryTranslucent)
     {
-        Span<long> totals = stackalloc long[256 * 8];
+        var totals = unsafe(MemoryMarshal.Cast<byte, long>(GetState().Slice(_buildScratchOffset, EntryTotalsLength)));
         totals[..(entries * 8)].Clear();
         for (var i = 0; i < itemCount; i++)
         {
@@ -1369,7 +1397,8 @@ internal sealed class PaletteQuantizer : IDisposable
     /// </summary>
     /// <param name="keys">The keys; sorted in place.</param>
     /// <param name="scratch">Scratch space of the same length.</param>
-    internal static void SortKeys(Span<int> keys, Span<int> scratch)
+    /// <param name="counts">Scratch space for the counts of the radix passes: <see cref="SortKeysCountsLength"/> values.</param>
+    internal static void SortKeys(Span<int> keys, Span<int> scratch, Span<int> counts)
     {
         const int RadixThreshold = 256;
         if (keys.Length < RadixThreshold)
@@ -1378,7 +1407,7 @@ internal sealed class PaletteQuantizer : IDisposable
             return;
         }
 
-        Span<int> starts = stackalloc int[3 * 256];
+        var starts = counts[..SortKeysCountsLength];
         starts.Clear();
         foreach (var key in keys)
         {
@@ -1529,6 +1558,14 @@ internal sealed class PaletteQuantizer : IDisposable
     }
 
     private Span<int> GetVectorPalette() => unsafe(MemoryMarshal.Cast<byte, int>(GetState().Slice(_vectorPaletteOffset, 3 * VectorPlaneLength * sizeof(int))));
+
+    /// <summary>Checks that the palette planes hold the entries up to <paramref name="length"/> (excluded), for the unchecked reads.</summary>
+    [Conditional("DEBUG")]
+    private void AssertPalettePlanes(int length)
+    {
+        Debug.Assert(length >= 0);
+        Debug.Assert(_paletteRed.Length >= length && _paletteGreen.Length >= length && _paletteBlue.Length >= length);
+    }
 
     private Span<byte> GetState() => (_state ?? throw new ObjectDisposedException(nameof(PaletteQuantizer))).RawBuffer.AsSpan(0, _stateLength);
 }

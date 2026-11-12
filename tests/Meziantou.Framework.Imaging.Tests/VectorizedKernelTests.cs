@@ -330,7 +330,7 @@ public sealed class VectorizedKernelTests
 
             keys = [.. keys.Distinct()];
             var expected = keys.Order().ToArray();
-            PaletteQuantizer.SortKeys(keys, new int[keys.Length]);
+            PaletteQuantizer.SortKeys(keys, new int[keys.Length], new int[PaletteQuantizer.SortKeysCountsLength]);
             Assert.Equal(expected, keys);
         }
     }

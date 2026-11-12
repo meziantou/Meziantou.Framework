@@ -100,31 +100,27 @@ internal static class BloomFilterSnapshot
 
     public static async Task WriteAsync(Stream stream, Header header, Payload payload, CancellationToken cancellationToken)
     {
+        // The buffer is returned only on success: when an asynchronous operation fails or is canceled, the stream may
+        // still use the memory, so the buffer is left to the GC instead of being handed to another renter.
         var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-        try
-        {
-            var hasher = new XxHash3();
-            header.WriteTo(buffer);
-            hasher.Append(buffer.AsSpan(0, HeaderSize));
-            await stream.WriteAsync(buffer.AsMemory(0, HeaderSize), cancellationToken).ConfigureAwait(false);
+        var hasher = new XxHash3();
+        header.WriteTo(buffer);
+        hasher.Append(buffer.AsSpan(0, HeaderSize));
+        await stream.WriteAsync(buffer.AsMemory(0, HeaderSize), cancellationToken).ConfigureAwait(false);
 
-            var remaining = payload.Length;
-            while (remaining > 0)
-            {
-                var count = (int)Math.Min(BufferSize, remaining);
-                payload.CopyTo(buffer.AsSpan(0, count));
-                hasher.Append(buffer.AsSpan(0, count));
-                await stream.WriteAsync(buffer.AsMemory(0, count), cancellationToken).ConfigureAwait(false);
-                remaining -= count;
-            }
-
-            BinaryPrimitives.WriteUInt64LittleEndian(buffer, hasher.GetCurrentHashAsUInt64());
-            await stream.WriteAsync(buffer.AsMemory(0, TrailerSize), cancellationToken).ConfigureAwait(false);
-        }
-        finally
+        var remaining = payload.Length;
+        while (remaining > 0)
         {
-            ArrayPool<byte>.Shared.Return(buffer);
+            var count = (int)Math.Min(BufferSize, remaining);
+            payload.CopyTo(buffer.AsSpan(0, count));
+            hasher.Append(buffer.AsSpan(0, count));
+            await stream.WriteAsync(buffer.AsMemory(0, count), cancellationToken).ConfigureAwait(false);
+            remaining -= count;
         }
+
+        BinaryPrimitives.WriteUInt64LittleEndian(buffer, hasher.GetCurrentHashAsUInt64());
+        await stream.WriteAsync(buffer.AsMemory(0, TrailerSize), cancellationToken).ConfigureAwait(false);
+        ArrayPool<byte>.Shared.Return(buffer);
     }
 
     /// <param name="createPayload">Validates the header against the requested type, then allocates the filter. It runs only once the header and the stream length are valid.</param>
@@ -162,34 +158,30 @@ internal static class BloomFilterSnapshot
 
     public static async Task<T> ReadAsync<T>(Stream stream, FilterKind expectedKind, Func<Header, (T Filter, Payload Payload)> createPayload, CancellationToken cancellationToken)
     {
+        // The buffer is returned only on success: when an asynchronous read fails or is canceled, the stream may still
+        // write into the memory, so the buffer is left to the GC instead of being handed to another renter.
         var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-        try
-        {
-            var hasher = new XxHash3();
-            await ReadExactlyAsync(stream, buffer.AsMemory(0, HeaderSize), cancellationToken).ConfigureAwait(false);
-            var header = Header.Parse(buffer.AsSpan(0, HeaderSize), expectedKind);
-            ValidateRemainingLength(stream, header);
-            hasher.Append(buffer.AsSpan(0, HeaderSize));
+        var hasher = new XxHash3();
+        await ReadExactlyAsync(stream, buffer.AsMemory(0, HeaderSize), cancellationToken).ConfigureAwait(false);
+        var header = Header.Parse(buffer.AsSpan(0, HeaderSize), expectedKind);
+        ValidateRemainingLength(stream, header);
+        hasher.Append(buffer.AsSpan(0, HeaderSize));
 
-            var (filter, payload) = createPayload(header);
-            var remaining = payload.Length;
-            while (remaining > 0)
-            {
-                var count = (int)Math.Min(BufferSize, remaining);
-                await ReadExactlyAsync(stream, buffer.AsMemory(0, count), cancellationToken).ConfigureAwait(false);
-                hasher.Append(buffer.AsSpan(0, count));
-                payload.CopyFrom(buffer.AsSpan(0, count));
-                remaining -= count;
-            }
-
-            await ReadExactlyAsync(stream, buffer.AsMemory(0, TrailerSize), cancellationToken).ConfigureAwait(false);
-            ValidateChecksum(hasher, buffer);
-            return filter;
-        }
-        finally
+        var (filter, payload) = createPayload(header);
+        var remaining = payload.Length;
+        while (remaining > 0)
         {
-            ArrayPool<byte>.Shared.Return(buffer);
+            var count = (int)Math.Min(BufferSize, remaining);
+            await ReadExactlyAsync(stream, buffer.AsMemory(0, count), cancellationToken).ConfigureAwait(false);
+            hasher.Append(buffer.AsSpan(0, count));
+            payload.CopyFrom(buffer.AsSpan(0, count));
+            remaining -= count;
         }
+
+        await ReadExactlyAsync(stream, buffer.AsMemory(0, TrailerSize), cancellationToken).ConfigureAwait(false);
+        ValidateChecksum(hasher, buffer);
+        ArrayPool<byte>.Shared.Return(buffer);
+        return filter;
     }
 
     public static InvalidDataException CreateTypeMismatchException(HashAlgorithm algorithm, Type actualType, Type requestedType)

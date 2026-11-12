@@ -807,28 +807,28 @@ internal sealed class FilterProcessor : IDisposable
         {
             var divisor = Vector128.Create((double)size);
             ref var sum = ref unsafe(MemoryMarshal.GetReference(sums));
-            ref var result = ref unsafe(MemoryMarshal.GetReference(output));
-            ref var added = ref unsafe(MemoryMarshal.GetReference(entering));
-            ref var removed = ref unsafe(MemoryMarshal.GetReference(leaving));
+
+            // The references of the optional lines are taken in their branches only: the reference of an empty span may be
+            // null or point past the end of its array
             for (; i + 4 <= count; i += 4)
             {
                 var low = unsafe(Vector128.LoadUnsafe(ref sum, (nuint)i));
                 var high = unsafe(Vector128.LoadUnsafe(ref sum, (nuint)(i + 2)));
                 if (hasOutput)
                 {
-                    unsafe { Vector128.Narrow(low / divisor, high / divisor).StoreUnsafe(ref result, (nuint)i); }
+                    unsafe { Vector128.Narrow(low / divisor, high / divisor).StoreUnsafe(ref MemoryMarshal.GetReference(output), (nuint)i); }
                 }
 
                 if (hasEntering)
                 {
-                    var value = unsafe(Vector128.LoadUnsafe(ref added, (nuint)i));
+                    var value = unsafe(Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(entering), (nuint)i));
                     low += Vector128.WidenLower(value);
                     high += Vector128.WidenUpper(value);
                 }
 
                 if (hasLeaving)
                 {
-                    var value = unsafe(Vector128.LoadUnsafe(ref removed, (nuint)i));
+                    var value = unsafe(Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(leaving), (nuint)i));
                     low -= Vector128.WidenLower(value);
                     high -= Vector128.WidenUpper(value);
                 }

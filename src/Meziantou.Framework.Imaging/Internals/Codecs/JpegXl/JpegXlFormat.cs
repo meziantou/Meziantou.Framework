@@ -48,8 +48,12 @@ internal static class JpegXlFormat
     /// <summary>The bit of a <c>jxlp</c> index that marks the last part of the codestream.</summary>
     public const uint LastPartFlag = 0x80000000;
 
-    /// <summary>The largest number of extra channels a codestream can declare (level 10).</summary>
-    public const int MaxExtraChannels = 256;
+    /// <summary>
+    /// The largest number of channels whose per-channel scratch (blending modes, sources) is allocated on the stack. A
+    /// codestream may declare up to 4096 extra channels, which libjxl decodes (only its encoder keeps to the 256 of level
+    /// 10): larger counts are rented from the allocation scope.
+    /// </summary>
+    public const int MaxStackChannels = 64;
 
     /// <summary>The first two bytes of a codestream.</summary>
     public static ReadOnlySpan<byte> CodestreamSignature => [0xFF, 0x0A];

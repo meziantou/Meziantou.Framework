@@ -62,7 +62,8 @@ internal static class Av1IntraPredictor
     public static int GetEdgeStorageLength(int log2W, int log2H) => EdgeOrigin + Math.Max((1 << log2W) + (1 << log2H), 32) + 16;
 
     // The entries of the edges are not cleared: the kernels read the entries that the steps of the specification write, and
-    // the vector lanes that read other entries are discarded
+    // the vector lanes that read other entries are discarded. Zeroing them costs 0.4% of the instructions of an AVIF decode
+    // (AvifBenchmarks.DecodeStill420, 2026-11-11)
     [SkipLocalsInit]
     private static void Predict(Span<ushort> plane, int stride, int x, int y, bool haveLeft, bool haveAbove, bool haveAboveRight, bool haveBelowLeft, int log2W, int log2H, int maxX, int maxY, in Parameters parameters, bool vectorized)
     {

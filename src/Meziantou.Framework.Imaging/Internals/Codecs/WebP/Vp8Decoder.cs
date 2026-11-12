@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -571,6 +572,7 @@ internal sealed class Vp8Decoder : IDisposable
                 for (var x = 0; x < 4; x++)
                 {
                     var above = aboveModes[x];
+                    Debug.Assert(above < 10 && left < 10);
                     var mode = (byte)ReadSubBlockMode(ref d, ref value, ref range, ref bits, ref unsafe(Unsafe.Add(ref probabilities, ((above * 10) + left) * 9)));
                     subModes[(y * 4) + x] = mode;
                     aboveModes[x] = mode;
@@ -776,6 +778,9 @@ internal sealed class Vp8Decoder : IDisposable
     {
         // The probabilities are addressed by reference: band < 8 and context < 3 keep every offset inside the 8 x 3 x 11
         // table of the type, and the positions inside the 16-entry block and tables stay below 16 (17 for the band offsets)
+        Debug.Assert(first is 0 or 1);
+        Debug.Assert(context is >= 0 and < 3);
+        Debug.Assert(BandOffsets.Length == 17 && Vp8Tables.Zigzag.Length == 16);
         ref var bandOffsets = ref unsafe(MemoryMarshal.GetReference(BandOffsets));
         ref var zigzag = ref unsafe(MemoryMarshal.GetReference(Vp8Tables.Zigzag));
         var i = first;

@@ -105,6 +105,14 @@ internal abstract class RandomAccessInput : IDisposable
         }
     }
 
+    /// <summary>
+    /// The bytes of a span pinned by the caller (<see cref="WholeInputParser{TResult}"/>), for the duration of a synchronous decode.
+    /// </summary>
+    /// <remarks>
+    /// The pointer is only valid while the caller's <see langword="fixed"/> statement runs: the caller disposes the input
+    /// before it ends, and every read after that throws <see cref="ObjectDisposedException"/>. A span returned by
+    /// <see cref="GetSpan"/> must not be used after the decode that read it returns.
+    /// </remarks>
     private sealed class PinnedInput(byte* data, int length) : RandomAccessInput
     {
         private byte* _data = data;

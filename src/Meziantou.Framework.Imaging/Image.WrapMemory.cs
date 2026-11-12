@@ -35,6 +35,10 @@ public abstract partial class Image
     /// <paramref name="release"/> is invoked. Dispose the image to release the memory: the image has no finalizer. An
     /// exception thrown by <paramref name="release"/> is thrown by the operation that released the memory.
     /// </para>
+    /// <para>
+    /// With a 16-bit or floating-point pixel type, a memory or a stride that is not aligned on the size of a component (2 or
+    /// 4 bytes) makes the operations read and write the components at unaligned addresses: this works, but it can be slower.
+    /// </para>
     /// </remarks>
     /// <exception cref="NotSupportedException"><typeparamref name="TPixel"/> is not a built-in pixel struct.</exception>
     /// <exception cref="ArgumentOutOfRangeException">A dimension or the stride is invalid.</exception>

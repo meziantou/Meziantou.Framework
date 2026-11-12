@@ -5,7 +5,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <summary>
 /// The storage of the storage endpoints (https://storage.spec.whatwg.org/#registered-storage-endpoints) of a global
 /// object whose storage is given by a backend (IndexedDB, the Cache API): the backend of the browsing context, and the
-/// origin of the storage key.
+/// serialization of the storage key (the origin, and the top-level site of a third-party context, see <see cref="StorageKey.Serialize"/>).
 /// </summary>
 internal static class StorageEndpoints
 {
@@ -14,7 +14,7 @@ internal static class StorageEndpoints
     private static readonly ConditionalWeakTable<Window, Dictionary<Type, object>> PartitionedBackends = [];
 
     /// <summary>
-    /// Returns the backend and the origin of the storage of a global object (https://storage.spec.whatwg.org/#obtain-a-storage-key),
+    /// Returns the backend and the serialized storage key of the storage of a global object (https://storage.spec.whatwg.org/#obtain-a-storage-key),
     /// or null (failure) when the origin is opaque. The credentialless iframes of a page (and their workers) have their own
     /// in-memory storage.
     /// </summary>
@@ -26,8 +26,7 @@ internal static class StorageEndpoints
         where TBackend : class
     {
         var document = global.EnvironmentDocument;
-        var origin = document.Origin;
-        if (origin.IsOpaque)
+        if (StorageKey.Obtain(document) is not { } storageKey)
             return null;
 
         var windowDocument = document.EnvironmentRootDocument;
@@ -42,7 +41,7 @@ internal static class StorageEndpoints
             backend = configured ?? (browsingContext is not null ? fromBrowsingContext(browsingContext) : GetOrCreate(DocumentBackends.GetValue(windowDocument, static _ => []), createInMemory));
         }
 
-        return (backend, origin.Serialize());
+        return (backend, storageKey.Serialize());
     }
 
     private static TBackend GetOrCreate<TBackend>(Dictionary<Type, object> backends, Func<TBackend> createInMemory)

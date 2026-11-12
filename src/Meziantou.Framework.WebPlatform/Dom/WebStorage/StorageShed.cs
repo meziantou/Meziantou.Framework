@@ -97,7 +97,7 @@ public sealed class StorageShed
     {
         lock (_lock)
         {
-            return [.. _areas.Where(entry => entry.Key.PartitionNonce is null && entry.Value.Count > 0).Select(entry => entry.Key.Origin)];
+            return [.. _areas.Where(entry => entry.Key.PartitionNonce is null && entry.Key.IsFirstParty && entry.Value.Count > 0).Select(entry => entry.Key.Origin)];
         }
     }
 
@@ -140,8 +140,9 @@ public sealed class StorageShed
 
     /// <summary>
     /// https://storage.spec.whatwg.org/#obtain-a-storage-bottle-map: the map of the bottle of the storage key, created when
-    /// needed (with the items of <see cref="Persistence"/>, except for the partitioned storage keys, which are not
-    /// persisted). The exceptions of the persistence are not caught, and the map is loaded again by the next call.
+    /// needed (with the items of <see cref="Persistence"/>, except for the partitioned storage keys, the ones of the
+    /// credentialless iframes and of the third-party contexts, which are not persisted). The exceptions of the persistence
+    /// are not caught, and the map is loaded again by the next call.
     /// </summary>
     internal StorageArea ObtainArea(StorageKey storageKey)
     {
@@ -149,7 +150,7 @@ public sealed class StorageShed
         {
             if (!_areas.TryGetValue(storageKey, out var area))
             {
-                area = storageKey.PartitionNonce is null && Persistence is { } persistence ? new StorageArea(Quota, persistence, storageKey.Origin) : new StorageArea(Quota);
+                area = storageKey.PartitionNonce is null && storageKey.IsFirstParty && Persistence is { } persistence ? new StorageArea(Quota, persistence, storageKey.Origin) : new StorageArea(Quota);
                 _areas.Add(storageKey, area);
             }
 
@@ -219,10 +220,86 @@ public sealed class StorageShed
 }
 
 /// <summary>
-/// A storage key (https://storage.spec.whatwg.org/#storage-key): the serialization of the origin, and the page
-/// credentialless nonce of the documents of the credentialless iframes (https://wicg.github.io/anonymous-iframe/#spec-storage-key).
+/// A storage key (https://storage.spec.whatwg.org/#storage-key): the serialization of the origin, the page credentialless
+/// nonce of the documents of the credentialless iframes (https://wicg.github.io/anonymous-iframe/#spec-storage-key), and
+/// the top-level site of the environments of a third-party context (https://privacycg.github.io/storage-partitioning/):
+/// the storage of an origin embedded by another site is partitioned by the site of the top-level document, and so is the
+/// storage of an origin embedded by its own site through a cross-site document (<see cref="HasCrossSiteAncestor"/>). The
+/// storage key of a first-party environment (a top-level document, or a document whose ancestors are all same site with the
+/// top-level document) has no top-level site.
 /// </summary>
-internal readonly record struct StorageKey(string Origin, Guid? PartitionNonce);
+internal readonly record struct StorageKey(string Origin, Guid? PartitionNonce, string? TopLevelSite = null, bool HasCrossSiteAncestor = false)
+{
+    /// <summary>Whether the key is the one of a first-party environment (it has no top-level site).</summary>
+    public bool IsFirstParty => TopLevelSite is null;
+
+    /// <summary>
+    /// The key of the storage in the backends (IndexedDB, the Cache API, the origin private file system): the serialized origin
+    /// of a first-party key, else the origin, the top-level site and the cross-site ancestor bit, separated by <c>^</c>.
+    /// </summary>
+    public string Serialize() => TopLevelSite is null ? Origin : Origin + "^" + TopLevelSite + (HasCrossSiteAncestor ? "^1" : "^0");
+
+    /// <summary>
+    /// https://storage.spec.whatwg.org/#obtain-a-storage-key: the storage key of an environment (the document of a window or
+    /// of a worker), or null (failure) when its origin is opaque. A dedicated worker has the partition of the document that
+    /// created it, and a service worker the storage key of its registration.
+    /// </summary>
+    public static StorageKey? Obtain(Document environment)
+    {
+        var origin = environment.Origin;
+        if (origin.IsOpaque)
+            return null;
+
+        var root = environment.EnvironmentRootDocument;
+        if (root.WorkerGlobal is ServiceWorkerGlobalScope serviceWorker && serviceWorker.Agent.ServiceWorker is { } record)
+            return record.Registration.StorageKey;
+
+        var nonce = environment.IsCredentialless && environment.EnvironmentBrowsingContext?.Top.Window is { } topLevelWindow ? topLevelWindow.PageCredentiallessNonce : (Guid?)null;
+        var (topLevelSite, hasCrossSiteAncestor) = GetPartition(origin, root.BrowsingContext?.Parent);
+        return new StorageKey(origin.Serialize(), nonce, topLevelSite, hasCrossSiteAncestor);
+    }
+
+    /// <summary>
+    /// The storage key of an environment of origin <paramref name="origin"/> created in <paramref name="navigable"/> (e.g. the
+    /// reserved client of a navigation), or of a worker created by the document of <paramref name="navigable"/> when
+    /// <paramref name="isNavigable"/> is false.
+    /// </summary>
+    public static StorageKey Create(OriginRecord origin, Guid? partitionNonce, BrowsingContext? navigable, bool isNavigable)
+    {
+        if (!isNavigable && navigable?.Document is { } creator && Obtain(creator) is { } creatorKey)
+            return creatorKey with { Origin = origin.Serialize(), PartitionNonce = partitionNonce };
+
+        var (topLevelSite, hasCrossSiteAncestor) = GetPartition(origin, navigable?.Parent);
+        return new StorageKey(origin.Serialize(), partitionNonce, topLevelSite, hasCrossSiteAncestor);
+    }
+
+    /// <summary>
+    /// The partition of an origin whose closest ancestor navigable is <paramref name="parent"/>: no top-level site for a
+    /// first-party environment, else the site of the top-level document and whether one of the documents of the ancestors
+    /// is cross-site with it (only for an origin that is same site with it). The environments of a top-level document whose
+    /// origin is opaque are not partitioned.
+    /// </summary>
+    private static (string? TopLevelSite, bool HasCrossSiteAncestor) GetPartition(OriginRecord origin, BrowsingContext? parent)
+    {
+        if (parent is null || parent.Top.Document.Origin is not { IsOpaque: false } topLevelOrigin)
+            return (null, false);
+
+        var site = GetSite(topLevelOrigin);
+        if (!OriginRecord.IsSameSite(origin, topLevelOrigin))
+            return (site, false);
+
+        for (var ancestor = parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            if (!OriginRecord.IsSameSite(ancestor.Document.Origin, topLevelOrigin))
+                return (site, true);
+        }
+
+        return (null, false);
+    }
+
+    /// <summary>The site of a tuple origin (https://html.spec.whatwg.org/multipage/browsers.html#obtain-a-site), serialized: <c>scheme://registrable-domain</c>.</summary>
+    private static string GetSite(OriginRecord origin) => origin.Scheme + "://" + (Urls.PublicSuffixList.GetRegistrableDomain(origin.Host) ?? origin.Host.Serialized);
+}
 
 /// <summary>
 /// The map of a storage bottle (https://storage.spec.whatwg.org/#storage-bottle) of Web Storage: the items of an origin,

@@ -15,8 +15,8 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <item><c>"executionContexts"</c>: the documents of the origin in the tree of the browsing context of the request are reloaded.</item>
 /// </list>
 /// As in the browsers, a response to a request whose top-level site is another site (a third-party context) only clears
-/// the data of the partition of that top-level site: the partitioned cookies, the caches of the partition and the
-/// documents of the tree of the request.
+/// the data of the partition of that top-level site: the partitioned cookies, the caches of the partition, the storage
+/// of the origin partitioned by that top-level site and the documents of the tree of the request.
 /// </summary>
 internal static class ClearSiteData
 {
@@ -130,9 +130,11 @@ internal static class ClearSiteData
         if (browsingContext is null)
             return types.HasFlag(DataTypes.Cache);
 
-        if (firstParty && types.HasFlag(DataTypes.Storage))
+        // The storage of the storage key of the origin in the partition of the request: the first-party storage, or the
+        // storage of the origin partitioned by the top-level site (https://privacycg.github.io/storage-partitioning/)
+        if (types.HasFlag(DataTypes.Storage) && (firstParty || partitionSite is not null))
         {
-            ClearStorage(browsingContext, serializedOrigin);
+            ClearStorage(browsingContext, new StorageKey(serializedOrigin, PartitionNonce: null, firstParty ? null : partitionSite));
         }
 
         // The reloaded documents are the ones of the tree of the request, which is its partition
@@ -194,9 +196,9 @@ internal static class ClearSiteData
     }
 
     /// <summary>https://w3c.github.io/webappsec-clear-site-data/#clear-dom-accessible-storage</summary>
-    private static void ClearStorage(BrowsingContext browsingContext, string origin)
+    private static void ClearStorage(BrowsingContext browsingContext, StorageKey storageKey)
     {
-        var storageKey = new StorageKey(origin, PartitionNonce: null);
+        var origin = storageKey.Serialize();
         browsingContext.LocalStorageShed.ObtainArea(storageKey).Clear();
         foreach (var topLevel in browsingContext.GetGroupTopLevelBrowsingContexts().ToArray())
         {
@@ -226,7 +228,7 @@ internal static class ClearSiteData
 
         // The service worker registrations are unregistered: the controlled clients keep their service worker until they are unloaded
         var registry = ServiceWorkerRegistry.Get(browsingContext.GroupOwner);
-        var serviceWorkerStorageKey = ServiceWorkerRegistry.GetStorageKey(origin, credentialless: false, browsingContext);
+        var serviceWorkerStorageKey = storageKey;
         foreach (var registration in registry.GetRegistrations(serviceWorkerStorageKey))
         {
             registry.ScheduleJob(new ServiceWorkerJob

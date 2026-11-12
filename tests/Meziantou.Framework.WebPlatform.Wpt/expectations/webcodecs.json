@@ -5,6 +5,9 @@
   "webcodecs/image-decoder-animated-zero-delay.https.any.js#dedicatedworker": {
     "total": 2
   },
+  "webcodecs/image-decoder-disconnect-readable-stream-crash.https.html": {
+    "crashtest": "PASS"
+  },
   "webcodecs/image-decoder-image-orientation-none.https.html": {
     "total": 16,
     "failures": {
@@ -23,6 +26,9 @@
       "Test JPEG w/ EXIF orientation right-top on canvas w/o orientation.": "FAIL",
       "Test JPEG w/ EXIF orientation top-right on canvas w/o orientation.": "FAIL"
     }
+  },
+  "webcodecs/image-decoder-transfer-nondetachable-crash.https.html": {
+    "crashtest": "PASS"
   },
   "webcodecs/image-decoder.crossOriginIsolated.https.any.js": {
     "total": 2

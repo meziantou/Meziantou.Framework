@@ -394,7 +394,13 @@
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-immediate.window.js": {
     "harness": "TIMEOUT",
-    "total": 0
+    "total": 6,
+    "failures": {
+      "document.open() aborts documents that are queued for navigation through <meta> refresh with timeout 0 (XMLHttpRequest)": "TIMEOUT",
+      "document.open() aborts documents that are queued for navigation through <meta> refresh with timeout 0 (fetch())": "FAIL",
+      "document.open() aborts documents that are queued for navigation through Refresh header with timeout 0 (XMLHttpRequest)": "TIMEOUT",
+      "document.open() aborts documents that are queued for navigation through Refresh header with timeout 0 (fetch())": "FAIL"
+    }
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-multisecond-header.window.js": {
     "total": 3

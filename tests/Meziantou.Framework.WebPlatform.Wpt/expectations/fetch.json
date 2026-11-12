@@ -1565,34 +1565,13 @@
     "total": 1
   },
   "fetch/content-encoding/zstd/bad-zstd-body.https.any.js": {
-    "total": 7,
-    "failures": {
-      "Consuming the body of a resource with bad zstd content with arrayBuffer() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with blob() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with bytes() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with json() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with text() should reject": "FAIL"
-    }
+    "total": 7
   },
   "fetch/content-encoding/zstd/bad-zstd-body.https.any.js#dedicatedworker": {
-    "total": 7,
-    "failures": {
-      "Consuming the body of a resource with bad zstd content with arrayBuffer() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with blob() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with bytes() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with json() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with text() should reject": "FAIL"
-    }
+    "total": 7
   },
   "fetch/content-encoding/zstd/bad-zstd-body.https.any.js#sharedworker": {
-    "total": 7,
-    "failures": {
-      "Consuming the body of a resource with bad zstd content with arrayBuffer() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with blob() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with bytes() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with json() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with text() should reject": "FAIL"
-    }
+    "total": 7
   },
   "fetch/content-encoding/zstd/big-window-zstd-body.tentative.https.any.js": {
     "total": 1,

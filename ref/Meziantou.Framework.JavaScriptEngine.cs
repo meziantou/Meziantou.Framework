@@ -180,6 +180,7 @@ namespace Meziantou.Framework.JavaScriptEngine
     public sealed class JsEngine : System.IDisposable
     {
         public Meziantou.Framework.JavaScriptEngine.JsRealm? CurrentRealm { get => throw null; }
+        public int ExecutionContextDepth { get => throw null; }
         public bool IsScriptRunning { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsEngineOptions Options { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsRealm> Realms { get => throw null; }

@@ -184,7 +184,27 @@ internal static class DrawingKernels
         {
             var chunk = colors.Slice(start, Math.Min(ChunkSize, colors.Length - start));
             var count = chunk.Length;
-            for (var i = 0; i < count; i++)
+            var done = 0;
+            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+            {
+                // The alpha is the last 16 bits of the 64 bits of a color
+                var colorBits = unsafe(MemoryMarshal.Cast<Rgba64, ulong>(chunk));
+                var opaqueBits = unsafe(MemoryMarshal.Cast<Rgba64, ulong>(opaque));
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    for (; done + 4 <= count; done += 4)
+                    {
+                        (Vector256.Create(colorBits.Slice(done, 4)) | Vector256.Create(0xFFFF_0000_0000_0000UL)).CopyTo(opaqueBits.Slice(done, 4));
+                    }
+                }
+
+                for (; done + 2 <= count; done += 2)
+                {
+                    (Vector128.Create(colorBits.Slice(done, 2)) | Vector128.Create(0xFFFF_0000_0000_0000UL)).CopyTo(opaqueBits.Slice(done, 2));
+                }
+            }
+
+            for (var i = done; i < count; i++)
             {
                 var color = chunk[i];
                 opaque[i] = new Rgba64(color.R, color.G, color.B);
@@ -223,7 +243,19 @@ internal static class DrawingKernels
             if (typeof(TPixel) == typeof(Rgba64))
             {
                 var values = unsafe(MemoryMarshal.Cast<TPixel, Rgba64>(pixels));
-                for (var i = 0; i < count; i++)
+                var i = 0;
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    // The converted color with the alpha of the paint, two colors per vector
+                    var paintSamples = unsafe(MemoryMarshal.Cast<Rgba64, ushort>(chunk));
+                    var convertedSamples = unsafe(MemoryMarshal.Cast<Rgba64, ushort>(values));
+                    for (; i + 2 <= count; i += 2)
+                    {
+                        Vector128.ConditionalSelect(AlphaLanes, Vector128.Create(paintSamples.Slice(i * 4, 8)), Vector128.Create(convertedSamples.Slice(i * 4, 8))).CopyTo(entries.Slice(i * 4, 8));
+                    }
+                }
+
+                for (; i < count; i++)
                 {
                     var value = values[i];
                     var entry = entries.Slice(i * 4, 4);
@@ -245,29 +277,17 @@ internal static class DrawingKernels
                     entry[3] = chunk[i].A;
                 }
             }
-            else if (typeof(TPixel) == typeof(Rgba32))
+            else if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
             {
-                var values = unsafe(MemoryMarshal.Cast<TPixel, Rgba32>(pixels));
-                for (var i = 0; i < count; i++)
+                // The bytes of the converted pixels in their stored order, with the alpha of the paint
+                var i = ConvertColors32Vector(unsafe(MemoryMarshal.AsBytes(pixels[..count])), chunk, entries);
+                for (; i < count; i++)
                 {
-                    var value = values[i];
+                    var value = unsafe(MemoryMarshal.AsBytes(pixels.Slice(i, 1)));
                     var entry = entries.Slice(i * 4, 4);
-                    entry[0] = value.R;
-                    entry[1] = value.G;
-                    entry[2] = value.B;
-                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
-                }
-            }
-            else if (typeof(TPixel) == typeof(Bgra32))
-            {
-                var values = unsafe(MemoryMarshal.Cast<TPixel, Bgra32>(pixels));
-                for (var i = 0; i < count; i++)
-                {
-                    var value = values[i];
-                    var entry = entries.Slice(i * 4, 4);
-                    entry[0] = value.B;
-                    entry[1] = value.G;
-                    entry[2] = value.R;
+                    entry[0] = value[0];
+                    entry[1] = value[1];
+                    entry[2] = value[2];
                     entry[3] = PixelConverter.To8Bit(chunk[i].A);
                 }
             }
@@ -343,6 +363,33 @@ internal static class DrawingKernels
                 throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
             }
         }
+    }
+
+    /// <summary>The fourth 16-bit lane of each 64 bits: the alpha of a color of four samples.</summary>
+    private static Vector128<ushort> AlphaLanes => Vector128.Create((ushort)0, 0, 0, ushort.MaxValue, 0, 0, 0, ushort.MaxValue);
+
+    /// <summary>
+    /// Writes the paint colors of the first pixels of four 8-bit samples: their bytes, widened, with the 8-bit alpha
+    /// (<see cref="PixelConverter.To8Bit"/>) of the paint; returns the number of colors written.
+    /// </summary>
+    private static int ConvertColors32Vector(ReadOnlySpan<byte> pixels, ReadOnlySpan<Rgba64> paints, Span<ushort> entries)
+    {
+        var count = pixels.Length / 4;
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var paintSamples = unsafe(MemoryMarshal.Cast<Rgba64, ushort>(paints));
+            for (; i + 4 <= count; i += 4)
+            {
+                var bytes = Vector128.Create(pixels.Slice(i * 4, 16));
+                var alphaLow = PixelConverter.To8BitVector(Vector128.Create(paintSamples.Slice(i * 4, 8)));
+                var alphaHigh = PixelConverter.To8BitVector(Vector128.Create(paintSamples.Slice((i * 4) + 8, 8)));
+                Vector128.ConditionalSelect(AlphaLanes, alphaLow, Vector128.WidenLower(bytes)).CopyTo(entries.Slice(i * 4, 8));
+                Vector128.ConditionalSelect(AlphaLanes, alphaHigh, Vector128.WidenUpper(bytes)).CopyTo(entries.Slice((i * 4) + 8, 8));
+            }
+        }
+
+        return i;
     }
 
     /// <summary>Reads pixels of a row as 16-bit colors, with the rules of pixel conversion (a floating-point sample outside [0, 1] is rejected).</summary>
@@ -437,6 +484,26 @@ internal static class DrawingKernels
         {
             var samples = row.Slice(x * 4, count * 4);
             var i = 0;
+            if (Vector512.IsHardwareAccelerated)
+            {
+                for (; i + 64 <= samples.Length; i += 64)
+                {
+                    var block = Vector512.Create(samples.Slice(i, 64));
+                    Vector512.WidenLower(block).CopyTo(destination.Slice(i, 32));
+                    Vector512.WidenUpper(block).CopyTo(destination.Slice(i + 32, 32));
+                }
+            }
+
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; i + 32 <= samples.Length; i += 32)
+                {
+                    var block = Vector256.Create(samples.Slice(i, 32));
+                    Vector256.WidenLower(block).CopyTo(destination.Slice(i, 16));
+                    Vector256.WidenUpper(block).CopyTo(destination.Slice(i + 16, 16));
+                }
+            }
+
             if (Vector128.IsHardwareAccelerated)
             {
                 for (; i + 16 <= samples.Length; i += 16)
@@ -460,7 +527,22 @@ internal static class DrawingKernels
         else if (typeof(TPixel) == typeof(Rgb24))
         {
             var samples = row.Slice(x * 3, count * 3);
-            for (var i = 0; i < count; i++)
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated)
+            {
+                // Four pixels of each 16 bytes read (the last 4 bytes are not used), an opaque alpha in their fourth byte; the
+                // indices stay in range (a constant shuffle on every platform), the alpha replaces the repeated byte
+                var expand = Vector128.Create((byte)0, 1, 2, 2, 3, 4, 5, 5, 6, 7, 8, 8, 9, 10, 11, 11);
+                var opaque = Vector128.Create(0xFF000000u).AsByte();
+                for (; (i * 3) + 16 <= samples.Length; i += 4)
+                {
+                    var block = Vector128.Shuffle(Vector128.Create(samples.Slice(i * 3, 16)), expand) | opaque;
+                    Vector128.WidenLower(block).CopyTo(destination.Slice(i * 4, 8));
+                    Vector128.WidenUpper(block).CopyTo(destination.Slice((i * 4) + 8, 8));
+                }
+            }
+
+            for (; i < count; i++)
             {
                 var entry = destination.Slice(i * 4, 4);
                 entry[0] = samples[i * 3];
@@ -472,7 +554,24 @@ internal static class DrawingKernels
         else if (typeof(TPixel) == typeof(Gray8))
         {
             var samples = row.Slice(x, count);
-            for (var i = 0; i < count; i++)
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+            {
+                // Each gray sample in the first 16 bits of the 64 bits of its color, with an opaque alpha in the last 16 bits
+                var opaque = Vector128.Create(0x00FF_0000_0000_0000UL);
+                var colors = unsafe(MemoryMarshal.Cast<ushort, ulong>(destination));
+                for (; i + 8 <= count; i += 8)
+                {
+                    var words = Vector128.WidenLower(Vector128.CreateScalar(unsafe(MemoryMarshal.Read<ulong>(samples.Slice(i, 8)))).AsByte());
+                    var (first, second) = Vector128.Widen(words);
+                    (Vector128.WidenLower(first) | opaque).CopyTo(colors.Slice(i, 2));
+                    (Vector128.WidenUpper(first) | opaque).CopyTo(colors.Slice(i + 2, 2));
+                    (Vector128.WidenLower(second) | opaque).CopyTo(colors.Slice(i + 4, 2));
+                    (Vector128.WidenUpper(second) | opaque).CopyTo(colors.Slice(i + 6, 2));
+                }
+            }
+
+            for (; i < count; i++)
             {
                 var entry = destination.Slice(i * 4, 4);
                 entry[0] = samples[i];
@@ -969,7 +1068,11 @@ internal static class DrawingKernels
     {
         if (typeof(TSample) == typeof(byte) && channels == 4 && coverage.Length >= 4 && Vector128.IsHardwareAccelerated)
         {
-            if (Avx2.IsSupported && coverage.Length >= 8)
+            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && coverage.Length >= 16)
+            {
+                CompositeOver8Avx512(unsafe(MemoryMarshal.Cast<TSample, byte>(samples)), coverage, source);
+            }
+            else if (Avx2.IsSupported && coverage.Length >= 8)
             {
                 CompositeOver8Avx2(unsafe(MemoryMarshal.Cast<TSample, byte>(samples)), coverage, source);
             }
@@ -1231,6 +1334,137 @@ internal static class DrawingKernels
         }
     }
 
+    /// <summary>
+    /// Composites a paint over pixels of four 8-bit samples (color then alpha) with source-over, with the formulas of
+    /// <see cref="CompositeOver8"/>, sixteen pixels at a time with AVX-512 when they are all opaque or all transparent; the
+    /// other pixels go through <see cref="CompositeOver8Avx2"/>. Each 128-bit lane of a vector holds four pixels, as a
+    /// vector of <see cref="CompositeOver8"/> does: the shuffles and the packs stay within the lanes.
+    /// </summary>
+    internal static void CompositeOver8Avx512(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    {
+        const uint Scale = byte.MaxValue * CoverageRasterizer.FullCoverage;
+        var colors = source.Colors;
+        var color = source.Color;
+        var transpose128 = Vector128.Create((byte)0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15);
+        var transpose = Vector512.Create(Vector256.Create(transpose128, transpose128), Vector256.Create(transpose128, transpose128));
+        var colorMask = Vector512.Create(0x00FFFFFFu).AsByte();
+        var half = Vector512.Create(Scale / 2);
+        var halfCoverage = Vector512.Create(CoverageRasterizer.FullCoverage / 2);
+        var scale = Vector512.Create(Scale);
+        var reciprocal = Vector512.Create(32897u);
+        var red = Vector512.Create((uint)color.C0);
+        var green = Vector512.Create((uint)color.C1);
+        var blue = Vector512.Create((uint)color.C2);
+        var alpha = Vector512.Create((uint)color.Alpha);
+
+        // The pixels from 'pending' on are not composited yet
+        var pending = 0;
+        for (var i = 0; i + 16 <= coverage.Length; i += 16)
+        {
+            // Pixels without coverage stay as they are: the run of them is skipped up to the block of the next covered pixel
+            var blockCoverage = Vector512.Create(coverage.Slice(i, 16));
+            if (blockCoverage == Vector512<uint>.Zero)
+            {
+                if (pending < i)
+                {
+                    CompositeOver8Avx2Range(samples, coverage, source, pending, i);
+                }
+
+                var next = coverage[(i + 16)..].IndexOfAnyExcept(0u);
+                i += (next < 0 ? coverage.Length - i - 16 : next) & ~15;
+                pending = i + 16;
+                continue;
+            }
+
+            var block = samples.Slice(i * 4, 64);
+            var pixels = Vector512.Create(block);
+            var isOpaque = (pixels | colorMask) == Vector512<byte>.AllBitsSet;
+            if (!isOpaque && Vector512.AndNot(pixels, colorMask) != Vector512<byte>.Zero)
+                continue;
+
+            if (pending < i)
+            {
+                CompositeOver8Avx2Range(samples, coverage, source, pending, i);
+            }
+
+            if (!colors.IsEmpty)
+            {
+                // The paint of the sixteen pixels, in the order of the pixels (its samples are 8-bit)
+                var paint = Vector512.Narrow(Vector512.Create(colors.Slice(i * 4, 32)), Vector512.Create(colors.Slice((i * 4) + 32, 32)));
+                Split(paint, transpose, out red, out green, out blue, out alpha);
+            }
+
+            Split(pixels, transpose, out var r, out var g, out var b, out var a);
+            if (isOpaque)
+            {
+                var effective = blockCoverage * alpha;
+                var inverse = scale - effective;
+                r = Blend(red, r, effective, inverse, half, reciprocal);
+                g = Blend(green, g, effective, inverse, half, reciprocal);
+                b = Blend(blue, b, effective, inverse, half, reciprocal);
+                Join(r, g, b, a, transpose).CopyTo(block);
+            }
+            else
+            {
+                // The paint with the alpha of its coverage, where that alpha is not 0
+                var resultAlpha = Vector512.ShiftRightLogical((blockCoverage * alpha) + halfCoverage, 16);
+                var painted = Join(red, green, blue, resultAlpha, transpose);
+                var unchanged = Vector512.Equals(resultAlpha, Vector512<uint>.Zero).AsInt32();
+                var words = Avx512BW.PackSignedSaturate(unchanged, unchanged);
+                var keep = Avx512BW.Shuffle(Avx512BW.PackSignedSaturate(words, words).AsByte(), transpose);
+                Vector512.ConditionalSelect(keep, pixels, painted).CopyTo(block);
+            }
+
+            pending = i + 16;
+        }
+
+        if (pending < coverage.Length)
+        {
+            CompositeOver8Avx2Range(samples, coverage, source, pending, coverage.Length);
+        }
+
+        static Vector512<uint> Blend(Vector512<uint> paint, Vector512<uint> pixel, Vector512<uint> effective, Vector512<uint> inverse, Vector512<uint> half, Vector512<uint> reciprocal)
+        {
+            var x = (paint * effective) + (pixel * inverse) + half;
+            return Vector512.ShiftRightLogical(Vector512.ShiftRightLogical(x, 16) * reciprocal, 23);
+        }
+
+        // The samples of the pixels of each lane, one channel per vector
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Split(Vector512<byte> pixels, Vector512<byte> transpose, out Vector512<uint> red, out Vector512<uint> green, out Vector512<uint> blue, out Vector512<uint> alpha)
+        {
+            var planar = Avx512BW.Shuffle(pixels, transpose);
+            var low = Avx512BW.UnpackLow(planar, Vector512<byte>.Zero).AsUInt16();
+            var high = Avx512BW.UnpackHigh(planar, Vector512<byte>.Zero).AsUInt16();
+            red = Avx512BW.UnpackLow(low, Vector512<ushort>.Zero).AsUInt32();
+            green = Avx512BW.UnpackHigh(low, Vector512<ushort>.Zero).AsUInt32();
+            blue = Avx512BW.UnpackLow(high, Vector512<ushort>.Zero).AsUInt32();
+            alpha = Avx512BW.UnpackHigh(high, Vector512<ushort>.Zero).AsUInt32();
+        }
+
+        // The inverse of Split, for samples up to 255
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector512<byte> Join(Vector512<uint> red, Vector512<uint> green, Vector512<uint> blue, Vector512<uint> alpha, Vector512<byte> transpose)
+        {
+            var low = Avx512BW.PackUnsignedSaturate(red.AsInt32(), green.AsInt32()).AsInt16();
+            var high = Avx512BW.PackUnsignedSaturate(blue.AsInt32(), alpha.AsInt32()).AsInt16();
+            return Avx512BW.Shuffle(Avx512BW.PackUnsignedSaturate(low, high), transpose);
+        }
+    }
+
+    private static void CompositeOver8Avx2Range(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, int end)
+    {
+        var range = samples[(start * 4)..(end * 4)];
+        if (source.Colors.IsEmpty)
+        {
+            CompositeOver8Avx2(range, coverage[start..end], source);
+        }
+        else
+        {
+            CompositeOver8Avx2(range, coverage[start..end], new DrawingSource(source.Colors[(start * 4)..(end * 4)]));
+        }
+    }
+
     private static void CompositeOver8Range(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, int end)
     {
         var range = samples[(start * 4)..(end * 4)];
@@ -1333,6 +1567,21 @@ internal static class DrawingKernels
                     CompositeOverScalarRange16(samples, 4, coverage, source, pending, i);
                 }
 
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    // AVX-512: the two pixels in one vector (a vector of 256 bits per pixel is slower than two of 128 bits with AVX2)
+                    var pairEffective0 = colors.IsEmpty ? paintAlpha * q0 : colors[(i * 4) + 3] * (double)q0;
+                    var pairEffective1 = colors.IsEmpty ? paintAlpha * q1 : colors[(i * 4) + 7] * (double)q1;
+                    var paintSamples = colors.IsEmpty ? Vector128.Create(color.C0, color.C1, color.C2, color.Alpha, color.C0, color.C1, color.C2, color.Alpha) : Vector128.Create(colors.Slice(i * 4, 8));
+                    var effective = Vector512.Create(Vector256.Create(pairEffective0), Vector256.Create(pairEffective1));
+                    var inverse = Vector512.Create(Vector256.Create(Scale - pairEffective0), Vector256.Create(Scale - pairEffective1));
+                    var bits = Blend512(ToDouble512(paintSamples), ToDouble512(pixels), effective, inverse);
+                    var narrowed = Vector256.Narrow(bits.GetLower(), bits.GetUpper());
+                    (Vector128.Narrow(narrowed.GetLower(), narrowed.GetUpper()) | alphaMask).CopyTo(block);
+                    pending = i + 2;
+                    continue;
+                }
+
                 var alpha0 = paintAlpha;
                 var alpha1 = paintAlpha;
                 var paint0Low = paintLow;
@@ -1404,6 +1653,23 @@ internal static class DrawingKernels
         if (pending < coverage.Length)
         {
             CompositeOverScalarRange16(samples, channels, coverage, source, pending, coverage.Length);
+        }
+
+        // The samples of two pixels as doubles, with the bits of 2^52 (see ToDouble)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector512<double> ToDouble512(Vector128<ushort> value)
+        {
+            var magic = Vector512.Create(4503599627370496.0);
+            var words = Vector256.WidenLower(value.ToVector256());
+            return (Vector512.WidenLower(words.ToVector512()) | magic.AsUInt64()).AsDouble() - magic;
+        }
+
+        // floor(x / S) in the low bits of the result, with the operations of Blend
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector512<ulong> Blend512(Vector512<double> paint, Vector512<double> pixel, Vector512<double> effective, Vector512<double> inverse)
+        {
+            var x = (paint * effective) + (pixel * inverse) + Vector512.Create(Scale / 2);
+            return (((x * Vector512.Create(1 / Scale)) - Vector512.Create(0.5 - (1.0 / (1L << 34)))) + Vector512.Create(4503599627370496.0)).AsUInt64();
         }
 
         // Integers below 2^32 widened to 64 bits, as doubles: their bits under the exponent of 2^52

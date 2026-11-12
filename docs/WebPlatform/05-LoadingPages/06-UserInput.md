@@ -75,6 +75,12 @@ Escape closes the dialogs and the popovers. Outside of the editable content, the
 `Home` and `End` scroll the focused scroll container (or the viewport). As in the browsers, a scroll container that the
 user can scroll and that has no focusable descendant can be focused by Tab and by `focus()` (not by a click).
 
+Tab follows the `reading-flow` property of the flex, grid and grid lanes containers: the visual order of the items
+instead of the order of the document. A grid lanes container (`display: grid-lanes`) accepts `source-order`,
+`grid-lanes-order` (the `order` property, then the order of the document), `grid-lanes-track` (one track after the
+other, each from its start edge) and `grid-lanes-flow` (across the tracks, row by row of items). The way
+`grid-lanes-flow` groups the items into rows is not specified yet: the library groups them as Chromium does.
+
 ## Pending input
 
 A long script can call `navigator.scheduling.isInputPending()` to yield when the user is waiting. The library dispatches

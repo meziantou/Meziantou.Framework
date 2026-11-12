@@ -401,13 +401,17 @@ internal sealed class FocusNavigationScopes
         GridRows,
         GridColumns,
         GridOrder,
+        GridLanesFlow,
+        GridLanesTrack,
+        GridLanesOrder,
     }
 
     /// <summary>
     /// The reading flow of a box: not <see cref="ReadingFlow.Normal"/> when the box is a reading flow container
     /// (https://drafts.csswg.org/css-display-4/#reading-flow-container: "a block, flex or grid container with a valid
-    /// reading-flow value other than normal"; the flex-* values only take effect on flex containers, and the grid-* values on
-    /// grid containers).
+    /// reading-flow value other than normal"; the flex-* values only take effect on flex containers, the grid-* values on
+    /// grid containers, and the grid-lanes-* values, resolved by the CSSWG in https://github.com/w3c/csswg-drafts/issues/14290,
+    /// on grid lanes containers).
     /// </summary>
     private static ReadingFlow GetReadingFlow(ComputedStyle style)
     {
@@ -421,13 +425,16 @@ internal sealed class FocusNavigationScopes
 
         return (display.Inside, value) switch
         {
-            (DisplayInside.Flex or DisplayInside.Grid or DisplayInside.FlowRoot, "source-order") => ReadingFlow.SourceOrder,
+            (DisplayInside.Flex or DisplayInside.Grid or DisplayInside.GridLanes or DisplayInside.FlowRoot, "source-order") => ReadingFlow.SourceOrder,
             (DisplayInside.Flow, "source-order") when !display.IsInlineBox => ReadingFlow.SourceOrder,
             (DisplayInside.Flex, "flex-visual") => ReadingFlow.FlexVisual,
             (DisplayInside.Flex, "flex-flow") => ReadingFlow.FlexFlow,
             (DisplayInside.Grid, "grid-rows") => ReadingFlow.GridRows,
             (DisplayInside.Grid, "grid-columns") => ReadingFlow.GridColumns,
             (DisplayInside.Grid, "grid-order") => ReadingFlow.GridOrder,
+            (DisplayInside.GridLanes, "grid-lanes-flow") => ReadingFlow.GridLanesFlow,
+            (DisplayInside.GridLanes, "grid-lanes-track") => ReadingFlow.GridLanesTrack,
+            (DisplayInside.GridLanes, "grid-lanes-order") => ReadingFlow.GridLanesOrder,
             _ => ReadingFlow.Normal,
         };
     }
@@ -510,7 +517,8 @@ internal sealed class FocusNavigationScopes
     /// order-modified document order; <c>flex-visual</c> follows the flex lines and the items of each line in the writing mode
     /// of the container (the order of the items of a line is reversed by <c>row-reverse</c> and <c>column-reverse</c>, the one of
     /// the lines by <c>wrap-reverse</c>); <c>grid-rows</c> and <c>grid-columns</c> follow the rows (then the columns) or the
-    /// columns (then the rows) of the grid areas of the items.
+    /// columns (then the rows) of the grid areas of the items; <c>grid-lanes-order</c> follows the order-modified document order;
+    /// <c>grid-lanes-track</c> and <c>grid-lanes-flow</c> follow the tracks and the positions in the stacking axis of the items.
     /// </summary>
     private Dictionary<Element, int> GetReadingFlowRanks(Element container)
     {
@@ -542,6 +550,14 @@ internal sealed class FocusNavigationScopes
 
             case ReadingFlow.GridRows or ReadingFlow.GridColumns:
                 items = SortGridItems(container, items, byRows: flow == ReadingFlow.GridRows);
+                break;
+
+            case ReadingFlow.GridLanesTrack:
+                items = SortGridLanesItemsByTrack(container, items);
+                break;
+
+            case ReadingFlow.GridLanesFlow:
+                items = SortGridLanesItemsByFlow(container, items);
                 break;
         }
 
@@ -658,5 +674,119 @@ internal sealed class FocusNavigationScopes
             .ThenBy(entry => entry.index)
             .Select(entry => entry.item)
             .ToList();
+    }
+
+    /// <summary>
+    /// Returns the tracks and the margin boxes in the stacking axis of the items of a grid lanes container (in order-modified
+    /// document order), from its last layout; null when the container is not laid out. The items that are not laid out have no area.
+    /// </summary>
+    private List<(Element Element, GridLanesItemArea? Area)>? GetGridLanesItemAreas(Element container, List<Element> items)
+    {
+        var layoutEngine = _document.GetLayoutEngine();
+        if (layoutEngine.GetFragments(container) is not [var containerFragment, ..] || containerFragment.Box.LayoutState is not GridContainerState { LanesItemAreas: { } areas })
+            return null;
+
+        var boxTree = layoutEngine.BoxTree;
+        return items.Select(item => (item, boxTree?.GetPrincipalBox(item) is { } box && areas.TryGetValue(box, out var area) ? area : (GridLanesItemArea?)null)).ToList();
+    }
+
+    /// <summary>
+    /// Sorts the items of a grid lanes container (in order-modified document order) in the order of <c>reading-flow: grid-lanes-track</c>
+    /// (https://github.com/w3c/csswg-drafts/issues/14290: "follows the visual order along the stacking axis, taking writing mode into
+    /// account", the tracks one after the other): the tracks from the start edge of the grid axis, and the items of each track from the
+    /// start edge of the stacking axis, whatever the direction of the placement (<c>track-reverse</c>, <c>fill-reverse</c>). An item
+    /// that spans several tracks is read in the first one; the items at the same position are in order-modified document order.
+    /// </summary>
+    private List<Element> SortGridLanesItemsByTrack(Element container, List<Element> items)
+    {
+        if (GetGridLanesItemAreas(container, items) is not { } entries)
+            return items;
+
+        var result = new List<Element>(items.Count);
+        var read = new HashSet<Element>(ReferenceEqualityComparer.Instance);
+        var trackCount = entries.Max(entry => entry.Area?.TrackEnd ?? 0);
+        for (var track = 0; track < trackCount; track++)
+        {
+            var inTrack = entries
+                .Select((entry, index) => (entry, index))
+                .Where(e => e.entry.Area is { } area && area.TrackStart <= track && track < area.TrackEnd && !read.Contains(e.entry.Element))
+                .OrderBy(e => e.entry.Area!.Value.StackStart)
+                .ThenBy(e => e.index);
+            foreach (var (entry, _) in inTrack)
+            {
+                read.Add(entry.Element);
+                result.Add(entry.Element);
+            }
+        }
+
+        result.AddRange(entries.Where(entry => !read.Contains(entry.Element)).Select(entry => entry.Element));
+        return result;
+    }
+
+    /// <summary>
+    /// Sorts the items of a grid lanes container (in order-modified document order) in the order of <c>reading-flow: grid-lanes-flow</c>
+    /// (https://github.com/w3c/csswg-drafts/issues/14290: "follows the visual order in which items are laid out along the grid axis,
+    /// taking writing mode into account"), whose reading rows are not specified yet. As in Chromium (the tentative WPT tests): a reading
+    /// row starts with the first unread item of each track (from the start edge of the stacking axis), its bounds are the union of their
+    /// margin boxes in the stacking axis, and it contains the unread items that have at least two thirds of their size in the bounds; the
+    /// items of a row are read by their first track, then from the start edge of the stacking axis.
+    /// </summary>
+    private List<Element> SortGridLanesItemsByFlow(Element container, List<Element> items)
+    {
+        if (GetGridLanesItemAreas(container, items) is not { } entries)
+            return items;
+
+        var unread = entries
+            .Select((entry, index) => (entry.Element, Area: entry.Area.GetValueOrDefault(), Index: index, HasArea: entry.Area is not null))
+            .Where(entry => entry.HasArea)
+            .ToList();
+        var result = new List<Element>(items.Count);
+        while (unread.Count > 0)
+        {
+            // The first unread item of each track
+            var firsts = new HashSet<int>();
+            var trackCount = unread.Max(entry => entry.Area.TrackEnd);
+            for (var track = 0; track < trackCount; track++)
+            {
+                var first = unread
+                    .Where(entry => entry.Area.TrackStart <= track && track < entry.Area.TrackEnd)
+                    .OrderBy(entry => entry.Area.StackStart)
+                    .ThenBy(entry => entry.Index)
+                    .Select(entry => (int?)entry.Index)
+                    .FirstOrDefault();
+                if (first is { } index)
+                {
+                    firsts.Add(index);
+                }
+            }
+
+            var rowStart = unread.Where(entry => firsts.Contains(entry.Index)).Min(entry => entry.Area.StackStart);
+            var rowEnd = unread.Where(entry => firsts.Contains(entry.Index)).Max(entry => entry.Area.StackEnd);
+            var row = unread
+                .Where(entry => firsts.Contains(entry.Index) || IsInRow(entry.Area, rowStart, rowEnd))
+                .OrderBy(entry => entry.Area.TrackStart)
+                .ThenBy(entry => entry.Area.StackStart)
+                .ThenBy(entry => entry.Index)
+                .ToList();
+            foreach (var entry in row)
+            {
+                result.Add(entry.Element);
+            }
+
+            unread.RemoveAll(entry => row.Exists(r => r.Index == entry.Index));
+        }
+
+        result.AddRange(entries.Where(entry => entry.Area is null).Select(entry => entry.Element));
+        return result;
+
+        static bool IsInRow(GridLanesItemArea area, double start, double end)
+        {
+            var size = area.StackEnd - area.StackStart;
+            if (size <= 0)
+                return area.StackStart >= start && area.StackStart <= end;
+
+            var inside = Math.Min(area.StackEnd, end) - Math.Max(area.StackStart, start);
+            return inside * 3 >= (size * 2) - 0.001;
+        }
     }
 }

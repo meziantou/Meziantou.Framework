@@ -197,6 +197,12 @@ public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuil
   approximated.
 - The recompressed files are read by other JPEG XL decoders, and the library rebuilds the files that
   `cjxl --lossless_jpeg=1` writes.
+- Since libjxl 0.13, `cjxl` lets decoders smooth the low-frequency image of a recompressed file, which reduces banding
+  in its pixels: by default when the chroma is not subsampled, and with `--jpeg_reconstruction_lfs=1` otherwise.
+  [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) decodes these files as libjxl 0.13 and jxl-oxide do, and the
+  JPEG file is still rebuilt byte for byte: the smoothing changes the pixels, not the coefficients.
+  [JpegXlTranscoder](cref:Meziantou.Framework.Imaging.JpegXlTranscoder) itself writes files without smoothing, whose
+  pixels are the ones of the JPEG file.
 
 ## Pitfalls
 

@@ -1750,6 +1750,56 @@ public sealed class JpegXlDecoderTests
         }
     }
 
+    /// <summary>
+    /// A squeeze keeps the negative shifts of a meta-channel, and undoing it keeps them too (libjxl 0.13 fixed the same
+    /// disagreement between its two steps): three palettes of one color, a color transform of the three, then a squeeze of
+    /// the first. Once the squeeze is undone, the color transform finds three channels of the same shifts.
+    /// </summary>
+    [Fact]
+    public void UndoingASqueezeOfAPaletteKeepsItsShifts()
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(UndoingASqueezeOfAPaletteKeepsItsShifts));
+        using var writer = new LsbBitWriter(scope);
+        writer.WriteU32(5, 0, 0, 1, 0, 2, 4, 18, 8);
+        for (var begin = 0; begin < 3; begin++)
+        {
+            // A palette of one color of the channel of indexes, which follows the palettes already added
+            writer.WriteBits(1, 2);
+            writer.WriteU32((uint)begin, 0, 3, 8, 6, 72, 10, 1096, 13);
+            writer.WriteU32(1, 1, 0, 3, 0, 4, 0, 1, 13);
+            writer.WriteU32(1, 0, 8, 256, 10, 1280, 12, 5376, 16);
+            writer.WriteU32(0, 0, 0, 1, 8, 257, 10, 1281, 16);
+            writer.WriteBits(0, 4);
+        }
+
+        // A color transform of type 0 (no change) of the three palettes
+        writer.WriteBits(0, 2);
+        writer.WriteU32(0, 0, 3, 8, 6, 72, 10, 1096, 13);
+        writer.WriteU32(0, 6, 0, 0, 2, 2, 4, 10, 6);
+
+        // An in-place horizontal squeeze of the first palette
+        writer.WriteBits(2, 2);
+        writer.WriteU32(1, 0, 0, 1, 4, 9, 6, 41, 8);
+        writer.WriteBool(true);
+        writer.WriteBool(true);
+        writer.WriteU32(0, 0, 3, 8, 6, 72, 10, 1096, 13);
+        writer.WriteU32(1, 1, 0, 2, 0, 3, 0, 4, 4);
+        writer.Finish();
+
+        var data = writer.WrittenSpan.ToArray();
+        using var image = new JpegXlModularImage(8);
+        image.AddChannel(1, 1, 0, 0);
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        JpegXlModularDecoder.ReadTransforms(reader, image, TestContext.Current.CancellationToken);
+        reader.EnsureNotOverrun();
+        Assert.Equal(4, image.MetaChannelCount);
+
+        image.Transforms[4].Undo(image, scope);
+        image.Transforms[3].Undo(image, scope);
+        Assert.Equal(3, image.MetaChannelCount);
+        Assert.All(image.Channels.Take(3), channel => channel.HorizontalShift == -1 && channel.VerticalShift == -1);
+    }
+
     [Fact]
     public void ReadingModularTransformsChecksCancellation()
     {

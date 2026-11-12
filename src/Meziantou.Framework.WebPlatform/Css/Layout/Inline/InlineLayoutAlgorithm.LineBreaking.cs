@@ -554,7 +554,12 @@ internal sealed partial class InlineLayoutAlgorithm
             }
 
             var fitWidth = breakWidth + lineEdge.Conditional;
-            var candidate = new BreakCandidate { Item = breakItem, Position = position, Width = breakWidth, IsHyphen = isHyphen, Exists = true };
+
+            // The opportunity before a ruby column is the one before its first base character (see GetRubyColumnBreakPosition): the
+            // line ends before the column, or before the ruby container that it starts (with its inline-start edges and its bidi
+            // control codes), also when it is the last opportunity that fits
+            var candidatePosition = Items[index].Kind == InlineItemKind.RubyColumn ? Items[breakItem].Start : position;
+            var candidate = new BreakCandidate { Item = breakItem, Position = candidatePosition, Width = breakWidth, IsHyphen = isHyphen, Exists = true };
             if (opportunity == LineBreakOpportunity.Phrase || (isHyphen && GetLineBreakOptions(GetOpportunityStyle(index)).WordBreak == WordBreakMode.AutoPhrase))
             {
                 // https://drafts.csswg.org/css-text-4/#valdef-word-break-auto-phrase: the phrases are kept together and the

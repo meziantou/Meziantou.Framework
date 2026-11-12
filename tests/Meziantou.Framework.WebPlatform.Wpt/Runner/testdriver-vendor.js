@@ -104,6 +104,13 @@
     return Promise.resolve();
   };
 
+  // The Set Storage Access command (https://privacycg.github.io/storage-access/#set-storage-access-command): a rule of the
+  // cookie jar of the runner (CookieJar.SetThirdPartyCookieAccess) that blocks or allows the unpartitioned cookies of the
+  // origin ("*" for every origin) in the third-party contexts of the embedding origin ("*" for every origin)
+  internal.set_storage_access = function (origin, embedding_origin, blocked, context) {
+    return new Promise((resolve, reject) => __wpt_set_storage_access(String(origin), String(embedding_origin), !!blocked, resolve, (message) => reject(new Error(message))));
+  };
+
   internal.get_all_cookies = function (context) {
     return Promise.resolve(JSON.parse(__wpt_get_cookies()));
   };

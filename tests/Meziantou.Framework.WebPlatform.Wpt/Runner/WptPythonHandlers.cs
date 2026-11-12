@@ -18,7 +18,8 @@ namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 /// timing tests (<c>WptPythonHandlers.PaintTiming.cs</c>), the ones of the <c>resource-timing</c> and <c>navigation-timing</c> tests
 /// (<c>WptPythonHandlers.Timing.cs</c>), the event streams of the <c>eventsource</c> tests (<c>WptPythonHandlers.EventSource.cs</c>),
 /// the ones of the <c>preload</c> tests (<c>WptPythonHandlers.Preload.cs</c>), the ones of the Early Hints tests
-/// (<c>WptPythonHandlers.EarlyHints.cs</c>), the ones of the <c>worklets</c> tests
+/// (<c>WptPythonHandlers.EarlyHints.cs</c>), the ones of the <c>storage-access-api</c> tests
+/// (<c>WptPythonHandlers.StorageAccess.cs</c>), the ones of the <c>worklets</c> tests
 /// (<c>WptPythonHandlers.Worklets.cs</c>), and the other
 /// ones (<c>WptPythonHandlers.Html.cs</c>).
 /// </summary>
@@ -92,7 +93,7 @@ internal static partial class WptPythonHandlers
     // The static field initializers of the partial declarations run before the static constructor
     static WptPythonHandlers()
     {
-        foreach (var handlers in new[] { CommonHandlers, SpeculationRulesHandlers, BeaconHandlers, ClearSiteDataHandlers, ClientHintsHandlers, CorsHandlers, EarlyHintsHandlers, ContentSecurityPolicyHandlers, CookieHandlers, CrossOriginIsolationHandlers, CssHandlers, FetchHandlers, FetchMetadataHandlers, HtmlHandlers, MediaHandlers, PaintTimingHandlers, SecurityFeaturesHandlers, ServiceWorkersHandlers, TimingHandlers, WebSocketsHandlers, EventSourceHandlers, PreloadHandlers, WorkletsHandlers, PageApisHandlers })
+        foreach (var handlers in new[] { CommonHandlers, SpeculationRulesHandlers, BeaconHandlers, ClearSiteDataHandlers, ClientHintsHandlers, CorsHandlers, EarlyHintsHandlers, ContentSecurityPolicyHandlers, CookieHandlers, CrossOriginIsolationHandlers, CssHandlers, FetchHandlers, FetchMetadataHandlers, HtmlHandlers, MediaHandlers, PaintTimingHandlers, SecurityFeaturesHandlers, ServiceWorkersHandlers, StorageAccessHandlers, TimingHandlers, WebSocketsHandlers, EventSourceHandlers, PreloadHandlers, WorkletsHandlers, PageApisHandlers })
         {
             foreach (var (path, handler) in handlers)
             {

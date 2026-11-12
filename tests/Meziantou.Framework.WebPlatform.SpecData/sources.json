@@ -346,6 +346,7 @@
       "viewport-segments",
       "cookies",
       "cookiestore",
+      "storage-access-api",
       "websockets",
       "webstorage",
       "IndexedDB",

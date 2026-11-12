@@ -1968,6 +1968,29 @@ internal sealed partial class WptTestRunner
             _cookieJar.Clear();
             return adapter.Undefined;
         });
+        // The Set Storage Access command (https://privacycg.github.io/storage-access/#set-storage-access-command), as the
+        // implementation of wptrunner: a rule of the cookie jar of the runner for an embedded origin (or "*") on an embedding
+        // origin (or "*"), set after the tasks that are already queued
+        Define("__wpt_set_storage_access", 5, (_, args) =>
+        {
+            var origin = adapter.ToString(args[0]);
+            var embeddingOrigin = adapter.ToString(args[1]);
+            var blocked = adapter.ToBoolean(args[2]);
+            var completion = CreateCompletion(args[3], args[4]);
+            QueueTask(() =>
+            {
+                try
+                {
+                    _cookieJar.SetThirdPartyCookieAccess(embeddingOrigin == "*" ? null : embeddingOrigin, origin == "*" ? null : origin, blocked);
+                    completion(null);
+                }
+                catch (ArgumentException ex)
+                {
+                    completion("invalid argument: " + ex.Message);
+                }
+            });
+            return adapter.Undefined;
+        });
         Define("__wpt_get_cookies", 1, (_, args) => adapter.FromString(GetWebDriverCookies(realm.Window.Document, args.Length > 0 && !adapter.IsUndefined(args[0]) ? adapter.ToString(args[0]) : null)));
         Define("__wpt_computed_role", 1, (_, args) => adapter.FromString(realm.ToInterface<Element>(args[0], "Element").ComputedRole));
         Define("__wpt_computed_label", 1, (_, args) => adapter.FromString(realm.ToInterface<Element>(args[0], "Element").ComputedName));

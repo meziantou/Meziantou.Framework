@@ -294,6 +294,8 @@ public sealed class WptTests
 
     public static TheoryData<string> CookieStoreTests => GetTests("cookiestore");
 
+    public static TheoryData<string> StorageAccessApiTests => GetTests("storage-access-api");
+
     public static TheoryData<string> WebSocketsTests => GetTests("websockets");
 
     public static TheoryData<string> EventSourceTests => GetTests("eventsource");
@@ -1312,6 +1314,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CookieStoreTests))]
     public void CookieStore(string test) => Run("cookiestore", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(StorageAccessApiTests))]
+    public void StorageAccessApi(string test) => Run("storage-access-api", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebSocketsTests))]

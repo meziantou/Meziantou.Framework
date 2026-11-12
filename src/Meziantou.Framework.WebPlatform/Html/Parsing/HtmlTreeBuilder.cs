@@ -212,30 +212,6 @@ internal sealed partial class HtmlTreeBuilder
     public bool ParserPauseFlag { get; set; }
 
     /// <summary>
-    /// The external SVG script elements parsed from the characters written by <c>document.write()</c> while a script runs,
-    /// whose fetch completed synchronously: as in the browsers, they block the parser like the parsing-blocking scripts and
-    /// run once the script that wrote them returns (see <see cref="RunPendingSvgScripts"/>).
-    /// </summary>
-    internal List<Action>? PendingSvgScripts { get; set; }
-
-    /// <summary>Runs the external SVG scripts written by a script that returned (the script nesting level is zero).</summary>
-    internal void RunPendingSvgScripts()
-    {
-        while (ScriptNestingLevel == 0 && PendingSvgScripts is { Count: > 0 } scripts)
-        {
-            var run = scripts[0];
-            scripts.RemoveAt(0);
-            var oldInsertionPoint = InsertionPoint;
-            InsertionPoint = _tokenizer.PositionFromEnd;
-            ScriptNestingLevel++;
-            run();
-            ScriptNestingLevel--;
-            ParserPauseFlag = false;
-            InsertionPoint = oldInsertionPoint;
-        }
-    }
-
-    /// <summary>
     /// Gets or sets the insertion point (https://html.spec.whatwg.org/multipage/parsing.html#insertion-point), as a position
     /// from the end of the input, or null when it is undefined.
     /// </summary>
@@ -492,7 +468,7 @@ internal sealed partial class HtmlTreeBuilder
 
         foreach (var element in _openElements)
         {
-            if (element is HtmlScriptElement script)
+            if (GetScriptCore(element) is { } script)
             {
                 script.AlreadyStarted = true;
             }
@@ -504,7 +480,7 @@ internal sealed partial class HtmlTreeBuilder
         {
             foreach (var script in _streamedScripts)
             {
-                if (script.NodeDocument.ScriptsToExecuteInOrderAsSoonAsPossible.Contains(script))
+                if (script.Element.NodeDocument.ScriptsToExecuteInOrderAsSoonAsPossible.Contains(script))
                 {
                     script.DiscardScriptOfAbortedParser();
                 }
@@ -517,7 +493,15 @@ internal sealed partial class HtmlTreeBuilder
     }
 
     /// <summary>The script elements streamed by the parser with runScripts (see <see cref="Abort"/>).</summary>
-    private List<HtmlScriptElement>? _streamedScripts;
+    private List<ScriptElementCore>? _streamedScripts;
+
+    /// <summary>The state of an HTML or SVG script element, or null when the element is not a script element.</summary>
+    internal static ScriptElementCore? GetScriptCore(Element element) => element switch
+    {
+        HtmlScriptElement script => script.Core,
+        SvgScriptElement script => script.Core,
+        _ => null,
+    };
 
     /// <summary>https://html.spec.whatwg.org/multipage/parsing.html#stop-parsing</summary>
     private void StopParsing()
@@ -1189,15 +1173,21 @@ internal sealed partial class HtmlTreeBuilder
         var adjustedInsertionLocation = GetAppropriatePlaceForInsertingANode();
         var element = CreateElementForToken(token, @namespace, adjustedInsertionLocation.Parent);
 
-        // The SVG script elements are processed when the parser reaches their end tag. As for the HTML script elements, the
-        // scripts of the Fragment scripting mode are not parser-inserted (except the streamed ones, until their end tag), and
-        // the scripts of the Inert scripting mode never run.
+        // The SVG script elements are prepared when the parser reaches their end tag, as the HTML script elements
+        // (https://html.spec.whatwg.org/multipage/parsing.html#scriptTag): the scripts of the Fragment scripting mode are not
+        // parser-inserted (except the streamed ones, until their end tag), and the scripts of the Inert scripting mode never run.
         if (element is SvgScriptElement svgScript)
         {
-            svgScript.IsParserInserted = ScriptingMode != ParserScriptingMode.Fragment || IsStreaming;
+            if (ScriptingMode != ParserScriptingMode.Fragment || IsStreaming)
+            {
+                svgScript.Core.ParserDocument = _document;
+                svgScript.Core.SourceTextPosition = _tokenizer.GetCurrentLineAndColumn();
+                svgScript.Core.ForceAsync = false;
+            }
+
             if (ScriptingMode == ParserScriptingMode.Inert)
             {
-                svgScript.MarkAsAlreadyProcessed();
+                svgScript.Core.AlreadyStarted = true;
             }
 
             BeginParsedScriptText(svgScript);

@@ -211,19 +211,11 @@ internal sealed class XmlTreeBuilder
 
         // https://html.spec.whatwg.org/multipage/xhtml.html#parsing-xhtml-documents: the script elements are parser-inserted
         // and not force-async. The scripts of a fragment never run.
-        if (element is HtmlScriptElement script)
+        if (Html.Parsing.HtmlTreeBuilder.GetScriptCore(element) is { } script)
         {
             script.ParserDocument = _document;
             script.ForceAsync = false;
             script.AlreadyStarted = _fragment;
-        }
-        else if (element is SvgScriptElement svgScript)
-        {
-            svgScript.IsParserInserted = true;
-            if (_fragment)
-            {
-                svgScript.MarkAsAlreadyProcessed();
-            }
         }
         else if (element is HtmlLinkElement link)
         {
@@ -288,7 +280,7 @@ internal sealed class XmlTreeBuilder
 
         // https://html.spec.whatwg.org/multipage/xhtml.html#parsing-xhtml-documents: when the end tag of a script element is
         // parsed, a microtask checkpoint is performed and the script is prepared. It runs when the browsing context of the
-        // document has a script engine.
+        // document has a script engine. As in the browsers, an SVG script element is prepared as an HTML one.
         if (element.LocalName == "script" && (element.IsHtmlNamespace || ReferenceEquals(element.NamespaceUri, Namespaces.Svg)))
         {
             if (!_fragment && _document.BrowsingContext is { Options.ScriptEngine: not null } browsingContext && !browsingContext.EventLoop.IsScriptRunning)
@@ -296,23 +288,14 @@ internal sealed class XmlTreeBuilder
                 browsingContext.EventLoop.PerformMicrotaskCheckpoint();
             }
 
-            if (element is HtmlScriptElement script)
+            if (Html.Parsing.HtmlTreeBuilder.GetScriptCore(element) is { } script)
             {
                 // https://w3c.github.io/trusted-types/dist/spec/#setting-slot-values-from-parser
-                script.ScriptText = script.GetChildTextContent();
+                script.ScriptText = element.GetChildTextContent();
                 script.Prepare();
 
                 // The parser pauses until the pending parsing-blocking script is executed (see XmlScriptingParser)
                 _pausedForScript = _document.PendingParsingBlockingScript is not null;
-            }
-            else if (element is SvgScriptElement svgScript)
-            {
-                // https://w3c.github.io/trusted-types/dist/spec/#setting-slot-values-from-parser
-                svgScript.ScriptText = svgScript.GetChildTextContent();
-                if (!_fragment)
-                {
-                    svgScript.Process();
-                }
             }
         }
     }

@@ -26,11 +26,16 @@ internal static class Binding_SVGScriptElement<TAdapter, TValue> where TAdapter 
     private static TValue Get_referrerPolicy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgScriptElement>(t, Binding); return r.FromString(o.ReferrerPolicy); }
     private static void Set_referrerPolicy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgScriptElement>(t, Binding); var x = r.ToDomString(v); o.ReferrerPolicy = x; }
     private static TValue Get_href(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgScriptElement>(t, Binding); return r.Wrap(o.Href); }
+    #pragma warning disable WEBPLATEXP0019 // The binding exposes the experimental Web IDL member
+    private static TValue Get_async(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgScriptElement>(t, Binding); return r.FromBoolean(o.Async); }
+    private static void Set_async(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgScriptElement>(t, Binding); var x = r.ToBoolean(v); o.Async = x; }
+    #pragma warning restore WEBPLATEXP0019
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "type", Get_type, Set_type);
         r.DefineAttribute(instanceTarget, "crossOrigin", Get_crossOrigin, Set_crossOrigin);
         r.DefineAttribute(instanceTarget, "referrerPolicy", Get_referrerPolicy, Set_referrerPolicy);
         r.DefineAttribute(instanceTarget, "href", Get_href, null);
+        r.DefineAttribute(instanceTarget, "async", Get_async, Set_async);
     }
 }

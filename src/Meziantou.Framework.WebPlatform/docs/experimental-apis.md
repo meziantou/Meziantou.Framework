@@ -192,3 +192,12 @@ proposal is under discussion.
 of the polar color spaces are interpolated. When `colorInterpolationMethod` is not set, the colors are interpolated as in
 the CSS gradients and in the browsers: in sRGB when all the stops are legacy sRGB colors, else in Oklab. Their API and
 behavior may change while the proposal is under discussion.
+
+<a id="WEBPLATEXP0019"></a>
+
+## WEBPLATEXP0019: async attribute of the SVG script elements
+
+`SvgScriptElement.Async` implements an `async` IDL attribute on the SVG `script` elements, as the one of the HTML `script`
+elements, as tested by the web-platform-tests of `svg/interact/scripted`: it reflects the `async` content attribute, and is
+true for a script created by a script until it is set. SVG 2 does not define it (the `async` and `defer` content attributes
+of the SVG scripts are processed as the ones of the HTML scripts). Its API and behavior may change.

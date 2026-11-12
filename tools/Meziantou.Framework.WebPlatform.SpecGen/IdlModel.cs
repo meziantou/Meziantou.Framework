@@ -399,6 +399,7 @@ internal sealed partial class IdlModel
         FixCssParserApiTypes(model);
         SetMediaMetadataArtworkType(model);
         AddIFrameElementPolicy(model);
+        AddSvgScriptElementAsync(model);
         AddDocumentPolicyViolationReportBody(model);
         AddCanvasLayers(model);
         AddCanvasGradientInterpolation(model);
@@ -1252,6 +1253,34 @@ internal sealed partial class IdlModel
             Source = "document-policy",
             DeclaringDefinition = definition.Name,
             ExperimentalApi = "DocumentPolicyIframeAttribute",
+        });
+    }
+
+    /// <summary>
+    /// The <c>async</c> attribute of the SVG <c>script</c> elements, as the one of HTMLScriptElement
+    /// (https://html.spec.whatwg.org/multipage/scripting.html#dom-script-async), which SVG 2 does not define but the
+    /// web-platform-tests of <c>svg/interact/scripted</c> test:
+    /// <code>
+    /// partial interface SVGScriptElement {
+    ///   [CEReactions] attribute boolean async;
+    /// };
+    /// </code>
+    /// </summary>
+    private static void AddSvgScriptElementAsync(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("SVGScriptElement", out var definition) || definition.Members.Exists(m => m.Name == "async"))
+            return;
+
+        definition.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Attribute,
+            Name = "async",
+            Type = new IdlType { Name = "boolean" },
+            ExtAttrs = [new IdlExtendedAttribute { Name = "CEReactions" }],
+            Href = "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-async",
+            Source = "svg",
+            DeclaringDefinition = definition.Name,
+            ExperimentalApi = "SvgScriptAsync",
         });
     }
 

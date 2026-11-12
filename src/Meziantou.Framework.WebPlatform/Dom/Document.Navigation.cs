@@ -8,9 +8,9 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public partial class Document
 {
     private bool _parsingFinished;
-    private List<HtmlScriptElement>? _scriptsToExecuteAsSoonAsPossible;
-    private List<HtmlScriptElement>? _scriptsToExecuteInOrderAsSoonAsPossible;
-    private List<HtmlScriptElement>? _scriptsToExecuteWhenParsingFinished;
+    private List<ScriptElementCore>? _scriptsToExecuteAsSoonAsPossible;
+    private List<ScriptElementCore>? _scriptsToExecuteInOrderAsSoonAsPossible;
+    private List<ScriptElementCore>? _scriptsToExecuteWhenParsingFinished;
     private bool _loadEventQueued;
 
     /// <summary>The media elements that play a media resource for the document: their players are released when the document is destroyed.</summary>
@@ -702,16 +702,16 @@ public partial class Document
     private Html.Parsing.ScriptingParser? _activeParser;
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#pending-parsing-blocking-script</summary>
-    internal HtmlScriptElement? PendingParsingBlockingScript { get; set; }
+    internal ScriptElementCore? PendingParsingBlockingScript { get; set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#set-of-scripts-that-will-execute-as-soon-as-possible</summary>
-    internal List<HtmlScriptElement> ScriptsToExecuteAsSoonAsPossible => _scriptsToExecuteAsSoonAsPossible ??= [];
+    internal List<ScriptElementCore> ScriptsToExecuteAsSoonAsPossible => _scriptsToExecuteAsSoonAsPossible ??= [];
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#list-of-scripts-that-will-execute-in-order-as-soon-as-possible</summary>
-    internal List<HtmlScriptElement> ScriptsToExecuteInOrderAsSoonAsPossible => _scriptsToExecuteInOrderAsSoonAsPossible ??= [];
+    internal List<ScriptElementCore> ScriptsToExecuteInOrderAsSoonAsPossible => _scriptsToExecuteInOrderAsSoonAsPossible ??= [];
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#list-of-scripts-that-will-execute-when-the-document-has-finished-parsing</summary>
-    internal List<HtmlScriptElement> ScriptsToExecuteWhenParsingFinished => _scriptsToExecuteWhenParsingFinished ??= [];
+    internal List<ScriptElementCore> ScriptsToExecuteWhenParsingFinished => _scriptsToExecuteWhenParsingFinished ??= [];
 
     /// <summary>The number of script elements whose "delaying the load event" is true (https://html.spec.whatwg.org/multipage/scripting.html#concept-script-delay-load).</summary>
     internal int ScriptsDelayingTheLoadEvent { get; set; }

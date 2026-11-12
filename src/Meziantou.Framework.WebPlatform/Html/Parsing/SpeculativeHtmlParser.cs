@@ -156,12 +156,8 @@ internal sealed class SpeculativeHtmlParser
                 break;
 
             case SvgScriptElement svgScript:
-            {
-                var type = svgScript.GetAttributeValue("type");
-                var isJavaScript = type is not { Length: > 0 } || HtmlScriptElement.IsJavaScriptMimeTypeEssenceMatch(InfraAscii.StripLeadingAndTrailingAsciiWhitespace(type).ToString());
-                FetchScript(svgScript, svgScript.GetAttributeValue("href") ?? svgScript.GetAttributeValue(Namespaces.XLink, "href"), isJavaScript ? ScriptElementType.Classic : null, noModule: false, referrerPolicy: "");
+                FetchScript(svgScript, svgScript.Core.Source, svgScript.Core.GetScriptTypeFromAttributes(), noModule: false, svgScript.ReferrerPolicy);
                 break;
-            }
 
             case HtmlImageElement image:
             {

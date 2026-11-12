@@ -77,8 +77,8 @@ public sealed class ClassicScript
     /// </summary>
     public ModuleFetchOptions FetchOptions
     {
-        get => field ??= Element is HtmlScriptElement script
-            ? new ModuleFetchOptions { IncludeCredentials = Infra.InfraAscii.EqualsIgnoreAsciiCase(script.GetAttributeValue("crossorigin") ?? "", "use-credentials"), ReferrerPolicy = script.ReferrerPolicy, Nonce = ContentSecurityPolicy.GetNonceMetadata(script), ParserInserted = script.IsParserInserted }
+        get => field ??= Element is not null && Html.Parsing.HtmlTreeBuilder.GetScriptCore(Element) is { } script
+            ? script.CreateModuleFetchOptions(renderBlocking: false)
             : new ModuleFetchOptions();
         init;
     }

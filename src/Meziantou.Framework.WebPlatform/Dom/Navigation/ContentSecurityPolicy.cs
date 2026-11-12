@@ -511,7 +511,8 @@ internal sealed partial class ContentSecurityPolicy
     /// <summary>The position in the document of the source text of a script or a style element created by the parser, or null.</summary>
     private static (int Line, int Column)? GetInlineSourcePosition(Element element) => element switch
     {
-        HtmlScriptElement { HasSourceTextPosition: true } script => script.SourceTextPosition,
+        HtmlScriptElement { Core.HasSourceTextPosition: true } script => script.SourceTextPosition,
+        SvgScriptElement { Core.HasSourceTextPosition: true } script => script.Core.SourceTextPosition,
         _ => (element.RareDataOrNull as ElementRareData)?.InlineSourcePosition,
     };
 

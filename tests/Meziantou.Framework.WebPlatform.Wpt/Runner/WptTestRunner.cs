@@ -113,6 +113,9 @@ internal sealed partial class WptTestRunner
     /// <summary>The posture of the device, overridden by test_driver.set_device_posture().</summary>
     private readonly DevicePostureProvider _devicePosture = new();
 
+    /// <summary>The virtual authenticators of test_driver.add_virtual_authenticator() (https://w3c.github.io/webauthn/#sctn-automation-virtual-authenticators).</summary>
+    private readonly VirtualAuthenticatorEnvironment _authenticators = new();
+
     /// <summary>The display features of the screen, set by test_driver.set_display_features().</summary>
     private readonly DisplayFeaturesProvider _displayFeatures = new();
     private readonly WptStash _stash = new();
@@ -229,6 +232,9 @@ internal sealed partial class WptTestRunner
                 // The virtual pressure sources and the posture override of the test driver
                 ComputePressure = new ComputePressureOptions { Provider = _pressureSources },
                 DevicePosture = new DevicePostureOptions { Provider = _devicePosture },
+
+                // The virtual authenticators of test_driver.add_virtual_authenticator()
+                WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
 
                 // A screen whose orientation can be locked (as the test environment of Chromium), and whose display features
                 // are set by test_driver.set_display_features()
@@ -1816,6 +1822,30 @@ internal sealed partial class WptTestRunner
 
                 completion(null);
             });
+            return adapter.Undefined;
+        });
+
+        // The virtual authenticators (https://w3c.github.io/webauthn/#sctn-automation): the arguments and the result are JSON;
+        // as WebDriver commands, they run after the tasks that are already queued
+        Define("__wpt_webauthn", 4, (_, args) =>
+        {
+            var command = adapter.ToString(args[0]);
+            var arguments = adapter.ToString(args[1]);
+            var (resolve, reject) = (args[2], args[3]);
+            QueueTask(() => realm.Run(() =>
+            {
+                string? result;
+                try
+                {
+                    result = WptTestDriver.ExecuteWebAuthnCommand(_authenticators, command, arguments);
+                }
+                catch (WptWebDriverException ex)
+                {
+                    return adapter.Call(reject, adapter.Undefined, [adapter.FromString(ex.Message)]);
+                }
+
+                return adapter.Call(resolve, adapter.Undefined, [result is null ? adapter.Undefined : adapter.FromString(result)]);
+            }));
             return adapter.Undefined;
         });
 

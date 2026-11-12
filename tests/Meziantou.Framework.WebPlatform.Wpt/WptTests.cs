@@ -258,6 +258,8 @@ public sealed class WptTests
 
     public static TheoryData<string> DeviceMemoryTests => GetTests("device-memory");
 
+    public static TheoryData<string> WebAuthnTests => GetTests("webauthn");
+
     public static TheoryData<string> SaveDataTests => GetTests("savedata");
 
     public static TheoryData<string> GpcTests => GetTests("gpc");
@@ -1244,6 +1246,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(DeviceMemoryTests))]
     public void DeviceMemory(string test) => Run("device-memory", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebAuthnTests))]
+    public void WebAuthn(string test) => Run("webauthn", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(SaveDataTests))]

@@ -214,6 +214,7 @@
       "html/resources",
       "html/canvas",
       "permissions-policy",
+      "webauthn",
       "media-source",
       "media-playback-quality",
       "html/dom",

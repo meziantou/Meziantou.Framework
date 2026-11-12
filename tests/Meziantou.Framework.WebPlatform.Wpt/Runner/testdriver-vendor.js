@@ -276,6 +276,46 @@
     return internal.set_display_features([], context);
   };
 
+  // The virtual authenticators of Web Authentication (https://w3c.github.io/webauthn/#sctn-automation): the VirtualAuthenticatorEnvironment
+  // of the runner (see WptTestDriver.ExecuteWebAuthnCommand). The arguments and the results are JSON, as the WebDriver commands.
+  const webauthn = (command, ...args) => new Promise((resolve, reject) => __wpt_webauthn(
+    command,
+    JSON.stringify(args),
+    (result) => resolve(result === undefined ? undefined : JSON.parse(result)),
+    (message) => reject(new Error(message))));
+
+  internal.add_virtual_authenticator = function (config, context) {
+    return webauthn('add_virtual_authenticator', config);
+  };
+
+  internal.remove_virtual_authenticator = function (authenticator_id, context) {
+    return webauthn('remove_virtual_authenticator', authenticator_id);
+  };
+
+  internal.add_credential = function (authenticator_id, credential, context) {
+    return webauthn('add_credential', authenticator_id, credential);
+  };
+
+  internal.get_credentials = function (authenticator_id, context) {
+    return webauthn('get_credentials', authenticator_id);
+  };
+
+  internal.remove_credential = function (authenticator_id, credential_id, context) {
+    return webauthn('remove_credential', authenticator_id, credential_id);
+  };
+
+  internal.remove_all_credentials = function (authenticator_id, context) {
+    return webauthn('remove_all_credentials', authenticator_id);
+  };
+
+  internal.set_user_verified = function (authenticator_id, uv, context) {
+    return webauthn('set_user_verified', authenticator_id, uv);
+  };
+
+  internal.set_credential_properties = function (authenticator_id, credential_id, props, context) {
+    return webauthn('set_credential_properties', authenticator_id, credential_id, props);
+  };
+
   // The properties of the contact of a pointer action (https://w3c.github.io/webdriver/#dfn-process-pointer-parameters)
   const pointerProperties = ['width', 'height', 'pressure', 'tangentialPressure', 'tiltX', 'tiltY', 'twist', 'altitudeAngle', 'azimuthAngle'];
 

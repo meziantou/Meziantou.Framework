@@ -214,11 +214,10 @@
     }
   },
   "permissions-policy/payment-extension-allowed-by-permissions-policy-attribute.https.sub.html": {
-    "harness": "TIMEOUT",
     "total": 2,
     "failures": {
-      "WebAuthn \"payment\" extension can be enabled in cross-origin iframe using allow=\"payment\" attribute": "NOTRUN",
-      "WebAuthn \"payment\" extension is not supported in cross-origin iframe without allow=\"payment\" attribute": "TIMEOUT"
+      "WebAuthn \"payment\" extension can be enabled in cross-origin iframe using allow=\"payment\" attribute": "FAIL",
+      "WebAuthn \"payment\" extension is not supported in cross-origin iframe without allow=\"payment\" attribute": "FAIL"
     }
   },
   "permissions-policy/payment-supported-by-permissions-policy.tentative.html": {

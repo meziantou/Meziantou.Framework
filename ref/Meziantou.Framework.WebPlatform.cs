@@ -3514,6 +3514,10 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class CanvasGradient
     {
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0018", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public string ColorInterpolationMethod { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0018", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public string HueInterpolationMethod { get => throw null; set { } }
         public void AddColorStop(double offset, string color) { }
     }
 
@@ -4017,6 +4021,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class CookieJar
     {
+        public bool OriginBound { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookiePersistence? Persistence { get => throw null; }
         public CookieJar(System.TimeProvider? timeProvider) { }
         public CookieJar(Meziantou.Framework.WebPlatform.Dom.CookiePersistence? persistence, System.TimeProvider? timeProvider) { }
@@ -4062,6 +4067,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Strict = 0,
         Lax = 1,
         None = 2,
+    }
+
+    public enum CookieSourceScheme
+    {
+        NonSecure = 0,
+        Secure = 1,
     }
 
     public sealed class CookieStore : Meziantou.Framework.WebPlatform.Dom.EventTarget
@@ -4756,6 +4767,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool IncludeCredentials { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.Element? Initiator { get => throw null; init { } }
         public string Integrity { get => throw null; init { } }
+        public System.Action<int, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>>>? InterimResponseHandler { get => throw null; init { } }
         public bool IsSpeculative { get => throw null; init { } }
         public bool IsSynchronous { get => throw null; init { } }
         public string Method { get => throw null; init { } }
@@ -4771,6 +4783,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool UserActivation { get => throw null; init { } }
         public DocumentRequest(string url) { }
         public string? GetCookieHeader(string? url = null, System.Collections.Generic.IReadOnlyList<string>? redirectUrls = null) => throw null;
+        public void ReportInterimResponse(int statusCode, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> headers) { }
         public void StoreCookies(System.Collections.Generic.IEnumerable<string> setCookieHeaders, string? url = null, System.Collections.Generic.IReadOnlyList<string>? redirectUrls = null) { }
     }
 
@@ -9601,6 +9614,23 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string TargetSelector { get => throw null; }
     }
 
+    public sealed class PerformanceLongAnimationFrameTiming : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
+    {
+        public double BlockingDuration { get => throw null; }
+        public new double Duration { get => throw null; }
+        public new string EntryType { get => throw null; }
+        public double FirstUIEventTimestamp { get => throw null; }
+        public double LayoutDuration { get => throw null; }
+        public new string Name { get => throw null; }
+        public double PaintTime { get => throw null; }
+        public double? PresentationTime { get => throw null; }
+        public double RenderStart { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PerformanceScriptTiming> Scripts { get => throw null; }
+        public new double StartTime { get => throw null; }
+        public double StyleAndLayoutStart { get => throw null; }
+        public double StyleDuration { get => throw null; }
+    }
+
     public sealed class PerformanceLongTaskTiming : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.TaskAttributionTiming> Attribution { get => throw null; }
@@ -9731,6 +9761,28 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string WorkerMatchedRouterSource { get => throw null; }
         public double WorkerRouterEvaluationStart { get => throw null; }
         public double WorkerStart { get => throw null; }
+    }
+
+    public sealed class PerformanceScriptTiming : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
+    {
+        public new double Duration { get => throw null; }
+        public new string EntryType { get => throw null; }
+        public double ExecutionStart { get => throw null; }
+        public double ForcedLayoutDuration { get => throw null; }
+        public double ForcedStyleAndLayoutDuration { get => throw null; }
+        public double ForcedStyleDuration { get => throw null; }
+        public string Invoker { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ScriptInvokerType InvokerType { get => throw null; }
+        public new string Name { get => throw null; }
+        public double PauseDuration { get => throw null; }
+        public long SourceCharPosition { get => throw null; }
+        public long SourceColumn { get => throw null; }
+        public string SourceFunctionName { get => throw null; }
+        public long SourceLine { get => throw null; }
+        public string SourceUrl { get => throw null; }
+        public new double StartTime { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Window? Window { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ScriptWindowAttribution WindowAttribution { get => throw null; }
     }
 
     public sealed class PerformanceServerTiming
@@ -10631,6 +10683,25 @@ namespace Meziantou.Framework.WebPlatform.Dom
         protected virtual bool TryLock(Meziantou.Framework.WebPlatform.Dom.OrientationLockType? orientation) => throw null;
     }
 
+    public enum ScriptInvokerType
+    {
+        ClassicScript = 0,
+        ModuleScript = 1,
+        EventListener = 2,
+        UserCallback = 3,
+        ResolvePromise = 4,
+        RejectPromise = 5,
+    }
+
+    public enum ScriptWindowAttribution
+    {
+        Self = 0,
+        Descendant = 1,
+        Ancestor = 2,
+        SamePage = 3,
+        Other = 4,
+    }
+
     public enum ScrollBehavior
     {
         Auto = 0,
@@ -11145,6 +11216,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public required string Path { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookieSameSite? SameSite { get => throw null; init { } }
         public bool Secure { get => throw null; init { } }
+        public int SourcePort { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.CookieSourceScheme? SourceScheme { get => throw null; init { } }
         public required string Value { get => throw null; init { } }
     }
 
@@ -12143,6 +12216,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class SvgScriptElement : Meziantou.Framework.WebPlatform.Dom.SvgElement
     {
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0019", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public bool Async { get => throw null; set { } }
         public string? CrossOrigin { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedString Href { get => throw null; }
         public string ReferrerPolicy { get => throw null; set { } }
@@ -13375,6 +13450,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool LargestContentfulPaintEnabled { get => throw null; init { } }
         public bool LayoutInstabilityEnabled { get => throw null; init { } }
         public bool LayoutWorkletEnabled { get => throw null; init { } }
+        public bool LongAnimationFramesEnabled { get => throw null; init { } }
         public bool LongTasksEnabled { get => throw null; init { } }
         public bool MediaPlaybackQualityEnabled { get => throw null; init { } }
         public bool MediaSessionEnabled { get => throw null; init { } }
@@ -14423,10 +14499,13 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public TValue? CreateCrossOriginPlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsCrossOriginObjectHandler<TValue> handler) => throw null;
         TValue CreateDate(double timeValue);
         System.Exception CreateException(TValue value);
+        public TValue? CreateFixedLengthSharedArrayBuffer(object dataBlock, int byteLength) => throw null;
         TValue CreateFunction(string name, int length, Meziantou.Framework.WebPlatform.Scripting.JsHostFunction<TValue> function);
+        public TValue? CreateGrowableSharedArrayBuffer(object dataBlock, System.Action<TValue, int> grow) => throw null;
         public TValue CreateHtmlDdaPlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue> handler, Meziantou.Framework.WebPlatform.Scripting.JsHostFunction<TValue> call) => throw null;
         TValue CreateObject(TValue prototype);
         TValue CreatePlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue>? handler);
+        public TValue? CreateResizableArrayBufferWithData(byte[] data, int maxByteLength, string detachKey, System.Action<TValue, int> resize) => throw null;
         public TValue? CreateSharedArrayBuffer(object dataBlock) => throw null;
         public TValue? CreateWindowProxy(Meziantou.Framework.WebPlatform.Scripting.IJsWindowProxyHandler<TValue> handler) => throw null;
         public void DefineLazyAccessorProperty(TValue obj, TValue key, Meziantou.Framework.WebPlatform.Scripting.IJsLazyAccessor<TValue> factory, bool hasSetter, bool enumerable, bool configurable) { }
@@ -14451,7 +14530,9 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public int GetPropertyCount(TValue obj) => throw null;
         TValue GetPrototypeOf(TValue obj);
         public object? GetSharedDataBlock(TValue sharedArrayBuffer) => throw null;
+        public int GetSharedDataBlockByteLength(object dataBlock) => throw null;
         TValue GetWellKnownSymbol(Meziantou.Framework.WebPlatform.Scripting.JsWellKnownSymbol symbol);
+        public bool GrowSharedDataBlock(object dataBlock, int byteLength) => throw null;
         public bool? HasInternalSlot(TValue value, Meziantou.Framework.WebPlatform.Scripting.JsInternalSlot slot) => throw null;
         bool HasProperty(TValue obj, TValue key);
         bool IsArray(TValue value);
@@ -14479,6 +14560,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public void ReserveProperties(TValue obj, int count) { }
         TResult RunInRealm<TResult>(object realm, System.Func<TResult> action);
         void Set(TValue obj, TValue key, TValue value);
+        public void SetArrayBufferData(TValue arrayBuffer, byte[] data) { }
         [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0014", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void SetModuleSourceClassName(TValue obj, string className) { }
         bool SetPrototypeOf(TValue obj, TValue prototype);
@@ -14531,6 +14613,9 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         int ChildCount { get; }
         TValue Window { get; }
         TValue? GetChild(int index);
+        public bool IsNamedProperty(string name) => throw null;
+        public void ReportAccess(string propertyName) { }
+        public bool ShouldReportAccess() => throw null;
     }
 
     public interface IWebIdlHost

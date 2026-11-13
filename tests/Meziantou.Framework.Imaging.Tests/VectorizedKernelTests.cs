@@ -1024,6 +1024,46 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ExrSampleRangeChecksMatchTheScalarReference()
+    {
+        var random = new Random(4129);
+        ushort[] halfLimits = [0, 0x3BFF, 0x3C00, 0x3C01, 0x7BFF, 0x7C00, 0x7FFF];
+        uint[] singleLimits = [0, 0x3F7F_FFFF, 0x3F80_0000, 0x477F_E000, 0x7F7F_FFFF, 0x7F80_0000, 0x7FFF_FFFF];
+        for (var pixels = 0; pixels <= 40; pixels++)
+        {
+            for (var round = 0; round < 24; round++)
+            {
+                // Values around the limits with both signs, infinities and values that are not numbers, one at a random
+                // position so that every lane and every tail decides the result
+                var halves = new ushort[pixels * 4];
+                var singles = new uint[pixels * 4];
+                for (var i = 0; i < halves.Length; i++)
+                {
+                    var sign = random.Next(2) == 0 ? 0 : 0x8000;
+                    halves[i] = (ushort)(sign | (round % 3 == 0 ? random.Next(0x10000) & 0x7FFF : random.Next(0x3C01)));
+                    singles[i] = ((uint)sign << 16) | (round % 3 == 0 ? (uint)random.Next() : (uint)random.Next(0x3F80_0001));
+                }
+
+                if (halves.Length > 0 && round % 3 == 2)
+                {
+                    var position = random.Next(halves.Length);
+                    halves[position] = halfLimits[random.Next(halfLimits.Length)];
+                    singles[position] = singleLimits[random.Next(singleLimits.Length)] | (random.Next(2) == 0 ? 0 : 0x8000_0000);
+                }
+
+                for (var limit = 0; limit < halfLimits.Length; limit++)
+                {
+                    var alphaLimit = halfLimits[random.Next(halfLimits.Length)];
+                    Assert.Equal(ExrLineKernels.AreHalfMagnitudesWithinScalar(halves, halfLimits[limit], alphaLimit), ExrLineKernels.AreHalfMagnitudesWithin(halves, halfLimits[limit], alphaLimit));
+                    var singleAlphaLimit = singleLimits[random.Next(singleLimits.Length)];
+                    Assert.Equal(ExrLineKernels.AreSingleMagnitudesWithinScalar(singles, singleLimits[limit], singleAlphaLimit), ExrLineKernels.AreSingleMagnitudesWithin(singles, singleLimits[limit], singleAlphaLimit));
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void FloatingPointConversionsMatchTheScalarReference()
     {
         CheckFloatConversion<RgbaFloat, Rgba32>();

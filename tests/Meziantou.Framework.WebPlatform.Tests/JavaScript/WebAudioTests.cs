@@ -380,6 +380,50 @@ public sealed class WebAudioTests : IDisposable
     }
 
     [Fact]
+    public void ConvolverNode_WithAShortResponse_ComputesTheConvolution()
+    {
+        // A response of at most 64 frames is convolved in the time domain
+        var context = new OfflineAudioContext(1, 1024, 8000);
+        var response = new AudioBuffer(new AudioBufferOptions { Length = 13, SampleRate = 8000 });
+        var responseSamples = response.GetChannelData(0);
+        for (var i = 0; i < responseSamples.Length; i++)
+        {
+            responseSamples[i] = (i + 1) * (i % 2 == 0 ? 0.05f : -0.03f);
+        }
+
+        var convolver = new ConvolverNode(context, new ConvolverOptions { Buffer = response, DisableNormalization = true });
+        var input = new AudioBuffer(new AudioBufferOptions { Length = 300, SampleRate = 8000 });
+        var inputSamples = input.GetChannelData(0);
+        for (var i = 0; i < inputSamples.Length; i++)
+        {
+            inputSamples[i] = (float)Math.Sin(i / 7.0);
+        }
+
+        var source = new AudioBufferSourceNode(context, new AudioBufferSourceOptions { Buffer = input });
+        source.Connect(convolver).Connect(context.Destination);
+        source.Start();
+
+        var output = Render(context).GetChannelData(0);
+
+        // The input ends at frame 300 and the response at frame 312: the history wraps many times and the tail is silent
+        for (var n = 0; n < output.Length; n++)
+        {
+            var expected = 0.0;
+            for (var k = 0; k < responseSamples.Length; k++)
+            {
+                if (n - k is >= 0 and < 300)
+                {
+                    expected += responseSamples[k] * (double)inputSamples[n - k];
+                }
+            }
+
+            Assert.True(Math.Abs(output[n] - expected) < 1e-6, $"Sample {n}: {output[n]} instead of {expected}");
+        }
+
+        Assert.Equal(-1, output[312..].IndexOfAnyExcept(0f));
+    }
+
+    [Fact]
     public void WaveShaperNode_MapsTheInputWithTheCurve()
     {
         var context = new OfflineAudioContext(1, 128, 8000);

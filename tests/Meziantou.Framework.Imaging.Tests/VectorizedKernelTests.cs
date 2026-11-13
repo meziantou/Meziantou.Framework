@@ -9041,6 +9041,57 @@ public sealed class VectorizedKernelTests
     };
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ColorLookupTablesMatchTheScalarReference()
+    {
+        // 8-bit and 16-bit entries, simplex and multilinear interpolation, one to four inputs and one to four outputs: the
+        // corners, the faces and the inside of the cells, and values outside [0, 1]
+        var random = new Random(20261114);
+        for (var inputs = 1; inputs <= 4; inputs++)
+        {
+            for (var outputs = 1; outputs <= 4; outputs++)
+            {
+                foreach (var bytesPerEntry in new[] { 1, 2 })
+                {
+                    foreach (var multilinear in new[] { false, true })
+                    {
+                        var grid = new int[inputs];
+                        var entries = outputs;
+                        for (var i = 0; i < inputs; i++)
+                        {
+                            grid[i] = random.Next(2, 6);
+                            entries *= grid[i];
+                        }
+
+                        var data = new byte[entries * bytesPerEntry];
+                        random.NextBytes(data);
+                        var stage = new IccClutStage(data, grid, outputs, bytesPerEntry, multilinear);
+                        var expected = new double[IccPipeline.MaxChannels];
+                        var actual = new double[IccPipeline.MaxChannels];
+                        for (var color = 0; color < 300; color++)
+                        {
+                            for (var i = 0; i < inputs; i++)
+                            {
+                                expected[i] = random.Next(5) switch
+                                {
+                                    0 => random.Next(grid[i]) / (double)(grid[i] - 1),
+                                    1 => random.Next(3) - 1,
+                                    _ => random.NextDouble(),
+                                };
+                            }
+
+                            expected.CopyTo(actual, 0);
+                            stage.ApplyScalar(expected);
+                            stage.Apply(actual);
+                            Assert.Equal(expected.Select(BitConverter.DoubleToInt64Bits), actual.Select(BitConverter.DoubleToInt64Bits));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void ColorConversionInputTablesMatchTheScalarReferenceExhaustively()
     {
         // The first stage of an 8-bit conversion is read from 256-entry tables: every sample value of every channel, with

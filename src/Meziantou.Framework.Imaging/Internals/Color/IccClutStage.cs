@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -31,6 +32,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class IccClutStage : IccStage
 {
+    /// <summary>The largest number of entries whose values are computed once (<see cref="GetValues"/>): 16 MB of doubles.</summary>
+    private const int MaxValueCount = 1 << 21;
+
     private readonly ReadOnlyMemory<byte> _data;
     private readonly int _inputs;
     private readonly int _outputs;
@@ -40,6 +44,9 @@ internal sealed class IccClutStage : IccStage
     // Grid points and entry stride (in table entries of all outputs) of each input
     private readonly int[] _gridPoints;
     private readonly int[] _strides;
+
+    // The value of each entry, computed on first use, and a zero after the last one
+    private double[]? _values;
 
     /// <summary>Initializes a new instance of the <see cref="IccClutStage"/> class.</summary>
     /// <param name="data">The table: for each grid point, <paramref name="outputs"/> entries of <paramref name="bytesPerEntry"/> bytes. Its length is validated by the caller.</param>
@@ -64,7 +71,12 @@ internal sealed class IccClutStage : IccStage
         }
     }
 
-    public override void Apply(Span<double> values)
+    public override void Apply(Span<double> values) => Apply(values, isScalar: false);
+
+    /// <summary>The reference of <see cref="Apply(Span{double})"/>: each entry is divided when it is read (<see cref="InterpolateScalar"/>).</summary>
+    internal void ApplyScalar(Span<double> values) => Apply(values, isScalar: true);
+
+    private void Apply(Span<double> values, bool isScalar)
     {
         Span<double> fractions = unsafe(stackalloc double[IccPipeline.MaxChannels]);
         Span<int> order = unsafe(stackalloc int[IccPipeline.MaxChannels]);
@@ -144,14 +156,115 @@ internal sealed class IccClutStage : IccStage
             count = _inputs + 1;
         }
 
-        Interpolate(vertexWeights[..count], vertexOffsets[..count], values);
+        if (isScalar)
+        {
+            InterpolateScalar(vertexWeights[..count], vertexOffsets[..count], values);
+        }
+        else
+        {
+            Interpolate(vertexWeights[..count], vertexOffsets[..count], values);
+        }
     }
 
     /// <summary>
     /// Sets the outputs to the sum, in vertex order, of the entries of the vertices whose weight is not zero times their
     /// weights: <c>0 + w0 e0 + w1 e1 + ...</c> for each output.
     /// </summary>
+    /// <remarks>
+    /// The value of each entry (<c>e / 255</c> or <c>e / 65535</c>) is computed once, and the three sums of the usual
+    /// case are the lanes of vectors: the same products and additions in the same order as <see cref="InterpolateScalar"/>.
+    /// </remarks>
     private void Interpolate(ReadOnlySpan<double> weights, ReadOnlySpan<int> offsets, Span<double> values)
+    {
+        if (GetValues() is not { } table)
+        {
+            InterpolateScalar(weights, offsets, values);
+            return;
+        }
+
+        // The entries of a vertex start at its byte offset divided by the size of an entry
+        var shift = _bytesPerEntry - 1;
+        if (_outputs == 3 && Vector256.IsHardwareAccelerated)
+        {
+            var sums = Vector256<double>.Zero;
+            for (var vertex = 0; vertex < weights.Length; vertex++)
+            {
+                var weight = weights[vertex];
+                if (weight == 0)
+                    continue;
+
+                sums += Vector256.Create(weight) * Vector256.Create(table.AsSpan(offsets[vertex] >> shift, 4));
+            }
+
+            values[0] = sums.GetElement(0);
+            values[1] = sums.GetElement(1);
+            values[2] = sums.GetElement(2);
+            return;
+        }
+
+        if (_outputs == 3 && Vector128.IsHardwareAccelerated)
+        {
+            var sums = Vector128<double>.Zero;
+            double sum2 = 0;
+            for (var vertex = 0; vertex < weights.Length; vertex++)
+            {
+                var weight = weights[vertex];
+                if (weight == 0)
+                    continue;
+
+                var index = offsets[vertex] >> shift;
+                sums += Vector128.Create(weight) * Vector128.Create(table.AsSpan(index, 2));
+                sum2 += weight * table[index + 2];
+            }
+
+            values[0] = sums.GetElement(0);
+            values[1] = sums.GetElement(1);
+            values[2] = sum2;
+            return;
+        }
+
+        Span<double> result = unsafe(stackalloc double[IccPipeline.MaxChannels]);
+        result.Clear();
+        for (var vertex = 0; vertex < weights.Length; vertex++)
+        {
+            var weight = weights[vertex];
+            if (weight == 0)
+                continue;
+
+            var entry = table.AsSpan(offsets[vertex] >> shift, _outputs);
+            for (var i = 0; i < _outputs; i++)
+            {
+                result[i] += weight * entry[i];
+            }
+        }
+
+        result[.._outputs].CopyTo(values);
+    }
+
+    /// <summary>Gets the value of each entry from 0 to 1, followed by a zero; <see langword="null"/> when the table has too many entries.</summary>
+    private double[]? GetValues()
+    {
+        if (_values is { } values)
+            return values;
+
+        var data = _data.Span;
+        var count = data.Length / _bytesPerEntry;
+        if (count > MaxValueCount)
+            return null;
+
+        // The same divisions as InterpolateScalar: every thread that computes them gets the same values
+        values = new double[count + 1];
+        for (var i = 0; i < count; i++)
+        {
+            values[i] = _bytesPerEntry == 1 ? data[i] / 255.0 : BinaryPrimitives.ReadUInt16BigEndian(data[(2 * i)..]) / 65535.0;
+        }
+
+        Volatile.Write(ref _values, values);
+        return values;
+    }
+
+    /// <summary>The reference of <see cref="Interpolate"/>: each entry divided when it is read.</summary>
+    private void InterpolateScalar(ReadOnlySpan<double> weights, ReadOnlySpan<int> offsets, Span<double> values)
     {
         var data = _data.Span;
         if (_outputs == 3)

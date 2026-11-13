@@ -3224,6 +3224,156 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    public void MedianNetworkSelectsTheKeysOfTheSortedWindows()
+    {
+        CheckMedianNetwork<byte>(16, 0xFF);
+        CheckMedianNetwork<ushort>(17, 0xFFFF);
+        CheckMedianNetwork<uint>(18, uint.MaxValue);
+
+        // Every rank of rows of every length up to two 512-bit vectors and beyond, every number of channels, keys from a
+        // small set (ties, every 0-1 window) and from the whole range (extremes)
+        [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+        static void CheckMedianNetwork<TKey>(int seed, ulong max)
+            where TKey : unmanaged, IBinaryInteger<TKey>, IUnsignedNumber<TKey>
+        {
+            var random = new Random(seed);
+            foreach (var channels in new[] { 1, 2, 3, 4 })
+            {
+                foreach (var length in new[] { 1, 2, 3, 7, 8, 15, 16, 17, 31, 32, 33, 63, 64, 65, 129, 1000 })
+                {
+                    foreach (var alphabet in new ulong[] { 2, 3, max })
+                    {
+                        var rows = new TKey[3][];
+                        for (var j = 0; j < 3; j++)
+                        {
+                            rows[j] = new TKey[length + (2 * channels)];
+                            for (var i = 0; i < rows[j].Length; i++)
+                            {
+                                var value = alphabet == max ? (ulong)random.NextInt64() : (ulong)random.NextInt64((long)alphabet);
+                                rows[j][i] = TKey.CreateTruncating(alphabet == max && random.Next(4) == 0 ? (random.Next(2) == 0 ? 0 : max) : value);
+                            }
+                        }
+
+                        for (var rank = 0; rank < 9; rank++)
+                        {
+                            var expected = new TKey[length];
+                            var actual = new TKey[length];
+                            MedianFilter.SelectRowScalar<TKey>(rows[0], rows[1], rows[2], expected, channels, rank);
+                            MedianFilter.SelectRow<TKey>(rows[0], rows[1], rows[2], actual, channels, rank);
+                            Assert.Equal(expected, actual);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void MedianKeyConversionsMatchTheScalarReference()
+    {
+        // Every half-precision value, and single-precision values around the infinities, the zeros and the numbers that are
+        // not numbers, in rows that are and are not multiples of the vector width
+        var halves = new ushort[65536 + 5];
+        for (var i = 0; i < halves.Length; i++)
+        {
+            halves[i] = (ushort)i;
+        }
+
+        var singles = new List<uint>();
+        foreach (var center in new uint[] { 0, 0x8000_0000, 0x7F80_0000, 0xFF80_0000, 0x3F80_0000, 0x7FFF_FFFF, 0xFFFF_FFFF })
+        {
+            for (var delta = -20; delta <= 20; delta++)
+            {
+                singles.Add(unchecked(center + (uint)delta));
+            }
+        }
+
+        var halfKeys = halves.ToArray();
+        MedianFilter.ConvertKeys<Half, ushort>(halfKeys, toKeys: true);
+        for (var i = 0; i < halves.Length; i++)
+        {
+            Assert.Equal(MedianFilter.ToKey(BitConverter.UInt16BitsToHalf(halves[i])), halfKeys[i]);
+        }
+
+        var halfSamples = halves.ToArray();
+        MedianFilter.ConvertKeys<Half, ushort>(halfSamples, toKeys: false);
+        for (var i = 0; i < halves.Length; i++)
+        {
+            Assert.Equal(BitConverter.HalfToUInt16Bits(MedianFilter.FromKey<Half>(halves[i])), halfSamples[i]);
+        }
+
+        var singleKeys = singles.ToArray();
+        MedianFilter.ConvertKeys<float, uint>(singleKeys, toKeys: true);
+        var singleSamples = singles.ToArray();
+        MedianFilter.ConvertKeys<float, uint>(singleSamples, toKeys: false);
+        for (var i = 0; i < singles.Count; i++)
+        {
+            Assert.Equal(MedianFilter.ToKey(BitConverter.UInt32BitsToSingle(singles[i])), singleKeys[i]);
+            Assert.Equal(BitConverter.SingleToUInt32Bits(MedianFilter.FromKey<float>(singles[i])), singleSamples[i]);
+        }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Bgra32)]
+    [InlineData(PixelFormat.Rgb24)]
+    [InlineData(PixelFormat.Gray8)]
+    [InlineData(PixelFormat.Rgba64)]
+    [InlineData(PixelFormat.Gray16)]
+    [InlineData(PixelFormat.RgbaHalf)]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void MedianNetworkFiltersAsTheHistograms(PixelFormat format)
+    {
+        // Radius 1 selects with the network, which the scalar loops replace by the histograms: images narrower and wider than
+        // the vectors, every edge mode, the median and other percentiles
+        var random = new Random((int)format + 2);
+        (int Width, int Height)[] cases = [(1, 1), (1, 7), (7, 1), (2, 3), (37, 23), (101, 9)];
+        foreach (var (width, height) in cases)
+        {
+            var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+            random.NextBytes(bytes);
+            foreach (var mode in Enum.GetValues<ConvolutionEdgeMode>())
+            {
+                foreach (var percentile in new double[] { 0, 30, 50, 80, 100 })
+                {
+                    Assert.Equal(Filter(bytes, forceScalar: true), Filter(bytes, forceScalar: false));
+
+                    byte[] Filter(byte[] source, bool forceScalar)
+                    {
+                        using var image = format switch
+                        {
+                            PixelFormat.RgbaHalf => Image.ImportPixelBytes<RgbaHalf>(source, width, height),
+                            PixelFormat.RgbaFloat => Image.ImportPixelBytes<RgbaFloat>(source, width, height),
+                            _ => ImportBytes(format, source, width, height),
+                        };
+                        Resampler.TestForceScalar = forceScalar;
+                        try
+                        {
+                            if (percentile == 50)
+                            {
+                                image.MedianBlur(1, mode);
+                            }
+                            else
+                            {
+                                image.PercentileFilter(1, percentile, mode);
+                            }
+                        }
+                        finally
+                        {
+                            Resampler.TestForceScalar = false;
+                        }
+
+                        var result = new byte[source.Length];
+                        image.Frames[0].CopyPixelBytesTo(result);
+                        return result;
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ImageBilinearSumsMatchTheScalarReferenceBitForBit()
     {

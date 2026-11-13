@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// A worker keeps, in rentals charged to the scope of the image before any pixel changes, the keys of the rows of its band
 /// that the window reads (a ring as tall as the window), of the rows it reads above and below its band (the halos, loaded
 /// before any row is rewritten), of the output row, and one histogram per sample of a pixel (two trees of 16 bits for
-/// 32-bit keys), or the keys of one window when they are sorted (<see cref="SortsWindows"/>).
+/// 32-bit keys), none when a network selects the keys (<see cref="UsesSortingNetwork"/>).
 /// </remarks>
 internal sealed class MedianPlan : IDisposable
 {
@@ -41,6 +41,7 @@ internal sealed class MedianPlan : IDisposable
         Channels = PixelFormats.GetComponentCount(format);
         KeyBits = format == PixelFormat.RgbaFloat ? 32 : PixelFormats.GetBitsPerComponent(format);
         Workers = RowBands.GetWorkerCount(size, maxDegreeOfParallelism);
+        UsesSortingNetwork = radius == 1 && !Resampler.TestForceScalar;
     }
 
     /// <summary>Gets the number of pixels on each side of a pixel.</summary>
@@ -64,10 +65,11 @@ internal sealed class MedianPlan : IDisposable
     public int KeyBits { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the median of every window is found by sorting its keys rather than in histograms:
-    /// 32-bit keys of the smallest windows (9 keys), for which sorting is faster.
+    /// Gets a value indicating whether the key of every window is selected by a network of minimums and maximums rather than
+    /// in histograms: the smallest windows (9 keys), many windows at a time in vectors. <see cref="Resampler.TestForceScalar"/>
+    /// keeps the histograms, which tests compare the network with.
     /// </summary>
-    public bool SortsWindows => KeyBits == 32 && Radius == 1;
+    public bool UsesSortingNetwork { get; }
 
     /// <summary>
     /// Gets the number of counters of the histogram of one sample: 16 per level of 4 bits of the keys, and two trees of
@@ -100,7 +102,7 @@ internal sealed class MedianPlan : IDisposable
         if (!CheckedSizes.TryMultiply(paddedLength, (long)Diameter + (2L * Radius), out var rows) || !CheckedSizes.TryAdd(rows, (long)Size.Width * Channels, out var keys))
             throw CheckedSizes.CreateOverflowException(scope.Limits);
 
-        var counts = SortsWindows ? (long)Diameter * Diameter : (long)HistogramLength * Channels;
+        var counts = UsesSortingNetwork ? 0 : (long)HistogramLength * Channels;
         _keys = new PooledBuffer?[Workers];
         _counts = new PooledBuffer?[Workers];
         for (var worker = 0; worker < Workers; worker++)
@@ -112,10 +114,13 @@ internal sealed class MedianPlan : IDisposable
         ScratchBytes = scope.LiveBytes - before;
     }
 
-    /// <summary>Gets the key rows of a worker: the ring, the top halo, the bottom halo and the output row.</summary>
+    /// <summary>
+    /// Gets the key rows of a worker: the ring, the top halo, the bottom halo and the output row. A network
+    /// (<see cref="UsesSortingNetwork"/>) stores keys of the size of the samples in the same rows, at the same indexes.
+    /// </summary>
     public Span<uint> GetKeys(int worker) => unsafe(MemoryMarshal.Cast<byte, uint>((_keys[worker] ?? throw new ObjectDisposedException(nameof(MedianPlan))).Span));
 
-    /// <summary>Gets the histograms of a worker (one per sample of a pixel), or the keys of one window to sort (<see cref="SortsWindows"/>).</summary>
+    /// <summary>Gets the histograms of a worker (one per sample of a pixel), unused by a network (<see cref="UsesSortingNetwork"/>).</summary>
     public Span<int> GetCounts(int worker) => unsafe(MemoryMarshal.Cast<byte, int>((_counts[worker] ?? throw new ObjectDisposedException(nameof(MedianPlan))).Span));
 
     /// <summary>Gets the first row of a band.</summary>

@@ -195,7 +195,35 @@ public sealed class VectorizedKernelTests
                     PngFilters.GetAdaptiveCostsScalar(row, previous, bytesPerPixel, expected);
                     PngFilters.GetAdaptiveCosts(row, previous, bytesPerPixel, actual);
                     Assert.Equal(expected, actual);
+
                 }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Bgra32)]
+    [InlineData(PixelFormat.Rgb24)]
+    [InlineData(PixelFormat.Gray8)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PngIndexedKeysMatchTheScalarReference(PixelFormat pixelFormat)
+    {
+        var random = new Random(61);
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(pixelFormat);
+        var scope = new AllocationScope(new ImageResourceLimits());
+        foreach (var width in new[] { 1, 2, 3, 4, 5, 7, 8, 15, 16, 17, 31, 33, 64, 100, 1001 })
+        {
+            using var rows = new PngIndexedRows(scope, pixelFormat, width);
+            var row = new byte[(width * bytesPerPixel) + 7];
+            random.NextBytes(row);
+            foreach (var (start, step) in new[] { (0, 1), (1, 1), (width / 3, 1), (0, 2), (1, 8) })
+            {
+                var count = start >= width ? 0 : ((width - start - 1) / step) + 1;
+                var expected = new uint[count + 3];
+                var actual = new uint[count + 3];
+                Assert.Equal(rows.ReadKeysScalar(row, start, step, expected.AsSpan(0, count)), rows.ReadKeys(row, start, step, actual.AsSpan(0, count)));
+                Assert.Equal(expected, actual);
             }
         }
     }

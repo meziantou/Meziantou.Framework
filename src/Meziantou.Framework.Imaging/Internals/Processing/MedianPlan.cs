@@ -41,7 +41,7 @@ internal sealed class MedianPlan : IDisposable
         Channels = PixelFormats.GetComponentCount(format);
         KeyBits = format == PixelFormat.RgbaFloat ? 32 : PixelFormats.GetBitsPerComponent(format);
         Workers = RowBands.GetWorkerCount(size, maxDegreeOfParallelism);
-        UsesSortingNetwork = radius == 1 && !Resampler.TestForceScalar;
+        UsesSortingNetwork = (radius == 1 || (radius == 2 && Rank == 12)) && !Resampler.TestForceScalar;
     }
 
     /// <summary>Gets the number of pixels on each side of a pixel.</summary>
@@ -66,8 +66,8 @@ internal sealed class MedianPlan : IDisposable
 
     /// <summary>
     /// Gets a value indicating whether the key of every window is selected by a network of minimums and maximums rather than
-    /// in histograms: the smallest windows (9 keys), many windows at a time in vectors. <see cref="Resampler.TestForceScalar"/>
-    /// keeps the histograms, which tests compare the network with.
+    /// in histograms, many windows at a time in vectors: any rank of windows of 9 keys, and the median of windows of 25 keys.
+    /// <see cref="Resampler.TestForceScalar"/> keeps the histograms, which tests compare the networks with.
     /// </summary>
     public bool UsesSortingNetwork { get; }
 
@@ -98,8 +98,10 @@ internal sealed class MedianPlan : IDisposable
         var before = scope.LiveBytes;
         var paddedLength = ((long)Size.Width + (2L * Radius)) * Channels;
 
-        // The ring and the two halos, then the output row
-        if (!CheckedSizes.TryMultiply(paddedLength, (long)Diameter + (2L * Radius), out var rows) || !CheckedSizes.TryAdd(rows, (long)Size.Width * Channels, out var keys))
+        // The ring and the two halos, then the output row; the network of 5x5 windows keeps 5 rows of sorted columns instead
+        // of the output row
+        var rowCount = (long)Diameter + (2L * Radius) + (UsesSortingNetwork && Radius == 2 ? 5 : 0);
+        if (!CheckedSizes.TryMultiply(paddedLength, rowCount, out var rows) || !CheckedSizes.TryAdd(rows, (long)Size.Width * Channels, out var keys))
             throw CheckedSizes.CreateOverflowException(scope.Limits);
 
         var counts = UsesSortingNetwork ? 0 : (long)HistogramLength * Channels;

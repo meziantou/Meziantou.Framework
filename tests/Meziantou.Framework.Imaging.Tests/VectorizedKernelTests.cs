@@ -3262,6 +3262,22 @@ public sealed class VectorizedKernelTests
                             MedianFilter.SelectRow<TKey>(rows[0], rows[1], rows[2], actual, channels, rank);
                             Assert.Equal(expected, actual);
                         }
+
+                        // The median of 5x5 windows: 5 rows padded by 2 pixels on each side, in one array
+                        var paddedLength = length + (4 * channels);
+                        var keys = new TKey[5 * paddedLength];
+                        for (var i = 0; i < keys.Length; i++)
+                        {
+                            var value = alphabet == max ? (ulong)random.NextInt64() : (ulong)random.NextInt64((long)alphabet);
+                            keys[i] = TKey.CreateTruncating(alphabet == max && random.Next(4) == 0 ? (random.Next(2) == 0 ? 0 : max) : value);
+                        }
+
+                        int[] offsets = [2 * paddedLength, 0, 4 * paddedLength, paddedLength, 3 * paddedLength];
+                        var expectedMedians = new TKey[length];
+                        var actualMedians = new TKey[length];
+                        MedianFilter.SelectMedian25Scalar<TKey>(keys, offsets, paddedLength, expectedMedians, channels);
+                        MedianFilter.SelectMedian25<TKey>(keys, offsets, paddedLength, new TKey[5 * paddedLength], actualMedians, channels);
+                        Assert.Equal(expectedMedians, actualMedians);
                     }
                 }
             }
@@ -3325,8 +3341,8 @@ public sealed class VectorizedKernelTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void MedianNetworkFiltersAsTheHistograms(PixelFormat format)
     {
-        // Radius 1 selects with the network, which the scalar loops replace by the histograms: images narrower and wider than
-        // the vectors, every edge mode, the median and other percentiles
+        // Radius 1 (every rank) and the median of radius 2 select with networks, which the scalar loops replace by the
+        // histograms: images narrower and wider than the vectors, every edge mode, the median and other percentiles
         var random = new Random((int)format + 2);
         (int Width, int Height)[] cases = [(1, 1), (1, 7), (7, 1), (2, 3), (37, 23), (101, 9)];
         foreach (var (width, height) in cases)
@@ -3335,7 +3351,7 @@ public sealed class VectorizedKernelTests
             random.NextBytes(bytes);
             foreach (var mode in Enum.GetValues<ConvolutionEdgeMode>())
             {
-                foreach (var percentile in new double[] { 0, 30, 50, 80, 100 })
+                foreach (var (radius, percentile) in new (int, double)[] { (1, 0), (1, 30), (1, 50), (1, 80), (1, 100), (2, 50), (2, 30) })
                 {
                     Assert.Equal(Filter(bytes, forceScalar: true), Filter(bytes, forceScalar: false));
 
@@ -3352,11 +3368,11 @@ public sealed class VectorizedKernelTests
                         {
                             if (percentile == 50)
                             {
-                                image.MedianBlur(1, mode);
+                                image.MedianBlur(radius, mode);
                             }
                             else
                             {
-                                image.PercentileFilter(1, percentile, mode);
+                                image.PercentileFilter(radius, percentile, mode);
                             }
                         }
                         finally

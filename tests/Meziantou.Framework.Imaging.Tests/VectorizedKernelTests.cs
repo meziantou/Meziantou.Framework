@@ -2622,6 +2622,76 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlCoefficientCostMatchesTheScalarReference()
+    {
+        var random = new Random(193);
+        int[] specials = [0, 1, -1, 2, 0xFFFFFF, 0x1000000, -0x1000000, 0x1FFFFFF, 0x1000001, 0x7FFFFF80, 0x40000000, int.MaxValue, -int.MaxValue];
+        for (var length = 0; length <= 70; length++)
+        {
+            for (var round = 0; round < 8; round++)
+            {
+                var values = new int[length];
+                for (var i = 0; i < length; i++)
+                {
+                    values[i] = (round % 4) switch
+                    {
+                        0 => random.Next(-3, 4),
+                        1 => specials[random.Next(specials.Length)],
+                        2 => random.Next(-int.MaxValue, int.MaxValue),
+                        _ => random.Next(4) == 0 ? random.Next(-100000, 100000) : 0,
+                    };
+                }
+
+                Assert.Equal(JpegXlVarDctEncoder.GetCoefficientCostScalar(values), JpegXlVarDctEncoder.GetCoefficientCost(values));
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlZeroThresholdsMatchTheScalarReferenceBitForBit()
+    {
+        var random = new Random(197);
+        float[] specials = [0f, -0f, float.NaN, float.PositiveInfinity, float.NegativeInfinity, float.Epsilon, 1e30f, -1e30f];
+        (int Rows, int Columns)[] shapes = [(8, 8), (8, 16), (16, 16), (16, 32), (32, 32), (8, 64), (64, 64)];
+        foreach (var (rows, columns) in shapes)
+        {
+            var size = rows * columns;
+            for (var round = 0; round < 24; round++)
+            {
+                var coefficients = new float[size];
+                var luma = new float[size];
+                var matrix = new float[size];
+                var quantized = new int[size];
+                var dequantized = new float[size];
+                var scale = (float)(0.01 + (random.NextDouble() * 4));
+                var factor = (float)((random.NextDouble() - 0.5) * 2);
+                for (var i = 0; i < size; i++)
+                {
+                    matrix[i] = (float)(0.001 + (random.NextDouble() * 3));
+                    quantized[i] = round % 5 == 0 && random.Next(3) == 0 ? 0 : random.Next(-2, 3);
+                    dequantized[i] = (float)(random.NextDouble() - 0.5);
+                    luma[i] = round % 3 == 0 && random.Next(16) == 0 ? specials[random.Next(specials.Length)] : (float)((random.NextDouble() - 0.5) * matrix[i] * scale);
+                    var quotient = (random.Next(2) == 0 ? -1 : 1) * (0.3 + (random.NextDouble() * 0.6));
+                    coefficients[i] = round % 3 == 0 && random.Next(16) == 0 ? specials[random.Next(specials.Length)] : (float)(quotient * matrix[i] * scale);
+                }
+
+                float[] thresholds = [(float)(0.4 + (random.NextDouble() * 0.4)), (float)(0.4 + (random.NextDouble() * 0.4)), (float)(0.4 + (random.NextDouble() * 0.4)), (float)(0.4 + (random.NextDouble() * 0.4))];
+                var isLuma = round % 2 == 0;
+                var expectedQuantized = quantized.ToArray();
+                var actualQuantized = quantized.ToArray();
+                float[] expectedDequantized = isLuma ? dequantized.ToArray() : [];
+                float[] actualDequantized = isLuma ? dequantized.ToArray() : [];
+                JpegXlVarDctEncoder.ZeroBelowThresholdsScalar(coefficients, isLuma ? default : luma, factor, matrix, scale, rows, columns, thresholds, expectedQuantized, expectedDequantized);
+                JpegXlVarDctEncoder.ZeroBelowThresholds(coefficients, isLuma ? default : luma, factor, matrix, scale, rows, columns, thresholds, actualQuantized, actualDequantized);
+                Assert.Equal(expectedQuantized, actualQuantized);
+                Assert.Equal(Array.ConvertAll(expectedDequantized, BitConverter.SingleToInt32Bits), Array.ConvertAll(actualDequantized, BitConverter.SingleToInt32Bits));
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlDequantizationMatchesTheScalarReferenceBitForBit()
     {
         var random = new Random(182);

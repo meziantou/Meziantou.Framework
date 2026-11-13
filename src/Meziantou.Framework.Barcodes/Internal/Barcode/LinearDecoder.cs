@@ -186,29 +186,71 @@ internal static class LinearDecoder
         results.Add(new BarcodeDecodeResult(type, text, firstLine, lastLine, start, end));
     }
 
+    // The scan lines that read the same row of a label are next to each other, but for a few lines that cannot read it
+    private const int MaximumLineGap = 3;
+
+    // The detections of the same row data that are near each other: one per row of each label, so that a label printed
+    // twice gives two labels
+    private static List<List<T>> GroupNearby<T>(IEnumerable<T> items, Func<T, string> getKey, Func<T, int> getLine, Func<T, long> getStart, Func<T, long> getEnd)
+    {
+        var groups = new List<List<T>>();
+        foreach (var sameKey in items.GroupBy(getKey, StringComparer.Ordinal))
+        {
+            var keyGroups = new List<(List<T> Items, int LastLine, long Start, long End)>();
+            foreach (var item in sameKey.OrderBy(getLine))
+            {
+                var line = getLine(item);
+                var start = getStart(item);
+                var end = getEnd(item);
+                var index = keyGroups.FindIndex(group => line - group.LastLine <= MaximumLineGap && start < group.End && group.Start < end);
+                if (index < 0)
+                {
+                    keyGroups.Add(([item], line, start, end));
+                }
+                else
+                {
+                    var group = keyGroups[index];
+                    group.Items.Add(item);
+                    keyGroups[index] = (group.Items, Math.Max(group.LastLine, line), Math.Min(group.Start, start), Math.Max(group.End, end));
+                }
+            }
+
+            groups.AddRange(keyGroups.Select(group => group.Items));
+        }
+
+        return groups;
+    }
+
+    // The number of lines between two ranges of lines, 0 when they overlap
+    private static int GetLineDistance(int firstLine1, int lastLine1, int firstLine2, int lastLine2) => Math.Max(0, Math.Max(firstLine2 - lastLine1, firstLine1 - lastLine2));
+
     // GS1 DataBar Stacked and Stacked Omnidirectional: a top row above a bottom row, whose checksum matches. The rows of
-    // Stacked Omnidirectional are as high as each other, the top row of Stacked is shorter.
+    // Stacked Omnidirectional are as high as each other, the top row of Stacked is shorter. The bottom row of a top row is
+    // the nearest one that matches it: the same label printed twice has two of each.
     private static void AssembleStackedOmnidirectional(List<(DataBarDecoder.Half Half, int Line, long Start, long End)> halves, List<BarcodeDecodeResult> results)
     {
-        foreach (var top in halves.Where(item => item.Half.IsTop).GroupBy(item => string.Join(",", item.Half.Values)))
+        var rows = GroupNearby(halves, item => (item.Half.IsTop ? "T" : "B") + string.Join(",", item.Half.Values), item => item.Line, item => item.Start, item => item.End)
+            .Select(group => (group[0].Half, FirstLine: group.Min(item => item.Line), LastLine: group.Max(item => item.Line), Start: group.Min(item => item.Start), End: group.Max(item => item.End)))
+            .ToList();
+        var usedBottoms = new HashSet<int>();
+        foreach (var top in rows.Where(row => row.Half.IsTop))
         {
-            var topFirst = top.Min(item => item.Line);
-            var topLast = top.Max(item => item.Line);
-            var topStart = top.Min(item => item.Start);
-            var topEnd = top.Max(item => item.End);
             // The bottom row is after the top row, or before it when the lines cross an upside-down symbol from the bottom
-            foreach (var bottom in halves.Where(item => !item.Half.IsTop && (item.Line > topLast || item.Line < topFirst) && item.Start < topEnd && topStart < item.End).GroupBy(item => string.Join(",", item.Half.Values)))
+            var bottoms = Enumerable.Range(0, rows.Count)
+                .Where(index => !usedBottoms.Contains(index) && !rows[index].Half.IsTop && (rows[index].FirstLine > top.LastLine || rows[index].LastLine < top.FirstLine) && rows[index].Start < top.End && top.Start < rows[index].End)
+                .OrderBy(index => GetLineDistance(top.FirstLine, top.LastLine, rows[index].FirstLine, rows[index].LastLine));
+            foreach (var index in bottoms)
             {
-                var text = DataBarDecoder.TryCombine(top.First().Half, bottom.First().Half);
+                var bottom = rows[index];
+                var text = DataBarDecoder.TryCombine(top.Half, bottom.Half);
                 if (text is null)
                     continue;
 
-                var bottomFirst = bottom.Min(item => item.Line);
-                var bottomLast = bottom.Max(item => item.Line);
-                var topHeight = topLast - topFirst + 1;
-                var bottomHeight = bottomLast - bottomFirst + 1;
+                var topHeight = top.LastLine - top.FirstLine + 1;
+                var bottomHeight = bottom.LastLine - bottom.FirstLine + 1;
                 var type = topHeight * 6 < bottomHeight * 5 ? BarcodeType.Gs1DataBarStacked : BarcodeType.Gs1DataBarStackedOmnidirectional;
-                AddResult(results, type, text, Math.Min(topFirst, bottomFirst), Math.Max(topLast, bottomLast), Math.Min(topStart, bottom.Min(item => item.Start)), Math.Max(topEnd, bottom.Max(item => item.End)));
+                AddResult(results, type, text, Math.Min(top.FirstLine, bottom.FirstLine), Math.Max(top.LastLine, bottom.LastLine), Math.Min(top.Start, bottom.Start), Math.Max(top.End, bottom.End));
+                usedBottoms.Add(index);
                 break;
             }
         }
@@ -216,35 +258,37 @@ internal static class LinearDecoder
 
     // GS1 DataBar Expanded and Expanded Stacked: the rows that make a symbol, in the order of their finder patterns. The rows
     // of a stacked symbol are below each other: the lines that read them are in the same order (or the reverse order, for
-    // an upside-down symbol), which keeps the combinations of rows of other symbols out.
+    // an upside-down symbol), which keeps the combinations of rows of other symbols out. The same label printed twice has
+    // two of each row: each is a separate row, and the rows of a symbol are the nearest ones.
     private static void AssembleExpanded(List<(DataBarExpandedDecoder.Row Row, int Line, long Start, long End)> rows, List<BarcodeDecodeResult> results)
     {
         if (rows.Count is 0)
             return;
 
-        var distinct = rows.GroupBy(item => item.Row.Signature).ToList();
-        var used = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var group in distinct)
+        var groups = GroupNearby(rows, item => item.Row.Signature, item => item.Line, item => item.Start, item => item.End);
+        var groupRows = groups.Select(group => group[0].Row with { FirstLine = group.Min(item => item.Line), LastLine = group.Max(item => item.Line) }).ToList();
+        var used = new bool[groups.Count];
+        for (var i = 0; i < groups.Count; i++)
         {
-            if (used.Contains(group.Key))
+            if (used[i])
                 continue;
 
             // The rows of a symbol overlap horizontally
-            var candidates = distinct
-                .Where(other => !used.Contains(other.Key) && other.Any(item => group.Any(first => item.Start < first.End && first.Start < item.End)))
-                .Select(other => other.First().Row with { FirstLine = other.Min(item => item.Line), LastLine = other.Max(item => item.Line) })
+            var candidates = Enumerable.Range(0, groups.Count)
+                .Where(other => !used[other] && groups[other].Any(item => groups[i].Any(first => item.Start < first.End && first.Start < item.End)))
                 .ToList();
-            var assembled = DataBarExpandedDecoder.TryAssemble(candidates);
+            var assembled = DataBarExpandedDecoder.TryAssemble([.. candidates.Select(index => groupRows[index])]);
             if (assembled is null)
                 continue;
 
             var (orderedRows, text) = assembled.Value;
-            var members = distinct.Where(other => orderedRows.Any(row => row.Signature == other.Key)).SelectMany(other => other).ToList();
-            foreach (var row in orderedRows)
+            var memberIndexes = candidates.Where(index => orderedRows.Any(row => ReferenceEquals(row, groupRows[index]))).ToList();
+            foreach (var index in memberIndexes)
             {
-                used.Add(row.Signature);
+                used[index] = true;
             }
 
+            var members = memberIndexes.SelectMany(index => groups[index]).ToList();
             var type = orderedRows.Count > 1 ? BarcodeType.Gs1DataBarExpandedStacked : BarcodeType.Gs1DataBarExpanded;
             AddResult(results, type, text, members.Min(item => item.Line), members.Max(item => item.Line), members.Min(item => item.Start), members.Max(item => item.End));
         }

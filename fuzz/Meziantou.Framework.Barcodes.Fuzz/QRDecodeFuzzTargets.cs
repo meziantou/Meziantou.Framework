@@ -83,18 +83,77 @@ internal static class QRDecodeFuzzTargets
             _ => Array.IndexOf(RMQRSizes, (qr.Height, qr.Width)),
         };
 
-        var bytes = new byte[2 + ((qr.Width * qr.Height) + 7) / 8];
-        bytes[0] = type;
-        bytes[1] = (byte)size;
-        for (var i = 0; i < qr.Width * qr.Height; i++)
+        var modules = GetModules(qr);
+        byte[] bytes = [type, (byte)size, .. PackModules(modules)];
+        EnsureSameModules(modules, ReadQRCodeModules(bytes), name);
+        return new FuzzSeed(name, bytes);
+    }
+
+    private static byte[] PackModules(bool[,] modules)
+    {
+        var height = modules.GetLength(0);
+        var width = modules.GetLength(1);
+        var bytes = new byte[((width * height) + 7) / 8];
+        for (var i = 0; i < width * height; i++)
         {
-            if (qr[i / qr.Width, i % qr.Width])
+            if (modules[i / width, i % width])
             {
-                bytes[2 + (i / 8)] |= (byte)(0x80 >> (i % 8));
+                bytes[i / 8] |= (byte)(0x80 >> (i % 8));
             }
         }
 
+        return bytes;
+    }
+
+    private static bool[,] ReadModules(ReadOnlySpan<byte> data, int height, int width)
+    {
+        var modules = new bool[height, width];
+        for (var i = 0; i < height * width && i / 8 < data.Length; i++)
+        {
+            modules[i / width, i % width] = (data[i / 8] & (0x80 >> (i % 8))) != 0;
+        }
+
+        return modules;
+    }
+
+    private static void EnsureSameModules(bool[,] expected, bool[,] actual, string name)
+    {
+        if (expected.GetLength(0) != actual.GetLength(0) || expected.GetLength(1) != actual.GetLength(1) || !expected.Cast<bool>().SequenceEqual(actual.Cast<bool>()))
+            throw new InvalidOperationException($"The seed {name} does not give back its {expected.GetLength(0)}x{expected.GetLength(1)} symbol, but {actual.GetLength(0)}x{actual.GetLength(1)} modules");
+    }
+
+    private static byte ToSizeByte(int size, string name)
+    {
+        if (size is < 1 or > 256)
+            throw new InvalidOperationException($"The seed {name} has a size of {size}, which does not fit in a byte");
+
+        return (byte)(size - 1);
+    }
+
+    // The first two bytes are the width and the height minus one, the next ones the gray levels, row by row
+    private static FuzzSeed CreateImageSeed(string name, Image<Rgba32> image)
+    {
+        var pixels = new Rgba32[image.Width * image.Height];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        byte[] bytes = [ToSizeByte(image.Width, name), ToSizeByte(image.Height, name), .. pixels.Select(pixel => pixel.R)];
+        var (width, height, grays) = ReadGrayPixels(bytes);
+        if (width != image.Width || height != image.Height || !grays.Select(gray => gray.Value).SequenceEqual(pixels.Select(pixel => pixel.R)))
+            throw new InvalidOperationException($"The seed {name} does not give back its {image.Width}x{image.Height} image, but {width}x{height} pixels");
+
         return new FuzzSeed(name, bytes);
+    }
+
+    private static (int Width, int Height, Gray8[] Pixels) ReadGrayPixels(ReadOnlySpan<byte> data)
+    {
+        var width = 1 + FuzzInput.ReadByte(ref data);
+        var height = 1 + FuzzInput.ReadByte(ref data);
+        var pixels = new Gray8[width * height];
+        for (var i = 0; i < pixels.Length && i < data.Length; i++)
+        {
+            pixels[i] = new Gray8(data[i]);
+        }
+
+        return (width, height, pixels);
     }
 
     private static readonly (int Height, int Width)[] RMQRSizes =
@@ -107,7 +166,7 @@ internal static class QRDecodeFuzzTargets
         (17, 43), (17, 59), (17, 77), (17, 99), (17, 139),
     ];
 
-    private static void DecodeTarget(ReadOnlySpan<byte> data)
+    private static bool[,] ReadQRCodeModules(ReadOnlySpan<byte> data)
     {
         var type = FuzzInput.ReadByte(ref data) % 4;
         var size = FuzzInput.ReadByte(ref data);
@@ -119,11 +178,14 @@ internal static class QRDecodeFuzzTargets
             _ => (1 + (size % 24), 1 + (size / 24 % 24)), // Any size
         };
 
-        var modules = new bool[height, width];
-        for (var i = 0; i < height * width && i / 8 < data.Length; i++)
-        {
-            modules[i / width, i % width] = (data[i / 8] & (0x80 >> (i % 8))) != 0;
-        }
+        return ReadModules(data, height, width);
+    }
+
+    private static void DecodeTarget(ReadOnlySpan<byte> data)
+    {
+        var modules = ReadQRCodeModules(data);
+        var height = modules.GetLength(0);
+        var width = modules.GetLength(1);
 
         QRCodeDecodeResult result;
         try
@@ -194,33 +256,38 @@ internal static class QRDecodeFuzzTargets
         yield return Create2DSeed("decode-aztec-binary", Barcode2D.CreateAztec([0x00, 0xFF, 0x10, 0x80, 0x7F]));
     }
 
+    // The reader adds one to the stored height and width, so that every byte value is a valid size
     private static FuzzSeed Create2DSeed(string name, Barcode2D barcode)
     {
-        var bytes = new byte[3 + ((barcode.Width * barcode.Height) + 7) / 8];
-        bytes[0] = (byte)barcode.Type;
-        bytes[1] = (byte)barcode.Height;
-        bytes[2] = (byte)barcode.Width;
-        for (var i = 0; i < barcode.Width * barcode.Height; i++)
+        var modules = new bool[barcode.Height, barcode.Width];
+        for (var row = 0; row < barcode.Height; row++)
         {
-            if (barcode[i / barcode.Width, i % barcode.Width])
+            for (var column = 0; column < barcode.Width; column++)
             {
-                bytes[3 + (i / 8)] |= (byte)(0x80 >> (i % 8));
+                modules[row, column] = barcode[row, column];
             }
         }
 
+        byte[] bytes = [(byte)barcode.Type, ToSizeByte(barcode.Height, name), ToSizeByte(barcode.Width, name), .. PackModules(modules)];
+        var (type, readModules) = Read2DModules(bytes);
+        if (type != barcode.Type)
+            throw new InvalidOperationException($"The seed {name} is read as a {type} symbol");
+
+        EnsureSameModules(modules, readModules, name);
         return new FuzzSeed(name, bytes);
     }
 
-    private static void Decode2DTarget(ReadOnlySpan<byte> data)
+    private static (Barcode2DType Type, bool[,] Modules) Read2DModules(ReadOnlySpan<byte> data)
     {
         var type = (Barcode2DType)(FuzzInput.ReadByte(ref data) % 3);
         var height = 1 + FuzzInput.ReadByte(ref data);
         var width = 1 + FuzzInput.ReadByte(ref data);
-        var modules = new bool[height, width];
-        for (var i = 0; i < height * width && i / 8 < data.Length; i++)
-        {
-            modules[i / width, i % width] = (data[i / 8] & (0x80 >> (i % 8))) != 0;
-        }
+        return (type, ReadModules(data, height, width));
+    }
+
+    private static void Decode2DTarget(ReadOnlySpan<byte> data)
+    {
+        var (type, modules) = Read2DModules(data);
 
         Barcode2DDecodeResult result;
         try
@@ -330,27 +397,18 @@ internal static class QRDecodeFuzzTargets
         FuzzAssert.Equal(results.Count, again.Count, "The number of results of the same lines");
     }
 
-    // The first two bytes are the width and the height, the next ones the gray levels, row by row
     private static IEnumerable<FuzzSeed> GetImageSeeds()
     {
         foreach (var (name, qr) in new[] { ("standard", QRCode.Create("HELLO")), ("micro", QRCode.CreateMicroQR("12345")), ("rmqr", QRCode.CreateRMQR("HELLO")) })
         {
             using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 2, QuietZoneModules = 2 });
-            var pixels = new Rgba32[image.Width * image.Height];
-            image.Frames[0].CopyPixelDataTo(pixels);
-            yield return new FuzzSeed($"image-{name}", (byte[])[(byte)image.Width, (byte)image.Height, .. pixels.Select(pixel => pixel.R)]);
+            yield return CreateImageSeed($"image-{name}", image);
         }
     }
 
     private static void ReadQRCodeImageTarget(ReadOnlySpan<byte> data)
     {
-        var width = 1 + FuzzInput.ReadByte(ref data);
-        var height = 1 + FuzzInput.ReadByte(ref data);
-        var pixels = new Gray8[width * height];
-        for (var i = 0; i < pixels.Length && i < data.Length; i++)
-        {
-            pixels[i] = new Gray8(data[i]);
-        }
+        var (width, height, pixels) = ReadGrayPixels(data);
 
         using var image = Image.ImportPixelData<Gray8>(pixels, width, height);
         foreach (var result in image.ReadQRCodes())
@@ -406,21 +464,13 @@ internal static class QRDecodeFuzzTargets
         foreach (var (name, barcode) in new[] { ("datamatrix", Barcode2D.CreateDataMatrix("HELLO")), ("pdf417", Barcode2D.CreatePdf417("HELLO", new Pdf417Options { Columns = 1, RowHeight = 2 })), ("aztec", Barcode2D.CreateAztec("HELLO")) })
         {
             using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 2, QuietZoneModules = 2 });
-            var pixels = new Rgba32[image.Width * image.Height];
-            image.Frames[0].CopyPixelDataTo(pixels);
-            yield return new FuzzSeed($"image-2d-{name}", (byte[])[(byte)image.Width, (byte)image.Height, .. pixels.Select(pixel => pixel.R)]);
+            yield return CreateImageSeed($"image-2d-{name}", image);
         }
     }
 
     private static void Read2DImageTarget(ReadOnlySpan<byte> data)
     {
-        var width = 1 + FuzzInput.ReadByte(ref data);
-        var height = 1 + FuzzInput.ReadByte(ref data);
-        var pixels = new Gray8[width * height];
-        for (var i = 0; i < pixels.Length && i < data.Length; i++)
-        {
-            pixels[i] = new Gray8(data[i]);
-        }
+        var (width, height, pixels) = ReadGrayPixels(data);
 
         using var image = Image.ImportPixelData<Gray8>(pixels, width, height);
         foreach (var result in image.ReadBarcodes2D())
@@ -476,21 +526,13 @@ internal static class QRDecodeFuzzTargets
         foreach (var (name, barcode) in new[] { ("ean13", Barcode.CreateEan13("590123412345")), ("code128", Barcode.CreateCode128("AB12")), ("databar", Barcode.CreateGs1DataBarLimited("1501234567890")) })
         {
             using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 1, ModuleHeight = 8, QuietZoneModules = 4 });
-            var pixels = new Rgba32[image.Width * image.Height];
-            image.Frames[0].CopyPixelDataTo(pixels);
-            yield return new FuzzSeed($"image-linear-{name}", (byte[])[(byte)image.Width, (byte)image.Height, .. pixels.Select(pixel => pixel.R)]);
+            yield return CreateImageSeed($"image-linear-{name}", image);
         }
     }
 
     private static void ReadLinearImageTarget(ReadOnlySpan<byte> data)
     {
-        var width = 1 + FuzzInput.ReadByte(ref data);
-        var height = 1 + FuzzInput.ReadByte(ref data);
-        var pixels = new Gray8[width * height];
-        for (var i = 0; i < pixels.Length && i < data.Length; i++)
-        {
-            pixels[i] = new Gray8(data[i]);
-        }
+        var (width, height, pixels) = ReadGrayPixels(data);
 
         using var image = Image.ImportPixelData<Gray8>(pixels, width, height);
         foreach (var result in image.ReadBarcodes())

@@ -119,7 +119,7 @@ internal static class LinearLocator
     private static (double Left, double Top, double Right, double Bottom) GetBounds(BarcodeImageResult result)
     {
         var length = result.Corners[0].DistanceTo(result.Corners[2]);
-        var margin = Math.Max(2, length / 20);
+        var margin = Math.Max(2, length / 100);
         return (result.Corners.Min(corner => corner.X) - margin, result.Corners.Min(corner => corner.Y) - margin, result.Corners.Max(corner => corner.X) + margin, result.Corners.Max(corner => corner.Y) + margin);
     }
 }

@@ -113,8 +113,10 @@ internal static class Barcode2DLocator
 
     private static IEnumerable<(int Height, int Width)> GetDataMatrixSizeCandidates(int height, int width)
     {
-        // The counts can be one or two modules off on a blurred edge: the closest sizes first
+        // The counts can be one or two modules off on a blurred edge: the closest sizes first. A rectangular symbol can be
+        // in portrait in the image, which samples it transposed: the decoder turns it back
         return DataMatrixSizes
+            .Concat(DataMatrixSizes.Where(size => size.Height != size.Width).Select(size => (Height: size.Width, Width: size.Height)))
             .Select(size => (Size: size, Distance: Math.Abs(size.Height - height) + Math.Abs(size.Width - width)))
             .Where(candidate => candidate.Distance <= 4)
             .OrderBy(candidate => candidate.Distance)
@@ -544,30 +546,62 @@ internal static class Barcode2DLocator
                 var first = rows[0];
                 var group = rows.Where(row => row.Columns == first.Columns && Math.Abs(row.Start - first.Start) < (first.End - first.Start) * 0.1 && Math.Abs(row.End - first.End) < (first.End - first.Start) * 0.1).ToList();
                 rows.RemoveAll(group.Contains);
-                if (group.Count < 3)
-                    continue;
 
+                // Labels printed above each other at the same place are separated by their quiet zones: the lines of a
+                // label are contiguous, except where a line is unreadable
                 var width = (17 * (first.Columns + 4)) + 1;
-                var modules = new bool[group.Count, width];
-                for (var i = 0; i < group.Count; i++)
+                var maximumGap = Math.Max(2, 2 * (first.End - first.Start) / width);
+                var labels = new List<List<(int Line, double Start, double End, int Columns, bool[] Modules)>>();
+                foreach (var row in group.OrderBy(row => row.Line))
                 {
-                    for (var x = 0; x < width; x++)
+                    if (labels.Count is 0 || row.Line - labels[^1][^1].Line > maximumGap)
                     {
-                        modules[i, x] = group[i].Modules[x];
+                        labels.Add([]);
                     }
+
+                    labels[^1].Add(row);
                 }
 
-                if (Barcode2DDecoder.TryDecode(modules, Barcode2DType.Pdf417, out var result))
+                // A label whose unreadable rows split it is decoded from a few consecutive parts together
+                for (var i = 0; i < labels.Count && results.Count < maximumResults; i++)
                 {
-                    var firstLine = group.Min(row => row.Line);
-                    var lastLine = group.Max(row => row.Line) + 1;
-                    var start = group.Min(row => row.Start);
-                    var end = group.Max(row => row.End);
-                    PointD At(double along, double across) => vertical ? new PointD(across, along) : new PointD(along, across);
-                    Add(results, new Barcode2DImageResult(result, OrderCorners([At(start, firstLine), At(end, firstLine), At(end, lastLine), At(start, lastLine)])));
+                    for (var j = i; j < labels.Count && j < i + 4; j++)
+                    {
+                        if (TryDecodePdf417([.. labels.Skip(i).Take(j - i + 1).SelectMany(label => label)], width, vertical) is { } result)
+                        {
+                            Add(results, result);
+                            i = j;
+                            break;
+                        }
+                    }
                 }
             }
         }
+    }
+
+    private static Barcode2DImageResult? TryDecodePdf417(List<(int Line, double Start, double End, int Columns, bool[] Modules)> rows, int width, bool vertical)
+    {
+        if (rows.Count < 3)
+            return null;
+
+        var modules = new bool[rows.Count, width];
+        for (var i = 0; i < rows.Count; i++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                modules[i, x] = rows[i].Modules[x];
+            }
+        }
+
+        if (!Barcode2DDecoder.TryDecode(modules, Barcode2DType.Pdf417, out var result))
+            return null;
+
+        var firstLine = rows.Min(row => row.Line);
+        var lastLine = rows.Max(row => row.Line) + 1;
+        var start = rows.Min(row => row.Start);
+        var end = rows.Max(row => row.End);
+        PointD At(double along, double across) => vertical ? new PointD(across, along) : new PointD(along, across);
+        return new Barcode2DImageResult(result, OrderCorners([At(start, firstLine), At(end, firstLine), At(end, lastLine), At(start, lastLine)]));
     }
 
     // The rows of a line: a start pattern, then a stop pattern, in either direction, sampled as modules

@@ -983,6 +983,25 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
+    public void ReadQRCodes_SheetOfSymbols()
+    {
+        using var image = new Image<Rgba32>(1000, 1000, Colors.White);
+        var options = new QRCodeDrawingOptions { ModuleSize = 3 };
+        image.Draw(canvas =>
+        {
+            for (var i = 0; i < 64; i++)
+            {
+                canvas.DrawQRCode(QRCode.Create($"Label {i}"), new PointD(10 + (i % 8 * 120), 10 + (i / 8 * 120)), options);
+            }
+        });
+
+        var results = image.ReadQRCodes();
+
+        Assert.Equal(Enumerable.Range(0, 64).Select(i => $"Label {i}").Order(StringComparer.Ordinal), results.Select(result => result.Text).Order(StringComparer.Ordinal));
+        Assert.Single(image.ReadQRCodes(new QRCodeReadingOptions { MaximumResults = 1 }));
+    }
+
+    [Fact]
     public void ReadQRCodes_NoSymbol()
     {
         using var blank = new Image<Rgba32>(200, 100, Colors.White);
@@ -1058,6 +1077,44 @@ public sealed class ImageRendererTests
         var result = Assert.Single(image.ReadBarcodes2D());
 
         Assert.Equal((type, "Rotated 2D symbol"), (result.Result.Type, result.Text));
+    }
+
+    [Theory]
+    [InlineData("8x18", RotateMode.Rotate90)]
+    [InlineData("8x18", RotateMode.Rotate270)]
+    [InlineData("Portrait 8x32", RotateMode.Rotate90)]
+    [InlineData("Portrait rectangle of 12x36", RotateMode.Rotate270)]
+    public void ReadBarcodes2D_RectangularDataMatrixInPortrait(string text, RotateMode rotation)
+    {
+        using var image = Barcode2D.CreateDataMatrix(text, new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }).ToImage(new Barcode2DDrawingOptions { ModuleSize = 4 });
+        image.Rotate(rotation);
+
+        Assert.True(image.Height > image.Width);
+        Assert.Equal(text, Assert.Single(image.ReadBarcodes2D()).Text);
+    }
+
+    [Theory]
+    [InlineData("Same label", "Same label", false)]
+    [InlineData("Upper label", "Lower label", false)]
+    [InlineData("Upper label", "Lower label", true)]
+    public void ReadBarcodes2D_Pdf417LabelsAboveEachOther(string upper, string lower, bool rotate)
+    {
+        var options = new Pdf417Options { Columns = 2 };
+        using var image = new Image<Rgba32>(400, 400, Colors.White);
+        image.Draw(canvas =>
+        {
+            canvas.DrawBarcode2D(Barcode2D.CreatePdf417(upper, options), new PointD(20, 20), new Barcode2DDrawingOptions { ModuleSize = 2 });
+            canvas.DrawBarcode2D(Barcode2D.CreatePdf417(lower, options), new PointD(20, 200), new Barcode2DDrawingOptions { ModuleSize = 2 });
+        });
+        if (rotate)
+        {
+            image.Rotate(RotateMode.Rotate90);
+        }
+
+        var results = image.ReadBarcodes2D().OrderBy(result => rotate ? -result.Corners[0].X : result.Corners[0].Y).ToList();
+
+        Assert.Equal([upper, lower], results.Select(result => result.Text).ToArray());
+        Assert.True(results[0].Corners.Max(corner => rotate ? -corner.X : corner.Y) < results[1].Corners.Min(corner => rotate ? -corner.X : corner.Y));
     }
 
     [Theory]
@@ -1236,6 +1293,33 @@ public sealed class ImageRendererTests
         Assert.True(ean.Corners[0].X is > 15 and < 50 && ean.Corners[0].Y is > 15 and < 90, $"{ean.Corners[0]}");
         Assert.Equal("SKU-123456", Assert.Single(image.ReadBarcodes(new BarcodeReadingOptions { Types = [BarcodeType.Code128] })).Text);
         Assert.Single(image.ReadBarcodes(new BarcodeReadingOptions { MaximumResults = 1 }));
+    }
+
+    [Theory]
+    [InlineData(BarcodeType.Gs1DataBarExpanded, false)]
+    [InlineData(BarcodeType.Gs1DataBarExpanded, true)]
+    [InlineData(BarcodeType.Gs1DataBarExpandedStacked, false)]
+    [InlineData(BarcodeType.Gs1DataBarExpandedStacked, true)]
+    [InlineData(BarcodeType.Gs1DataBarStacked, false)]
+    [InlineData(BarcodeType.Gs1DataBarStackedOmnidirectional, true)]
+    public void ReadBarcodes_SameDataBarLabelTwice(BarcodeType type, bool aboveEachOther)
+    {
+        var barcode = CreateSample(type);
+        var options = new BarcodeDrawingOptions { ModuleWidth = 2, ModuleHeight = 40 };
+        using var label = barcode.ToImage(options);
+        using var image = new Image<Rgba32>(aboveEachOther ? label.Width + 40 : (2 * label.Width) + 80, aboveEachOther ? (2 * label.Height) + 80 : label.Height + 40, Colors.White);
+        image.Draw(canvas =>
+        {
+            canvas.DrawBarcode(barcode, new PointD(20, 20), options);
+            canvas.DrawBarcode(barcode, aboveEachOther ? new PointD(20, label.Height + 60) : new PointD(label.Width + 60, 20), options);
+        });
+
+        var results = image.ReadBarcodes().OrderBy(result => aboveEachOther ? result.Corners[0].Y : result.Corners[0].X).ToList();
+
+        Assert.Equal([barcode.Text, barcode.Text], results.Select(result => result.Text).ToArray());
+        Assert.True(aboveEachOther
+            ? results[0].Corners.Max(corner => corner.Y) < results[1].Corners.Min(corner => corner.Y)
+            : results[0].Corners.Max(corner => corner.X) < results[1].Corners.Min(corner => corner.X));
     }
 
     [Fact]

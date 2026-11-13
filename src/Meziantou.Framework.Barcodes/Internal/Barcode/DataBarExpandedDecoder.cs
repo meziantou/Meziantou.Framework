@@ -211,7 +211,8 @@ internal static class DataBarExpandedDecoder
         }
         else
         {
-            foreach (var candidate in rows)
+            // The nearest rows first: the next row of a label printed twice is the one of the same label
+            foreach (var candidate in rows.OrderBy(candidate => Math.Max(0, Math.Max(candidate.FirstLine - row.LastLine, row.FirstLine - candidate.LastLine))))
             {
                 var text = TryFollow(rows, candidate, next, sequence, symbolCharacters, ordered);
                 if (text is not null)

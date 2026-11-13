@@ -35,15 +35,35 @@ internal static class QRCodeLocator
 
     private static void LocateStandard(BinaryImage image, List<PatternCenter> finders, bool[] used, List<QRCodeImageResult> results, int maximumResults, CancellationToken cancellationToken)
     {
-        // The triples whose finder patterns have the same module size and form a right isosceles triangle
+        // The finder patterns of a symbol have the same module size and are 10 to 200 modules apart along the legs of the
+        // triangle, about √2 times more along its hypotenuse: only these pairs, with some slack, can be in a triple
+        var neighbors = new List<int>[finders.Count];
+        var neighborSets = new HashSet<int>[finders.Count];
+        for (var a = 0; a < finders.Count; a++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            neighbors[a] = [];
+            neighborSets[a] = [];
+            for (var b = a + 1; b < finders.Count; b++)
+            {
+                if (CanBeInSameSymbol(finders[a], finders[b]))
+                {
+                    neighbors[a].Add(b);
+                    neighborSets[a].Add(b);
+                }
+            }
+        }
+
+        // The triples whose finder patterns form a right isosceles triangle
         var triples = new List<(double Score, int A, int B, int C)>();
         for (var a = 0; a < finders.Count; a++)
         {
-            for (var b = a + 1; b < finders.Count; b++)
+            cancellationToken.ThrowIfCancellationRequested();
+            foreach (var b in neighbors[a])
             {
-                for (var c = b + 1; c < finders.Count; c++)
+                foreach (var c in neighbors[b])
                 {
-                    if (GetTriangleScore(finders[a], finders[b], finders[c]) is { } score)
+                    if (neighborSets[a].Contains(c) && GetTriangleScore(finders[a], finders[b], finders[c]) is { } score)
                     {
                         triples.Add((score, a, b, c));
                     }
@@ -66,6 +86,15 @@ internal static class QRCodeLocator
                 used[a] = used[b] = used[c] = true;
             }
         }
+    }
+
+    private static bool CanBeInSameSymbol(PatternCenter a, PatternCenter b)
+    {
+        if (Math.Max(a.ModuleSize, b.ModuleSize) > Math.Min(a.ModuleSize, b.ModuleSize) * 1.5)
+            return false;
+
+        var modules = a.Point.DistanceTo(b.Point) / ((a.ModuleSize + b.ModuleSize) / 2);
+        return modules is >= 8 and <= 400;
     }
 
     // The lower the better: how far the triangle is from a right isosceles triangle, or null when it is too far

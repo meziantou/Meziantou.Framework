@@ -413,6 +413,51 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PaletteTranslucentSearchMatchesTheScalarReference()
+    {
+        // Palettes of every size around the vector sizes, of opaque, translucent and transparent entries, and a palette of grays
+        // two units apart (colors between two entries are at the same distance of both); colors of any alpha and the extremes
+        var random = new Random(43);
+        using var quantizer = new PaletteQuantizer(new AllocationScope(new ImageResourceLimits()), translucent: true);
+        foreach (var entries in new[] { 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 100, 255, 256 })
+        {
+            for (var round = 0; round < 3; round++)
+            {
+                var keys = new HashSet<int>();
+                for (var attempt = 0; keys.Count < entries && attempt < 10_000; attempt++)
+                {
+                    keys.Add(round switch
+                    {
+                        0 => PaletteQuantizer.GetKey(random.Next(256), random.Next(256), random.Next(256), random.Next(256)),
+                        1 => 2 * keys.Count * 0x01_0101,
+                        _ => PaletteQuantizer.GetKey(random.Next(2) * 255, random.Next(2) * 255, random.Next(2) * 255, random.Next(3) * 127),
+                    });
+
+                    if (round == 1 && keys.Count == 128)
+                        break;
+                }
+
+                quantizer.SetPalette([.. keys]);
+                for (var i = 0; i < 2000; i++)
+                {
+                    var key = (i % 4) switch
+                    {
+                        0 => PaletteQuantizer.GetKey(random.Next(256), random.Next(256), random.Next(256), random.Next(256)),
+                        1 => PaletteQuantizer.GetKey(random.Next(2) * 255, random.Next(2) * 255, random.Next(2) * 255, random.Next(2) * 255),
+                        2 => ((2 * random.Next(128)) + 1) * 0x01_0101,
+                        _ => quantizer.Palette[random.Next(quantizer.PaletteCount)],
+                    };
+
+                    var alpha = PaletteQuantizer.GetAlpha(key);
+                    var (red, green, blue) = key == PaletteQuantizer.TransparentKey ? (0, 0, 0) : (((key >> 16) & 0xFF) * alpha, ((key >> 8) & 0xFF) * alpha, (key & 0xFF) * alpha);
+                    Assert.Equal(quantizer.FindNearestPremultipliedScalar(red, green, blue, alpha * 255), quantizer.FindNearestPremultipliedVector(red, green, blue, alpha * 255));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void GifInvalidIndexSearchMatchesTheScalarReference()
     {
         var random = new Random(31);

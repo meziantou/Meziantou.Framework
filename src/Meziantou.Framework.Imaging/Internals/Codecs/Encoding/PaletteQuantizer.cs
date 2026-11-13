@@ -94,6 +94,11 @@ internal sealed class PaletteQuantizer : IDisposable
     private const int RgbaCacheLength = 4096;
     private const int NoKey = unchecked((int)0xFF00_0000);
 
+    // The vectorized translucent search: the premultiplied coordinates as double planes of whole vectors (at most 8 lanes),
+    // padded with a coordinate whose distance is larger than any distance between colors (and still finite)
+    private const int PremultipliedPlaneLength = 256;
+    private const double FarCoordinate = 1e9;
+
     // The colors mapped last (key and palette index, at the slot of the key): it takes the memory of the histogram sums once
     // the palette is built. An empty slot reads as the key 0xFFFFFF, which is never taken from the cache
     private const int MapCacheBits = 16;
@@ -145,6 +150,8 @@ internal sealed class PaletteQuantizer : IDisposable
     private readonly int[] _premultiplied = new int[256 * 4];
     private readonly bool _translucent;
     private int[]? _rgbaCacheKeys;
+    private double[]? _premultipliedPlanes;
+    private int _premultipliedPlanesVersion = -1;
     private byte[]? _rgbaCacheIndexes;
 
     // For each red sample, the index of the first palette entry whose red sample is at least that value (the palette is sorted)
@@ -1155,6 +1162,22 @@ internal sealed class PaletteQuantizer : IDisposable
             red = green = blue = 0;
         }
 
+        var best = UseRgbaVectors && _paletteCount > 0 ? FindNearestPremultipliedVector(red, green, blue, alpha) : FindNearestPremultipliedScalar(red, green, blue, alpha);
+        cacheKeys[slot] = key;
+        cacheIndexes[slot] = (byte)best;
+        return best;
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether <see cref="FindNearestRgba"/> compares a color with several entries at once (the
+    /// default with 128-bit hardware vectors). Tests turn it off to compare both paths.
+    /// </summary>
+    internal bool UseRgbaVectors { get; set; } = Vector128.IsHardwareAccelerated;
+
+    /// <summary>The scalar reference of <see cref="FindNearestPremultipliedVector"/>: the smallest 64-bit distance, ties to the lowest index.</summary>
+    /// <returns>The palette index.</returns>
+    internal int FindNearestPremultipliedScalar(int red, int green, int blue, int alpha)
+    {
         var best = 0;
         var bestDistance = long.MaxValue;
         for (var i = 0; i < _paletteCount; i++)
@@ -1171,9 +1194,121 @@ internal sealed class PaletteQuantizer : IDisposable
             }
         }
 
-        cacheKeys[slot] = key;
-        cacheIndexes[slot] = (byte)best;
         return best;
+    }
+
+    /// <summary>
+    /// Gets the entry nearest to premultiplied coordinates as <see cref="FindNearestPremultipliedScalar"/>, a vector of entries at
+    /// a time, in double precision: every value is an integer below 2^53, so the arithmetic is exact. A coordinate is at most
+    /// 255², a distance below 2^35, and the key <c>distance × 256 + index</c> (below 2^43) orders the entries by distance, then
+    /// by index: the smallest key is the result.
+    /// </summary>
+    /// <returns>The palette index.</returns>
+    internal int FindNearestPremultipliedVector(int red, int green, int blue, int alpha)
+    {
+        var planes = GetPremultipliedPlanes();
+        var count = _paletteCount;
+        Debug.Assert(count is > 0 and <= 256 && planes.Length == 4 * PremultipliedPlaneLength);
+        ref var reds = ref unsafe(MemoryMarshal.GetArrayDataReference(planes));
+        ref var greens = ref unsafe(Unsafe.Add(ref reds, PremultipliedPlaneLength));
+        ref var blues = ref unsafe(Unsafe.Add(ref reds, 2 * PremultipliedPlaneLength));
+        ref var alphas = ref unsafe(Unsafe.Add(ref reds, 3 * PremultipliedPlaneLength));
+        double smallest;
+        if (Vector512.IsHardwareAccelerated)
+        {
+            var r = Vector512.Create((double)red);
+            var g = Vector512.Create((double)green);
+            var b = Vector512.Create((double)blue);
+            var a = Vector512.Create((double)alpha);
+            var scale = Vector512.Create(256d);
+            var index = Vector512.Create(0d, 1, 2, 3, 4, 5, 6, 7);
+            var step = Vector512.Create((double)Vector512<double>.Count);
+            var keys = Vector512.Create(double.MaxValue);
+            for (var i = 0; i < count; i += Vector512<double>.Count)
+            {
+                var dr = unsafe(Vector512.LoadUnsafe(ref reds, (nuint)i)) - r;
+                var dg = unsafe(Vector512.LoadUnsafe(ref greens, (nuint)i)) - g;
+                var db = unsafe(Vector512.LoadUnsafe(ref blues, (nuint)i)) - b;
+                var da = unsafe(Vector512.LoadUnsafe(ref alphas, (nuint)i)) - a;
+                keys = Vector512.Min(keys, ((((dr * dr) + (dg * dg)) + ((db * db) + (da * da))) * scale) + index);
+                index += step;
+            }
+
+            var half = Vector256.Min(keys.GetLower(), keys.GetUpper());
+            smallest = Math.Min(Math.Min(half[0], half[1]), Math.Min(half[2], half[3]));
+        }
+        else if (Vector256.IsHardwareAccelerated)
+        {
+            var r = Vector256.Create((double)red);
+            var g = Vector256.Create((double)green);
+            var b = Vector256.Create((double)blue);
+            var a = Vector256.Create((double)alpha);
+            var scale = Vector256.Create(256d);
+            var index = Vector256.Create(0d, 1, 2, 3);
+            var step = Vector256.Create((double)Vector256<double>.Count);
+            var keys = Vector256.Create(double.MaxValue);
+            for (var i = 0; i < count; i += Vector256<double>.Count)
+            {
+                var dr = unsafe(Vector256.LoadUnsafe(ref reds, (nuint)i)) - r;
+                var dg = unsafe(Vector256.LoadUnsafe(ref greens, (nuint)i)) - g;
+                var db = unsafe(Vector256.LoadUnsafe(ref blues, (nuint)i)) - b;
+                var da = unsafe(Vector256.LoadUnsafe(ref alphas, (nuint)i)) - a;
+                keys = Vector256.Min(keys, ((((dr * dr) + (dg * dg)) + ((db * db) + (da * da))) * scale) + index);
+                index += step;
+            }
+
+            smallest = Math.Min(Math.Min(keys[0], keys[1]), Math.Min(keys[2], keys[3]));
+        }
+        else
+        {
+            var r = Vector128.Create((double)red);
+            var g = Vector128.Create((double)green);
+            var b = Vector128.Create((double)blue);
+            var a = Vector128.Create((double)alpha);
+            var scale = Vector128.Create(256d);
+            var index = Vector128.Create(0d, 1);
+            var step = Vector128.Create((double)Vector128<double>.Count);
+            var keys = Vector128.Create(double.MaxValue);
+            for (var i = 0; i < count; i += Vector128<double>.Count)
+            {
+                var dr = unsafe(Vector128.LoadUnsafe(ref reds, (nuint)i)) - r;
+                var dg = unsafe(Vector128.LoadUnsafe(ref greens, (nuint)i)) - g;
+                var db = unsafe(Vector128.LoadUnsafe(ref blues, (nuint)i)) - b;
+                var da = unsafe(Vector128.LoadUnsafe(ref alphas, (nuint)i)) - a;
+                keys = Vector128.Min(keys, ((((dr * dr) + (dg * dg)) + ((db * db) + (da * da))) * scale) + index);
+                index += step;
+            }
+
+            smallest = Math.Min(keys[0], keys[1]);
+        }
+
+        return (int)((long)smallest & 0xFF);
+    }
+
+    /// <summary>
+    /// Gets the premultiplied coordinates of the palette entries as double planes (R·A, G·A, B·A, A·255), each padded to whole
+    /// vectors of 8 entries with an entry farther than any color (never selected); refreshed when the palette changes.
+    /// </summary>
+    private double[] GetPremultipliedPlanes()
+    {
+        var planes = _premultipliedPlanes ??= new double[4 * PremultipliedPlaneLength];
+        if (_premultipliedPlanesVersion != PaletteVersion)
+        {
+            for (var plane = 0; plane < 4; plane++)
+            {
+                var samples = planes.AsSpan(plane * PremultipliedPlaneLength, PremultipliedPlaneLength);
+                for (var i = 0; i < _paletteCount; i++)
+                {
+                    samples[i] = _premultiplied[(4 * i) + plane];
+                }
+
+                samples[_paletteCount..].Fill(FarCoordinate);
+            }
+
+            _premultipliedPlanesVersion = PaletteVersion;
+        }
+
+        return planes;
     }
 
     public void Dispose()

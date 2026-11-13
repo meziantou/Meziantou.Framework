@@ -34,6 +34,7 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
     /// <summary>Gets or sets the directory used to resolve relative paths. Relative paths resolve against the current directory when it is not set.</summary>
     public string? ProjectDirectory { get; set; }
 
+    [SuppressMessage("MSBuild.TaskAuthoring", "MSBuildTask0003", Justification = "Relative paths are resolved against ProjectDirectory, which the package targets always set. TaskEnvironment requires MSBuild 18 and the task still supports MSBuild 17.")]
     public override bool Execute()
     {
         if (Assemblies.Length == 0)
@@ -133,6 +134,7 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
         }
     }
 
+    [SuppressMessage("MSBuild.TaskAuthoring", "MSBuildTask0003", Justification = "Relative paths are resolved against ProjectDirectory, which the package targets always set. TaskEnvironment requires MSBuild 18 and the task still supports MSBuild 17.")]
     private static List<string> ValidateSingleFile(PublicApiFile expectedFile, FullPath outputFilePath)
     {
         var errors = new List<string>();
@@ -151,6 +153,7 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
         return errors;
     }
 
+    [SuppressMessage("MSBuild.TaskAuthoring", "MSBuildTask0003", Justification = "Relative paths are resolved against ProjectDirectory, which the package targets always set. TaskEnvironment requires MSBuild 18 and the task still supports MSBuild 17.")]
     private static List<string> ValidateDirectory(IReadOnlyList<PublicApiFile> expectedFiles, FullPath outputDirectoryPath)
     {
         var errors = new List<string>();

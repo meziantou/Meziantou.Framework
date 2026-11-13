@@ -361,6 +361,7 @@ internal static class EmbeddedConstantsGeneratorTask
     /// Returns <paramref name="path"/> relative to <paramref name="basePath"/>, or <see langword="null"/>
     /// when it is not under it. Path.GetRelativePath applies the comparison rules of the current platform.
     /// </summary>
+    [SuppressMessage("MSBuild.TaskAuthoring", "MSBuildTask0005", Justification = "Relative paths are resolved against ProjectDirectory, which the package targets always set. TaskEnvironment requires MSBuild 18 and the task still supports MSBuild 17.")]
     private static string? MakeRelativePath(string path, string? basePath)
     {
         if (string.IsNullOrWhiteSpace(basePath))
@@ -552,6 +553,7 @@ internal static class EmbeddedConstantsGeneratorTask
         public string? Kind { get; }
         public string? ExplicitName { get; }
 
+        [SuppressMessage("MSBuild.TaskAuthoring", "MSBuildTask0005", Justification = "Relative paths are resolved against ProjectDirectory, which the package targets always set. TaskEnvironment requires MSBuild 18 and the task still supports MSBuild 17.")]
         private static string GetFullPath(string path, string? projectDirectory)
         {
             if (Path.IsPathRooted(path) || string.IsNullOrWhiteSpace(projectDirectory))
@@ -580,6 +582,7 @@ internal static class EmbeddedConstantsGeneratorTask
         public byte[] Bytes { get; }
         public IReadOnlyList<ValidationError> Errors { get; }
 
+        [SuppressMessage("MSBuild.TaskAuthoring", "MSBuildTask0005", Justification = "Relative paths are resolved against ProjectDirectory, which the package targets always set. TaskEnvironment requires MSBuild 18 and the task still supports MSBuild 17.")]
         public static EmbeddedFile Create(InputFile file)
         {
             var errors = new List<ValidationError>();

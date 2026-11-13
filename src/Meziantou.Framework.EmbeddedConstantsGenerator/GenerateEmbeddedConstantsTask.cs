@@ -71,6 +71,7 @@ public sealed class GenerateEmbeddedConstantsTask : Microsoft.Build.Utilities.Ta
     }
 
     // In multithreaded builds, tasks share the process, so the current directory is not the project directory
+    [SuppressMessage("MSBuild.TaskAuthoring", "MSBuildTask0002", Justification = "Relative paths are resolved against ProjectDirectory, which the package targets always set. TaskEnvironment requires MSBuild 18 and the task still supports MSBuild 17.")]
     private string GetOutputFullPath()
     {
         if (Path.IsPathRooted(OutputPath) || string.IsNullOrWhiteSpace(ProjectDirectory))
@@ -110,6 +111,7 @@ public sealed class GenerateEmbeddedConstantsTask : Microsoft.Build.Utilities.Ta
         return null;
     }
 
+    [SuppressMessage("MSBuild.TaskAuthoring", "MSBuildTask0003", Justification = "Relative paths are resolved against ProjectDirectory, which the package targets always set. TaskEnvironment requires MSBuild 18 and the task still supports MSBuild 17.")]
     private static void WriteFileIfChanged(string path, string content)
     {
         var directoryPath = Path.GetDirectoryName(path);

@@ -28,5 +28,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Framework" Version="17.14.28" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.28" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.TaskAuthoring.Analyzer" Version="18.13.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>

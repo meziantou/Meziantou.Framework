@@ -240,8 +240,10 @@ internal static class AztecEncoder
         {
             DrawBullsEye(matrix, middle, 7);
 
-            // The reference grid: every 16th row and column from the center has alternating modules
-            for (int i = 0, j = 0; i < (baseSize / 2) - 1; i += 15, j += 16)
+            // The reference grid: every 16th row and column from the center has alternating modules, up to the edges of
+            // the symbol. GetSize reserves a line every 15 modules of the base symbol, including the last one when
+            // (baseSize / 2) - 1 is a multiple of 15 (12 and 27 layers).
+            for (var j = 0; j <= middle; j += 16)
             {
                 for (var k = middle & 1; k < size; k += 2)
                 {

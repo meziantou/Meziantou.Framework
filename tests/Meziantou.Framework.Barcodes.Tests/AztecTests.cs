@@ -126,7 +126,9 @@ public class AztecTests
     [InlineData(4, 31)]
     [InlineData(5, 37)] // 19 + 4 × 5 modules, and 2 lines of the reference grid
     [InlineData(10, 57)]
+    [InlineData(12, 67)] // The outermost lines of the reference grid are 32 modules from the center, on the second module of each side
     [InlineData(15, 79)]
+    [InlineData(27, 131)] // The outermost lines of the reference grid are 64 modules from the center
     [InlineData(32, 151)]
     public void CreateAztec_FullRangeSizes(int layers, int size)
     {

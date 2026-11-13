@@ -101,8 +101,11 @@ it runs. A trusted event of the user input also requests a frame, which sets the
 A host that runs an event loop on its own thread (instead of calling `RunUntilIdleAsync()`) sets `DomEventLoop.WorkSignal`:
 the callback is invoked, from any thread, when a task or a timer is queued (e.g. by a document loaded by the
 `DocumentLoader` on another thread) or when an asynchronous operation ends, so that the thread wakes up and calls
-`RunTask()` and `PromoteDueTimers()`. The callback must not run the event loop itself. The Playwright server
-(Meziantou.Framework.WebPlatform.Playwright) runs the pages of each browser context this way.
+`RunTask()` and `PromoteDueTimers()`. The callback must not run the event loop itself. Run the tasks without a
+`SynchronizationContext`: the library completes its asynchronous operations (e.g. the load of a document) from a task and
+continues them with `ConfigureAwait(false)`, and .NET runs these continuations on the thread pool, instead of inline, when
+the thread has a synchronization context. The DevTools protocol server (Meziantou.Framework.WebPlatform.DevTools) runs the
+pages of each browser context this way.
 
 ### Render blocking
 

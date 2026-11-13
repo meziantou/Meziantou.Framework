@@ -32,6 +32,8 @@
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.PdfRendering" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.PdfRendering.Tests" />
+    <!-- The DevTools protocol server reads the session history and sets the files of the file inputs -->
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.DevTools" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Scripting\WebIdl\Streams.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.Streams.js" />

@@ -1203,18 +1203,27 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
 
         foreach (var longhand in longhands)
         {
-            var index = IndexOf(declarations, longhand.Name);
-            if (index >= 0)
-            {
-                // An important declaration is not overridden by a later normal declaration
-                if (declarations[index].Important && !declaration.Important)
-                    continue;
-
-                declarations.RemoveAt(index);
-            }
-
-            declarations.Add(new CssDeclarationEntry(longhand, declaration.Important));
+            AddDeclaration(declarations, new CssDeclarationEntry(longhand, declaration.Important));
         }
+    }
+
+    /// <summary>
+    /// Adds a declaration to a declaration block, as the parser: it replaces the declaration of the same property, which is
+    /// moved to the end of the block, unless that declaration is important and the added one is not.
+    /// </summary>
+    internal static void AddDeclaration(List<CssDeclarationEntry> declarations, CssDeclarationEntry declaration)
+    {
+        var index = IndexOf(declarations, declaration.Name);
+        if (index >= 0)
+        {
+            // An important declaration is not overridden by a later normal declaration
+            if (declarations[index].Important && !declaration.Important)
+                return;
+
+            declarations.RemoveAt(index);
+        }
+
+        declarations.Add(declaration);
     }
 
     private static int IndexOf(List<CssDeclarationEntry> declarations, string name)

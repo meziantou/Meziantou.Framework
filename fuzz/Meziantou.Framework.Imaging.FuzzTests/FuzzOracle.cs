@@ -382,6 +382,10 @@ internal static class FuzzOracle
         if (CheckLosslessRoundTrip(image, variant) is { Length: > 0 } lossless)
             return lossless;
 
+        // The lossy HEIC encoder (transforms, quantization, sample adaptive offset) writes a part of the first frame
+        if (variant % 12 is 11 && CheckLossyHeic(image, variant) is { Length: > 0 } lossy)
+            return lossy;
+
         // Processing on whatever geometry and orientation the input declared
         image.AutoOrient();
         image.Resize(new ResizeOptions(Math.Max(1, image.Width / 2), Math.Max(1, (image.Height * 2) / 3)) { Mode = ResizeMode.Stretch });
@@ -467,6 +471,24 @@ internal static class FuzzOracle
                     return $"jpeg-region-pixels: row {row} of the region {region} at 1/{scale} differs from the full decode";
             }
         }
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckLossyHeic(Image image, int variant)
+    {
+        // A corner of the first frame, at an effort and a quality of the variant: the efforts from 3 search the sample
+        // adaptive offset, from 4 hide signs
+        using var still = image.CloneFrame(0);
+        still.Crop(new Rectangle(0, 0, Math.Min(still.Width, 40), Math.Min(still.Height, 40)));
+        using var converted = still.CloneAs<Rgb24>(Conversion);
+        var encoder = new HeicEncoder { MetadataHandling = MetadataHandling.Strip, Compression = HeicCompression.Lossy, Effort = (variant >> 4) % 7, Quality = 1 + ((variant >> 3) % 100) };
+        using var output = new MemoryStream();
+        converted.Save(output, encoder);
+        using var reloaded = Image.Load<Rgb24>(output.ToArray(), new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+        if (reloaded.Width != converted.Width || reloaded.Height != converted.Height || reloaded.Frames.Count != 1)
+            return $"lossy-heic-structure: the image of {converted.Width}x{converted.Height} written as lossy HEIC (effort {encoder.Effort}, quality {encoder.Quality}) decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s)";
 
         return string.Empty;
     }

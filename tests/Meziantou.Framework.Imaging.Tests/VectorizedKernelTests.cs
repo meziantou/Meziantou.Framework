@@ -11047,6 +11047,52 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Jpeg2000HighThroughputQuadRowsMatchTheScalarReference()
+    {
+        var random = new Random(20261115);
+        foreach (var (width, height) in new[] { (1, 1), (2, 1), (3, 2), (4, 3), (5, 5), (7, 2), (8, 4), (9, 3), (16, 16), (31, 7), (64, 64), (1024, 3), (1023, 4), (4, 1024) })
+        {
+            // Sign-magnitude coefficients of every size, often zero, the largest magnitude, or 1 above the lowest plane
+            var samples = new int[width * height];
+            for (var i = 0; i < samples.Length; i++)
+            {
+                var magnitude = random.Next(6) switch
+                {
+                    0 => 0,
+                    1 => int.MaxValue,
+                    2 => random.Next(4),
+                    _ => random.Next() >> random.Next(31),
+                };
+                samples[i] = magnitude | (random.Next(2) == 0 ? int.MinValue : 0);
+            }
+
+            var quadsWide = (width + 1) / 2;
+            foreach (var plane in new[] { 0, 1, 2, 5, 15, 16, 17, 29, 30 })
+            {
+                for (var quadY = 0; quadY < (height + 1) / 2; quadY++)
+                {
+                    var expectedValues = new uint[4 * quadsWide];
+                    var expectedExponents = new int[4 * quadsWide];
+                    var expectedPatterns = new byte[quadsWide];
+                    for (var quadX = 0; quadX < quadsWide; quadX++)
+                    {
+                        expectedPatterns[quadX] = (byte)Jpeg2000HtBlockEncoder.ReadQuad(samples, width, height, plane, quadX, quadY, expectedValues.AsSpan(4 * quadX, 4), expectedExponents.AsSpan(4 * quadX, 4));
+                    }
+
+                    var actualValues = new uint[4 * quadsWide];
+                    var actualExponents = new int[4 * quadsWide];
+                    var actualPatterns = new byte[quadsWide];
+                    Jpeg2000HtBlockEncoder.ReadQuadRow(samples, width, height, plane, quadY, actualValues, actualExponents, actualPatterns);
+                    Assert.Equal(expectedValues, actualValues);
+                    Assert.Equal(expectedExponents, actualExponents);
+                    Assert.Equal(expectedPatterns, actualPatterns);
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData(0, 0)]
     [InlineData(1, 0)]

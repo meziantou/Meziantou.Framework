@@ -3892,6 +3892,44 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void EdgeCombinationsAndSharpenBlendMatchTheScalarLoops()
+    {
+        // Every tail length, values that are not numbers (in either or both operands), infinities, zeros of both signs,
+        // equal values, and differences on both sides of the thresholds
+        var random = new Random(400);
+        double[] specials = [double.NaN, -double.NaN, double.PositiveInfinity, double.NegativeInfinity, 0, -0.0, 1, -1, 1e-300];
+        for (var length = 0; length <= 37; length++)
+        {
+            var left = CreateValues(length);
+            var right = CreateValues(length);
+            Check((result, other, vectorized) => Convolver.SetMagnitudes(result, other, vectorized), left, right);
+            Check((result, other, vectorized) => Convolver.SetMaximums(result, other, absolute: false, vectorized), left, right);
+            Check((result, other, vectorized) => Convolver.SetMaximums(result, other, absolute: true, vectorized), left, right);
+            Check((result, _, vectorized) => Convolver.SetMaximums(result, result, absolute: true, vectorized), left, right);
+            foreach (var channels in new[] { 1, 3, 4 })
+            {
+                var thresholds = Enumerable.Range(0, channels).Select(c => c * 0.4).ToArray();
+                var count = length / channels * channels;
+                var nearby = right.Take(count).Select((value, i) => random.Next(3) == 0 ? value : left[i] + ((random.NextDouble() - 0.5) * 2.4)).ToArray();
+                Check((result, other, vectorized) => Convolver.BlendSharpened(other, result, thresholds, 1.7, vectorized), nearby, left.Take(count).ToArray());
+            }
+        }
+
+        double[] CreateValues(int length)
+            => [.. Enumerable.Range(0, length).Select(_ => random.Next(4) == 0 ? specials[random.Next(specials.Length)] : (random.NextDouble() - 0.5) * 8)];
+
+        static void Check(Action<Span<double>, ReadOnlySpan<double>, bool> operation, double[] result, double[] other)
+        {
+            var expected = result.ToArray();
+            var actual = result.ToArray();
+            operation(expected, other, false);
+            operation(actual, other, true);
+            Assert.Equal(expected.Select(BitConverter.DoubleToInt64Bits), actual.Select(BitConverter.DoubleToInt64Bits));
+        }
+    }
+
     public static TheoryData<PixelFormat, ConvolutionEdgeMode, ConvolutionWorkingSpace> BlurCases()
     {
         var data = new TheoryData<PixelFormat, ConvolutionEdgeMode, ConvolutionWorkingSpace>();

@@ -3361,6 +3361,77 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ButteraugliPlaneKernelsMatchTheScalarReference()
+    {
+        var random = new Random(20261117);
+        foreach (var length in new[] { 0, 1, 3, 4, 5, 7, 8, 9, 15, 16, 17, 33, 100 })
+        {
+            for (var round = 0; round < 4; round++)
+            {
+                // Values around the thresholds of the branches, on both sides and exactly on them
+                var a = Enumerable.Range(0, length).Select(_ => NextBandValue(random)).ToArray();
+                var b = Enumerable.Range(0, length).Select(_ => NextBandValue(random)).ToArray();
+                for (var channel = 0; channel < 2; channel++)
+                {
+                    var (expected0, expected1, actual0, actual1) = ((float[])a.Clone(), (float[])b.Clone(), (float[])a.Clone(), (float[])b.Clone());
+                    ButteraugliCalculator.SeparateMediumFrequenciesScalar(expected0, expected1, channel);
+                    ButteraugliCalculator.SeparateMediumFrequencies(actual0, actual1, channel);
+                    AssertBits(expected0, actual0);
+                    AssertBits(expected1, actual1);
+
+                    (expected0, expected1, actual0, actual1) = ((float[])a.Clone(), (float[])b.Clone(), (float[])a.Clone(), (float[])b.Clone());
+                    ButteraugliCalculator.SeparateHighFrequenciesScalar(expected0, expected1, channel);
+                    ButteraugliCalculator.SeparateHighFrequencies(actual0, actual1, channel);
+                    AssertBits(expected0, actual0);
+                    AssertBits(expected1, actual1);
+                }
+
+                var diffmap = Enumerable.Range(0, length).Select(_ => NextSimilarityValue(random)).ToArray();
+                var expected = (float[])diffmap.Clone();
+                var actual = (float[])diffmap.Clone();
+                var weight = (float)(random.NextDouble() * 400);
+                ButteraugliCalculator.L2DiffAsymmetricScalar(a, b, weight, weight, expected);
+                ButteraugliCalculator.L2DiffAsymmetric(a, b, weight, weight, actual);
+                AssertBits(expected, actual);
+            }
+        }
+
+        foreach (var width in new[] { 1, 3, 4, 6, 7, 8, 10, 11, 14, 19, 22, 40 })
+        {
+            foreach (var height in new[] { 1, 3, 4, 6, 7, 9 })
+            {
+                var from = Enumerable.Range(0, width * height).Select(_ => random.Next(4) == 0 ? random.Next(4) : NextSimilarityValue(random)).ToArray();
+                var expected = Enumerable.Repeat(float.NaN, width * height).ToArray();
+                var actual = (float[])expected.Clone();
+                for (var y = 0; y < height; y++)
+                {
+                    ButteraugliCalculator.FuzzyErosionRowScalar(from, expected, width, height, y, 0, width);
+                    ButteraugliCalculator.FuzzyErosionRow(from, actual, width, height, y);
+                }
+
+                AssertBits(expected, actual);
+            }
+        }
+
+        static void AssertBits(float[] expected, float[] actual) => Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+
+        static float NextBandValue(Random random)
+        {
+            float[] thresholds = [0.04f, 0.1f, 0.132f, 0.29f, 1.5f, 5.19175294647f, 28.4691806922f];
+            var threshold = thresholds[random.Next(thresholds.Length)];
+            return random.Next(6) switch
+            {
+                0 => threshold,
+                1 => -threshold,
+                2 => BitConverter.Int32BitsToSingle(BitConverter.SingleToInt32Bits(threshold) + random.Next(-1, 2)) * (random.Next(2) == 0 ? 1 : -1),
+                3 => (float)((random.NextDouble() - 0.5) * 4 * threshold),
+                _ => NextSimilarityValue(random),
+            };
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Ssimulacra2BlurPassesMatchTheScalarReference()
     {
         var gaussian = new Ssimulacra2Calculator.RecursiveGaussian(1.5);

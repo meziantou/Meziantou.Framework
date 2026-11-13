@@ -1,3 +1,7 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -381,7 +385,7 @@ internal static class Ssimulacra2Calculator
     /// "Recursive Implementation of the Gaussian Filter Using Truncated Cosine Functions"): three second-order filters per
     /// direction, with zeros outside the plane.
     /// </summary>
-    private sealed class RecursiveGaussian
+    internal sealed class RecursiveGaussian
     {
         /// <summary>The rows of the state of the vertical pass: the last two outputs of each of the three filters.</summary>
         public const int StateRows = 6;
@@ -495,10 +499,104 @@ internal static class Ssimulacra2Calculator
         }
 
         /// <summary>
-        /// The horizontal pass of libjxl (<c>FastGaussian1D</c>, 4 lanes), emulated lane by lane with fused multiply-adds: one
-        /// sample at a time near the borders, and blocks of 4 samples between them.
+        /// The horizontal pass of libjxl (<c>FastGaussian1D</c>, 4 lanes): one sample at a time near the borders, and blocks of
+        /// 4 samples between them, computed by a vector of 4 lanes with the fused multiply-adds of <see cref="BlurRowScalar"/>
+        /// when the processor has them.
         /// </summary>
-        private void BlurRow(ReadOnlySpan<float> input, Span<float> output)
+        internal void BlurRow(ReadOnlySpan<float> input, Span<float> output)
+        {
+            const int Lanes = 4;
+            if (!Resampler.IsFmaAccelerated || !Vector128.IsHardwareAccelerated || output.Length < input.Length)
+            {
+                BlurRowScalar(input, output);
+                return;
+            }
+
+            var length = input.Length;
+            var radius = _radius;
+            Span<float> prev = stackalloc float[3];
+            Span<float> prev2 = stackalloc float[3];
+
+            var n = -radius + 1;
+            var firstAligned = (radius + 1 + Lanes - 1) / Lanes * Lanes;
+            for (; n < Math.Min(firstAligned, length); n++)
+            {
+                StepOne(input, output, n, prev, prev2);
+            }
+
+            var blockEnd = length - radius + 1 - (Lanes - 1);
+            if (n < blockEnd)
+            {
+                // Lane l of the coefficients of sum j is mul_in[l - j], used by the lanes l >= j only
+                var in0 = Vector128.Create(_mulIn.AsSpan(0, 4));
+                var in1 = Vector128.Create(_mulIn.AsSpan(4, 4));
+                var in2 = Vector128.Create(_mulIn.AsSpan(8, 4));
+                var prevMul0 = Vector128.Create(_mulPrev.AsSpan(0, 4));
+                var prevMul1 = Vector128.Create(_mulPrev.AsSpan(4, 4));
+                var prevMul2 = Vector128.Create(_mulPrev.AsSpan(8, 4));
+                var prev2Mul0 = Vector128.Create(_mulPrev2.AsSpan(0, 4));
+                var prev2Mul1 = Vector128.Create(_mulPrev2.AsSpan(4, 4));
+                var prev2Mul2 = Vector128.Create(_mulPrev2.AsSpan(8, 4));
+                var previous0 = Vector128.Create(prev[0]);
+                var previous1 = Vector128.Create(prev[1]);
+                var previous2 = Vector128.Create(prev[2]);
+                var beforePrevious0 = Vector128.Create(prev2[0]);
+                var beforePrevious1 = Vector128.Create(prev2[1]);
+                var beforePrevious2 = Vector128.Create(prev2[2]);
+                ref var source = ref unsafe(MemoryMarshal.GetReference(input));
+                ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+                for (; n < blockEnd; n += Lanes)
+                {
+                    // Lane j: the sum of the samples j - radius - 1 and j + radius - 1 after n
+                    var sums = unsafe(Vector128.LoadUnsafe(ref source, (nuint)(n - radius - 1)) + Vector128.LoadUnsafe(ref source, (nuint)(n + radius - 1)));
+                    var sum0 = Vector128.Shuffle(sums, Vector128.Create(0, 0, 0, 0));
+                    var sum1 = Vector128.Shuffle(sums, Vector128.Create(1, 1, 1, 1));
+                    var sum2 = Vector128.Shuffle(sums, Vector128.Create(2, 2, 2, 2));
+                    var sum3 = Vector128.Shuffle(sums, Vector128.Create(3, 3, 3, 3));
+                    var block0 = Filter(sum0, sum1, sum2, sum3, in0, prevMul0, prev2Mul0, previous0, beforePrevious0);
+                    var block1 = Filter(sum0, sum1, sum2, sum3, in1, prevMul1, prev2Mul1, previous1, beforePrevious1);
+                    var block2 = Filter(sum0, sum1, sum2, sum3, in2, prevMul2, prev2Mul2, previous2, beforePrevious2);
+                    beforePrevious0 = Vector128.Shuffle(block0, Vector128.Create(2, 2, 2, 2));
+                    previous0 = Vector128.Shuffle(block0, Vector128.Create(3, 3, 3, 3));
+                    beforePrevious1 = Vector128.Shuffle(block1, Vector128.Create(2, 2, 2, 2));
+                    previous1 = Vector128.Shuffle(block1, Vector128.Create(3, 3, 3, 3));
+                    beforePrevious2 = Vector128.Shuffle(block2, Vector128.Create(2, 2, 2, 2));
+                    previous2 = Vector128.Shuffle(block2, Vector128.Create(3, 3, 3, 3));
+                    unsafe { (block0 + (block1 + block2)).StoreUnsafe(ref target, (nuint)n); }
+                }
+
+                prev[0] = previous0.ToScalar();
+                prev[1] = previous1.ToScalar();
+                prev[2] = previous2.ToScalar();
+                prev2[0] = beforePrevious0.ToScalar();
+                prev2[1] = beforePrevious1.ToScalar();
+                prev2[2] = beforePrevious2.ToScalar();
+            }
+
+            for (; n < length; n++)
+            {
+                StepOne(input, output, n, prev, prev2);
+            }
+        }
+
+        /// <summary>
+        /// Four consecutive outputs of one of the filters: lane <c>l</c> is <c>sum0 × mul_in[l]</c>, plus the products of the
+        /// sums <c>1</c> to <c>l</c> and of the previous outputs, with fused multiply-adds in the order of <see cref="BlurRowScalar"/>.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<float> Filter(Vector128<float> sum0, Vector128<float> sum1, Vector128<float> sum2, Vector128<float> sum3, Vector128<float> mulIn, Vector128<float> mulPrev, Vector128<float> mulPrev2, Vector128<float> previous, Vector128<float> beforePrevious)
+        {
+            // The coefficient of sum j in lane l is mul_in[l - j], for the lanes l >= j only
+            var value = sum0 * mulIn;
+            value = Vector128.ConditionalSelect(Vector128.Create(0, -1, -1, -1).AsSingle(), Vector128.FusedMultiplyAdd(Vector128.Shuffle(mulIn, Vector128.Create(0, 0, 1, 2)), sum1, value), value);
+            value = Vector128.ConditionalSelect(Vector128.Create(0, 0, -1, -1).AsSingle(), Vector128.FusedMultiplyAdd(Vector128.Shuffle(mulIn, Vector128.Create(0, 0, 0, 1)), sum2, value), value);
+            value = Vector128.ConditionalSelect(Vector128.Create(0, 0, 0, -1).AsSingle(), Vector128.FusedMultiplyAdd(Vector128.Shuffle(mulIn, Vector128.Create(0, 0, 0, 0)), sum3, value), value);
+            value = Vector128.FusedMultiplyAdd(mulPrev2, beforePrevious, value);
+            return Vector128.FusedMultiplyAdd(mulPrev, previous, value);
+        }
+
+        /// <summary>The scalar reference of <see cref="BlurRow"/>: the lanes of libjxl emulated one by one, with fused multiply-adds.</summary>
+        internal void BlurRowScalar(ReadOnlySpan<float> input, Span<float> output)
         {
             const int Lanes = 4;
             var length = input.Length;
@@ -570,8 +668,160 @@ internal static class Ssimulacra2Calculator
             }
         }
 
-        /// <summary>The vertical pass of libjxl (<c>VerticalBlock</c>) on the columns <c>[first, end)</c>, with fused multiply-adds.</summary>
-        private void BlurColumns(ReadOnlySpan<float> input, Span<float> output, Span<float> state, int width, int height, int first, int end)
+        /// <summary>
+        /// The vertical pass of libjxl (<c>VerticalBlock</c>) on the columns <c>[first, end)</c>: the columns are independent,
+        /// and the vectors compute consecutive columns with the fused multiply-adds of <see cref="BlurColumnsScalar"/> when the
+        /// processor has them.
+        /// </summary>
+        internal void BlurColumns(ReadOnlySpan<float> input, Span<float> output, Span<float> state, int width, int height, int first, int end)
+        {
+            if (!Resampler.IsFmaAccelerated || !Vector128.IsHardwareAccelerated || end - first < Vector128<float>.Count
+                || (uint)first > (uint)end || end > width || input.Length < width * height || output.Length < width * height || state.Length < StateRows * width)
+            {
+                BlurColumnsScalar(input, output, state, width, height, first, end);
+                return;
+            }
+
+            // Rows 0-2 of the state are the previous outputs of the three filters, rows 3-5 the outputs before them
+            for (var row = 0; row < StateRows; row++)
+            {
+                state.Slice(row * width + first, end - first).Clear();
+            }
+
+            ref var source = ref unsafe(MemoryMarshal.GetReference(input));
+            ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+            ref var states = ref unsafe(MemoryMarshal.GetReference(state));
+            for (var n = -_radius + 1; n < height; n++)
+            {
+                var top = n - _radius - 1;
+                var bottom = n + _radius - 1;
+                var x = first;
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    for (; x + Vector512<float>.Count <= end; x += Vector512<float>.Count)
+                    {
+                        Vector512<float> sum;
+                        if (top >= 0)
+                        {
+                            var upper = unsafe(Vector512.LoadUnsafe(ref source, (nuint)((top * width) + x)));
+                            sum = upper + (bottom < height ? unsafe(Vector512.LoadUnsafe(ref source, (nuint)((bottom * width) + x))) : Vector512<float>.Zero);
+                        }
+                        else
+                        {
+                            sum = bottom < height ? unsafe(Vector512.LoadUnsafe(ref source, (nuint)((bottom * width) + x))) : Vector512<float>.Zero;
+                        }
+
+                        var value0 = Step(ref states, (nuint)x, (nuint)width, 0, Vector512.Create(_n2[0]), Vector512.Create(-_d1[0]), sum);
+                        var value1 = Step(ref states, (nuint)x, (nuint)width, 1, Vector512.Create(_n2[1]), Vector512.Create(-_d1[1]), sum);
+                        var value2 = Step(ref states, (nuint)x, (nuint)width, 2, Vector512.Create(_n2[2]), Vector512.Create(-_d1[2]), sum);
+                        if (n >= 0)
+                        {
+                            unsafe { (value0 + (value1 + value2)).StoreUnsafe(ref target, (nuint)((n * width) + x)); }
+                        }
+                    }
+                }
+
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    for (; x + Vector256<float>.Count <= end; x += Vector256<float>.Count)
+                    {
+                        Vector256<float> sum;
+                        if (top >= 0)
+                        {
+                            var upper = unsafe(Vector256.LoadUnsafe(ref source, (nuint)((top * width) + x)));
+                            sum = upper + (bottom < height ? unsafe(Vector256.LoadUnsafe(ref source, (nuint)((bottom * width) + x))) : Vector256<float>.Zero);
+                        }
+                        else
+                        {
+                            sum = bottom < height ? unsafe(Vector256.LoadUnsafe(ref source, (nuint)((bottom * width) + x))) : Vector256<float>.Zero;
+                        }
+
+                        var value0 = Step(ref states, (nuint)x, (nuint)width, 0, Vector256.Create(_n2[0]), Vector256.Create(-_d1[0]), sum);
+                        var value1 = Step(ref states, (nuint)x, (nuint)width, 1, Vector256.Create(_n2[1]), Vector256.Create(-_d1[1]), sum);
+                        var value2 = Step(ref states, (nuint)x, (nuint)width, 2, Vector256.Create(_n2[2]), Vector256.Create(-_d1[2]), sum);
+                        if (n >= 0)
+                        {
+                            unsafe { (value0 + (value1 + value2)).StoreUnsafe(ref target, (nuint)((n * width) + x)); }
+                        }
+                    }
+                }
+
+                for (; x + Vector128<float>.Count <= end; x += Vector128<float>.Count)
+                {
+                    Vector128<float> sum;
+                    if (top >= 0)
+                    {
+                        var upper = unsafe(Vector128.LoadUnsafe(ref source, (nuint)((top * width) + x)));
+                        sum = upper + (bottom < height ? unsafe(Vector128.LoadUnsafe(ref source, (nuint)((bottom * width) + x))) : Vector128<float>.Zero);
+                    }
+                    else
+                    {
+                        sum = bottom < height ? unsafe(Vector128.LoadUnsafe(ref source, (nuint)((bottom * width) + x))) : Vector128<float>.Zero;
+                    }
+
+                    var value0 = Step(ref states, (nuint)x, (nuint)width, 0, Vector128.Create(_n2[0]), Vector128.Create(-_d1[0]), sum);
+                    var value1 = Step(ref states, (nuint)x, (nuint)width, 1, Vector128.Create(_n2[1]), Vector128.Create(-_d1[1]), sum);
+                    var value2 = Step(ref states, (nuint)x, (nuint)width, 2, Vector128.Create(_n2[2]), Vector128.Create(-_d1[2]), sum);
+                    if (n >= 0)
+                    {
+                        unsafe { (value0 + (value1 + value2)).StoreUnsafe(ref target, (nuint)((n * width) + x)); }
+                    }
+                }
+
+                for (; x < end; x++)
+                {
+                    StepColumn(input, output, state, width, height, n, x);
+                }
+            }
+        }
+
+        /// <summary>The next output of filter <paramref name="k"/> in the columns at <paramref name="x"/>, which updates its state.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<float> Step(ref float states, nuint x, nuint width, nuint k, Vector512<float> n2, Vector512<float> minusD1, Vector512<float> sum)
+        {
+            unsafe
+            {
+                var previous = Vector512.LoadUnsafe(ref states, (k * width) + x);
+                var beforePrevious = Vector512.LoadUnsafe(ref states, ((k + 3) * width) + x);
+                var value = Vector512.FusedMultiplyAdd(n2, sum, Vector512.FusedMultiplyAdd(minusD1, previous, -beforePrevious));
+                previous.StoreUnsafe(ref states, ((k + 3) * width) + x);
+                value.StoreUnsafe(ref states, (k * width) + x);
+                return value;
+            }
+        }
+
+        /// <inheritdoc cref="Step(ref float, nuint, nuint, nuint, Vector512{float}, Vector512{float}, Vector512{float})"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<float> Step(ref float states, nuint x, nuint width, nuint k, Vector256<float> n2, Vector256<float> minusD1, Vector256<float> sum)
+        {
+            unsafe
+            {
+                var previous = Vector256.LoadUnsafe(ref states, (k * width) + x);
+                var beforePrevious = Vector256.LoadUnsafe(ref states, ((k + 3) * width) + x);
+                var value = Vector256.FusedMultiplyAdd(n2, sum, Vector256.FusedMultiplyAdd(minusD1, previous, -beforePrevious));
+                previous.StoreUnsafe(ref states, ((k + 3) * width) + x);
+                value.StoreUnsafe(ref states, (k * width) + x);
+                return value;
+            }
+        }
+
+        /// <inheritdoc cref="Step(ref float, nuint, nuint, nuint, Vector512{float}, Vector512{float}, Vector512{float})"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<float> Step(ref float states, nuint x, nuint width, nuint k, Vector128<float> n2, Vector128<float> minusD1, Vector128<float> sum)
+        {
+            unsafe
+            {
+                var previous = Vector128.LoadUnsafe(ref states, (k * width) + x);
+                var beforePrevious = Vector128.LoadUnsafe(ref states, ((k + 3) * width) + x);
+                var value = Vector128.FusedMultiplyAdd(n2, sum, Vector128.FusedMultiplyAdd(minusD1, previous, -beforePrevious));
+                previous.StoreUnsafe(ref states, ((k + 3) * width) + x);
+                value.StoreUnsafe(ref states, (k * width) + x);
+                return value;
+            }
+        }
+
+        /// <summary>The scalar reference of <see cref="BlurColumns"/>.</summary>
+        internal void BlurColumnsScalar(ReadOnlySpan<float> input, Span<float> output, Span<float> state, int width, int height, int first, int end)
         {
             // Rows 0-2 of the state are the previous outputs of the three filters, rows 3-5 the outputs before them
             for (var row = 0; row < StateRows; row++)
@@ -581,27 +831,33 @@ internal static class Ssimulacra2Calculator
 
             for (var n = -_radius + 1; n < height; n++)
             {
-                var top = n - _radius - 1;
-                var bottom = n + _radius - 1;
                 for (var x = first; x < end; x++)
                 {
-                    var sum = top >= 0
-                        ? input[top * width + x] + (bottom < height ? input[bottom * width + x] : 0f)
-                        : bottom < height ? input[bottom * width + x] : 0f;
-                    for (var k = 0; k < 3; k++)
-                    {
-                        ref var previous = ref state[k * width + x];
-                        ref var beforePrevious = ref state[(k + 3) * width + x];
-                        var value = MathF.FusedMultiplyAdd(_n2[k], sum, MathF.FusedMultiplyAdd(-_d1[k], previous, -beforePrevious));
-                        beforePrevious = previous;
-                        previous = value;
-                    }
-
-                    if (n >= 0)
-                    {
-                        output[n * width + x] = state[x] + (state[width + x] + state[2 * width + x]);
-                    }
+                    StepColumn(input, output, state, width, height, n, x);
                 }
+            }
+        }
+
+        /// <summary>The next output of the three filters in column <paramref name="x"/>, written at row <paramref name="n"/> when it is in the plane.</summary>
+        private void StepColumn(ReadOnlySpan<float> input, Span<float> output, Span<float> state, int width, int height, int n, int x)
+        {
+            var top = n - _radius - 1;
+            var bottom = n + _radius - 1;
+            var sum = top >= 0
+                ? input[top * width + x] + (bottom < height ? input[bottom * width + x] : 0f)
+                : bottom < height ? input[bottom * width + x] : 0f;
+            for (var k = 0; k < 3; k++)
+            {
+                ref var previous = ref state[k * width + x];
+                ref var beforePrevious = ref state[(k + 3) * width + x];
+                var value = MathF.FusedMultiplyAdd(_n2[k], sum, MathF.FusedMultiplyAdd(-_d1[k], previous, -beforePrevious));
+                beforePrevious = previous;
+                previous = value;
+            }
+
+            if (n >= 0)
+            {
+                output[n * width + x] = state[x] + (state[width + x] + state[2 * width + x]);
             }
         }
 

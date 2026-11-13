@@ -3361,6 +3361,47 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Ssimulacra2BlurPassesMatchTheScalarReference()
+    {
+        var gaussian = new Ssimulacra2Calculator.RecursiveGaussian(1.5);
+        var random = new Random(20261116);
+        foreach (var length in new[] { 1, 2, 3, 5, 7, 8, 9, 11, 12, 13, 15, 16, 17, 19, 20, 31, 33, 64, 101 })
+        {
+            for (var round = 0; round < 5; round++)
+            {
+                var input = Enumerable.Range(0, length).Select(_ => round == 0 ? (float)random.NextDouble() : NextSimilarityValue(random)).ToArray();
+                var expected = Enumerable.Repeat(float.NaN, length).ToArray();
+                var actual = (float[])expected.Clone();
+                gaussian.BlurRowScalar(input, expected);
+                gaussian.BlurRow(input, actual);
+                Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+            }
+        }
+
+        foreach (var width in new[] { 1, 3, 4, 5, 8, 15, 16, 17, 33, 40 })
+        {
+            foreach (var height in new[] { 1, 2, 5, 6, 7, 12, 30 })
+            {
+                var input = Enumerable.Range(0, width * height).Select(_ => random.Next(2) == 0 ? (float)random.NextDouble() : NextSimilarityValue(random)).ToArray();
+
+                // The whole plane, then a range of columns; the state starts with anything
+                foreach (var (first, end) in new[] { (0, width), (random.Next(width), width) })
+                {
+                    var expected = Enumerable.Repeat(float.NaN, width * height).ToArray();
+                    var actual = (float[])expected.Clone();
+                    var expectedState = Enumerable.Range(0, Ssimulacra2Calculator.RecursiveGaussian.StateRows * width).Select(_ => NextSimilarityValue(random)).ToArray();
+                    var actualState = (float[])expectedState.Clone();
+                    gaussian.BlurColumnsScalar(input, expected, expectedState, width, height, first, end);
+                    gaussian.BlurColumns(input, actual, actualState, width, height, first, end);
+                    Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+                    Assert.Equal(Array.ConvertAll(expectedState, BitConverter.SingleToInt32Bits), Array.ConvertAll(actualState, BitConverter.SingleToInt32Bits));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void SsimMapStatisticsAndScoresMatchTheScalarReference()
     {
         var random = new Random(20261114);

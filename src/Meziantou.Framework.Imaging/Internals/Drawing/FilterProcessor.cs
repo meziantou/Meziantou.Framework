@@ -573,6 +573,10 @@ internal sealed class FilterProcessor : IDisposable
         var bounds = surface.Bounds;
         var target = shadow.Values;
 
+        // The pixels read where they are: in the surface, and in the edges, which leave them where they are
+        var values = surface.Values;
+        var inner = Rectangle.Intersect((_edgeOverride ?? FilterEdgeMode.Transparent) == FilterEdgeMode.Transparent ? _extent : _edges, bounds);
+
         // The alpha at the position the offset moves each pixel from: the four pixels around it, interpolated
         for (var y = bounds.Top; y < bounds.Bottom; y++)
         {
@@ -584,13 +588,31 @@ internal sealed class FilterProcessor : IDisposable
             var sourceY = y - dy;
             var row = (int)Math.Floor(sourceY);
             var fy = sourceY - row;
+            var hasRows = row >= inner.Top && (long)row + 1 < inner.Bottom;
             for (var x = bounds.Left; x < bounds.Right; x++)
             {
                 var sourceX = x - dx;
                 var column = (int)Math.Floor(sourceX);
                 var fx = sourceX - column;
-                var alpha = ((1 - fy) * (((1 - fx) * ReadAlpha(surface, column, row, FilterEdgeMode.Transparent)) + (fx * ReadAlpha(surface, column + 1, row, FilterEdgeMode.Transparent))))
-                    + (fy * (((1 - fx) * ReadAlpha(surface, column, row + 1, FilterEdgeMode.Transparent)) + (fx * ReadAlpha(surface, column + 1, row + 1, FilterEdgeMode.Transparent))));
+                float topLeft, topRight, bottomLeft, bottomRight;
+                if (hasRows && column >= inner.Left && (long)column + 1 < inner.Right)
+                {
+                    var index = (4 * (((row - bounds.Top) * bounds.Width) + (column - bounds.Left))) + 3;
+                    topLeft = values[index];
+                    topRight = values[index + 4];
+                    bottomLeft = values[index + (4 * bounds.Width)];
+                    bottomRight = values[index + (4 * bounds.Width) + 4];
+                }
+                else
+                {
+                    topLeft = ReadAlpha(surface, column, row, FilterEdgeMode.Transparent);
+                    topRight = ReadAlpha(surface, column + 1, row, FilterEdgeMode.Transparent);
+                    bottomLeft = ReadAlpha(surface, column, row + 1, FilterEdgeMode.Transparent);
+                    bottomRight = ReadAlpha(surface, column + 1, row + 1, FilterEdgeMode.Transparent);
+                }
+
+                var alpha = ((1 - fy) * (((1 - fx) * topLeft) + (fx * topRight)))
+                    + (fy * (((1 - fx) * bottomLeft) + (fx * bottomRight)));
                 var offsetIndex = 4 * (((y - bounds.Top) * bounds.Width) + (x - bounds.Left));
                 target[offsetIndex] = 0;
                 target[offsetIndex + 1] = 0;

@@ -1,5 +1,7 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -45,7 +47,19 @@ internal static class JpegXlForwardTransform
     /// <param name="scratch">Scratch memory of <paramref name="rows"/> times <paramref name="columns"/> values.</param>
     public static void ForwardDct(ReadOnlySpan<float> samples, int stride, int rows, int columns, Span<float> coefficients, Span<float> scratch)
     {
-        // Four lines at once, one per lane, each with the operations of the scalar code in the same order
+        // Eight lines at once with AVX (four otherwise), one per lane, each with the operations of the scalar code in the same order
+        if (Vector256.IsHardwareAccelerated && Avx.IsSupported && rows >= 8 && columns >= 8)
+        {
+            if (rows == 8 && columns == 8)
+            {
+                ForwardDct8x8Vector256(samples, stride, coefficients);
+                return;
+            }
+
+            ForwardDctVector256(samples, stride, rows, columns, coefficients, scratch);
+            return;
+        }
+
         if (Vector128.IsHardwareAccelerated && rows >= 4 && columns >= 4)
         {
             if (rows == 8 && columns == 8)
@@ -66,7 +80,7 @@ internal static class JpegXlForwardTransform
     /// 4x4 values at a time on the way in and out), then the columns of horizontal frequencies four at a time.
     /// </summary>
     /// <remarks>Every element of the stack buffers is written before it is read.</remarks>
-    [System.Runtime.CompilerServices.SkipLocalsInit]
+    [SkipLocalsInit]
     private static void ForwardDctVector(ReadOnlySpan<float> samples, int stride, int rows, int columns, Span<float> coefficients, Span<float> scratch)
     {
         Span<Vector128<float>> lines = unsafe(stackalloc Vector128<float>[MaxSize]);
@@ -137,6 +151,115 @@ internal static class JpegXlForwardTransform
                     r1.CopyTo(coefficients.Slice(((u + 1) * rows) + v, 4));
                     r2.CopyTo(coefficients.Slice(((u + 2) * rows) + v, 4));
                     r3.CopyTo(coefficients.Slice(((u + 3) * rows) + v, 4));
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// The operations of <see cref="ForwardDctVector"/> on eight lines at a time, for a block whose sides are multiples of
+    /// 8: the lines that are contiguous in memory are transposed 8x8 values at a time.
+    /// </summary>
+    /// <remarks>Every element of the stack buffers is written before it is read.</remarks>
+    [SkipLocalsInit]
+    private static void ForwardDctVector256(ReadOnlySpan<float> samples, int stride, int rows, int columns, Span<float> coefficients, Span<float> scratch)
+    {
+        Span<Vector256<float>> lines = unsafe(stackalloc Vector256<float>[MaxSize]);
+        Span<Vector256<float>> work = unsafe(stackalloc Vector256<float>[MaxSize]);
+
+        // The horizontal frequencies of each row of samples, for eight rows at a time
+        var horizontal = scratch[..(rows * columns)];
+        var line = lines[..columns];
+        for (var y = 0; y < rows; y += 8)
+        {
+            for (var x = 0; x < columns; x += 8)
+            {
+                var r0 = Vector256.Create(samples.Slice((y * stride) + x, 8));
+                var r1 = Vector256.Create(samples.Slice(((y + 1) * stride) + x, 8));
+                var r2 = Vector256.Create(samples.Slice(((y + 2) * stride) + x, 8));
+                var r3 = Vector256.Create(samples.Slice(((y + 3) * stride) + x, 8));
+                var r4 = Vector256.Create(samples.Slice(((y + 4) * stride) + x, 8));
+                var r5 = Vector256.Create(samples.Slice(((y + 5) * stride) + x, 8));
+                var r6 = Vector256.Create(samples.Slice(((y + 6) * stride) + x, 8));
+                var r7 = Vector256.Create(samples.Slice(((y + 7) * stride) + x, 8));
+                JpegXlInverseTransform.Transpose(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+                line[x] = r0;
+                line[x + 1] = r1;
+                line[x + 2] = r2;
+                line[x + 3] = r3;
+                line[x + 4] = r4;
+                line[x + 5] = r5;
+                line[x + 6] = r6;
+                line[x + 7] = r7;
+            }
+
+            ForwardDct(line, work);
+            for (var u = 0; u < columns; u += 8)
+            {
+                var r0 = line[u];
+                var r1 = line[u + 1];
+                var r2 = line[u + 2];
+                var r3 = line[u + 3];
+                var r4 = line[u + 4];
+                var r5 = line[u + 5];
+                var r6 = line[u + 6];
+                var r7 = line[u + 7];
+                JpegXlInverseTransform.Transpose(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+                r0.CopyTo(horizontal.Slice((y * columns) + u, 8));
+                r1.CopyTo(horizontal.Slice(((y + 1) * columns) + u, 8));
+                r2.CopyTo(horizontal.Slice(((y + 2) * columns) + u, 8));
+                r3.CopyTo(horizontal.Slice(((y + 3) * columns) + u, 8));
+                r4.CopyTo(horizontal.Slice(((y + 4) * columns) + u, 8));
+                r5.CopyTo(horizontal.Slice(((y + 5) * columns) + u, 8));
+                r6.CopyTo(horizontal.Slice(((y + 6) * columns) + u, 8));
+                r7.CopyTo(horizontal.Slice(((y + 7) * columns) + u, 8));
+            }
+        }
+
+        // Then the vertical frequencies of each column of horizontal frequencies, for eight columns at a time, scaled
+        var isWide = rows < columns;
+        var scale = Vector256.Create(1f / (rows * columns));
+        var column = lines[..rows];
+        for (var u = 0; u < columns; u += 8)
+        {
+            for (var y = 0; y < rows; y++)
+            {
+                column[y] = Vector256.Create(horizontal.Slice((y * columns) + u, 8));
+            }
+
+            ForwardDct(column, work);
+            for (var v = 0; v < rows; v += 8)
+            {
+                var s0 = column[v] * scale;
+                var s1 = column[v + 1] * scale;
+                var s2 = column[v + 2] * scale;
+                var s3 = column[v + 3] * scale;
+                var s4 = column[v + 4] * scale;
+                var s5 = column[v + 5] * scale;
+                var s6 = column[v + 6] * scale;
+                var s7 = column[v + 7] * scale;
+                if (isWide)
+                {
+                    s0.CopyTo(coefficients.Slice((v * columns) + u, 8));
+                    s1.CopyTo(coefficients.Slice(((v + 1) * columns) + u, 8));
+                    s2.CopyTo(coefficients.Slice(((v + 2) * columns) + u, 8));
+                    s3.CopyTo(coefficients.Slice(((v + 3) * columns) + u, 8));
+                    s4.CopyTo(coefficients.Slice(((v + 4) * columns) + u, 8));
+                    s5.CopyTo(coefficients.Slice(((v + 5) * columns) + u, 8));
+                    s6.CopyTo(coefficients.Slice(((v + 6) * columns) + u, 8));
+                    s7.CopyTo(coefficients.Slice(((v + 7) * columns) + u, 8));
+                }
+                else
+                {
+                    JpegXlInverseTransform.Transpose(ref s0, ref s1, ref s2, ref s3, ref s4, ref s5, ref s6, ref s7);
+                    s0.CopyTo(coefficients.Slice((u * rows) + v, 8));
+                    s1.CopyTo(coefficients.Slice(((u + 1) * rows) + v, 8));
+                    s2.CopyTo(coefficients.Slice(((u + 2) * rows) + v, 8));
+                    s3.CopyTo(coefficients.Slice(((u + 3) * rows) + v, 8));
+                    s4.CopyTo(coefficients.Slice(((u + 4) * rows) + v, 8));
+                    s5.CopyTo(coefficients.Slice(((u + 5) * rows) + v, 8));
+                    s6.CopyTo(coefficients.Slice(((u + 6) * rows) + v, 8));
+                    s7.CopyTo(coefficients.Slice(((u + 7) * rows) + v, 8));
                 }
             }
         }
@@ -268,6 +391,46 @@ internal static class JpegXlForwardTransform
         }
     }
 
+    /// <summary>
+    /// Eight one-dimensional DCTs of a power-of-two number of values (8 or more), one per lane, in place: the operations of
+    /// <see cref="ForwardDct(Span{float}, Span{float})"/>, in the same order.
+    /// </summary>
+    private static void ForwardDct(Span<Vector256<float>> values, Span<Vector256<float>> scratch)
+    {
+        var count = values.Length;
+        if (count == 8)
+        {
+            values = values[..8];
+            ForwardDct8(ref values[0], ref values[1], ref values[2], ref values[3], ref values[4], ref values[5], ref values[6], ref values[7]);
+            return;
+        }
+
+        var half = count / 2;
+        var even = scratch[..half];
+        var odd = scratch.Slice(half, half);
+        var cosines = DoubleCosines.AsSpan(half, half);
+        for (var i = 0; i < half; i++)
+        {
+            var first = values[i];
+            var last = values[count - 1 - i];
+            even[i] = first + last;
+            odd[i] = (first - last) * Vector256.Create(cosines[i]);
+        }
+
+        ForwardDct(even, values[..half]);
+        ForwardDct(odd, values.Slice(half, half));
+        for (var i = 0; i < half; i++)
+        {
+            values[2 * i] = even[i];
+        }
+
+        values[1] = odd[0] * Vector256.Create(InverseSquareRoot2);
+        for (var i = 1; i < half; i++)
+        {
+            values[(2 * i) + 1] = odd[i] - values[(2 * i) - 1];
+        }
+    }
+
     private static void ForwardDct8(Span<Vector128<float>> values)
     {
         values = values[..8];
@@ -330,8 +493,107 @@ internal static class JpegXlForwardTransform
         }
     }
 
+    /// <summary>
+    /// The operations of <see cref="ForwardDct8x8"/> on eight lines at a time: each pass is one 8x8 transposition and eight
+    /// transforms, and the coefficients are transposed once more into the layout of the format.
+    /// </summary>
+    private static void ForwardDct8x8Vector256(ReadOnlySpan<float> samples, int stride, Span<float> coefficients)
+    {
+        // Every position read or written is checked here, once for the block
+        if (stride < 8 || samples.Length < (7 * stride) + 8 || coefficients.Length < 64)
+            throw new ArgumentOutOfRangeException(nameof(samples));
+
+        ref var source = ref unsafe(MemoryMarshal.GetReference(samples));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        var step = (nuint)stride;
+        Vector256<float> r0, r1, r2, r3, r4, r5, r6, r7;
+        unsafe
+        {
+            r0 = Vector256.LoadUnsafe(ref source);
+            r1 = Vector256.LoadUnsafe(ref source, step);
+            r2 = Vector256.LoadUnsafe(ref source, 2 * step);
+            r3 = Vector256.LoadUnsafe(ref source, 3 * step);
+            r4 = Vector256.LoadUnsafe(ref source, 4 * step);
+            r5 = Vector256.LoadUnsafe(ref source, 5 * step);
+            r6 = Vector256.LoadUnsafe(ref source, 6 * step);
+            r7 = Vector256.LoadUnsafe(ref source, 7 * step);
+        }
+
+        // The horizontal frequencies of the rows (one row per lane), then the vertical frequencies of the horizontal
+        // frequencies (one horizontal frequency per lane), scaled; the block is square, so the coefficients of a horizontal
+        // frequency are a row of the layout of the format
+        JpegXlInverseTransform.Transpose(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+        ForwardDct8(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+        JpegXlInverseTransform.Transpose(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+        ForwardDct8(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+        var scale = Vector256.Create(1f / 64);
+        r0 *= scale;
+        r1 *= scale;
+        r2 *= scale;
+        r3 *= scale;
+        r4 *= scale;
+        r5 *= scale;
+        r6 *= scale;
+        r7 *= scale;
+        JpegXlInverseTransform.Transpose(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+        unsafe
+        {
+            r0.StoreUnsafe(ref target);
+            r1.StoreUnsafe(ref target, 8);
+            r2.StoreUnsafe(ref target, 16);
+            r3.StoreUnsafe(ref target, 24);
+            r4.StoreUnsafe(ref target, 32);
+            r5.StoreUnsafe(ref target, 40);
+            r6.StoreUnsafe(ref target, 48);
+            r7.StoreUnsafe(ref target, 56);
+        }
+    }
+
+    /// <summary>Eight one-dimensional DCTs of eight values, one per lane, in place: the operations of the scalar transform of eight values.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ForwardDct8(ref Vector256<float> v0, ref Vector256<float> v1, ref Vector256<float> v2, ref Vector256<float> v3, ref Vector256<float> v4, ref Vector256<float> v5, ref Vector256<float> v6, ref Vector256<float> v7)
+    {
+        var cosines = DoubleCosines;
+        var e0 = v0 + v7;
+        var o0 = (v0 - v7) * Vector256.Create(cosines[4]);
+        var e1 = v1 + v6;
+        var o1 = (v1 - v6) * Vector256.Create(cosines[5]);
+        var e2 = v2 + v5;
+        var o2 = (v2 - v5) * Vector256.Create(cosines[6]);
+        var e3 = v3 + v4;
+        var o3 = (v3 - v4) * Vector256.Create(cosines[7]);
+        ForwardDct4(ref e0, ref e1, ref e2, ref e3);
+        ForwardDct4(ref o0, ref o1, ref o2, ref o3);
+        v0 = e0;
+        v2 = e1;
+        v4 = e2;
+        v6 = e3;
+        var odd = o0 * Vector256.Create(InverseSquareRoot2);
+        v1 = odd;
+        odd = o1 - odd;
+        v3 = odd;
+        odd = o2 - odd;
+        v5 = odd;
+        v7 = o3 - odd;
+    }
+
+    /// <summary>Eight one-dimensional DCTs of four values, one per lane: the operations of the scalar transform of four values.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ForwardDct4(ref Vector256<float> v0, ref Vector256<float> v1, ref Vector256<float> v2, ref Vector256<float> v3)
+    {
+        var e0 = v0 + v3;
+        var o0 = (v0 - v3) * Vector256.Create(DoubleCosines[2]);
+        var e1 = v1 + v2;
+        var o1 = (v1 - v2) * Vector256.Create(DoubleCosines[3]);
+        v0 = e0 + e1;
+        v2 = e0 - e1;
+        var odd = (o0 + o1) * Vector256.Create(InverseSquareRoot2);
+        v1 = odd;
+        v3 = (o0 - o1) - odd;
+    }
+
     /// <summary>Four one-dimensional DCTs of eight values, one per lane, in place: the operations of the scalar transform of eight values.</summary>
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ForwardDct8(ref Vector128<float> v0, ref Vector128<float> v1, ref Vector128<float> v2, ref Vector128<float> v3, ref Vector128<float> v4, ref Vector128<float> v5, ref Vector128<float> v6, ref Vector128<float> v7)
     {
         var cosines = DoubleCosines;
@@ -359,7 +621,7 @@ internal static class JpegXlForwardTransform
     }
 
     /// <summary>Four one-dimensional DCTs of four values, one per lane: the operations of the scalar transform of four values.</summary>
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ForwardDct4(ref Vector128<float> v0, ref Vector128<float> v1, ref Vector128<float> v2, ref Vector128<float> v3)
     {
         // Each half is a transform of two values: their sum and their difference

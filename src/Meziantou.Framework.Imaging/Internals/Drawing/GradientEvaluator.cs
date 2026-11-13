@@ -385,61 +385,171 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
 
         var parameters = unsafe(MemoryMarshal.Cast<byte, double>(_parameters!.Span))[..count];
         GetParameters(y, x, parameters);
-        var firstOffset = stops[0];
-        var index = 0;
-        for (var i = 0; i < count; i++)
+        if (Resampler.TestForceScalar || !Vector128.IsHardwareAccelerated)
         {
-            var t = parameters[i];
-            var output = colors.Slice(i * 4, 4);
-            if (double.IsNaN(t))
-            {
-                // A position without color: beyond the horizon of a plane seen in perspective
-                output.Clear();
-                continue;
-            }
-
-            if (t < firstOffset)
-            {
-                WriteStop(stops, 0, output);
-                continue;
-            }
-
-            // The last stop whose offset is not greater than the parameter. The offsets increase: the search goes on
-            // from the stop of the previous pixel when its offset is not greater either, and starts again otherwise.
-            if (stops[index * ValuesPerStop] > t)
-            {
-                index = 0;
-            }
-
-            while (index < last && stops[(index + 1) * ValuesPerStop] <= t)
-            {
-                index++;
-            }
-
-            if (index == last)
-            {
-                WriteStop(stops, last, output);
-                continue;
-            }
-
-            var from = stops.Slice(index * ValuesPerStop, ValuesPerStop);
-            var u = (t - from[0]) / from[OffsetStep];
-            var alpha = from[1] + (u * from[AlphaStep]);
-            var offset = _dither ? GetDitherThreshold(x + i, y) : RoundingOffset;
-            var roundedAlpha = Round(alpha, offset);
-            if (roundedAlpha == 0)
-            {
-                output.Clear();
-                continue;
-            }
-
-            output[0] = Round((from[Premultiplied] + (u * from[PremultipliedStep])) / alpha, offset);
-            output[1] = Round((from[Premultiplied + 1] + (u * from[PremultipliedStep + 1])) / alpha, offset);
-            output[2] = Round((from[Premultiplied + 2] + (u * from[PremultipliedStep + 2])) / alpha, offset);
-            output[3] = roundedAlpha;
+            EvaluateStopsScalar(y, x, parameters, colors);
+        }
+        else if (Vector256.IsHardwareAccelerated)
+        {
+            EvaluateStopsVector<DoubleLanes256, Vector256<double>>(y, x, parameters, colors);
+        }
+        else
+        {
+            EvaluateStopsVector<DoubleLanes128, Vector128<double>>(y, x, parameters, colors);
         }
 
         return colors;
+    }
+
+    /// <summary>Computes the colors of the parameters of a run of pixels, pixel by pixel: the reference of <see cref="EvaluateStopsVector"/>.</summary>
+    internal void EvaluateStopsScalar(int y, int x, ReadOnlySpan<double> parameters, Span<ushort> colors)
+    {
+        var stops = Stops[..(_stopCount * ValuesPerStop)];
+        var index = 0;
+        for (var i = 0; i < parameters.Length; i++)
+        {
+            EvaluateStop(stops, parameters[i], x + i, y, colors.Slice(i * 4, 4), ref index);
+        }
+    }
+
+    /// <summary>
+    /// <see cref="EvaluateStopsScalar"/> on vectors: the lanes are consecutive pixels whose parameters are between the same
+    /// two stops, which every lane reads, and the other pixels are computed one by one.
+    /// </summary>
+    internal void EvaluateStopsVector<TLanes, TVector>(int y, int x, ReadOnlySpan<double> parameters, Span<ushort> colors)
+        where TLanes : IDoubleLanes<TVector>
+        where TVector : unmanaged
+    {
+        var stops = Stops[..(_stopCount * ValuesPerStop)];
+        var last = _stopCount - 1;
+        var count = TLanes.Count;
+
+        // The thresholds of the row, twice, so that the lanes of any column read consecutive ones
+        Span<double> thresholds = stackalloc double[16];
+        var dither = _dither;
+        if (dither)
+        {
+            for (var k = 0; k < thresholds.Length; k++)
+            {
+                thresholds[k] = GetDitherThreshold(k, y);
+            }
+        }
+
+        var rounding = TLanes.Create(RoundingOffset);
+        var zero = TLanes.Create(0);
+        var max = TLanes.Create(_max);
+        var firstOffset = stops[0];
+        var index = 0;
+        var i = 0;
+        while (i < parameters.Length)
+        {
+            var t0 = parameters[i];
+            if (i + count <= parameters.Length && t0 >= firstOffset)
+            {
+                // The segment of the first lane, found as the scalar code finds it
+                if (stops[index * ValuesPerStop] > t0)
+                {
+                    index = 0;
+                }
+
+                while (index < last && stops[(index + 1) * ValuesPerStop] <= t0)
+                {
+                    index++;
+                }
+
+                if (index < last)
+                {
+                    var from = stops.Slice(index * ValuesPerStop, ValuesPerStop);
+                    var t = TLanes.Load(parameters[i..]);
+                    var start = TLanes.Create(from[0]);
+                    if (TLanes.All(TLanes.And(TLanes.GreaterThanOrEqual(t, start), TLanes.LessThan(t, TLanes.Create(stops[(index + 1) * ValuesPerStop])))))
+                    {
+                        var u = TLanes.Divide(TLanes.Subtract(t, start), TLanes.Create(from[OffsetStep]));
+                        var alpha = TLanes.Add(TLanes.Create(from[1]), TLanes.Multiply(u, TLanes.Create(from[AlphaStep])));
+                        var offset = dither ? TLanes.Load(thresholds[((x + i) & 7)..]) : rounding;
+                        var roundedAlpha = RoundLanes<TLanes, TVector>(alpha, offset, zero, max);
+                        var c0 = RoundLanes<TLanes, TVector>(TLanes.Divide(TLanes.Add(TLanes.Create(from[Premultiplied]), TLanes.Multiply(u, TLanes.Create(from[PremultipliedStep]))), alpha), offset, zero, max);
+                        var c1 = RoundLanes<TLanes, TVector>(TLanes.Divide(TLanes.Add(TLanes.Create(from[Premultiplied + 1]), TLanes.Multiply(u, TLanes.Create(from[PremultipliedStep + 1]))), alpha), offset, zero, max);
+                        var c2 = RoundLanes<TLanes, TVector>(TLanes.Divide(TLanes.Add(TLanes.Create(from[Premultiplied + 2]), TLanes.Multiply(u, TLanes.Create(from[PremultipliedStep + 2]))), alpha), offset, zero, max);
+
+                        // A pixel whose alpha rounds to zero has no color
+                        TLanes.StoreSamples(c0, c1, c2, roundedAlpha, TLanes.Equal(roundedAlpha, zero), colors.Slice(i * 4, count * 4));
+                        i += count;
+                        continue;
+                    }
+                }
+            }
+
+            EvaluateStop(stops, t0, x + i, y, colors.Slice(i * 4, 4), ref index);
+            i++;
+        }
+    }
+
+    /// <summary>
+    /// Computes the color of the parameter of a pixel: <paramref name="index"/> is the stop the search starts from, the
+    /// last stop whose offset is not greater than the parameter afterward.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EvaluateStop(ReadOnlySpan<double> stops, double t, int x, int y, Span<ushort> output, ref int index)
+    {
+        var last = _stopCount - 1;
+        if (double.IsNaN(t))
+        {
+            // A position without color: beyond the horizon of a plane seen in perspective
+            output.Clear();
+            return;
+        }
+
+        if (t < stops[0])
+        {
+            WriteStop(stops, 0, output);
+            return;
+        }
+
+        // The last stop whose offset is not greater than the parameter. The offsets increase: the search goes on
+        // from the stop of the previous pixel when its offset is not greater either, and starts again otherwise.
+        if (stops[index * ValuesPerStop] > t)
+        {
+            index = 0;
+        }
+
+        while (index < last && stops[(index + 1) * ValuesPerStop] <= t)
+        {
+            index++;
+        }
+
+        if (index == last)
+        {
+            WriteStop(stops, last, output);
+            return;
+        }
+
+        var from = stops.Slice(index * ValuesPerStop, ValuesPerStop);
+        var u = (t - from[0]) / from[OffsetStep];
+        var alpha = from[1] + (u * from[AlphaStep]);
+        var offset = _dither ? GetDitherThreshold(x, y) : RoundingOffset;
+        var roundedAlpha = Round(alpha, offset);
+        if (roundedAlpha == 0)
+        {
+            output.Clear();
+            return;
+        }
+
+        output[0] = Round((from[Premultiplied] + (u * from[PremultipliedStep])) / alpha, offset);
+        output[1] = Round((from[Premultiplied + 1] + (u * from[PremultipliedStep + 1])) / alpha, offset);
+        output[2] = Round((from[Premultiplied + 2] + (u * from[PremultipliedStep + 2])) / alpha, offset);
+        output[3] = roundedAlpha;
+    }
+
+    /// <summary><see cref="Round"/> of each lane, as a whole number from 0 to the maximum of a sample (zero for a lane that is not a number).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static TVector RoundLanes<TLanes, TVector>(TVector value, TVector offset, TVector zero, TVector max)
+        where TLanes : IDoubleLanes<TVector>
+        where TVector : unmanaged
+    {
+        var rounded = TLanes.Floor(TLanes.Add(value, offset));
+        rounded = TLanes.Select(TLanes.GreaterThan(rounded, zero), rounded, zero);
+        return TLanes.Select(TLanes.GreaterThanOrEqual(rounded, max), max, rounded);
     }
 
     /// <remarks>

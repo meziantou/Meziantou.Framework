@@ -1175,6 +1175,33 @@ public sealed partial class DomEventLoop
         WorkSignal?.Invoke();
     }
 
+    /// <summary>
+    /// Removes the synchronization context of the current thread while the event loop runs a task or the microtasks, and
+    /// returns the context to restore (see <see cref="RestoreSynchronizationContext"/>). The library completes its asynchronous
+    /// operations from the tasks of the event loop (e.g. the loads of the fetches), and their continuations must run in these
+    /// tasks: the runtime only runs the continuation of an <c>await</c> inline when the thread has no synchronization context
+    /// (or the default one), otherwise it queues it to the thread pool, where it would run concurrently with the event loop.
+    /// </summary>
+    private static SynchronizationContext? SuspendSynchronizationContext()
+    {
+        var synchronizationContext = SynchronizationContext.Current;
+        if (synchronizationContext is not null)
+        {
+            SynchronizationContext.SetSynchronizationContext(null);
+        }
+
+        return synchronizationContext;
+    }
+
+    /// <summary>Restores the synchronization context removed by <see cref="SuspendSynchronizationContext"/>.</summary>
+    private static void RestoreSynchronizationContext(SynchronizationContext? synchronizationContext)
+    {
+        if (synchronizationContext is not null)
+        {
+            SynchronizationContext.SetSynchronizationContext(synchronizationContext);
+        }
+    }
+
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#perform-a-microtask-checkpoint</summary>
     public void PerformMicrotaskCheckpoint()
     {
@@ -1185,6 +1212,7 @@ public sealed partial class DomEventLoop
         _performingMicrotaskCheckpoint = true;
         var timerNestingLevel = CurrentTimerNestingLevel;
         CurrentTimerNestingLevel = 0;
+        var synchronizationContext = SuspendSynchronizationContext();
         try
         {
             do
@@ -1228,6 +1256,7 @@ public sealed partial class DomEventLoop
         {
             _performingMicrotaskCheckpoint = false;
             CurrentTimerNestingLevel = timerNestingLevel;
+            RestoreSynchronizationContext(synchronizationContext);
         }
 
         // https://w3c.github.io/long-animation-frames/#record-timing-info-for-microtask-checkpoint

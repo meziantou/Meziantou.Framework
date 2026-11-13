@@ -799,6 +799,107 @@ public sealed class ScreenshotTests : IDisposable
         Assert.Equal(Colors.White, screenshot.GetPixel(102, 27));
     }
 
+    [Fact]
+    public async Task ConcurrentPages_TheLoadsCompleteInTheTasksOfTheEventLoopOfEachPage()
+    {
+        // Each page is rendered on its own thread, which has a synchronization context (as the threads of a UI framework or of
+        // the "aggressive" parallel algorithm of xUnit). The images are loaded asynchronously: their responses must be
+        // processed in the tasks of the event loop of the page, on its thread, not on a thread-pool thread while the page is
+        // styled and painted.
+        var pages = new Task<int>[4];
+        for (var i = 0; i < pages.Length; i++)
+        {
+            var width = 200 + (i * 50);
+            pages[i] = Task.Factory.StartNew(
+                () =>
+                {
+                    var previous = SynchronizationContext.Current;
+                    SynchronizationContext.SetSynchronizationContext(new ThreadSynchronizationContext());
+                    try
+                    {
+                        return RenderPageWithAsynchronousImages(width);
+                    }
+                    finally
+                    {
+                        SynchronizationContext.SetSynchronizationContext(previous);
+                    }
+                },
+                TestContext.Current.CancellationToken,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
+        }
+
+        var loadsOnOtherThreads = await Task.WhenAll(pages);
+        Assert.All(loadsOnOtherThreads, count => Assert.Equal(0, count));
+    }
+
+    /// <summary>Renders a page whose images are loaded asynchronously, and returns the number of load events fired on another thread.</summary>
+    private static int RenderPageWithAsynchronousImages(double width)
+    {
+        const int ImageCount = 20;
+        var thread = Environment.CurrentManagedThreadId;
+        var png = TestPages.CreatePng(1, 1, Colors.Lime);
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { Width = width, Height = 100 },
+            RenderingBackend = new ImagingRenderingBackend(),
+            DocumentLoader = new DelayedImageLoader(png),
+        });
+
+        var html = new System.Text.StringBuilder("<!DOCTYPE html><style>body { margin: 0 } div p img { width: 20px; height: 20px; vertical-align: top } div > p { margin: 0 }</style><div><p>");
+        for (var i = 0; i < ImageCount; i++)
+        {
+            html.Append(System.Globalization.CultureInfo.InvariantCulture, $"<img src='/{i}.png'>");
+        }
+
+        html.Append("</p></div>");
+        context.Navigate("https://example.com/", _ => html.ToString());
+
+        var loads = 0;
+        var loadsOnOtherThreads = 0;
+        foreach (var image in context.Document.QuerySelectorAll<HtmlImageElement>("img"))
+        {
+            image.AddEventListener("load", _ =>
+            {
+                Interlocked.Increment(ref loads);
+                if (Environment.CurrentManagedThreadId != thread)
+                {
+                    Interlocked.Increment(ref loadsOnOtherThreads);
+                }
+            });
+        }
+
+        // The event loop is run on the thread of the page until the images are loaded
+        var timeout = System.Diagnostics.Stopwatch.StartNew();
+        while (Volatile.Read(ref loads) < ImageCount && timeout.Elapsed < TimeSpan.FromSeconds(60))
+        {
+            context.EventLoop.RunUntilIdle();
+            Thread.Sleep(1);
+        }
+
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal(ImageCount, Volatile.Read(ref loads));
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal(Colors.Lime, screenshot.GetPixel(10, 10));
+        return Volatile.Read(ref loadsOnOtherThreads);
+    }
+
+    /// <summary>A synchronization context that is not the default one: the runtime does not run the continuations inline on its thread.</summary>
+    private sealed class ThreadSynchronizationContext : SynchronizationContext
+    {
+        public override SynchronizationContext CreateCopy() => new ThreadSynchronizationContext();
+    }
+
+    /// <summary>A loader whose responses complete asynchronously, on a thread-pool thread.</summary>
+    private sealed class DelayedImageLoader(byte[] png) : DocumentLoader
+    {
+        public override async ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
+        {
+            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+            return new DocumentResource(png) { Headers = [new("Content-Type", "image/png")] };
+        }
+    }
+
     private static Func<Rgba32, Rgba32, bool> ColorComparer(int tolerance) => (a, b) => Math.Abs(a.R - b.R) <= tolerance && Math.Abs(a.G - b.G) <= tolerance && Math.Abs(a.B - b.B) <= tolerance && Math.Abs(a.A - b.A) <= tolerance;
 
     /// <summary>Returns the sum of the darkness of the pixels of an area.</summary>

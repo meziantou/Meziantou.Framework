@@ -12,6 +12,9 @@ internal static class Av1InterPredictor
     /// <summary>The largest number of rows of the intermediate array of <see cref="PredictBlock"/>: a block of 128 rows from a reference of twice the height.</summary>
     public const int MaxIntermediateHeight = (((127 * 2048) + 1023) >> Av1Constants.ScaleSubpelBits) + 8;
 
+    // The largest width of a block
+    private const int MaxBlockSize = 128;
+
     /// <summary>Predicts a block from a reference plane with the separable sub-sample interpolation filters.</summary>
     /// <param name="reference">The samples of the reference plane.</param>
     /// <param name="referenceStride">The number of samples of a row of <paramref name="reference"/>.</param>
@@ -129,8 +132,9 @@ internal static class Av1InterPredictor
     }
 
     // PredictBlockScalar for a reference of the size of the frame (steps of one sample): every sample of the block uses the
-    // same taps, and the taps of consecutive samples read consecutive samples. The rows whose taps are all inside the
-    // reference are filtered 4 samples at a time with the integer expressions of the scalar code, the others like it.
+    // same taps, and the taps of consecutive samples read consecutive samples. The rows are filtered 4 samples at a time
+    // with the integer expressions of the scalar code, from the reference or, when some taps are outside it, from a copy
+    // of the w + 7 samples that the taps read, each one the nearest sample inside the reference.
     // The taps of the position 0 of every filter are 128 on the sample itself and 0 elsewhere: a filter at a whole-sample
     // position is the exact expression of CenterTap, and a vertical one reads the rows 3 to h + 2 of the intermediate array only
     private static void PredictBlockUnscaled(
@@ -173,8 +177,12 @@ internal static class Av1InterPredictor
                 CenterTapRow(source, first + 3, lastX, interRound0, intermediate.Slice(r * w, w));
             }
         }
-        else if (first >= 0 && first + w + 6 <= lastX)
+        else
         {
+            var inside = first >= 0 && first + w + 6 <= lastX;
+            Span<ushort> edge = inside ? default : stackalloc ushort[MaxBlockSize + 7];
+            var leftCount = Math.Clamp(-first, 0, w + 7);
+            var rightStart = Math.Clamp(lastX + 1 - first, 0, w + 7);
             var h0 = Vector128.Create((int)tapsH[0]);
             var h1 = Vector128.Create((int)tapsH[1]);
             var h2 = Vector128.Create((int)tapsH[2]);
@@ -185,31 +193,29 @@ internal static class Av1InterPredictor
             var h7 = Vector128.Create((int)tapsH[7]);
             for (var r = firstRow; r < intermediateHeight; r++)
             {
-                var source = reference.Slice((Math.Clamp((y >> Av1Constants.ScaleSubpelBits) + r - 3, 0, lastY) * referenceStride) + first, w + 7);
+                var rowStart = Math.Clamp((y >> Av1Constants.ScaleSubpelBits) + r - 3, 0, lastY) * referenceStride;
+                scoped ReadOnlySpan<ushort> source;
+                if (inside)
+                {
+                    source = reference.Slice(rowStart + first, w + 7);
+                }
+                else
+                {
+                    var row = reference.Slice(rowStart, lastX + 1);
+                    edge[..leftCount].Fill(row[0]);
+                    if (rightStart > leftCount)
+                        row.Slice(first + leftCount, rightStart - leftCount).CopyTo(edge[leftCount..]);
+
+                    edge[rightStart..(w + 7)].Fill(row[lastX]);
+                    source = edge[..(w + 7)];
+                }
+
                 var destination = intermediate.Slice(r * w, w);
                 for (var c = 0; c < w; c += 4)
                 {
                     var s = (h0 * Load(source, c)) + (h1 * Load(source, c + 1)) + (h2 * Load(source, c + 2)) + (h3 * Load(source, c + 3))
                         + (h4 * Load(source, c + 4)) + (h5 * Load(source, c + 5)) + (h6 * Load(source, c + 6)) + (h7 * Load(source, c + 7));
                     ((s + round0) >> interRound0).CopyTo(destination[c..]);
-                }
-            }
-        }
-        else
-        {
-            for (var r = firstRow; r < intermediateHeight; r++)
-            {
-                var source = reference.Slice(Math.Clamp((y >> Av1Constants.ScaleSubpelBits) + r - 3, 0, lastY) * referenceStride, lastX + 1);
-                var destination = intermediate.Slice(r * w, w);
-                for (var c = 0; c < w; c++)
-                {
-                    var s = 0;
-                    for (var t = 0; t < 8; t++)
-                    {
-                        s += tapsH[t] * source[Math.Clamp(first + c + t, 0, lastX)];
-                    }
-
-                    destination[c] = (s + round0.ToScalar()) >> interRound0;
                 }
             }
         }

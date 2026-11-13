@@ -6323,8 +6323,8 @@ public sealed class VectorizedKernelTests
     public void Av1InterPredictionMatchesTheScalarReference(int bitDepth)
     {
         // Blocks of every size at every sub-sample position (whole-sample positions, which skip the filters, in a third of the
-        // directions), inside the reference and across each of its edges, with every filter type and the rounding of the bit
-        // depth, of compound prediction and of test values
+        // directions), inside the reference, across each of its edges and wider than it, with every filter type and the
+        // rounding of the bit depth, of compound prediction and of test values
         short[] wholeSampleTaps = [0, 0, 0, 128, 0, 0, 0, 0];
         for (var filter = 0; filter < Av1Tables.SubpelFiltersLength0; filter++)
         {
@@ -6341,10 +6341,10 @@ public sealed class VectorizedKernelTests
             reference[i] = (ushort)(random.Next(4) == 0 ? random.Next(2) * maxSample : random.Next(maxSample + 1));
         }
 
-        var intermediate = new int[Av1InterPredictor.MaxIntermediateHeight * 64];
+        var intermediate = new int[Av1InterPredictor.MaxIntermediateHeight * 128];
         for (var round = 0; round < 4000; round++)
         {
-            var w = 4 << random.Next(5);
+            var w = 4 << random.Next(6);
             var h = 2 << random.Next(6);
             var lastX = random.Next(8, Stride);
             var lastY = random.Next(8, Height);
@@ -6359,10 +6359,10 @@ public sealed class VectorizedKernelTests
                 1 => 11 - interRound0,
                 _ => 14 - interRound0,
             };
-            var expected = new int[h * 70];
-            var actual = new int[h * 70];
-            Av1InterPredictor.PredictBlockScalar(reference, Stride, lastX, lastY, x, y, 1024, 1024, w, h, horizontalFilter, verticalFilter, interRound0, interRound1, intermediate, expected, 70);
-            Av1InterPredictor.PredictBlock(reference, Stride, lastX, lastY, x, y, 1024, 1024, w, h, horizontalFilter, verticalFilter, interRound0, interRound1, intermediate, actual, 70);
+            var expected = new int[h * 130];
+            var actual = new int[h * 130];
+            Av1InterPredictor.PredictBlockScalar(reference, Stride, lastX, lastY, x, y, 1024, 1024, w, h, horizontalFilter, verticalFilter, interRound0, interRound1, intermediate, expected, 130);
+            Av1InterPredictor.PredictBlock(reference, Stride, lastX, lastY, x, y, 1024, 1024, w, h, horizontalFilter, verticalFilter, interRound0, interRound1, intermediate, actual, 130);
             Assert.True(expected.AsSpan().SequenceEqual(actual), $"Round {round}: {w}x{h} at ({x}, {y}), limits ({lastX}, {lastY}), filters {horizontalFilter}/{verticalFilter}.");
         }
     }

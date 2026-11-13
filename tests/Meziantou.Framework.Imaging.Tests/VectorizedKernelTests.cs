@@ -3285,6 +3285,50 @@ public sealed class VectorizedKernelTests
         };
     }
 
+    #region Similarity metrics
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ButteraugliMaltaLinesMatchTheScalarReference()
+    {
+        const int Rows = 3;
+        var random = new Random(20261112);
+        foreach (var lowFrequency in new[] { false, true })
+        {
+            foreach (var width in new[] { 1, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 47, 48, 64, 79 })
+            {
+                var stride = width + (2 * ButteraugliMalta.Padding);
+                var offsets = ButteraugliMalta.GetLineOffsets(lowFrequency, stride, out var lineEnds);
+
+                // The kernel does not need the margin to be zero: every sample is random
+                var diffs = Enumerable.Range(0, (Rows + (2 * ButteraugliMalta.Padding)) * stride).Select(_ => NextSimilarityValue(random)).ToArray();
+                var expected = Enumerable.Range(0, Rows * width).Select(_ => NextSimilarityValue(random)).ToArray();
+                var actual = (float[])expected.Clone();
+                for (var y = 0; y < Rows; y++)
+                {
+                    var center = ((y + ButteraugliMalta.Padding) * stride) + ButteraugliMalta.Padding;
+                    ButteraugliMalta.AddLinesScalar(diffs, expected.AsSpan(y * width, width), offsets, lineEnds, center);
+                    ButteraugliMalta.AddLines(diffs, actual.AsSpan(y * width, width), offsets, lineEnds, center);
+                }
+
+                Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+            }
+        }
+    }
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static float NextSimilarityValue(Random random) => random.Next(12) switch
+    {
+        0 => 0f,
+        1 => -0f,
+        2 => (float)(random.NextDouble() * 1e-38),
+        3 => (float)((random.NextDouble() - 0.5) * 1e30),
+        4 => random.Next(-3, 4),
+        _ => (float)((random.NextDouble() - 0.5) * random.Next(1, 200)),
+    };
+
+    #endregion
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingSourceOverOf8BitPixelsMatchesTheScalarReference()

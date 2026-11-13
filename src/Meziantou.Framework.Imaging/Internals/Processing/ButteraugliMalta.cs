@@ -1,3 +1,7 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -75,14 +79,36 @@ internal static class ButteraugliMalta
 
         // The differences of every row, then the lines through every pixel, which read the rows around it
         RowBands.For(lum0.Size, maxDegreeOfParallelism, (start, end) => ComputeDifferences(lum0.Span, lum1.Span, padded.Span, width, stride, norm1Float, norm2Gt1, norm2Lt1, start, end));
+        var offsets = GetLineOffsets(lowFrequency, stride, out var lineEnds);
+        RowBands.For(lum0.Size, maxDegreeOfParallelism, (start, end) =>
+        {
+            for (var y = start; y < end; y++)
+            {
+                AddLines(padded.Span, blockDiffAc.Span.Slice(y * width, width), offsets, lineEnds, (y + Padding) * stride + Padding);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Gets the offsets of the points of every line in a padded plane of <paramref name="stride"/> floats per row, line after
+    /// line: line <c>i</c> ends at <c>lineEnds[i]</c>.
+    /// </summary>
+    internal static int[] GetLineOffsets(bool lowFrequency, int stride, out int[] lineEnds)
+    {
         var lines = lowFrequency ? LowFrequencyLines : HighFrequencyLines;
-        var offsets = new int[lines.Length][];
+        var offsets = new List<int>();
+        lineEnds = new int[lines.Length];
         for (var i = 0; i < lines.Length; i++)
         {
-            offsets[i] = Array.ConvertAll(lines[i], point => point.Dy * stride + point.Dx);
+            foreach (var (dx, dy) in lines[i])
+            {
+                offsets.Add(dy * stride + dx);
+            }
+
+            lineEnds[i] = offsets.Count;
         }
 
-        RowBands.For(lum0.Size, maxDegreeOfParallelism, (start, end) => AddLines(padded.Span, blockDiffAc.Span, offsets, width, stride, start, end));
+        return [.. offsets];
     }
 
     private static void ComputeDifferences(ReadOnlySpan<float> plane0, ReadOnlySpan<float> plane1, Span<float> diffs, int width, int stride, float norm1Float, float norm2Gt1, float norm2Lt1, int start, int end)
@@ -134,28 +160,119 @@ internal static class ButteraugliMalta
         }
     }
 
-    private static void AddLines(ReadOnlySpan<float> diffs, Span<float> output, int[][] offsets, int width, int stride, int start, int end)
+    /// <summary>
+    /// Adds the Malta error of the pixels of a row to <paramref name="output"/>: <paramref name="center"/> is the index of the
+    /// first pixel of the row in <paramref name="diffs"/>. The vectors compute the pixels of consecutive columns with the
+    /// additions of <see cref="AddLinesScalar"/>, in the same order.
+    /// </summary>
+    internal static void AddLines(ReadOnlySpan<float> diffs, Span<float> output, ReadOnlySpan<int> offsets, ReadOnlySpan<int> lineEnds, int center)
     {
-        for (var y = start; y < end; y++)
+        var width = output.Length;
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated && width >= Vector128<float>.Count && lineEnds.Length > 0)
         {
-            var outputRow = output.Slice(y * width, width);
-            var center = (y + Padding) * stride + Padding;
-            for (var x = 0; x < width; x++)
+            // Every load reads inside the plane: the vectors cover the columns [0, width) only
+            var minOffset = int.MaxValue;
+            var maxOffset = int.MinValue;
+            var tapCount = lineEnds[^1];
+            foreach (var offset in offsets[..tapCount])
             {
-                var retval = 0f;
-                foreach (var line in offsets)
+                minOffset = Math.Min(minOffset, offset);
+                maxOffset = Math.Max(maxOffset, offset);
+            }
+
+            if (center + minOffset < 0 || (long)center + width - 1 + maxOffset >= diffs.Length)
+                throw new ArgumentOutOfRangeException(nameof(center));
+
+            ref var source = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(diffs), center));
+            ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+            ref var offset0 = ref unsafe(MemoryMarshal.GetReference(offsets));
+            if (Vector512.IsHardwareAccelerated)
+            {
+                for (; x + Vector512<float>.Count <= width; x += Vector512<float>.Count)
                 {
-                    var sum = 0f;
-                    foreach (var offset in line)
+                    ref var column = ref unsafe(Unsafe.Add(ref source, x));
+                    var retval = Vector512<float>.Zero;
+                    var t = 0;
+                    foreach (var lineEnd in lineEnds)
                     {
-                        sum += diffs[center + x + offset];
+                        var sum = Vector512<float>.Zero;
+                        for (; t < lineEnd; t++)
+                        {
+                            sum += unsafe(Vector512.LoadUnsafe(ref Unsafe.Add(ref column, Unsafe.Add(ref offset0, t))));
+                        }
+
+                        retval += sum * sum;
+                    }
+
+                    unsafe { (Vector512.LoadUnsafe(ref target, (nuint)x) + retval).StoreUnsafe(ref target, (nuint)x); }
+                }
+            }
+
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; x + Vector256<float>.Count <= width; x += Vector256<float>.Count)
+                {
+                    ref var column = ref unsafe(Unsafe.Add(ref source, x));
+                    var retval = Vector256<float>.Zero;
+                    var t = 0;
+                    foreach (var lineEnd in lineEnds)
+                    {
+                        var sum = Vector256<float>.Zero;
+                        for (; t < lineEnd; t++)
+                        {
+                            sum += unsafe(Vector256.LoadUnsafe(ref Unsafe.Add(ref column, Unsafe.Add(ref offset0, t))));
+                        }
+
+                        retval += sum * sum;
+                    }
+
+                    unsafe { (Vector256.LoadUnsafe(ref target, (nuint)x) + retval).StoreUnsafe(ref target, (nuint)x); }
+                }
+            }
+
+            for (; x + Vector128<float>.Count <= width; x += Vector128<float>.Count)
+            {
+                ref var column = ref unsafe(Unsafe.Add(ref source, x));
+                var retval = Vector128<float>.Zero;
+                var t = 0;
+                foreach (var lineEnd in lineEnds)
+                {
+                    var sum = Vector128<float>.Zero;
+                    for (; t < lineEnd; t++)
+                    {
+                        sum += unsafe(Vector128.LoadUnsafe(ref Unsafe.Add(ref column, Unsafe.Add(ref offset0, t))));
                     }
 
                     retval += sum * sum;
                 }
 
-                outputRow[x] += retval;
+                unsafe { (Vector128.LoadUnsafe(ref target, (nuint)x) + retval).StoreUnsafe(ref target, (nuint)x); }
             }
+        }
+
+        AddLinesScalar(diffs, output, offsets, lineEnds, center, x);
+    }
+
+    /// <summary>The scalar reference of <see cref="AddLines"/>, from column <paramref name="start"/>.</summary>
+    internal static void AddLinesScalar(ReadOnlySpan<float> diffs, Span<float> output, ReadOnlySpan<int> offsets, ReadOnlySpan<int> lineEnds, int center, int start = 0)
+    {
+        for (var x = start; x < output.Length; x++)
+        {
+            var retval = 0f;
+            var t = 0;
+            foreach (var lineEnd in lineEnds)
+            {
+                var sum = 0f;
+                for (; t < lineEnd; t++)
+                {
+                    sum += diffs[center + x + offsets[t]];
+                }
+
+                retval += sum * sum;
+            }
+
+            output[x] += retval;
         }
     }
 }

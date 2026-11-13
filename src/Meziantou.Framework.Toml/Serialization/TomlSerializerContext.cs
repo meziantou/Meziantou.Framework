@@ -101,8 +101,6 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
 
         if (type == typeof(Half)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<Half>(options, TomlHalfConverter.Instance);
 
-        if (type == typeof(System.Numerics.Complex)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<System.Numerics.Complex>(options, TomlComplexConverter.Instance);
-
 #if NET11_0_OR_GREATER
         if (type == typeof(System.Numerics.BFloat16)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<System.Numerics.BFloat16>(options, TomlBFloat16Converter.Instance);
         if (type == typeof(System.Numerics.Decimal32)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<System.Numerics.Decimal32>(options, TomlDecimalFloatingPointConverter.Decimal32);
@@ -516,24 +514,49 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
         return new TomlSourceGeneratedArrayTypeInfo<TElement>(context, options);
     }
 
+    /// <summary>
+    /// Creates metadata for a <see cref="System.Numerics.Complex"/>, written as an inline table with the keys <c>Real</c> and <c>Imaginary</c>, using source-generated resolution for the parts.
+    /// </summary>
+    /// <remarks>
+    /// This method avoids reflection-based metadata resolution, making it compatible with trimming and NativeAOT.
+    /// </remarks>
+    protected static TomlTypeInfo<System.Numerics.Complex> CreateSourceGeneratedComplexTypeInfo(TomlSerializerContext context, TomlSerializerOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        var resolvedOptions = options ?? context.Options;
+        return new TomlComplexTypeInfo<System.Numerics.Complex, double>(
+            resolvedOptions,
+            () => context.GetTypeInfo(typeof(double), resolvedOptions),
+            (real, imaginary) => new System.Numerics.Complex(real, imaginary),
+            value => value.Real,
+            value => value.Imaginary);
+    }
+
 #if NET11_0_OR_GREATER
     /// <summary>
-    /// Creates metadata for a <see cref="System.Numerics.Complex{T}"/>, written as an inline table with the keys <c>Real</c> and <c>Imaginary</c>.
+    /// Creates metadata for a <see cref="System.Numerics.Complex{T}"/>, written as an inline table with the keys <c>Real</c> and <c>Imaginary</c>, using source-generated resolution for the parts.
     /// </summary>
     /// <remarks>
     /// This method avoids reflection-based metadata resolution, making it compatible with trimming and NativeAOT.
     /// </remarks>
     /// <exception cref="TomlException"><typeparamref name="T"/> is not <see cref="double"/>, <see cref="float"/>, <see cref="Half"/>, <see cref="System.Numerics.BFloat16"/>, <see cref="System.Numerics.Decimal32"/>, <see cref="System.Numerics.Decimal64"/>, or <see cref="System.Numerics.Decimal128"/>.</exception>
-    protected static TomlTypeInfo<System.Numerics.Complex<T>> CreateSourceGeneratedComplexTypeInfo<T>(TomlSerializerOptions options)
+    protected static TomlTypeInfo<System.Numerics.Complex<T>> CreateSourceGeneratedComplexTypeInfo<T>(TomlSerializerContext context, TomlSerializerOptions? options = null)
         where T : struct, System.Numerics.IFloatingPointIeee754<T>, System.Numerics.IMinMaxValue<T>
     {
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(context);
+        if (!TomlComplexConverter.IsSupportedPartType(typeof(T)))
+        {
+            throw TomlException.CreateConfigurationError($"The type '{typeof(System.Numerics.Complex<T>).FullName}' is not supported: the parts of a complex number must be a floating-point type supported by TOML.");
+        }
 
-        var partConverter = TomlComplexConverter.GetPartConverter<T>()
-            ?? throw TomlException.CreateConfigurationError($"The type '{typeof(System.Numerics.Complex<T>).FullName}' is not supported: the parts of a complex number must be a floating-point type supported by TOML.");
-        return new TomlConverterTypeInfo<System.Numerics.Complex<T>>(options, new TomlComplexConverter<T>(partConverter));
+        var resolvedOptions = options ?? context.Options;
+        return new TomlComplexTypeInfo<System.Numerics.Complex<T>, T>(
+            resolvedOptions,
+            () => context.GetTypeInfo(typeof(T), resolvedOptions),
+            (real, imaginary) => new System.Numerics.Complex<T>(real, imaginary),
+            value => value.Real,
+            value => value.Imaginary);
     }
-
 #endif
     /// <summary>
     /// Creates metadata for a <see cref="List{T}"/> using source-generated resolution for nested elements.

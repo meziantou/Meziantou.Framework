@@ -114,10 +114,10 @@ The arguments are converted as [ToDotNet\<T\>](cref:Meziantou.Framework.JavaScri
 
 | .NET type | Argument | Result |
 | --- | --- | --- |
-| `bool`, `string`, the numeric types, `BigInteger`, `DateTimeOffset`, `DateTime`, and their nullable forms | yes | yes |
+| `bool`, `string`, the numeric types (including `Half`, and on .NET 11 `BFloat16`, `Decimal32`, `Decimal64` and `Decimal128`), `BigInteger`, `DateTimeOffset`, `DateTime`, and their nullable forms | yes | yes |
 | `object`, [JsValue](cref:Meziantou.Framework.JavaScriptEngine.JsValue), [JsObject](cref:Meziantou.Framework.JavaScriptEngine.JsObject) | yes | yes |
 | A class marked with `[JsExport]` | yes | yes |
-| `char`, `Half`, `JsonElement`, `JsonNode`, a class derived from [JsObject](cref:Meziantou.Framework.JavaScriptEngine.JsObject) | | yes |
+| `char`, `JsonElement`, `JsonNode`, a class derived from [JsObject](cref:Meziantou.Framework.JavaScriptEngine.JsObject) | | yes |
 | Arrays, collections and dictionaries with string keys of these types | | yes |
 | `void`, `Task`, `ValueTask` | | `undefined`, a promise |
 | `Task<T>`, `ValueTask<T>` | | a promise of the result |

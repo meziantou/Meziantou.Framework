@@ -40,7 +40,15 @@ internal static class TomlBuiltInTypeInfoResolver
 
         if (type == typeof(Half)) return new BuiltInTomlTypeInfo<Half>(options, TomlHalfConverter.Instance);
 
-        if (type == typeof(System.Numerics.Complex)) return new BuiltInTomlTypeInfo<System.Numerics.Complex>(options, TomlComplexConverter.Instance);
+        if (type == typeof(System.Numerics.Complex))
+        {
+            return new TomlComplexTypeInfo<System.Numerics.Complex, double>(
+                options,
+                () => TomlTypeInfoResolverPipeline.Resolve(options, typeof(double)),
+                (real, imaginary) => new System.Numerics.Complex(real, imaginary),
+                value => value.Real,
+                value => value.Imaginary);
+        }
 
 #if NET11_0_OR_GREATER
         if (type == typeof(System.Numerics.BFloat16)) return new BuiltInTomlTypeInfo<System.Numerics.BFloat16>(options, TomlBFloat16Converter.Instance);
@@ -90,11 +98,22 @@ internal static class TomlBuiltInTypeInfoResolver
 
 #if NET11_0_OR_GREATER
     // Null when the parts are not a floating-point type TOML supports, so the type is handled like any other struct
-    private static BuiltInTomlTypeInfo<System.Numerics.Complex<T>>? CreateComplexTypeInfo<T>(TomlSerializerOptions options)
+    [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]
+    [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
+    private static TomlComplexTypeInfo<System.Numerics.Complex<T>, T>? CreateComplexTypeInfo<T>(TomlSerializerOptions options)
         where T : struct, System.Numerics.IFloatingPointIeee754<T>, System.Numerics.IMinMaxValue<T>
     {
-        var partConverter = TomlComplexConverter.GetPartConverter<T>();
-        return partConverter is null ? null : new BuiltInTomlTypeInfo<System.Numerics.Complex<T>>(options, new TomlComplexConverter<T>(partConverter));
+        if (!TomlComplexConverter.IsSupportedPartType(typeof(T)))
+        {
+            return null;
+        }
+
+        return new TomlComplexTypeInfo<System.Numerics.Complex<T>, T>(
+            options,
+            () => TomlTypeInfoResolverPipeline.Resolve(options, typeof(T)),
+            (real, imaginary) => new System.Numerics.Complex<T>(real, imaginary),
+            value => value.Real,
+            value => value.Imaginary);
     }
 
 #endif

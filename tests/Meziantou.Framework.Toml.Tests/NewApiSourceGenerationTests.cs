@@ -3447,6 +3447,23 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
+    public void GeneratedContext_Complex_UsesTheRuntimeConverterOfTheParts()
+    {
+        var options = new TomlSerializerOptions
+        {
+            TypeInfoResolver = TestTomlSerializerContextNumerics.Default,
+            PropertyNamingPolicy = TomlNamingPolicy.CamelCase,
+            Converters = [new NewApiWellKnownScalarTypeParityTests.StringDoubleConverter()],
+        };
+        var payload = new GeneratedNumericsPayload { Complex = new System.Numerics.Complex(1.5, -2) };
+
+        var toml = TomlSerializer.Serialize(payload, options);
+
+        Assert.Contains("complex = {real = \"1.5\", imaginary = \"-2\"}", toml, StringComparison.Ordinal);
+        Assert.Equal(payload.Complex, TomlSerializer.Deserialize<GeneratedNumericsPayload>(toml, options)!.Complex);
+    }
+
+    [Fact]
     public void GeneratedContext_CanDeserializePoco()
     {
         var context = TestTomlSerializerContext.Default;

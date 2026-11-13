@@ -437,12 +437,40 @@ public sealed class YamlCollectionConverterTests
 
         // The names follow the naming policy; a missing part is zero, and an unknown entry (such as the Magnitude and the
         // Phase that the object converter wrote) is skipped
-        var camelCase = Serialize(new System.Numerics.Complex(3, 4), useSourceGeneration, static options => options with { PropertyNamingPolicy = YamlNamingPolicy.CamelCase });
+        var camelCase = Serialize(new System.Numerics.Complex(3, 4), useSourceGeneration, options => options with { PropertyNamingPolicy = YamlNamingPolicy.CamelCase });
         Assert.Equal("real: 3.0\nimaginary: 4.0\n", camelCase, ignoreLineEndingDifferences: true);
         Assert.Equal(new System.Numerics.Complex(3, 4), Deserialize<System.Numerics.Complex>("Real: 3\nImaginary: 4\nMagnitude: 5\nPhase: 0.93\n", useSourceGeneration));
-        Assert.Equal(new System.Numerics.Complex(0, 2), Deserialize<System.Numerics.Complex>("IMAGINARY: 2\n", useSourceGeneration, static options => options with { PropertyNameCaseInsensitive = true }));
+        Assert.Equal(new System.Numerics.Complex(0, 2), Deserialize<System.Numerics.Complex>("IMAGINARY: 2\n", useSourceGeneration, options => options with { PropertyNameCaseInsensitive = true }));
         Assert.Throws<YamlException>(() => Deserialize<System.Numerics.Complex>("1.5\n", useSourceGeneration));
         Assert.Throws<YamlException>(() => Deserialize<System.Numerics.Complex>("Real: abc\n", useSourceGeneration));
+    }
+
+    [Fact]
+    public void Complex_UsesTheConverterOfThePartsOfEachOptions()
+    {
+        var value = new System.Numerics.Complex(1.5, -2);
+        var customOptions = new YamlSerializerOptions { Converters = [new PrefixedDoubleConverter()] };
+
+        // The converter of Complex is shared, so the converter of its parts must come from the options of each call
+        Assert.Equal("Real: 1.5\nImaginary: -2.0\n", YamlSerializer.Serialize(value), ignoreLineEndingDifferences: true);
+        Assert.Equal("Real: x1.5\nImaginary: x-2\n", YamlSerializer.Serialize(value, customOptions), ignoreLineEndingDifferences: true);
+        Assert.Equal("Real: 1.5\nImaginary: -2.0\n", YamlSerializer.Serialize(value), ignoreLineEndingDifferences: true);
+        Assert.Equal(value, YamlSerializer.Deserialize<System.Numerics.Complex>("Real: x1.5\nImaginary: x-2\n", customOptions));
+    }
+
+    private sealed class PrefixedDoubleConverter : YamlConverter<double>
+    {
+        public override double Read(YamlReader reader)
+        {
+            var scalar = reader.GetScalarValue();
+            reader.Read();
+            return double.Parse(scalar.AsSpan(1), CultureInfo.InvariantCulture);
+        }
+
+        public override void Write(YamlWriter writer, double value)
+        {
+            writer.WriteScalar("x" + value.ToString(CultureInfo.InvariantCulture));
+        }
     }
 
     [Theory]

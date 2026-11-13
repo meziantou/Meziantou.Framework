@@ -33,6 +33,23 @@ internal static class GeoPropertyValue
 #endif
     }
 
+    /// <summary>Gets the text of a finite Decimal32, Decimal64 or Decimal128, which keeps every digit of the value.</summary>
+    public static bool TryGetFiniteDecimalFloatingPointText(object? value, [NotNullWhen(true)] out string? text)
+    {
+#if NET11_0_OR_GREATER
+        text = value switch
+        {
+            System.Numerics.Decimal32 d32 when System.Numerics.Decimal32.IsFinite(d32) => d32.ToString(format: null, CultureInfo.InvariantCulture),
+            System.Numerics.Decimal64 d64 when System.Numerics.Decimal64.IsFinite(d64) => d64.ToString(format: null, CultureInfo.InvariantCulture),
+            System.Numerics.Decimal128 d128 when System.Numerics.Decimal128.IsFinite(d128) => d128.ToString(format: null, CultureInfo.InvariantCulture),
+            _ => null,
+        };
+#else
+        text = null;
+#endif
+        return text is not null;
+    }
+
     /// <summary>Gets whether the value is a binary floating-point number.</summary>
     public static bool IsBinaryFloatingPointNumber(object? value)
     {

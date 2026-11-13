@@ -1,37 +1,20 @@
 using System.Numerics;
-using Meziantou.Framework.Toml.Serialization.Internal;
 
 namespace Meziantou.Framework.Toml.Serialization.Converters;
 
-// A complex number is an inline table with the keys Real and Imaginary (converted by the property naming policy)
-internal sealed class TomlComplexConverter : TomlConverter<Complex>
+// A complex number is an inline table with the keys Real and Imaginary (converted by the property naming policy). The
+// parts are read and written by the metadata of their type, so a converter registered for the part type applies.
+internal static class TomlComplexConverter
 {
-    public static TomlComplexConverter Instance { get; } = new();
-
-    public override Complex Read(TomlReader reader)
-    {
-        var (real, imaginary) = Read(reader, TomlDoubleConverter.Instance, typeof(Complex));
-        return new Complex(real, imaginary);
-    }
-
-    public override void Write(TomlWriter writer, Complex value) => Write(writer, value.Real, value.Imaginary, TomlDoubleConverter.Instance);
-
 #if NET11_0_OR_GREATER
-    // The converter of the parts of a Complex<T>, or null when T is not a floating-point type that TOML supports
-    internal static TomlConverter<T>? GetPartConverter<T>()
-    {
-        if (typeof(T) == typeof(double)) return (TomlConverter<T>)(object)TomlDoubleConverter.Instance;
-        if (typeof(T) == typeof(float)) return (TomlConverter<T>)(object)TomlSingleConverter.Instance;
-        if (typeof(T) == typeof(Half)) return (TomlConverter<T>)(object)TomlHalfConverter.Instance;
-        if (typeof(T) == typeof(BFloat16)) return (TomlConverter<T>)(object)TomlBFloat16Converter.Instance;
-        if (typeof(T) == typeof(Decimal32)) return (TomlConverter<T>)(object)TomlDecimalFloatingPointConverter.Decimal32;
-        if (typeof(T) == typeof(Decimal64)) return (TomlConverter<T>)(object)TomlDecimalFloatingPointConverter.Decimal64;
-        if (typeof(T) == typeof(Decimal128)) return (TomlConverter<T>)(object)TomlDecimalFloatingPointConverter.Decimal128;
-        return null;
-    }
+    // The parts of a Complex<T> that TOML supports; the source generator matches the same types. Other parts, such as
+    // NFloat, have no TOML representation, so the type is handled like any other struct.
+    internal static bool IsSupportedPartType(Type type) =>
+        type == typeof(double) || type == typeof(float) || type == typeof(Half) || type == typeof(BFloat16) ||
+        type == typeof(Decimal32) || type == typeof(Decimal64) || type == typeof(Decimal128);
 #endif
 
-    internal static (TPart Real, TPart Imaginary) Read<TPart>(TomlReader reader, TomlConverter<TPart> partConverter, Type complexType)
+    internal static (TPart Real, TPart Imaginary) Read<TPart>(TomlReader reader, TomlTypeInfo partTypeInfo, Type complexType)
         where TPart : struct
     {
         if (reader.TokenType != TomlTokenType.StartTable)
@@ -58,11 +41,11 @@ internal sealed class TomlComplexConverter : TomlConverter<Complex>
             reader.Read();
             if (string.Equals(name, realName, comparison))
             {
-                real = TomlConverterHelper.Read(reader, partConverter);
+                real = ReadPart<TPart>(reader, partTypeInfo);
             }
             else if (string.Equals(name, imaginaryName, comparison))
             {
-                imaginary = TomlConverterHelper.Read(reader, partConverter);
+                imaginary = ReadPart<TPart>(reader, partTypeInfo);
             }
             else
             {
@@ -79,37 +62,35 @@ internal sealed class TomlComplexConverter : TomlConverter<Complex>
         return (real, imaginary);
     }
 
-    internal static void Write<TPart>(TomlWriter writer, TPart real, TPart imaginary, TomlConverter<TPart> partConverter)
+    internal static void Write<TPart>(TomlWriter writer, TPart real, TPart imaginary, TomlTypeInfo partTypeInfo)
     {
         var options = writer.Options;
         writer.WriteStartInlineTable();
         writer.WritePropertyName(ConvertName(options, nameof(Complex.Real)));
-        partConverter.Write(writer, real);
+        WritePart(writer, real, partTypeInfo);
         writer.WritePropertyName(ConvertName(options, nameof(Complex.Imaginary)));
-        partConverter.Write(writer, imaginary);
+        WritePart(writer, imaginary, partTypeInfo);
         writer.WriteEndInlineTable();
+    }
+
+    private static TPart ReadPart<TPart>(TomlReader reader, TomlTypeInfo partTypeInfo)
+        where TPart : struct
+    {
+        var value = partTypeInfo is TomlTypeInfo<TPart> typed ? typed.Read(reader) : partTypeInfo.ReadAsObject(reader);
+        return value is TPart part ? part : throw reader.CreateException($"The TOML value cannot be converted to '{typeof(TPart).FullName}'.");
+    }
+
+    private static void WritePart<TPart>(TomlWriter writer, TPart value, TomlTypeInfo partTypeInfo)
+    {
+        if (partTypeInfo is TomlTypeInfo<TPart> typed)
+        {
+            typed.Write(writer, value);
+        }
+        else
+        {
+            partTypeInfo.Write(writer, value);
+        }
     }
 
     private static string ConvertName(TomlSerializerOptions options, string name) => options.PropertyNamingPolicy?.ConvertName(name) ?? name;
 }
-
-#if NET11_0_OR_GREATER
-internal sealed class TomlComplexConverter<T> : TomlConverter<Complex<T>>
-    where T : struct, IFloatingPointIeee754<T>, IMinMaxValue<T>
-{
-    private readonly TomlConverter<T> _partConverter;
-
-    public TomlComplexConverter(TomlConverter<T> partConverter)
-    {
-        _partConverter = partConverter;
-    }
-
-    public override Complex<T> Read(TomlReader reader)
-    {
-        var (real, imaginary) = TomlComplexConverter.Read(reader, _partConverter, typeof(Complex<T>));
-        return new Complex<T>(real, imaginary);
-    }
-
-    public override void Write(TomlWriter writer, Complex<T> value) => TomlComplexConverter.Write(writer, value.Real, value.Imaginary, _partConverter);
-}
-#endif

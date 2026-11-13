@@ -142,7 +142,8 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
                 TomlInt128Converter.Instance.Write(writer, i128);
                 return;
             case System.Numerics.Complex complex:
-                TomlComplexConverter.Instance.Write(writer, complex);
+                // Like the other numbers of an untyped value, the parts are written by the built-in converter
+                TomlComplexConverter.Write(writer, complex.Real, complex.Imaginary, new TomlConverterTypeInfo<double>(writer.Options, TomlDoubleConverter.Instance));
                 return;
 #if NET11_0_OR_GREATER
             case System.Numerics.BFloat16 bfloat16:

@@ -129,12 +129,15 @@ public sealed class GeoJsonTests
             ["decimal64"] = System.Numerics.Decimal64.Parse("1E+20", CultureInfo.InvariantCulture),
             ["decimal128"] = System.Numerics.Decimal128.Parse("0.1000000000000000000000000000000001", CultureInfo.InvariantCulture),
             ["nan"] = System.Numerics.Decimal64.NaN,
+            ["large"] = System.Numerics.Decimal128.Parse("1E+400", CultureInfo.InvariantCulture),
         };
 
         var json = GeoJson.Format([new GeoFeature(geometry: null, properties)]);
 
-        Assert.Equal("""{"type":"FeatureCollection","features":[{"type":"Feature","geometry":null,"properties":{"bfloat16":0.5,"decimal32":1.10,"decimal64":1E+20,"decimal128":0.1000000000000000000000000000000001,"nan":null}}]}""", json);
-        Assert.Equal(1e20, GeoJson.Parse(json)[0].Properties["decimal64"]);
+        Assert.Equal("""{"type":"FeatureCollection","features":[{"type":"Feature","geometry":null,"properties":{"bfloat16":0.5,"decimal32":1.10,"decimal64":1E+20,"decimal128":0.1000000000000000000000000000000001,"nan":null,"large":1E+400}}]}""", json);
+        var read = GeoJson.Parse(json)[0].Properties;
+        Assert.Equal(1e20, read["decimal64"]);
+        Assert.Equal(double.PositiveInfinity, read["large"]);
     }
 #endif
 

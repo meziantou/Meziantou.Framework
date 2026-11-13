@@ -187,6 +187,17 @@ public sealed class NewApiWellKnownScalarTypeParityTests
     }
 
     [Fact]
+    public void Serialize_Complex_UsesTheConverterOfTheParts()
+    {
+        var options = new TomlSerializerOptions { Converters = [new StringDoubleConverter()] };
+
+        var toml = TomlSerializer.Serialize(new ComplexPayload { Value = new Complex(1.5, -2) }, options);
+
+        Assert.Equal("Value = {Real = \"1.5\", Imaginary = \"-2\"}" + Environment.NewLine, toml);
+        Assert.Equal(new Complex(1.5, -2), TomlSerializer.Deserialize<ComplexPayload>(toml, options)!.Value);
+    }
+
+    [Fact]
     public void Serialize_Complex_Root()
     {
         var toml = TomlSerializer.Serialize(new Complex(1, 2));
@@ -391,4 +402,16 @@ public sealed class NewApiWellKnownScalarTypeParityTests
             """.ReplaceLineEndings(), toml);
     }
 #endif
+
+    internal sealed class StringDoubleConverter : Serialization.TomlConverter<double>
+    {
+        public override double Read(Serialization.TomlReader reader)
+        {
+            var value = double.Parse(reader.GetString(), CultureInfo.InvariantCulture);
+            reader.Read();
+            return value;
+        }
+
+        public override void Write(Serialization.TomlWriter writer, double value) => writer.WriteStringValue(value.ToString(CultureInfo.InvariantCulture));
+    }
 }

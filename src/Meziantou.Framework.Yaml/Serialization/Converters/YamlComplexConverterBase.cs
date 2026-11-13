@@ -13,8 +13,6 @@ internal abstract class YamlComplexConverterBase<TComplex, TPart> : YamlConverte
     where TComplex : struct
     where TPart : struct
 {
-    private YamlConverter? _partConverter;
-
     protected abstract TComplex Create(TPart real, TPart imaginary);
 
     protected abstract TPart GetReal(TComplex value);
@@ -39,11 +37,12 @@ internal abstract class YamlComplexConverterBase<TComplex, TPart> : YamlConverte
             throw YamlThrowHelper.ThrowExpectedMapping(reader);
         }
 
-        _partConverter ??= reader.GetConverter(typeof(TPart));
+        // The converter of the parts depends on the options of the operation, and this converter is shared by every options
+        var partConverter = reader.GetConverter(typeof(TPart));
         var anchor = reader.Anchor;
         var comparison = reader.Options.PropertyNameCaseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        var realName = reader.ConvertName("Real");
-        var imaginaryName = reader.ConvertName("Imaginary");
+        var realName = reader.ConvertName(nameof(System.Numerics.Complex.Real));
+        var imaginaryName = reader.ConvertName(nameof(System.Numerics.Complex.Imaginary));
         var real = default(TPart);
         var imaginary = default(TPart);
         reader.Read();
@@ -58,11 +57,11 @@ internal abstract class YamlComplexConverterBase<TComplex, TPart> : YamlConverte
             reader.Read();
             if (string.Equals(name, realName, comparison))
             {
-                real = (TPart)_partConverter.Read(reader, typeof(TPart))!;
+                real = (TPart)partConverter.Read(reader, typeof(TPart))!;
             }
             else if (string.Equals(name, imaginaryName, comparison))
             {
-                imaginary = (TPart)_partConverter.Read(reader, typeof(TPart))!;
+                imaginary = (TPart)partConverter.Read(reader, typeof(TPart))!;
             }
             else
             {
@@ -82,12 +81,12 @@ internal abstract class YamlComplexConverterBase<TComplex, TPart> : YamlConverte
 
     public override void Write(YamlWriter writer, TComplex value)
     {
-        _partConverter ??= writer.GetConverter(typeof(TPart));
+        var partConverter = writer.GetConverter(typeof(TPart));
         writer.WriteStartMapping();
-        writer.WritePropertyName(writer.ConvertName("Real"));
-        _partConverter.Write(writer, GetReal(value));
-        writer.WritePropertyName(writer.ConvertName("Imaginary"));
-        _partConverter.Write(writer, GetImaginary(value));
+        writer.WritePropertyName(writer.ConvertName(nameof(System.Numerics.Complex.Real)));
+        partConverter.Write(writer, GetReal(value));
+        writer.WritePropertyName(writer.ConvertName(nameof(System.Numerics.Complex.Imaginary)));
+        partConverter.Write(writer, GetImaginary(value));
         writer.WriteEndMapping();
     }
 }

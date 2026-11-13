@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.PublicApiGenerator.Fuzz" />
+    <InternalsVisibleTo Include="Meziantou.Framework.PublicApiGenerator.Tests" />
   </ItemGroup>
 
 </Project>

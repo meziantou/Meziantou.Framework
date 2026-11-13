@@ -341,7 +341,7 @@ internal static class FuzzOracle
         ImageEncoder[] encoders = format switch
         {
             ImageFormat.Png => [new PngEncoder { CompressionLevel = System.IO.Compression.CompressionLevel.Fastest, Interlaced = (variant & 16) != 0 }, new PngEncoder { MetadataHandling = MetadataHandling.Strip }],
-            ImageFormat.Gif => [new GifEncoder { Interlaced = (variant & 16) != 0 }, new GifEncoder { MetadataHandling = MetadataHandling.Strip }],
+            ImageFormat.Gif => [new GifEncoder { Interlaced = (variant & 16) != 0, OptimizeFrames = (variant & 32) != 0, Quantization = new QuantizeOptions { Dithering = (variant & 64) != 0 ? DitheringMode.FloydSteinberg : DitheringMode.None } }, new GifEncoder { MetadataHandling = MetadataHandling.Strip }],
 
             // Either process; the 16-bit pixels of a 12-bit file are reduced to the 8 bits the encoder writes
             _ => [new JpegEncoder { Quality = 1 + (variant % 100), Process = (variant & 16) != 0 ? JpegEncodingProcess.Progressive : JpegEncodingProcess.Baseline, AllowBitDepthReduction = true }, new JpegEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true }],
@@ -435,6 +435,21 @@ internal static class FuzzOracle
         image.ApplyLut(Lut, (variant & 32) != 0 ? LutInterpolation.Trilinear : LutInterpolation.Tetrahedral);
         if (image.Size != size || image.PixelFormat != pixelFormat)
             return $"selection-filters: the {size} {pixelFormat} image became {image.Size} {image.PixelFormat}";
+
+        // Color reduction (translucent colors included) with every dithering, which keeps the geometry and the pixel format.
+        // Floating-point samples that the convolution moved outside [0, 1] are refused (documented)
+        var modes = Enum.GetValues<DitheringMode>();
+        var (quantizedSize, quantizedFormat) = (image.Size, image.PixelFormat);
+        try
+        {
+            image.Quantize(new QuantizeOptions { MaxColors = 2 + (variant % 255), Dithering = modes[(variant >> 3) % modes.Length] });
+        }
+        catch (UnsupportedImageFeatureException) when (PixelFormats.IsFloatingPoint(quantizedFormat))
+        {
+        }
+
+        if (image.Size != quantizedSize || image.PixelFormat != quantizedFormat)
+            return $"quantize: the {quantizedSize} {quantizedFormat} image became {image.Size} {image.PixelFormat}";
 
         image.Grayscale();
 

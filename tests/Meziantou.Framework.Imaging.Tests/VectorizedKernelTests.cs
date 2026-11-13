@@ -3316,6 +3316,49 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ButteraugliBlursMatchTheTransposingScalarReference()
+    {
+        // The sigmas of ButteraugliCalculator: kernels of 5 (separable), 7, 13, 15 and 33 taps
+        float[] sigmas = [1.2f, 1.56416327805f, 2.7f, 3.22489901262f, 7.15593339443f];
+        int[] sizes = [1, 2, 3, 5, 6, 8, 13, 16, 17, 31, 33, 34, 40, 71];
+        var random = new Random(20261113);
+        var scope = AllocationScope.Create(configuration: null);
+        using var arena = new FloatPlaneArena(scope);
+        foreach (var sigma in sigmas)
+        {
+            foreach (var width in sizes)
+            {
+                foreach (var height in sizes)
+                {
+                    if (width * height > 1000 && random.Next(3) != 0)
+                        continue;
+
+                    var input = arena.Rent(width, height);
+                    for (var i = 0; i < input.Span.Length; i++)
+                    {
+                        input.Span[i] = NextSimilarityValue(random);
+                    }
+
+                    // Into another plane (the separable kernel for 5 taps), then in place
+                    var expected = arena.Rent(width, height);
+                    var actual = arena.Rent(width, height);
+                    ButteraugliBlur.BlurScalar(arena, input, sigma, expected, maxDegreeOfParallelism: 1);
+                    ButteraugliBlur.Blur(arena, input, sigma, actual, maxDegreeOfParallelism: 1);
+                    Assert.Equal(Array.ConvertAll(expected.Span.ToArray(), BitConverter.SingleToInt32Bits), Array.ConvertAll(actual.Span.ToArray(), BitConverter.SingleToInt32Bits));
+
+                    input.Span.CopyTo(expected.Span);
+                    input.Span.CopyTo(actual.Span);
+                    ButteraugliBlur.BlurScalar(arena, expected, sigma, expected, maxDegreeOfParallelism: 1);
+                    ButteraugliBlur.Blur(arena, actual, sigma, actual, maxDegreeOfParallelism: 1);
+                    Assert.Equal(Array.ConvertAll(expected.Span.ToArray(), BitConverter.SingleToInt32Bits), Array.ConvertAll(actual.Span.ToArray(), BitConverter.SingleToInt32Bits));
+                    arena.Release([input, expected, actual]);
+                }
+            }
+        }
+    }
+
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     private static float NextSimilarityValue(Random random) => random.Next(12) switch
     {

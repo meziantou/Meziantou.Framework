@@ -256,7 +256,11 @@ public class CssWriter
                 break;
 
             default:
-                var merged = new List<CssDeclarationEntry>();
+                // As the parser (CssStyleDeclaration.AddDeclaration), a declaration replaces the previous declaration of its property
+                // and moves it to the end of the block, unless the previous one is important and it is not. The position of the
+                // declaration kept for each property is tracked in a dictionary: searching the list for each one is quadratic
+                var kept = new Dictionary<string, (CssDeclarationEntry Declaration, int Position)>(StringComparer.Ordinal);
+                var position = 0;
                 foreach (var source in pending)
                 {
                     var declarations = source switch
@@ -268,8 +272,17 @@ public class CssWriter
 
                     foreach (var declaration in declarations)
                     {
-                        CssStyleDeclaration.AddDeclaration(merged, declaration);
+                        if (kept.TryGetValue(declaration.Name, out var previous) && previous.Declaration.Important && !declaration.Important)
+                            continue;
+
+                        kept[declaration.Name] = (declaration, position++);
                     }
+                }
+
+                var merged = new List<CssDeclarationEntry>(kept.Count);
+                foreach (var (declaration, _) in kept.Values.OrderBy(value => value.Position))
+                {
+                    merged.Add(declaration);
                 }
 
                 foreach (var declaration in GetDeclarationsToWrite(CssStyleDeclaration.GetSerializedDeclarations(merged)))

@@ -1150,6 +1150,41 @@ internal sealed class FilterProcessor : IDisposable
             throw new ArgumentException("The lines must have the length of the sums.", nameof(sums));
 
         var i = 0;
+        if (Vector256.IsHardwareAccelerated)
+        {
+            var divisor = Vector256.Create((double)size);
+            ref var sum = ref unsafe(MemoryMarshal.GetReference(sums));
+            for (; i + 8 <= count; i += 8)
+            {
+                var low = unsafe(Vector256.LoadUnsafe(ref sum, (nuint)i));
+                var high = unsafe(Vector256.LoadUnsafe(ref sum, (nuint)(i + 4)));
+                if (hasOutput)
+                {
+                    unsafe { Vector256.Narrow(low / divisor, high / divisor).StoreUnsafe(ref MemoryMarshal.GetReference(output), (nuint)i); }
+                }
+
+                if (hasEntering)
+                {
+                    var value = unsafe(Vector256.LoadUnsafe(ref MemoryMarshal.GetReference(entering), (nuint)i));
+                    low += Vector256.WidenLower(value);
+                    high += Vector256.WidenUpper(value);
+                }
+
+                if (hasLeaving)
+                {
+                    var value = unsafe(Vector256.LoadUnsafe(ref MemoryMarshal.GetReference(leaving), (nuint)i));
+                    low -= Vector256.WidenLower(value);
+                    high -= Vector256.WidenUpper(value);
+                }
+
+                unsafe
+                {
+                    low.StoreUnsafe(ref sum, (nuint)i);
+                    high.StoreUnsafe(ref sum, (nuint)(i + 4));
+                }
+            }
+        }
+
         if (Vector128.IsHardwareAccelerated)
         {
             var divisor = Vector128.Create((double)size);
@@ -1226,6 +1261,51 @@ internal sealed class FilterProcessor : IDisposable
 
         weights = weights[..rows.Length];
         var i = 0;
+        if (Vector256.IsHardwareAccelerated)
+        {
+            ref var source = ref unsafe(MemoryMarshal.GetReference(lines));
+            ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+            for (; i + 16 <= count; i += 16)
+            {
+                var sum0 = Vector256<double>.Zero;
+                var sum1 = Vector256<double>.Zero;
+                var sum2 = Vector256<double>.Zero;
+                var sum3 = Vector256<double>.Zero;
+                for (var row = 0; row < rows.Length; row++)
+                {
+                    var weight = Vector256.Create(weights[row]);
+                    var offset = (nuint)(rows[row] + i);
+                    var first = unsafe(Vector256.LoadUnsafe(ref source, offset));
+                    var second = unsafe(Vector256.LoadUnsafe(ref source, offset + 8));
+                    sum0 += weight * Vector256.WidenLower(first);
+                    sum1 += weight * Vector256.WidenUpper(first);
+                    sum2 += weight * Vector256.WidenLower(second);
+                    sum3 += weight * Vector256.WidenUpper(second);
+                }
+
+                unsafe
+                {
+                    Vector256.Narrow(sum0, sum1).StoreUnsafe(ref target, (nuint)i);
+                    Vector256.Narrow(sum2, sum3).StoreUnsafe(ref target, (nuint)(i + 8));
+                }
+            }
+
+            for (; i + 8 <= count; i += 8)
+            {
+                var sum0 = Vector256<double>.Zero;
+                var sum1 = Vector256<double>.Zero;
+                for (var row = 0; row < rows.Length; row++)
+                {
+                    var weight = Vector256.Create(weights[row]);
+                    var value = unsafe(Vector256.LoadUnsafe(ref source, (nuint)(rows[row] + i)));
+                    sum0 += weight * Vector256.WidenLower(value);
+                    sum1 += weight * Vector256.WidenUpper(value);
+                }
+
+                unsafe { Vector256.Narrow(sum0, sum1).StoreUnsafe(ref target, (nuint)i); }
+            }
+        }
+
         if (Vector128.IsHardwareAccelerated)
         {
             ref var source = ref unsafe(MemoryMarshal.GetReference(lines));

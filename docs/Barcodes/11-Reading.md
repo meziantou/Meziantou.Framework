@@ -1,6 +1,6 @@
 ---
 title: Reading
-description: Read the data of QR codes, Micro QR codes and rMQR codes from their modules, with error correction and structured append.
+description: Read the data of QR codes, Data Matrix, PDF417 and Aztec symbols from their modules, with error correction.
 ---
 
 [QRCodeDecoder](cref:Meziantou.Framework.Barcodes.QRCodeDecoder) reads the data of a QR code from its modules: it reads
@@ -96,5 +96,52 @@ var symbols = QRCode.CreateStructuredAppend(text, ErrorCorrectionLevel.M, new QR
 var results = symbols.Reverse().Select(QRCodeDecoder.Decode).ToList();
 
 Assert.Equal(text, QRCodeDecoder.MergeStructuredAppend(results));
+```
+<!-- endref -->
+
+## Data Matrix, PDF417 and Aztec
+
+[Barcode2DDecoder](cref:Meziantou.Framework.Barcodes.Barcode2DDecoder) reads Data Matrix (ECC 200), PDF417 and Aztec
+symbols. Pass the modules and the type of the symbol: the decoder finds the orientation of a Data Matrix or Aztec symbol
+from its finder pattern, mirrored included, and reads the rows of a PDF417 symbol from either side. A row of a PDF417
+symbol can span several rows of the matrix.
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/DataMatrixTests.cs;region=Barcode2DDecoder_Decode;format=md-fenced-code-block;dedent=true -->
+```csharp
+var dataMatrix = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+
+var result = Barcode2DDecoder.Decode(dataMatrix);
+
+Assert.Equal("https://www.meziantou.net", result.Text);
+Assert.Equal(Barcode2DType.DataMatrix, result.Type);
+```
+<!-- endref -->
+
+[Barcode2DDecodeResult](cref:Meziantou.Framework.Barcodes.Barcode2DDecodeResult) gives the
+[Text](cref:Meziantou.Framework.Barcodes.Barcode2DDecodeResult.Text), the raw
+[Bytes](cref:Meziantou.Framework.Barcodes.Barcode2DDecodeResult.Bytes), the
+[EciAssignmentNumber](cref:Meziantou.Framework.Barcodes.Barcode2DDecodeResult.EciAssignmentNumber) of the first ECI
+designator, and the [CorrectedErrorCount](cref:Meziantou.Framework.Barcodes.Barcode2DDecodeResult.CorrectedErrorCount).
+The bytes are decoded as for QR codes: with the character set of their ECI designator, or as UTF-8 when they are valid
+UTF-8, and as ISO/IEC 8859-1 otherwise.
+
+A Data Matrix symbol that starts with a FNC1 character holds GS1 element strings:
+[IsGs1](cref:Meziantou.Framework.Barcodes.Barcode2DDecodeResult.IsGs1) is `true`, and the text is the human-readable
+interpretation, each application identifier in parentheses. The bytes keep the element strings, with a GS character for
+each FNC1 separator.
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/DataMatrixTests.cs;region=Barcode2DDecoder_DecodeGs1;format=md-fenced-code-block;dedent=true -->
+```csharp
+var gs1 = Barcode2D.CreateGs1DataMatrix(
+    new Gs1Element("01", "09521234543213"),
+    new Gs1Element("10", "ABC123"),
+    new Gs1Element("21", "XYZ"));
+
+var result = Barcode2DDecoder.Decode(gs1);
+
+// The human-readable interpretation, and the bytes with a GS character for each FNC1 separator
+Assert.True(result.IsGs1);
+Assert.Equal("(01)09521234543213(10)ABC123(21)XYZ", result.Text);
+Assert.Equal("010952123454321310ABC123\u001D21XYZ"u8.ToArray(), result.Bytes.ToArray());
 ```
 <!-- endref -->

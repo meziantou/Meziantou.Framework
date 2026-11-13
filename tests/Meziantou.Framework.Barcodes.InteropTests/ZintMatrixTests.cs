@@ -246,6 +246,57 @@ public sealed class ZintMatrixTests
         Assert.Contains(eci, result.Segments.Select(segment => segment.EciAssignmentNumber ?? -1).ToArray());
     }
 
+    public static TheoryData<Barcode2DType, string, string, string> ZintBarcodes2D() => new()
+    {
+        { Barcode2DType.DataMatrix, "", "Hello", "Hello" },
+        { Barcode2DType.DataMatrix, "", "HELLO WORLD 12345", "HELLO WORLD 12345" },
+        { Barcode2DType.DataMatrix, "", "hello world, lowercase", "hello world, lowercase" },
+        { Barcode2DType.DataMatrix, "", "*ABC>123*XYZ>456*", "*ABC>123*XYZ>456*" },
+        { Barcode2DType.DataMatrix, "", "@ABC^_@DEF^_@GHI", "@ABC^_@DEF^_@GHI" },
+        { Barcode2DType.DataMatrix, "", "01234567890123456789012345678901", "01234567890123456789012345678901" },
+        { Barcode2DType.DataMatrix, "", "héllo wörld", "héllo wörld" },
+        { Barcode2DType.DataMatrix, "--eci=26", "Ελληνικά 漢字", "Ελληνικά 漢字" },
+        { Barcode2DType.DataMatrix, "--square", string.Concat(Enumerable.Repeat("Large Data Matrix symbol 0123456789 ", 30)), string.Concat(Enumerable.Repeat("Large Data Matrix symbol 0123456789 ", 30)) },
+        { Barcode2DType.DataMatrix, "--gs1 --gs1nocheck", "[01]09521234543213[17]250101[10]ABC123[21]XYZ", "(01)09521234543213(17)250101(10)ABC123(21)XYZ" },
+        { Barcode2DType.Pdf417, "", "Hello, World!", "Hello, World!" },
+        { Barcode2DType.Pdf417, "", "Invoice 1234567890123456789 total 99.95", "Invoice 1234567890123456789 total 99.95" },
+        { Barcode2DType.Pdf417, "", "Mixed Text 123 & more ; < > @ [] {}", "Mixed Text 123 & more ; < > @ [] {}" },
+        { Barcode2DType.Pdf417, "", "héllo wörld", "héllo wörld" },
+        { Barcode2DType.Pdf417, "--eci=26", "Ελληνικά 漢字", "Ελληνικά 漢字" },
+        { Barcode2DType.Pdf417, "--cols=12 --secure=6", string.Concat(Enumerable.Repeat("PDF417 0123456789 ", 20)), string.Concat(Enumerable.Repeat("PDF417 0123456789 ", 20)) },
+        { Barcode2DType.Aztec, "", "Hello, World!", "Hello, World!" },
+        { Barcode2DType.Aztec, "", "0123456789, 3.14", "0123456789, 3.14" },
+        { Barcode2DType.Aztec, "", "Aztec ABC abc 123 !? @^_", "Aztec ABC abc 123 !? @^_" },
+        { Barcode2DType.Aztec, "", "héllo wörld", "héllo wörld" },
+        { Barcode2DType.Aztec, "--eci=26", "Ελληνικά 漢字", "Ελληνικά 漢字" },
+        { Barcode2DType.Aztec, "--vers=10", "Full-range Aztec symbol", "Full-range Aztec symbol" },
+        { Barcode2DType.Aztec, "", string.Concat(Enumerable.Repeat("Large Aztec symbol 0123456789 ", 40)), string.Concat(Enumerable.Repeat("Large Aztec symbol 0123456789 ", 40)) },
+    };
+
+    // zint is an independent encoder: its symbols, with the encodation that it chooses, must decode to the data
+    [Theory]
+    [MemberData(nameof(ZintBarcodes2D))]
+    public async Task ZintBarcode2D_IsDecoded(Barcode2DType type, string options, string data, string expected)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        List<string> arguments = ["-b", type switch { Barcode2DType.DataMatrix => "71", Barcode2DType.Pdf417 => "55", _ => "92" }, .. options.Split(' ', StringSplitOptions.RemoveEmptyEntries)];
+
+        // The dump gives the rows, padded to a multiple of 4 modules: the width is the one of the type that fits
+        var rows = await tools.GetZintRowsAsync(arguments, data);
+        var digits = rows[0].Length;
+        var width = Enumerable.Range((4 * digits) - 3, 4).Single(width => type switch
+        {
+            Barcode2DType.DataMatrix => DataMatrixSizes.Contains((rows.Count, width)),
+            Barcode2DType.Pdf417 => (width - 1) % 17 is 0,
+            _ => width == rows.Count,
+        });
+
+        var result = Barcode2DDecoder.Decode(await tools.GetZintMatrixAsync(arguments, data, width), type);
+
+        Assert.Equal(expected, result.Text);
+        Assert.Equal(options.Contains("--gs1", StringComparison.Ordinal), result.IsGs1);
+    }
+
     private static async Task<bool[,]> GetZintQRCodeAsync(BarcodeTools tools, IEnumerable<string> arguments, string data)
     {
         // The dump gives the rows, padded to a multiple of 4 modules: the width of an rMQR code is the size that fits

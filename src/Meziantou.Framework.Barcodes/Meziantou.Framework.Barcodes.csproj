@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Barcodes</RootNamespace>
     <Version>1.0.3</Version>
-    <Description>QR code, Data Matrix, PDF417, Aztec and barcode generation with SVG, PNG, and console renderers, and QR code decoding</Description>
+    <Description>QR code, Data Matrix, PDF417, Aztec and barcode generation with SVG, PNG, and console renderers, and decoding of the two-dimensional symbols</Description>
     <PackageTags>qrcode, barcode, datamatrix, pdf417, aztec, svg, png, console, decoder, reader</PackageTags>
     <NoWarn>$(NoWarn);CA1814</NoWarn>
   </PropertyGroup>

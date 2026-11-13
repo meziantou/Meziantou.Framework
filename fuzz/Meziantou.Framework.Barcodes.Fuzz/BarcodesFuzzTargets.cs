@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Meziantou.Framework.Barcodes.Internal;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Barcodes;
@@ -491,6 +492,10 @@ public static class BarcodesFuzzTargets
                 break;
         }
 
+        // The decoder of the library reads the data back, the independent Data Matrix decoder of this project agrees, and
+        // the error correction fixes a damaged module
+        CheckBarcode2DDecoding(barcode, (flags & 0x40) != 0 && type is Barcode2DType.DataMatrix ? CreateGs1Elements(text) : null, binary ? bytes : null, text);
+
         // The encoding is deterministic
         var other = Create();
         FuzzAssert.True(other is not null && SameModules(barcode, other), "Encoding the same data twice gives different symbols");
@@ -501,6 +506,55 @@ public static class BarcodesFuzzTargets
         using var fromImaging = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 1, QuietZoneModules = 0 });
         CheckPixels(fromImaging, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToImage");
         FuzzAssert.True(barcode.ToSvg().StartsWith("<svg ", StringComparison.Ordinal), "ToSvg does not start with <svg");
+    }
+
+    private static void CheckBarcode2DDecoding(Barcode2D barcode, List<Gs1Element>? gs1Elements, byte[]? bytes, string text)
+    {
+        var result = Barcode2DDecoder.Decode(barcode);
+        FuzzAssert.Equal((barcode.Type, 0), (result.Type, result.CorrectedErrorCount), "The decoded symbol");
+        if (gs1Elements is not null)
+        {
+            FuzzAssert.True(result.IsGs1, "GS1 data is not read as GS1");
+            FuzzAssert.Equal(Gs1ElementStrings.FormatHumanReadable(Encoding.ASCII.GetString(result.Bytes.Span)) ?? Encoding.ASCII.GetString(result.Bytes.Span), result.Text, "The human-readable text of GS1 data");
+        }
+        else if (bytes is not null)
+        {
+            FuzzAssert.True(result.Bytes.Span.SequenceEqual(bytes), "The decoded bytes");
+            FuzzAssert.Equal((int?)null, result.EciAssignmentNumber, "Binary data has an ECI designator");
+        }
+        else
+        {
+            FuzzAssert.Equal(ReplaceLoneSurrogates(text), result.Text, "The decoded text");
+            FuzzAssert.Equal(Ascii.IsValid(text) ? null : 26, result.EciAssignmentNumber, "The ECI assignment number");
+        }
+
+        if (barcode.Type is Barcode2DType.DataMatrix)
+        {
+            var (message, _) = DataMatrixDecoder.Decode(barcode);
+            // The FNC1 separators are GS bytes, the FNC1 that marks GS1 data is not part of the bytes
+            var expected = message.Select(value => value is DataMatrixDecoder.Fnc1 ? (byte)0x1D : (byte)value).ToArray();
+            if (gs1Elements is not null)
+            {
+                expected = expected[1..];
+            }
+
+            FuzzAssert.True(result.Bytes.Span.SequenceEqual(expected), "The library and the independent decoder of this project read different bytes");
+        }
+
+        // A damaged module in the middle of the symbol (a Data Matrix of 10x10 modules has 5 error correction codewords)
+        var modules = new bool[barcode.Height, barcode.Width];
+        for (var row = 0; row < barcode.Height; row++)
+        {
+            for (var column = 0; column < barcode.Width; column++)
+            {
+                modules[row, column] = barcode[row, column];
+            }
+        }
+
+        var damagedRow = barcode.Height / 2;
+        var damagedColumn = (barcode.Width / 2) + 1;
+        modules[damagedRow, damagedColumn] = !modules[damagedRow, damagedColumn];
+        FuzzAssert.True(Barcode2DDecoder.TryDecode(modules, barcode.Type, out var repaired) && repaired.Bytes.Span.SequenceEqual(result.Bytes.Span), $"A damaged module at ({damagedRow}, {damagedColumn}) is not repaired");
     }
 
     // The text as element strings: an application identifier of 2 digits, its data, and GS between the elements

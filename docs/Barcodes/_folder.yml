@@ -1,5 +1,5 @@
 title: Barcodes
-description: Generate QR codes, Data Matrix, PDF417, Aztec and linear barcodes, render them as SVG, PNG, text or images, and read QR codes back.
+description: Generate QR codes, Data Matrix, PDF417, Aztec and linear barcodes, render them as SVG, PNG, text or images, and read the two-dimensional symbols back.
 packageIds:
 - Meziantou.Framework.Barcodes
 - Meziantou.Framework.Imaging.Barcodes

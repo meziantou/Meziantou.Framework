@@ -1,6 +1,6 @@
 # Meziantou.Framework.Barcodes
 
-QR and barcode generation library with SVG and PNG renderers, plus a console renderer for QR codes, and a decoder that reads QR codes back from their modules. Implements QR code specifications from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes, Data Matrix (including GS1 Data Matrix), PDF417 and Aztec codes, and linear barcodes from Code 39 to ITF.
+QR and barcode generation library with SVG and PNG renderers, plus a console renderer for QR codes, and decoders that read QR codes, Data Matrix, PDF417 and Aztec symbols back from their modules. Implements QR code specifications from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes, Data Matrix (including GS1 Data Matrix), PDF417 and Aztec codes, and linear barcodes from Code 39 to ITF.
 
 ## Supported QR Code Types
 
@@ -310,7 +310,7 @@ Assert.StartsWith("BCD\n002\n1\nSCT\n", sepa);
 ```
 <!-- endref -->
 
-### Read QR codes
+### Read QR codes and 2D barcodes
 
 `QRCodeDecoder` reads the data of standard QR codes, Micro QR codes and rMQR codes from their modules, with error correction, ECI designators and structured append. To read QR codes from images, use `Meziantou.Framework.Imaging.Barcodes`.
 
@@ -322,5 +322,18 @@ var result = QRCodeDecoder.Decode(qrCode);
 
 Assert.Equal("https://www.meziantou.net", result.Text);
 Assert.Equal((QRCodeType.Standard, 2, ErrorCorrectionLevel.M), (result.Type, result.Version, result.ErrorCorrectionLevel));
+```
+<!-- endref -->
+
+`Barcode2DDecoder` reads Data Matrix, PDF417 and Aztec symbols from their modules, in any orientation.
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/DataMatrixTests.cs;region=Barcode2DDecoder_Decode;format=md-fenced-code-block;dedent=true -->
+```csharp
+var dataMatrix = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+
+var result = Barcode2DDecoder.Decode(dataMatrix);
+
+Assert.Equal("https://www.meziantou.net", result.Text);
+Assert.Equal(Barcode2DType.DataMatrix, result.Type);
 ```
 <!-- endref -->

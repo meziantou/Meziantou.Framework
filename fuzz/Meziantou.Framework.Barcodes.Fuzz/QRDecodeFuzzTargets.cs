@@ -14,9 +14,17 @@ internal static class QRDecodeFuzzTargets
         "HELLO WORLD", "12345", "0123456789", "https://www.meziantou.net", "Hello, World!", "café", "日本語", "ABC12345678901234567890abc日本語",
     ];
 
+    private static readonly string[] ModuleTokens = ["\0\0\0\0", "\xFF\xFF\xFF\xFF", "\x55\x55", "\xAA\xAA", "\x7F", "\x80"];
+
+    private static readonly string[] Barcode2DSeedTexts =
+    [
+        "Hello", "HELLO WORLD 12345", "hello world", "*ABC>123*\r", "@ABC^_@DEF", "0123456789012345678901234567890123", "caf\u00E9", "Ελληνικά 漢字",
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
-        new("barcodes-decode-qrcode", DecodeTarget) { Seeds = GetSeeds, Dictionary = ["\0\0\0\0", "\xFF\xFF\xFF\xFF", "\x55\x55", "\xAA\xAA", "\x7F", "\x80"] },
+        new("barcodes-decode-qrcode", DecodeTarget) { Seeds = GetSeeds, Dictionary = ModuleTokens },
+        new("barcodes-decode-2d", Decode2DTarget) { Seeds = Get2DSeeds, Dictionary = ModuleTokens },
     ];
 
     internal static bool[,] GetModules(QRCode qr)
@@ -157,5 +165,69 @@ internal static class QRDecodeFuzzTargets
 
             FuzzAssert.Equal(result.Text, QRCodeDecoder.Decode(reencoded).Text, "The text of the encoded segments");
         }
+    }
+
+    // The first byte selects the type, the next two the height and the width; the next bytes are the modules, row by row
+    private static IEnumerable<FuzzSeed> Get2DSeeds()
+    {
+        for (var index = 0; index < Barcode2DSeedTexts.Length; index++)
+        {
+            var text = Barcode2DSeedTexts[index];
+            yield return Create2DSeed($"decode-datamatrix-{index}", Barcode2D.CreateDataMatrix(text));
+            yield return Create2DSeed($"decode-pdf417-{index}", Barcode2D.CreatePdf417(text, new Pdf417Options { RowHeight = 1 }));
+            yield return Create2DSeed($"decode-aztec-{index}", Barcode2D.CreateAztec(text));
+        }
+
+        yield return Create2DSeed("decode-datamatrix-rectangle", Barcode2D.CreateDataMatrix("ABC-12345", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }));
+        yield return Create2DSeed("decode-datamatrix-gs1", Barcode2D.CreateGs1DataMatrix(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123"), new Gs1Element("21", "XYZ")));
+        yield return Create2DSeed("decode-datamatrix-binary", Barcode2D.CreateDataMatrix([0x00, 0xFF, 0x10, 0x80, 0x7F]));
+        yield return Create2DSeed("decode-aztec-full", Barcode2D.CreateAztec("Full-range", new AztecOptions { Compact = false }));
+        yield return Create2DSeed("decode-aztec-binary", Barcode2D.CreateAztec([0x00, 0xFF, 0x10, 0x80, 0x7F]));
+    }
+
+    private static FuzzSeed Create2DSeed(string name, Barcode2D barcode)
+    {
+        var bytes = new byte[3 + ((barcode.Width * barcode.Height) + 7) / 8];
+        bytes[0] = (byte)barcode.Type;
+        bytes[1] = (byte)barcode.Height;
+        bytes[2] = (byte)barcode.Width;
+        for (var i = 0; i < barcode.Width * barcode.Height; i++)
+        {
+            if (barcode[i / barcode.Width, i % barcode.Width])
+            {
+                bytes[3 + (i / 8)] |= (byte)(0x80 >> (i % 8));
+            }
+        }
+
+        return new FuzzSeed(name, bytes);
+    }
+
+    private static void Decode2DTarget(ReadOnlySpan<byte> data)
+    {
+        var type = (Barcode2DType)(FuzzInput.ReadByte(ref data) % 3);
+        var height = 1 + FuzzInput.ReadByte(ref data);
+        var width = 1 + FuzzInput.ReadByte(ref data);
+        var modules = new bool[height, width];
+        for (var i = 0; i < height * width && i / 8 < data.Length; i++)
+        {
+            modules[i / width, i % width] = (data[i / 8] & (0x80 >> (i % 8))) != 0;
+        }
+
+        Barcode2DDecodeResult result;
+        try
+        {
+            result = Barcode2DDecoder.Decode(modules, type);
+        }
+        catch (FormatException)
+        {
+            FuzzAssert.False(Barcode2DDecoder.TryDecode(modules, type, out _), "TryDecode succeeds where Decode fails");
+            return;
+        }
+
+        FuzzAssert.Equal(type, result.Type, "The type of the symbol");
+        FuzzAssert.True(result.CorrectedErrorCount >= 0, "The number of corrected errors");
+        FuzzAssert.True(result.EciAssignmentNumber is null or (>= 0 and <= 999999 + 810900), $"ECI {result.EciAssignmentNumber}");
+        FuzzAssert.True(!result.IsGs1 || type is Barcode2DType.DataMatrix, "Only Data Matrix symbols are read as GS1 data");
+        FuzzAssert.True(Barcode2DDecoder.TryDecode(modules, type, out var other) && other.Text == result.Text && other.Bytes.Span.SequenceEqual(result.Bytes.Span), "Decoding twice gives different results");
     }
 }

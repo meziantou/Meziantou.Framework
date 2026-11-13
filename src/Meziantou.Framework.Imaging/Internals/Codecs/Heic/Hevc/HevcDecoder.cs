@@ -23,6 +23,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>After an exception the state of the decoder is undefined: it must be disposed.</para>
 /// <para>
+/// A decode window (<see cref="DecodeWindow"/>) limits the decoding of an intra picture to the rows of coding tree blocks
+/// that the window and the margin of the in-loop filters need: see <see cref="DecodeWindow"/>.
+/// </para>
+/// <para>
 /// The decoder decodes the base layer: the NAL units of the other layers (<c>nuh_layer_id</c> greater than 0) are
 /// ignored, and <see cref="HasEnhancementLayers"/> tells that some were met. A picture is complete, and nothing is
 /// concealed: a picture whose slice segments do not cover every coding tree block is
@@ -63,6 +67,11 @@ internal sealed class HevcDecoder : IDisposable
     private int _prevPicOrderCntMsb;
     private bool _disposed;
 
+    // The decode window: the address in tile scan of the first coding tree block that the picture being decoded does not
+    // decode, or -1 when it is decoded whole; and whether a picture was decoded for the window
+    private int _windowCtbEnd = -1;
+    private bool _isWindowUsed;
+
     /// <summary>Creates a decoder whose buffers are rented from <paramref name="scope"/>.</summary>
     /// <param name="scope">The allocation scope of the operation.</param>
     /// <param name="tracker">The per-input limit accounting, which the pixels of the pictures that are not output are charged to; or <see langword="null"/>.</param>
@@ -91,6 +100,24 @@ internal sealed class HevcDecoder : IDisposable
     /// default, decodes and filters on the calling thread.
     /// </summary>
     public int MaxDegreeOfParallelism { get; set; } = 1;
+
+    /// <summary>The luma samples around a window that its samples depend on through the in-loop filters (deblocking, then SAO).</summary>
+    public const int DecodeWindowMargin = 16;
+
+    /// <summary>
+    /// Gets or sets the area of the picture, in luma samples of the output picture (its conformance window), whose samples
+    /// must be those of a whole decoding; <see langword="null"/>, the default, decodes the pictures whole.
+    /// </summary>
+    /// <remarks>
+    /// The first picture, when it is made of I slices and of one column of tiles, is then decoded down to the row of coding
+    /// tree blocks that holds the bottom of the area plus <see cref="DecodeWindowMargin"/> samples: its planes hold these
+    /// rows only (<see cref="HevcPicture.DecodedHeight"/>), the slice segments below them are not decoded nor validated, and
+    /// the in-loop filters stop there. The samples near the last rows differ from a whole decoding, but not those of the area.
+    /// A picture with several columns of tiles is decoded whole. Another picture, a P or B slice in that picture, or a first
+    /// picture that is not output would read the rows that are not decoded: <see cref="DecodeWindowNotApplicableException"/> is
+    /// thrown, and the caller decodes the input whole.
+    /// </remarks>
+    public Rectangle? DecodeWindow { get; set; }
 
     /// <summary>Gets or sets the in-loop filters applied to the pictures: a diagnostic, <see cref="HevcInLoopFilters.All"/> otherwise.</summary>
     public HevcInLoopFilters InLoopFilters { get; set; } = HevcInLoopFilters.All;
@@ -376,6 +403,20 @@ internal sealed class HevcDecoder : IDisposable
             BeginPicture(nal, header);
         }
 
+        if (_windowCtbEnd >= 0)
+        {
+            // A picture decoded for a window: only intra slices leave the rows below it unread, and the slice segments that
+            // start below them are not decoded
+            if (header.SliceType is not HevcConstants.SliceI)
+                throw new DecodeWindowNotApplicableException();
+
+            if (layout.CtbAddrRsToTs[header.SliceSegmentAddress] >= _windowCtbEnd)
+            {
+                _previousSliceSegment = header;
+                return;
+            }
+        }
+
         var state = _state!;
         if (!header.DependentSliceSegmentFlag)
         {
@@ -389,7 +430,9 @@ internal sealed class HevcDecoder : IDisposable
         }
 
         _previousSliceSegment = header;
-        var coder = new HevcSliceCoder(layout, header, _current!, state, _cabac, _scratch!, _rbsp, _references, cancellationToken, GetSubstreamWorkers(layout, header), MaxDegreeOfParallelism);
+        // The workers decode the substreams of the whole slice segment: a picture decoded for a window is decoded on the calling thread
+        var workers = _windowCtbEnd >= 0 ? null : GetSubstreamWorkers(layout, header);
+        var coder = new HevcSliceCoder(layout, header, _current!, state, _cabac, _scratch!, _rbsp, _references, cancellationToken, workers, MaxDegreeOfParallelism, _windowCtbEnd >= 0 ? _windowCtbEnd : int.MaxValue);
         coder.DecodeSliceSegment();
     }
 
@@ -536,6 +579,12 @@ internal sealed class HevcDecoder : IDisposable
     private void BeginPicture(in HevcNalUnitHeader nal, HevcSliceSegmentHeader header)
     {
         var sps = _layout!.Sps;
+
+        // Only the first picture, of I slices, that is output can be decoded for a window: the decoding stops before anything
+        // is charged for another one
+        if (DecodeWindow is not null && (_isWindowUsed || header.SliceType is not HevcConstants.SliceI || !header.PicOutputFlag))
+            throw new DecodeWindowNotApplicableException();
+
         if ((_firstPicture || _afterEndOfSequence) && !nal.IsIrap)
             throw HevcErrors.Invalid("the first picture of a coded video sequence is not an intra random access point picture.");
 
@@ -595,6 +644,21 @@ internal sealed class HevcDecoder : IDisposable
             _tracker?.ChargeHiddenPixels(discardedPixels);
         }
 
+        // The decode window: the rows of coding tree blocks that it needs, in a picture of one column of tiles, whose tile
+        // scan is the raster scan. Only the first picture can be decoded for a window
+        int? decodedHeight = null;
+        if (DecodeWindow is { } window)
+        {
+            var bottom = (long)sps.OutputTop + Math.Max(window.Bottom, 1) - 1 + DecodeWindowMargin;
+            var rowEnd = (int)Math.Min(sps.PicHeightInCtbsY, (bottom >> sps.CtbLog2SizeY) + 1);
+            if (_layout!.Pps.NumTileColumns is 1 && rowEnd < sps.PicHeightInCtbsY)
+            {
+                decodedHeight = rowEnd << sps.CtbLog2SizeY;
+                _windowCtbEnd = rowEnd * sps.PicWidthInCtbsY;
+                _isWindowUsed = true;
+            }
+        }
+
         var picture = new HevcPicture(sps)
         {
             PicOrderCntVal = picOrderCntVal,
@@ -603,7 +667,7 @@ internal sealed class HevcDecoder : IDisposable
             // Clause 8.1.3: a RASL picture associated with an IRAP picture with NoRaslOutputFlag equal to 1 is not output
             PicOutputFlag = header.PicOutputFlag,
         };
-        picture.Allocate(_scope);
+        picture.Allocate(_scope, decodedHeight);
         _current = picture;
         _state!.BeginPicture();
         _firstPicture = false;
@@ -624,7 +688,11 @@ internal sealed class HevcDecoder : IDisposable
         var picture = _current!;
         var layout = _layout!;
         var state = _state!;
-        if (state.NextCtbAddrInTs != layout.Sps.PicSizeInCtbsY)
+        // A picture decoded for a window needs the coding tree blocks before the end of the window only
+        var windowEnd = _windowCtbEnd;
+        var isWindowed = windowEnd >= 0;
+        _windowCtbEnd = -1;
+        if (isWindowed ? state.NextCtbAddrInTs < windowEnd : state.NextCtbAddrInTs != layout.Sps.PicSizeInCtbsY)
             throw HevcErrors.Invalid("a picture is incomplete.");
 
         var workers = GetFilterWorkerCount(layout.Sps);
@@ -638,7 +706,7 @@ internal sealed class HevcDecoder : IDisposable
             HevcSampleAdaptiveOffset.Apply(_scope, picture, layout, state, workers, cancellationToken);
         }
 
-        if (layout.Sps.SpsTemporalMvpEnabledFlag)
+        if (layout.Sps.SpsTemporalMvpEnabledFlag && !isWindowed)
         {
             state.StoreCollocatedMotion(picture, layout.Sps);
         }

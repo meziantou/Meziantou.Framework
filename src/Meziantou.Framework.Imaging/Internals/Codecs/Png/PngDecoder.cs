@@ -25,6 +25,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// shows what was decoded the same way (rows that were not decoded are zero when the image is not interlaced).
 /// </description></item>
 /// <item><description>
+/// Scaled decoding (<see cref="ImageDecodeRequest.ScaleDenominator"/>, <see cref="ImageDecodeRequest.TargetSize"/>): an
+/// interlaced image is decoded at 1/2, 1/4 or 1/8 of its size from its first Adam7 passes, which hold the pixel at the top
+/// left of each block of that many pixels a side (<see cref="PngInterlace.GetPassCountForScale"/>): the frame has the size
+/// of the reduced image, the passes after them are not inflated, and no rendering is given before the frame. An image
+/// that is not interlaced, and an APNG, are decoded at full size for a target size, and rejected for an exact scale.
+/// </description></item>
+/// <item><description>
 /// The image ends at <c>IEND</c> (after <see cref="DecodedFrameSink.UpdateMetadata"/>), so that sequential reader frames carry
 /// the metadata that follows the image data exactly like eager loads.
 /// </description></item>
@@ -42,6 +49,7 @@ internal sealed class PngDecoder : PngDecodeObserver, IPartialFrameRenderer
     private PooledBuffer? _passRowBuffer;
     private PooledBuffer? _image;
     private int _renderedPasses;
+    private int _scaleDenominator = 1;
     private int _destinationBytesPerPixel;
     private bool _imageDecoded;
 
@@ -65,9 +73,25 @@ internal sealed class PngDecoder : PngDecodeObserver, IPartialFrameRenderer
 
         _structure = structure;
         _format = PngSampleFormat.Create(structure);
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Png, structure.Size, structure.DefaultPixelFormat, _format.SourcePixelFormat, structure.Metadata.IccProfile);
+        var size = structure.Size;
+        if (_request.IsScaled)
+        {
+            // Only the first Adam7 passes give a smaller image: every pixel of it is a pixel of the image
+            var interlaced = structure.InterlaceMethod == 1;
+            _scaleDenominator = _request.GetScaleDenominator(size, interlaced ? 8 : 1, ImageFormat.Png, interlaced ? "an interlaced PNG image is reduced to 1/8 of its size at most, by its first Adam7 pass" : "only an interlaced (Adam7) PNG image is decoded at a reduced size");
+            if (_scaleDenominator > 1)
+            {
+                size = new Size(ImageDecodeRequest.GetScaledLength(size.Width, _scaleDenominator), ImageDecodeRequest.GetScaledLength(size.Height, _scaleDenominator));
+                _context.Sequential?.ScaleHeader(size);
+            }
+        }
+
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Png, size, structure.DefaultPixelFormat, _format.SourcePixelFormat, structure.Metadata.IccProfile);
         _destinationBytesPerPixel = PixelFormats.GetBytesPerPixel(_sink.DestinationPixelFormat);
-        _sink.SetPartialFrameRenderer(this);
+        if (_scaleDenominator == 1)
+        {
+            _sink.SetPartialFrameRenderer(this);
+        }
     }
 
     public override void OnImageStart(PngFrameControl? control)
@@ -82,7 +106,7 @@ internal sealed class PngDecoder : PngDecodeObserver, IPartialFrameRenderer
         var sink = _sink!;
         var interlaced = structure.InterlaceMethod == 1;
         var imageLength = (long)structure.Width * structure.Height * _destinationBytesPerPixel;
-        if (interlaced && sink.WantsRefinement && imageLength <= CheckedSizes.MaxBufferLength)
+        if (interlaced && _scaleDenominator == 1 && sink.WantsRefinement && imageLength <= CheckedSizes.MaxBufferLength)
         {
             // The passes are decoded in an image of the decoder: the frame begins once they are all decoded
             _image = _context.Scope.Rent((int)imageLength, AllocationKind.DecoderState, clear: false);
@@ -93,11 +117,12 @@ internal sealed class PngDecoder : PngDecodeObserver, IPartialFrameRenderer
             sink.BeginFrame(FrameDuration.Zero);
         }
 
-        _data = new PngImageDataDecoder(_context, _format!, structure.Width, structure.Height, interlaced);
+        _data = new PngImageDataDecoder(_context, _format!, structure.Width, structure.Height, interlaced, _scaleDenominator);
         if (interlaced && !sink.Plan.IsIdentity)
         {
-            // One pass row converted to the destination format before it is scattered (pass 7 is as wide as the image)
-            var length = (long)structure.Width * _destinationBytesPerPixel;
+            // One pass row converted to the destination format before it is scattered (pass 7 is as wide as the image, and
+            // no pass of a reduced image is wider than it)
+            var length = (long)ImageDecodeRequest.GetScaledLength(structure.Width, _scaleDenominator) * _destinationBytesPerPixel;
             if (length > CheckedSizes.MaxBufferLength)
                 throw CheckedSizes.CreateOverflowException(_context.Limits);
 

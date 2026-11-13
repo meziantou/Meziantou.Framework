@@ -29,10 +29,11 @@ public static void SavePreview(string animationPath, string previewPath)
 <!-- endref -->
 
 - **Decode a large photo at the size you need.** [ImageDecodeOptions.TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) decodes a JPEG file at 1/2, 1/4 or 1/8
-  of its size, a JPEG 2000 file at a lower resolution level, a lossy JPEG XL file at 1/8, and a TIFF file from a reduced-resolution image it stores (a pyramid), when the result is still at least
+  of its size, a JPEG 2000 file at a lower resolution level, a lossy JPEG XL file at 1/8, an interlaced PNG file at 1/2, 1/4 or 1/8, and a TIFF file from a reduced-resolution image it stores (a pyramid), when the result is still at least
   that large: the decoder computes fewer pixels and allocates the memory of the smaller image. See [Decode a smaller image](05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
 - **Decode only the area you show.** [ImageDecodeOptions.Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) decodes a rectangle of a JPEG or JPEG 2000 file,
-  a tiled or stripped TIFF page, or an AVIF or HEIC grid, without decoding the blocks, strips or tiles around it. Store large
+  a tiled or stripped TIFF page, or an AVIF or HEIC grid, without decoding the blocks, strips or tiles around it, and an
+  AVIF or HEIC image that is not a grid down to the rows it needs. Store large
   scans as tiled TIFF files ([TiffEncoder.TileWidth](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.TileWidth)) to make viewports cheap. See
   [Decode an area](05-LoadingAndSaving/02-LoadingImages.md#decode-an-area).
 - **Load in the pixel format you work with.** [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) returns the smallest pixel format that keeps the source

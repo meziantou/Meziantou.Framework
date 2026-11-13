@@ -28,6 +28,16 @@ internal sealed class Av1FrameBuffer
     /// <summary>Gets the number of planes: 1 for a monochrome frame, otherwise 3.</summary>
     public int PlaneCount => Sequence.PlaneCount;
 
+    /// <summary>
+    /// Gets the number of rows of 4x4 luma blocks that are decoded and filtered: <see cref="Av1FrameHeader.MiRows"/>, or the
+    /// first rows of superblocks that a decode window needs (<see cref="Av1Decoder.DecodeWindow"/>). The planes hold these
+    /// rows only.
+    /// </summary>
+    public int DecodedMiRows { get; private set; }
+
+    /// <summary>Gets the number of rows of luma samples that the planes hold.</summary>
+    public int DecodedHeight => Math.Min(Header.FrameHeight, DecodedMiRows * Av1Constants.MiSize);
+
     /// <summary>Gets the plane <paramref name="index"/>: 0 for Y, 1 for U, 2 for V.</summary>
     public Av1Plane GetPlane(int index) => _planes[index] ?? throw new ObjectDisposedException(nameof(Av1FrameBuffer));
 
@@ -72,13 +82,17 @@ internal sealed class Av1FrameBuffer
 
     /// <summary>
     /// Rents the planes and the frame context of the frame: the planes have the size of the frame after super-resolution
-    /// upscaling, and at least the size of the coded frame.
+    /// upscaling, and at least the size of the coded frame, or the rows of <paramref name="decodedMiRows"/> only.
     /// </summary>
+    /// <param name="scope">The allocation scope.</param>
+    /// <param name="decodedMiRows">The rows of 4x4 luma blocks that are decoded (<see cref="DecodedMiRows"/>); <see langword="null"/> for the whole frame.</param>
     /// <exception cref="ImageResourceLimitException">The buffers exceed the live-allocation limit.</exception>
-    public void Allocate(AllocationScope scope)
+    public void Allocate(AllocationScope scope, int? decodedMiRows = null)
     {
+        DecodedMiRows = Math.Min(decodedMiRows ?? Header.MiRows, Header.MiRows);
         var alignment = Sequence.Use128x128Superblock ? 128 : 64;
         var width = Math.Max(Header.UpscaledWidth, Header.FrameWidth);
+        var height = DecodedHeight;
         try
         {
             _cdfs = Av1PooledArray<ushort>.Rent(scope, Av1CdfLayout.TotalLength, clear: false);
@@ -86,7 +100,7 @@ internal sealed class Av1FrameBuffer
             {
                 var subX = plane > 0 ? Sequence.SubsamplingX : 0;
                 var subY = plane > 0 ? Sequence.SubsamplingY : 0;
-                _planes[plane] = Av1Plane.Create(scope, (width + subX) >> subX, (Header.FrameHeight + subY) >> subY, alignment);
+                _planes[plane] = Av1Plane.Create(scope, (width + subX) >> subX, (height + subY) >> subY, alignment);
             }
         }
         catch

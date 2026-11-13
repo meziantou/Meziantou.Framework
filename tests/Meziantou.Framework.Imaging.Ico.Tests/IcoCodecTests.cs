@@ -138,6 +138,24 @@ public sealed class IcoCodecTests
     }
 
     [Fact]
+    public void AnInterlacedPngRepresentationIsDecodedAtFullSizeForATargetSize()
+    {
+        // The PNG codec decodes an interlaced image at a reduced size, but an icon representation is not reduced
+        using var source = new Image<Rgba32>(16, 16, new Rgba32(10, 20, 30, 255));
+        using var stream = new MemoryStream();
+        source.Save(stream, new PngEncoder { Interlaced = true });
+        var data = new IcoFileBuilder().Add(new IcoEntrySpec { Width = 16, Height = 16, Payload = stream.ToArray() }).Build();
+        using (var image = Image.Load(data, new ImageDecodeOptions { TargetSize = new Size(1, 1) }))
+        {
+            Assert.Equal(new Size(16, 16), image.Size);
+        }
+
+        using var collection = ImageCollection.Load(data);
+        using var entry = collection[0].Decode(new ImageDecodeOptions { TargetSize = new Size(1, 1) });
+        Assert.Equal(new Size(16, 16), entry.Size);
+    }
+
+    [Fact]
     public void RunLengthAndOs2DibPayloadsAreRejected()
     {
         // The standalone BMP decoder reads both; an icon payload has fixed-length color rows followed by its AND mask

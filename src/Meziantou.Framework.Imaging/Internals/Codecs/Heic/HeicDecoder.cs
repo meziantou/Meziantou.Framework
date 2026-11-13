@@ -69,13 +69,16 @@ internal sealed class HeicDecoder : HeifDecodeObserver
         }
         else
         {
-            // A region decodes the tiles of a grid that it needs, into planes that hold these tiles only
+            // A region decodes the tiles of a grid that it needs, into planes that hold these tiles only, and the rows of an
+            // image that is not a grid that it needs
             var area = GetOutputArea(_request, plan.Crop, ImageFormat.Heic);
             var window = GetGridWindow(plan, area);
-            using var color = DecodeImage(structure, plan.Color, window);
+            using var color = DecodeImage(structure, plan.Color, window, GetDecodeWindow(plan.Color, area));
             structure.SetBitstreamColorDescription(color.Format);
-            using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha, window);
-            HeifFrameWriter.WriteFrame(_context, sink, structure, color, alpha, window.GetCodedSize(plan.Color), window.ToPlanes(plan.Color, area));
+            using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha, window, GetDecodeWindow(plan.Alpha, area));
+            var codedSize = window.GetCodedSize(plan.Color);
+            codedSize = new Size(codedSize.Width, Math.Min(codedSize.Height, Math.Min(color.Height, alpha?.Height ?? int.MaxValue)));
+            HeifFrameWriter.WriteFrame(_context, sink, structure, color, alpha, codedSize, window.ToPlanes(plan.Color, area));
         }
 
         sink.UpdateMetadata(structure.Metadata);
@@ -173,12 +176,19 @@ internal sealed class HeicDecoder : HeifDecodeObserver
         }
     }
 
-    // Decodes the coded items of an image into planes of the size of the image, or of the tiles of the window of a region
-    private HeicPlanarImage DecodeImage(HeifStructureParser structure, HeifCodedImage image, HeifGridWindow window)
+    // The rows of an image that is not a grid that a region needs: the area of the coded image, when the request has a region
+    // and the image has the size of the color image (an alpha plane may be smaller)
+    private Rectangle? GetDecodeWindow(HeifCodedImage image, Rectangle area)
+        => _request.Region is not null && !image.IsGrid && image.Size == _structure!.Plan.Color.Size ? area : null;
+
+    // Decodes the coded items of an image into planes of the size of the image, or of the tiles of the window of a region.
+    // An image that is not a grid is decoded down to the rows that the decode window needs, when it has one: its planes hold
+    // these rows only
+    private HeicPlanarImage DecodeImage(HeifStructureParser structure, HeifCodedImage image, HeifGridWindow window, Rectangle? decodeWindow = null)
     {
         if (!image.IsGrid)
         {
-            var picture = DecodeTile(structure, image, out var format);
+            var picture = DecodePreparedTile(image, PrepareTile(structure, image, 0), _context.Tracker, GetItemWorkerCount(image, image.Tiles.Length), out var format, decodeWindow);
             return HeicPlanarImage.FromPicture(_context.Scope, picture, format);
         }
 
@@ -300,10 +310,6 @@ internal sealed class HeicDecoder : HeifDecodeObserver
             selection);
     }
 
-    // Decodes the coded item of an image that is not a grid, and checks the picture against the file
-    private HevcPicture DecodeTile(HeifStructureParser structure, HeifCodedImage image, out HeifBitstreamFormat format)
-        => DecodePreparedTile(image, PrepareTile(structure, image, 0), _context.Tracker, GetItemWorkerCount(image, image.Tiles.Length), out format);
-
     // The workers of the HEVC decoder of a coded item: the configured number, unless the tiles of a grid are decoded by
     // several workers, which already share the threads
     private int GetItemWorkerCount(HeifCodedImage image, int tileCount)
@@ -340,9 +346,9 @@ internal sealed class HeicDecoder : HeifDecodeObserver
 
     // Decodes a prepared coded item and checks the picture against the file. It uses no state of the decoder but the
     // template, which it only reads: the tiles of a grid are decoded on several threads.
-    private HevcPicture DecodePreparedTile(HeifCodedImage image, in PreparedTile tile, InputResourceTracker tracker, int itemWorkers, out HeifBitstreamFormat format)
+    private HevcPicture DecodePreparedTile(HeifCodedImage image, in PreparedTile tile, InputResourceTracker tracker, int itemWorkers, out HeifBitstreamFormat format, Rectangle? decodeWindow = null)
     {
-        var picture = DecodeCodedItem(tile, tracker, itemWorkers);
+        var picture = DecodeCodedItem(tile, tracker, itemWorkers, decodeWindow);
         try
         {
             format = HeicBinding.ToBitstreamFormat(picture.Sps);
@@ -360,10 +366,27 @@ internal sealed class HeicDecoder : HeifDecodeObserver
         return picture;
     }
 
-    // Decodes the picture of a coded item: the decoder is released, the picture is kept by the caller
-    private HevcPicture DecodeCodedItem(in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism)
+    // Decodes the picture of a coded item: the decoder is released, the picture is kept by the caller. With a decode window,
+    // an item that is not a single intra picture is decoded again, whole
+    private HevcPicture DecodeCodedItem(in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism, Rectangle? decodeWindow = null)
     {
-        using var decoder = new HevcDecoder(_context.Scope, tracker) { MaxDegreeOfParallelism = maxDegreeOfParallelism };
+        if (decodeWindow is not null)
+        {
+            try
+            {
+                return DecodeCodedItemCore(tile, tracker, maxDegreeOfParallelism, decodeWindow);
+            }
+            catch (DecodeWindowNotApplicableException)
+            {
+            }
+        }
+
+        return DecodeCodedItemCore(tile, tracker, maxDegreeOfParallelism, decodeWindow: null);
+    }
+
+    private HevcPicture DecodeCodedItemCore(in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism, Rectangle? decodeWindow)
+    {
+        using var decoder = new HevcDecoder(_context.Scope, tracker) { MaxDegreeOfParallelism = maxDegreeOfParallelism, DecodeWindow = decodeWindow };
         decoder.CopyParameterSetsFrom(tile.Template);
         decoder.SetInput(tile.Data, 0, tile.Length, tile.NalLengthSize);
         var picture = decoder.DecodeNextOutputPicture(_context.CancellationToken);

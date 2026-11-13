@@ -1038,6 +1038,196 @@ public sealed class PngDecoderTests
         return output.ToArray();
     }
 
+    public static TheoryData<byte, byte, bool, int> ScaledCombinations
+    {
+        get
+        {
+            var data = new TheoryData<byte, byte, bool, int>();
+            foreach (var (colorType, bitDepth) in LegalCombinations)
+            {
+                foreach (var scale in new[] { 2, 4, 8 })
+                {
+                    data.Add(colorType, bitDepth, false, scale);
+                    if (colorType is 0 or 2 or 3)
+                    {
+                        data.Add(colorType, bitDepth, true, scale);
+                    }
+                }
+            }
+
+            return data;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ScaledCombinations))]
+    public void InterlacedImagesDecodeAtAReducedScaleFromTheirFirstPasses(byte colorType, byte bitDepth, bool transparency, int scale)
+    {
+        // Every size up to 17x17 covers the empty passes; the pixel of each block is the one at its top left
+        foreach (var (width, height) in Sizes.Concat([(17, 17), (16, 9), (8, 8), (3, 17)]))
+        {
+            var image = PngTestImage.CreateRandom(width, height, colorType, bitDepth, transparency, seed: (width * 37) + height + scale);
+            var data = image.Encode(interlaced: true, filterSeed: scale);
+            var context = $"{width}x{height} at 1/{scale}";
+            var size = new Size((width + scale - 1) / scale, (height + scale - 1) / scale);
+            var expected = new Rgba64[size.Width * size.Height];
+            for (var y = 0; y < size.Height; y++)
+            {
+                for (var x = 0; x < size.Width; x++)
+                {
+                    expected[(y * size.Width) + x] = image.GetExpectedPixel(x * scale, y * scale);
+                }
+            }
+
+            using (var untyped = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = scale }))
+            {
+                Assert.Equal(size, untyped.Size);
+                Assert.Equal(DefaultPixelFormats.ForPng(colorType, bitDepth, transparency, isAnimated: false), untyped.PixelFormat);
+                using var converted = untyped.CloneAs<Rgba64>();
+                AssertPixels(expected, converted, context);
+            }
+
+            using (var typed = Image.Load<Rgba64>(data, new ImageDecodeOptions { ScaleDenominator = scale }))
+            {
+                AssertPixels(expected, typed, context);
+            }
+
+            // A conversion of the pass rows before they are written
+            using (var full = Image.Load<Bgra32>(data))
+            using (var reduced = Image.Load<Bgra32>(data, new ImageDecodeOptions { ScaleDenominator = scale }))
+            {
+                Assert.Equal(size, reduced.Size);
+                for (var y = 0; y < size.Height; y++)
+                {
+                    for (var x = 0; x < size.Width; x++)
+                    {
+                        Assert.Equal(full.Frames[0][x * scale, y * scale], reduced.Frames[0][x, y]);
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void TargetSizeDecodesAnInterlacedImageAtTheSmallestScaleThatKeepsIt()
+    {
+        var image = PngTestImage.CreateRandom(40, 24, 6, 8, transparency: false, seed: 5);
+        var interlaced = image.Encode(interlaced: true);
+        Assert.Equal(new Size(5, 3), Load(interlaced, new Size(1, 1)));
+        Assert.Equal(new Size(5, 3), Load(interlaced, new Size(5, 3)));
+        Assert.Equal(new Size(10, 6), Load(interlaced, new Size(6, 3)));
+        Assert.Equal(new Size(20, 12), Load(interlaced, new Size(11, 12)));
+        Assert.Equal(new Size(40, 24), Load(interlaced, new Size(21, 1)));
+        Assert.Equal(new Size(40, 24), Load(interlaced, new Size(100, 100)));
+
+        // An image that is not interlaced has no smaller image in it
+        Assert.Equal(new Size(40, 24), Load(image.Encode(interlaced: false), new Size(1, 1)));
+
+        static Size Load(byte[] data, Size target)
+        {
+            using var decoded = Image.Load(data, new ImageDecodeOptions { TargetSize = target });
+            return decoded.Size;
+        }
+    }
+
+    [Fact]
+    public void ScalesThatThePassesDoNotGiveAreRejected()
+    {
+        var image = PngTestImage.CreateRandom(20, 10, 2, 8, transparency: false, seed: 6);
+        var progressive = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(image.Encode(interlaced: false), new ImageDecodeOptions { ScaleDenominator = 2 }));
+        Assert.Equal(ImageFormat.Png, progressive.Format);
+        Assert.Equal("Scaled decoding", progressive.Feature);
+
+        var tooSmall = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(image.Encode(interlaced: true), new ImageDecodeOptions { ScaleDenominator = 16 }));
+        Assert.Equal("Scaled decoding", tooSmall.Feature);
+
+        // The frames of an animation are decoded at full size
+        var animation = new SyntheticImages.PngBuilder().Header(4, 4, 8, 6, interlace: 1).AnimationControl(1, 0).FrameControl(4, 4).Chunk("IDAT", SyntheticImages.Zlib(CreateInterlacedData(4, 4))).End().ToArray();
+        var animated = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(animation, new ImageDecodeOptions { ScaleDenominator = 2 }));
+        Assert.Equal("Scaled decoding", animated.Feature);
+        using var full = Image.Load(animation, new ImageDecodeOptions { TargetSize = new Size(1, 1) });
+        Assert.Equal(new Size(4, 4), full.Size);
+        Assert.True(full.IsAnimated);
+
+        static byte[] CreateInterlacedData(int width, int height) => PngTestImage.CreateRandom(width, height, 6, 8, transparency: false, seed: 9).GetFilteredData(interlaced: true);
+    }
+
+    [Fact]
+    public void ScaledDecodingSkipsTheDataAfterItsPassesAndKeepsTheMetadata()
+    {
+        // The Adler-32 checksum of the datastream is wrong: the full decode fails, the passes of the reduced image are read
+        var image = PngTestImage.CreateRandom(33, 21, 6, 16, transparency: false, seed: 8);
+        var zlib = SyntheticImages.Zlib(image.GetFilteredData(interlaced: true));
+        zlib[^1] ^= 0x5A;
+        var data = image.Encode(interlaced: true, idatChunkSize: 50, zlib: zlib, afterImageData: builder => builder.Text("Title", "after the data"));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+        foreach (var scale in new[] { 2, 4, 8 })
+        {
+            using var reduced = Image.Load<Rgba64>(data, new ImageDecodeOptions { ScaleDenominator = scale });
+            Assert.Equal(new Size((33 + scale - 1) / scale, (21 + scale - 1) / scale), reduced.Size);
+            Assert.Equal(image.GetExpectedPixel(scale, scale), reduced.Frames[0][1, 1]);
+            Assert.Equal(["Title"], reduced.Metadata.TextEntries.Select(entry => entry.Keyword));
+            Assert.Equal("after the data", reduced.Metadata.TextEntries[0].Value);
+        }
+
+        // Data missing in the passes of the reduced image is still an error
+        var truncated = image.Encode(interlaced: true, zlib: SyntheticImages.Zlib(image.GetFilteredData(interlaced: true)).AsSpan(0, 20).ToArray());
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(truncated, new ImageDecodeOptions { ScaleDenominator = 8 }));
+    }
+
+    [Fact]
+    public void ScaledDecodingAllocatesTheReducedImageOnly()
+    {
+        using var source = new Image<Rgba64>(1024, 768);
+        var frame = source.Frames[0];
+        for (var y = 0; y < source.Height; y++)
+        {
+            for (var x = 0; x < source.Width; x++)
+            {
+                var value = ((uint)x * 2654435761u) ^ ((uint)y * 40503u);
+                frame[x, y] = new Rgba64((ushort)value, (ushort)(value >> 16), (ushort)(value >> 8), ushort.MaxValue);
+            }
+        }
+
+        using var stream = new MemoryStream();
+        source.Save(stream, new Formats.PngEncoder { Interlaced = true, CompressionLevel = CompressionLevel.Fastest });
+        var data = stream.ToArray();
+        long fullPeak;
+        using (var full = Image.Load(data))
+        {
+            fullPeak = full.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        }
+
+        using var reduced = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 8 });
+        Assert.Equal(new Size(128, 96), reduced.Size);
+        var reducedPeak = reduced.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        Assert.Equal(0, reduced.Owner.Scope.GetLiveBytes(AllocationKind.DecoderState));
+        Assert.True(reducedPeak * 20 < fullPeak, $"The 1/8 decode peaks at {reducedPeak} bytes, the full decode at {fullPeak} bytes.");
+    }
+
+    [Fact]
+    public void SequentialReadersDecodeAtAReducedScale()
+    {
+        var image = PngTestImage.CreateRandom(30, 20, 2, 8, transparency: false, seed: 10);
+        var data = image.Encode(interlaced: true, idatChunkSize: 64);
+        using (var reader = Image.OpenReader<Rgba64>(new MemoryStream(data), new ImageReaderOptions { ScaleDenominator = 4 }))
+        {
+            Assert.Equal(new Size(8, 5), reader.Info.Size);
+            using var frame = reader.ReadFrame();
+            Assert.NotNull(frame);
+            Assert.Equal(new Size(8, 5), frame.Size);
+            Assert.Equal(image.GetExpectedPixel(28, 16), frame.Frames[0][7, 4]);
+            Assert.Null(reader.ReadFrame());
+        }
+
+        using (var reader = Image.OpenReader<Rgba64>(new MemoryStream(data), new ImageReaderOptions { TargetSize = new Size(10, 10) }))
+        {
+            Assert.Equal(new Size(15, 10), reader.Info.Size);
+            using var frame = reader.ReadFrame();
+            Assert.Equal(new Size(15, 10), frame!.Size);
+        }
+    }
+
     private static void AssertPixels(Rgba64[] expected, Image<Rgba64> image, string context)
     {
         var actual = new Rgba64[image.Width * image.Height];

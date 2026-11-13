@@ -2806,6 +2806,17 @@ public sealed class PublicApiGeneratorTests
         Assert.Contains("public class B", files[1].Content);
     }
 
+    [Theory]
+    [InlineData("Demo.g.cs", "demo.G.CS", "demo~2.G.CS")]
+    [InlineData("..g.cs", "..G.CS", ".~2.G.CS")]
+    [InlineData("Sample.cs", "sample.CS", "sample~2.CS")]
+    public void MakeFileNamesUnique_KeepsTheExtensionCase(string first, string second, string expected)
+    {
+        var files = PublicApiEmitter.MakeFileNamesUnique([new PublicApiFile(first, "1"), new PublicApiFile(second, "2")]);
+
+        Assert.Equal([first, expected], files.Select(static file => file.RelativePath));
+    }
+
     [Fact]
     public async Task GenerateToDirectory_DeleteUnexpectedFiles()
     {

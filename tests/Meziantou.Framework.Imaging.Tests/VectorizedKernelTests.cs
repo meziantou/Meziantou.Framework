@@ -5230,6 +5230,109 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ImagePixelsReadOneByOneMatchTheScalarReference()
+    {
+        // Turned, skewed, scaled and mirrored images, read with the cubic filter or interpolated, every wrap mode, regions
+        // of the frame, rectangles that are not made of whole pixels, and a limit that leaves no room for the segments
+        var random = new Random(20261113);
+        var roomy = AllocationScope.Create(configuration: null);
+        var tight = AllocationScope.Create(new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 16384 } });
+        using var narrow = new Image<Rgba32>(37, 29);
+        using var wide = new Image<Rgba64>(70, 9);
+        for (var y = 0; y < narrow.Height; y++)
+        {
+            for (var x = 0; x < narrow.Width; x++)
+            {
+                narrow.Frames[0][x, y] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), random.Next(4) switch
+                {
+                    0 => 0,
+                    1 => 255,
+                    _ => (byte)random.Next(256),
+                });
+            }
+        }
+
+        for (var y = 0; y < wide.Height; y++)
+        {
+            for (var x = 0; x < wide.Width; x++)
+            {
+                wide.Frames[0][x, y] = new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), random.Next(4) switch
+                {
+                    0 => 0,
+                    1 => ushort.MaxValue,
+                    _ => (ushort)random.Next(1, 65536),
+                });
+            }
+        }
+
+        const int CanvasWidth = 48;
+        using var canvas = new Image<Rgba64>(CanvasWidth, 4);
+        var modes = Enum.GetValues<ImageWrapMode>();
+        for (var round = 0; round < 600; round++)
+        {
+            ImageFrame frame = (round & 1) == 0 ? narrow.Frames[0] : wide.Frames[0];
+            Rectangle? region = null;
+            if (random.Next(3) == 0)
+            {
+                var left = random.Next(frame.Width);
+                var top = random.Next(frame.Height);
+                region = new Rectangle(left, top, random.Next(1, frame.Width - left + 1), random.Next(1, frame.Height - top + 1));
+            }
+
+            var angle = random.Next(4) == 0 ? 0 : random.NextDouble() * 360;
+            var scale = random.Next(4) == 0 ? 1 : 0.3 + (random.NextDouble() * 3);
+            var transform = AffineTransform.CreateScale(random.Next(5) == 0 ? -scale : scale, scale)
+                .Then(AffineTransform.CreateRotation(angle, new PointD(random.Next(-10, 40), random.Next(-10, 40))))
+                .Then(AffineTransform.CreateTranslation((random.NextDouble() - 0.5) * 30, (random.NextDouble() - 0.5) * 30));
+            var modeX = modes[random.Next(modes.Length)];
+            var modeY = modes[random.Next(modes.Length)];
+            var sampling = random.Next(3) switch
+            {
+                0 => ImageSampling.Bilinear,
+                _ => ImageSampling.Bicubic,
+            };
+            var domain = random.Next(5) == 0 ? new RectangleD(random.NextDouble() * 4, random.NextDouble() * 4, random.NextDouble() * 20, random.NextDouble() * 6) : (RectangleD?)null;
+            var scope = random.Next(4) == 0 ? tight : roomy;
+            var calls = new List<(int Y, int X, int Count)>();
+            for (var i = 0; i < 12; i++)
+            {
+                calls.Add((random.Next(-10, 50), random.Next(-8, CanvasWidth), random.Next(1, CanvasWidth + 1)));
+            }
+
+            var expected = Evaluate(useVectorKernels: false);
+            var actual = Evaluate(useVectorKernels: true);
+            Assert.Equal(expected, actual);
+
+            ushort[] Evaluate(bool useVectorKernels)
+            {
+                using var evaluator = new ImageEvaluator(scope) { UseVectorKernels = useVectorKernels };
+                evaluator.Prepare(frame, region, transform, modeX, modeY, sampling, canvas.Frames[0], CanvasWidth, "region");
+                if (domain is { } rectangle)
+                {
+                    evaluator.SetDomain(rectangle);
+                }
+
+                var colors = new List<ushort>();
+                evaluator.Begin();
+                try
+                {
+                    foreach (var (y, x, count) in calls)
+                    {
+                        colors.AddRange(evaluator.Evaluate(y, x, count));
+                    }
+                }
+                finally
+                {
+                    evaluator.End();
+                }
+
+                return [.. colors];
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingSourceOverOf8BitPixelsMatchesTheScalarReference()
     {
         // The division of the vectorized path: by 2^16, then by 255 as a product and a shift, below 2^32

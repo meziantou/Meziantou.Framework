@@ -200,9 +200,9 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private Span<Rgba64> Samples => unsafe(MemoryMarshal.Cast<byte, Rgba64>(_samples!.Span));
 
     /// <summary>
-    /// Gets or sets a value indicating whether a reduced image read row by row is summed with vectors, the sums of each
-    /// row of the image kept for the next rows of the canvas (the default when vectors are accelerated), rather than by
-    /// the scalar reference.
+    /// Gets or sets a value indicating whether the colors are summed with vectors (the default when vectors are
+    /// accelerated): a reduced image read row by row, the sums of each row of the image kept for the next rows of the
+    /// canvas and the cubic filter of the pixels read one by one, rather than by the scalar references.
     /// Both give the same bits.
     /// </summary>
     internal bool UseVectorKernels { get; set; } = Vector128.IsHardwareAccelerated;
@@ -1066,6 +1066,157 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// </summary>
     private Rgba64 Bicubic(double u, double v)
     {
+        if (UseVectorKernels)
+        {
+            if (Vector256.IsHardwareAccelerated && Avx.IsSupported)
+                return Bicubic<Lanes256>(u, v);
+
+            return Bicubic<Lanes128>(u, v);
+        }
+
+        return BicubicScalar(u, v);
+    }
+
+    /// <summary>
+    /// Gets the color of the image at a position with the cubic filter, as <see cref="BicubicScalar"/> does: the weights
+    /// of the columns and of the rows computed as lanes of <typeparamref name="TLanes"/>, the 16 pixels read first, by rows
+    /// (<see cref="ReadBlock"/>), then summed as the lanes of <typeparamref name="TLanes"/>, with the products and the
+    /// additions of the scalar sums in the same order. A pixel that is not there adds zeros, which change no sum: a sum
+    /// that starts at a positive zero is never a negative zero.
+    /// </summary>
+    private Rgba64 Bicubic<TLanes>(double u, double v)
+        where TLanes : struct, IColorLanes<TLanes>
+    {
+        // Written so that a coordinate that is not a number is far away
+        u = Math.Abs(u) < MaxPosition ? u : (u < 0 ? -MaxPosition : MaxPosition);
+        v = Math.Abs(v) < MaxPosition ? v : (v < 0 ? -MaxPosition : MaxPosition);
+        var column = (int)Math.Floor(u - 0.5);
+        var row = (int)Math.Floor(v - 0.5);
+        var block = default(BicubicBlock);
+        TLanes.CubicWeights(u - 0.5 - column, ref block.Weights[0]);
+        TLanes.CubicWeights(v - 0.5 - row, ref block.Weights[4]);
+        ReadBlock(column - 1, row - 1, block.Pixels);
+        return SumBlock<TLanes>(ref block);
+    }
+
+    /// <summary>Sums the 16 pixels of a block with the weights of its columns and of its rows, row by row (<see cref="BicubicScalar"/>).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Rgba64 SumBlock<TLanes>(ref BicubicBlock block)
+        where TLanes : struct, IColorLanes<TLanes>
+    {
+        var sum = TLanes.Zero;
+        for (var j = 0; j < 4; j++)
+        {
+            var weightY = block.Weights[4 + j];
+            for (var i = 0; i < 4; i++)
+            {
+                var bits = block.Pixels[(4 * j) + i];
+                sum = TLanes.AddProduct(sum, block.Weights[i] * weightY * (long)(bits >> 48), TLanes.Channels((bits & 0x0000_FFFF_FFFF_FFFFUL) | 0x0001_0000_0000_0000UL));
+            }
+        }
+
+        Span<double> sums = block.Weights;
+        TLanes.Store(sum, ref sums[0]);
+        var alpha = sums[3];
+
+        // The sums are of 16-bit values times 16-bit alphas: the alpha is up to 65535, each color up to 65535 times it
+        var a = Math.Clamp(alpha, 0, 65535);
+        var resultAlpha = Round(a);
+        if (resultAlpha == 0)
+            return default;
+
+        return new Rgba64(Round(Math.Clamp(sums[0], 0, 65535 * a) / a), Round(Math.Clamp(sums[1], 0, 65535 * a) / a), Round(Math.Clamp(sums[2], 0, 65535 * a) / a), resultAlpha);
+    }
+
+    /// <summary>
+    /// Reads the 4 by 4 pixels of the image from a column and a row, as the bits of their colors, row by row; a pixel that
+    /// is not there is transparent. The 4 pixels of a row that are 4 columns of the region one after the other are read
+    /// at once, from one segment when they are in the same one.
+    /// </summary>
+    private void ReadBlock(int left, int top, Span<ulong> pixels)
+    {
+        var hasColumn0 = TryWrap(left, _left, _regionWidth, _wrapModeX, out var column0);
+        var hasColumn1 = TryWrap(left + 1, _left, _regionWidth, _wrapModeX, out var column1);
+        var hasColumn2 = TryWrap(left + 2, _left, _regionWidth, _wrapModeX, out var column2);
+        var hasColumn3 = TryWrap(left + 3, _left, _regionWidth, _wrapModeX, out var column3);
+        var isRun = hasColumn0 && hasColumn1 && hasColumn2 && hasColumn3 && column1 == column0 + 1 && column2 == column0 + 2 && column3 == column0 + 3;
+        var hasColumn = hasColumn0 || hasColumn1 || hasColumn2 || hasColumn3;
+        var useSegments = false;
+        var isOneSegment = false;
+        var hasPixel = false;
+        for (var j = 0; j < 4; j++)
+        {
+            var target = pixels.Slice(4 * j, 4);
+            if (!hasColumn || !TryWrap(top + j, _top, _regionHeight, _wrapModeY, out var row))
+            {
+                target.Clear();
+                continue;
+            }
+
+            // The segments are started by the first pixel read, as TryRead does
+            if (!hasPixel)
+            {
+                hasPixel = true;
+                useSegments = _segmentState > 0 || (_segmentState == 0 && StartSegments());
+                isOneSegment = isRun && useSegments && (column0 >> SegmentShift) == (column3 >> SegmentShift);
+            }
+
+            if (isOneSegment)
+            {
+                ref var first = ref GetSegmentPixel(column0, row);
+                unsafe { MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<Rgba64, ulong>(ref first), 4).CopyTo(target); }
+            }
+            else if (isRun && !useSegments)
+            {
+                _source!.ReadRgba64(_storage!, _top + row, _left + column0, unsafe(MemoryMarshal.Cast<ulong, Rgba64>(target)));
+            }
+            else
+            {
+                target[0] = hasColumn0 ? ReadPixel(column0, row, useSegments) : 0;
+                target[1] = hasColumn1 ? ReadPixel(column1, row, useSegments) : 0;
+                target[2] = hasColumn2 ? ReadPixel(column2, row, useSegments) : 0;
+                target[3] = hasColumn3 ? ReadPixel(column3, row, useSegments) : 0;
+            }
+        }
+    }
+
+    /// <summary>Reads a pixel of the region, from its segment or from the frame, as the bits of its color.</summary>
+    private ulong ReadPixel(int x, int y, bool useSegments)
+    {
+        if (useSegments)
+            return unsafe(Unsafe.BitCast<Rgba64, ulong>(GetSegmentPixel(x, y)));
+
+        var color = default(Rgba64);
+        _source!.ReadRgba64(_storage!, _top + y, _left + x, new Span<Rgba64>(ref color));
+        return unsafe(Unsafe.BitCast<Rgba64, ulong>(color));
+    }
+
+    /// <summary>The weights and the pixels of the cubic filter at a position: 4 weights of columns, 4 of rows, then 4 by 4 pixels.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private struct BicubicBlock
+    {
+        public Doubles8 Weights;
+        public Pixels16 Pixels;
+    }
+
+    [InlineArray(8)]
+    private struct Doubles8
+    {
+        private double _element;
+    }
+
+    [InlineArray(16)]
+    private struct Pixels16
+    {
+        private ulong _element;
+    }
+
+    /// <summary>
+    /// Gets the color of the image at a position with the filter of Mitchell and Netravali, one pixel at a time (the
+    /// scalar reference of <see cref="Bicubic{TLanes}"/>).
+    /// </summary>
+    private Rgba64 BicubicScalar(double u, double v)
+    {
         // Written so that a coordinate that is not a number is far away
         u = Math.Abs(u) < MaxPosition ? u : (u < 0 ? -MaxPosition : MaxPosition);
         v = Math.Abs(v) < MaxPosition ? v : (v < 0 ? -MaxPosition : MaxPosition);
@@ -1732,7 +1883,16 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// <summary>Gets a pixel of the region from its segment, which is converted first when it is not kept yet.</summary>
     /// <param name="x">The column, from the first one of the region.</param>
     /// <param name="y">The row, from the first one of the region.</param>
-    private Rgba64 ReadSegment(int x, int y)
+    private Rgba64 ReadSegment(int x, int y) => GetSegmentPixel(x, y);
+
+    /// <summary>
+    /// Gets a reference to a pixel of the region in its segment, which is converted first when it is not kept yet: the
+    /// next pixels of the row follow it, up to the end of the segment.
+    /// </summary>
+    /// <param name="x">The column, from the first one of the region.</param>
+    /// <param name="y">The row, from the first one of the region.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private ref Rgba64 GetSegmentPixel(int x, int y)
     {
         var segment = x >> SegmentShift;
         var key = ((long)y * _segmentsPerRow) + segment;
@@ -1747,12 +1907,19 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         ref var colors = ref unsafe(Unsafe.Add(ref Unsafe.As<byte, Rgba64>(ref MemoryMarshal.GetArrayDataReference(_segmentColorBytes!)), slot << SegmentShift));
         if (keyEntry != tag)
         {
-            var start = segment << SegmentShift;
-            _source!.ReadRgba64(_storage!, _top + y, _left + start, unsafe(MemoryMarshal.CreateSpan(ref colors, Math.Min(SegmentLength, _regionWidth - start))));
+            LoadSegment(ref colors, segment, y);
             keyEntry = tag;
         }
 
-        return unsafe(Unsafe.Add(ref colors, x & (SegmentLength - 1)));
+        return ref unsafe(Unsafe.Add(ref colors, x & (SegmentLength - 1)));
+    }
+
+    /// <summary>Converts the pixels of a segment into its slot.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void LoadSegment(ref Rgba64 colors, int segment, int y)
+    {
+        var start = segment << SegmentShift;
+        _source!.ReadRgba64(_storage!, _top + y, _left + start, unsafe(MemoryMarshal.CreateSpan(ref colors, Math.Min(SegmentLength, _regionWidth - start))));
     }
 
     /// <summary>Rents the segments for the image of the lease, and forgets those of the previous ones.</summary>
@@ -1888,6 +2055,31 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         /// <summary>Converts the four 16-bit samples of a color (the bits of an <see cref="Rgba64"/>) to doubles.</summary>
         static abstract TSelf Channels(ulong color);
 
+        /// <summary>
+        /// Writes the weights of the cubic filter for a fraction <c>f</c>: <c>k(1 + f)</c>, <c>k(f)</c>, <c>k(1 - f)</c>
+        /// and <c>k(2 - f)</c>, each computed with the operations of <see cref="Kernel"/>, in the same order.
+        /// </summary>
+        static abstract void CubicWeights(double fraction, ref double target);
+    }
+
+    /// <summary>Gets the cubic filter of distances, lane by lane, with the operations of <see cref="Kernel"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<double> CubicKernel(Vector128<double> distance)
+    {
+        var t = Vector128.Abs(distance);
+        var near = ((((Vector128.Create(7.0) * t) - Vector128.Create(12.0)) * t * t) + Vector128.Create(16.0 / 3)) / Vector128.Create(6.0);
+        var far = ((((Vector128.Create(-7.0 / 3) * t) + Vector128.Create(12.0)) * t * t) - (Vector128.Create(20.0) * t) + Vector128.Create(32.0 / 3)) / Vector128.Create(6.0);
+        return Vector128.ConditionalSelect(Vector128.LessThan(t, Vector128.Create(1.0)), near, Vector128.ConditionalSelect(Vector128.LessThan(t, Vector128.Create(2.0)), far, Vector128<double>.Zero));
+    }
+
+    /// <summary>Gets the cubic filter of distances, lane by lane, with the operations of <see cref="Kernel"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<double> CubicKernel(Vector256<double> distance)
+    {
+        var t = Vector256.Abs(distance);
+        var near = ((((Vector256.Create(7.0) * t) - Vector256.Create(12.0)) * t * t) + Vector256.Create(16.0 / 3)) / Vector256.Create(6.0);
+        var far = ((((Vector256.Create(-7.0 / 3) * t) + Vector256.Create(12.0)) * t * t) - (Vector256.Create(20.0) * t) + Vector256.Create(32.0 / 3)) / Vector256.Create(6.0);
+        return Vector256.ConditionalSelect(Vector256.LessThan(t, Vector256.Create(1.0)), near, Vector256.ConditionalSelect(Vector256.LessThan(t, Vector256.Create(2.0)), far, Vector256<double>.Zero));
     }
 
     /// <summary>The four sums of a pixel in one vector of 256 bits, with AVX.</summary>
@@ -1913,6 +2105,14 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Lanes256 Channels(ulong color) => new(Avx.ConvertToVector256Double(Sse41.ConvertToVector128Int32(Vector128.CreateScalar(color).AsUInt16())));
+
+        /// <remarks><c>1 + 1 f</c>, <c>0 + 1 f</c>, <c>1 + (-1) f</c> and <c>2 + (-1) f</c> are <c>1 + f</c>, <c>f</c>, <c>1 - f</c> and <c>2 - f</c>, exactly.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CubicWeights(double fraction, ref double target)
+        {
+            var distances = Vector256.Create(1.0, 0, 1, 2) + (Vector256.Create(1.0, 1, -1, -1) * Vector256.Create(fraction));
+            unsafe { CubicKernel(distances).StoreUnsafe(ref target); }
+        }
 
     }
 
@@ -1957,6 +2157,21 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             var samples = Vector128.WidenLower(Vector128.CreateScalar(color).AsUInt16());
             return new(ToDouble(Vector128.WidenLower(samples)), ToDouble(Vector128.WidenUpper(samples)));
         }
+
+        /// <remarks><c>1 + 1 f</c>, <c>0 + 1 f</c>, <c>1 + (-1) f</c> and <c>2 + (-1) f</c> are <c>1 + f</c>, <c>f</c>, <c>1 - f</c> and <c>2 - f</c>, exactly.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CubicWeights(double fraction, ref double target)
+        {
+            var broadcast = Vector128.Create(fraction);
+            var low = Vector128.Create(1.0, 0) + (Vector128.Create(1.0, 1) * broadcast);
+            var high = Vector128.Create(1.0, 2) + (Vector128.Create(-1.0, -1) * broadcast);
+            unsafe
+            {
+                CubicKernel(low).StoreUnsafe(ref target);
+                CubicKernel(high).StoreUnsafe(ref target, 2);
+            }
+        }
+
 
         /// <summary>Converts integers below 2^52 to doubles, exactly: with the conversion of Arm64, or as the bits of 2^52 plus the integer, minus 2^52.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

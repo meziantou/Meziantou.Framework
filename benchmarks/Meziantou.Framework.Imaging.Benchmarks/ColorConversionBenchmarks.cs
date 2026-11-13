@@ -8,7 +8,8 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 
 /// <summary>
 /// ICC color conversion of 1920x1080 pixels between the profiles provided by the library: matrix-based RGB and monochrome
-/// profiles with the sRGB parametric curve or no curve (linear light), as sample buffers and as an image operation.
+/// profiles with the sRGB parametric curve or no curve (linear light), and the LUT-based CMYK profile, as sample buffers
+/// and as an image operation.
 /// </summary>
 [Config(typeof(WorkloadConfig))]
 public class ColorConversionBenchmarks
@@ -22,6 +23,8 @@ public class ColorConversionBenchmarks
     private IccColorTransform _srgbToLinear = null!;
     private IccColorTransform _linearToSrgb = null!;
     private IccColorTransform _srgbToGray = null!;
+    private IccColorTransform _cmykToSrgb = null!;
+    private byte[] _cmyk8 = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -44,6 +47,13 @@ public class ColorConversionBenchmarks
         _srgbToLinear = IccColorTransform.Create(IccProfile.Srgb, BuiltInIccProfiles.LinearSrgb);
         _linearToSrgb = IccColorTransform.Create(BuiltInIccProfiles.LinearSrgb, IccProfile.Srgb);
         _srgbToGray = IccColorTransform.Create(IccProfile.Srgb, IccProfile.SrgbGray);
+        _cmykToSrgb = IccColorTransform.Create(BuiltInIccProfiles.Cgats001CompatibleCmyk, IccProfile.Srgb);
+        _cmyk8 = new byte[pixels * 4];
+        for (var i = 0; i < _cmyk8.Length; i++)
+        {
+            state = (state * 1664525) + 1013904223;
+            _cmyk8[i] = (byte)(state >> 24);
+        }
     }
 
     [GlobalCleanup]
@@ -87,6 +97,14 @@ public class ColorConversionBenchmarks
     {
         _srgbToGray.Convert(_rgb8, _gray8);
         return _gray8[0];
+    }
+
+    [Benchmark]
+    [Workload("1920x1080 CMYK 8-bit to RGB 8-bit, a LUT-based CMYK profile (four-input table, multilinear) to sRGB")]
+    public int CmykToSrgb8()
+    {
+        _cmykToSrgb.Convert(_cmyk8, _converted8);
+        return _converted8[0];
     }
 
     [Benchmark]

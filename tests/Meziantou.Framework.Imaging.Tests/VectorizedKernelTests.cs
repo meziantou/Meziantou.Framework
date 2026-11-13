@@ -3402,6 +3402,48 @@ public sealed class VectorizedKernelTests
         };
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WideSsimStatisticsAndScoresMatchTheScalarReference()
+    {
+        var random = new Random(20261115);
+        foreach (var sixteenBit in new[] { true, false })
+        {
+            foreach (var width in new[] { 1, 2, 3, 4, 5, 7, 8, 9, 13, 20 })
+            {
+                foreach (var windowHeight in new[] { 1, 2, 5, 7 })
+                {
+                    var windowWidth = Math.Min(7, width);
+                    var rowLength = width * 4;
+                    var expectedRing = Enumerable.Range(0, windowHeight * rowLength).Select(_ => NextValue(random, sixteenBit)).ToArray();
+                    var actualRing = expectedRing.Select(value => random.Next(3) == 0 ? value : NextValue(random, sixteenBit)).ToArray();
+                    var windowRow = random.Next(20);
+                    var expectedColumns = Enumerable.Repeat(double.NaN, rowLength * 5).ToArray();
+                    var actualColumns = (double[])expectedColumns.Clone();
+                    WideSimilarityCalculator.ComputeColumnStatisticsScalar(expectedRing, actualRing, expectedColumns, windowRow, windowHeight, rowLength);
+                    WideSimilarityCalculator.ComputeColumnStatistics(expectedRing, actualRing, actualColumns, windowRow, windowHeight, rowLength);
+                    Assert.Equal(Array.ConvertAll(expectedColumns, BitConverter.DoubleToInt64Bits), Array.ConvertAll(actualColumns, BitConverter.DoubleToInt64Bits));
+
+                    // The sums of the band accumulate the windows of every window row
+                    var colorRange = sixteenBit ? 65535 : random.Next(2) == 0 ? 1 : 255;
+                    var alphaRange = sixteenBit ? 65535 : 1;
+                    var expectedSums = Enumerable.Range(0, 4).Select(_ => random.NextDouble() * 100).ToArray();
+                    var actualSums = (double[])expectedSums.Clone();
+                    WideSimilarityCalculator.AccumulateWindowsScalar(expectedColumns, width, windowWidth, windowHeight, colorRange, alphaRange, expectedSums);
+                    WideSimilarityCalculator.AccumulateWindows(expectedColumns, width, windowWidth, windowHeight, colorRange, alphaRange, actualSums);
+                    Assert.Equal(Array.ConvertAll(expectedSums, BitConverter.DoubleToInt64Bits), Array.ConvertAll(actualSums, BitConverter.DoubleToInt64Bits));
+                }
+            }
+        }
+
+        static double NextValue(Random random, bool sixteenBit) => random.Next(5) switch
+        {
+            0 => 0,
+            1 => sixteenBit ? 65535 : 1,
+            _ => sixteenBit ? random.Next(65536) : random.NextDouble() * 1.5,
+        };
+    }
+
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     private static float NextSimilarityValue(Random random) => random.Next(12) switch
     {

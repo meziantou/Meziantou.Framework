@@ -4085,6 +4085,66 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Gray8)]
+    [InlineData(PixelFormat.Rgba64)]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void CannyEdgesVectorizedRowsMatchTheScalarLoops(PixelFormat format)
+    {
+        // Frames narrower and shorter than the blur and the 3x3 neighborhoods, rows whose vector part leaves every possible
+        // tail, smooth areas (equal magnitudes, gradients on the boundaries of the sectors) and noise, with and without blur
+        var random = new Random((int)format + 300);
+        (int Width, int Height, double Sigma)[] cases = [(1, 1, 1.4), (2, 5, 1.4), (3, 3, 0), (7, 4, 1), (13, 9, 0), (14, 11, 1.4), (15, 12, 2.5), (41, 23, 0.8)];
+        foreach (var ((width, height, sigma), noisy) in cases.SelectMany(item => new[] { (item, false), (item, true) }))
+        {
+            // Vertical steps (equal magnitudes on both sides of the edge, horizontal sectors) with and without noise
+            var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+            var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
+            if (format == PixelFormat.RgbaFloat)
+            {
+                var floats = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(bytes.AsSpan()));
+                for (var i = 0; i < floats.Length; i++)
+                {
+                    floats[i] = noisy && random.Next(3) == 0 ? (float)random.NextDouble() : (i / 4 % width) < width / 2 ? 0.25f : 0.75f;
+                }
+            }
+            else
+            {
+                for (var i = 0; i < bytes.Length; i++)
+                {
+                    bytes[i] = noisy && random.Next(3) == 0 ? (byte)random.Next(256) : (i / bytesPerPixel % width) < width / 2 ? (byte)40 : (byte)200;
+                }
+            }
+
+            foreach (var options in new[] { new CannyEdgeOptions { Sigma = sigma }, new CannyEdgeOptions { Sigma = sigma, LowThreshold = 0.02, HighThreshold = 0.3 } })
+            {
+                Assert.Equal(Detect(forceScalar: true), Detect(forceScalar: false));
+
+                byte[] Detect(bool forceScalar)
+                {
+                    using var image = format == PixelFormat.RgbaFloat
+                        ? Image.ImportPixelBytes<RgbaFloat>(bytes, width, height)
+                        : ImportBytes(format, bytes, width, height);
+                    Resampler.TestForceScalar = forceScalar;
+                    try
+                    {
+                        image.DetectCannyEdges(options);
+                    }
+                    finally
+                    {
+                        Resampler.TestForceScalar = false;
+                    }
+
+                    var result = new byte[bytes.Length];
+                    image.Frames[0].CopyPixelBytesTo(result);
+                    return result;
+                }
+            }
+        }
+    }
+
     // The sign of a NaN depends on the order of the operands of an addition, which the JIT may swap in the scalar loops too
     private static byte[] NormalizeNaNs(PixelFormat format, byte[] bytes)
     {

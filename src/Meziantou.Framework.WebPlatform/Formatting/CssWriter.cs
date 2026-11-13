@@ -176,18 +176,111 @@ public class CssWriter
         WriteBlockStart(rule);
         Depth++;
         _blocks.Push(new BlockState(rule.HasMultilineBlock ? BlockKind.Multiline : BlockKind.SingleLine));
-        WriteDeclarations(rule);
-        if (rule.ChildRules is { } children)
+        if (MergeAdjacentDeclarations && rule.ChildRules is { } nestedRules)
         {
-            foreach (var child in children)
+            WriteItemsMergingDeclarations(rule, nestedRules);
+        }
+        else
+        {
+            WriteDeclarations(rule);
+            if (rule.ChildRules is { } children)
             {
-                WriteRule(child);
+                foreach (var child in children)
+                {
+                    WriteRule(child);
+                }
             }
         }
 
         _blocks.Pop();
         Depth--;
         WriteBlockEnd(rule);
+    }
+
+    /// <summary>
+    /// Whether the declarations that are written without a rule between them (the declarations of a style rule and its nested
+    /// declarations, separated by the rules that are not written) are written as one declaration block: the parser reads them
+    /// as one block, so the declarations of a property are merged, as the parser does (the last one replaces the others).
+    /// </summary>
+    internal virtual bool MergeAdjacentDeclarations => false;
+
+    private void WriteItemsMergingDeclarations(CssRule rule, List<CssRule> children)
+    {
+        // The declaration blocks written since the last rule: the declarations of the style rule, and the nested declarations
+        // (the declarations of the other rules, such as the descriptors of @page, are not merged with nested declarations)
+        var pending = new List<CssRule>();
+        if (rule is CssStyleRule)
+        {
+            pending.Add(rule);
+        }
+        else
+        {
+            WriteDeclarations(rule);
+        }
+
+        foreach (var child in children)
+        {
+            if (!ShouldWrite(child))
+                continue;
+
+            if (child is CssNestedDeclarations)
+            {
+                pending.Add(child);
+                continue;
+            }
+
+            WritePendingDeclarations(rule, pending);
+            WriteRule(child);
+        }
+
+        WritePendingDeclarations(rule, pending);
+    }
+
+    private void WritePendingDeclarations(CssRule rule, List<CssRule> pending)
+    {
+        switch (pending)
+        {
+            case []:
+                return;
+
+            case [var single]:
+                if (ReferenceEquals(single, rule))
+                {
+                    WriteDeclarations(rule);
+                }
+                else
+                {
+                    WriteRule(single);
+                }
+
+                break;
+
+            default:
+                var merged = new List<CssDeclarationEntry>();
+                foreach (var source in pending)
+                {
+                    var declarations = source switch
+                    {
+                        CssStyleRule styleRule => styleRule.Style.Declarations,
+                        CssNestedDeclarations nested => nested.Style.Declarations,
+                        _ => throw new InvalidOperationException("Unexpected declaration block"),
+                    };
+
+                    foreach (var declaration in declarations)
+                    {
+                        CssStyleDeclaration.AddDeclaration(merged, declaration);
+                    }
+                }
+
+                foreach (var declaration in GetDeclarationsToWrite(CssStyleDeclaration.GetSerializedDeclarations(merged)))
+                {
+                    WriteDeclaration(rule, declaration.Name, declaration.Value, declaration.Important);
+                }
+
+                break;
+        }
+
+        pending.Clear();
     }
 
     private void WriteDeclarations(CssRule rule)

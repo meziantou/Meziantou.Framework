@@ -66,6 +66,11 @@ true by default:
 | [ShortenColors](cref:Meziantou.Framework.WebPlatform.Formatting.CssMinifyFormatter.ShortenColors) | Writes the opaque colors in hexadecimal (`#f00`) |
 | [RemoveLeadingZeros](cref:Meziantou.Framework.WebPlatform.Formatting.CssMinifyFormatter.RemoveLeadingZeros) | Writes `0.5s` as `.5s` |
 
+The declarations of a style rule that are no longer separated by a rule once the empty rules are removed
+(`a { color: red; .b { } color: blue }`) are written as one block, as the parser reads them: the last declaration of a
+property replaces the previous ones, unless they are `!important` and it is not (`a{color:blue}`). Minifying the output
+again does not change it.
+
 The values of the custom properties are written as they are. The values that contain a substitution function, such as
 `var()`, are kept as specified: their whitespace is removed, but their numbers and colors are not shortened
 (`calc(0.5px + var(--x))` stays `calc(0.5px + var(--x))`).

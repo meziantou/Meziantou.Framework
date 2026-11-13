@@ -1,3 +1,5 @@
+using Meziantou.Framework.WebPlatform.WebAudio.Rendering;
+
 namespace Meziantou.Framework.WebPlatform.WebAudio;
 
 /// <summary>The options of a <see cref="GainNode"/> (https://webaudio.github.io/web-audio-api/#GainOptions).</summary>
@@ -59,12 +61,7 @@ public sealed class GainNode : AudioNode
 
             for (var channel = 0; channel < input.NumberOfChannels; channel++)
             {
-                var source = input.GetChannelSpan(channel);
-                var destination = output.GetChannelSpan(channel);
-                for (var i = 0; i < source.Length; i++)
-                {
-                    destination[i] = source[i] * gain;
-                }
+                AudioVectors.Multiply(input.GetChannelSpan(channel), gain, output.GetChannelSpan(channel));
             }
         }
         else
@@ -72,12 +69,7 @@ public sealed class GainNode : AudioNode
             var gains = Gain.Values;
             for (var channel = 0; channel < input.NumberOfChannels; channel++)
             {
-                var source = input.GetChannelSpan(channel);
-                var destination = output.GetChannelSpan(channel);
-                for (var i = 0; i < source.Length; i++)
-                {
-                    destination[i] = source[i] * gains[i];
-                }
+                AudioVectors.Multiply(input.GetChannelSpan(channel), gains, output.GetChannelSpan(channel));
             }
         }
 

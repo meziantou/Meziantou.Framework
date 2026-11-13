@@ -2,6 +2,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Meziantou.Framework.WebPlatform.WebAudio;
+using Meziantou.Framework.WebPlatform.WebAudio.Rendering;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
@@ -764,5 +765,63 @@ public sealed class WebAudioTests : IDisposable
         Assert.Equal(
             "0.02 0.08 0.32 0.02 0.32,NotSupportedError,object,none,true,{\"underrunDuration\":0,\"underrunEvents\":0,\"totalDuration\":0,\"averageLatency\":0,\"minimumLatency\":0,\"maximumLatency\":0},NotFoundError,error \"\",sinkchange,\"\"",
             Evaluate(document, "log.join()"));
+    }
+
+    [Fact]
+    public void AudioVectors_MatchTheScalarOperations()
+    {
+        for (var length = 0; length <= 40; length++)
+        {
+            var x = new float[length];
+            var y = new float[length];
+            var addend = new float[length];
+            for (var i = 0; i < length; i++)
+            {
+                x[i] = MathF.Sin((i * 1.7f) + length);
+                y[i] = MathF.Cos((i * 0.9f) - length);
+                addend[i] = MathF.Sin(i * 3.1f) / 3;
+            }
+
+            var destination = new float[length + 1];
+            destination[length] = 42;
+            AudioVectors.Multiply(x, 0.3f, destination);
+            for (var i = 0; i < length; i++)
+            {
+                Assert.Equal(x[i] * 0.3f, destination[i]);
+            }
+
+            Assert.Equal(42f, destination[length]);
+
+            AudioVectors.Multiply(x, y, destination);
+            for (var i = 0; i < length; i++)
+            {
+                Assert.Equal(x[i] * y[i], destination[i]);
+            }
+
+            // In place, as the mixing of the buses does
+            var sum = addend.ToArray();
+            AudioVectors.Add(sum, x, sum);
+            for (var i = 0; i < length; i++)
+            {
+                Assert.Equal(addend[i] + x[i], sum[i]);
+            }
+
+            var scaled = addend.ToArray();
+            AudioVectors.MultiplyAdd(x, 0.7f, scaled, scaled);
+            for (var i = 0; i < length; i++)
+            {
+                Assert.Equal((x[i] * 0.7f) + addend[i], scaled[i]);
+            }
+
+            var dx = x.Select(value => (double)value).ToArray();
+            var dy = y.Select(value => (double)value).ToArray();
+            var expected = 0.0;
+            for (var i = 0; i < length; i++)
+            {
+                expected += dx[i] * dy[i];
+            }
+
+            Assert.True(Math.Abs(expected - AudioVectors.Dot(dx, dy)) <= 1e-12, $"length {length}");
+        }
     }
 }

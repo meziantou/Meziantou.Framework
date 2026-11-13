@@ -246,8 +246,10 @@ public sealed class ConvolverNode : AudioNode
         private readonly double _scale;
         private readonly int _blockSize;
 
-        // Direct convolution: the last input samples
-        private readonly float[]? _history;
+        // Direct convolution: the response in reverse order, and the last input samples, each stored twice (at its
+        // position and one response length later) so that the window of the last samples is contiguous
+        private readonly double[]? _reversedResponse;
+        private readonly double[]? _history;
         private int _historyPosition;
 
         // Partitioned convolution: the spectra of the partitions of the response, and the spectra of the last input windows
@@ -271,7 +273,13 @@ public sealed class ConvolverNode : AudioNode
             _blockSize = blockSize;
             if (response.Length <= MaxDirectLength)
             {
-                _history = new float[response.Length];
+                _reversedResponse = new double[response.Length];
+                for (var i = 0; i < response.Length; i++)
+                {
+                    _reversedResponse[i] = response[response.Length - 1 - i];
+                }
+
+                _history = new double[2 * response.Length];
                 return;
             }
 
@@ -347,16 +355,16 @@ public sealed class ConvolverNode : AudioNode
         private void ProcessDirect(ReadOnlySpan<float> input, Span<float> output, bool accumulate)
         {
             var history = _history!;
-            var length = history.Length;
+            var reversedResponse = _reversedResponse!;
+            var length = reversedResponse.Length;
             for (var i = 0; i < output.Length; i++)
             {
-                history[_historyPosition] = input.IsEmpty ? 0 : input[i];
-                var sum = 0.0;
-                for (var k = 0; k < length; k++)
-                {
-                    sum += _response[k] * (double)history[(_historyPosition - k + length) % length];
-                }
+                double sample = input.IsEmpty ? 0 : input[i];
+                history[_historyPosition] = sample;
+                history[_historyPosition + length] = sample;
 
+                // The products of two floats are exact in double: only the order of the additions differs from the definition
+                var sum = AudioVectors.Dot(history.AsSpan(_historyPosition + 1, length), reversedResponse);
                 _historyPosition = (_historyPosition + 1) % length;
                 var value = (float)(sum * _scale);
                 output[i] = accumulate ? output[i] + value : value;
@@ -392,7 +400,7 @@ public sealed class ConvolverNode : AudioNode
             var fft = Fft.Get(fftSize);
             fft.Transform(inputReal, inputImaginary, inverse: false);
 
-            // Y = sum X[n - p] H[p]
+            // Y = sum X[n - p] H[p], vectorized (the operations are not fused, so the result is the same as the scalar loop)
             var real = _real!;
             var imaginary = _imaginary!;
             Array.Clear(real);
@@ -404,7 +412,24 @@ public sealed class ConvolverNode : AudioNode
                 var xi = _inputImaginary[index];
                 var hr = _partitionReal[p];
                 var hi = _partitionImaginary![p];
-                for (var k = 0; k < fftSize; k++)
+                var k = 0;
+                for (; k <= fftSize - Vector<double>.Count; k += Vector<double>.Count)
+                {
+                    // Every array has fftSize elements: the loads and stores stay within the arrays
+                    var vxr = unsafe(Vector.LoadUnsafe(ref xr[0], (nuint)k));
+                    var vxi = unsafe(Vector.LoadUnsafe(ref xi[0], (nuint)k));
+                    var vhr = unsafe(Vector.LoadUnsafe(ref hr[0], (nuint)k));
+                    var vhi = unsafe(Vector.LoadUnsafe(ref hi[0], (nuint)k));
+                    var vreal = unsafe(Vector.LoadUnsafe(ref real[0], (nuint)k)) + ((vxr * vhr) - (vxi * vhi));
+                    var vimaginary = unsafe(Vector.LoadUnsafe(ref imaginary[0], (nuint)k)) + ((vxr * vhi) + (vxi * vhr));
+                    unsafe
+                    {
+                        vreal.StoreUnsafe(ref real[0], (nuint)k);
+                        vimaginary.StoreUnsafe(ref imaginary[0], (nuint)k);
+                    }
+                }
+
+                for (; k < fftSize; k++)
                 {
                     real[k] += (xr[k] * hr[k]) - (xi[k] * hi[k]);
                     imaginary[k] += (xr[k] * hi[k]) + (xi[k] * hr[k]);

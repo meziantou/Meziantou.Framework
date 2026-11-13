@@ -37,7 +37,7 @@ internal static class TomlComplexConverter
                 throw reader.CreateException($"Expected {TomlTokenType.PropertyName} token but was {reader.TokenType}.");
             }
 
-            var name = reader.PropertyName!;
+            var name = reader.PropertyName;
             reader.Read();
             if (string.Equals(name, realName, comparison))
             {

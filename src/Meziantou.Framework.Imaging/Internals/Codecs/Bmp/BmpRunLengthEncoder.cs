@@ -44,6 +44,15 @@ internal static class BmpRunLengthEncoder
         return written + 2;
     }
 
+    /// <summary>The pixel-at-a-time reference of <see cref="EncodeRow"/>.</summary>
+    internal static int EncodeRowScalar(ReadOnlySpan<byte> indexes, bool fourBit, Span<byte> destination)
+    {
+        var written = fourBit ? EncodeRow4Scalar(indexes, destination) : EncodeRow8Scalar(indexes, destination);
+        destination[written] = 0;
+        destination[written + 1] = BmpFormat.RunLengthEndOfLine;
+        return written + 2;
+    }
+
     /// <summary>Writes the end-of-bitmap escape.</summary>
     /// <param name="destination">At least <see cref="EndOfBitmapLength"/> bytes.</param>
     public static void WriteEndOfBitmap(Span<byte> destination)
@@ -52,7 +61,112 @@ internal static class BmpRunLengthEncoder
         destination[1] = BmpFormat.RunLengthEndOfBitmap;
     }
 
+    /// <summary>
+    /// Encodes a row of 8-bit indexes: <see cref="EncodeRow8Scalar"/>, the literal pixels found with
+    /// <see cref="RunLengthSearch.IndexOfTriple"/>. The first 3 equal pixels after the start of the literals start a group of
+    /// equal pixels, which the scalar loop reaches through the groups of 1 or 2 pixels before it.
+    /// </summary>
     private static int EncodeRow8(ReadOnlySpan<byte> row, Span<byte> destination)
+    {
+        var written = 0;
+        var position = 0;
+        while (position < row.Length)
+        {
+            var run = RunLengthSearch.CountRun(row[position..], MaxCount);
+            if (run >= MinRepeat)
+            {
+                destination[written++] = (byte)run;
+                destination[written++] = row[position];
+                position += run;
+                continue;
+            }
+
+            // The literal pixels up to the next run worth encoding, at most MaxCount of them
+            var start = position;
+            var triple = RunLengthSearch.IndexOfTriple(row[(start + 1)..Math.Min(row.Length, start + MaxCount + 2)]);
+            position = triple < 0 ? Math.Min(row.Length, start + MaxCount) : start + 1 + triple;
+            var count = position - start;
+            if (count >= MinRepeat)
+            {
+                destination[written++] = 0;
+                destination[written++] = (byte)count;
+                row.Slice(start, count).CopyTo(destination[written..]);
+                written += count;
+                if ((count & 1) != 0)
+                {
+                    destination[written++] = 0;
+                }
+
+                continue;
+            }
+
+            // One or two pixels: too few for absolute mode
+            var literals = row[..position];
+            for (var i = start; i < position; i += run)
+            {
+                run = GetRun8(literals, i);
+                destination[written++] = (byte)run;
+                destination[written++] = row[i];
+            }
+        }
+
+        return written;
+    }
+
+    /// <summary>
+    /// Encodes a row of 4-bit indexes: <see cref="EncodeRow4Scalar"/>, the literal pixels found with
+    /// <see cref="RunLengthSearch.IndexOfPairAtDistance2"/> (a run of two alternating indexes is worth encoding from the pixel
+    /// that equals the one two positions after it).
+    /// </summary>
+    private static int EncodeRow4(ReadOnlySpan<byte> row, Span<byte> destination)
+    {
+        var written = 0;
+        var position = 0;
+        while (position < row.Length)
+        {
+            var run = GetRun4Vector(row, position);
+            if (run >= MinRepeat)
+            {
+                destination[written++] = (byte)run;
+                destination[written++] = (byte)((row[position] << 4) | row[position + 1]);
+                position += run;
+                continue;
+            }
+
+            // The literal pixels up to the next run worth encoding, at most MaxCount of them
+            var start = position;
+            var repeat = RunLengthSearch.IndexOfPairAtDistance2(row[start..Math.Min(row.Length, start + MaxCount + 2)]);
+            position = repeat < 0 ? Math.Min(row.Length, start + MaxCount) : start + repeat;
+            var count = position - start;
+            if (count >= MinRepeat)
+            {
+                // Two indexes per byte, the first in the high-order half; an odd count leaves the last half at zero
+                destination[written++] = 0;
+                destination[written++] = (byte)count;
+                var length = (count + 1) / 2;
+                for (var i = 0; i < length; i++)
+                {
+                    var second = (2 * i) + 1 < count ? row[start + (2 * i) + 1] : 0;
+                    destination[written++] = (byte)((row[start + (2 * i)] << 4) | second);
+                }
+
+                if ((length & 1) != 0)
+                {
+                    destination[written++] = 0;
+                }
+
+                continue;
+            }
+
+            // One or two pixels: too few for absolute mode, and exactly what one encoded run of two indexes can store
+            destination[written++] = (byte)count;
+            destination[written++] = (byte)((row[start] << 4) | (count == 2 ? row[start + 1] : 0));
+        }
+
+        return written;
+    }
+
+    private static int EncodeRow8Scalar(ReadOnlySpan<byte> row, Span<byte> destination)
     {
         var written = 0;
         var position = 0;
@@ -107,7 +221,7 @@ internal static class BmpRunLengthEncoder
         return written;
     }
 
-    private static int EncodeRow4(ReadOnlySpan<byte> row, Span<byte> destination)
+    private static int EncodeRow4Scalar(ReadOnlySpan<byte> row, Span<byte> destination)
     {
         var written = 0;
         var position = 0;
@@ -170,6 +284,16 @@ internal static class BmpRunLengthEncoder
         }
 
         return end - position;
+    }
+
+    /// <summary><see cref="GetRun4"/>, the pixels compared with the pixels two positions before them a vector at a time.</summary>
+    private static int GetRun4Vector(ReadOnlySpan<byte> row, int position)
+    {
+        var limit = Math.Min(row.Length, position + MaxCount);
+        if (limit - position <= 2)
+            return limit - position;
+
+        return 2 + row[(position + 2)..limit].CommonPrefixLength(row[position..(limit - 2)]);
     }
 
     /// <summary>

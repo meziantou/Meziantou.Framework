@@ -56,7 +56,44 @@ internal static class TiffPackBits
     /// <summary>Compresses one row. The specification packs each row separately: a run never crosses a row.</summary>
     /// <param name="row">The bytes of the row.</param>
     /// <param name="output">The output buffer the compressed row is appended to.</param>
+    /// <remarks>
+    /// The packets of <see cref="EncodeRowScalar"/>: the bytes before the first 3 equal bytes (found with
+    /// <see cref="RunLengthSearch.IndexOfTriple"/>) are groups of 1 or 2 equal bytes, which the scalar loop keeps as literals.
+    /// </remarks>
     public static void EncodeRow(ReadOnlySpan<byte> row, ImageOutputBuffer output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+
+        // The worst case is a row of literal runs: one header byte for every 128 bytes (a repeated run is never longer
+        // than the bytes it replaces)
+        var destination = output.GetSpan(row.Length + (row.Length / MaxRunLength) + 2);
+        var written = 0;
+        var literalStart = 0;
+        var position = 0;
+        while (position < row.Length)
+        {
+            var triple = RunLengthSearch.IndexOfTriple(row[position..]);
+            if (triple < 0)
+                break;
+
+            position += triple;
+            var value = row[position];
+            var run = RunLengthSearch.CountRun(row[position..], MaxRunLength);
+            written += WriteLiterals(row[literalStart..position], destination[written..]);
+            destination[written++] = (byte)(1 - run);
+            destination[written++] = value;
+            position += run;
+            literalStart = position;
+        }
+
+        written += WriteLiterals(row[literalStart..], destination[written..]);
+        output.Advance(written);
+    }
+
+    /// <summary>The byte-at-a-time reference of <see cref="EncodeRow"/>.</summary>
+    /// <param name="row">The bytes of the row.</param>
+    /// <param name="output">The output buffer the compressed row is appended to.</param>
+    internal static void EncodeRowScalar(ReadOnlySpan<byte> row, ImageOutputBuffer output)
     {
         ArgumentNullException.ThrowIfNull(output);
 

@@ -923,6 +923,127 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void RunLengthSearchesMatchTheScalarReferences()
+    {
+        var random = new Random(4130);
+        for (var length = 0; length <= 120; length++)
+        {
+            for (var round = 0; round < 12; round++)
+            {
+                // Element runs of every length, with elements that share all but one byte
+                var elementSize = round % 3 == 0 ? 1 : round % 3 == 1 ? 3 : 4;
+                var values = CreateRunLengthRow(random, (length + elementSize - 1) / elementSize, elementSize, longRuns: round >= 6)[..length];
+                Assert.Equal(RunLengthSearch.IndexOfPairScalar(values), RunLengthSearch.IndexOfPair(values));
+                Assert.Equal(RunLengthSearch.IndexOfTripleScalar(values), RunLengthSearch.IndexOfTriple(values));
+                Assert.Equal(RunLengthSearch.IndexOfPairAtDistance2Scalar(values), RunLengthSearch.IndexOfPairAtDistance2(values));
+                Assert.Equal(RunLengthSearch.IndexOfPair24Scalar(values.AsSpan(0, length / 3 * 3)), RunLengthSearch.IndexOfPair24(values.AsSpan(0, length / 3 * 3)));
+                var words = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, uint>(values.AsSpan(0, length / 4 * 4)));
+                Assert.Equal(RunLengthSearch.IndexOfPairScalar(words), RunLengthSearch.IndexOfPair(words));
+                if (length > 0)
+                {
+                    var maximum = random.Next(1, length + 2);
+                    var expectedRun = 1;
+                    while (expectedRun < Math.Min(length, maximum) && values[expectedRun] == values[0])
+                    {
+                        expectedRun++;
+                    }
+
+                    Assert.Equal(expectedRun, RunLengthSearch.CountRun<byte>(values, maximum));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void RunLengthEncodersMatchTheScalarReferences()
+    {
+        var random = new Random(4131);
+        var scope = AllocationScope.Create(configuration: null);
+        foreach (var width in Enumerable.Range(0, 70).Concat([127, 128, 129, 254, 255, 256, 257, 300, 513, 1000]))
+        {
+            for (var round = 0; round < 6; round++)
+            {
+                var longRuns = round >= 3;
+                foreach (var bytesPerPixel in new[] { 1, 3, 4 })
+                {
+                    var stored = CreateRunLengthRow(random, width, bytesPerPixel, longRuns);
+                    var expected = new byte[stored.Length + (((width + 127) / 128) * 2)];
+                    var actual = new byte[expected.Length];
+                    Assert.Equal(TgaRunLengthEncoder.EncodeRowScalar(stored, bytesPerPixel, expected), TgaRunLengthEncoder.EncodeRow(stored, bytesPerPixel, actual));
+                    Assert.Equal(expected, actual);
+                }
+
+                foreach (var fourBit in new[] { false, true })
+                {
+                    var indexes = CreateRunLengthRow(random, width, 1, longRuns);
+                    if (fourBit)
+                    {
+                        for (var i = 0; i < indexes.Length; i++)
+                        {
+                            indexes[i] &= 15;
+                        }
+                    }
+
+                    var expected = new byte[BmpRunLengthEncoder.GetMaxEncodedRowLength(width)];
+                    var actual = new byte[expected.Length];
+                    Assert.Equal(BmpRunLengthEncoder.EncodeRowScalar(indexes, fourBit, expected), BmpRunLengthEncoder.EncodeRow(indexes, fourBit, actual));
+                    Assert.Equal(expected, actual);
+                }
+
+                var bytes = CreateRunLengthRow(random, width, 1, longRuns);
+                foreach (var capacity in new[] { width + (width / 127) + 2, width / 2, width / 4 })
+                {
+                    // A destination that is too short gives -1 at the same packet
+                    var expected = new byte[capacity];
+                    var actual = new byte[capacity];
+                    Assert.Equal(ExrRle.EncodeScalar(bytes, expected), ExrRle.Encode(bytes, actual));
+                    Assert.Equal(expected, actual);
+                }
+
+                using var expectedOutput = new ImageOutputBuffer(scope);
+                using var actualOutput = new ImageOutputBuffer(scope);
+                TiffPackBits.EncodeRowScalar(bytes, expectedOutput);
+                TiffPackBits.EncodeRow(bytes, actualOutput);
+                Assert.Equal(expectedOutput.WrittenMemory.ToArray(), actualOutput.WrittenMemory.ToArray());
+            }
+        }
+    }
+
+    /// <summary>
+    /// Creates elements in runs: short runs of 1 to 3 equal elements, or runs of up to 300 elements, drawn from 4 elements of
+    /// which 3 differ by one byte only.
+    /// </summary>
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static byte[] CreateRunLengthRow(Random random, int elements, int elementSize, bool longRuns)
+    {
+        var palette = new byte[4][];
+        palette[0] = new byte[elementSize];
+        random.NextBytes(palette[0]);
+        for (var i = 1; i < 3; i++)
+        {
+            palette[i] = (byte[])palette[0].Clone();
+            palette[i][random.Next(elementSize)] ^= (byte)random.Next(1, 256);
+        }
+
+        palette[3] = new byte[elementSize];
+        random.NextBytes(palette[3]);
+        var row = new byte[elements * elementSize];
+        for (var position = 0; position < elements;)
+        {
+            var element = palette[random.Next(4)];
+            var run = longRuns && random.Next(6) == 0 ? random.Next(1, 300) : random.Next(1, 4);
+            for (var i = 0; i < run && position < elements; i++, position++)
+            {
+                element.CopyTo(row, position * elementSize);
+            }
+        }
+
+        return row;
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ExrPredictorMatchesTheScalarReference()
     {
         var random = new Random(4127);

@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using Meziantou.Framework.WebPlatform.Compression;
 using Meziantou.Framework.WebPlatform.Infra;
 using Meziantou.Framework.WebPlatform.Urls;
@@ -107,7 +108,9 @@ internal sealed class CompressionDictionaries
     /// <summary>
     /// https://www.rfc-editor.org/rfc/rfc9842#section-2.1.1: the URL pattern of the <c>match</c> member, created with the URL of
     /// the dictionary as the base URL. It is not valid when it has regular expression groups, or when it is not same-origin
-    /// with the dictionary (its protocol, hostname and port are not the ones of the URL of the dictionary).
+    /// with the dictionary (its protocol, hostname and port are not the ones of the URL of the dictionary). Creating the pattern
+    /// matches its protocol against the special schemes, so a regexp group of the protocol (which is not valid) can exceed the
+    /// default match timeout of the application (catastrophic backtracking): the pattern is not valid either.
     /// </summary>
     private static UrlPattern? CreatePattern(string match, UrlRecord dictionaryUrl)
     {
@@ -117,6 +120,10 @@ internal sealed class CompressionDictionaries
             pattern = new UrlPattern(match, dictionaryUrl.Serialize());
         }
         catch (TypeErrorException)
+        {
+            return null;
+        }
+        catch (RegexMatchTimeoutException)
         {
             return null;
         }

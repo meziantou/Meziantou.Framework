@@ -153,7 +153,8 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   response within its `stale-while-revalidate` window is used while a request revalidates it in the background.
 - [Compression dictionaries](https://www.rfc-editor.org/rfc/rfc9842) are supported. A response of a secure URL with a
   `Use-As-Dictionary` header (fetched with CORS or from the same origin) registers its body as a dictionary for the URLs
-  of its `match` pattern, while it would be fresh in the HTTP cache. The next requests of these URLs announce the best
+  of its `match` pattern, while it would be fresh in the HTTP cache. A header whose pattern is not valid, has regular
+  expression groups, or is not same-origin with the dictionary is ignored. The next requests of these URLs announce the best
   dictionary in their `Available-Dictionary` and `Dictionary-ID` headers (and `Accept-Encoding: dcb, dcz`), and the
   library decodes the responses compressed with it (`Content-Encoding: dcb`, Brotli, or `dcz`, Zstandard); the loader
   decodes the other content codings. A response that cannot be decoded has a body that fails. The dictionaries are

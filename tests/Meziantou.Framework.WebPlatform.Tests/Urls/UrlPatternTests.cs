@@ -115,6 +115,57 @@ public sealed class UrlPatternTests
     }
 
     [Theory]
+    [InlineData("/{:a}*{:b}*.txt", "/abc.txt", "abc", "")]
+    [InlineData("/{:a}+{:b}+.txt", "/abc.txt", "ab", "c")]
+    [InlineData("/{:a}*{:b}+.txt", "/abc.txt", "ab", "c")]
+    [InlineData("/:a*/:b*", "/x/y/z", "x/y/z", null)]
+    public void Exec_RepeatedSegmentWildcards(string pathname, string input, string? expectedA, string? expectedB)
+    {
+        var result = new UrlPattern(new UrlPatternInit { Pathname = pathname }).Exec(new UrlPatternInit { Pathname = input });
+
+        Assert.NotNull(result);
+        Assert.Equal(expectedA, result.Pathname.Groups["a"]);
+        Assert.Equal(expectedB, result.Pathname.Groups.GetValueOrDefault("b"));
+    }
+
+    [Theory]
+    [InlineData("/foo/**", "/foo/a/b", "a/b")]
+    [InlineData("/foo/**", "/foo", null)]
+    [InlineData("/foo/*+", "/foo/", "")]
+    [InlineData("/foo{/*.}*", "/foo/a.b/c.", "a.b/c")]
+    [InlineData("*****", "/a/b", "/a/b")]
+    public void Exec_RepeatedFullWildcards(string pathname, string input, string? expected)
+    {
+        var result = new UrlPattern(new UrlPatternInit { Pathname = pathname }).Exec(new UrlPatternInit { Pathname = input });
+
+        Assert.NotNull(result);
+        Assert.Equal(expected, result.Pathname.Groups["0"]);
+    }
+
+    [Theory]
+    [InlineData("{:a}*{:b}*ps", "/")]
+    [InlineData("{:a}*s", "/")]
+    [InlineData("{:a}*{:b}*x", "")]
+    [InlineData("f{il}?{e}?{tp}?", "/")]
+    [InlineData("*e*", "/")]
+    [InlineData("*e*e", "")]
+    public void Constructor_ProtocolMatchesSpecialScheme(string protocol, string expectedPathname)
+    {
+        Assert.Equal(expectedPathname, new UrlPattern(protocol + "://example.com?q").Pathname);
+    }
+
+    [Fact]
+    public void Constructor_ProtocolWithAdjacentWildcards()
+    {
+        // Found by fuzzing: matching the protocol against the special schemes backtracked through every way to split them
+        // between the groups
+        var protocol = string.Concat(Enumerable.Range(0, 1000).Select(i => "{:a" + i + "}*"));
+        Assert.Equal("", new UrlPattern(protocol + "x://example.com?q").Pathname);
+        Assert.Equal("/", new UrlPattern(protocol + "ps://example.com?q").Pathname);
+        Assert.Equal("/", new UrlPattern(new string('*', 1000) + "s://example.com?q").Pathname);
+    }
+
+    [Theory]
     [InlineData("*\u0002\0\0/..")]
     [InlineData("a/../..")]
     public void Constructor_RelativePathnameRemovingThePrefix(string pathname)

@@ -1623,6 +1623,385 @@ public class QRCodeTests
         return value == 0;
     }
 
+    [Fact]
+    public void Documentation_Decode()
+    {
+        #region QRCodeDecoder_Decode
+        var qrCode = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.M);
+
+        var result = QRCodeDecoder.Decode(qrCode);
+
+        Assert.Equal("https://www.meziantou.net", result.Text);
+        Assert.Equal((QRCodeType.Standard, 2, ErrorCorrectionLevel.M), (result.Type, result.Version, result.ErrorCorrectionLevel));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DecodeModules()
+    {
+        #region QRCodeDecoder_DecodeModules
+        // The modules, true for dark, indexed by row then column, without quiet zone
+        var qrCode = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.Q);
+        var modules = new bool[qrCode.Height, qrCode.Width];
+        for (var row = 0; row < qrCode.Height; row++)
+        {
+            for (var column = 0; column < qrCode.Width; column++)
+            {
+                modules[row, column] = qrCode[row, column];
+            }
+        }
+
+        // Damage the symbol: the error correction restores the data
+        for (var column = 9; column < 14; column++)
+        {
+            modules[12, column] = !modules[12, column];
+        }
+
+        Assert.True(QRCodeDecoder.TryDecode(modules, out var result));
+        Assert.Equal("HELLO WORLD", result.Text);
+        Assert.True(result.CorrectedErrorCount > 0);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_MergeStructuredAppend()
+    {
+        #region QRCodeDecoder_MergeStructuredAppend
+        var text = "Structured append splits this text across several QR codes, and the reader puts it back together.";
+        var symbols = QRCode.CreateStructuredAppend(text, ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 2 });
+
+        // The symbols can be read in any order
+        var results = symbols.Reverse().Select(QRCodeDecoder.Decode).ToList();
+
+        Assert.Equal(text, QRCodeDecoder.MergeStructuredAppend(results));
+        #endregion
+    }
+
+    public static TheoryData<int, ErrorCorrectionLevel> AllVersionsAndLevels()
+    {
+        var data = new TheoryData<int, ErrorCorrectionLevel>();
+        for (var version = 1; version <= 40; version++)
+        {
+            foreach (var level in Enum.GetValues<ErrorCorrectionLevel>())
+            {
+                data.Add(version, level);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(AllVersionsAndLevels))]
+    public void Decode_AllVersionsAndLevels(int version, ErrorCorrectionLevel ecLevel)
+    {
+        var qr = CreateWithVersion(version, ecLevel);
+
+        var result = QRCodeDecoder.Decode(qr);
+
+        Assert.Equal((QRCodeType.Standard, version, ecLevel, 0, false), (result.Type, result.Version, result.ErrorCorrectionLevel, result.CorrectedErrorCount, result.IsMirrored));
+        Assert.HasCount(ByteCapacities[version - 1][(int)ecLevel], result.Text);
+        Assert.True(result.MaskPattern is >= 0 and <= 7);
+        Assert.Null(result.StructuredAppend);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("12")]
+    [InlineData("0123456789012345678901234567890")]
+    [InlineData("HELLO WORLD")]
+    [InlineData(" $%*+-./:")]
+    [InlineData("Hello, World!")]
+    [InlineData("caf\u00E9")]
+    [InlineData("\U0001F600 emoji")]
+    [InlineData("日本語")]
+    [InlineData("ABC12345678901234567890abc日本語")]
+    public void Decode_Text(string text)
+    {
+        text = System.Text.RegularExpressions.Regex.Unescape(text);
+        foreach (var level in Enum.GetValues<ErrorCorrectionLevel>())
+        {
+            Assert.Equal(text, QRCodeDecoder.Decode(QRCode.Create(text, level)).Text);
+        }
+    }
+
+    [Fact]
+    public void Decode_Segments()
+    {
+        QRCodeSegment[] segments =
+        [
+            QRCodeSegment.CreateAlphanumeric("ID:"),
+            QRCodeSegment.CreateNumeric("0123456789"),
+            QRCodeSegment.CreateKanji("漢字"),
+            QRCodeSegment.CreateByte([0x00, 0xFF]),
+        ];
+
+        var result = QRCodeDecoder.Decode(QRCode.Create(segments));
+
+        Assert.Equal(
+            [QRCodeSegmentMode.Alphanumeric, QRCodeSegmentMode.Numeric, QRCodeSegmentMode.Kanji, QRCodeSegmentMode.Byte],
+            result.Segments.Select(segment => segment.Mode).ToArray());
+        Assert.Equal(["ID:", "0123456789", "漢字", null], result.Segments.Select(segment => segment.Text).ToArray());
+        Assert.Equal([0x00, 0xFF], result.Segments[3].Bytes.ToArray());
+        Assert.True(HasSameModules(QRCode.Create(segments), QRCode.Create(result.Segments)));
+    }
+
+    [Fact]
+    public void Decode_Eci()
+    {
+        var utf8 = QRCodeDecoder.Decode(QRCode.Create("Caf\u00E9 cr\u00E8me", ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber }));
+        var latin1 = QRCodeDecoder.Decode(QRCode.Create([0x63, 0x61, 0x66, 0xE9], ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 }));
+        var shiftJis = QRCodeDecoder.Decode(QRCode.Create([QRCodeSegment.CreateEci(20), QRCodeSegment.CreateByte([0x93, 0xFA, 0x96, 0x7B])]));
+
+        Assert.Equal("Caf\u00E9 cr\u00E8me", utf8.Text);
+        Assert.Equal(26, utf8.Segments[0].EciAssignmentNumber);
+        Assert.Equal("caf\u00E9", latin1.Text);
+        Assert.Equal("日本", shiftJis.Text);
+    }
+
+    [Fact]
+    public void Decode_InvalidUtf8WithoutEci_IsLatin1()
+    {
+        Assert.Equal("caf\u00E9", QRCodeDecoder.Decode(QRCode.Create([0x63, 0x61, 0x66, 0xE9])).Text);
+    }
+
+    [Fact]
+    public void Decode_StructuredAppend()
+    {
+        var text = string.Concat(Enumerable.Repeat("0123456789ABCDEFGHIJ abcdefghij 日本語 caf\u00E9 ", 8));
+        var symbols = QRCode.CreateStructuredAppend(text, ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 3 });
+        var results = symbols.Select(QRCodeDecoder.Decode).ToArray();
+
+        Assert.HasCountGreaterThan(1, results);
+        for (var i = 0; i < results.Length; i++)
+        {
+            Assert.Equal((i, results.Length, symbols[i].StructuredAppend!.Parity), (results[i].StructuredAppend!.Index, results[i].StructuredAppend!.Count, results[i].StructuredAppend!.Parity));
+        }
+
+        Assert.Equal(text, QRCodeDecoder.MergeStructuredAppend(results.Reverse()));
+        Assert.Throws<ArgumentException>("results", () => QRCodeDecoder.MergeStructuredAppend(results.Skip(1)));
+        Assert.Throws<ArgumentException>("results", () => QRCodeDecoder.MergeStructuredAppend([.. results, results[0]]));
+        Assert.Throws<ArgumentException>("results", () => QRCodeDecoder.MergeStructuredAppend([]));
+        Assert.Throws<ArgumentException>("results", () => QRCodeDecoder.MergeStructuredAppend([QRCodeDecoder.Decode(QRCode.Create("HELLO"))]));
+        Assert.Throws<ArgumentNullException>("results", () => QRCodeDecoder.MergeStructuredAppend(null!));
+    }
+
+    [Theory]
+    [InlineData(ErrorCorrectionLevel.L)]
+    [InlineData(ErrorCorrectionLevel.M)]
+    [InlineData(ErrorCorrectionLevel.Q)]
+    [InlineData(ErrorCorrectionLevel.H)]
+    public void Decode_CorrectsCodewordErrors(ErrorCorrectionLevel ecLevel)
+    {
+        foreach (var version in (int[])[1, 2, 5, 7, 10, 20, 27, 40])
+        {
+            var qr = CreateWithVersion(version, ecLevel);
+            var expected = QRCodeDecoder.Decode(qr).Text;
+
+            // Corrupt the first codewords of each block, up to the number the error correction fixes
+            var correctable = QRCodeVersion.GetECCodewordsPerBlock(version, ecLevel) / 2;
+            var blockCount = QRCodeVersion.GetBlockCount(version, ecLevel);
+            var codewordPositions = GetCodewordModules(version);
+            var modules = CopyModules(qr);
+            for (var i = 0; i < correctable * blockCount; i++)
+            {
+                foreach (var (row, column) in codewordPositions[i])
+                {
+                    modules[row, column] = !modules[row, column];
+                }
+            }
+
+            var result = QRCodeDecoder.Decode(modules);
+            Assert.Equal(expected, result.Text);
+            Assert.Equal(correctable * blockCount, result.CorrectedErrorCount);
+
+            // One more error in the first block is too many
+            foreach (var (row, column) in codewordPositions[correctable * blockCount])
+            {
+                modules[row, column] = !modules[row, column];
+            }
+
+            if (QRCodeDecoder.TryDecode(modules, out var corrupted))
+            {
+                Assert.NotEqual(expected, corrupted.Text);
+            }
+        }
+    }
+
+    [Fact]
+    public void Decode_FormatInformationWithErrors()
+    {
+        var qr = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
+        var modules = CopyModules(qr);
+
+        // Three errors in the first copy, the second copy is intact
+        modules[8, 0] = !modules[8, 0];
+        modules[8, 2] = !modules[8, 2];
+        modules[2, 8] = !modules[2, 8];
+        Assert.Equal("HELLO WORLD", QRCodeDecoder.Decode(modules).Text);
+
+        // Both copies damaged beyond repair
+        for (var i = 0; i < 8; i++)
+        {
+            modules[8, i is 6 ? 8 : i] = !modules[8, i is 6 ? 8 : i];
+            modules[8, qr.Size - 1 - i] = !modules[8, qr.Size - 1 - i];
+        }
+
+        Assert.False(QRCodeDecoder.TryDecode(modules, out _));
+    }
+
+    [Fact]
+    public void Decode_Mirrored()
+    {
+        var qr = QRCode.Create("Mirrored QR code", ErrorCorrectionLevel.M);
+        var transposed = new bool[qr.Size, qr.Size];
+        for (var row = 0; row < qr.Size; row++)
+        {
+            for (var column = 0; column < qr.Size; column++)
+            {
+                transposed[column, row] = qr[row, column];
+            }
+        }
+
+        var result = QRCodeDecoder.Decode(transposed);
+
+        Assert.Equal("Mirrored QR code", result.Text);
+        Assert.True(result.IsMirrored);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void Decode_InvalidMatrix()
+    {
+        Assert.Throws<ArgumentNullException>("modules", () => QRCodeDecoder.Decode((bool[,])null!));
+        Assert.Throws<ArgumentNullException>("qrCode", () => QRCodeDecoder.Decode((QRCode)null!));
+        Assert.Throws<FormatException>(() => QRCodeDecoder.Decode(new bool[22, 22]));
+        Assert.Throws<FormatException>(() => QRCodeDecoder.Decode(new bool[21, 21]));
+        Assert.Throws<FormatException>(() => QRCodeDecoder.Decode(new bool[10, 30]));
+        Assert.False(QRCodeDecoder.TryDecode(new bool[0, 0], out _));
+
+        var random = new Random(42);
+        for (var i = 0; i < 100; i++)
+        {
+            var size = 21 + (4 * random.Next(10));
+            var modules = new bool[size, size];
+            for (var row = 0; row < size; row++)
+            {
+                for (var column = 0; column < size; column++)
+                {
+                    modules[row, column] = random.Next(2) is 0;
+                }
+            }
+
+            // Random modules almost never have a valid format and valid codewords, but must not throw
+            _ = QRCodeDecoder.TryDecode(modules, out _);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void ReedSolomonDecoder_CorrectsUpToHalfTheErrorCorrectionCodewords()
+    {
+        var random = new Random(1);
+        foreach (var (field, firstRoot) in new[] { (BinaryGaloisField.QRCode256, 0), (BinaryGaloisField.Field256, 1), (BinaryGaloisField.Aztec64, 1), (BinaryGaloisField.Aztec16, 1), (BinaryGaloisField.Aztec1024, 1), (BinaryGaloisField.Aztec4096, 1) })
+        {
+            for (var iteration = 0; iteration < 200; iteration++)
+            {
+                var ecCount = random.Next(1, Math.Min(30, field.Size - 2));
+                var dataCount = random.Next(1, Math.Min(60, field.Size - 1 - ecCount));
+                var codewords = new int[dataCount + ecCount];
+                for (var i = 0; i < dataCount; i++)
+                {
+                    codewords[i] = random.Next(field.Size);
+                }
+
+                if (firstRoot is 0)
+                {
+                    var bytes = codewords[..dataCount].Select(value => (byte)value).ToArray();
+                    GaloisField.ComputeRemainder(bytes, GaloisField.GenerateGeneratorPolynomial(ecCount)).Select(value => (int)value).ToArray().CopyTo(codewords, dataCount);
+                }
+                else
+                {
+                    field.ComputeErrorCorrection(codewords.AsSpan(0, dataCount), codewords.AsSpan(dataCount));
+                }
+
+                var original = codewords.ToArray();
+                Assert.Equal(0, ReedSolomonDecoder.Correct(field, codewords, ecCount, firstRoot));
+
+                var errorCount = random.Next(0, (ecCount / 2) + 2);
+                var positions = Enumerable.Range(0, codewords.Length).OrderBy(_ => random.Next()).Take(errorCount).ToArray();
+                foreach (var position in positions)
+                {
+                    codewords[position] ^= random.Next(1, field.Size);
+                }
+
+                var corrected = ReedSolomonDecoder.Correct(field, codewords, ecCount, firstRoot);
+                if (positions.Length * 2 <= ecCount)
+                {
+                    Assert.Equal(positions.Length, corrected);
+                    Assert.Equal(original, codewords);
+                }
+                else if (corrected >= 0)
+                {
+                    Assert.NotEqual(original, codewords);
+                }
+            }
+        }
+    }
+
+    private static bool[,] CopyModules(QRCode qr)
+    {
+        var modules = new bool[qr.Height, qr.Width];
+        for (var row = 0; row < qr.Height; row++)
+        {
+            for (var column = 0; column < qr.Width; column++)
+            {
+                modules[row, column] = qr[row, column];
+            }
+        }
+
+        return modules;
+    }
+
+    // The modules of each codeword, in placement order (ISO/IEC 18004, 7.7.3)
+    private static List<List<(int Row, int Column)>> GetCodewordModules(int version)
+    {
+        var builder = new MatrixBuilder(version);
+        var total = QRCodeVersion.GetTotalCodewords(version);
+        builder.PlaceFunctionPatternsAndData(new byte[total]);
+        var result = new List<List<(int Row, int Column)>>();
+        var size = builder.Size;
+        var bitIndex = 0;
+        for (var column = size - 1; column >= 0; column -= 2)
+        {
+            if (column == 6)
+            {
+                column--;
+            }
+
+            var isUpward = ((size - 1 - column) / 2) % 2 == 0;
+            for (var i = 0; i < size; i++)
+            {
+                var row = isUpward ? size - 1 - i : i;
+                for (var offset = 0; offset < 2 && column - offset >= 0; offset++)
+                {
+                    if (builder.IsReserved[row, column - offset] || bitIndex >= total * 8)
+                        continue;
+
+                    if (bitIndex % 8 is 0)
+                    {
+                        result.Add([]);
+                    }
+
+                    result[^1].Add((row, column - offset));
+                    bitIndex++;
+                }
+            }
+        }
+
+        return result;
+    }
+
     private static QRCode CreateWithVersion(int version, ErrorCorrectionLevel ecLevel)
     {
         var payload = new byte[ByteCapacities[version - 1][(int)ecLevel]];

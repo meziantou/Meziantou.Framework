@@ -130,6 +130,24 @@ internal static class QRSegmentFuzzTargets
         var other = Create();
         FuzzAssert.True(other is not null && BarcodesFuzzTargets.SameModules(qr, other), "Encoding the same segments twice gives different symbols");
 
+        // The decoder of the library gives the segments back, as the independent decoder of this project reads them
+        var segmentsRead = QRCodeDecoder.Decode(qr).Segments;
+        FuzzAssert.Equal(expected.Count, segmentsRead.Count, "The number of segments read by QRCodeDecoder");
+        for (var i = 0; i < expected.Count; i++)
+        {
+            var segment = segmentsRead[i];
+            FuzzAssert.Equal(expected[i].Mode, segment.Mode, "The mode of the segment read by QRCodeDecoder");
+            FuzzAssert.Equal(expected[i].EciAssignmentNumber, segment.EciAssignmentNumber ?? 0, "The ECI assignment number read by QRCodeDecoder");
+            var segmentData = segment.Mode switch
+            {
+                QRCodeSegmentMode.Byte => segment.Bytes.ToArray(),
+                QRCodeSegmentMode.Kanji => ShiftJis.GetBytes(segment.Text!),
+                QRCodeSegmentMode.Eci => [],
+                _ => Encoding.ASCII.GetBytes(segment.Text!),
+            };
+            FuzzAssert.True(expected[i].Data.AsSpan().SequenceEqual(segmentData), "The data of the segment read by QRCodeDecoder");
+        }
+
         if (type is not QRCodeType.Standard)
             return;
 
@@ -306,6 +324,19 @@ internal static class QRSegmentFuzzTargets
             BarcodesFuzzTargets.CheckSize(symbol);
             BarcodesFuzzTargets.CheckFinderPattern(symbol);
             BarcodesFuzzTargets.CheckFormatInformation(symbol, level);
+        }
+
+        // The decoder of the library reads the symbols back and puts the sequence together, in any order
+        var merged = QRCodeDecoder.MergeStructuredAppend(symbols.Select(QRCodeDecoder.Decode).Reverse());
+        if (text is not null)
+        {
+            FuzzAssert.Equal(BarcodesFuzzTargets.ReplaceLoneSurrogates(text), merged, "The text of the sequence read by QRCodeDecoder");
+        }
+        else if (kind is 1)
+        {
+            var bytes = expected.Select(unit => unit.Value).ToArray();
+            var expectedText = useEci || !System.Text.Unicode.Utf8.IsValid(bytes) ? Encoding.Latin1.GetString(bytes) : Encoding.UTF8.GetString(bytes);
+            FuzzAssert.Equal(expectedText, merged, "The text of the sequence read by QRCodeDecoder");
         }
     }
 

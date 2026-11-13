@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Meziantou.Framework.Barcodes.Internal.MicroQR;
 
 internal static class MicroQRFormatInfo
@@ -15,6 +17,36 @@ internal static class MicroQRFormatInfo
         var dataBits = (symbolNumber << 2) | maskPattern;
         var encoded = ComputeBCH15_5(dataBits);
         return encoded ^ FormatMask;
+    }
+
+    /// <summary>
+    /// Finds the format information of a symbol of <paramref name="version"/> closest to the bits read from it. BCH(15,5)
+    /// corrects up to 3 bit errors.
+    /// </summary>
+    public static bool TryDecode(int bits, int version, out ErrorCorrectionLevel ecLevel, out int maskPattern)
+    {
+        ecLevel = default;
+        maskPattern = -1;
+        var bestDistance = int.MaxValue;
+        foreach (var level in (ReadOnlySpan<ErrorCorrectionLevel>)[ErrorCorrectionLevel.L, ErrorCorrectionLevel.M, ErrorCorrectionLevel.Q])
+        {
+            if (!MicroQRVersion.IsECLevelSupported(version, level) || MicroQRVersion.ResolveECLevel(version, level) != level)
+                continue;
+
+            var symbolNumber = MicroQRVersion.GetSymbolNumber(version, level);
+            for (var mask = 0; mask < 4; mask++)
+            {
+                var distance = BitOperations.PopCount((uint)(GetFormatInfo(symbolNumber, mask) ^ bits));
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    ecLevel = level;
+                    maskPattern = mask;
+                }
+            }
+        }
+
+        return bestDistance <= 3;
     }
 
     private static int ComputeBCH15_5(int data)

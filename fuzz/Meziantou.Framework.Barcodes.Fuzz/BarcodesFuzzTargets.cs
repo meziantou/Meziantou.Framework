@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Barcodes;
@@ -91,6 +92,7 @@ public static class BarcodesFuzzTargets
         new("barcodes-draw", DrawTarget) { Seeds = () => Enumerable.Range(0, 12).Select(kind => new FuzzSeed($"draw-{kind}", (byte[])[(byte)kind, (byte)(kind % 8), (byte)(kind * 37), (byte)(kind * 11), (byte)(kind % 3), .. FuzzText.Encode(kind < 3 ? "HELLO" : "12345678")])), Dictionary = Tokens },
         .. Gs1FuzzTargets.All,
         .. QRSegmentFuzzTargets.All,
+        .. QRDecodeFuzzTargets.All,
     ];
 
     private static void QRCodeTarget(ReadOnlySpan<byte> data)
@@ -105,6 +107,26 @@ public static class BarcodesFuzzTargets
         CheckSize(qr);
         CheckFinderPattern(qr);
         CheckFormatInformation(qr, level);
+
+        // The decoder reads the text back, also with a damaged module, which the error correction fixes (M1 only detects errors)
+        var expectedText = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(text));
+        var decoded = QRCodeDecoder.Decode(qr);
+        FuzzAssert.Equal(expectedText, decoded.Text, "The decoded text");
+        FuzzAssert.Equal((qr.Type, qr.Version, qr.ErrorCorrectionLevel, 0), (decoded.Type, decoded.Version, decoded.ErrorCorrectionLevel, decoded.CorrectedErrorCount), "The decoded symbol parameters");
+        var damaged = QRDecodeFuzzTargets.GetModules(qr);
+        var hash = 17u;
+        foreach (var c in text)
+        {
+            hash = (hash * 31) + c;
+        }
+
+        var damagedRow = (int)(hash % (uint)qr.Height);
+        var damagedColumn = (int)((hash / 7919) % (uint)qr.Width);
+        damaged[damagedRow, damagedColumn] = !damaged[damagedRow, damagedColumn];
+        if (QRCodeDecoder.TryDecode(damaged, out var repaired) || !(qr.Type is QRCodeType.MicroQR && qr.Version is 1))
+        {
+            FuzzAssert.True(repaired is not null && repaired.Text == expectedText, $"A damaged module at ({damagedRow}, {damagedColumn}) gives '{repaired?.Text}'");
+        }
 
         // The encoding is deterministic
         TryCreateQRCode(type, text, level, out var other);

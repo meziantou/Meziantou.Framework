@@ -3,7 +3,9 @@ title: Limitations
 description: What the barcode packages do not do.
 ---
 
-- **No reading.** The packages generate QR codes and barcodes; they do not detect or decode them in photos or scans.
+- **Reading QR codes from their modules only.** [QRCodeDecoder](cref:Meziantou.Framework.Barcodes.QRCodeDecoder) reads
+  QR codes, Micro QR codes and rMQR codes from a matrix of modules. The packages do not read the other symbologies, and
+  do not detect or decode symbols in photos or scans. The decoder does not read the FNC1 modes of GS1 QR codes.
 - **The symbologies listed** only: standard QR codes, Micro QR codes, rMQR codes, Data Matrix, PDF417, Aztec, Code 39,
   Code 93, Code 128, GS1-128, EAN-8, EAN-13, UPC-A, UPC-E, GS1 DataBar, Codabar and ITF. The variants of the
   two-dimensional codes are not supported (Data Matrix rectangular extension, Macro and Micro PDF417, Aztec Runes).

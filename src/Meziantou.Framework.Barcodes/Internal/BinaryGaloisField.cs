@@ -3,6 +3,7 @@ namespace Meziantou.Framework.Barcodes.Internal;
 /// <summary>
 /// GF(2^m) arithmetic and Reed-Solomon encoding for the symbologies whose generator polynomials have the roots
 /// α^1 to α^n: Data Matrix and Aztec. (QR codes use <see cref="GaloisField"/>, whose roots start at α^0.)
+/// <see cref="ReedSolomonDecoder"/> decodes the codewords of every field, QR codes included.
 /// </summary>
 internal sealed class BinaryGaloisField
 {
@@ -30,6 +31,9 @@ internal sealed class BinaryGaloisField
         _generators = new int[]?[size];
     }
 
+    /// <summary>GF(256), x^8 + x^4 + x^3 + x^2 + 1: QR codes, Micro QR codes and rMQR codes.</summary>
+    public static BinaryGaloisField QRCode256 { get; } = new(256, 0x11D);
+
     /// <summary>GF(16), x^4 + x + 1: the mode message of Aztec symbols.</summary>
     public static BinaryGaloisField Aztec16 { get; } = new(16, 0x13);
 
@@ -54,6 +58,25 @@ internal sealed class BinaryGaloisField
 
         return _exp[(_log[a] + _log[b]) % (Size - 1)];
     }
+
+    /// <summary>Gets α^<paramref name="power"/>, for any power, negative ones included.</summary>
+    public int Exp(int power)
+    {
+        var order = Size - 1;
+        power %= order;
+        if (power < 0)
+        {
+            power += order;
+        }
+
+        return _exp[power];
+    }
+
+    /// <summary>Gets the logarithm of a non-zero element.</summary>
+    public int Log(int value) => _log[value];
+
+    /// <summary>Gets the multiplicative inverse of a non-zero element.</summary>
+    public int Inverse(int value) => Exp(-Log(value));
 
     /// <summary>Computes the error correction codewords of <paramref name="data"/>, highest degree first.</summary>
     public void ComputeErrorCorrection(ReadOnlySpan<int> data, Span<int> errorCorrection)

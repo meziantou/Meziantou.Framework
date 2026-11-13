@@ -285,6 +285,28 @@ namespace Meziantou.Framework.Barcodes
         public static void WriteToConsole(this Meziantou.Framework.Barcodes.QRCode qrCode, Meziantou.Framework.Barcodes.QRCodeConsoleOptions options) { }
     }
 
+    public sealed class QRCodeDecodeResult
+    {
+        public int CorrectedErrorCount { get => throw null; }
+        public Meziantou.Framework.Barcodes.ErrorCorrectionLevel ErrorCorrectionLevel { get => throw null; }
+        public bool IsMirrored { get => throw null; }
+        public int? MaskPattern { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Barcodes.QRCodeSegment> Segments { get => throw null; }
+        public Meziantou.Framework.Barcodes.QRCodeStructuredAppend? StructuredAppend { get => throw null; }
+        public string Text { get => throw null; }
+        public Meziantou.Framework.Barcodes.QRCodeType Type { get => throw null; }
+        public int Version { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public static class QRCodeDecoder
+    {
+        public static Meziantou.Framework.Barcodes.QRCodeDecodeResult Decode(Meziantou.Framework.Barcodes.QRCode qrCode) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCodeDecodeResult Decode(bool[,] modules) => throw null;
+        public static string MergeStructuredAppend(System.Collections.Generic.IEnumerable<Meziantou.Framework.Barcodes.QRCodeDecodeResult> results) => throw null;
+        public static bool TryDecode(bool[,] modules, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Barcodes.QRCodeDecodeResult? result) => throw null;
+    }
+
     public sealed class QRCodeOptions
     {
         public const int Utf8EciAssignmentNumber = 26;
@@ -326,7 +348,10 @@ namespace Meziantou.Framework.Barcodes
 
     public sealed class QRCodeSegment
     {
+        public System.ReadOnlyMemory<byte> Bytes { get => throw null; }
+        public int? EciAssignmentNumber { get => throw null; }
         public Meziantou.Framework.Barcodes.QRCodeSegmentMode Mode { get => throw null; }
+        public string? Text { get => throw null; }
         public static Meziantou.Framework.Barcodes.QRCodeSegment CreateAlphanumeric(string text) => throw null;
         public static Meziantou.Framework.Barcodes.QRCodeSegment CreateByte(System.ReadOnlySpan<byte> data) => throw null;
         public static Meziantou.Framework.Barcodes.QRCodeSegment CreateByte(string text) => throw null;

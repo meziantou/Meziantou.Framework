@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Meziantou.Framework.Barcodes.Internal;
 
 internal static class FormatInfo
@@ -22,6 +24,29 @@ internal static class FormatInfo
     public static int GetFormatInfo(ErrorCorrectionLevel ecLevel, int maskPattern)
     {
         return FormatInfoTable[((int)ecLevel * 8) + maskPattern];
+    }
+
+    /// <summary>
+    /// Finds the format information closest to the bits read from a symbol, from its two copies. BCH(15,5) corrects up to
+    /// 3 bit errors (ISO/IEC 18004, Annex C).
+    /// </summary>
+    public static bool TryDecodeFormatInfo(int copy1, int copy2, out ErrorCorrectionLevel ecLevel, out int maskPattern)
+    {
+        var bestIndex = -1;
+        var bestDistance = int.MaxValue;
+        for (var i = 0; i < FormatInfoTable.Length; i++)
+        {
+            var distance = Math.Min(BitOperations.PopCount((uint)(FormatInfoTable[i] ^ copy1)), BitOperations.PopCount((uint)(FormatInfoTable[i] ^ copy2)));
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestIndex = i;
+            }
+        }
+
+        ecLevel = (ErrorCorrectionLevel)(bestIndex / 8);
+        maskPattern = bestIndex % 8;
+        return bestDistance <= 3;
     }
 
     // Version information strings for versions 7-40

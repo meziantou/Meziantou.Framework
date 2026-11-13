@@ -211,6 +211,50 @@ public sealed class ZintMatrixTests
         AssertSameModules(expected, qr.Width, qr.Height, (row, column) => qr[row, column]);
     }
 
+    // zint is an independent encoder: its symbols, with the version, the segmentation and the mask that it chooses, must
+    // decode to the data
+    [Theory]
+    [MemberData(nameof(QRCodes))]
+    public async Task ZintQRCode_IsDecoded(QRCodeType type, ErrorCorrectionLevel level, string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var symbology = type switch
+        {
+            QRCodeType.MicroQR => "97",
+            QRCodeType.RMQR => "145",
+            _ => "58",
+        };
+
+        var result = QRCodeDecoder.Decode(await GetZintQRCodeAsync(tools, ["-b", symbology, "--secure=" + GetZintLevel(level)], data));
+
+        Assert.Equal((type, level, data), (result.Type, result.ErrorCorrectionLevel, result.Text));
+    }
+
+    [Theory]
+    [InlineData(26, "héllo wörld")]
+    [InlineData(3, "caf\u00E9")]
+    [InlineData(7, "Кириллица")]
+    [InlineData(20, "漢字のテスト")]
+    [InlineData(28, "繁體字")]
+    public async Task ZintQRCodeWithEci_IsDecoded(int eci, string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+
+        var result = QRCodeDecoder.Decode(await GetZintQRCodeAsync(tools, ["-b", "58", "--eci=" + eci.ToString(CultureInfo.InvariantCulture)], data));
+
+        Assert.Equal(data, result.Text);
+        Assert.Contains(eci, result.Segments.Select(segment => segment.EciAssignmentNumber ?? -1).ToArray());
+    }
+
+    private static async Task<bool[,]> GetZintQRCodeAsync(BarcodeTools tools, IEnumerable<string> arguments, string data)
+    {
+        // The dump gives the rows, padded to a multiple of 4 modules: the width of an rMQR code is the size that fits
+        var rows = await tools.GetZintRowsAsync(arguments, data);
+        var digits = rows[0].Length;
+        var width = (rows.Count + 3) / 4 == digits ? rows.Count : RMQRSizes.Select(size => size.Width).Distinct().Single(width => (width + 3) / 4 == digits);
+        return await tools.GetZintMatrixAsync(arguments, data, width);
+    }
+
     [Theory]
     [InlineData(26, "héllo wörld", true)]
     [InlineData(26, "漢字のテスト", true)]

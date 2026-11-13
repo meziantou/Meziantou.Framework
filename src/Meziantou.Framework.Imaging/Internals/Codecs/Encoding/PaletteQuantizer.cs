@@ -133,6 +133,7 @@ internal sealed class PaletteQuantizer : IDisposable
     private readonly int _exactOffset;
     private readonly int _exactCountsOffset;
     private readonly int _vectorPaletteOffset;
+    private readonly int _premultipliedPlanesOffset;
     private readonly int _buildScratchOffset;
     private readonly int _stateLength;
 
@@ -150,7 +151,6 @@ internal sealed class PaletteQuantizer : IDisposable
     private readonly int[] _premultiplied = new int[256 * 4];
     private readonly bool _translucent;
     private int[]? _rgbaCacheKeys;
-    private double[]? _premultipliedPlanes;
     private int _premultipliedPlanesVersion = -1;
     private byte[]? _rgbaCacheIndexes;
 
@@ -188,7 +188,8 @@ internal sealed class PaletteQuantizer : IDisposable
         _exactOffset = _translucentSumsOffset + (translucent ? Buckets * 4 * sizeof(long) : 0);
         _exactCountsOffset = _exactOffset + (ExactSlots * sizeof(int));
         _vectorPaletteOffset = _exactCountsOffset + (ExactSlots * sizeof(int));
-        _buildScratchOffset = _vectorPaletteOffset + (3 * VectorPlaneLength * sizeof(int));
+        _premultipliedPlanesOffset = _vectorPaletteOffset + (3 * VectorPlaneLength * sizeof(int));
+        _buildScratchOffset = _premultipliedPlanesOffset + (4 * PremultipliedPlaneLength * sizeof(double));
         _stateLength = _buildScratchOffset + BuildScratchLength;
         _state = scope.Rent(_stateLength, AllocationKind.Temporary, clear: false);
     }
@@ -1209,7 +1210,7 @@ internal sealed class PaletteQuantizer : IDisposable
         var planes = GetPremultipliedPlanes();
         var count = _paletteCount;
         Debug.Assert(count is > 0 and <= 256 && planes.Length == 4 * PremultipliedPlaneLength);
-        ref var reds = ref unsafe(MemoryMarshal.GetArrayDataReference(planes));
+        ref var reds = ref unsafe(MemoryMarshal.GetReference(planes));
         ref var greens = ref unsafe(Unsafe.Add(ref reds, PremultipliedPlaneLength));
         ref var blues = ref unsafe(Unsafe.Add(ref reds, 2 * PremultipliedPlaneLength));
         ref var alphas = ref unsafe(Unsafe.Add(ref reds, 3 * PremultipliedPlaneLength));
@@ -1287,16 +1288,17 @@ internal sealed class PaletteQuantizer : IDisposable
 
     /// <summary>
     /// Gets the premultiplied coordinates of the palette entries as double planes (R·A, G·A, B·A, A·255), each padded to whole
-    /// vectors of 8 entries with an entry farther than any color (never selected); refreshed when the palette changes.
+    /// vectors of 8 entries with an entry farther than any color (never selected); refreshed when the palette changes. They
+    /// are a region of the working memory of their own, charged to the scope with the rest of it.
     /// </summary>
-    private double[] GetPremultipliedPlanes()
+    private Span<double> GetPremultipliedPlanes()
     {
-        var planes = _premultipliedPlanes ??= new double[4 * PremultipliedPlaneLength];
+        var planes = unsafe(MemoryMarshal.Cast<byte, double>(GetState().Slice(_premultipliedPlanesOffset, 4 * PremultipliedPlaneLength * sizeof(double))));
         if (_premultipliedPlanesVersion != PaletteVersion)
         {
             for (var plane = 0; plane < 4; plane++)
             {
-                var samples = planes.AsSpan(plane * PremultipliedPlaneLength, PremultipliedPlaneLength);
+                var samples = planes.Slice(plane * PremultipliedPlaneLength, PremultipliedPlaneLength);
                 for (var i = 0; i < _paletteCount; i++)
                 {
                     samples[i] = _premultiplied[(4 * i) + plane];

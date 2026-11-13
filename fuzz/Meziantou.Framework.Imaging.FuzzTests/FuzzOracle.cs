@@ -404,6 +404,8 @@ internal static class FuzzOracle
         image.Rotate(RotateMode.Rotate90);
         image.Flip(FlipMode.Horizontal);
         image.Crop(new Rectangle(0, 0, Math.Max(1, image.Width - 1), image.Height));
+        if (CheckNeighborhoodFilters(image, variant) is { Length: > 0 } filters)
+            return filters;
 
         // Whatever the pixels, the detected box is a non-empty part of the canvas and a clamped auto-crop never enlarges it.
         // The weights are within [-1, 1], except for floating-point samples, which are not clipped (outside [0, 1] in OpenEXR)
@@ -639,6 +641,56 @@ internal static class FuzzOracle
         using var reloaded = Image.Load<Rgba32>(output.ToArray(), new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
         if (reloaded.Width != converted.Width || reloaded.Height != converted.Height || reloaded.Frames.Count != 1)
             return $"lossy-avif-structure: the image of {converted.Width}x{converted.Height} written as a lossy AVIF (variant {variant}) decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s)";
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckNeighborhoodFilters(Image image, int variant)
+    {
+        // A corner of the first frame, so that the filters of large neighborhoods stay fast: the edge-preserving and radial
+        // filters, the edge detectors, the unsharp mask and the transformations onto the same canvas keep the size and the
+        // pixel format
+        using var still = image.CloneFrame(0);
+        still.Crop(new Rectangle(0, 0, Math.Min(still.Width, 48), Math.Min(still.Height, 48)));
+        var size = still.Size;
+        var pixelFormat = still.PixelFormat;
+        var mode = (ConvolutionEdgeMode)(variant % 4);
+        var center = new PointD(size.Width / 3.0, size.Height / 2.0);
+        var transform = new TransformOptions { CanvasMode = TransformCanvasMode.Keep, BackgroundColor = new Rgba64(0, 0, 0, ushort.MaxValue), Filter = (variant & 4) != 0 ? ResamplingFilter.Bicubic : ResamplingFilter.Bilinear };
+        switch ((variant >> 2) % 8)
+        {
+            case 0:
+                still.BilateralFilter(2, 1.5, 0.1, mode);
+                break;
+            case 1:
+                still.GuidedFilter(2, 0.01, mode);
+                break;
+            case 2:
+                still.RadialBlur(new RadialBlurOptions(RadialBlurKind.Zoom, center, 0.3) { EdgeMode = mode });
+                break;
+            case 3:
+                still.RadialBlur(new RadialBlurOptions(RadialBlurKind.Spin, center, 20) { EdgeMode = mode });
+                break;
+            case 4:
+                still.DetectCannyEdges();
+                break;
+            case 5:
+                still.DetectEdges((variant & 64) != 0 ? EdgeDetector.Kirsch : EdgeDetector.Sobel, grayscale: (variant & 128) != 0, mode);
+                break;
+            case 6:
+                still.Sharpen(1.2, 1.5, 0.01, mode);
+                still.BoxBlur(2, mode);
+                break;
+            default:
+                still.Rotate(17, transform);
+                still.Skew(10, -5, transform);
+                still.CorrectPerspective(new PointD(0.05 * size.Width, 0), new PointD(0.95 * size.Width, 0.1 * size.Height), new PointD(size.Width, size.Height), new PointD(0, 0.9 * size.Height), size, transform);
+                break;
+        }
+
+        if (still.Size != size || still.PixelFormat != pixelFormat)
+            return $"neighborhood-filters: the {size} {pixelFormat} image became {still.Size} {still.PixelFormat} (variant {variant})";
 
         return string.Empty;
     }

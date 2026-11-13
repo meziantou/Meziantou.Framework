@@ -4035,6 +4035,56 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(BilateralCases))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void GuidedFilterAndBoxBlurVectorizedWindowSumsMatchTheScalarLoops(PixelFormat format, ConvolutionEdgeMode mode)
+    {
+        // Window sums of 1 to 25 values per pixel: windows wider and taller than the frame, and blocks of windows that end
+        // at every offset of a row
+        var random = new Random(((int)format * 8) + (int)mode + 200);
+        (int Width, int Height, int Radius)[] cases = [(1, 5, 1), (3, 2, 4), (17, 13, 1), (17, 13, 2), (23, 9, 3), (40, 21, 7)];
+        foreach (var (width, height, radius) in cases)
+        {
+            var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+            if (format == PixelFormat.RgbaFloat)
+            {
+                var floats = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(bytes.AsSpan()));
+                for (var i = 0; i < floats.Length; i++)
+                {
+                    floats[i] = random.Next(50) == 0 ? -0.5f : (float)random.NextDouble();
+                }
+            }
+            else
+            {
+                random.NextBytes(bytes);
+            }
+
+            Assert.Equal(Filter(image => image.GuidedFilter(radius, 0.01, mode), forceScalar: true), Filter(image => image.GuidedFilter(radius, 0.01, mode), forceScalar: false));
+            Assert.Equal(Filter(image => image.BoxBlur(radius, mode), forceScalar: true), Filter(image => image.BoxBlur(radius, mode), forceScalar: false));
+
+            byte[] Filter(Action<Image> filter, bool forceScalar)
+            {
+                using var image = format == PixelFormat.RgbaFloat
+                    ? Image.ImportPixelBytes<RgbaFloat>(bytes, width, height)
+                    : ImportBytes(format, bytes, width, height);
+                Resampler.TestForceScalar = forceScalar;
+                try
+                {
+                    filter(image);
+                }
+                finally
+                {
+                    Resampler.TestForceScalar = false;
+                }
+
+                var result = new byte[bytes.Length];
+                image.Frames[0].CopyPixelBytesTo(result);
+                return NormalizeNaNs(format, result);
+            }
+        }
+    }
+
     // The sign of a NaN depends on the order of the operands of an addition, which the JIT may swap in the scalar loops too
     private static byte[] NormalizeNaNs(PixelFormat format, byte[] bytes)
     {

@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -87,11 +88,15 @@ internal sealed class CubeLutLookup(CubeLut lut, LutInterpolation interpolation)
     /// <summary>
     /// Maps the colors of a three-dimensional table <see cref="Vector{T}.Count"/> pixels at a time (2 lanes of doubles on
     /// Arm64, 4 with AVX2): the lanes compute what <see cref="MapColor"/> computes, in the same order, the tetrahedron of
-    /// each lane being selected by masks instead of branches, and the corners are read one lane at a time.
+    /// each lane being selected by masks instead of branches, and the corners are read one lane at a time. Trilinear
+    /// interpolation reads 8 corners: with 2 lanes on x64 (no AVX2), the vectors are slower than the scalar loop.
     /// </summary>
     public override int MapColors(Span<ushort> samples, double scale, int max)
     {
         if (!lut.IsThreeDimensional || !Vector.IsHardwareAccelerated || Vector<double>.Count is not (2 or 4))
+            return 0;
+
+        if (interpolation == LutInterpolation.Trilinear && Vector<double>.Count == 2 && !AdvSimd.IsSupported)
             return 0;
 
         var size = lut.Size;

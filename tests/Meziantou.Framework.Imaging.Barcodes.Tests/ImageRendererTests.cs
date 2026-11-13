@@ -997,6 +997,142 @@ public sealed class ImageRendererTests
         Assert.Throws<OperationCanceledException>(() => canceled.ReadQRCodes(cancellationToken: new CancellationToken(canceled: true)));
     }
 
+    [Fact]
+    public void ReadmeExample_ReadBarcodes2D()
+    {
+        #region ImagingBarcodes_ReadBarcodes2D
+        using var image = Barcode2D.CreateDataMatrix("https://www.meziantou.net").ToImage(); // or Image.Load("label.png")
+
+        var results = image.ReadBarcodes2D();
+
+        var result = Assert.Single(results);
+        Assert.Equal((Barcode2DType.DataMatrix, "https://www.meziantou.net"), (result.Result.Type, result.Text));
+        #endregion
+    }
+
+    public static TheoryData<Barcode2DType, string, int> ReadableBarcodes2D()
+    {
+        var data = new TheoryData<Barcode2DType, string, int>();
+        foreach (var moduleSize in (int[])[2, 3, 5])
+        {
+            foreach (var type in (Barcode2DType[])[Barcode2DType.DataMatrix, Barcode2DType.Pdf417, Barcode2DType.Aztec])
+            {
+                data.Add(type, "Hello", moduleSize);
+                data.Add(type, "https://www.meziantou.net/a-longer-text-for-a-larger-symbol-0123456789", moduleSize);
+            }
+        }
+
+        data.Add(Barcode2DType.DataMatrix, string.Concat(Enumerable.Repeat("Data Matrix with several data regions. ", 8)), 2);
+        data.Add(Barcode2DType.Aztec, string.Concat(Enumerable.Repeat("Full-range Aztec symbol with a reference grid. ", 8)), 2);
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ReadableBarcodes2D))]
+    public void ReadBarcodes2D_RendersReadBack(Barcode2DType type, string text, int moduleSize)
+    {
+        using var image = CreateBarcode2D(type, text).ToImage(new Barcode2DDrawingOptions { ModuleSize = moduleSize });
+
+        var result = Assert.Single(image.ReadBarcodes2D());
+
+        Assert.Equal((type, text), (result.Result.Type, result.Text));
+        Assert.All(result.Corners, corner => corner.X >= 0 && corner.Y >= 0 && corner.X <= image.Width && corner.Y <= image.Height);
+    }
+
+    [Theory]
+    [InlineData(Barcode2DType.DataMatrix, 90)]
+    [InlineData(Barcode2DType.DataMatrix, 180)]
+    [InlineData(Barcode2DType.DataMatrix, 17)]
+    [InlineData(Barcode2DType.DataMatrix, 300)]
+    [InlineData(Barcode2DType.Aztec, 90)]
+    [InlineData(Barcode2DType.Aztec, 25)]
+    [InlineData(Barcode2DType.Aztec, 200)]
+    [InlineData(Barcode2DType.Pdf417, 90)]
+    [InlineData(Barcode2DType.Pdf417, 180)]
+    [InlineData(Barcode2DType.Pdf417, 270)]
+    public void ReadBarcodes2D_Rotated(Barcode2DType type, double degrees)
+    {
+        using var image = CreateBarcode2D(type, "Rotated 2D symbol").ToImage(new Barcode2DDrawingOptions { ModuleSize = 5 });
+        image.Rotate(degrees, new TransformOptions { BackgroundColor = Rgba64.FromRgba32(Colors.White) });
+
+        var result = Assert.Single(image.ReadBarcodes2D());
+
+        Assert.Equal((type, "Rotated 2D symbol"), (result.Result.Type, result.Text));
+    }
+
+    [Theory]
+    [InlineData(Barcode2DType.DataMatrix)]
+    [InlineData(Barcode2DType.Pdf417)]
+    [InlineData(Barcode2DType.Aztec)]
+    public void ReadBarcodes2D_MirroredInvertedAndCompressed(Barcode2DType type)
+    {
+        var barcode = CreateBarcode2D(type, "Mirrored 2D symbol");
+        using var mirrored = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 4 });
+        mirrored.Flip(FlipMode.Horizontal);
+        Assert.Equal("Mirrored 2D symbol", Assert.Single(mirrored.ReadBarcodes2D()).Text);
+
+        using var inverted = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 4, DarkBrush = new SolidBrush(Colors.White), LightBrush = new SolidBrush(Colors.Black) });
+        Assert.Equal("Mirrored 2D symbol", Assert.Single(inverted.ReadBarcodes2D()).Text);
+        Assert.Empty(inverted.ReadBarcodes2D(new Barcode2DReadingOptions { TryInverted = false }));
+
+        using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 5 });
+        image.GaussianBlur(0.7);
+        using var jpeg = new MemoryStream();
+        image.Save(jpeg, new JpegEncoder { Quality = 70 });
+        using var decoded = Image.Load(jpeg.ToArray());
+        Assert.Equal("Mirrored 2D symbol", Assert.Single(decoded.ReadBarcodes2D()).Text);
+    }
+
+    [Fact]
+    public void ReadBarcodes2D_CompactAztecWhoseRingsContinueInTheModeMessage()
+    {
+        // The modules of the mode message around this compact bullseye alternate like the rings of a full-range one
+        using var image = Barcode2D.CreateAztec("XEv").ToImage(new Barcode2DDrawingOptions { ModuleSize = 4 });
+        image.Rotate(RotateMode.Rotate90);
+
+        Assert.Equal("XEv", Assert.Single(image.ReadBarcodes2D()).Text);
+    }
+
+    [Fact]
+    public void ReadBarcodes2D_SeveralSymbols()
+    {
+        using var image = new Image<Rgba32>(800, 400, Colors.White);
+        var options = new Barcode2DDrawingOptions { ModuleSize = 3 };
+        image.Draw(canvas =>
+        {
+            canvas.DrawBarcode2D(Barcode2D.CreateDataMatrix("Data Matrix"), new PointD(10, 10), options);
+            canvas.DrawBarcode2D(Barcode2D.CreateAztec("Aztec"), new PointD(200, 20), options);
+            canvas.DrawBarcode2D(Barcode2D.CreatePdf417("PDF417 symbol"), new PointD(20, 200), options);
+            canvas.DrawBarcode2D(Barcode2D.CreateDataMatrix("Rectangle", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }), new PointD(450, 40), options);
+        });
+
+        var results = image.ReadBarcodes2D();
+
+        Assert.Equal(["Aztec", "Data Matrix", "PDF417 symbol", "Rectangle"], results.Select(result => result.Text).Order(StringComparer.Ordinal).ToArray());
+        Assert.Equal("Aztec", Assert.Single(image.ReadBarcodes2D(new Barcode2DReadingOptions { Types = [Barcode2DType.Aztec] })).Text);
+        Assert.Single(image.ReadBarcodes2D(new Barcode2DReadingOptions { MaximumResults = 1 }));
+    }
+
+    [Fact]
+    public void ReadBarcodes2D_NoSymbol()
+    {
+        using var blank = new Image<Rgba32>(200, 100, Colors.White);
+        Assert.Empty(blank.ReadBarcodes2D());
+
+        using var qrCode = QRCode.Create("Not a 2D barcode of this reader").ToImage();
+        Assert.Empty(qrCode.ReadBarcodes2D());
+
+        Assert.Throws<ArgumentNullException>("image", () => Barcode2DImageReader.ReadBarcodes2D(null!));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new Barcode2DReadingOptions { MaximumResults = 0 });
+    }
+
+    private static Barcode2D CreateBarcode2D(Barcode2DType type, string text) => type switch
+    {
+        Barcode2DType.DataMatrix => Barcode2D.CreateDataMatrix(text),
+        Barcode2DType.Pdf417 => Barcode2D.CreatePdf417(text),
+        _ => Barcode2D.CreateAztec(text, new AztecOptions { Compact = text.Length > 200 ? false : null }),
+    };
+
     private static QRCode CreateQRCode(string text, QRCodeType type) => type switch
     {
         QRCodeType.MicroQR => QRCode.CreateMicroQR(text),

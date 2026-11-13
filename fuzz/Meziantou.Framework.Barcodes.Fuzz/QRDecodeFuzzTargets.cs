@@ -29,6 +29,8 @@ internal static class QRDecodeFuzzTargets
         new("barcodes-decode-2d", Decode2DTarget) { Seeds = Get2DSeeds, Dictionary = ModuleTokens },
         new("barcodes-read-qrcode-image", ReadQRCodeImageTarget) { Seeds = GetImageSeeds, Dictionary = ModuleTokens },
         new("barcodes-read-qrcode-roundtrip", ReadQRCodeRoundTripTarget) { Seeds = () => SeedTexts.Select((text, index) => FuzzSeed.FromText($"roundtrip-{index}", [(byte)index, (byte)(index * 37)], text)), Dictionary = ["HELLO", "0123456789", "https://", "日本"] },
+        new("barcodes-read-2d-image", Read2DImageTarget) { Seeds = Get2DImageSeeds, Dictionary = ModuleTokens },
+        new("barcodes-read-2d-roundtrip", Read2DRoundTripTarget) { Seeds = () => Barcode2DSeedTexts.Select((text, index) => FuzzSeed.FromText($"roundtrip-2d-{index}", [(byte)index, (byte)(index * 37)], text)), Dictionary = ["HELLO", "0123456789", "abc", "*>\r", "@^_"] },
         new("barcodes-decode-linear", DecodeLinearTarget) { Seeds = GetLinearSeeds, Dictionary = ["\x01\x01\x01", "\x02\x02", "\x03", "\x04", "\x0A", "\x00"] },
     ];
 
@@ -395,5 +397,75 @@ internal static class QRDecodeFuzzTargets
         var results = image.ReadQRCodes();
         var expected = System.Text.Encoding.UTF8.GetString(System.Text.Encoding.UTF8.GetBytes(text));
         FuzzAssert.True(results.Count is 1 && results[0].Text == expected && results[0].Result.Type == type, $"The {type} code of version {qr.Version} is read as [{string.Join(", ", results.Select(result => result.Result.Type + " " + result.Text))}]");
+    }
+
+    private static IEnumerable<FuzzSeed> Get2DImageSeeds()
+    {
+        foreach (var (name, barcode) in new[] { ("datamatrix", Barcode2D.CreateDataMatrix("HELLO")), ("pdf417", Barcode2D.CreatePdf417("HELLO", new Pdf417Options { Columns = 1, RowHeight = 2 })), ("aztec", Barcode2D.CreateAztec("HELLO")) })
+        {
+            using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 2, QuietZoneModules = 2 });
+            var pixels = new Rgba32[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            yield return new FuzzSeed($"image-2d-{name}", (byte[])[(byte)image.Width, (byte)image.Height, .. pixels.Select(pixel => pixel.R)]);
+        }
+    }
+
+    private static void Read2DImageTarget(ReadOnlySpan<byte> data)
+    {
+        var width = 1 + FuzzInput.ReadByte(ref data);
+        var height = 1 + FuzzInput.ReadByte(ref data);
+        var pixels = new Gray8[width * height];
+        for (var i = 0; i < pixels.Length && i < data.Length; i++)
+        {
+            pixels[i] = new Gray8(data[i]);
+        }
+
+        using var image = Image.ImportPixelData<Gray8>(pixels, width, height);
+        foreach (var result in image.ReadBarcodes2D())
+        {
+            FuzzAssert.Equal(4, result.Corners.Count, "The number of corners");
+            FuzzAssert.True(result.Corners.All(corner => double.IsFinite(corner.X) && double.IsFinite(corner.Y)), "A corner is not finite");
+            var center = new PointD(result.Corners.Average(corner => corner.X), result.Corners.Average(corner => corner.Y));
+            FuzzAssert.True(center.X >= -1 && center.Y >= -1 && center.X <= width + 1 && center.Y <= height + 1, $"The center {center} of a symbol is outside the image");
+        }
+    }
+
+    // A Data Matrix, PDF417 or Aztec symbol rendered with modules of 3 to 6 pixels, turned by a multiple of 90°, is read back
+    private static void Read2DRoundTripTarget(ReadOnlySpan<byte> data)
+    {
+        var type = (Barcode2DType)(FuzzInput.ReadByte(ref data) % 3);
+        var flags = FuzzInput.ReadByte(ref data);
+        var text = FuzzInput.ReadText(data);
+        Barcode2D barcode;
+        try
+        {
+            barcode = type switch
+            {
+                Barcode2DType.DataMatrix => Barcode2D.CreateDataMatrix(text),
+                Barcode2DType.Pdf417 => Barcode2D.CreatePdf417(text),
+                _ => Barcode2D.CreateAztec(text),
+            };
+        }
+        catch (ArgumentException)
+        {
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            return;
+        }
+
+        if (barcode.Width * barcode.Height > 100 * 100)
+            return;
+
+        using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 3 + (flags % 4) });
+        if ((flags & 0x30) is not 0)
+        {
+            image.Rotate((flags >> 4 & 3) switch { 1 => RotateMode.Rotate90, 2 => RotateMode.Rotate180, _ => RotateMode.Rotate270 });
+        }
+
+        var results = image.ReadBarcodes2D();
+        var expected = Barcode2DDecoder.Decode(barcode).Text;
+        FuzzAssert.True(results.Count is 1 && results[0].Text == expected && results[0].Result.Type == type, $"The {type} symbol of {barcode.Width}x{barcode.Height} modules is read as [{string.Join(", ", results.Select(result => result.Result.Type + " " + result.Text))}]");
     }
 }

@@ -1052,4 +1052,32 @@ public sealed class DecodeInteropTests
 
         Assert.Equal(data, result.Text);
     }
+
+    public static TheoryData<string, string, string> ZintBarcode2DImages() => new()
+    {
+        { "71", "--scale=1", "Data Matrix rendered by zint" },
+        { "71", "--scale=2 --rotate=90", "HELLO 0123456789" },
+        { "71", "--scale=1 --square", string.Concat(Enumerable.Repeat("Large Data Matrix ", 12)) },
+        { "71", "--scale=2 --vers=27", "RECTANGLE 12x26" },
+        { "55", "--scale=1", "PDF417 rendered by zint" },
+        { "55", "--scale=2 --rotate=180 --cols=4", "https://www.meziantou.net" },
+        { "92", "--scale=1", "Aztec rendered by zint" },
+        { "92", "--scale=2 --rotate=270", "HELLO AZTEC 0123456789" },
+        { "92", "--scale=1 --vers=12", string.Concat(Enumerable.Repeat("Full-range Aztec ", 10)) },
+    };
+
+    [Theory]
+    [MemberData(nameof(ZintBarcode2DImages))]
+    public async Task ZintBarcode2DImage_IsRead(string symbology, string options, string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "zint.png";
+        await tools.RenderWithZintAsync(["-b", symbology, "--quietzones", .. options.Split(' ')], data, path);
+        using var image = Image.Load(path);
+
+        var result = Assert.Single(image.ReadBarcodes2D());
+
+        Assert.Equal(data, result.Text);
+    }
 }

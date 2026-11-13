@@ -1,9 +1,9 @@
 ---
 title: Reading
-description: Read QR codes from images, and the data of QR codes, Data Matrix, PDF417, Aztec symbols and linear barcodes from their modules or scan lines.
+description: Read QR codes, Data Matrix, PDF417 and Aztec symbols from images, and every symbology from its modules or scan lines.
 ---
 
-The packages read the codes back: `Meziantou.Framework.Imaging.Barcodes` finds the QR codes of an image, and
+The packages read the codes back: `Meziantou.Framework.Imaging.Barcodes` finds the two-dimensional symbols of an image, and
 `Meziantou.Framework.Barcodes` decodes every symbology from its modules, or the linear barcodes from the widths of their
 bars.
 
@@ -40,6 +40,22 @@ of at least 2 pixels. Symbols printed light on a dark background are read too. A
 [QRCodeReadingOptions](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions) limits the
 [Types](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions.Types) to read and the
 [MaximumResults](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions.MaximumResults).
+
+[ReadBarcodes2D](cref:Meziantou.Framework.Imaging.Barcodes.Barcode2DImageReader.ReadBarcodes2D) reads the Data Matrix,
+PDF417 and Aztec symbols of an image the same way, with
+[Barcode2DReadingOptions](cref:Meziantou.Framework.Imaging.Barcodes.Barcode2DReadingOptions). Data Matrix and Aztec
+symbols can be in any orientation; the rows of a PDF417 symbol must be about horizontal or vertical.
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_ReadBarcodes2D;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var image = Barcode2D.CreateDataMatrix("https://www.meziantou.net").ToImage(); // or Image.Load("label.png")
+
+var results = image.ReadBarcodes2D();
+
+var result = Assert.Single(results);
+Assert.Equal((Barcode2DType.DataMatrix, "https://www.meziantou.net"), (result.Result.Type, result.Text));
+```
+<!-- endref -->
 
 ## Reading modules
 

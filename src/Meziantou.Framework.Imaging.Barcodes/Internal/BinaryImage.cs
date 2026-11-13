@@ -22,6 +22,9 @@ internal sealed class BinaryImage
     /// <summary>Gets whether the pixel under a point is dark.</summary>
     public bool IsDark(double x, double y) => IsDark((int)Math.Floor(x), (int)Math.Floor(y));
 
+    /// <summary>Gets whether the pixel under a point is dark.</summary>
+    public bool IsDark(PointD point) => IsDark(point.X, point.Y);
+
     /// <summary>Gets the image with the dark and light pixels swapped, for symbols printed light on a dark background.</summary>
     public BinaryImage Invert()
     {

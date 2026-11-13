@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.WebPlatform.PdfRendering</RootNamespace>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
     <Description>Prints the documents of Meziantou.Framework.WebPlatform to PDF with Meziantou.Framework.Pdf: vector pages, embedded font subsets with extractable text, images, links, bookmarks and tagged PDF (PDF/UA, PDF/A).</Description>
     <PackageTags>html;dom;css;rendering;print;pdf;pdf-ua;pdf-a</PackageTags>

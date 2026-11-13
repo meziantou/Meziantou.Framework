@@ -592,7 +592,7 @@ internal static class FuzzOracle
             4 => (new TiffEncoder { MetadataHandling = MetadataHandling.Strip, Compression = option switch { 0 => TiffCompression.None, 1 => TiffCompression.Deflate, 2 => TiffCompression.Lzw, _ => TiffCompression.PackBits }, BigEndian = (variant & 64) != 0, BigTiff = (variant & 128) != 0, RowsPerStrip = 1 + (variant % 7) }, source),
             5 => (new WebPEncoder { MetadataHandling = MetadataHandling.Strip, Effort = option * 3 }, eightBit),
             6 => (new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip }, source),
-            7 => (new Jpeg2000Encoder { MetadataHandling = MetadataHandling.Strip }, source),
+            7 => (new Jpeg2000Encoder { MetadataHandling = MetadataHandling.Strip, BlockCoder = alternative ? Jpeg2000BlockCoder.HighThroughput : Jpeg2000BlockCoder.Standard }, source),
             8 => (new PngEncoder { MetadataHandling = MetadataHandling.Strip, Interlaced = alternative, Optimization = option switch { 2 => PngOptimization.Layout, 3 => PngOptimization.MinimumSize, _ => PngOptimization.None } }, source),
             9 => (new IcoEncoder { MetadataHandling = MetadataHandling.Strip, Kind = (variant & 32) != 0 ? IconKind.Cursor : IconKind.Icon, PayloadFormat = dibPayload ? IconPayloadFormat.Dib : IconPayloadFormat.Png }, dibPayload ? eightBit : source),
             10 => (new AvifEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),
@@ -691,6 +691,25 @@ internal static class FuzzOracle
 
         if (still.Size != size || still.PixelFormat != pixelFormat)
             return $"neighborhood-filters: the {size} {pixelFormat} image became {still.Size} {still.PixelFormat} (variant {variant})";
+
+        // Linear-light filtering of the pixels without their color description (a profile that is not sRGB is refused), of
+        // 8-bit and 16-bit samples, and the filtering of floating-point samples
+        using var wide = still.CloneAs<Rgba64>(Conversion);
+        var samples = new Rgba64[size.Width * size.Height];
+        wide.Frames[0].CopyPixelDataTo(samples);
+        using var described = Image.ImportPixelData<Rgba64>(samples, size.Width, size.Height);
+        using var filtered = ((variant >> 5) % 3) switch
+        {
+            0 => (Image)described.CloneAs<Rgba32>(),
+            1 => described.Clone(),
+            _ => described.CloneAs<RgbaFloat>(),
+        };
+        var floatingPoint = PixelFormats.IsFloatingPoint(filtered.PixelFormat);
+        filtered.Convolve(new ConvolutionOptions(new ConvolutionKernel(3, 3, [1 / 16d, 1 / 8d, 1 / 16d, 1 / 8d, 1 / 4d, 1 / 8d, 1 / 16d, 1 / 8d, 1 / 16d])) { EdgeMode = mode, WorkingSpace = floatingPoint ? ConvolutionWorkingSpace.Encoded : ConvolutionWorkingSpace.LinearSrgb });
+        var resized = new Size(Math.Max(1, (size.Width * 2) / 3), Math.Max(1, size.Height / 2));
+        filtered.Resize(new ResizeOptions(resized.Width, resized.Height) { Mode = ResizeMode.Stretch, WorkingSpace = floatingPoint ? ResizeWorkingSpace.Encoded : ResizeWorkingSpace.LinearSrgb });
+        if (filtered.Size != resized)
+            return $"linear-light-filters: the {size} {filtered.PixelFormat} image became {filtered.Size} instead of {resized} (variant {variant})";
 
         return string.Empty;
     }

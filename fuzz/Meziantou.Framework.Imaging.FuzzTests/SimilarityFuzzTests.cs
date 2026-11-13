@@ -128,6 +128,23 @@ public sealed class SimilarityFuzzTests
         if (identical && (butteraugli.MaxDistance != 0 || butteraugli.PNorm3 != 0))
             return FormattableString.Invariant($"identical frames have a Butteraugli distance of {butteraugli.MaxDistance} (3-norm {butteraugli.PNorm3})");
 
+        // PSNR and the hash distances are symmetric, and those of identical frames are infinite and 0
+        var psnr = ImageSimilarity.ComputePsnr(expected, actual);
+        failure = CheckRange("PSNR", psnr, 0, double.PositiveInfinity);
+        if (failure is not null)
+            return failure;
+
+        if ((identical && !double.IsPositiveInfinity(psnr)) || ImageSimilarity.ComputePsnr(actual, expected) != psnr)
+            return FormattableString.Invariant($"the frames have a PSNR of {psnr}, and of {ImageSimilarity.ComputePsnr(actual, expected)} in the other order (identical: {identical})");
+
+        foreach (var perceptual in (bool[])[false, true])
+        {
+            var distance = perceptual ? ImageSimilarity.ComputePerceptualHashDistance(expected, actual) : ImageSimilarity.ComputeDifferenceHashDistance(expected, actual);
+            var reverse = perceptual ? ImageSimilarity.ComputePerceptualHashDistance(actual, expected) : ImageSimilarity.ComputeDifferenceHashDistance(actual, expected);
+            if (distance is < 0 or > 64 || distance != reverse || (identical && distance != 0))
+                return FormattableString.Invariant($"the frames have a {(perceptual ? "pHash" : "dHash")} distance of {distance}, and of {reverse} in the other order (identical: {identical})");
+        }
+
         if (width < 8 || height < 8)
             return null;
 

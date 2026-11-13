@@ -357,6 +357,62 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PaletteRefinementAssignmentMatchesTheScalarReference()
+    {
+        // Items below 2^15 are opaque histogram buckets, the others translucent ones; the coordinates span every value or a
+        // few (ties between entries and with the current entry), and the extremes (the largest distance)
+        var random = new Random(41);
+        using var quantizer = new PaletteQuantizer(new AllocationScope(new ImageResourceLimits()), translucent: true);
+        var colors = new int[1 << 16];
+        foreach (var entries in new[] { 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 64, 100, 255, 256 })
+        {
+            for (var round = 0; round < 12; round++)
+            {
+                var range = round % 3 switch
+                {
+                    0 => 256,
+                    1 => 3,
+                    _ => 2,
+                };
+                int Sample() => range == 2 ? random.Next(2) * 255 : random.Next(range);
+                var coordinates = new int[entries * 4];
+                var entryTranslucent = new bool[entries];
+                for (var entry = 0; entry < entries; entry++)
+                {
+                    coordinates[4 * entry] = Sample();
+                    coordinates[(4 * entry) + 1] = Sample();
+                    coordinates[(4 * entry) + 2] = Sample();
+                    coordinates[(4 * entry) + 3] = Sample();
+                    entryTranslucent[entry] = (round / 3) switch
+                    {
+                        0 => false,
+                        1 => true,
+                        _ => random.Next(2) == 0,
+                    };
+                }
+
+                var itemCount = random.Next(1, 300);
+                var items = new int[itemCount];
+                var owners = new int[itemCount];
+                for (var i = 0; i < itemCount; i++)
+                {
+                    items[i] = random.Next(1 << 16);
+                    owners[i] = random.Next(entries);
+                    colors[items[i]] = (Sample() << 24) | (Sample() << 16) | (Sample() << 8) | Sample();
+                }
+
+                var expected = owners.ToArray();
+                var expectedMoved = quantizer.AssignItemsScalar(entries, itemCount, items, colors, [], expected, coordinates, entryTranslucent);
+                var actual = owners.ToArray();
+                var actualMoved = quantizer.AssignItemsVector(entries, itemCount, items, colors, [], actual, coordinates, entryTranslucent);
+                Assert.Equal(expected, actual);
+                Assert.Equal(expectedMoved, actualMoved);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void GifInvalidIndexSearchMatchesTheScalarReference()
     {
         var random = new Random(31);

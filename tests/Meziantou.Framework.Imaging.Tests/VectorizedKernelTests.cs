@@ -3484,6 +3484,69 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Theory]
+    [InlineData(PixelFormat.Rgba32, LutInterpolation.Tetrahedral)]
+    [InlineData(PixelFormat.Rgba32, LutInterpolation.Trilinear)]
+    [InlineData(PixelFormat.Bgra32, LutInterpolation.Tetrahedral)]
+    [InlineData(PixelFormat.Rgb24, LutInterpolation.Trilinear)]
+    [InlineData(PixelFormat.Rgba64, LutInterpolation.Tetrahedral)]
+    [InlineData(PixelFormat.Rgba64, LutInterpolation.Trilinear)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void CubeLutLanesMatchTheScalarReference(PixelFormat format, LutInterpolation interpolation)
+    {
+        // Tables of several sizes with values beyond [0, 1] (both ends of the quantization), domains that clip the colors, and
+        // colors whose fractions tie (every tetrahedron and its edges); rows that are and are not multiples of the lanes
+        var random = new Random((int)format + (10 * (int)interpolation));
+        foreach (var size in new[] { 2, 3, 5, 17 })
+        {
+            foreach (var domain in new[] { "", "DOMAIN_MIN 0.1 0.2 0\nDOMAIN_MAX 0.9 1 0.5\n" })
+            {
+                var text = new System.Text.StringBuilder();
+                text.Append(System.Globalization.CultureInfo.InvariantCulture, $"LUT_3D_SIZE {size}\n{domain}");
+                for (var i = 0; i < size * size * size; i++)
+                {
+                    text.Append(System.Globalization.CultureInfo.InvariantCulture, $"{(random.NextDouble() * 1.4) - 0.2:R} {(random.NextDouble() * 1.4) - 0.2:R} {(random.NextDouble() * 1.4) - 0.2:R}\n");
+                }
+
+                var lut = CubeLut.Parse(text.ToString());
+                foreach (var width in new[] { 1, 2, 3, 5, 9, 37 })
+                {
+                    var height = 7;
+                    var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+                    random.NextBytes(bytes);
+                    if (width % 2 == 1)
+                    {
+                        // Samples from a small set: equal fractions
+                        for (var i = 0; i < bytes.Length; i++)
+                        {
+                            bytes[i] = (byte)(random.Next(3) * 0x7F);
+                        }
+                    }
+
+                    Assert.Equal(Map(bytes, forceScalar: true), Map(bytes, forceScalar: false));
+
+                    byte[] Map(byte[] source, bool forceScalar)
+                    {
+                        using var image = ImportBytes(format, source, width, height);
+                        Resampler.TestForceScalar = forceScalar;
+                        try
+                        {
+                            image.ApplyLut(lut, interpolation);
+                        }
+                        finally
+                        {
+                            Resampler.TestForceScalar = false;
+                        }
+
+                        var result = new byte[source.Length];
+                        image.Frames[0].CopyPixelBytesTo(result);
+                        return result;
+                    }
+                }
+            }
+        }
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ImageBilinearSumsMatchTheScalarReferenceBitForBit()

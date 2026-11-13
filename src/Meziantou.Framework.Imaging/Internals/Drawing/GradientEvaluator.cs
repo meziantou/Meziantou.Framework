@@ -521,7 +521,29 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     }
 
     /// <summary>Gets the parameters of the centers of a run of pixels, brought into the range of the stops by the spread mode: those of <see cref="GetParameter"/>.</summary>
-    private void GetParameters(int y, int x, Span<double> parameters)
+    /// <remarks>The lanes of a vector compute the parameters of consecutive pixels with the operations of <see cref="GetParametersScalar"/>.</remarks>
+    internal void GetParameters(int y, int x, Span<double> parameters)
+    {
+        if (Resampler.TestForceScalar || !Vector128.IsHardwareAccelerated)
+        {
+            GetParametersScalar(y, x, parameters);
+        }
+        else if (Vector512.IsHardwareAccelerated)
+        {
+            GetParametersVector<DoubleLanes512, Vector512<double>>(y, x, parameters);
+        }
+        else if (Vector256.IsHardwareAccelerated)
+        {
+            GetParametersVector<DoubleLanes256, Vector256<double>>(y, x, parameters);
+        }
+        else
+        {
+            GetParametersVector<DoubleLanes128, Vector128<double>>(y, x, parameters);
+        }
+    }
+
+    /// <summary>The reference of <see cref="GetParameters"/>: each parameter is the one of <see cref="GetParameter"/>.</summary>
+    internal void GetParametersScalar(int y, int x, Span<double> parameters)
     {
         var centerY = y + 0.5;
         if (_kind == GradientKind.Linear && !_hasTransform && !_isProjective)
@@ -539,22 +561,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             var circleY = _isElliptic ? _ellipseCenterY + (((centerY - _ellipseCenterY) * _ellipseRadiusX) / _ellipseRadiusY) : centerY;
             var py = circleY - _originY;
             var squared = py * py;
-            var i = 0;
-            if (Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar)
-            {
-                // The same operations on two columns at a time
-                var origin = Vector128.Create(_originX);
-                var half = Vector128.Create(0.5);
-                var squaredY = Vector128.Create(squared);
-                var divisor = Vector128.Create(_divisor);
-                for (; i + 2 <= parameters.Length; i += 2)
-                {
-                    var px = (Vector128.Create((double)(x + i), x + i + 1) + half) - origin;
-                    (Vector128.Sqrt((px * px) + squaredY) / divisor).CopyTo(parameters[i..]);
-                }
-            }
-
-            for (; i < parameters.Length; i++)
+            for (var i = 0; i < parameters.Length; i++)
             {
                 var px = (x + i + 0.5) - _originX;
                 parameters[i] = Math.Sqrt((px * px) + squared) / _divisor;
@@ -570,6 +577,179 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             return;
         }
 
+        Spread(parameters);
+    }
+
+    /// <summary>
+    /// <see cref="GetParametersScalar"/> on vectors: the position of each lane goes through the transformation, the ellipse
+    /// and the formula of the gradient, then the spread mode. A projective transformation and the cone of two circles are
+    /// computed pixel by pixel before the spread mode.
+    /// </summary>
+    private void GetParametersVector<TLanes, TVector>(int y, int x, Span<double> parameters)
+        where TLanes : IDoubleLanes<TVector>
+        where TVector : unmanaged
+    {
+        var i = _isProjective ? 0 : _kind switch
+        {
+            GradientKind.Linear => GetUnspreadParameters<TLanes, TVector, LinearFormula>(y, x, parameters),
+            GradientKind.Radial => GetUnspreadParameters<TLanes, TVector, RadialFormula>(y, x, parameters),
+            GradientKind.Focal => GetUnspreadParameters<TLanes, TVector, FocalFormula>(y, x, parameters),
+            GradientKind.TwoCircles => GetUnspreadParameters<TLanes, TVector, TwoCirclesFormula>(y, x, parameters),
+            GradientKind.Sweep => GetUnspreadParameters<TLanes, TVector, SweepFormula>(y, x, parameters),
+            _ => 0,
+        };
+
+        var centerY = y + 0.5;
+        for (; i < parameters.Length; i++)
+        {
+            parameters[i] = GetUnspreadParameter(x + i + 0.5, centerY);
+        }
+
+        SpreadVector<TLanes, TVector>(parameters);
+    }
+
+    /// <summary>The parameters before the spread mode of the first whole vectors of a run: those of <see cref="GetUnspreadParameter"/>.</summary>
+    /// <returns>The number of parameters computed.</returns>
+    private int GetUnspreadParameters<TLanes, TVector, TFormula>(int y, int x, Span<double> parameters)
+        where TLanes : IDoubleLanes<TVector>
+        where TVector : unmanaged
+        where TFormula : IGradientFormula
+    {
+        // The centers of the pixels are whole numbers plus one half: adding the number of lanes is exact
+        var count = TLanes.Count;
+        var step = TLanes.Create(count);
+        var centerX = TLanes.Add(TLanes.Sequence(x), TLanes.Create(0.5));
+        var centerY = y + 0.5;
+        var originX = TLanes.Create(_originX);
+        var originY = TLanes.Create(_originY);
+        var axisX = TLanes.Create(_axisX);
+        var axisY = TLanes.Create(_axisY);
+        var divisor = TLanes.Create(_divisor);
+        var focal = TLanes.Create(_focalRadius * _focalGrowth);
+        var focalSquared = TLanes.Create(_focalRadius * _focalRadius);
+        var isElliptic = _isElliptic;
+        var ellipseCenterY = TLanes.Create(_ellipseCenterY);
+        var ellipseRadiusX = TLanes.Create(_ellipseRadiusX);
+        var ellipseRadiusY = TLanes.Create(_ellipseRadiusY);
+        var i = 0;
+        if (_hasTransform)
+        {
+            // The products of the row are the ones the transformation computes for every pixel of it
+            var m11 = TLanes.Create(_inverse.A);
+            var m12 = TLanes.Create(_inverse.B);
+            var rowX = TLanes.Create(_inverse.C * centerY);
+            var rowY = TLanes.Create(_inverse.D * centerY);
+            var offsetX = TLanes.Create(_inverse.Tx);
+            var offsetY = TLanes.Create(_inverse.Ty);
+            for (; i + count <= parameters.Length; i += count)
+            {
+                var positionX = TLanes.Add(TLanes.Add(TLanes.Multiply(m11, centerX), rowX), offsetX);
+                var positionY = TLanes.Add(TLanes.Add(TLanes.Multiply(m12, centerX), rowY), offsetY);
+                if (isElliptic)
+                {
+                    positionY = TLanes.Add(ellipseCenterY, TLanes.Divide(TLanes.Multiply(TLanes.Subtract(positionY, ellipseCenterY), ellipseRadiusX), ellipseRadiusY));
+                }
+
+                var t = TFormula.Compute<TLanes, TVector>(TLanes.Subtract(positionX, originX), TLanes.Subtract(positionY, originY), axisX, axisY, divisor, focal, focalSquared);
+                TLanes.Store(t, parameters[i..]);
+                centerX = TLanes.Add(centerX, step);
+            }
+        }
+        else
+        {
+            // Every pixel of the row has the same position along y
+            var positionY = TLanes.Create(centerY);
+            if (isElliptic)
+            {
+                positionY = TLanes.Add(ellipseCenterY, TLanes.Divide(TLanes.Multiply(TLanes.Subtract(positionY, ellipseCenterY), ellipseRadiusX), ellipseRadiusY));
+            }
+
+            var py = TLanes.Subtract(positionY, originY);
+            for (; i + count <= parameters.Length; i += count)
+            {
+                var t = TFormula.Compute<TLanes, TVector>(TLanes.Subtract(centerX, originX), py, axisX, axisY, divisor, focal, focalSquared);
+                TLanes.Store(t, parameters[i..]);
+                centerX = TLanes.Add(centerX, step);
+            }
+        }
+
+        return i;
+    }
+
+    /// <summary>The parameter of a gradient at positions relative to its origin, before the spread mode, on the lanes of vectors.</summary>
+    private interface IGradientFormula
+    {
+        /// <summary>Computes the parameters: those of the case of the gradient in <see cref="GetUnspreadParameter"/>.</summary>
+        static abstract TVector Compute<TLanes, TVector>(TVector px, TVector py, TVector axisX, TVector axisY, TVector divisor, TVector focal, TVector focalSquared)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged;
+    }
+
+    private readonly struct LinearFormula : IGradientFormula
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Compute<TLanes, TVector>(TVector px, TVector py, TVector axisX, TVector axisY, TVector divisor, TVector focal, TVector focalSquared)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+            => TLanes.Divide(TLanes.Add(TLanes.Multiply(px, axisX), TLanes.Multiply(py, axisY)), divisor);
+    }
+
+    private readonly struct RadialFormula : IGradientFormula
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Compute<TLanes, TVector>(TVector px, TVector py, TVector axisX, TVector axisY, TVector divisor, TVector focal, TVector focalSquared)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+            => TLanes.Divide(TLanes.Sqrt(TLanes.Add(TLanes.Multiply(px, px), TLanes.Multiply(py, py))), divisor);
+    }
+
+    private readonly struct FocalFormula : IGradientFormula
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Compute<TLanes, TVector>(TVector px, TVector py, TVector axisX, TVector axisY, TVector divisor, TVector focal, TVector focalSquared)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+        {
+            var along = TLanes.Add(TLanes.Multiply(px, axisX), TLanes.Multiply(py, axisY));
+            var distance = TLanes.Add(TLanes.Multiply(px, px), TLanes.Multiply(py, py));
+            return TLanes.Divide(TLanes.Subtract(TLanes.Sqrt(TLanes.Add(TLanes.Multiply(along, along), TLanes.Multiply(divisor, distance))), along), divisor);
+        }
+    }
+
+    private readonly struct TwoCirclesFormula : IGradientFormula
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Compute<TLanes, TVector>(TVector px, TVector py, TVector axisX, TVector axisY, TVector divisor, TVector focal, TVector focalSquared)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+        {
+            var half = TLanes.Add(TLanes.Add(TLanes.Multiply(px, axisX), TLanes.Multiply(py, axisY)), focal);
+            var distance = TLanes.Subtract(TLanes.Add(TLanes.Multiply(px, px), TLanes.Multiply(py, py)), focalSquared);
+            var discriminant = TLanes.Add(TLanes.Multiply(half, half), TLanes.Multiply(divisor, distance));
+            var zero = TLanes.Create(0);
+            discriminant = TLanes.Select(TLanes.GreaterThan(discriminant, zero), discriminant, zero);
+            return TLanes.Divide(TLanes.Subtract(TLanes.Sqrt(discriminant), half), divisor);
+        }
+    }
+
+    /// <summary>The angle from the start, in half turns, brought into [0, 2), over the angle of the gradient (<c>axisX</c> is the start).</summary>
+    private readonly struct SweepFormula : IGradientFormula
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Compute<TLanes, TVector>(TVector px, TVector py, TVector axisX, TVector axisY, TVector divisor, TVector focal, TVector focalSquared)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+        {
+            var two = TLanes.Create(2);
+            var angle = TLanes.Subtract(Atan2<TLanes, TVector>(py, px), axisX);
+            angle = TLanes.Subtract(angle, TLanes.Multiply(two, TLanes.Floor(TLanes.Divide(angle, two))));
+            return TLanes.Divide(angle, divisor);
+        }
+    }
+
+    /// <summary>Brings parameters into the range of the stops by the spread mode, as <see cref="GetParameter"/> does.</summary>
+    private void Spread(Span<double> parameters)
+    {
         switch (_spreadMode)
         {
             case GradientSpreadMode.Repeat:
@@ -612,6 +792,90 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
 
                 break;
         }
+    }
+
+    /// <summary><see cref="Spread"/> on vectors, the last parameters one by one.</summary>
+    private void SpreadVector<TLanes, TVector>(Span<double> parameters)
+        where TLanes : IDoubleLanes<TVector>
+        where TVector : unmanaged
+    {
+        var count = TLanes.Count;
+        var i = 0;
+        var zero = TLanes.Create(0);
+        var one = TLanes.Create(1);
+        var two = TLanes.Create(2);
+        var notANumber = TLanes.Create(double.NaN);
+        var mode = _spreadMode;
+        for (; i + count <= parameters.Length; i += count)
+        {
+            var t = TLanes.Load(parameters[i..]);
+            switch (mode)
+            {
+                case GradientSpreadMode.Repeat:
+                    t = TLanes.Subtract(t, TLanes.Floor(t));
+                    break;
+
+                case GradientSpreadMode.Reflect:
+                    t = TLanes.Subtract(t, TLanes.Multiply(two, TLanes.Floor(TLanes.Divide(t, two))));
+                    t = TLanes.Select(TLanes.GreaterThan(t, one), TLanes.Subtract(two, t), t);
+                    break;
+
+                case GradientSpreadMode.Transparent:
+                    t = TLanes.Select(TLanes.Or(TLanes.LessThan(t, zero), TLanes.GreaterThan(t, one)), notANumber, t);
+                    break;
+
+                default:
+                    t = TLanes.Select(TLanes.LessThan(t, zero), zero, TLanes.Select(TLanes.GreaterThan(t, one), one, t));
+                    break;
+            }
+
+            TLanes.Store(t, parameters[i..]);
+        }
+
+        Spread(parameters[i..]);
+    }
+
+    /// <summary>
+    /// <see cref="DeterministicAngle.Atan2"/> of each lane, with the same operations in the same order: the folded ratio is
+    /// the quotient of the selected magnitudes, every branch of the unfolding is computed, and the lanes select theirs.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static TVector Atan2<TLanes, TVector>(TVector y, TVector x)
+        where TLanes : IDoubleLanes<TVector>
+        where TVector : unmanaged
+    {
+        const double Pi = 3.14159265358979323846;
+        var zero = TLanes.Create(0);
+        var one = TLanes.Create(1);
+        var absoluteX = TLanes.Abs(x);
+        var absoluteY = TLanes.Abs(y);
+        var isVector = TLanes.Or(TLanes.GreaterThan(absoluteX, zero), TLanes.GreaterThan(absoluteY, zero));
+
+        var isFlat = TLanes.GreaterThanOrEqual(absoluteX, absoluteY);
+        var ratio = TLanes.Divide(TLanes.Select(isFlat, absoluteY, absoluteX), TLanes.Select(isFlat, absoluteX, absoluteY));
+        var r = TLanes.Divide(ratio, TLanes.Add(one, TLanes.Sqrt(TLanes.Add(one, TLanes.Multiply(ratio, ratio)))));
+        r = TLanes.Divide(r, TLanes.Add(one, TLanes.Sqrt(TLanes.Add(one, TLanes.Multiply(r, r)))));
+        var r2 = TLanes.Multiply(r, r);
+        var series = TLanes.Create(1.0 / 21);
+        series = TLanes.Add(TLanes.Create(-1.0 / 19), TLanes.Multiply(r2, series));
+        series = TLanes.Add(TLanes.Create(1.0 / 17), TLanes.Multiply(r2, series));
+        series = TLanes.Add(TLanes.Create(-1.0 / 15), TLanes.Multiply(r2, series));
+        series = TLanes.Add(TLanes.Create(1.0 / 13), TLanes.Multiply(r2, series));
+        series = TLanes.Add(TLanes.Create(-1.0 / 11), TLanes.Multiply(r2, series));
+        series = TLanes.Add(TLanes.Create(1.0 / 9), TLanes.Multiply(r2, series));
+        series = TLanes.Add(TLanes.Create(-1.0 / 7), TLanes.Multiply(r2, series));
+        series = TLanes.Add(TLanes.Create(1.0 / 5), TLanes.Multiply(r2, series));
+        series = TLanes.Add(TLanes.Create(-1.0 / 3), TLanes.Multiply(r2, series));
+        series = TLanes.Multiply(r, TLanes.Add(one, TLanes.Multiply(r2, series)));
+        var angle = TLanes.Divide(TLanes.Multiply(TLanes.Create(4), series), TLanes.Create(Pi));
+
+        // Unfold: the other eighth of the quadrant, then the quadrant; the origin has the angle 0
+        var two = TLanes.Create(2);
+        angle = TLanes.Select(TLanes.GreaterThan(absoluteY, absoluteX), TLanes.Subtract(TLanes.Create(0.5), angle), angle);
+        angle = TLanes.Select(TLanes.LessThan(x, zero), TLanes.Subtract(one, angle), angle);
+        angle = TLanes.Select(TLanes.LessThan(y, zero), TLanes.Subtract(two, angle), angle);
+        angle = TLanes.Select(TLanes.GreaterThanOrEqual(angle, two), zero, angle);
+        return TLanes.Select(isVector, angle, zero);
     }
 
     /// <summary>Gets the parameter of the center of a pixel, brought into the range of the stops by the spread mode; not a number where the gradient has no color.</summary>
@@ -794,11 +1058,12 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         var colorStops = _brush!.StopSpan;
         var samples = unsafe(MemoryMarshal.Cast<byte, Rgba64>(_samples!.Span))[..count];
         var last = _stopCount - 1;
-        var centerY = y + 0.5;
+        var parameters = unsafe(MemoryMarshal.Cast<byte, double>(_parameters!.Span))[..count];
+        GetParameters(y, x, parameters);
         Span<double> mixed = stackalloc double[3];
         for (var i = 0; i < count; i++)
         {
-            var t = GetParameter(x + i + 0.5, centerY);
+            var t = parameters[i];
             if (double.IsNaN(t))
             {
                 samples[i] = default;

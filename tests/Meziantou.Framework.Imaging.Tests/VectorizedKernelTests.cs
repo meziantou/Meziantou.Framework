@@ -4764,6 +4764,139 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingGradientAnglesMatchTheDeterministicArcTangent()
+    {
+        // Both zeros, infinities, values that are not numbers, equal magnitudes, the axes and the diagonals, tiny and huge
+        // ratios, then random vectors of every quadrant
+        double[] specials = [0, -0.0, 1, -1, 0.5, -2.5, 3, 1e-300, -1e-300, double.Epsilon, 1e300, -1e300, double.MaxValue, double.PositiveInfinity, double.NegativeInfinity, double.NaN, 0.1, -0.3, 1e-8];
+        var pairs = new List<(double Y, double X)>();
+        foreach (var y in specials)
+        {
+            foreach (var x in specials)
+            {
+                pairs.Add((y, x));
+            }
+        }
+
+        var random = new Random(20261112);
+        for (var i = 0; i < 4000; i++)
+        {
+            var scale = random.Next(3) switch
+            {
+                0 => 1.0,
+                1 => 1000.0,
+                _ => 1e-5,
+            };
+            pairs.Add(((random.NextDouble() - 0.5) * scale, (random.NextDouble() - 0.5) * scale));
+        }
+
+        Check<DoubleLanes128, Vector128<double>>(pairs);
+        Check<DoubleLanes256, Vector256<double>>(pairs);
+        Check<DoubleLanes512, Vector512<double>>(pairs);
+
+        static void Check<TLanes, TVector>(List<(double Y, double X)> pairs)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+        {
+            var count = TLanes.Count;
+            var ys = new double[count];
+            var xs = new double[count];
+            var angles = new double[count];
+            for (var start = 0; start < pairs.Count; start += count)
+            {
+                for (var lane = 0; lane < count; lane++)
+                {
+                    (ys[lane], xs[lane]) = pairs[(start + lane) % pairs.Count];
+                }
+
+                TLanes.Store(GradientEvaluator.Atan2<TLanes, TVector>(TLanes.Load(ys), TLanes.Load(xs)), angles);
+                for (var lane = 0; lane < count; lane++)
+                {
+                    var expected = DeterministicAngle.Atan2(ys[lane], xs[lane]);
+                    Assert.True(double.IsNaN(expected) ? double.IsNaN(angles[lane]) : BitConverter.DoubleToInt64Bits(expected) == BitConverter.DoubleToInt64Bits(angles[lane]), $"atan2({ys[lane]}, {xs[lane]})");
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Rgba64)]
+    public void DrawingGradientsMatchTheScalarPaths(PixelFormat format)
+    {
+        // Every kind of gradient, spread mode and placement, with stops of every kind: the parameters, then the colors,
+        // of runs of every length and start (the canvas is narrower than some vectors at its last columns)
+        GradientStop[][] stopSets =
+        [
+            [new(0, new Rgba64(65535, 0, 0, 65535)), new(0.3, new Rgba64(0, 65535, 0, 65535)), new(0.7, new Rgba64(0, 0, 65535, 32768)), new(1, new Rgba64(65535, 65535, 0, 65535))],
+            [new(0.2, new Rgba64(1000, 20000, 65535, 0)), new(0.2, new Rgba64(9000, 0, 300, 400)), new(0.5, new Rgba64(65535, 65535, 65535, 65535)), new(0.6, new Rgba64(0, 0, 0, 0))],
+            [new(0.4, new Rgba64(12345, 23456, 34567, 45678))],
+        ];
+        var transforms = new[] { AffineTransform.Identity, AffineTransform.CreateRotation(27, new PointD(30, 10)).Then(AffineTransform.CreateScale(1.5, 0.75)) };
+        var brushes = new List<Func<GradientStop[], GradientSpreadMode, AffineTransform, bool, GradientColorSpace, GradientBrush>>
+        {
+            (stops, s, t, d, c) => new LinearGradientBrush(new PointD(3.5, 2), new PointD(61, 19), stops) { SpreadMode = s, Transform = t, Dither = d, ColorSpace = c },
+            (stops, s, t, d, c) => new LinearGradientBrush(new PointD(5, 1), new PointD(50, 1), stops) { SpreadMode = s, Transform = t, Dither = d, ColorSpace = c },
+            (stops, s, t, d, c) => new LinearGradientBrush(new PointD(5, 1), new PointD(5, 20), stops) { SpreadMode = s, Transform = t, Dither = d, ColorSpace = c },
+            (stops, s, t, d, c) => new RadialGradientBrush(new PointD(30.25, 11.5), 17, stops) { SpreadMode = s, Transform = t, Dither = d, ColorSpace = c },
+            (stops, s, t, d, c) => new RadialGradientBrush(new PointD(30.25, 11.5), 17, 6, stops) { SpreadMode = s, Transform = t, Dither = d, ColorSpace = c },
+            (stops, s, t, d, c) => new RadialGradientBrush(new PointD(30.25, 11.5), 17, stops) { FocalPoint = new PointD(25, 8), SpreadMode = s, Transform = t, Dither = d, ColorSpace = c },
+            (stops, s, t, d, c) => new RadialGradientBrush(new PointD(30.25, 11.5), 17, 9, stops) { FocalPoint = new PointD(25, 8), FocalRadius = 3, SpreadMode = s, Transform = t, Dither = d, ColorSpace = c },
+            (stops, s, t, d, c) => new RadialGradientBrush(new PointD(30.25, 11.5), 4, stops) { FocalPoint = new PointD(5, 3), FocalRadius = 2, SpreadMode = s, Transform = t, Dither = d, ColorSpace = c },
+            (stops, s, t, d, c) => new SweepGradientBrush(new PointD(31, 11), stops) { SpreadMode = s, Transform = t, Dither = d, ColorSpace = c },
+            (stops, s, t, d, c) => new SweepGradientBrush(new PointD(31.5, 11.5), -40, 200, stops) { SpreadMode = s, Transform = t, Dither = d, ColorSpace = c },
+        };
+
+        foreach (var stops in stopSets)
+        {
+            foreach (var create in brushes)
+            {
+                foreach (var spread in Enum.GetValues<GradientSpreadMode>())
+                {
+                    foreach (var transform in transforms)
+                    {
+                        foreach (var dither in new[] { false, true })
+                        {
+                            foreach (var colorSpace in new[] { GradientColorSpace.Encoded, GradientColorSpace.Oklab })
+                            {
+                                var brush = create(stops, spread, transform, dither, colorSpace);
+                                Check(format, brush, $"{brush.GetType().Name} {spread} {transform.IsIdentity} {dither} {colorSpace} {stops.Length}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        static void Check(PixelFormat format, GradientBrush brush, string name)
+        {
+            using var expected = DrawingTestSupport.Create(format, 67, 23);
+            using var actual = DrawingTestSupport.Create(format, 67, 23);
+            Resampler.TestForceScalar = true;
+            try
+            {
+                Draw(expected, brush);
+            }
+            finally
+            {
+                Resampler.TestForceScalar = false;
+            }
+
+            Draw(actual, brush);
+            Assert.True(DrawingTestSupport.ReadSamples(expected.Frames[0]).SequenceEqual(DrawingTestSupport.ReadSamples(actual.Frames[0])), name);
+        }
+
+        static void Draw(Image image, GradientBrush brush)
+            => image.Draw(canvas =>
+            {
+                canvas.Fill(brush);
+                canvas.FillRectangle(brush, new RectangleD(3.25, 2, 41, 9));
+                canvas.FillEllipse(brush, new PointD(40, 15), 23.5, 6.25);
+            }, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingTurbulenceOfTheFourChannelsMatchesTheReferenceOfEachChannel()
     {
         var random = new Random(20261019);

@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Formats;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -45,6 +46,179 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
 
         index -= pass3;
         return 1 + (index * 2);
+    }
+
+    /// <summary>
+    /// Converts 8-bit RGBA pixels to color keys with an alpha threshold: <see cref="PaletteQuantizer.TransparentKey"/> below
+    /// it, the 24-bit key of the color otherwise; a vector of pixels at a time (the bytes of a pixel are reordered into
+    /// <c>(A &lt;&lt; 24) | (R &lt;&lt; 16) | (G &lt;&lt; 8) | B</c>, the alpha compared, then cleared).
+    /// </summary>
+    /// <param name="rgba">The pixels, 4 bytes each.</param>
+    /// <param name="keys">Receives one key per pixel.</param>
+    /// <param name="threshold">The alpha threshold.</param>
+    internal static void GetThresholdKeys(ReadOnlySpan<byte> rgba, Span<int> keys, int threshold)
+    {
+        var count = rgba.Length / 4;
+        keys = keys[..count];
+        if (!Vector128.IsHardwareAccelerated || count < Vector128<int>.Count)
+        {
+            GetThresholdKeysScalar(rgba, keys, threshold);
+            return;
+        }
+
+        // The last vector ends at the last pixel, overlapping the previous one (the keys are written again, unchanged)
+        ref var source = ref unsafe(MemoryMarshal.GetReference(rgba));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(keys));
+        var order = Vector128.Create((byte)2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15);
+        var thresholds = Vector128.Create(threshold);
+        var colors = Vector128.Create(0x00FF_FFFF);
+        for (var x = 0; ; x += Vector128<int>.Count)
+        {
+            x = Math.Min(x, count - Vector128<int>.Count);
+            var key = Vector128.Shuffle(unsafe(Vector128.LoadUnsafe(ref source, (nuint)x * 4)), order).AsInt32();
+            key = (key & colors) | Vector128.LessThan(Vector128.ShiftRightLogical(key, 24), thresholds);
+            unsafe { key.StoreUnsafe(ref destination, (nuint)x); }
+            if (x == count - Vector128<int>.Count)
+                return;
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="GetThresholdKeys"/>.</summary>
+    /// <param name="rgba">The pixels, 4 bytes each.</param>
+    /// <param name="keys">Receives one key per pixel.</param>
+    /// <param name="threshold">The alpha threshold.</param>
+    internal static void GetThresholdKeysScalar(ReadOnlySpan<byte> rgba, Span<int> keys, int threshold)
+    {
+        for (var x = 0; x < rgba.Length / 4; x++)
+        {
+            var pixel = rgba.Slice(4 * x, 4);
+            keys[x] = pixel[3] < threshold ? PaletteQuantizer.TransparentKey : (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
+        }
+    }
+
+    /// <summary>
+    /// Gets the keys of a row of the region of a frame drawn over a canvas: <see cref="PaletteQuantizer.TransparentKey"/> for a
+    /// transparent pixel, and for a pixel equal to the one of the canvas when <paramref name="keepUnchanged"/> is set (it is
+    /// kept by drawing nothing over it); the 24-bit key of the color otherwise. A vector of pixels at a time.
+    /// </summary>
+    /// <param name="displayed">The pixels of the frame (8-bit RGBA, fully transparent or opaque).</param>
+    /// <param name="canvas">The pixels of the canvas, as many.</param>
+    /// <param name="keys">Receives one key per pixel.</param>
+    /// <param name="keepUnchanged"><see langword="true"/> to make the unchanged pixels transparent.</param>
+    /// <returns><see langword="true"/> when a visible pixel was made transparent because it is unchanged.</returns>
+    internal static bool GetRegionKeys(ReadOnlySpan<byte> displayed, ReadOnlySpan<byte> canvas, Span<int> keys, bool keepUnchanged)
+    {
+        var count = displayed.Length / 4;
+        keys = keys[..count];
+        if (!Vector128.IsHardwareAccelerated || count < Vector128<int>.Count)
+            return GetRegionKeysScalar(displayed, canvas, keys, keepUnchanged);
+
+        // The last vector ends at the last pixel, overlapping the previous one (the same keys and flag again)
+        canvas = canvas[..displayed.Length];
+        ref var source = ref unsafe(MemoryMarshal.GetReference(displayed));
+        ref var reference = ref unsafe(MemoryMarshal.GetReference(canvas));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(keys));
+        var order = Vector128.Create((byte)2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15);
+        var colors = Vector128.Create(0x00FF_FFFF);
+        var keep = keepUnchanged ? Vector128<int>.AllBitsSet : Vector128<int>.Zero;
+        var kept = Vector128<int>.Zero;
+        for (var x = 0; ; x += Vector128<int>.Count)
+        {
+            x = Math.Min(x, count - Vector128<int>.Count);
+            var pixels = unsafe(Vector128.LoadUnsafe(ref source, (nuint)x * 4));
+            var transparent = Vector128.Equals(Vector128.ShiftRightLogical(pixels.AsInt32(), 24), Vector128<int>.Zero);
+            var unchanged = Vector128.AndNot(Vector128.Equals(pixels.AsInt32(), unsafe(Vector128.LoadUnsafe(ref reference, (nuint)x * 4)).AsInt32()) & keep, transparent);
+            kept |= unchanged;
+            var key = (Vector128.Shuffle(pixels, order).AsInt32() & colors) | transparent | unchanged;
+            unsafe { key.StoreUnsafe(ref destination, (nuint)x); }
+            if (x == count - Vector128<int>.Count)
+                return kept != Vector128<int>.Zero;
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="GetRegionKeys"/>.</summary>
+    /// <param name="displayed">The pixels of the frame.</param>
+    /// <param name="canvas">The pixels of the canvas.</param>
+    /// <param name="keys">Receives one key per pixel.</param>
+    /// <param name="keepUnchanged"><see langword="true"/> to make the unchanged pixels transparent.</param>
+    /// <returns><see langword="true"/> when a visible pixel was made transparent because it is unchanged.</returns>
+    internal static bool GetRegionKeysScalar(ReadOnlySpan<byte> displayed, ReadOnlySpan<byte> canvas, Span<int> keys, bool keepUnchanged)
+    {
+        var kept = false;
+        for (var x = 0; x < displayed.Length / 4; x++)
+        {
+            var pixel = displayed.Slice(4 * x, 4);
+            if (pixel[3] == 0)
+            {
+                keys[x] = PaletteQuantizer.TransparentKey;
+            }
+            else if (keepUnchanged && pixel.SequenceEqual(canvas.Slice(4 * x, 4)))
+            {
+                keys[x] = PaletteQuantizer.TransparentKey;
+                kept = true;
+            }
+            else
+            {
+                keys[x] = (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
+            }
+        }
+
+        return kept;
+    }
+
+    /// <summary>
+    /// Converts keys to the pixels of the canvases: opaque 8-bit RGBA, or transparent black for
+    /// <see cref="PaletteQuantizer.TransparentKey"/>; a vector of pixels at a time.
+    /// </summary>
+    /// <param name="keys">The keys.</param>
+    /// <param name="row">Receives the pixels, 4 bytes each.</param>
+    internal static void ToCanonical(ReadOnlySpan<int> keys, Span<byte> row)
+    {
+        var count = keys.Length;
+        row = row[..(4 * count)];
+        if (!Vector128.IsHardwareAccelerated || count < Vector128<int>.Count)
+        {
+            ToCanonicalScalar(keys, row);
+            return;
+        }
+
+        // The last vector ends at the last pixel, overlapping the previous one (the pixels are written again, unchanged)
+        ref var source = ref unsafe(MemoryMarshal.GetReference(keys));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(row));
+        var order = Vector128.Create((byte)2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15);
+        var opaque = Vector128.Create(unchecked((int)0xFF00_0000));
+        for (var x = 0; ; x += Vector128<int>.Count)
+        {
+            x = Math.Min(x, count - Vector128<int>.Count);
+            var key = unsafe(Vector128.LoadUnsafe(ref source, (nuint)x));
+            var pixels = Vector128.AndNot(Vector128.Shuffle(key.AsByte(), order).AsInt32() | opaque, Vector128.Equals(key, Vector128.Create(PaletteQuantizer.TransparentKey)));
+            unsafe { pixels.AsByte().StoreUnsafe(ref destination, (nuint)x * 4); }
+            if (x == count - Vector128<int>.Count)
+                return;
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="ToCanonical"/>.</summary>
+    /// <param name="keys">The keys.</param>
+    /// <param name="row">Receives the pixels, 4 bytes each.</param>
+    internal static void ToCanonicalScalar(ReadOnlySpan<int> keys, Span<byte> row)
+    {
+        for (var x = 0; x < keys.Length; x++)
+        {
+            var key = keys[x];
+            var pixel = row.Slice(4 * x, 4);
+            if (key == PaletteQuantizer.TransparentKey)
+            {
+                pixel.Clear();
+            }
+            else
+            {
+                pixel[0] = (byte)(key >> 16);
+                pixel[1] = (byte)(key >> 8);
+                pixel[2] = (byte)key;
+                pixel[3] = byte.MaxValue;
+            }
+        }
     }
 
     /// <summary>
@@ -705,22 +879,9 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             var length = _image.Width * 4;
             var displayed = _delta.Displayed.GetRow(_image.Y + y).Slice(bytes, length);
             var canvas = _delta.Canvas!.GetRow(_image.Y + y).Slice(bytes, length);
-            for (var x = 0; x < keys.Length; x++)
+            if (GetRegionKeys(displayed, canvas, keys, _keepUnchanged))
             {
-                var pixel = displayed.Slice(4 * x, 4);
-                if (pixel[3] == 0)
-                {
-                    keys[x] = PaletteQuantizer.TransparentKey;
-                }
-                else if (_keepUnchanged && pixel.SequenceEqual(canvas.Slice(4 * x, 4)))
-                {
-                    keys[x] = PaletteQuantizer.TransparentKey;
-                    _keptUnchanged = true;
-                }
-                else
-                {
-                    keys[x] = (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
-                }
+                _keptUnchanged = true;
             }
         }
 
@@ -741,37 +902,11 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
 
             if (_threshold)
             {
-                var threshold = _encoder.AlphaThreshold;
-                for (var x = 0; x < _width; x++)
-                {
-                    var pixel = source.Slice(4 * x, 4);
-                    keys[x] = pixel[3] < threshold ? PaletteQuantizer.TransparentKey : (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
-                }
+                GetThresholdKeys(source[..(4 * _width)], keys, _encoder.AlphaThreshold);
             }
             else
             {
                 PixelConverter.Rgb24ToColorKeys(source[..(3 * _width)], keys);
-            }
-        }
-
-        /// <summary>Converts keys to the pixels of the canvases: opaque 8-bit RGBA, or transparent black.</summary>
-        private static void ToCanonical(ReadOnlySpan<int> keys, Span<byte> row)
-        {
-            for (var x = 0; x < keys.Length; x++)
-            {
-                var key = keys[x];
-                var pixel = row.Slice(4 * x, 4);
-                if (key == PaletteQuantizer.TransparentKey)
-                {
-                    pixel.Clear();
-                }
-                else
-                {
-                    pixel[0] = (byte)(key >> 16);
-                    pixel[1] = (byte)(key >> 8);
-                    pixel[2] = (byte)key;
-                    pixel[3] = byte.MaxValue;
-                }
             }
         }
 

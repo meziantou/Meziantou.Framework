@@ -490,6 +490,67 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void GifEncoderKeysAndCanvasPixelsMatchTheScalarReferences()
+    {
+        // Every alpha around the thresholds, transparent and opaque frame pixels equal or not to the canvas (one byte differs),
+        // and keys converted back to canvas pixels, at every length around the vector size
+        var random = new Random(53);
+        foreach (var length in new[] { 0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 100, 257 })
+        {
+            var rgba = new byte[4 * length];
+            var canvas = new byte[4 * length];
+            for (var round = 0; round < 8; round++)
+            {
+                random.NextBytes(rgba);
+                foreach (var threshold in new[] { 0, 1, 128, 254, 255 })
+                {
+                    var expected = new int[length + 1];
+                    var actual = new int[length + 1];
+                    GifEncoderCodec.GetThresholdKeysScalar(rgba, expected, threshold);
+                    GifEncoderCodec.GetThresholdKeys(rgba, actual, threshold);
+                    Assert.Equal(expected, actual);
+
+                    var expectedPixels = new byte[(4 * length) + 4];
+                    var actualPixels = new byte[(4 * length) + 4];
+                    GifEncoderCodec.ToCanonicalScalar(expected.AsSpan(0, length), expectedPixels);
+                    GifEncoderCodec.ToCanonical(expected.AsSpan(0, length), actualPixels);
+                    Assert.Equal(expectedPixels, actualPixels);
+                }
+
+                // The frame pixels of a canvas: transparent black or opaque
+                for (var x = 0; x < length; x++)
+                {
+                    if (random.Next(3) == 0)
+                    {
+                        rgba.AsSpan(4 * x, 4).Clear();
+                    }
+                    else
+                    {
+                        rgba[(4 * x) + 3] = byte.MaxValue;
+                    }
+
+                    rgba.AsSpan(4 * x, 4).CopyTo(canvas.AsSpan(4 * x));
+                    if (random.Next(2) == 0)
+                    {
+                        canvas[(4 * x) + random.Next(4)] ^= (byte)(1 << random.Next(8));
+                    }
+                }
+
+                foreach (var keepUnchanged in new[] { false, true })
+                {
+                    var expected = new int[length + 1];
+                    var actual = new int[length + 1];
+                    var expectedKept = GifEncoderCodec.GetRegionKeysScalar(rgba, canvas, expected, keepUnchanged);
+                    var actualKept = GifEncoderCodec.GetRegionKeys(rgba, canvas, actual, keepUnchanged);
+                    Assert.Equal(expected, actual);
+                    Assert.Equal(expectedKept, actualKept);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void GifInvalidIndexSearchMatchesTheScalarReference()
     {
         var random = new Random(31);

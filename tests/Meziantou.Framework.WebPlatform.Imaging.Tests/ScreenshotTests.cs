@@ -800,6 +800,35 @@ public sealed class ScreenshotTests : IDisposable
     }
 
     [Fact]
+    public void PinchZoom_TheScreenshotIsTheMagnifiedVisualViewport()
+    {
+        // The 200x100 viewport zoomed 2x around (150, 50): the screenshot shows the area (75, 25)-(175, 75) of the layout
+        // viewport, magnified, at the size of the viewport
+        var context = _pages.Load("""
+            <style>body { margin: 0 } div { position: absolute; width: 10px; height: 10px }</style>
+            <div style="left: 75px; top: 25px; background: red"></div>
+            <div style="left: 165px; top: 65px; background: blue"></div>
+            <div style="left: 60px; top: 10px; background: lime"></div>
+            """);
+
+        Assert.True(context.Input.Pinch(150, 50, 2));
+
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal((200, 100), (screenshot.Width, screenshot.Height));
+        Assert.Equal(Colors.Red, screenshot.GetPixel(0, 0));
+        Assert.Equal(Colors.Red, screenshot.GetPixel(19, 19));
+        Assert.Equal(Colors.White, screenshot.GetPixel(21, 21));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(199, 99));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(180, 80));
+        Assert.Equal(Colors.White, screenshot.GetPixel(178, 78));
+
+        // A full page screenshot is not zoomed
+        using var fullPage = context.TakeScreenshot(new ScreenshotOptions { FullPage = true });
+        Assert.Equal((200, 100), (fullPage.Width, fullPage.Height));
+        Assert.Equal(Colors.Lime, fullPage.GetPixel(65, 15));
+    }
+
+    [Fact]
     public async Task ConcurrentPages_TheLoadsCompleteInTheTasksOfTheEventLoopOfEachPage()
     {
         // Each page is rendered on its own thread, which has a synchronization context (as the threads of a UI framework or of

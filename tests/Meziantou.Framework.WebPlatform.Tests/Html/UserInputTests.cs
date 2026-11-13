@@ -581,4 +581,36 @@ public sealed class UserInputTests : IDisposable
         Assert.Equal("Ad", name.Value);
         #endregion
     }
+
+    [Fact]
+    public void Documentation_SelectAndPinchZoom()
+    {
+        #region WebPlatform_SelectAndPinchZoom
+        using var context = new BrowsingContext();
+        var document = context.Navigate("https://example.com/", _ => """
+            <!DOCTYPE html>
+            <style>body { margin: 0 } p { margin: 0; font-size: 20px }</style>
+            <p>Hello world</p>
+            """);
+
+        // A double click selects the word under the pointer (a drag selects from the press to the pointer)
+        var input = context.Input;
+        input.Mouse.Move(5, 10);
+        input.Mouse.Down();
+        input.Mouse.Up();
+        input.Mouse.Down();
+        input.Mouse.Up();
+        Assert.Equal("Hello", document.GetSelection()!.ToString());
+
+        // A pinch of the touchpad zooms the visual viewport 2x around the center of the 800x600 viewport: the screenshots
+        // show the area (200, 150)-(600, 450), magnified
+        input.Pinch(400, 300, 2);
+        var visualViewport = document.DefaultView!.VisualViewport!;
+        Assert.Equal(2, visualViewport.Scale);
+        Assert.Equal((200, 150), (visualViewport.OffsetLeft, visualViewport.OffsetTop));
+
+        // The positions of the input stay in the layout viewport: map a position of a screenshot to click it
+        Assert.Equal((210, 155), input.MapFromVisualViewport(20, 10));
+        #endregion
+    }
 }

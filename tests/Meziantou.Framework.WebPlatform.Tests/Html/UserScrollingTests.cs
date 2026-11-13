@@ -240,4 +240,170 @@ public sealed class UserScrollingTests : IDisposable
         RunFrames(3);
         Assert.Equal(state.MaxOffset.Y, engine.TryGetScrollState(target, "before")!.Offset.Y);
     }
+
+    [Fact]
+    public void Pinch_ZoomsTheVisualViewportAroundThePosition()
+    {
+        var document = Load("<p>text</p>");
+        var window = document.DefaultView!;
+        var visualViewport = window.VisualViewport!;
+        var events = Log(visualViewport, "resize", "scroll", "scrollend");
+        var wheels = new List<(bool CtrlKey, double DeltaY)>();
+        document.AddEventListener("wheel", e => wheels.Add((((WheelEvent)e).CtrlKey, ((WheelEvent)e).DeltaY)));
+        var input = document.BrowsingContext!.Input;
+
+        Assert.True(input.Pinch(400, 300, 2));
+        Assert.Equal([(true, -100 * Math.Log(2))], wheels);
+        Assert.Equal(2, visualViewport.Scale);
+        Assert.Equal((400, 300), (visualViewport.Width, visualViewport.Height));
+        Assert.Equal((200, 150), (visualViewport.OffsetLeft, visualViewport.OffsetTop));
+        Assert.Equal((200, 150), (visualViewport.PageLeft, visualViewport.PageTop));
+
+        // The layout viewport does not change
+        Assert.Equal(800, window.InnerWidth);
+        Assert.Equal(0, window.ScrollX);
+
+        RunFrames();
+        Assert.Equal(["resize", "scroll", "scrollend"], events);
+
+        // The input stays in the coordinates of the layout viewport: the center of the zoomed screen is the center of the page,
+        // and its top-left corner is the offset of the visual viewport
+        Assert.Equal((400, 300), input.MapFromVisualViewport(400, 300));
+        Assert.Equal((200, 150), input.MapFromVisualViewport(0, 0));
+
+        // The zoom is limited to 5, and the page cannot be zoomed out further than its initial scale
+        Assert.True(input.Pinch(400, 300, 10));
+        Assert.Equal(5, visualViewport.Scale);
+        Assert.True(input.Pinch(400, 300, 0.01));
+        Assert.Equal(1, visualViewport.Scale);
+        Assert.Equal((800, 600), (visualViewport.Width, visualViewport.Height));
+        Assert.Equal((0, 0), (visualViewport.OffsetLeft, visualViewport.OffsetTop));
+        Assert.False(input.Pinch(400, 300, 0.5));
+    }
+
+    [Fact]
+    public void Pinch_CanceledWheelEventDoesNotZoom()
+    {
+        var document = Load("<p>text</p>");
+        document.AddEventListener("wheel", e => e.PreventDefault(), new AddEventListenerOptions { Passive = false });
+        Assert.False(document.BrowsingContext!.Input.Pinch(400, 300, 2));
+        Assert.Equal(1, document.DefaultView!.VisualViewport!.Scale);
+    }
+
+    [Fact]
+    public void Pinch_NotScalableMobilePage()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock, Viewport = new ViewportOptions { Width = 390, Height = 664, IsMobile = true } });
+        var document = context.Navigate("https://example.com/", _ => "<!DOCTYPE html><meta name=viewport content='width=device-width, user-scalable=no'><p>text</p>");
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.False(context.Input.Pinch(100, 100, 2));
+        Assert.Equal(1, document.DefaultView!.VisualViewport!.Scale);
+
+        var scalable = context.Navigate("https://example.com/", _ => "<!DOCTYPE html><meta name=viewport content='width=device-width, maximum-scale=3'><p>text</p>");
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(context.Input.Pinch(100, 100, 4));
+        Assert.Equal(3, scalable.DefaultView!.VisualViewport!.Scale);
+    }
+
+    [Fact]
+    public void Wheel_ScrollsTheZoomedVisualViewportBeforeTheLayoutViewport()
+    {
+        var document = Load("<div style='height: 2000px'></div>");
+        var window = document.DefaultView!;
+        var visualViewport = window.VisualViewport!;
+        var input = document.BrowsingContext!.Input;
+        Assert.True(input.Pinch(0, 0, 2));
+        Assert.Equal((0, 0), (visualViewport.OffsetLeft, visualViewport.OffsetTop));
+        RunFrames();
+        var events = Log(visualViewport, "scroll", "scrollend");
+
+        // The visual viewport (300px high) scrolls to the bottom of the layout viewport (600px high), then the layout viewport scrolls
+        Assert.True(input.Wheel(10, 10, 0, 500));
+        RunFrames();
+        Assert.Equal(300, visualViewport.OffsetTop);
+        Assert.Equal(200, window.ScrollY);
+        Assert.Equal(500, visualViewport.PageTop);
+        Assert.Equal(["scroll", "scrollend"], events);
+    }
+
+    [Fact]
+    public void ScrollIntoView_ScrollsTheZoomedVisualViewportBeforeTheLayoutViewport()
+    {
+        var document = Load("<div id=top style='height: 10px'></div><div style='height: 1000px'></div><div id=bottom style='height: 10px'></div><div style='height: 1000px'></div><div id=fixed style='position: fixed; left: 0; bottom: 0; width: 10px; height: 10px'></div>");
+        var window = document.DefaultView!;
+        var visualViewport = window.VisualViewport!;
+        Assert.True(document.BrowsingContext!.Input.Pinch(400, 300, 2));
+        Assert.Equal(150, visualViewport.OffsetTop);
+        var events = Log(visualViewport, "scroll", "scrollend");
+
+        // The visual viewport scrolls to the top of the layout viewport: the layout viewport does not scroll
+        _ = document.GetElementById("top")!.ScrollIntoView();
+        Assert.Equal(0, visualViewport.OffsetTop);
+        Assert.Equal(0, window.ScrollY);
+
+        // The visual viewport (300px high) scrolls to the bottom of the layout viewport, then the layout viewport scrolls the
+        // rest: the target (1010px from the top of the document) is at the top of the visual viewport
+        _ = document.GetElementById("bottom")!.ScrollIntoView();
+        Assert.Equal(300, visualViewport.OffsetTop);
+        Assert.Equal(710, window.ScrollY);
+        Assert.Equal(1010, visualViewport.PageTop);
+
+        // A fixed positioned target is in the layout viewport: only the visual viewport scrolls to it
+        _ = document.GetElementById("top")!.ScrollIntoView();
+        Assert.Equal(0, visualViewport.OffsetTop);
+        Assert.Equal(0, window.ScrollY);
+        _ = document.GetElementById("fixed")!.ScrollIntoView();
+        Assert.Equal(300, visualViewport.OffsetTop);
+        Assert.Equal(0, window.ScrollY);
+
+        RunFrames();
+        Assert.Equal(["scroll", "scrollend"], events);
+    }
+
+    [Fact]
+    public void Touch_TwoFingersPinchZoom()
+    {
+        var document = Load("<p>text</p>");
+        var visualViewport = document.DefaultView!.VisualViewport!;
+        var pointerEvents = Log(document, "pointercancel");
+        var viewportEvents = Log(visualViewport, "scroll", "scrollend");
+        var input = document.BrowsingContext!.Input;
+        var finger1 = input.CreatePointer("touch");
+        var finger2 = input.CreatePointer("touch");
+        finger1.Move(300, 300);
+        finger1.Down();
+        finger2.Move(500, 300);
+        finger2.Down();
+
+        // The distance between the fingers doubles: the point under the middle of the fingers (400, 300) moves under their new middle (500, 300)
+        finger2.Move(700, 300);
+        Assert.Equal(["pointercancel", "pointercancel"], pointerEvents);
+        Assert.Equal(2, visualViewport.Scale);
+        Assert.Equal((150, 150), (visualViewport.OffsetLeft, visualViewport.OffsetTop));
+        RunFrames();
+        Assert.Equal(["scroll"], viewportEvents);
+
+        // The scrollend event is fired when the fingers are released
+        finger2.Up();
+        finger1.Up();
+        RunFrames();
+        Assert.Equal(["scroll", "scrollend"], viewportEvents);
+    }
+
+    [Fact]
+    public void Touch_PinchZoomPreventedByTouchAction()
+    {
+        var document = Load("<div style='touch-action: pan-x pan-y; height: 500px'></div>");
+        var input = document.BrowsingContext!.Input;
+        var finger1 = input.CreatePointer("touch");
+        var finger2 = input.CreatePointer("touch");
+        finger1.Move(300, 300);
+        finger1.Down();
+        finger2.Move(500, 300);
+        finger2.Down();
+        finger2.Move(700, 300);
+        finger2.Up();
+        finger1.Up();
+        Assert.Equal(1, document.DefaultView!.VisualViewport!.Scale);
+    }
 }

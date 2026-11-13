@@ -409,6 +409,9 @@ internal sealed partial class LayoutEngine
         QueuePendingScrollEvent(state.Element ?? (EventTarget)_document, "scrollend");
     }
 
+    /// <summary>Queues a <c>scroll</c> or <c>scrollend</c> event at the visual viewport of the document, fired by the next scroll steps.</summary>
+    internal void QueueVisualViewportScrollEvent(Dom.VisualViewport visualViewport, string type) => QueuePendingScrollEvent(visualViewport, type);
+
     private void QueuePendingScrollEvent(EventTarget target, string type, Node? snapTargetBlock = null, Node? snapTargetInline = null)
     {
         for (var i = 0; i < _pendingScrollEvents.Count; i++)

@@ -13615,8 +13615,10 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.PointerInput Mouse { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.PointerInput CreatePointer(string pointerType) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Element? HitTest(double x, double y) => throw null;
+        public (double X, double Y) MapFromVisualViewport(double x, double y) => throw null;
         public (double X, double Y) MapToDocument(Meziantou.Framework.WebPlatform.Dom.Document document, double x, double y) => throw null;
         public static (double X, double Y) MapToTopLevel(Meziantou.Framework.WebPlatform.Dom.Document document, double x, double y) => throw null;
+        public bool Pinch(double x, double y, double scale) => throw null;
         public bool Wheel(double x, double y, double deltaX, double deltaY) => throw null;
     }
 

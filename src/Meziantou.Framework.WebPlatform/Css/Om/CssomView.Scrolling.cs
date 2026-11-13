@@ -1236,12 +1236,13 @@ public partial class Window
 }
 
 /// <summary>
-/// The visual viewport of a document (https://drafts.csswg.org/cssom-view/#the-visualviewport-interface): there is no pinch
-/// zoom, so it is the layout viewport without its scrollbars (the initial containing block computed by the layout: the
-/// <c>clientWidth</c> and <c>clientHeight</c> of the root element), a scale of 1, no offset from the layout viewport, and the
-/// scroll position of the layout viewport as page offsets. It is never scrolled relative to the layout viewport, so it never
-/// fires <c>scroll</c> nor <c>scrollend</c> events; it fires <c>resize</c> events when its size changes (the size of the
-/// viewport, or its classic scrollbars).
+/// The visual viewport of a document (https://drafts.csswg.org/cssom-view/#the-visualviewport-interface): the layout viewport
+/// without its scrollbars (the initial containing block computed by the layout: the <c>clientWidth</c> and <c>clientHeight</c>
+/// of the root element), magnified by the pinch zoom of the user (see <see cref="UserInput.Pinch"/>). Only the visual viewport
+/// of a top-level document is zoomed: it is then smaller than the layout viewport, and it is scrolled in the layout viewport
+/// (its <see cref="OffsetLeft"/> and <see cref="OffsetTop"/>) by the scrolls of the user, before the layout viewport. It fires
+/// <c>scroll</c> and <c>scrollend</c> events when its offset changes, and <c>resize</c> events when its size changes (the
+/// size of the viewport, its classic scrollbars, or the pinch zoom).
 /// </summary>
 /// <seealso href="https://drafts.csswg.org/cssom-view/#visualviewport"/>
 [IdlInterface("VisualViewport", "https://drafts.csswg.org/cssom-view/#visualviewport")]
@@ -1256,6 +1257,13 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     private PhysicalSize? _lastSize;
     private bool _resizePending;
 
+    /// <summary>The pinch zoom of the user: a factor of the page scale (1: not zoomed), and the offset of the visual viewport in the layout viewport.</summary>
+    private double _pinchScale = 1;
+    private PhysicalOffset _pinchOffset;
+
+    /// <summary>Whether the offset changed during a gesture of the user that has not ended (its <c>scrollend</c> event is fired when it ends).</summary>
+    private bool _scrollEndPending;
+
     internal VisualViewport(Document document)
     {
         _document = document;
@@ -1266,18 +1274,19 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     Window? IRealmBoundPlatformObject.RealmWindow => _document.RelevantWindow;
 
     /// <summary>
-    /// Gets the offset of the left edge of the visual viewport from the left edge of the layout viewport: 0, there is no pinch zoom.
+    /// Gets the offset of the left edge of the visual viewport from the left edge of the layout viewport: 0 unless the user
+    /// zoomed in (see <see cref="UserInput.Pinch"/>), or 0 when the document is not fully active.
     /// </summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-offsetleft"/>
     [IdlMember("offsetLeft", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-offsetleft")]
-    public double OffsetLeft => 0;
+    public double OffsetLeft => _document.IsFullyActive ? PinchOffset.X : 0;
 
     /// <summary>
-    /// Gets the offset of the top edge of the visual viewport from the top edge of the layout viewport: 0, there is no pinch zoom.
+    /// Gets the offset of the top edge of the visual viewport from the top edge of the layout viewport: see <see cref="OffsetLeft"/>.
     /// </summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-offsettop"/>
     [IdlMember("offsetTop", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-offsettop")]
-    public double OffsetTop => 0;
+    public double OffsetTop => _document.IsFullyActive ? PinchOffset.Y : 0;
 
     /// <summary>
     /// Gets the x coordinate of the left edge of the visual viewport relative to the initial containing block: the scroll
@@ -1311,15 +1320,28 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
 
     /// <summary>
     /// Gets the scale of the visual viewport: the page scale of a top-level document on a mobile device (set by its viewport
-    /// meta element, see <see cref="ViewportOptions.IsMobile"/>), else 1 (there is no pinch zoom), or 0 when the document is not
-    /// fully active.
+    /// meta element, see <see cref="ViewportOptions.IsMobile"/>) multiplied by the pinch zoom of the user (see
+    /// <see cref="UserInput.Pinch"/>), or 0 when the document is not fully active.
     /// </summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-scale"/>
     [IdlMember("scale", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-scale")]
-    public double Scale => _document.IsFullyActive ? _document.GetPageScale() : 0;
+    public double Scale => _document.IsFullyActive ? _document.GetPageScale() * PinchScale : 0;
 
-    /// <summary>The size of the visual viewport in CSS pixels: the viewport of a mobile device divided by the page scale, else the layout viewport without its scrollbars.</summary>
+    /// <summary>The pinch zoom of the user: the factor by which the page scale is multiplied (1 when the page is not zoomed in).</summary>
+    internal double PinchScale => _pinchScale;
+
+    /// <summary>The offset of the visual viewport in the layout viewport, in CSS pixels, clamped to the layout viewport (its size may have changed since it was set).</summary>
+    internal PhysicalOffset PinchOffset => ClampOffset(_pinchOffset, _pinchScale);
+
+    /// <summary>The size of the visual viewport in CSS pixels, without the pinch zoom (see <see cref="GetUnzoomedVisualSize"/>), divided by the pinch zoom.</summary>
     private PhysicalSize GetVisualSize()
+    {
+        var size = GetUnzoomedVisualSize();
+        return new PhysicalSize(size.Width / _pinchScale, size.Height / _pinchScale);
+    }
+
+    /// <summary>The size of the visual viewport in CSS pixels without the pinch zoom: the viewport of a mobile device divided by the page scale, else the layout viewport without its scrollbars.</summary>
+    private PhysicalSize GetUnzoomedVisualSize()
     {
         if (_document.BrowsingContext is { Container: null } browsingContext && browsingContext.Top.Viewport is { IsMobile: true } viewport)
         {
@@ -1328,6 +1350,142 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
         }
 
         return GetSize();
+    }
+
+    /// <summary>
+    /// The maximum pinch zoom of the document: 1 (no zoom) for a document that is not the document of a top-level browsing
+    /// context, else the maximum scale of the viewport meta element (5 by default) divided by the page scale; a page that is not
+    /// scalable (<c>user-scalable=no</c>) is not zoomed. As in Servo, the viewport meta element also limits the pinch zoom of a
+    /// device that is not a mobile device (WPT visual-viewport/viewport-scale-clamped.html).
+    /// </summary>
+    internal double GetMaximumPinchScale()
+    {
+        if (!_document.IsFullyActive || _document.BrowsingContext is not { Container: null, Parent: null })
+            return 1;
+
+        var description = _document.ViewportMeta;
+        if (description?.UserScalable == false)
+            return 1;
+
+        return Math.Max(1, MobileViewport.GetMaximumScale(description) / _document.GetPageScale());
+    }
+
+    /// <summary>Clamps an offset of the visual viewport, at a pinch zoom, so that the visual viewport stays in the layout viewport.</summary>
+    private PhysicalOffset ClampOffset(PhysicalOffset offset, double pinchScale)
+    {
+        if (pinchScale == 1 && offset == PhysicalOffset.Zero)
+            return offset;
+
+        var layout = GetSize();
+        var visual = GetUnzoomedVisualSize();
+        var maxX = Math.Max(0, layout.Width - (visual.Width / pinchScale));
+        var maxY = Math.Max(0, layout.Height - (visual.Height / pinchScale));
+        return new PhysicalOffset(Math.Clamp(offset.X, 0, maxX), Math.Clamp(offset.Y, 0, maxY));
+    }
+
+    /// <summary>
+    /// Zooms the visual viewport by a factor (a pinch of the user), clamped between 1 and <see cref="GetMaximumPinchScale"/>:
+    /// the point of the layout viewport <paramref name="anchor"/> moves to where <paramref name="destination"/> was displayed
+    /// before the zoom (the same point when the fingers do not move). Returns whether the scale or the offset changed.
+    /// </summary>
+    /// <param name="factor">The factor by which the current zoom is multiplied.</param>
+    /// <param name="anchor">The point of the layout viewport under the center of the gesture, in CSS pixels.</param>
+    /// <param name="destination">The point of the layout viewport displayed where the center of the gesture moves, in CSS pixels.</param>
+    /// <param name="endsGesture">Whether the gesture ends with the zoom (its <c>scrollend</c> event is queued now).</param>
+    internal bool ZoomBy(double factor, PhysicalOffset anchor, PhysicalOffset destination, bool endsGesture)
+    {
+        if (!double.IsFinite(factor) || factor <= 0)
+            return false;
+
+        var scale = _pinchScale;
+        var offset = PinchOffset;
+        var newScale = Math.Clamp(scale * factor, 1, Math.Max(1, GetMaximumPinchScale()));
+
+        // The point displayed at the visual position v is offset + v / scale: the anchor is displayed at the visual position of
+        // the destination, (destination - offset) * scale
+        var newOffset = new PhysicalOffset(
+            anchor.X - ((destination.X - offset.X) * scale / newScale),
+            anchor.Y - ((destination.Y - offset.Y) * scale / newScale));
+        return SetPinchZoom(newScale, newOffset, endsGesture);
+    }
+
+    /// <summary>
+    /// Scrolls the visual viewport in the layout viewport by the deltas of a scroll of the user (in CSS pixels): the deltas are
+    /// decreased by the distance the visual viewport scrolled, and the rest scrolls the layout viewport. Returns whether the
+    /// visual viewport scrolled.
+    /// </summary>
+    internal bool ScrollByUser(ref double deltaX, ref double deltaY, bool endsGesture)
+    {
+        if (_pinchScale == 1 || !_document.IsFullyActive)
+            return false;
+
+        var offset = PinchOffset;
+        var newOffset = ClampOffset(new PhysicalOffset(offset.X + deltaX, offset.Y + deltaY), _pinchScale);
+        deltaX -= newOffset.X - offset.X;
+        deltaY -= newOffset.Y - offset.Y;
+        return SetPinchZoom(_pinchScale, newOffset, endsGesture);
+    }
+
+    /// <summary>
+    /// Returns the part of a change of the offset of the visual viewport that keeps it in the layout viewport (the rest of a
+    /// scroll of the viewport scrolls the layout viewport, https://drafts.csswg.org/cssom-view/#perform-a-scroll).
+    /// </summary>
+    internal PhysicalOffset GetReachableDelta(PhysicalOffset delta)
+    {
+        var offset = PinchOffset;
+        return ClampOffset(offset + delta, _pinchScale) - offset;
+    }
+
+    /// <summary>Scrolls the visual viewport in the layout viewport (a programmatic scroll, e.g. <c>scrollIntoView()</c>): see <see cref="SetPinchZoom"/>.</summary>
+    internal bool ScrollBy(PhysicalOffset delta) => SetPinchZoom(_pinchScale, PinchOffset + delta, endsGesture: true);
+
+    /// <summary>
+    /// Sets the pinch zoom and the offset of the visual viewport (the offset is clamped to the layout viewport): a change of
+    /// the offset queues a <c>scroll</c> event (and a <c>scrollend</c> event when the gesture ends), and a change of the scale a
+    /// <c>resize</c> event at the next resize steps. Returns whether the scale or the offset changed.
+    /// </summary>
+    private bool SetPinchZoom(double scale, PhysicalOffset offset, bool endsGesture)
+    {
+        var oldScale = _pinchScale;
+        var oldOffset = PinchOffset;
+        _pinchScale = scale;
+        _pinchOffset = ClampOffset(offset, scale);
+        var scaleChanged = oldScale != scale;
+        var offsetChanged = oldOffset != _pinchOffset;
+        if (scaleChanged && _lastSize is not null)
+        {
+            _resizePending = true;
+            _document.EventLoop?.RequestRenderingUpdate();
+        }
+
+        var engine = _document.LayoutEngineOrNull;
+        if (offsetChanged && engine is not null)
+        {
+            engine.QueueVisualViewportScrollEvent(this, "scroll");
+            _scrollEndPending = true;
+        }
+
+        if (endsGesture)
+        {
+            EndUserGesture();
+        }
+
+        if (scaleChanged || offsetChanged)
+        {
+            engine?.RequestRenderingUpdates();
+        }
+
+        return scaleChanged || offsetChanged;
+    }
+
+    /// <summary>The end of a gesture of the user (e.g. the touches of a pinch are released): the <c>scrollend</c> event is queued when the offset changed during the gesture.</summary>
+    internal void EndUserGesture()
+    {
+        if (!_scrollEndPending)
+            return;
+
+        _scrollEndPending = false;
+        _document.LayoutEngineOrNull?.QueueVisualViewportScrollEvent(this, "scrollend");
     }
 
     /// <summary>The size of the layout viewport without its scrollbars, from the layout (computed when it is out of date), or the size of the viewport when the document is not rendered.</summary>

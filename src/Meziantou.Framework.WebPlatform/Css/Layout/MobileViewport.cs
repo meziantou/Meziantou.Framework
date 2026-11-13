@@ -221,6 +221,13 @@ internal static class MobileViewport
     }
 
     /// <summary>
+    /// Returns the maximum scale of the page: the maximum scale of the viewport meta element (at least its minimum scale), else
+    /// 5, as in Chromium.
+    /// </summary>
+    public static double GetMaximumScale(ViewportDescription? description)
+        => Math.Clamp(Math.Max(description?.MinimumScale ?? 0, description?.MaximumScale ?? DefaultMaximumScale), MinimumZoom, MaximumZoom);
+
+    /// <summary>
     /// Returns the initial scale of the page: the initial scale of the viewport meta element, else the scale that fits the
     /// width of the contents (at least the layout viewport) in the width of the device; clamped by the minimum scale (the
     /// scale that fits the contents by default) and the maximum scale (5 by default). A page that is not scalable

@@ -1503,6 +1503,52 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal(42u, authenticator.GetCredentials()[0].SignCount);
     }
 
+    [Theory]
+    [InlineData("1.2.840.21143491591", false)] // Unknown curve (fuzzing, issue 4912)
+    [InlineData("1.2.840.21143491591", true)]
+    [InlineData("1.3.132.0.34", false)] // P-384
+    [InlineData("1.3.132.0.34", true)]
+    public void WebAuthentication_AddCredential_RejectsEcdsaKeyOfAnotherCurve(string curve, bool inEcPrivateKey)
+    {
+        // The named curve is either the parameters of the AlgorithmIdentifier, or the parameters of the ECPrivateKey (RFC 5915)
+        // when the AlgorithmIdentifier has none
+        using var key = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+        var privateKey = key.ExportParameters(includePrivateParameters: true).D!;
+        var ecPrivateKey = new System.Formats.Asn1.AsnWriter(System.Formats.Asn1.AsnEncodingRules.DER);
+        using (ecPrivateKey.PushSequence())
+        {
+            ecPrivateKey.WriteInteger(1);
+            ecPrivateKey.WriteOctetString(privateKey);
+            if (inEcPrivateKey)
+            {
+                using (ecPrivateKey.PushSequence(new System.Formats.Asn1.Asn1Tag(System.Formats.Asn1.TagClass.ContextSpecific, 0, isConstructed: true)))
+                {
+                    ecPrivateKey.WriteObjectIdentifier(curve);
+                }
+            }
+        }
+
+        var pkcs8 = new System.Formats.Asn1.AsnWriter(System.Formats.Asn1.AsnEncodingRules.DER);
+        using (pkcs8.PushSequence())
+        {
+            pkcs8.WriteInteger(0);
+            using (pkcs8.PushSequence())
+            {
+                pkcs8.WriteObjectIdentifier("1.2.840.10045.2.1");
+                if (!inEcPrivateKey)
+                {
+                    pkcs8.WriteObjectIdentifier(curve);
+                }
+            }
+
+            pkcs8.WriteOctetString(ecPrivateKey.Encode());
+        }
+
+        var authenticator = new VirtualAuthenticatorEnvironment().AddAuthenticator(new VirtualAuthenticatorOptions());
+        Assert.Throws<ArgumentException>(() => authenticator.AddCredential(new VirtualCredential { CredentialId = new byte[] { 1 }, RpId = "example.com", PrivateKey = pkcs8.Encode(), SignCount = 0 }));
+        Assert.Empty(authenticator.GetCredentials());
+    }
+
     [Fact]
     public void WebAuthentication_ParseCreationOptionsFromJson_RejectsInvalidBase64Url()
     {

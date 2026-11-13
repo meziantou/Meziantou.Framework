@@ -45,12 +45,23 @@ internal abstract class CredentialKey
 
             case KeyEncodings.EcPublicKey:
             {
+                // The BCL rejects the curves that the platform does not know with a PlatformNotSupportedException, and
+                // the platforms do not know the same curves: the named curve must be P-256 before the import
+                if (info.Parameters is not null && KeyEncodings.TryDecodeObjectIdentifier(info.Parameters) is not KeyEncodings.Secp256r1)
+                    throw new CryptographicException("The key is not an ECDSA private key on the P-256 curve");
+
                 var ecdsa = ECDsa.Create();
                 try
                 {
                     ecdsa.ImportPkcs8PrivateKey(pkcs8, out var read);
                     if (read != pkcs8.Length || !IsP256(ecdsa.ExportParameters(includePrivateParameters: false).Curve))
                         throw new CryptographicException("The key is not an ECDSA private key on the P-256 curve");
+                }
+                catch (PlatformNotSupportedException ex)
+                {
+                    // The ECPrivateKey structure may name another curve than the AlgorithmIdentifier
+                    ecdsa.Dispose();
+                    throw new CryptographicException("The key is not an ECDSA private key on the P-256 curve", ex);
                 }
                 catch
                 {

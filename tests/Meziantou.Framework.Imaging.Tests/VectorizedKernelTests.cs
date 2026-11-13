@@ -3951,6 +3951,108 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    public static TheoryData<PixelFormat, ConvolutionEdgeMode> BilateralCases()
+    {
+        var data = new TheoryData<PixelFormat, ConvolutionEdgeMode>();
+        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Rgb24, PixelFormat.Gray8, PixelFormat.Rgba64, PixelFormat.RgbaFloat })
+        {
+            foreach (var mode in Enum.GetValues<ConvolutionEdgeMode>())
+            {
+                data.Add(format, mode);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(BilateralCases))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void BilateralFilterVectorizedRowsMatchTheScalarLoops(PixelFormat format, ConvolutionEdgeMode mode)
+    {
+        // Rows narrower than the disk, rows whose vector part leaves every possible tail, opaque and translucent pixels,
+        // range deviations that give weights of 0, and floating-point samples that are not numbers or infinite
+        var random = new Random(((int)format * 8) + (int)mode);
+        (int Width, int Height, int Radius, double RangeSigma)[] cases = [(1, 7, 2, 0.1), (5, 6, 3, 0.2), (12, 9, 2, 0.1), (13, 8, 2, 0.05), (14, 8, 5, 0.3), (15, 7, 1, 0.01), (37, 11, 4, 0.1), (40, 9, 6, 1e-3)];
+        foreach (var (width, height, radius, rangeSigma) in cases)
+        {
+            var source = CreateSource(width, height);
+            Assert.Equal(Filter(source, forceScalar: true), Filter(source, forceScalar: false));
+            if (format != PixelFormat.RgbaFloat && MakeOpaque(format, source))
+            {
+                Assert.Equal(Filter(source, forceScalar: true), Filter(source, forceScalar: false));
+            }
+
+            byte[] Filter(byte[] bytes, bool forceScalar)
+            {
+                using var image = format == PixelFormat.RgbaFloat
+                    ? Image.ImportPixelBytes<RgbaFloat>(bytes, width, height)
+                    : ImportBytes(format, bytes, width, height);
+                Resampler.TestForceScalar = forceScalar;
+                try
+                {
+                    image.BilateralFilter(radius, radius / 1.5, rangeSigma, mode);
+                }
+                finally
+                {
+                    Resampler.TestForceScalar = false;
+                }
+
+                var result = new byte[bytes.Length];
+                image.Frames[0].CopyPixelBytesTo(result);
+                return NormalizeNaNs(format, result);
+            }
+        }
+
+        byte[] CreateSource(int width, int height)
+        {
+            var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+            if (format == PixelFormat.RgbaFloat)
+            {
+                var floats = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(bytes.AsSpan()));
+                for (var i = 0; i < floats.Length; i++)
+                {
+                    floats[i] = random.Next(40) switch
+                    {
+                        0 => float.NaN,
+                        1 => float.PositiveInfinity,
+                        2 => -0.25f,
+                        3 => 1.5f,
+                        _ => random.Next(8) == 0 ? (float)random.NextDouble() : (float)(0.5 + (random.NextDouble() * 0.05)),
+                    };
+                }
+            }
+            else
+            {
+                // Smooth areas with noise, so that most weights are neither 0 nor 1
+                for (var i = 0; i < bytes.Length; i++)
+                {
+                    bytes[i] = random.Next(6) == 0 ? (byte)random.Next(256) : (byte)(128 + random.Next(-8, 9));
+                }
+            }
+
+            return bytes;
+        }
+    }
+
+    // The sign of a NaN depends on the order of the operands of an addition, which the JIT may swap in the scalar loops too
+    private static byte[] NormalizeNaNs(PixelFormat format, byte[] bytes)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            var floats = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(bytes.AsSpan()));
+            for (var i = 0; i < floats.Length; i++)
+            {
+                if (float.IsNaN(floats[i]))
+                {
+                    floats[i] = float.NaN;
+                }
+            }
+        }
+
+        return bytes;
+    }
+
     [Fact]
     public void MedianNetworkSelectsTheKeysOfTheSortedWindows()
     {

@@ -52,14 +52,14 @@ The features of `REQUIRES`:
 | [Stable](#stable-tests) | 26,843 | 29,904 | 1,914 | 96% |
 | [Tentative](#tentative-tests) | 1,454 | 3,169 | 659 | 58% |
 | [Reftests](#reftests) | 28,313 | 29,507 | 149 | 96% |
-| [Crash tests](#crash-tests) | 2,040 | 2,111 | 58 | 99% |
-| **All** | **58,650** | **64,691** | **2,780** | **95%** |
+| [Crash tests](#crash-tests) | 2,041 | 2,111 | 58 | 99% |
+| **All** | **58,651** | **64,691** | **2,780** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 164
+- **BUG**: 163
 - **TEST BUG**: 1,075
 - **NOT IMPLEMENTED**: 3,848
 - **REQUIRES**: 766
@@ -762,7 +762,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-images`](css/css-images.md#crash-tests) | 6 | 6 | 0 | 100% |
 | [`css/css-inline`](css/css-inline.md#crash-tests) | 7 | 7 | 0 | 100% |
 | [`css/css-layout-api`](css/css-layout-api.md#crash-tests) | 11 | 11 | 0 | 100% |
-| [`css/css-lists`](css/css-lists.md#crash-tests) | 16 | 17 | 0 | 94% |
+| [`css/css-lists`](css/css-lists.md#crash-tests) | 17 | 17 | 0 | 100% |
 | [`css/css-masking`](css/css-masking.md#crash-tests) | 6 | 6 | 0 | 100% |
 | [`css/css-motion-path`](css/css-motion-path.md#crash-tests) | 0 | 1 | 1 | – |
 | [`css/css-multicol`](css/css-multicol.md#crash-tests) | 165 | 165 | 0 | 100% |
@@ -856,4 +856,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webmcp`](webmcp.md#crash-tests) | 5 | 5 | 0 | 100% |
 | [`webtransport`](webtransport.md#crash-tests) | 0 | 1 | 1 | – |
 | [`xml`](xml.md#crash-tests) | 0 | 11 | 11 | – |
-| **Total (121 sections)** | **2,040** | **2,111** | **58** | **99%** |
+| **Total (121 sections)** | **2,041** | **2,111** | **58** | **99%** |

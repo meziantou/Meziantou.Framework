@@ -13,6 +13,9 @@ fails.
   [BrowsingContext.Input](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Input) (see [User input](05-LoadingPages/06-UserInput.md)). There is no pinch zoom, and the text cannot be
   selected with the pointer. The delegated ink trails (`navigator.ink`) are not drawn, and there is no scroll performance
   timing (`PerformanceScrollTiming`).
+- **CSS values.** A value with more than 1,000 repetitions of a component of its grammar (e.g. more than 1,000 tracks
+  listed in `grid-template-columns`, or 1,000 families in `font-family`) is invalid: the parser backtracks through the
+  repetitions, and a fixed limit keeps the time it takes small and the same on every platform.
 - **Layout.** The layout engine is internal: it runs when a web API reads the geometry, and its results are read through
   the web APIs only (CSSOM View, the computed styles, the observers; see [Layout and geometry](05-LoadingPages/05-LayoutAndGeometry.md)).
   It does not implement:

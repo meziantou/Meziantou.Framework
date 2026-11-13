@@ -219,7 +219,7 @@
     "crashtest": "PASS"
   },
   "css/css-lists/crashtests/firefox-bug-1715631.html": {
-    "crashtest": "ERROR"
+    "crashtest": "PASS"
   },
   "css/css-lists/crashtests/firefox-bug-1930225.html": {
     "crashtest": "PASS"

@@ -2361,7 +2361,6 @@
     "svg/embedded/image-preserveaspectratio-none-animated-viewbox.html": [{ "kind": "NOT IMPLEMENTED", "description": "the animations of the SVG images: an SVG image is sampled at the begin of its timeline, so the `<set>` of the root's `viewBox` at 0.2s is never applied and the red left half stays visible" }]
   },
   "failingCrashtests": {
-    "css/css-lists/crashtests/firefox-bug-1715631.html": [{"kind": "BUG", "description": "the layout throws (`Debug.Assert`: the block formatting context state is out of sync with the placement of the children)"}],
     "css/selectors/crashtests/chrome-bug-565742178.html": [{"kind": "BUG", "description": "the event handler content attribute of an SVG element (`onerror` of `<image>`) has an `event` parameter instead of `evt`: the handler throws a ReferenceError and the test-wait class is never removed"}],
     "custom-elements/xhtml-crash.xhtml": [{"kind": "TEST RUNNER", "description": "the page is not well-formed XML (on purpose): the runner fails to load it instead of displaying the XML parsing error document of a browser"}],
     "mathml/crashtests/mozilla/289180-1.xml": [{"kind": "TEST RUNNER", "description": "the page is not well-formed XML (multiple root elements): the runner fails to load it instead of displaying the XML parsing error document of a browser"}],

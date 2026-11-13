@@ -12,14 +12,13 @@ description: "The results of the web-platform-tests of css/css-lists, and why th
 | [Stable](#stable-tests) | 38 | 38 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 179 | 198 | 0 | 90% |
-| [Crash tests](#crash-tests) | 16 | 17 | 0 | 94% |
-| **All** | **233** | **253** | **0** | **92%** |
+| [Crash tests](#crash-tests) | 17 | 17 | 0 | 100% |
+| **All** | **234** | **253** | **0** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 19
 
 ## Stable tests
@@ -279,7 +278,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`crashtests/chrome-counter-in-multicol-details-crash.html`](https://wpt.fyi/results/css/css-lists/crashtests/chrome-counter-in-multicol-details-crash.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/chrome-legacy-propagation-crash.html`](https://wpt.fyi/results/css/css-lists/crashtests/chrome-legacy-propagation-crash.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/chrome-legacy-propagation-remove-body-crash.html`](https://wpt.fyi/results/css/css-lists/crashtests/chrome-legacy-propagation-remove-body-crash.html) | Pass | 1 / 1 |  |  |
-| [`crashtests/firefox-bug-1715631.html`](https://wpt.fyi/results/css/css-lists/crashtests/firefox-bug-1715631.html) | Error | 0 / 1 | BUG | the layout throws (`Debug.Assert`: the block formatting context state is out of sync with the placement of the children) |
+| [`crashtests/firefox-bug-1715631.html`](https://wpt.fyi/results/css/css-lists/crashtests/firefox-bug-1715631.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/firefox-bug-1930225.html`](https://wpt.fyi/results/css/css-lists/crashtests/firefox-bug-1930225.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/list-item-hidden-until-found-crash.html`](https://wpt.fyi/results/css/css-lists/crashtests/list-item-hidden-until-found-crash.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/list-item-marker-list-style-type-change-crash.html`](https://wpt.fyi/results/css/css-lists/crashtests/list-item-marker-list-style-type-change-crash.html) | Pass | 1 / 1 |  |  |

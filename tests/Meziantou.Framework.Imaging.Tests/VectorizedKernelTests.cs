@@ -3725,6 +3725,131 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Theory]
+    [InlineData((int)WorkingAlpha.None)]
+    [InlineData((int)WorkingAlpha.Premultiplied)]
+    [InlineData((int)WorkingAlpha.Preserved)]
+    [InlineData((int)WorkingAlpha.Opaque)]
+    public void LinearWorkingSampleConversionsMatchTheScalarReference(int alphaMode)
+    {
+        var alpha = (WorkingAlpha)alphaMode;
+        foreach (var transfer in (byte[])[CicpTransfer.Srgb, 1, 4, 9, 18])
+        {
+            CheckLoad<byte>(alpha, transfer, byte.MaxValue);
+            CheckLoad<ushort>(alpha, transfer, ushort.MaxValue);
+            CheckStore(alpha, transfer);
+        }
+
+        [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+        static void CheckLoad<TSample>(WorkingAlpha alpha, byte transfer, int max)
+            where TSample : unmanaged
+        {
+            var random = new Random(max + (int)alpha + transfer);
+            for (var pixels = 0; pixels <= 40; pixels++)
+            {
+                var samples = new TSample[pixels * 4];
+                for (var i = 0; i < samples.Length; i++)
+                {
+                    var value = random.Next(4) switch
+                    {
+                        0 => 0,
+                        1 => max,
+                        _ => random.Next(max + 1),
+                    };
+                    samples[i] = typeof(TSample) == typeof(byte) ? (TSample)(object)(byte)value : (TSample)(object)(ushort)value;
+                }
+
+                // Opaque pixels give their 3 colors: nothing is written after them
+                var workingLength = WorkingSamples.GetWorkingLength(samples.Length, alpha);
+                var expected = new double[workingLength];
+                var actual = new double[workingLength + 4];
+                actual.AsSpan(workingLength).Fill(-7);
+                WorkingSamples.LoadScalar<TSample>(samples, expected, alpha, transfer);
+                WorkingSamples.Load<TSample>(samples, actual.AsSpan(0, workingLength), alpha, transfer);
+                Assert.Equal(expected.Select(BitConverter.DoubleToInt64Bits), actual.Take(workingLength).Select(BitConverter.DoubleToInt64Bits));
+                Assert.All(actual[workingLength..], value => Assert.Equal(-7, value));
+            }
+        }
+
+        // Linear light around every threshold of the encoding and random values, out of range too, times alphas that
+        // round to zero or not
+        [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+        static void CheckStore(WorkingAlpha alpha, byte transfer)
+        {
+            // The thresholds of sRGB have the intervals of the vector search
+            var thresholds = WorkingSamples.GetThresholds8(transfer);
+            Assert.True(transfer is not CicpTransfer.Srgb || !thresholds!.Intervals.IsEmpty);
+            var inputs = thresholds is null ? GetQuantizationInputs() : GetQuantizationInputs(thresholds);
+            var random = new Random(transfer + (int)alpha);
+            double[] alphas = [0, 0.49, 0.5, 1, 3, 127.5, 254.5, 255, 256, double.NaN];
+            var length = 4 * 5000;
+            var values = new double[length];
+            for (var i = 0; i < length; i++)
+            {
+                values[i] = inputs[random.Next(inputs.Length)];
+            }
+
+            for (var i = 3; alpha is WorkingAlpha.Premultiplied or WorkingAlpha.Preserved && i < length; i += 4)
+            {
+                var a = random.Next(3) == 0 ? alphas[random.Next(alphas.Length)] : random.NextDouble() * 255;
+                values[i] = a;
+                if (alpha == WorkingAlpha.Premultiplied)
+                {
+                    values[i - 3] *= a;
+                    values[i - 2] *= a;
+                    values[i - 1] *= a;
+                }
+            }
+
+            foreach (var pixels in (int[])[0, 1, 2, 3, 4, 5, 7, 8, 9, 17, length / 4])
+            {
+                var count = pixels * 4;
+                var working = values.AsSpan(0, WorkingSamples.GetWorkingLength(count, alpha));
+                var expected = new byte[count];
+                var actual = new byte[count];
+                for (var i = 3; i < count; i += 4)
+                {
+                    expected[i] = (byte)i;
+                    actual[i] = (byte)i;
+                }
+
+                WorkingSamples.StoreScalar<byte>(working, expected, alpha, transfer, byte.MaxValue);
+                WorkingSamples.Store<byte>(working, actual, alpha, transfer, byte.MaxValue);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData((int)WorkingAlpha.None)]
+    [InlineData((int)WorkingAlpha.Premultiplied)]
+    [InlineData((int)WorkingAlpha.Preserved)]
+    [InlineData((int)WorkingAlpha.Opaque)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FloatingPointWorkingSamplesMatchTheScalarReference(int alphaMode)
+    {
+        var alpha = (WorkingAlpha)alphaMode;
+        var random = new Random(alphaMode);
+        float[] special = [0, -0f, 1, -1, 0.5f, float.Epsilon, float.MaxValue, float.MinValue, float.PositiveInfinity, float.NegativeInfinity, float.NaN, BitConverter.Int32BitsToSingle(0x7FA00001), 1e-40f, 65504];
+        for (var pixels = 0; pixels <= 40; pixels++)
+        {
+            var samples = new float[pixels * 4];
+            for (var i = 0; i < samples.Length; i++)
+            {
+                samples[i] = random.Next(3) == 0 ? special[random.Next(special.Length)] : (float)((random.NextDouble() * 1.4) - 0.2);
+            }
+
+            var workingLength = WorkingSamples.GetWorkingLength(samples.Length, alpha);
+            var expected = new double[workingLength];
+            var actual = new double[workingLength + 4];
+            actual.AsSpan(workingLength).Fill(-7);
+            WorkingSamples.LoadScalar<float>(samples, expected, alpha, transfer: 0);
+            WorkingSamples.Load<float>(samples, actual.AsSpan(0, workingLength), alpha, transfer: 0);
+            Assert.Equal(expected.Select(BitConverter.DoubleToInt64Bits), actual.Take(workingLength).Select(BitConverter.DoubleToInt64Bits));
+            Assert.All(actual[workingLength..], value => Assert.Equal(-7, value));
+        }
+    }
+
     public static TheoryData<byte> TransferCharacteristics() => [1, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 
     [Theory]

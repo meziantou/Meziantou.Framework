@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Imaging.Formats;
@@ -119,7 +118,13 @@ internal sealed class PnmEncoderCodec : ImageEncoderCodec
             for (var y = 0; y < lease.Height; y++)
             {
                 var band = ConvertRow(lease.GetRowBytes(y));
-                for (var x = 0; x < _width; x++)
+
+                // 8-bit gray samples: 0 and 255 are black and white, and no other sample is
+                var start = _grayscale && !_is16Bit ? band[.._width].IndexOfAnyExcept((byte)0, byte.MaxValue) : 0;
+                if (start < 0)
+                    continue;
+
+                for (var x = start; x < _width; x++)
                 {
                     if (!IsBlackOrWhite(band, x))
                         throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"A portable bitmap stores black and white pixels only and the pixel ({x}, {y}) is neither. Keep PnmPixelLayout.Auto, or reduce the image to black and white explicitly."), ImageFormat.Pnm, "Bilevel reduction");
@@ -270,6 +275,13 @@ internal sealed class PnmEncoderCodec : ImageEncoderCodec
         {
             var length = (_width + 7) / 8;
             var destination = output.GetSpan(length);
+            if (_grayscale && !_is16Bit)
+            {
+                IndexPacking.PackBits(band[.._width], setWhenZero: true, destination);
+                output.Advance(length);
+                return;
+            }
+
             for (var i = 0; i < length; i++)
             {
                 // The bits past the width are padding and stay clear
@@ -316,13 +328,8 @@ internal sealed class PnmEncoderCodec : ImageEncoderCodec
                 return;
             }
 
-            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(band));
-            var destination = output.GetSpan(sampleCount * 2);
-            for (var i = 0; i < sampleCount; i++)
-            {
-                BinaryPrimitives.WriteUInt16BigEndian(destination[(i * 2)..], samples[i]);
-            }
-
+            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(band))[..sampleCount];
+            SampleEndianness.WriteBigEndian(samples, output.GetSpan(sampleCount * 2));
             output.Advance(sampleCount * 2);
         }
 

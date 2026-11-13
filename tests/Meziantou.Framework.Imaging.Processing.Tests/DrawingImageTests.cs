@@ -1721,6 +1721,51 @@ public sealed class DrawingImageTests
         return result;
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    public void DrawingAReducedImageSucceedsWithMoreMemoryOnceItSucceeds(int workers)
+    {
+        // An image reduced 4 times keeps the sums of its rows when there is room for them, after the scratch the drawing
+        // needs: from the first limit that has room for the drawing, a larger one draws the same pixels, and a smaller
+        // one fails before it changes a pixel
+        var random = new Random(20261113);
+        using var source = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 2048, 1024, random.Next);
+        var target = new Rectangle(0, 0, 512, 256);
+        int[] expected;
+        long first = 0;
+        long peak = 0;
+        using (var unlimited = new Image<Rgba32>(target.Width, target.Height, new Rgba32(10, 20, 30), new ImageConfiguration { MaxDegreeOfParallelism = workers }))
+        {
+            unlimited.Draw(_ => first = unlimited.Owner.Scope.LiveBytes, Ct);
+            unlimited.Draw(canvas => canvas.DrawImage(source.Frames[0], target, ImageSampling.Smooth), Ct);
+            expected = DrawingTestSupport.ReadSamples(unlimited.Frames[0]);
+            peak = unlimited.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        }
+
+        var hasSucceeded = false;
+        for (var limit = first; limit <= peak; limit += 4096)
+        {
+            using var image = new Image<Rgba32>(target.Width, target.Height, new Rgba32(10, 20, 30), new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = limit } });
+            var blank = DrawingTestSupport.ReadSamples(image.Frames[0]);
+            try
+            {
+                image.Draw(canvas => canvas.DrawImage(source.Frames[0], target, ImageSampling.Smooth), Ct);
+            }
+            catch (ImageResourceLimitException)
+            {
+                Assert.False(hasSucceeded, $"The drawing failed with a limit of {limit} bytes, after it succeeded with less");
+                Assert.Equal(blank, DrawingTestSupport.ReadSamples(image.Frames[0]));
+                continue;
+            }
+
+            hasSucceeded = true;
+            Assert.Equal(expected, DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        Assert.True(hasSucceeded);
+    }
+
     [Fact]
     public void DrawingAnImageBeyondTheAllocationLimitChangesNothing()
     {

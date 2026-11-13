@@ -17,7 +17,8 @@ internal static class PngLayoutInput
     /// <param name="height">The height in pixels.</param>
     /// <param name="colorType">The PNG color type (0, 2, 4 or 6).</param>
     /// <param name="bitDepth">8 or 16, or 1 for gray (the samples are then packed, the first pixel in the most significant bit).</param>
-    public static byte[] Encode(ReadOnlySpan<byte> samples, int width, int height, byte colorType, byte bitDepth)
+    /// <param name="transparency">The data of a tRNS chunk (the transparent color of gray and RGB), or empty for none.</param>
+    public static byte[] Encode(ReadOnlySpan<byte> samples, int width, int height, byte colorType, byte bitDepth, ReadOnlySpan<byte> transparency = default)
     {
         var channels = colorType switch
         {
@@ -53,6 +54,11 @@ internal static class PngLayoutInput
         header[8] = bitDepth;
         header[9] = colorType;
         WriteChunk(output, "IHDR"u8, header);
+        if (!transparency.IsEmpty)
+        {
+            WriteChunk(output, "tRNS"u8, transparency);
+        }
+
         WriteChunk(output, "IDAT"u8, compressed.ToArray());
         WriteChunk(output, "IEND"u8, []);
         return output.ToArray();

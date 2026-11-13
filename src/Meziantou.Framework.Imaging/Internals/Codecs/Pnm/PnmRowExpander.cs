@@ -100,6 +100,13 @@ internal sealed class PnmRowExpander
             case PnmTupleType.GrayscaleAlpha:
             {
                 var identity = max == 255;
+                if (identity)
+                {
+                    // No sample is greater than MAXVAL: the samples are only replicated, as in PNG gray+alpha rows
+                    PngSampleFormat.ExpandGrayAlpha8(stored, width, destination);
+                    break;
+                }
+
                 for (var x = 0; x < width; x++)
                 {
                     var gray = (byte)Scale(stored[x * 2], max, identity);

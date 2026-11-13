@@ -117,8 +117,8 @@ internal static class IndexedPixels
         else
         {
             var mask = (1 << bitsPerIndex) - 1;
-            var x = 0;
-            for (var i = 0; x < stored; i++)
+            var x = bitsPerIndex == 4 ? ExpandNibbles(packed, stored, palette, destination[..(width * bytesPerPixel)], rgba) : 0;
+            for (var i = x * bitsPerIndex / 8; x < stored; i++)
             {
                 int value = packed[i];
                 for (var shift = 8 - bitsPerIndex; shift >= 0 && x < stored; shift -= bitsPerIndex, x++)
@@ -141,6 +141,92 @@ internal static class IndexedPixels
             }
 
             color[..3].CopyTo(destination[((width - 1) * 3)..]);
+        }
+    }
+
+    /// <summary>
+    /// Writes the colors of the leading groups of 32 pixels of 4-bit indices with 128-bit hardware vectors: the 16 colors
+    /// are 4 tables of 16 bytes (one per channel) that each index selects from, and the channels are interleaved by
+    /// widening. A 3-byte destination is written 16 bytes at a time for 12, so a group is written only when the 4 bytes after
+    /// it are in the row.
+    /// </summary>
+    /// <returns>The number of pixels written, a multiple of 32.</returns>
+    /// <param name="packed">The indices.</param>
+    /// <param name="count">The number of pixels to write at most.</param>
+    /// <param name="palette">The colors.</param>
+    /// <param name="destination">The pixels of the row, and nothing after them.</param>
+    /// <param name="rgba">Whether the pixels have 4 bytes (otherwise 3).</param>
+    private static int ExpandNibbles(ReadOnlySpan<byte> packed, int count, ReadOnlySpan<uint> palette, Span<byte> destination, bool rgba)
+    {
+        if (!Vector128.IsHardwareAccelerated || !BitConverter.IsLittleEndian || count < 32)
+            return 0;
+
+        Span<byte> channels = stackalloc byte[64];
+        for (var i = 0; i < 16; i++)
+        {
+            var color = palette[i];
+            channels[i] = (byte)color;
+            channels[16 + i] = (byte)(color >> 8);
+            channels[32 + i] = (byte)(color >> 16);
+            channels[48 + i] = (byte)(color >> 24);
+        }
+
+        var red = Vector128.Create(channels[..16]);
+        var green = Vector128.Create(channels[16..32]);
+        var blue = Vector128.Create(channels[32..48]);
+        var alpha = Vector128.Create(channels[48..]);
+        var bytesPerPixel = rgba ? 4 : 3;
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        var x = 0;
+        for (; x + 32 <= count && ((x + 32) * bytesPerPixel) + 4 <= destination.Length; x += 32)
+        {
+            // Each byte holds two pixels, the first one in its high-order half
+            var (first, second) = Vector128.Widen(Vector128.Create(packed[(x / 2)..]));
+            StoreColors(((first >>> 4) | ((first & Vector128.Create((ushort)15)) << 8)).AsByte(), red, green, blue, alpha, ref output, (nuint)(x * bytesPerPixel), rgba);
+            StoreColors(((second >>> 4) | ((second & Vector128.Create((ushort)15)) << 8)).AsByte(), red, green, blue, alpha, ref output, (nuint)((x + 16) * bytesPerPixel), rgba);
+        }
+
+        return x;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void StoreColors(Vector128<byte> indices, Vector128<byte> red, Vector128<byte> green, Vector128<byte> blue, Vector128<byte> alpha, ref byte output, nuint offset, bool rgba)
+        {
+            var (redLow, redHigh) = Vector128.Widen(Vector128.Shuffle(red, indices));
+            var (greenLow, greenHigh) = Vector128.Widen(Vector128.Shuffle(green, indices));
+            var (blueLow, blueHigh) = Vector128.Widen(Vector128.Shuffle(blue, indices));
+            var (alphaLow, alphaHigh) = Vector128.Widen(Vector128.Shuffle(alpha, indices));
+            var (pixels0, pixels1) = Pack(redLow | (greenLow << 8), blueLow | (alphaLow << 8));
+            var (pixels2, pixels3) = Pack(redHigh | (greenHigh << 8), blueHigh | (alphaHigh << 8));
+            if (rgba)
+            {
+                unsafe
+                {
+                    pixels0.StoreUnsafe(ref output, offset);
+                    pixels1.StoreUnsafe(ref output, offset + 16);
+                    pixels2.StoreUnsafe(ref output, offset + 32);
+                    pixels3.StoreUnsafe(ref output, offset + 48);
+                }
+
+                return;
+            }
+
+            // The 3 bytes of each 4-byte pixel; each store writes 4 bytes that the next one overwrites
+            var compact = Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 15, 15, 15, 15);
+            unsafe
+            {
+                Vector128.Shuffle(pixels0, compact).StoreUnsafe(ref output, offset);
+                Vector128.Shuffle(pixels1, compact).StoreUnsafe(ref output, offset + 12);
+                Vector128.Shuffle(pixels2, compact).StoreUnsafe(ref output, offset + 24);
+                Vector128.Shuffle(pixels3, compact).StoreUnsafe(ref output, offset + 36);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static (Vector128<byte> Low, Vector128<byte> High) Pack(Vector128<ushort> redGreen, Vector128<ushort> blueAlpha)
+        {
+            var (redGreenLow, redGreenHigh) = Vector128.Widen(redGreen);
+            var (blueAlphaLow, blueAlphaHigh) = Vector128.Widen(blueAlpha);
+            return ((redGreenLow | (blueAlphaLow << 16)).AsByte(), (redGreenHigh | (blueAlphaHigh << 16)).AsByte());
         }
     }
 

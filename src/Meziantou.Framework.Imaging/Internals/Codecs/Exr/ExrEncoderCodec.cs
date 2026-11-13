@@ -201,6 +201,9 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
         {
             for (var y = start; y < end; y++)
             {
+                if (IsRowWithinRange(storage.GetRowSpanCore(y)))
+                    continue;
+
                 var pixels = GetRow(storage.GetRowSpanCore(y), floats);
                 for (var i = 0; i < pixels.Length; i++)
                 {
@@ -220,6 +223,28 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
                     throw new UnsupportedImageFeatureException(message, ImageFormat.OpenExr, premultiplied ? "Premultiplied samples beyond the range of the sample type" : "Samples beyond the range of half");
                 }
             }
+        }
+
+        /// <summary>
+        /// Determines whether no sample of a row can fail the checks of <see cref="ValidateRows"/>, without converting it: every
+        /// alpha is within [-1, 1] (so a color multiplied by alpha is not larger than the color, and the stored alpha is the
+        /// alpha rounded) and every color within the range of the sample type. A row with an infinity or a value that is not a
+        /// number takes the checks, which skip some of them.
+        /// </summary>
+        private bool IsRowWithinRange(ReadOnlySpan<byte> row)
+        {
+            if (_plan is null)
+            {
+                // RgbaFloat pixels: 65,504 is the largest half, float.MaxValue the largest float
+                var colorLimit = BitConverter.SingleToUInt32Bits(_pixelType == ExrPixelType.Half ? 65504f : float.MaxValue);
+                var alphaLimit = _hasAlpha ? BitConverter.SingleToUInt32Bits(1f) : colorLimit;
+                return ExrLineKernels.AreSingleMagnitudesWithin(unsafe(MemoryMarshal.Cast<byte, uint>(row[..(_width * 16)])), colorLimit, alphaLimit);
+            }
+
+            // RgbaHalf pixels written as half samples: a finite color is within the range of halves, and the checks skip the
+            // colors that are not finite
+            const ushort Unlimited = 0x7FFF;
+            return ExrLineKernels.AreHalfMagnitudesWithin(unsafe(MemoryMarshal.Cast<byte, ushort>(row[..(_width * 8)])), Unlimited, _hasAlpha ? BitConverter.HalfToUInt16Bits(Half.One) : Unlimited);
         }
 
         public override void BeginPosterFrame(ImageFrame frame) => throw new InvalidOperationException("OpenEXR output has no poster frame.");

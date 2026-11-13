@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -110,11 +111,7 @@ internal static class GuidedFilterer
                 for (var slot = diameter - 2; slot >= 0; slot--)
                 {
                     var current = GetSlot(ring, slot, rowLength);
-                    var next = GetSlot(ring, slot + 1, rowLength);
-                    for (var i = 0; i < rowLength; i++)
-                    {
-                        current[i] += next[i];
-                    }
+                    Add(current, GetSlot(ring, slot + 1, rowLength), current);
                 }
 
                 sink(y, GetSlot(ring, 0, rowLength));
@@ -133,17 +130,10 @@ internal static class GuidedFilterer
                 }
                 else
                 {
-                    for (var i = 0; i < rowLength; i++)
-                    {
-                        prefix[i] += row[i];
-                    }
+                    Add(prefix, row, prefix);
                 }
 
-                var current = GetSlot(ring, offset, rowLength);
-                for (var i = 0; i < rowLength; i++)
-                {
-                    output[i] = current[i] + prefix[i];
-                }
+                Add(GetSlot(ring, offset, rowLength), prefix, output);
 
                 sink(y, output);
             }
@@ -169,6 +159,52 @@ internal static class GuidedFilterer
         }
 
         BoxBlurrer.SumWindows(padded, suffix, destination, width, (2 * radius) + 1, values);
+    }
+
+    /// <summary>Sets <paramref name="destination"/> to the sums of the elements of <paramref name="left"/> and <paramref name="right"/>, which may be the destination.</summary>
+    internal static void Add(ReadOnlySpan<double> left, ReadOnlySpan<double> right, Span<double> destination)
+    {
+        var length = destination.Length;
+        if (left.Length < length || right.Length < length)
+            throw new ArgumentException("The rows are shorter than the destination.", nameof(left));
+
+        var i = 0;
+        if (!Resampler.TestForceScalar)
+        {
+            ref var leftStart = ref unsafe(MemoryMarshal.GetReference(left));
+            ref var rightStart = ref unsafe(MemoryMarshal.GetReference(right));
+            ref var destinationStart = ref unsafe(MemoryMarshal.GetReference(destination));
+            if (Vector512.IsHardwareAccelerated)
+            {
+                for (; i + Vector512<double>.Count <= length; i += Vector512<double>.Count)
+                {
+                    unsafe { (Vector512.LoadUnsafe(ref leftStart, (nuint)i) + Vector512.LoadUnsafe(ref rightStart, (nuint)i)).StoreUnsafe(ref destinationStart, (nuint)i); }
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated)
+            {
+                for (; i + Vector256<double>.Count <= length; i += Vector256<double>.Count)
+                {
+                    unsafe { (Vector256.LoadUnsafe(ref leftStart, (nuint)i) + Vector256.LoadUnsafe(ref rightStart, (nuint)i)).StoreUnsafe(ref destinationStart, (nuint)i); }
+                }
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                for (; i + (2 * Vector128<double>.Count) <= length; i += 2 * Vector128<double>.Count)
+                {
+                    unsafe
+                    {
+                        (Vector128.LoadUnsafe(ref leftStart, (nuint)i) + Vector128.LoadUnsafe(ref rightStart, (nuint)i)).StoreUnsafe(ref destinationStart, (nuint)i);
+                        (Vector128.LoadUnsafe(ref leftStart, (nuint)(i + 2)) + Vector128.LoadUnsafe(ref rightStart, (nuint)(i + 2))).StoreUnsafe(ref destinationStart, (nuint)(i + 2));
+                    }
+                }
+            }
+        }
+
+        for (; i < length; i++)
+        {
+            destination[i] = left[i] + right[i];
+        }
     }
 
     private static Span<double> GetSlot(Span<double> ring, int slot, int rowLength) => ring.Slice(slot * rowLength, rowLength);

@@ -1,6 +1,8 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -661,7 +663,12 @@ internal sealed class TiffDocumentWriter : IDisposable
     /// <summary>Checks that every pixel of a row is exactly black or exactly white: gray levels and colors are never thresholded silently.</summary>
     private static void ValidateBilevelRow(PixelFormat format, ReadOnlySpan<byte> row, int width, int y)
     {
-        for (var x = 0; x < width; x++)
+        // Gray8: the colors of 0 and 255 are black and white, and no other gray is
+        var start = format == PixelFormat.Gray8 ? row[..width].IndexOfAnyExcept((byte)0, byte.MaxValue) : 0;
+        if (start < 0)
+            return;
+
+        for (var x = start; x < width; x++)
         {
             if (ReadColor(format, row, x) is not (0 or WhiteColor))
                 throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"A bilevel TIFF page stores black and white pixels only and the pixel ({x}, {y}) is neither. Keep TiffPixelLayout.Auto, or reduce the image to black and white explicitly."), "Bilevel reduction");
@@ -839,7 +846,35 @@ internal sealed class TiffDocumentWriter : IDisposable
     /// its difference from the sample of the same channel on its left, modulo 2^16 (the inverse of
     /// <see cref="TiffBlockReader.UndoDifferencing16"/>).
     /// </summary>
+    /// <remarks>
+    /// The samples are rewritten from the end of the row, 8 at a time with 128-bit hardware vectors: a sample and the sample
+    /// it is subtracted from are both read before any of them is rewritten. The result equals
+    /// <see cref="ApplyDifferencing16Scalar"/>.
+    /// </remarks>
     internal static void ApplyDifferencing16(Span<byte> row, int samplesPerPixel, bool bigEndian)
+    {
+        var count = row.Length / sizeof(ushort);
+        var end = count;
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+        {
+            ref var samples = ref unsafe(Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(row)));
+            for (; end - Vector128<ushort>.Count >= samplesPerPixel; end -= Vector128<ushort>.Count)
+            {
+                var start = (nuint)(end - Vector128<ushort>.Count);
+                var current = unsafe(Vector128.LoadUnsafe(ref samples, start));
+                var previous = unsafe(Vector128.LoadUnsafe(ref samples, start - (nuint)samplesPerPixel));
+                var difference = bigEndian ? SwapBytes(SwapBytes(current) - SwapBytes(previous)) : current - previous;
+                unsafe { difference.StoreUnsafe(ref samples, start); }
+            }
+        }
+
+        ApplyDifferencing16Scalar(row[..(end * sizeof(ushort))], samplesPerPixel, bigEndian);
+
+        static Vector128<ushort> SwapBytes(Vector128<ushort> value) => (value << 8) | (value >>> 8);
+    }
+
+    /// <summary>The sample-at-a-time reference of <see cref="ApplyDifferencing16"/>.</summary>
+    internal static void ApplyDifferencing16Scalar(Span<byte> row, int samplesPerPixel, bool bigEndian)
     {
         for (var i = (row.Length / sizeof(ushort)) - 1; i >= samplesPerPixel; i--)
         {
@@ -865,6 +900,23 @@ internal sealed class TiffDocumentWriter : IDisposable
         var bigEndian = IsBigEndian;
         var samples = destination;
         var isHalf = _page.PixelFormat == PixelFormat.RgbaHalf;
+        if (!isHalf && samplesPerPixel == 4)
+        {
+            // RGBA floats are the samples, in the byte order of the file
+            var words = unsafe(MemoryMarshal.Cast<byte, uint>(source[..(width * 16)]));
+            var target = unsafe(MemoryMarshal.Cast<byte, uint>(destination[..(width * 16)]));
+            if (bigEndian == BitConverter.IsLittleEndian)
+            {
+                BinaryPrimitives.ReverseEndianness(words, target);
+            }
+            else
+            {
+                words.CopyTo(target);
+            }
+
+            return;
+        }
+
         var halves = unsafe(MemoryMarshal.Cast<byte, Half>(source));
         var singles = unsafe(MemoryMarshal.Cast<byte, float>(source));
         var position = 0;
@@ -904,6 +956,13 @@ internal sealed class TiffDocumentWriter : IDisposable
         if (layout.IsBilevel)
         {
             // WhiteIsZero: a set bit is a black pixel, which is also what the CCITT compressions code as a black run
+            if (_page.PixelFormat == PixelFormat.Gray8)
+            {
+                IndexPacking.PackBits(source[..width], setWhenZero: true, destination);
+                destination[((width + 7) / 8)..].Clear();
+                return;
+            }
+
             destination.Clear();
             for (var x = 0; x < width; x++)
             {

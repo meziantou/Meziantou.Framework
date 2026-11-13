@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -152,6 +153,7 @@ internal static class Warper
         var sums = scratch.Slice(((width + plan.TapsX) * channels) + plan.TapsX + plan.TapsY, channels);
         var rowSums = scratch.Slice(((width + plan.TapsX) * channels) + plan.TapsX + plan.TapsY + channels, channels);
         var integerEncoded = plan.Transfer is 0 && !WorkingSamples.IsFloatingPoint<TSample>();
+        var vectorized = channels == 4 && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar;
         for (var y = start; y < end; y++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -169,6 +171,12 @@ internal static class Warper
                     || !GetWeights(plan.Filter, v - 0.5, radius, scaleY, geometry.SourceSize.Height, yWeights, out var firstY, out var countY, out var totalY, out var insideY))
                 {
                     background.CopyTo(output);
+                    continue;
+                }
+
+                if (vectorized)
+                {
+                    FilterPixel<TPixel, TSample>(source, plan, background, taps, xWeights[..countX], yWeights[..countY], firstX, firstY, integerEncoded, totalX * totalY, insideX * insideY, output);
                     continue;
                 }
 
@@ -225,6 +233,87 @@ internal static class Warper
 
             var row = unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(destination, y)));
             WorkingSamples.Store(outputRow, row, plan.Alpha, plan.Transfer, plan.MaxValue);
+        }
+    }
+
+    /// <summary>
+    /// Filters a pixel of 4 working samples as the scalar loop of <see cref="Filter"/> does, the sums of samples 0 and 1 in
+    /// the lanes of one vector and those of samples 2 and 3 in another, each lane in the order of the scalar sums.
+    /// </summary>
+    private static void FilterPixel<TPixel, TSample>(PixelStorage source, WarpPlan plan, double[] background, Span<double> taps, ReadOnlySpan<double> xWeights, ReadOnlySpan<double> yWeights, int firstX, int firstY, bool integerEncoded, double total, double inside, Span<double> output)
+        where TPixel : unmanaged
+        where TSample : unmanaged
+    {
+        var premultiplied = plan.Alpha == WorkingAlpha.Premultiplied;
+        var sumLow = Vector128<double>.Zero;
+        var sumHigh = Vector128<double>.Zero;
+        for (var j = 0; j < yWeights.Length; j++)
+        {
+            var weightY = yWeights[j];
+            if (weightY == 0)
+                continue;
+
+            var samples = unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(source, firstY + j))).Slice(firstX * 4, xWeights.Length * 4);
+            var rowLow = Vector128<double>.Zero;
+            var rowHigh = Vector128<double>.Zero;
+            if (integerEncoded)
+            {
+                for (var i = 0; i < xWeights.Length; i++)
+                {
+                    var weight = xWeights[i];
+                    if (weight == 0)
+                        continue;
+
+                    var pixel = samples.Slice(i * 4, 4);
+                    double alpha = WorkingSamples.ToInt(pixel[3]);
+                    var low = Vector128.Create((double)WorkingSamples.ToInt(pixel[0]), WorkingSamples.ToInt(pixel[1]));
+                    var high = Vector128.Create(WorkingSamples.ToInt(pixel[2]), premultiplied ? 1 : alpha);
+                    if (premultiplied)
+                    {
+                        var factor = Vector128.Create(alpha);
+                        low *= factor;
+                        high *= factor;
+                    }
+
+                    var weights = Vector128.Create(weight);
+                    rowLow += weights * low;
+                    rowHigh += weights * high;
+                }
+            }
+            else
+            {
+                var working = taps[..(xWeights.Length * 4)];
+                WorkingSamples.Load(samples, working, plan.Alpha, plan.Transfer);
+                ref var workingStart = ref unsafe(MemoryMarshal.GetReference(working));
+                for (var i = 0; i < xWeights.Length; i++)
+                {
+                    var weight = xWeights[i];
+                    if (weight == 0)
+                        continue;
+
+                    var weights = Vector128.Create(weight);
+                    unsafe
+                    {
+                        rowLow += weights * Vector128.LoadUnsafe(ref workingStart, (nuint)(i * 4));
+                        rowHigh += weights * Vector128.LoadUnsafe(ref workingStart, (nuint)((i * 4) + 2));
+                    }
+                }
+            }
+
+            var rowWeight = Vector128.Create(weightY);
+            sumLow += rowWeight * rowLow;
+            sumHigh += rowWeight * rowHigh;
+        }
+
+        // The weights of the pixels beyond the edges read the background; normalized by the sum of all the weights
+        var outside = Vector128.Create(total - inside);
+        var divisor = Vector128.Create(total);
+        unsafe
+        {
+            ref var backgroundStart = ref MemoryMarshal.GetArrayDataReference(background);
+            ref var outputStart = ref MemoryMarshal.GetReference(output);
+            ((sumLow + (Vector128.LoadUnsafe(ref backgroundStart) * outside)) / divisor).StoreUnsafe(ref outputStart);
+            ((sumHigh + (Vector128.LoadUnsafe(ref backgroundStart, 2) * outside)) / divisor).StoreUnsafe(ref outputStart, 2);
         }
     }
 

@@ -21,6 +21,8 @@ public class PixelRowBenchmarks
     private Image<Gray16> _gray16 = null!;
     private Image<Rgba32> _framed = null!;
     private Image<Rgba64> _framed64 = null!;
+    private Image<La16> _la16 = null!;
+    private Image<Argb32> _argb32 = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -28,6 +30,8 @@ public class PixelRowBenchmarks
         _image = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight);
         _rgba64 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.ResizeRgba64Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight);
         _rgb24 = _image.CloneAs<Rgb24>(Flatten);
+        _la16 = _image.CloneAs<La16>();
+        _argb32 = _image.CloneAs<Argb32>();
         _gray8 = _image.CloneAs<Gray8>(Flatten);
         _gray16 = _rgba64.CloneAs<Gray16>(Flatten);
 
@@ -58,6 +62,8 @@ public class PixelRowBenchmarks
         _gray16?.Dispose();
         _framed?.Dispose();
         _framed64?.Dispose();
+        _la16?.Dispose();
+        _argb32?.Dispose();
     }
 
     [Benchmark]
@@ -108,6 +114,22 @@ public class PixelRowBenchmarks
     [Benchmark]
     [Workload("1920x1080 Rgba64 with transparency -> Gray16 (flattened onto a background, luma)")]
     public int ConvertRgba64ToGray16() => Convert<Rgba64, Gray16>(_rgba64, Flatten);
+
+    [Benchmark]
+    [Workload("1920x1080 La16 -> Rgba32 (the working copy of the processing bridge)")]
+    public int ConvertLa16ToRgba32() => Convert<La16, Rgba32>(_la16, options: null);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 with transparency -> La16 (luma, back from the working copy)")]
+    public int ConvertRgba32ToLa16() => Convert<Rgba32, La16>(_image, options: null);
+
+    [Benchmark]
+    [Workload("1920x1080 Argb32 -> Rgba32 (the working copy of the processing bridge)")]
+    public int ConvertArgb32ToRgba32() => Convert<Argb32, Rgba32>(_argb32, options: null);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 with transparency -> La32 (luma, back from the working copy)")]
+    public int ConvertRgba64ToLa32() => Convert<Rgba64, La32>(_rgba64, options: null);
 
     [Benchmark]
     [Workload("1920x1080 Rgba32: clone, then grayscale in place")]

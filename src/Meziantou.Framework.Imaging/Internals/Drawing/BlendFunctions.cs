@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -146,5 +147,143 @@ internal static class BlendFunctions
                 color[i] = max > min ? (color[i] - min) * saturation / (max - min) : 0;
             }
         }
+    }
+
+    /// <summary>
+    /// A separable blend mode on the lanes of vectors: <see cref="BlendFunctions.Blend(BlendMode, double, double)"/> of each lane, with the
+    /// same operations in the same order, every branch computed and selected.
+    /// </summary>
+    /// <remarks>The components are from 0 to 1: the minimum and the maximum of two of them have a single definition.</remarks>
+    internal interface ISeparableBlend
+    {
+        static abstract TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged;
+    }
+
+    internal readonly struct MultiplyBlend : ISeparableBlend
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+            => TLanes.Multiply(s, d);
+    }
+
+    internal readonly struct ScreenBlend : ISeparableBlend
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+            => TLanes.Subtract(TLanes.Add(s, d), TLanes.Multiply(s, d));
+    }
+
+    internal readonly struct OverlayBlend : ISeparableBlend
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+            => HardLightBlend.Blend<TLanes, TVector>(d, s);
+    }
+
+    internal readonly struct DarkenBlend : ISeparableBlend
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+            => TLanes.Min(s, d);
+    }
+
+    internal readonly struct LightenBlend : ISeparableBlend
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+            => TLanes.Max(s, d);
+    }
+
+    internal readonly struct ColorDodgeBlend : ISeparableBlend
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+        {
+            var zero = TLanes.Create(0);
+            var one = TLanes.Create(1);
+            var result = TLanes.Min(one, TLanes.Divide(d, TLanes.Subtract(one, s)));
+            result = TLanes.Select(TLanes.GreaterThanOrEqual(s, one), one, result);
+            return TLanes.Select(TLanes.LessThanOrEqual(d, zero), zero, result);
+        }
+    }
+
+    internal readonly struct ColorBurnBlend : ISeparableBlend
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+        {
+            var zero = TLanes.Create(0);
+            var one = TLanes.Create(1);
+            var result = TLanes.Subtract(one, TLanes.Min(one, TLanes.Divide(TLanes.Subtract(one, d), s)));
+            result = TLanes.Select(TLanes.LessThanOrEqual(s, zero), zero, result);
+            return TLanes.Select(TLanes.GreaterThanOrEqual(d, one), one, result);
+        }
+    }
+
+    internal readonly struct HardLightBlend : ISeparableBlend
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+        {
+            var two = TLanes.Create(2);
+            var doubled = TLanes.Multiply(two, s);
+            var low = TLanes.Multiply(TLanes.Multiply(d, two), s);
+            var shifted = TLanes.Subtract(doubled, TLanes.Create(1));
+            var high = TLanes.Subtract(TLanes.Add(shifted, d), TLanes.Multiply(shifted, d));
+            return TLanes.Select(TLanes.LessThanOrEqual(s, TLanes.Create(0.5)), low, high);
+        }
+    }
+
+    internal readonly struct SoftLightBlend : ISeparableBlend
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+        {
+            var one = TLanes.Create(1);
+            var doubled = TLanes.Multiply(TLanes.Create(2), s);
+            var low = TLanes.Subtract(d, TLanes.Multiply(TLanes.Multiply(TLanes.Subtract(one, doubled), d), TLanes.Subtract(one, d)));
+            var polynomial = TLanes.Multiply(TLanes.Add(TLanes.Multiply(TLanes.Subtract(TLanes.Multiply(TLanes.Create(16), d), TLanes.Create(12)), d), TLanes.Create(4)), d);
+            var g = TLanes.Select(TLanes.LessThanOrEqual(d, TLanes.Create(0.25)), polynomial, TLanes.Sqrt(d));
+            var high = TLanes.Add(d, TLanes.Multiply(TLanes.Subtract(doubled, one), TLanes.Subtract(g, d)));
+            return TLanes.Select(TLanes.LessThanOrEqual(s, TLanes.Create(0.5)), low, high);
+        }
+    }
+
+    internal readonly struct DifferenceBlend : ISeparableBlend
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+            => TLanes.Abs(TLanes.Subtract(d, s));
+    }
+
+    internal readonly struct ExclusionBlend : ISeparableBlend
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Blend<TLanes, TVector>(TVector s, TVector d)
+            where TLanes : IDoubleLanes<TVector>
+            where TVector : unmanaged
+            => TLanes.Subtract(TLanes.Add(s, d), TLanes.Multiply(TLanes.Multiply(TLanes.Create(2), s), d));
     }
 }

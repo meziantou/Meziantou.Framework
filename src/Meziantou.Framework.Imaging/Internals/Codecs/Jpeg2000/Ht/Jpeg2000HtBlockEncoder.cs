@@ -1,6 +1,10 @@
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -22,6 +26,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// its significant samples (7.3.8). Among the exponent max bound patterns that a context, a significance pattern and an
 /// unsigned residual offset allow, the encoder chooses the one whose codeword and MagSgn bits are the shortest.
 /// </para>
+/// <para>
+/// The MagSgn values, the exponents and the significance patterns of a row of quads are computed before its quads are
+/// coded (<see cref="ReadQuadRow"/>): with 128-bit hardware vectors, 2 quads at a time from 4 columns of the 2 rows of
+/// samples, with the same integer operations as <see cref="ReadQuad"/>. The bit-streams are written one quad after the
+/// other.
+/// </para>
 /// </remarks>
 internal sealed class Jpeg2000HtBlockEncoder : IDisposable
 {
@@ -30,6 +40,10 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
 
     // Two exponents per quad of the widest code-block, and those of a quad that does not exist on each side
     private const int ExponentRowLength = 1024 + 4;
+
+    // The quads of a row of the widest code-block, and their samples
+    private const int MaxQuadsWide = 1024 / 2;
+    private const int QuadRowSamples = 4 * MaxQuadsWide;
 
     // The most bytes each bit-stream needs for a code-block of 4096 samples, with a margin
     private const int MagSgnCapacity = MaxCleanupLength + 16;
@@ -46,6 +60,9 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
     private readonly Av1PooledArray<byte> _mel;
     private readonly Av1PooledArray<byte> _vlc;
     private readonly Av1PooledArray<byte> _exponents;
+
+    // The MagSgn values, then the exponents, of the samples of a row of quads (ReadQuadRow)
+    private readonly Av1PooledArray<uint> _quadSamples;
 
     // The MagSgn bit-stream: the bits that are not written yet, the first one in the least significant bit, and the
     // number of bits the next byte holds (7 after an FF byte)
@@ -73,20 +90,25 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
         Av1PooledArray<byte>? magSgn = null;
         Av1PooledArray<byte>? mel = null;
         Av1PooledArray<byte>? vlc = null;
+        Av1PooledArray<byte>? exponents = null;
         try
         {
             magSgn = Av1PooledArray<byte>.Rent(scope, MagSgnCapacity, clear: false, AllocationKind.Temporary);
             mel = Av1PooledArray<byte>.Rent(scope, SuffixCapacity, clear: false, AllocationKind.Temporary);
             vlc = Av1PooledArray<byte>.Rent(scope, SuffixCapacity, clear: false, AllocationKind.Temporary);
-            _exponents = Av1PooledArray<byte>.Rent(scope, 2 * ExponentRowLength, clear: false, AllocationKind.Temporary);
+            exponents = Av1PooledArray<byte>.Rent(scope, 2 * ExponentRowLength, clear: false, AllocationKind.Temporary);
+            _quadSamples = Av1PooledArray<uint>.Rent(scope, 2 * QuadRowSamples, clear: false, AllocationKind.Temporary);
         }
         catch
         {
             magSgn?.Dispose();
             mel?.Dispose();
             vlc?.Dispose();
+            exponents?.Dispose();
             throw;
         }
+
+        _exponents = exponents;
 
         _magSgn = magSgn;
         _mel = mel;
@@ -187,8 +209,9 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
         var quadsWide = (width + 1) / 2;
         var quadsHigh = (height + 1) / 2;
         _exponents.Span[..(2 * ExponentRowLength)].Clear();
-        Span<uint> values = stackalloc uint[8];
-        Span<int> sampleExponents = stackalloc int[8];
+        var quadValues = _quadSamples.Span[..QuadRowSamples];
+        var quadExponents = unsafe(MemoryMarshal.Cast<uint, int>(_quadSamples.Span.Slice(QuadRowSamples, QuadRowSamples)));
+        Span<byte> patterns = stackalloc byte[MaxQuadsWide];
         for (var quadY = 0; quadY < quadsHigh; quadY++)
         {
             var isInitialRow = quadY == 0;
@@ -196,11 +219,14 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
             var exponents = _exponents.Span.Slice(aboveRow, ExponentRowLength);
             var nextExponents = _exponents.Span.Slice(ExponentRowLength - aboveRow, ExponentRowLength);
             var previousPattern = 0;
+            ReadQuadRow(samples, width, height, plane, quadY, quadValues, quadExponents, patterns);
             for (var quadX = 0; quadX < quadsWide; quadX += 2)
             {
                 var hasSecond = quadX + 1 < quadsWide;
-                var pattern0 = ReadQuad(samples, width, height, plane, quadX, quadY, values[..4], sampleExponents[..4]);
-                var pattern1 = hasSecond ? ReadQuad(samples, width, height, plane, quadX + 1, quadY, values[4..], sampleExponents[4..]) : 0;
+                var values = quadValues.Slice(4 * quadX, 8);
+                var sampleExponents = quadExponents.Slice(4 * quadX, 8);
+                int pattern0 = patterns[quadX];
+                var pattern1 = hasSecond ? patterns[quadX + 1] : 0;
 
                 // The first quad of the pair, then the second one, whose context depends on the first one
                 var context0 = GetContext(exponents, quadX, isInitialRow, previousPattern);
@@ -242,6 +268,7 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
         _mel.Dispose();
         _vlc.Dispose();
         _exponents.Dispose();
+        _quadSamples.Dispose();
     }
 
     /// <summary>Gets how much coding the bit-planes down to <paramref name="plane"/> reduces the squared error of the coefficients.</summary>
@@ -264,6 +291,96 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
         return reduction;
     }
 
+    /// <summary>
+    /// Reads the samples of a row of quads, in the order of their quads: 4 values and 4 exponents per quad
+    /// (<see cref="ReadQuad"/>), and the significance pattern of each quad. With 128-bit hardware vectors, 2 quads are read
+    /// at a time: the 4 samples of each row of the 2 quads are converted in one vector, then the 2 rows are interleaved.
+    /// </summary>
+    /// <param name="samples">The coefficients of the code-block.</param>
+    /// <param name="width">The width of the code-block: at most 1024.</param>
+    /// <param name="height">The height of the code-block.</param>
+    /// <param name="plane">The lowest coded bit-plane.</param>
+    /// <param name="quadY">The row of quads.</param>
+    /// <param name="values">Receives the MagSgn values: 4 per quad.</param>
+    /// <param name="exponents">Receives the exponents: 4 per quad.</param>
+    /// <param name="patterns">Receives the significance patterns: one per quad.</param>
+    internal static void ReadQuadRow(ReadOnlySpan<int> samples, int width, int height, int plane, int quadY, Span<uint> values, Span<int> exponents, Span<byte> patterns)
+    {
+        var quadsWide = (width + 1) / 2;
+        var quadX = 0;
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+        {
+            var y = 2 * quadY;
+            ref var top = ref unsafe(MemoryMarshal.GetReference(samples[(y * width)..((y + 1) * width)]));
+            var hasBottom = y + 1 < height;
+            ref var bottom = ref hasBottom ? ref unsafe(MemoryMarshal.GetReference(samples[((y + 1) * width)..((y + 2) * width)])) : ref top;
+            ref var valueOutput = ref unsafe(MemoryMarshal.GetReference(values[..(4 * quadsWide)]));
+            ref var exponentOutput = ref unsafe(Unsafe.As<int, uint>(ref MemoryMarshal.GetReference(exponents[..(4 * quadsWide)])));
+            for (; (2 * quadX) + Vector128<int>.Count <= width; quadX += 2)
+            {
+                var (topValues, topExponents) = ReadSamples(unsafe(Vector128.LoadUnsafe(ref top, (nuint)(2 * quadX))).AsUInt32(), plane);
+                var (bottomValues, bottomExponents) = hasBottom ? ReadSamples(unsafe(Vector128.LoadUnsafe(ref bottom, (nuint)(2 * quadX))).AsUInt32(), plane) : (Vector128<uint>.Zero, Vector128<uint>.Zero);
+                var (firstValues, secondValues) = Interleave(topValues, bottomValues);
+                var (firstExponents, secondExponents) = Interleave(topExponents, bottomExponents);
+                unsafe { firstValues.StoreUnsafe(ref valueOutput, (nuint)(4 * quadX)); }
+                unsafe { secondValues.StoreUnsafe(ref valueOutput, (nuint)((4 * quadX) + 4)); }
+                unsafe { firstExponents.StoreUnsafe(ref exponentOutput, (nuint)(4 * quadX)); }
+                unsafe { secondExponents.StoreUnsafe(ref exponentOutput, (nuint)((4 * quadX) + 4)); }
+
+                // A sample is significant when its exponent is not 0
+                patterns[quadX] = (byte)(~Vector128.Equals(firstExponents, Vector128<uint>.Zero)).ExtractMostSignificantBits();
+                patterns[quadX + 1] = (byte)(~Vector128.Equals(secondExponents, Vector128<uint>.Zero)).ExtractMostSignificantBits();
+            }
+        }
+
+        for (; quadX < quadsWide; quadX++)
+        {
+            patterns[quadX] = (byte)ReadQuad(samples, width, height, plane, quadX, quadY, values.Slice(4 * quadX, 4), exponents.Slice(4 * quadX, 4));
+        }
+    }
+
+    /// <summary>The MagSgn values and the exponents of 4 samples, as <see cref="ReadQuad"/> computes them, 0 for the samples that are not significant.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<uint> Values, Vector128<uint> Exponents) ReadSamples(Vector128<uint> samples, int plane)
+    {
+        var magnitude = Vector128.ShiftRightLogical(samples & Vector128.Create((uint)int.MaxValue), plane);
+        var significant = ~Vector128.Equals(magnitude, Vector128<uint>.Zero);
+        var values = ((magnitude + magnitude) - Vector128.Create(2u) + Vector128.ShiftRightLogical(samples, 31)) & significant;
+        var exponents = GetBitLength((magnitude + magnitude) - Vector128<uint>.One) & significant;
+        return (values, exponents);
+    }
+
+    /// <summary>The number of bits of each lane (32 less its leading zeros).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<uint> GetBitLength(Vector128<uint> value)
+    {
+        if (AdvSimd.IsSupported)
+            return Vector128.Create(32u) - AdvSimd.LeadingZeroCount(value);
+
+        if (Avx512CD.VL.IsSupported)
+            return Vector128.Create(32u) - Avx512CD.VL.LeadingZeroCount(value);
+
+        // The exponent of a float is exact for the 16-bit halves: 127 + floor(log2(v)) for v > 0, and 0 for v = 0
+        var high = Vector128.ShiftRightLogical(value, 16);
+        var low = value & Vector128.Create(0xFFFFu);
+        var highLength = Vector128.ShiftRightLogical(Vector128.ConvertToSingle(high.AsInt32()).AsUInt32(), 23) - Vector128.Create(126u - 16);
+        var lowLength = Vector128.Max(Vector128.ShiftRightLogical(Vector128.ConvertToSingle(low.AsInt32()).AsUInt32(), 23).AsInt32() - Vector128.Create(126), Vector128<int>.Zero).AsUInt32();
+        return Vector128.ConditionalSelect(Vector128.Equals(high, Vector128<uint>.Zero), lowLength, highLength);
+    }
+
+    /// <summary>Interleaves the lanes of 2 vectors: <c>(a0, b0, a1, b1)</c> and <c>(a2, b2, a3, b3)</c>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<uint> Low, Vector128<uint> High) Interleave(Vector128<uint> a, Vector128<uint> b)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return (AdvSimd.Arm64.ZipLow(a, b), AdvSimd.Arm64.ZipHigh(a, b));
+
+        if (Sse2.IsSupported)
+            return (Sse2.UnpackLow(a, b), Sse2.UnpackHigh(a, b));
+
+        return (Vector128.Create(a.GetElement(0), b.GetElement(0), a.GetElement(1), b.GetElement(1)), Vector128.Create(a.GetElement(2), b.GetElement(2), a.GetElement(3), b.GetElement(3)));
+    }
+
     /// <summary>Reads the four samples of a quad (7.2: top-left, bottom-left, top-right, bottom-right).</summary>
     /// <param name="samples">The coefficients of the code-block.</param>
     /// <param name="width">The width of the code-block.</param>
@@ -274,7 +391,7 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
     /// <param name="values">Receives the MagSgn value of each significant sample: twice its magnitude less one, plus its sign (7.3.8).</param>
     /// <param name="exponents">Receives the exponent of each sample: the number of bits of twice its magnitude less one, 0 when it is not significant.</param>
     /// <returns>The significance pattern of the quad.</returns>
-    private static int ReadQuad(ReadOnlySpan<int> samples, int width, int height, int plane, int quadX, int quadY, Span<uint> values, Span<int> exponents)
+    internal static int ReadQuad(ReadOnlySpan<int> samples, int width, int height, int plane, int quadX, int quadY, Span<uint> values, Span<int> exponents)
     {
         var pattern = 0;
         for (var j = 0; j < 4; j++)

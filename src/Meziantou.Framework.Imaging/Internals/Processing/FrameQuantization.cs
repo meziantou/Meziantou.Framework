@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -163,12 +164,67 @@ internal sealed class FrameQuantization : IDisposable
         }
 
         var keys = Keys[..width];
-        for (var x = 0; x < width; x++)
+        GetKeys(samples[..(4 * width)], keys);
+        return keys;
+    }
+
+    /// <summary>
+    /// Gets the keys of 8-bit RGBA pixels (<see cref="PaletteQuantizer.GetKey"/>), a vector of pixels at a time: the bytes of
+    /// a pixel are reordered into <c>(A &lt;&lt; 24) | (R &lt;&lt; 16) | (G &lt;&lt; 8) | B</c>, then the alpha of an opaque
+    /// pixel is cleared and a transparent pixel becomes <see cref="PaletteQuantizer.TransparentKey"/>.
+    /// </summary>
+    /// <param name="rgba">The pixels, 4 bytes each.</param>
+    /// <param name="keys">Receives one key per pixel.</param>
+    internal static void GetKeys(ReadOnlySpan<byte> rgba, Span<int> keys)
+    {
+        var count = rgba.Length / 4;
+        keys = keys[..count];
+        if (!Vector128.IsHardwareAccelerated || count < Vector128<int>.Count)
         {
-            var pixel = samples.Slice(4 * x, 4);
-            keys[x] = PaletteQuantizer.GetKey(pixel[0], pixel[1], pixel[2], pixel[3]);
+            GetKeysScalar(rgba, keys);
+            return;
         }
 
-        return keys;
+        // The last vector ends at the last pixel, overlapping the previous one (the keys are written again, unchanged)
+        ref var source = ref unsafe(MemoryMarshal.GetReference(rgba));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(keys));
+        if (Vector256.IsHardwareAccelerated && count >= Vector256<int>.Count)
+        {
+            var order = Vector256.Create((byte)2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15, 18, 17, 16, 19, 22, 21, 20, 23, 26, 25, 24, 27, 30, 29, 28, 31);
+            for (var x = 0; ; x += Vector256<int>.Count)
+            {
+                x = Math.Min(x, count - Vector256<int>.Count);
+                var key = Vector256.Shuffle(unsafe(Vector256.LoadUnsafe(ref source, (nuint)x * 4)), order).AsInt32();
+                var alpha = Vector256.ShiftRightLogical(key, 24);
+                key = Vector256.AndNot(key, Vector256.Equals(alpha, Vector256.Create(255)) & Vector256.Create(unchecked((int)0xFF00_0000))) | Vector256.Equals(alpha, Vector256<int>.Zero);
+                unsafe { key.StoreUnsafe(ref destination, (nuint)x); }
+                if (x == count - Vector256<int>.Count)
+                    return;
+            }
+        }
+
+        var order128 = Vector128.Create((byte)2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15);
+        for (var x = 0; ; x += Vector128<int>.Count)
+        {
+            x = Math.Min(x, count - Vector128<int>.Count);
+            var key = Vector128.Shuffle(unsafe(Vector128.LoadUnsafe(ref source, (nuint)x * 4)), order128).AsInt32();
+            var alpha = Vector128.ShiftRightLogical(key, 24);
+            key = Vector128.AndNot(key, Vector128.Equals(alpha, Vector128.Create(255)) & Vector128.Create(unchecked((int)0xFF00_0000))) | Vector128.Equals(alpha, Vector128<int>.Zero);
+            unsafe { key.StoreUnsafe(ref destination, (nuint)x); }
+            if (x == count - Vector128<int>.Count)
+                return;
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="GetKeys"/>.</summary>
+    /// <param name="rgba">The pixels, 4 bytes each.</param>
+    /// <param name="keys">Receives one key per pixel.</param>
+    internal static void GetKeysScalar(ReadOnlySpan<byte> rgba, Span<int> keys)
+    {
+        for (var x = 0; x < rgba.Length / 4; x++)
+        {
+            var pixel = rgba.Slice(4 * x, 4);
+            keys[x] = PaletteQuantizer.GetKey(pixel[0], pixel[1], pixel[2], pixel[3]);
+        }
     }
 }

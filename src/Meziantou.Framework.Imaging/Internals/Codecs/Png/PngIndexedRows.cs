@@ -242,7 +242,37 @@ internal sealed class PngIndexedRows : IDisposable
 
     /// <summary>Reads the keys of <c>keys.Length</c> pixels of a stored row.</summary>
     /// <returns>The column of the first pixel with a sample that 8 bits cannot represent exactly, or -1.</returns>
-    private int ReadKeys(ReadOnlySpan<byte> row, int start, int step, Span<uint> keys)
+    /// <remarks>
+    /// The keys of contiguous 8-bit RGB and RGBA pixels are their bytes reordered as a little-endian <c>BGRA</c> pixel:
+    /// <see cref="PixelConverter"/> shuffles whole vectors of them (a copy for <c>Bgra32</c>). The result is identical to
+    /// <see cref="ReadKeysScalar"/>, the reference.
+    /// </remarks>
+    internal int ReadKeys(ReadOnlySpan<byte> row, int start, int step, Span<uint> keys)
+    {
+        if (step == 1 && BitConverter.IsLittleEndian)
+        {
+            var bytes = unsafe(MemoryMarshal.AsBytes(keys));
+            switch (_pixelFormat)
+            {
+                case PixelFormat.Rgba32:
+                    PixelConverter.SwapRedAndBlue32(row.Slice(start * 4, keys.Length * 4), bytes);
+                    return -1;
+
+                case PixelFormat.Bgra32:
+                    row.Slice(start * 4, keys.Length * 4).CopyTo(bytes);
+                    return -1;
+
+                case PixelFormat.Rgb24:
+                    PixelConverter.SwapRedAndBlue24ToOpaque32(row.Slice(start * 3, keys.Length * 3), bytes);
+                    return -1;
+            }
+        }
+
+        return ReadKeysScalar(row, start, step, keys);
+    }
+
+    /// <summary>The scalar reference of <see cref="ReadKeys"/>.</summary>
+    internal int ReadKeysScalar(ReadOnlySpan<byte> row, int start, int step, Span<uint> keys)
     {
         const uint Opaque = 0xFF00_0000;
         switch (_pixelFormat)

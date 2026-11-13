@@ -56,6 +56,10 @@ public class ImageSimilarityBenchmarks
     public double Ssim64SixteenBit() => ImageSimilarity.ComputeSsim(_expected64.Frames[0], _actual64.Frames[0], new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit });
 
     [Benchmark]
+    [Workload("1920x1080 Rgba32 PSNR")]
+    public double Psnr() => ImageSimilarity.ComputePsnr(_expected.Frames[0], _actual.Frames[0]);
+
+    [Benchmark]
     [Workload("1920x1080 Rgba64 PSNR (16-bit samples)")]
     public double Psnr64SixteenBit() => ImageSimilarity.ComputePsnr(_expected64.Frames[0], _actual64.Frames[0], new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit });
 

@@ -311,7 +311,8 @@ internal static class PngFilters
         if (!Vector.IsHardwareAccelerated || filtered.Length < Vector<byte>.Count)
             return GetAdaptiveCostScalar(filtered);
 
-        // |(sbyte)v| fits a byte (|-128| = 128); pairs of them are summed in 16-bit lanes, flushed before they can overflow
+        // |(sbyte)v| fits a byte (|-128| = 128); pairs of them are summed in 16-bit lanes, flushed before they can overflow.
+        // One chain of sums: the widening adds of AddMagnitudes would wait for each other (it suits the five chains of GetAdaptiveCosts)
         var count = Vector<byte>.Count;
         long total = 0;
         var i = 0;
@@ -342,16 +343,39 @@ internal static class PngFilters
     /// <param name="costs">The five costs, indexed by filter type.</param>
     /// <remarks>The result is identical to <see cref="GetAdaptiveCostsScalar"/>: <see cref="FilterScalar"/> then <see cref="GetAdaptiveCostScalar"/> for each type.</remarks>
     public static void GetAdaptiveCosts(ReadOnlySpan<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel, Span<long> costs)
+        => GetAdaptiveCosts(row, previous, bytesPerPixel, costs, paeth: default);
+
+    /// <summary>
+    /// Gets the adaptive costs of the five filter types (<see cref="GetAdaptiveCosts(ReadOnlySpan{byte}, ReadOnlySpan{byte}, int, Span{long})"/>)
+    /// and writes the scanline filtered with Paeth, the filter type that costs the most to compute again.
+    /// </summary>
+    /// <param name="row">The unfiltered bytes of the scanline.</param>
+    /// <param name="previous">The unfiltered previous scanline of the same pass, at least as long as <paramref name="row"/>.</param>
+    /// <param name="bytesPerPixel">The number of bytes per complete pixel, at least 1.</param>
+    /// <param name="costs">The five costs, indexed by filter type.</param>
+    /// <param name="paeth">The bytes filtered with Paeth, as <see cref="Filter"/> writes them, or empty to skip them.</param>
+    public static void GetAdaptiveCosts(ReadOnlySpan<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel, Span<long> costs, Span<byte> paeth)
     {
         costs = costs[..5];
+        var writePaeth = !paeth.IsEmpty;
+        if (writePaeth)
+        {
+            paeth = paeth[..row.Length];
+        }
+
         if (!Vector.IsHardwareAccelerated || row.Length < Vector<byte>.Count + bytesPerPixel)
         {
             GetAdaptiveCostsScalar(row, previous, bytesPerPixel, costs);
+            if (writePaeth)
+            {
+                FilterScalar(Paeth, row, previous, bytesPerPixel, paeth);
+            }
+
             return;
         }
 
         previous = previous[..row.Length];
-        long none = 0, sub = 0, up = 0, average = 0, paeth = 0;
+        long none = 0, sub = 0, up = 0, average = 0, paethCost = 0;
 
         // The first pixel: no left neighbor (a = c = 0)
         for (var i = 0; i < bytesPerPixel; i++)
@@ -360,12 +384,21 @@ internal static class PngFilters
             sub += Magnitude(row[i]);
             up += Magnitude((byte)(row[i] - previous[i]));
             average += Magnitude((byte)(row[i] - (previous[i] >> 1)));
-            paeth += Magnitude((byte)(row[i] - previous[i]));
+            var paethByte = (byte)(row[i] - previous[i]);
+            paethCost += Magnitude(paethByte);
+            if (writePaeth)
+            {
+                paeth[i] = paethByte;
+            }
         }
 
-        // |(sbyte)v| fits a byte; pairs of them are summed in 16-bit lanes, flushed before they can overflow
+        // |(sbyte)v| fits a byte; the partial sums are flushed before they can overflow (AddMagnitudes)
         var count = Vector<byte>.Count;
         var i0 = bytesPerPixel;
+        ref var rowStart = ref unsafe(MemoryMarshal.GetReference(row));
+        ref var previousStart = ref unsafe(MemoryMarshal.GetReference(previous));
+        ref var paethStart = ref unsafe(MemoryMarshal.GetReference(paeth));
+        var distance = (nuint)bytesPerPixel;
         while (i0 + count <= row.Length)
         {
             var noneSums = Vector<ushort>.Zero;
@@ -375,22 +408,33 @@ internal static class PngFilters
             var paethSums = Vector<ushort>.Zero;
             for (var block = 0; block < 255 && i0 + count <= row.Length; block++, i0 += count)
             {
-                var current = new Vector<byte>(row[i0..]);
-                var left = new Vector<byte>(row[(i0 - bytesPerPixel)..]);
-                var above = new Vector<byte>(previous[i0..]);
-                var upperLeft = new Vector<byte>(previous[(i0 - bytesPerPixel)..]);
-                noneSums += WidenedMagnitudes(current);
-                subSums += WidenedMagnitudes(current - left);
-                upSums += WidenedMagnitudes(current - above);
-                averageSums += WidenedMagnitudes(current - ((left & above) + Vector.ShiftRightLogical(left ^ above, 1)));
-                paethSums += WidenedMagnitudes(current - PaethVector(left, above, upperLeft));
+                var offset = (nuint)i0;
+                Vector<byte> current, left, above, upperLeft;
+                unsafe
+                {
+                    current = Vector.LoadUnsafe(ref rowStart, offset);
+                    left = Vector.LoadUnsafe(ref rowStart, offset - distance);
+                    above = Vector.LoadUnsafe(ref previousStart, offset);
+                    upperLeft = Vector.LoadUnsafe(ref previousStart, offset - distance);
+                }
+
+                noneSums = AddMagnitudes(noneSums, current);
+                subSums = AddMagnitudes(subSums, current - left);
+                upSums = AddMagnitudes(upSums, current - above);
+                averageSums = AddMagnitudes(averageSums, current - ((left & above) + Vector.ShiftRightLogical(left ^ above, 1)));
+                var paethFiltered = current - PaethVector(left, above, upperLeft);
+                paethSums = AddMagnitudes(paethSums, paethFiltered);
+                if (writePaeth)
+                {
+                    unsafe { paethFiltered.StoreUnsafe(ref paethStart, offset); }
+                }
             }
 
-            none += Total(noneSums);
-            sub += Total(subSums);
-            up += Total(upSums);
-            average += Total(averageSums);
-            paeth += Total(paethSums);
+            none += TotalMagnitudes(noneSums);
+            sub += TotalMagnitudes(subSums);
+            up += TotalMagnitudes(upSums);
+            average += TotalMagnitudes(averageSums);
+            paethCost += TotalMagnitudes(paethSums);
         }
 
         for (var i = i0; i < row.Length; i++)
@@ -400,32 +444,63 @@ internal static class PngFilters
             sub += Magnitude((byte)(row[i] - left));
             up += Magnitude((byte)(row[i] - previous[i]));
             average += Magnitude((byte)(row[i] - ((left + previous[i]) >> 1)));
-            paeth += Magnitude((byte)(row[i] - PaethPredictor(left, previous[i], previous[i - bytesPerPixel])));
+            var paethByte = (byte)(row[i] - PaethPredictor(left, previous[i], previous[i - bytesPerPixel]));
+            paethCost += Magnitude(paethByte);
+            if (writePaeth)
+            {
+                paeth[i] = paethByte;
+            }
         }
 
         costs[None] = none;
         costs[Sub] = sub;
         costs[Up] = up;
         costs[Average] = average;
-        costs[Paeth] = paeth;
+        costs[Paeth] = paethCost;
 
         static int Magnitude(byte value) => Math.Abs((int)(sbyte)value);
-
-        static Vector<ushort> WidenedMagnitudes(Vector<byte> filtered)
-        {
-            var magnitudes = Vector.AsVectorByte(Vector.Abs(Vector.AsVectorSByte(filtered)));
-            Vector.Widen(magnitudes, out var low, out var high);
-            return low + high;
-        }
-
-        static long Total(Vector<ushort> sums)
-        {
-            Vector.Widen(sums, out var low, out var high);
-            return (long)Vector.Sum(low + high);
-        }
     }
 
-    /// <summary>The scalar reference of <see cref="GetAdaptiveCosts"/>.</summary>
+    /// <summary>
+    /// Gets a value indicating whether the partial sums of <see cref="AddMagnitudes"/> are 64-bit lanes of byte sums
+    /// (<c>psadbw</c> against zero); otherwise they are 16-bit lanes of pairs of bytes.
+    /// </summary>
+    private static bool SumsMagnitudesIn64BitLanes => (Avx2.IsSupported && Vector<byte>.Count == Vector256<byte>.Count) || (Sse2.IsSupported && Vector<byte>.Count == Vector128<byte>.Count);
+
+    /// <summary>
+    /// Adds the magnitudes <c>|(sbyte)v|</c> of filtered bytes, at most 128 each, to partial sums that can take 255 calls
+    /// before <see cref="TotalMagnitudes"/>: 16-bit lanes that each receive two magnitudes (a pairwise widening add on
+    /// Arm64), or, on x64, 64-bit lanes that each receive eight (the sum of absolute differences with zero).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector<ushort> AddMagnitudes(Vector<ushort> sums, Vector<byte> filtered)
+    {
+        var magnitudes = Vector.AsVectorByte(Vector.Abs(Vector.AsVectorSByte(filtered)));
+        if (AdvSimd.IsSupported && Vector<byte>.Count == Vector128<byte>.Count)
+            return AdvSimd.AddPairwiseWideningAndAdd(sums.AsVector128(), magnitudes.AsVector128()).AsVector();
+
+        if (Avx2.IsSupported && Vector<byte>.Count == Vector256<byte>.Count)
+            return Vector.AsVectorUInt16(Vector.AsVectorUInt64(sums) + Avx2.SumAbsoluteDifferences(magnitudes.AsVector256(), Vector256<byte>.Zero).AsUInt64().AsVector());
+
+        if (Sse2.IsSupported && Vector<byte>.Count == Vector128<byte>.Count)
+            return Vector.AsVectorUInt16(Vector.AsVectorUInt64(sums) + Sse2.SumAbsoluteDifferences(magnitudes.AsVector128(), Vector128<byte>.Zero).AsUInt64().AsVector());
+
+        Vector.Widen(magnitudes, out var low, out var high);
+        return sums + low + high;
+    }
+
+    /// <summary>Adds up the partial sums of <see cref="AddMagnitudes"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static long TotalMagnitudes(Vector<ushort> sums)
+    {
+        if (SumsMagnitudesIn64BitLanes)
+            return (long)Vector.Sum(Vector.AsVectorUInt64(sums));
+
+        Vector.Widen(sums, out var low, out var high);
+        return (long)Vector.Sum(low + high);
+    }
+
+    /// <summary>The scalar reference of <see cref="GetAdaptiveCosts(ReadOnlySpan{byte}, ReadOnlySpan{byte}, int, Span{long})"/>.</summary>
     internal static void GetAdaptiveCostsScalar(ReadOnlySpan<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel, Span<long> costs)
     {
         var filtered = new byte[row.Length];
@@ -700,10 +775,49 @@ internal static class PngFilters
     }
 
     /// <summary>
-    /// The Paeth predictor of <see cref="Vector{T}.Count"/> bytes, in 16-bit lanes: with <c>p = a + b - c</c>, the distances
-    /// are <c>|p - a| = |b - c|</c>, <c>|p - b| = |a - c|</c> and <c>|p - c| = |a + b - 2c|</c>; ties prefer a, then b.
+    /// The Paeth predictor of <see cref="Vector{T}.Count"/> bytes, in byte lanes: with <c>p = a + b - c</c>, the distances
+    /// are <c>|p - a| = |b - c|</c>, <c>|p - b| = |a - c|</c> and <c>|p - c| = |(b - c) + (a - c)|</c>; ties prefer a, then b.
     /// </summary>
-    private static Vector<byte> PaethVector(Vector<byte> left, Vector<byte> above, Vector<byte> upperLeft)
+    /// <remarks>
+    /// The first two distances fit a byte. The third is their sum when <c>b - c</c> and <c>a - c</c> have the same sign, and
+    /// the difference of the larger and the smaller otherwise; the sum saturates at 255, which changes no comparison, since
+    /// it is only compared with the first two distances, at most 255. The result is identical to
+    /// <see cref="PaethVectorWide"/> and to <see cref="PaethPredictor"/>.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector<byte> PaethVector(Vector<byte> left, Vector<byte> above, Vector<byte> upperLeft)
+    {
+        if (AdvSimd.IsSupported && Vector<byte>.Count == Vector128<byte>.Count)
+        {
+            // Absolute differences, unsigned comparisons and the saturating add are single instructions
+            var (a, b, c) = (left.AsVector128(), above.AsVector128(), upperLeft.AsVector128());
+            var pa = AdvSimd.AbsoluteDifference(b, c);
+            var pb = AdvSimd.AbsoluteDifference(a, c);
+            var differentSigns = AdvSimd.CompareGreaterThanOrEqual(b, c) ^ AdvSimd.CompareGreaterThanOrEqual(a, c);
+            var pc = AdvSimd.BitwiseSelect(differentSigns, AdvSimd.AbsoluteDifference(pa, pb), AdvSimd.AddSaturate(pa, pb));
+            var pickA = AdvSimd.CompareLessThanOrEqual(pa, pb) & AdvSimd.CompareLessThanOrEqual(pa, pc);
+            var pickB = AdvSimd.CompareLessThanOrEqual(pb, pc);
+            return AdvSimd.BitwiseSelect(pickA, a, AdvSimd.BitwiseSelect(pickB, b, c)).AsVector();
+        }
+
+        var distanceA = Vector.Max(above, upperLeft) - Vector.Min(above, upperLeft);
+        var distanceB = Vector.Max(left, upperLeft) - Vector.Min(left, upperLeft);
+
+        // Same sign: b >= c and a >= c, or b <= c and a <= c (a zero difference makes both formulas equal)
+        var aboveAtLeast = Vector.Equals(Vector.Max(above, upperLeft), above);
+        var leftAtLeast = Vector.Equals(Vector.Max(left, upperLeft), left);
+        var sum = distanceA + Vector.Min(distanceB, ~distanceA);
+        var difference = Vector.Max(distanceA, distanceB) - Vector.Min(distanceA, distanceB);
+        var distanceC = Vector.ConditionalSelect(aboveAtLeast ^ leftAtLeast, difference, sum);
+
+        // x <= y is min(x, y) == x in unsigned byte lanes
+        var useA = Vector.Equals(Vector.Min(distanceA, distanceB), distanceA) & Vector.Equals(Vector.Min(distanceA, distanceC), distanceA);
+        var useB = Vector.Equals(Vector.Min(distanceB, distanceC), distanceB);
+        return Vector.ConditionalSelect(useA, left, Vector.ConditionalSelect(useB, above, upperLeft));
+    }
+
+    /// <summary>The Paeth predictor of <see cref="Vector{T}.Count"/> bytes in 16-bit lanes: the reference of <see cref="PaethVector"/>.</summary>
+    internal static Vector<byte> PaethVectorWide(Vector<byte> left, Vector<byte> above, Vector<byte> upperLeft)
     {
         Vector.Widen(left, out var leftLow, out var leftHigh);
         Vector.Widen(above, out var aboveLow, out var aboveHigh);

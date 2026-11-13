@@ -61,6 +61,9 @@ internal static class FuzzOracle
     // the inks and the embedded CMYK profile instead of stopping at the frame header
     private static readonly CmykConversionOptions CmykConversion = CmykConversionOptions.Default;
 
+    // A 3D table of 3 points per axis whose colors are a nonlinear function of the lattice point
+    private static readonly CubeLut Lut = CreateLut();
+
     /// <summary>Checks one input.</summary>
     /// <param name="input">The input.</param>
     /// <param name="variant">Selects the reader input (stream kind, read sizes) and the reader methods (whole frames, or every refinement of a frame); part of the case identity.</param>
@@ -349,7 +352,7 @@ internal static class FuzzOracle
         ImageEncoder[] encoders = format switch
         {
             ImageFormat.Png => [new PngEncoder { CompressionLevel = System.IO.Compression.CompressionLevel.Fastest, Interlaced = (variant & 16) != 0 }, new PngEncoder { MetadataHandling = MetadataHandling.Strip }],
-            ImageFormat.Gif => [new GifEncoder { Interlaced = (variant & 16) != 0 }, new GifEncoder { MetadataHandling = MetadataHandling.Strip }],
+            ImageFormat.Gif => [new GifEncoder { Interlaced = (variant & 16) != 0, OptimizeFrames = (variant & 32) != 0, Quantization = new QuantizeOptions { Dithering = (variant & 64) != 0 ? DitheringMode.FloydSteinberg : DitheringMode.None } }, new GifEncoder { MetadataHandling = MetadataHandling.Strip }],
 
             // Either process; the 16-bit pixels of a 12-bit file are reduced to the 8 bits the encoder writes
             _ => [new JpegEncoder { Quality = 1 + (variant % 100), Process = (variant & 16) != 0 ? JpegEncodingProcess.Progressive : JpegEncodingProcess.Baseline, AllowBitDepthReduction = true }, new JpegEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true }],
@@ -393,12 +396,27 @@ internal static class FuzzOracle
         if (CheckLosslessRoundTrip(image, variant) is { Length: > 0 } lossless)
             return lossless;
 
+        // The lossy HEIC encoder (transforms, quantization, sample adaptive offset) writes a part of the first frame
+        if (variant % 12 is 11 && CheckLossyHeic(image, variant) is { Length: > 0 } lossy)
+            return lossy;
+
+        // The lossy AV1 encoder (its searches of modes, transform types and filters), on the variants of the lossless AVIF
+        // encoder, writes a part of the first frame that decodes to its geometry
+        if (variant % 12 is 10 && CheckLossyAvif(image, variant) is { Length: > 0 } lossyAvif)
+            return lossyAvif;
+
+        // The variant of the JPEG XL encoder also writes the part as a lossy file: transform choice, quantization, zero thresholds
+        if (variant % 12 == 6 && CheckLossyJpegXl(image, variant) is { Length: > 0 } lossyJpegXl)
+            return lossyJpegXl;
+
         // Processing on whatever geometry and orientation the input declared
         image.AutoOrient();
         image.Resize(new ResizeOptions(Math.Max(1, image.Width / 2), Math.Max(1, (image.Height * 2) / 3)) { Mode = ResizeMode.Stretch });
         image.Rotate(RotateMode.Rotate90);
         image.Flip(FlipMode.Horizontal);
         image.Crop(new Rectangle(0, 0, Math.Max(1, image.Width - 1), image.Height));
+        if (CheckNeighborhoodFilters(image, variant) is { Length: > 0 } filters)
+            return filters;
 
         // Whatever the pixels, the detected box is a non-empty part of the canvas and a clamped auto-crop never enlarges it.
         // The weights are within [-1, 1], except for floating-point samples, which are not clipped (outside [0, 1] in OpenEXR)
@@ -413,6 +431,43 @@ internal static class FuzzOracle
             return $"auto-crop-contain: the {size} canvas became {image.Size} (success: {analysis.Success}, changed: {cropped})";
 
         image.Convolve(new ConvolutionOptions(new ConvolutionKernel(3, 3, [0, -1, 0, -1, 5, -1, 0, -1, 0])) { EdgeMode = ConvolutionEdgeMode.Mirror });
+
+        // The selection filters (networks of minimums and maximums for windows of 3x3 and 5x5 pixels) and a 3D table keep the
+        // size and the pixel format
+        size = image.Size;
+        var pixelFormat = image.PixelFormat;
+        switch (variant % 3)
+        {
+            case 0:
+                image.MedianBlur(1, ConvolutionEdgeMode.Mirror);
+                break;
+            case 1:
+                image.MedianBlur(2, ConvolutionEdgeMode.Wrap);
+                break;
+            default:
+                image.PercentileFilter(1, 25);
+                break;
+        }
+
+        image.ApplyLut(Lut, (variant & 32) != 0 ? LutInterpolation.Trilinear : LutInterpolation.Tetrahedral);
+        if (image.Size != size || image.PixelFormat != pixelFormat)
+            return $"selection-filters: the {size} {pixelFormat} image became {image.Size} {image.PixelFormat}";
+
+        // Color reduction (translucent colors included) with every dithering, which keeps the geometry and the pixel format.
+        // Floating-point samples that the convolution moved outside [0, 1] are refused (documented)
+        var modes = Enum.GetValues<DitheringMode>();
+        var (quantizedSize, quantizedFormat) = (image.Size, image.PixelFormat);
+        try
+        {
+            image.Quantize(new QuantizeOptions { MaxColors = 2 + (variant % 255), Dithering = modes[(variant >> 3) % modes.Length] });
+        }
+        catch (UnsupportedImageFeatureException) when (PixelFormats.IsFloatingPoint(quantizedFormat))
+        {
+        }
+
+        if (image.Size != quantizedSize || image.PixelFormat != quantizedFormat)
+            return $"quantize: the {quantizedSize} {quantizedFormat} image became {image.Size} {image.PixelFormat}";
+
         image.Grayscale();
 
         // Last, since enlarging the canvas may legitimately exceed the limits of the configuration
@@ -425,6 +480,18 @@ internal static class FuzzOracle
             return $"auto-crop-expand: the {size} canvas is reported as changed but the content box {box} and its padding are the canvas";
 
         return string.Empty;
+    }
+
+    private static CubeLut CreateLut()
+    {
+        var text = new StringBuilder("LUT_3D_SIZE 3\n");
+        for (var i = 0; i < 27; i++)
+        {
+            var (r, g, b) = (i % 3 / 2.0, i / 3 % 3 / 2.0, i / 9 / 2.0);
+            text.Append(System.Globalization.CultureInfo.InvariantCulture, $"{g * b:F3} {1 - r:F3} {(r + b) / 2:F3}\n");
+        }
+
+        return CubeLut.Parse(text.ToString());
     }
 
     /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
@@ -550,6 +617,24 @@ internal static class FuzzOracle
     }
 
     /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckLossyHeic(Image image, int variant)
+    {
+        // A corner of the first frame, at an effort and a quality of the variant: the efforts from 3 search the sample
+        // adaptive offset, from 4 hide signs
+        using var still = image.CloneFrame(0);
+        still.Crop(new Rectangle(0, 0, Math.Min(still.Width, 40), Math.Min(still.Height, 40)));
+        using var converted = still.CloneAs<Rgb24>(Conversion);
+        var encoder = new HeicEncoder { MetadataHandling = MetadataHandling.Strip, Compression = HeicCompression.Lossy, Effort = (variant >> 4) % 7, Quality = 1 + ((variant >> 3) % 100) };
+        using var output = new MemoryStream();
+        converted.Save(output, encoder);
+        using var reloaded = Image.Load<Rgb24>(output.ToArray(), new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+        if (reloaded.Width != converted.Width || reloaded.Height != converted.Height || reloaded.Frames.Count != 1)
+            return $"lossy-heic-structure: the image of {converted.Width}x{converted.Height} written as lossy HEIC (effort {encoder.Effort}, quality {encoder.Quality}) decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s)";
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
     private static string CheckLosslessRoundTrip(Image image, int variant)
     {
         // A corner of the first frame, so that the slowest encoders stay fast whatever the size of the input
@@ -569,23 +654,30 @@ internal static class FuzzOracle
         // (IcoEntryDecoder: an all-transparent icon is never what the file means): such a corner is written as a PNG payload.
         // The DIB stores 8-bit alpha: a 16-bit alpha of 128 or less is 0 there (fuzz regression)
         var dibPayload = alternative && !IsFullyTransparentIn8Bits(still);
+
+        // The layouts of black and white pixels (palettes of 1, 4 and 8 bits, run-length or not, PBM, TIFF bilevel) write
+        // the corner reduced to black and white
+        var bilevel = option == 3 && ((variant % 12) is 1 or 3 || ((variant % 12) == 4 && (variant & 128) != 0));
         var (encoder, pixelFormat) = (variant % 12) switch
         {
             0 => ((ImageEncoder)new QoiEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),
+            1 when bilevel => (new BmpEncoder { MetadataHandling = MetadataHandling.Strip, PixelLayout = ((variant >> 6) & 3) switch { 0 => BmpPixelLayout.Indexed1, 1 or 2 => BmpPixelLayout.Indexed4, _ => BmpPixelLayout.Indexed8 }, Compression = ((variant >> 6) & 1) != 0 ? BmpCompression.RunLength : BmpCompression.None }, PixelFormat.Gray8),
             1 => (new BmpEncoder { MetadataHandling = MetadataHandling.Strip, RowOrder = alternative ? BmpRowOrder.TopDown : BmpRowOrder.BottomUp }, eightBit),
             2 => (new TgaEncoder { MetadataHandling = MetadataHandling.Strip, Compression = alternative ? TgaCompression.RunLength : TgaCompression.None }, eightBit),
+            3 when bilevel => (new PnmEncoder { MetadataHandling = MetadataHandling.Strip, PixelLayout = PnmPixelLayout.Bitmap }, PixelFormat.Gray8),
             3 => (new PnmEncoder { MetadataHandling = MetadataHandling.Strip }, source),
+            4 when bilevel => (new TiffEncoder { MetadataHandling = MetadataHandling.Strip, Compression = TiffCompression.PackBits, PixelLayout = TiffPixelLayout.Bilevel, BigEndian = (variant & 64) != 0, RowsPerStrip = 1 + (variant % 7) }, PixelFormat.Gray8),
             4 => (new TiffEncoder { MetadataHandling = MetadataHandling.Strip, Compression = option switch { 0 => TiffCompression.None, 1 => TiffCompression.Deflate, 2 => TiffCompression.Lzw, _ => TiffCompression.PackBits }, BigEndian = (variant & 64) != 0, BigTiff = (variant & 128) != 0, RowsPerStrip = 1 + (variant % 7) }, source),
             5 => (new WebPEncoder { MetadataHandling = MetadataHandling.Strip, Effort = option * 3 }, eightBit),
             6 => (new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip }, source),
-            7 => (new Jpeg2000Encoder { MetadataHandling = MetadataHandling.Strip }, source),
-            8 => (new PngEncoder { MetadataHandling = MetadataHandling.Strip, Interlaced = alternative }, source),
+            7 => (new Jpeg2000Encoder { MetadataHandling = MetadataHandling.Strip, BlockCoder = alternative ? Jpeg2000BlockCoder.HighThroughput : Jpeg2000BlockCoder.Standard }, source),
+            8 => (new PngEncoder { MetadataHandling = MetadataHandling.Strip, Interlaced = alternative, Optimization = option switch { 2 => PngOptimization.Layout, 3 => PngOptimization.MinimumSize, _ => PngOptimization.None } }, source),
             9 => (new IcoEncoder { MetadataHandling = MetadataHandling.Strip, Kind = (variant & 32) != 0 ? IconKind.Cursor : IconKind.Icon, PayloadFormat = dibPayload ? IconPayloadFormat.Dib : IconPayloadFormat.Png }, dibPayload ? eightBit : source),
             10 => (new AvifEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),
             _ => (new HeicEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),
         };
 
-        using var converted = pixelFormat switch
+        using var converted = bilevel ? ToBlackAndWhite(still) : pixelFormat switch
         {
             PixelFormat.Rgba32 => (Image)still.CloneAs<Rgba32>(Conversion),
             PixelFormat.Bgra32 => still.CloneAs<Bgra32>(Conversion),
@@ -605,6 +697,133 @@ internal static class FuzzOracle
             return $"lossless-round-trip-pixels: the {pixelFormat} image of {expected.Width}x{expected.Height} written as {encoder.Format} ({encoder.GetType().Name}, variant {variant}) does not decode to the same pixels";
 
         return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckLossyAvif(Image image, int variant)
+    {
+        using var still = image.CloneFrame(0);
+        still.Crop(new Rectangle(0, 0, Math.Min(still.Width, 40), Math.Min(still.Height, 40)));
+        using var converted = still.CloneAs<Rgba32>(Conversion);
+        var option = variant / 12;
+        var encoder = new AvifEncoder
+        {
+            MetadataHandling = MetadataHandling.Strip,
+            Compression = AvifCompression.Lossy,
+            Quality = (option * 23) % 101,
+            Effort = option % 10,
+            ChromaSubsampling = (AvifChromaSubsampling)(option % 4),
+        };
+        using var output = new MemoryStream();
+        converted.Save(output, encoder);
+        using var reloaded = Image.Load<Rgba32>(output.ToArray(), new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+        if (reloaded.Width != converted.Width || reloaded.Height != converted.Height || reloaded.Frames.Count != 1)
+            return $"lossy-avif-structure: the image of {converted.Width}x{converted.Height} written as a lossy AVIF (variant {variant}) decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s)";
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckNeighborhoodFilters(Image image, int variant)
+    {
+        // A corner of the first frame, so that the filters of large neighborhoods stay fast: the edge-preserving and radial
+        // filters, the edge detectors, the unsharp mask and the transformations onto the same canvas keep the size and the
+        // pixel format
+        using var still = image.CloneFrame(0);
+        still.Crop(new Rectangle(0, 0, Math.Min(still.Width, 48), Math.Min(still.Height, 48)));
+        var size = still.Size;
+        var pixelFormat = still.PixelFormat;
+        var mode = (ConvolutionEdgeMode)(variant % 4);
+        var center = new PointD(size.Width / 3.0, size.Height / 2.0);
+        var transform = new TransformOptions { CanvasMode = TransformCanvasMode.Keep, BackgroundColor = new Rgba64(0, 0, 0, ushort.MaxValue), Filter = (variant & 4) != 0 ? ResamplingFilter.Bicubic : ResamplingFilter.Bilinear };
+        switch ((variant >> 2) % 8)
+        {
+            case 0:
+                still.BilateralFilter(2, 1.5, 0.1, mode);
+                break;
+            case 1:
+                still.GuidedFilter(2, 0.01, mode);
+                break;
+            case 2:
+                still.RadialBlur(new RadialBlurOptions(RadialBlurKind.Zoom, center, 0.3) { EdgeMode = mode });
+                break;
+            case 3:
+                still.RadialBlur(new RadialBlurOptions(RadialBlurKind.Spin, center, 20) { EdgeMode = mode });
+                break;
+            case 4:
+                still.DetectCannyEdges();
+                break;
+            case 5:
+                still.DetectEdges((variant & 64) != 0 ? EdgeDetector.Kirsch : EdgeDetector.Sobel, grayscale: (variant & 128) != 0, mode);
+                break;
+            case 6:
+                still.Sharpen(1.2, 1.5, 0.01, mode);
+                still.BoxBlur(2, mode);
+                break;
+            default:
+                still.Rotate(17, transform);
+                still.Skew(10, -5, transform);
+                still.CorrectPerspective(new PointD(0.05 * size.Width, 0), new PointD(0.95 * size.Width, 0.1 * size.Height), new PointD(size.Width, size.Height), new PointD(0, 0.9 * size.Height), size, transform);
+                break;
+        }
+
+        if (still.Size != size || still.PixelFormat != pixelFormat)
+            return $"neighborhood-filters: the {size} {pixelFormat} image became {still.Size} {still.PixelFormat} (variant {variant})";
+
+        // Linear-light filtering of the pixels without their color description (a profile that is not sRGB is refused), of
+        // 8-bit and 16-bit samples, and the filtering of floating-point samples
+        using var wide = still.CloneAs<Rgba64>(Conversion);
+        var samples = new Rgba64[size.Width * size.Height];
+        wide.Frames[0].CopyPixelDataTo(samples);
+        using var described = Image.ImportPixelData<Rgba64>(samples, size.Width, size.Height);
+        using var filtered = ((variant >> 5) % 3) switch
+        {
+            0 => (Image)described.CloneAs<Rgba32>(),
+            1 => described.Clone(),
+            _ => described.CloneAs<RgbaFloat>(),
+        };
+        var floatingPoint = PixelFormats.IsFloatingPoint(filtered.PixelFormat);
+        filtered.Convolve(new ConvolutionOptions(new ConvolutionKernel(3, 3, [1 / 16d, 1 / 8d, 1 / 16d, 1 / 8d, 1 / 4d, 1 / 8d, 1 / 16d, 1 / 8d, 1 / 16d])) { EdgeMode = mode, WorkingSpace = floatingPoint ? ConvolutionWorkingSpace.Encoded : ConvolutionWorkingSpace.LinearSrgb });
+        var resized = new Size(Math.Max(1, (size.Width * 2) / 3), Math.Max(1, size.Height / 2));
+        filtered.Resize(new ResizeOptions(resized.Width, resized.Height) { Mode = ResizeMode.Stretch, WorkingSpace = floatingPoint ? ResizeWorkingSpace.Encoded : ResizeWorkingSpace.LinearSrgb });
+        if (filtered.Size != resized)
+            return $"linear-light-filters: the {size} {filtered.PixelFormat} image became {filtered.Size} instead of {resized} (variant {variant})";
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckLossyJpegXl(Image image, int variant)
+    {
+        // The corner of CheckLosslessRoundTrip, at an effort that chooses the transforms by their cost (3 and above)
+        using var still = image.CloneFrame(0);
+        still.Crop(new Rectangle(0, 0, Math.Min(still.Width, 40), Math.Min(still.Height, 40)));
+        using var converted = still.CloneAs<Rgba32>(Conversion);
+        var encoder = new JpegXlEncoder
+        {
+            MetadataHandling = MetadataHandling.Strip,
+            Compression = JpegXlCompression.Lossy,
+            Quality = 10 + ((variant >> 4) % 91),
+            Effort = 3 + (2 * ((variant >> 6) & 3)),
+            Progressive = (variant & 256) != 0,
+        };
+        using var output = new MemoryStream();
+        converted.Save(output, encoder);
+        using var reloaded = Image.Load(output.ToArray(), new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+        if (reloaded.Width != converted.Width || reloaded.Height != converted.Height || reloaded.Frames.Count != 1)
+            return $"lossy-jpegxl-structure: the image of {converted.Width}x{converted.Height} written as a lossy JPEG XL file (variant {variant}) decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s)";
+
+        return string.Empty;
+    }
+
+    /// <summary>Reduces an image to black and white <see cref="Gray8"/> pixels: white where the sum of the colors (alpha ignored) is 384 or more.</summary>
+    private static Image<Gray8> ToBlackAndWhite(Image image)
+    {
+        using var rgba = image.CloneAs<Rgba32>(Conversion);
+        var colors = new Rgba32[rgba.Width * rgba.Height];
+        rgba.Frames[0].CopyPixelDataTo(colors);
+        var values = Array.ConvertAll(colors, color => new Gray8(color.R + color.G + color.B >= 384 ? byte.MaxValue : (byte)0));
+        return Image.ImportPixelData<Gray8>(values, rgba.Width, rgba.Height, configuration: Configuration);
     }
 
     private static bool IsFullyTransparentIn8Bits(Image image)

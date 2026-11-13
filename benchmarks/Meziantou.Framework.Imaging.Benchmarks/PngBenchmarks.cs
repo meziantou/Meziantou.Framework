@@ -14,6 +14,9 @@ public class PngBenchmarks : IDisposable
     private Image<Rgb24> _large8 = null!;
     private Image<Rgba64> _large16 = null!;
     private Image<Rgb24> _fewColors = null!;
+    private Image<Bgra32> _bgra32 = null!;
+    private Image<Rgb24> _sixteenColors = null!;
+    private byte[] _colorKeyPng = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -22,6 +25,34 @@ public class PngBenchmarks : IDisposable
         _large8 = Image.ImportPixelData<Rgb24>(BenchmarkInputs.LargeRgb24Source, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
         _large16 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.LargeRgba64Source, BenchmarkInputs.Large16Width, BenchmarkInputs.Large16Height);
         _fewColors = Image.ImportPixelData<Rgb24>(BenchmarkInputs.IndexedRgb24Source, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
+        _bgra32 = _large8.CloneAs<Bgra32>();
+
+        // 16 colors at most: the high bit of red and blue, the 2 high bits of green
+        var sixteenColors = BenchmarkInputs.IndexedRgb24Source;
+        for (var i = 0; i < sixteenColors.Length; i++)
+        {
+            var pixel = sixteenColors[i];
+            sixteenColors[i] = new Rgb24((byte)(pixel.R & 0x80), (byte)(pixel.G & 0xC0), (byte)(pixel.B & 0x80));
+        }
+
+        _sixteenColors = Image.ImportPixelData<Rgb24>(sixteenColors, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
+
+        // The RGB source with one pixel in 7 of the transparent color of a tRNS chunk
+        var colorKey = BenchmarkInputs.LargeRgb24Source;
+        var expected = new Rgba32[colorKey.Length];
+        for (var i = 0; i < colorKey.Length; i++)
+        {
+            if (i % 7 == 0)
+            {
+                colorKey[i] = new Rgb24(0x12, 0x34, 0x56);
+            }
+
+            var pixel = colorKey[i];
+            expected[i] = new Rgba32(pixel.R, pixel.G, pixel.B, pixel is { R: 0x12, G: 0x34, B: 0x56 } ? (byte)0 : (byte)255);
+        }
+
+        _colorKeyPng = PngLayoutInput.Encode(unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(colorKey.AsSpan())), BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight, colorType: 2, bitDepth: 8, transparency: [0, 0x12, 0, 0x34, 0, 0x56]);
+        WorkloadChecks.RequireLossless(_colorKeyPng, expected);
 
         // Untimed correctness gate: PNG is lossless, so decoding must give back the independent synthetic source exactly
         WorkloadChecks.RequireLossless(BenchmarkInputs.SmallPng, BenchmarkInputs.SmallPngSource);
@@ -40,6 +71,8 @@ public class PngBenchmarks : IDisposable
         _large8?.Dispose();
         _large16?.Dispose();
         _fewColors?.Dispose();
+        _bgra32?.Dispose();
+        _sixteenColors?.Dispose();
     }
 
     [Benchmark]
@@ -77,6 +110,22 @@ public class PngBenchmarks : IDisposable
     [Benchmark]
     [Workload("2048x1536 Rgb24 of 256 colors -> PNG in the narrowest exact layout (palette found, PngOptimization.Layout)", ReturnsOutputBytes = true)]
     public long SaveFewColorsLayout() => ImageWorkloads.Encode(_fewColors, new PngEncoder { Optimization = PngOptimization.Layout }, _output);
+
+    [Benchmark]
+    [Workload("2048x1536 Bgra32 -> PNG (adaptive filters, fastest zlib)", ReturnsOutputBytes = true)]
+    public long SaveBgra32Fastest() => ImageWorkloads.Encode(_bgra32, new PngEncoder { CompressionLevel = System.IO.Compression.CompressionLevel.Fastest }, _output);
+
+    [Benchmark]
+    [Workload("2048x1536 Rgb24 of 16 colors -> 4-bit indexed PNG (fastest zlib)", ReturnsOutputBytes = true)]
+    public long SavePalette4BitFastest() => ImageWorkloads.Encode(_sixteenColors, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, CompressionLevel = System.IO.Compression.CompressionLevel.Fastest }, _output);
+
+    [Benchmark]
+    [Workload("2048x1536 RGB8 PNG with a tRNS color key -> Rgba32")]
+    public int LoadRgbColorKey()
+    {
+        using var image = Image.Load<Rgba32>(_colorKeyPng);
+        return image.Width;
+    }
 
     [Benchmark]
     [Workload("2048x1536 RGB8 Adam7-interlaced PNG -> Rgb24")]

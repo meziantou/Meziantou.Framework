@@ -1779,12 +1779,7 @@ internal ref partial struct Av1TileCoder
             var ordered = workspace.Records.Slice(_recordPosition + count, count);
             Av1ForwardTransform.Forward(residual, coefficients, txSz, txType);
             Av1Quantizer.Quantize(coefficients, levels, dcQuantizer, acQuantizer, denominator, _bitDepth, _decisions.QuantizerRounding);
-            long error = 0;
-            for (var i = 0; i < count; i++)
-            {
-                long difference = coefficients[i] - Av1Quantizer.Dequantize(levels[i], i is 0 ? dcQuantizer : acQuantizer, denominator, _bitDepth);
-                error += difference * difference;
-            }
+            var error = Av1Quantizer.GetQuantizationError(coefficients, levels, dcQuantizer, acQuantizer, denominator, _bitDepth);
 
             var scan = GetScan(txSz, txType);
             var eob = 0;

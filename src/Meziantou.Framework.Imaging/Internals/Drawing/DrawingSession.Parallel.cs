@@ -210,6 +210,15 @@ internal sealed partial class DrawingSession
                     worker.Evaluator = copy;
                 }
             }
+
+            if (evaluator is not null)
+            {
+                // The scratch that only saves time comes last: it never takes the room of the scratch a worker needs
+                for (var i = 0; i < workerCount; i++)
+                {
+                    paintWorkers[i].Evaluator!.PrepareOptionalScratch();
+                }
+            }
         }
         catch
         {

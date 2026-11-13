@@ -78,6 +78,21 @@ internal static class Av1Simd
     }
 
     /// <summary>
+    /// <paramref name="addend"/> plus the 64-bit squares of the lanes of <paramref name="value"/>: of 2 lanes in each lane
+    /// of the result (0 and 2 then 1 and 3 on Arm64, 0 and 1 then 2 and 3 on x64).
+    /// </summary>
+    // pmuldq multiplies the lanes 0 and 2, and the lanes 1 and 3 once shifted into them
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<long> AddSquaresWidening(Vector128<long> addend, Vector128<int> value)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.MultiplyWideningUpperAndAdd(AdvSimd.MultiplyWideningLowerAndAdd(addend, value.GetLower(), value.GetLower()), value, value);
+
+        var odd = Sse2.ShiftRightLogical(value.AsInt64(), 32).AsInt32();
+        return addend + Sse41.Multiply(value, value) + Sse41.Multiply(odd, odd);
+    }
+
+    /// <summary>
     /// The 64-bit products of 2 lanes of <paramref name="value"/> and <paramref name="factor"/>, whose lanes are equal: the
     /// lanes 0 and 1 on Arm64, 0 and 2 on x64. <see cref="RoundNarrow12Split"/> joins them with the products of
     /// <see cref="MultiplySplitSecond"/>.
@@ -286,6 +301,17 @@ internal static class Av1Simd
             return AdvSimd.MultiplyWideningUpper(left, right);
 
         return Sse2.UnpackHigh(Sse2.MultiplyLow(left, right), Sse2.MultiplyHigh(left, right)).AsInt32();
+    }
+
+    /// <summary>The sum of the products of the lanes, for products whose sums do not overflow 32 bits.</summary>
+    // pmaddwd adds the products of the pairs of lanes
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int DotProduct(Vector128<short> left, Vector128<short> right)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.Arm64.AddAcross(AdvSimd.MultiplyWideningUpperAndAdd(AdvSimd.MultiplyWideningLower(left.GetLower(), right.GetLower()), left, right)).ToScalar();
+
+        return Vector128.Sum(Sse2.MultiplyAddAdjacent(left, right));
     }
 
     /// <summary>The sum of the lanes, wrapped to 16 bits.</summary>

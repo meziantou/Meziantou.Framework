@@ -285,6 +285,136 @@ internal static class ExrLineKernels
     }
 
     /// <summary>
+    /// Determines whether the magnitude of every sample of <see cref="RgbaHalf"/> pixels (bit patterns) is at most a limit:
+    /// <paramref name="colorLimit"/> for the colors, <paramref name="alphaLimit"/> for the alphas. The magnitudes of halves
+    /// are ordered as their bit patterns without the sign, the infinities and the values that are not numbers above the
+    /// finite ones. With hardware vectors, 4 pixels (<see cref="Vector256"/>) or 2 pixels (<see cref="Vector128"/>) are
+    /// compared at a time; the result equals <see cref="AreHalfMagnitudesWithinScalar"/>.
+    /// </summary>
+    /// <param name="samples">The pixels, four samples each.</param>
+    /// <param name="colorLimit">The largest magnitude of a color, as a bit pattern without sign.</param>
+    /// <param name="alphaLimit">The largest magnitude of an alpha, as a bit pattern without sign.</param>
+    internal static bool AreHalfMagnitudesWithin(ReadOnlySpan<ushort> samples, ushort colorLimit, ushort alphaLimit)
+    {
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            // The magnitudes are below 2^15, so they compare as signed numbers
+            ref var source = ref unsafe(MemoryMarshal.GetReference(samples));
+            var color = (short)colorLimit;
+            var alpha = (short)alphaLimit;
+            if (Vector256.IsHardwareAccelerated && samples.Length >= Vector256<ushort>.Count)
+            {
+                var magnitude = Vector256.Create((short)HalfMagnitude);
+                var limits = Vector256.Create(color, color, color, alpha, color, color, color, alpha, color, color, color, alpha, color, color, color, alpha);
+                var above = Vector256<short>.Zero;
+                for (; i <= samples.Length - Vector256<ushort>.Count; i += Vector256<ushort>.Count)
+                {
+                    above |= Vector256.GreaterThan(unsafe(Vector256.LoadUnsafe(ref source, (nuint)i)).AsInt16() & magnitude, limits);
+                }
+
+                if (above != Vector256<short>.Zero)
+                    return false;
+            }
+            else
+            {
+                var magnitude = Vector128.Create((short)HalfMagnitude);
+                var limits = Vector128.Create(color, color, color, alpha, color, color, color, alpha);
+                var above = Vector128<short>.Zero;
+                for (; i <= samples.Length - Vector128<ushort>.Count; i += Vector128<ushort>.Count)
+                {
+                    above |= Vector128.GreaterThan(unsafe(Vector128.LoadUnsafe(ref source, (nuint)i)).AsInt16() & magnitude, limits);
+                }
+
+                if (above != Vector128<short>.Zero)
+                    return false;
+            }
+        }
+
+        return AreHalfMagnitudesWithinScalar(samples[i..], colorLimit, alphaLimit);
+    }
+
+    /// <summary>The sample-at-a-time reference of <see cref="AreHalfMagnitudesWithin"/>.</summary>
+    /// <param name="samples">The pixels, four samples each.</param>
+    /// <param name="colorLimit">The largest magnitude of a color, as a bit pattern without sign.</param>
+    /// <param name="alphaLimit">The largest magnitude of an alpha, as a bit pattern without sign.</param>
+    internal static bool AreHalfMagnitudesWithinScalar(ReadOnlySpan<ushort> samples, ushort colorLimit, ushort alphaLimit)
+    {
+        for (var i = 0; i < samples.Length; i++)
+        {
+            if ((samples[i] & HalfMagnitude) > ((i & 3) == 3 ? alphaLimit : colorLimit))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Determines whether the magnitude of every sample of <see cref="RgbaFloat"/> pixels (bit patterns) is at most a limit:
+    /// <paramref name="colorLimit"/> for the colors, <paramref name="alphaLimit"/> for the alphas. The magnitudes of floats
+    /// are ordered as their bit patterns without the sign, the infinities and the values that are not numbers above the
+    /// finite ones. With hardware vectors, 2 pixels (<see cref="Vector256"/>) or 1 pixel (<see cref="Vector128"/>) are
+    /// compared at a time; the result equals <see cref="AreSingleMagnitudesWithinScalar"/>.
+    /// </summary>
+    /// <param name="samples">The pixels, four samples each.</param>
+    /// <param name="colorLimit">The largest magnitude of a color, as a bit pattern without sign.</param>
+    /// <param name="alphaLimit">The largest magnitude of an alpha, as a bit pattern without sign.</param>
+    internal static bool AreSingleMagnitudesWithin(ReadOnlySpan<uint> samples, uint colorLimit, uint alphaLimit)
+    {
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            // The magnitudes are below 2^31, so they compare as signed numbers
+            ref var source = ref unsafe(MemoryMarshal.GetReference(samples));
+            var color = (int)colorLimit;
+            var alpha = (int)alphaLimit;
+            if (Vector256.IsHardwareAccelerated && samples.Length >= Vector256<uint>.Count)
+            {
+                var magnitude = Vector256.Create(int.MaxValue);
+                var limits = Vector256.Create(color, color, color, alpha, color, color, color, alpha);
+                var above = Vector256<int>.Zero;
+                for (; i <= samples.Length - Vector256<uint>.Count; i += Vector256<uint>.Count)
+                {
+                    above |= Vector256.GreaterThan(unsafe(Vector256.LoadUnsafe(ref source, (nuint)i)).AsInt32() & magnitude, limits);
+                }
+
+                if (above != Vector256<int>.Zero)
+                    return false;
+            }
+            else
+            {
+                var magnitude = Vector128.Create(int.MaxValue);
+                var limits = Vector128.Create(color, color, color, alpha);
+                var above = Vector128<int>.Zero;
+                for (; i <= samples.Length - Vector128<uint>.Count; i += Vector128<uint>.Count)
+                {
+                    above |= Vector128.GreaterThan(unsafe(Vector128.LoadUnsafe(ref source, (nuint)i)).AsInt32() & magnitude, limits);
+                }
+
+                if (above != Vector128<int>.Zero)
+                    return false;
+            }
+        }
+
+        return AreSingleMagnitudesWithinScalar(samples[i..], colorLimit, alphaLimit);
+    }
+
+    /// <summary>The sample-at-a-time reference of <see cref="AreSingleMagnitudesWithin"/>.</summary>
+    /// <param name="samples">The pixels, four samples each.</param>
+    /// <param name="colorLimit">The largest magnitude of a color, as a bit pattern without sign.</param>
+    /// <param name="alphaLimit">The largest magnitude of an alpha, as a bit pattern without sign.</param>
+    internal static bool AreSingleMagnitudesWithinScalar(ReadOnlySpan<uint> samples, uint colorLimit, uint alphaLimit)
+    {
+        for (var i = 0; i < samples.Length; i++)
+        {
+            if ((samples[i] & int.MaxValue) > ((i & 3) == 3 ? alphaLimit : colorLimit))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Rounds the products of finite floats by finite halves (as floats) to halves (bit patterns): the products are exact in
     /// double precision, and are rounded to nearest, ties to even, beyond the largest half to an infinity. A normal half gets
     /// the rounded fraction, carried into the exponent; a subnormal half is the product added to 2^28, which rounds it to a

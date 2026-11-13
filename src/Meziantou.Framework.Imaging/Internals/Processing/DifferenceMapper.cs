@@ -1,4 +1,6 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -19,6 +21,8 @@ internal static class DifferenceMapper
     private const int ChannelCount = 4;
     private const int AlphaChannel = 3;
     private const int StatisticCount = 5;
+    private const double C1 = 0.01 * 0.01;
+    private const double C2 = 0.03 * 0.03;
 
     /// <summary>Draws the map of two leased frames into <paramref name="destination"/>, an <see cref="Rgba32"/> storage of their size.</summary>
     /// <exception cref="ImageResourceLimitException">The buffers exceed the allocation limit.</exception>
@@ -103,18 +107,17 @@ internal static class DifferenceMapper
         var windowHeight = GetWindowSize(height);
         var rowLength = width * ChannelCount;
 
-        // The rows of the window of the output row, premultiplied, then the statistics of every column
-        using var buffer = ResampleWeights.Rent<double>(scope, (2L * windowHeight * rowLength) + ((long)rowLength * StatisticCount));
+        // A ring of the premultiplied rows (row r in slot r % windowHeight: the rows of a window are consecutive), the
+        // statistics of every column, then the scores of the output row
+        using var buffer = ResampleWeights.Rent<double>(scope, (2L * windowHeight * rowLength) + ((long)rowLength * StatisticCount) + width);
         var span = unsafe(MemoryMarshal.Cast<byte, double>(buffer.Span));
         var expectedRows = span[..(windowHeight * rowLength)];
         var actualRows = span.Slice(windowHeight * rowLength, windowHeight * rowLength);
         var columns = span.Slice(2 * windowHeight * rowLength, rowLength * StatisticCount);
-        double count = windowWidth * windowHeight;
-        var covarianceScale = count > 1 ? count / (count - 1) : 1;
-        const double C1 = 0.01 * 0.01;
-        const double C2 = 0.03 * 0.03;
-        Span<double> window = stackalloc double[StatisticCount];
-        Span<double> scores = stackalloc double[ChannelCount];
+        var ssim = span.Slice((2 * windowHeight * rowLength) + (rowLength * StatisticCount), width);
+        Span<int> slotRows = stackalloc int[windowHeight];
+        slotRows.Fill(-1);
+        Span<int> slots = stackalloc int[windowHeight];
         for (var y = 0; y < height; y++)
         {
             if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
@@ -122,58 +125,281 @@ internal static class DifferenceMapper
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
+            // The rows are read in the order of the window, the first time they are in one
             for (var k = 0; k < windowHeight; k++)
             {
                 var source = ConvolutionPlan.MapIndex(y - (windowHeight / 2) + k, height, ConvolutionEdgeMode.Mirror);
-                Premultiply(expectedReader.GetRow(expected, source), expectedRows.Slice(k * rowLength, rowLength));
-                Premultiply(actualReader.GetRow(actual, source), actualRows.Slice(k * rowLength, rowLength));
-            }
-
-            columns.Clear();
-            for (var k = 0; k < windowHeight; k++)
-            {
-                var e = expectedRows.Slice(k * rowLength, rowLength);
-                var a = actualRows.Slice(k * rowLength, rowLength);
-                for (var i = 0; i < rowLength; i++)
+                var slot = source % windowHeight;
+                if (slotRows[slot] != source)
                 {
-                    var column = columns.Slice(i * StatisticCount, StatisticCount);
-                    column[0] += e[i];
-                    column[1] += a[i];
-                    column[2] += e[i] * e[i];
-                    column[3] += a[i] * a[i];
-                    column[4] += e[i] * a[i];
+                    Premultiply(expectedReader.GetRow(expected, source), expectedRows.Slice(slot * rowLength, rowLength));
+                    Premultiply(actualReader.GetRow(actual, source), actualRows.Slice(slot * rowLength, rowLength));
+                    slotRows[slot] = source;
                 }
+
+                slots[k] = slot;
             }
 
+            SumColumns(expectedRows, actualRows, slots, rowLength, columns);
+            ComputeScores(columns, windowWidth, windowHeight, ssim);
             var output = unsafe(MemoryMarshal.Cast<byte, Rgba32>(destination.GetRowSpanCore(y)))[..width];
             for (var x = 0; x < width; x++)
             {
-                for (var channel = 0; channel < ChannelCount; channel++)
-                {
-                    window.Clear();
-                    for (var k = 0; k < windowWidth; k++)
-                    {
-                        var source = ConvolutionPlan.MapIndex(x - (windowWidth / 2) + k, width, ConvolutionEdgeMode.Mirror);
-                        var statistics = columns.Slice(((source * ChannelCount) + channel) * StatisticCount, StatisticCount);
-                        for (var i = 0; i < StatisticCount; i++)
-                        {
-                            window[i] += statistics[i];
-                        }
-                    }
-
-                    // The means and the sample variances and covariance, as scikit-image computes them
-                    var meanExpected = window[0] / count;
-                    var meanActual = window[1] / count;
-                    var varianceExpected = covarianceScale * ((window[2] / count) - (meanExpected * meanExpected));
-                    var varianceActual = covarianceScale * ((window[3] / count) - (meanActual * meanActual));
-                    var covariance = covarianceScale * ((window[4] / count) - (meanExpected * meanActual));
-                    scores[channel] = ((2 * meanExpected * meanActual) + C1) * ((2 * covariance) + C2) / (((meanExpected * meanExpected) + (meanActual * meanActual) + C1) * (varianceExpected + varianceActual + C2));
-                }
-
-                var ssim = Math.Min((scores[0] + scores[1] + scores[2]) / 3, scores[AlphaChannel]);
-                var level = ToByte((1 - ssim) * gain);
+                var level = ToByte((1 - ssim[x]) * gain);
                 output[x] = new Rgba32(level, level, level, byte.MaxValue);
             }
+        }
+    }
+
+    /// <summary>
+    /// Sets the statistics of every column of a window of rows: the sums of the values of both frames, of their squares and
+    /// of their products (<see cref="StatisticCount"/> groups of <see cref="ChannelCount"/> values per pixel), adding the
+    /// rows in the order of <paramref name="slots"/>. The vectors compute the four channels of a pixel.
+    /// </summary>
+    internal static void SumColumns(ReadOnlySpan<double> expectedRows, ReadOnlySpan<double> actualRows, ReadOnlySpan<int> slots, int rowLength, Span<double> columns)
+    {
+        var x = 0;
+        var width = rowLength / ChannelCount;
+        foreach (var slot in slots)
+        {
+            if ((uint)slot >= (uint)(expectedRows.Length / Math.Max(1, rowLength)) || (slot + 1) * rowLength > actualRows.Length)
+                throw new ArgumentOutOfRangeException(nameof(slots));
+        }
+
+        if (columns.Length < width * ChannelCount * StatisticCount)
+            throw new ArgumentOutOfRangeException(nameof(columns));
+
+        ref var expected0 = ref unsafe(MemoryMarshal.GetReference(expectedRows));
+        ref var actual0 = ref unsafe(MemoryMarshal.GetReference(actualRows));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(columns));
+        if (Vector256.IsHardwareAccelerated)
+        {
+            for (; x < width; x++)
+            {
+                var sumExpected = Vector256<double>.Zero;
+                var sumActual = Vector256<double>.Zero;
+                var sumExpected2 = Vector256<double>.Zero;
+                var sumActual2 = Vector256<double>.Zero;
+                var sumProduct = Vector256<double>.Zero;
+                foreach (var slot in slots)
+                {
+                    var offset = (nuint)((slot * rowLength) + (x * ChannelCount));
+                    var e = unsafe(Vector256.LoadUnsafe(ref expected0, offset));
+                    var a = unsafe(Vector256.LoadUnsafe(ref actual0, offset));
+                    sumExpected += e;
+                    sumActual += a;
+                    sumExpected2 += e * e;
+                    sumActual2 += a * a;
+                    sumProduct += e * a;
+                }
+
+                var column = (nuint)(x * ChannelCount * StatisticCount);
+                unsafe
+                {
+                    sumExpected.StoreUnsafe(ref target, column);
+                    sumActual.StoreUnsafe(ref target, column + ChannelCount);
+                    sumExpected2.StoreUnsafe(ref target, column + (2 * ChannelCount));
+                    sumActual2.StoreUnsafe(ref target, column + (3 * ChannelCount));
+                    sumProduct.StoreUnsafe(ref target, column + (4 * ChannelCount));
+                }
+            }
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            for (; x < 2 * width; x++)
+            {
+                // Half a pixel: two channels
+                var sumExpected = Vector128<double>.Zero;
+                var sumActual = Vector128<double>.Zero;
+                var sumExpected2 = Vector128<double>.Zero;
+                var sumActual2 = Vector128<double>.Zero;
+                var sumProduct = Vector128<double>.Zero;
+                foreach (var slot in slots)
+                {
+                    var offset = (nuint)((slot * rowLength) + (x * 2));
+                    var e = unsafe(Vector128.LoadUnsafe(ref expected0, offset));
+                    var a = unsafe(Vector128.LoadUnsafe(ref actual0, offset));
+                    sumExpected += e;
+                    sumActual += a;
+                    sumExpected2 += e * e;
+                    sumActual2 += a * a;
+                    sumProduct += e * a;
+                }
+
+                var column = (nuint)(((x >> 1) * ChannelCount * StatisticCount) + ((x & 1) * 2));
+                unsafe
+                {
+                    sumExpected.StoreUnsafe(ref target, column);
+                    sumActual.StoreUnsafe(ref target, column + ChannelCount);
+                    sumExpected2.StoreUnsafe(ref target, column + (2 * ChannelCount));
+                    sumActual2.StoreUnsafe(ref target, column + (3 * ChannelCount));
+                    sumProduct.StoreUnsafe(ref target, column + (4 * ChannelCount));
+                }
+            }
+
+            x = width;
+        }
+
+        SumColumnsScalar(expectedRows, actualRows, slots, rowLength, columns, x);
+    }
+
+    /// <summary>The scalar reference of <see cref="SumColumns"/>, from pixel <paramref name="start"/>.</summary>
+    internal static void SumColumnsScalar(ReadOnlySpan<double> expectedRows, ReadOnlySpan<double> actualRows, ReadOnlySpan<int> slots, int rowLength, Span<double> columns, int start = 0)
+    {
+        columns[(start * ChannelCount * StatisticCount)..(rowLength * StatisticCount)].Clear();
+        foreach (var slot in slots)
+        {
+            var e = expectedRows.Slice(slot * rowLength, rowLength);
+            var a = actualRows.Slice(slot * rowLength, rowLength);
+            for (var i = start * ChannelCount; i < rowLength; i++)
+            {
+                var column = columns.Slice(((i / ChannelCount * StatisticCount) * ChannelCount) + (i % ChannelCount));
+                column[0] += e[i];
+                column[ChannelCount] += a[i];
+                column[2 * ChannelCount] += e[i] * e[i];
+                column[3 * ChannelCount] += a[i] * a[i];
+                column[4 * ChannelCount] += e[i] * a[i];
+            }
+        }
+    }
+
+    /// <summary>
+    /// Computes the SSIM of the window centered on every pixel of a row from the statistics of the columns
+    /// (<see cref="SumColumns"/>), the columns beyond the edges mirrored: the lower of the mean color score and the alpha
+    /// score. The vectors compute the four channels of a pixel.
+    /// </summary>
+    internal static void ComputeScores(ReadOnlySpan<double> columns, int windowWidth, int windowHeight, Span<double> ssim)
+    {
+        var width = ssim.Length;
+        if (columns.Length < width * ChannelCount * StatisticCount)
+            throw new ArgumentOutOfRangeException(nameof(columns));
+
+        var x = 0;
+        if (Vector256.IsHardwareAccelerated)
+        {
+            double count = windowWidth * windowHeight;
+            var covarianceScale = Vector256.Create(count > 1 ? count / (count - 1) : 1);
+            var countVector = Vector256.Create(count);
+            var two = Vector256.Create(2.0);
+            var c1 = Vector256.Create(C1);
+            var c2 = Vector256.Create(C2);
+            ref var column0 = ref unsafe(MemoryMarshal.GetReference(columns));
+            for (; x < width; x++)
+            {
+                var sumExpected = Vector256<double>.Zero;
+                var sumActual = Vector256<double>.Zero;
+                var sumExpected2 = Vector256<double>.Zero;
+                var sumActual2 = Vector256<double>.Zero;
+                var sumProduct = Vector256<double>.Zero;
+                var first = x - (windowWidth / 2);
+                var inside = first >= 0 && first + windowWidth <= width;
+                for (var k = 0; k < windowWidth; k++)
+                {
+                    var source = inside ? first + k : ConvolutionPlan.MapIndex(first + k, width, ConvolutionEdgeMode.Mirror);
+                    var column = (nuint)(source * ChannelCount * StatisticCount);
+                    unsafe
+                    {
+                        sumExpected += Vector256.LoadUnsafe(ref column0, column);
+                        sumActual += Vector256.LoadUnsafe(ref column0, column + ChannelCount);
+                        sumExpected2 += Vector256.LoadUnsafe(ref column0, column + (2 * ChannelCount));
+                        sumActual2 += Vector256.LoadUnsafe(ref column0, column + (3 * ChannelCount));
+                        sumProduct += Vector256.LoadUnsafe(ref column0, column + (4 * ChannelCount));
+                    }
+                }
+
+                var meanExpected = sumExpected / countVector;
+                var meanActual = sumActual / countVector;
+                var varianceExpected = covarianceScale * ((sumExpected2 / countVector) - (meanExpected * meanExpected));
+                var varianceActual = covarianceScale * ((sumActual2 / countVector) - (meanActual * meanActual));
+                var covariance = covarianceScale * ((sumProduct / countVector) - (meanExpected * meanActual));
+                var scores = ((two * meanExpected * meanActual) + c1) * ((two * covariance) + c2) / (((meanExpected * meanExpected) + (meanActual * meanActual) + c1) * (varianceExpected + varianceActual + c2));
+                ssim[x] = Math.Min((scores.GetElement(0) + scores.GetElement(1) + scores.GetElement(2)) / 3, scores.GetElement(AlphaChannel));
+            }
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            double count = windowWidth * windowHeight;
+            var covarianceScale = Vector128.Create(count > 1 ? count / (count - 1) : 1);
+            var countVector = Vector128.Create(count);
+            var two = Vector128.Create(2.0);
+            var c1 = Vector128.Create(C1);
+            var c2 = Vector128.Create(C2);
+            ref var column0 = ref unsafe(MemoryMarshal.GetReference(columns));
+            for (; x < width; x++)
+            {
+                var scores01 = Score128(ref column0, x, 0);
+                var scores23 = Score128(ref column0, x, 2);
+                ssim[x] = Math.Min((scores01.GetElement(0) + scores01.GetElement(1) + scores23.GetElement(0)) / 3, scores23.GetElement(1));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Vector128<double> Score128(ref double column0, int x, int channel)
+            {
+                var sumExpected = Vector128<double>.Zero;
+                var sumActual = Vector128<double>.Zero;
+                var sumExpected2 = Vector128<double>.Zero;
+                var sumActual2 = Vector128<double>.Zero;
+                var sumProduct = Vector128<double>.Zero;
+                var first = x - (windowWidth / 2);
+                var inside = first >= 0 && first + windowWidth <= width;
+                for (var k = 0; k < windowWidth; k++)
+                {
+                    var source = inside ? first + k : ConvolutionPlan.MapIndex(first + k, width, ConvolutionEdgeMode.Mirror);
+                    var column = (nuint)((source * ChannelCount * StatisticCount) + channel);
+                    unsafe
+                    {
+                        sumExpected += Vector128.LoadUnsafe(ref column0, column);
+                        sumActual += Vector128.LoadUnsafe(ref column0, column + ChannelCount);
+                        sumExpected2 += Vector128.LoadUnsafe(ref column0, column + (2 * ChannelCount));
+                        sumActual2 += Vector128.LoadUnsafe(ref column0, column + (3 * ChannelCount));
+                        sumProduct += Vector128.LoadUnsafe(ref column0, column + (4 * ChannelCount));
+                    }
+                }
+
+                var meanExpected = sumExpected / countVector;
+                var meanActual = sumActual / countVector;
+                var varianceExpected = covarianceScale * ((sumExpected2 / countVector) - (meanExpected * meanExpected));
+                var varianceActual = covarianceScale * ((sumActual2 / countVector) - (meanActual * meanActual));
+                var covariance = covarianceScale * ((sumProduct / countVector) - (meanExpected * meanActual));
+                return ((two * meanExpected * meanActual) + c1) * ((two * covariance) + c2) / (((meanExpected * meanExpected) + (meanActual * meanActual) + c1) * (varianceExpected + varianceActual + c2));
+            }
+        }
+
+        ComputeScoresScalar(columns, windowWidth, windowHeight, ssim, x);
+    }
+
+    /// <summary>The scalar reference of <see cref="ComputeScores"/>, from pixel <paramref name="start"/>.</summary>
+    internal static void ComputeScoresScalar(ReadOnlySpan<double> columns, int windowWidth, int windowHeight, Span<double> ssim, int start = 0)
+    {
+        var width = ssim.Length;
+        double count = windowWidth * windowHeight;
+        var covarianceScale = count > 1 ? count / (count - 1) : 1;
+        Span<double> window = stackalloc double[StatisticCount];
+        Span<double> scores = stackalloc double[ChannelCount];
+        for (var x = start; x < width; x++)
+        {
+            for (var channel = 0; channel < ChannelCount; channel++)
+            {
+                window.Clear();
+                for (var k = 0; k < windowWidth; k++)
+                {
+                    var source = ConvolutionPlan.MapIndex(x - (windowWidth / 2) + k, width, ConvolutionEdgeMode.Mirror);
+                    for (var i = 0; i < StatisticCount; i++)
+                    {
+                        window[i] += columns[(((source * StatisticCount) + i) * ChannelCount) + channel];
+                    }
+                }
+
+                // The means and the sample variances and covariance, as scikit-image computes them
+                var meanExpected = window[0] / count;
+                var meanActual = window[1] / count;
+                var varianceExpected = covarianceScale * ((window[2] / count) - (meanExpected * meanExpected));
+                var varianceActual = covarianceScale * ((window[3] / count) - (meanActual * meanActual));
+                var covariance = covarianceScale * ((window[4] / count) - (meanExpected * meanActual));
+                scores[channel] = ((2 * meanExpected * meanActual) + C1) * ((2 * covariance) + C2) / (((meanExpected * meanExpected) + (meanActual * meanActual) + C1) * (varianceExpected + varianceActual + C2));
+            }
+
+            ssim[x] = Math.Min((scores[0] + scores[1] + scores[2]) / 3, scores[AlphaChannel]);
         }
     }
 

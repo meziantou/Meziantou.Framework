@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -22,7 +23,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// sums of doubles. The image checks that every sample is finite first (<see cref="FloatingPointSampleRange"/>).
 /// </para>
 /// <para>
-/// The kernels are scalar and sequential; cancellation is observed between row bands. The only allocations are the border
+/// The kernels are sequential, and scalar but for the sums of the weights of <see cref="Rgba32"/>, <see cref="Bgra32"/> and
+/// <see cref="Rgba64"/> pixels (<see cref="BackgroundTest.SumMasses"/>: exact integers); cancellation is observed between row bands. The only allocations are the border
 /// color table (at most 255 entries) and the 11 luma buckets, whatever the image size.
 /// </para>
 /// </remarks>
@@ -382,7 +384,10 @@ internal sealed class AutoCropAnalyzer
             var inside = y >= _minY && y <= _maxY;
             var leftEnd = inside ? _minX : region.Right;
             var first = -1;
-            for (var x = region.Left; x < leftEnd; x++)
+
+            // Integer pixels skip whole vectors of background first
+            var start = typeof(TTest) == typeof(BackgroundTest) ? ((BackgroundTest)(object)background).SkipBackground(row, region.Left, leftEnd) : region.Left;
+            for (var x = start; x < leftEnd; x++)
             {
                 if (!background.Matches(ref row[x]))
                 {
@@ -396,7 +401,8 @@ internal sealed class AutoCropAnalyzer
 
             var rightEnd = inside ? _maxX : first;
             var lastContent = first;
-            for (var x = region.Right - 1; x > rightEnd; x--)
+            var end = typeof(TTest) == typeof(BackgroundTest) ? ((BackgroundTest)(object)background).SkipBackgroundBackward(row, region.Right - 1, rightEnd) : region.Right - 1;
+            for (var x = end; x > rightEnd; x--)
             {
                 if (!background.Matches(ref row[x]))
                 {
@@ -444,15 +450,7 @@ internal sealed class AutoCropAnalyzer
             for (var chunkStart = 0; chunkStart < row.Length; chunkStart += WeightChunkLength)
             {
                 var chunk = row.Slice(chunkStart, Math.Min(WeightChunkLength, row.Length - chunkStart));
-                ulong chunkMass = 0;
-                ulong chunkWeightedX = 0;
-                for (var x = 0; x < chunk.Length; x++)
-                {
-                    var mass = background.GetMass(ref chunk[x]);
-                    chunkMass += mass;
-                    chunkWeightedX += mass * (ulong)x;
-                }
-
+                background.SumMasses(chunk, out var chunkMass, out var chunkWeightedX);
                 rowMass += chunkMass;
                 rowWeightedX += chunkWeightedX + ((UInt128)chunkMass * (ulong)chunkStart);
             }
@@ -460,6 +458,45 @@ internal sealed class AutoCropAnalyzer
             _momentX += (2 * (Int128)rowWeightedX) + ((1 - width) * (Int128)rowMass);
             _momentY += (Int128)rowMass * ((2L * y) + 1 - height);
         }
+    }
+
+    /// <summary>Gets the sums of <see cref="BackgroundTest.SumMasses"/> of a chunk for a background, or of its scalar reference (tests).</summary>
+    internal static (ulong Mass, ulong WeightedX) SumMasses<TPixel>(Span<TPixel> chunk, Rgba64 background, bool scalar)
+        where TPixel : unmanaged
+    {
+        var test = BackgroundTest.Create<TPixel>(background, threshold: 0);
+        ulong mass = 0;
+        ulong weightedX = 0;
+        if (scalar)
+        {
+            test.SumMassesScalar(chunk, 0, ref mass, ref weightedX);
+        }
+        else
+        {
+            test.SumMasses(chunk, out mass, out weightedX);
+        }
+
+        return (mass, weightedX);
+    }
+
+    /// <summary>Gets the first and the last pixels of a row that are not background, or -1, skipping vectors of background first or not (tests).</summary>
+    internal static (int First, int Last) FindContent<TPixel>(Span<TPixel> row, Rgba64 background, int threshold, bool scalar)
+        where TPixel : unmanaged
+    {
+        var test = BackgroundTest.Create<TPixel>(background, threshold);
+        var first = scalar ? 0 : test.SkipBackground(row, 0, row.Length);
+        while (first < row.Length && test.Matches(ref row[first]))
+        {
+            first++;
+        }
+
+        var last = scalar ? row.Length - 1 : test.SkipBackgroundBackward(row, row.Length - 1, -1);
+        while (last >= 0 && test.Matches(ref row[last]))
+        {
+            last--;
+        }
+
+        return (first == row.Length ? -1 : first, last);
     }
 
     // The weights of floating-point frames: the moments of AccumulateWeights, as sums of doubles
@@ -620,6 +657,337 @@ internal sealed class AutoCropAnalyzer
         {
             ReadPixel(ref pixel, out var r, out var g, out var b, out var a);
             return GetColorDifference(r, g, b) <= _colorLimit && AbsoluteDifference(a, _a) < _alphaLimit;
+        }
+
+        /// <summary>
+        /// Gets the sum of the masses of the pixels of a chunk of at most <see cref="WeightChunkLength"/> pixels
+        /// (<see cref="GetMass"/>), and the sum of the masses multiplied by the index of their pixel in the chunk.
+        /// </summary>
+        public void SumMasses<TPixel>(Span<TPixel> chunk, out ulong mass, out ulong weightedX)
+            where TPixel : unmanaged
+        {
+            Debug.Assert(chunk.Length <= WeightChunkLength);
+            mass = 0;
+            weightedX = 0;
+            var x = SumMassesVector(chunk, ref mass, ref weightedX);
+            SumMassesScalar(chunk, x, ref mass, ref weightedX);
+        }
+
+        /// <summary>The reference of <see cref="SumMasses"/>: adds the masses of the pixels from <paramref name="start"/>.</summary>
+        public void SumMassesScalar<TPixel>(Span<TPixel> chunk, int start, ref ulong mass, ref ulong weightedX)
+            where TPixel : unmanaged
+        {
+            for (var x = start; x < chunk.Length; x++)
+            {
+                var pixelMass = GetMass(ref chunk[x]);
+                mass += pixelMass;
+                weightedX += pixelMass * (ulong)x;
+            }
+        }
+
+        /// <summary>
+        /// Adds the masses of the leading pixels of a chunk in vectors of 4 or 8 pixels (lane <c>l</c> of iteration <c>k</c>
+        /// is pixel <c>L k + l</c>): every lane sums its masses <c>S</c> and the running sums <c>Q</c> of its masses, so that
+        /// the sum of its masses multiplied by <c>k</c> is <c>K S - Q</c> after <c>K</c> iterations. Every sum is an exact
+        /// integer in 64 bits: a mass is below 2^46 and a lane sums at most 128 of them. Returns the number of pixels summed
+        /// (0 for the other pixel types).
+        /// </summary>
+        private int SumMassesVector<TPixel>(Span<TPixel> chunk, ref ulong mass, ref ulong weightedX)
+            where TPixel : unmanaged
+        {
+            if (!IsVectorized<TPixel>())
+                return 0;
+
+            ref var start = ref unsafe(Unsafe.As<TPixel, byte>(ref MemoryMarshal.GetReference(chunk)));
+            Span<ulong> sums = stackalloc ulong[16];
+            int lanes;
+            int k;
+            if (Vector256.IsHardwareAccelerated && chunk.Length >= 8)
+            {
+                lanes = 8;
+                var reference = new Lanes256<TPixel>(this);
+                Vector256<ulong> lowSums = default, highSums = default, lowRunning = default, highRunning = default;
+                for (k = 0; (k + 1) * 8 <= chunk.Length; k++)
+                {
+                    Lanes256<TPixel>.Load(ref start, 8 * k, out var c0, out var c1, out var c2, out var alpha);
+                    var difference = reference.GetDifference(c0, c1, c2);
+                    var masses = typeof(TPixel) == typeof(Rgba64) ? Lanes256<TPixel>.MultiplyWide(difference, alpha) : Vector256.Widen((difference * alpha).AsUInt32());
+                    lowSums += masses.Lower;
+                    highSums += masses.Upper;
+                    lowRunning += lowSums;
+                    highRunning += highSums;
+                }
+
+                lowSums.CopyTo(sums);
+                highSums.CopyTo(sums[4..]);
+                lowRunning.CopyTo(sums[8..]);
+                highRunning.CopyTo(sums[12..]);
+            }
+            else if (chunk.Length >= 4)
+            {
+                lanes = 4;
+                var reference = new Lanes128<TPixel>(this);
+                Vector128<ulong> lowSums = default, highSums = default, lowRunning = default, highRunning = default;
+                for (k = 0; (k + 1) * 4 <= chunk.Length; k++)
+                {
+                    Lanes128<TPixel>.Load(ref start, 4 * k, out var c0, out var c1, out var c2, out var alpha);
+                    var difference = reference.GetDifference(c0, c1, c2);
+                    var masses = typeof(TPixel) == typeof(Rgba64) ? Lanes128<TPixel>.MultiplyWide(difference, alpha) : Vector128.Widen((difference * alpha).AsUInt32());
+                    lowSums += masses.Lower;
+                    highSums += masses.Upper;
+                    lowRunning += lowSums;
+                    highRunning += highSums;
+                }
+
+                lowSums.CopyTo(sums);
+                highSums.CopyTo(sums[2..]);
+                lowRunning.CopyTo(sums[8..]);
+                highRunning.CopyTo(sums[10..]);
+            }
+            else
+            {
+                return 0;
+            }
+
+            // Pixel L k + l of lane l: the sum of (L k + l) m is L (K S - Q) + l S
+            for (var lane = 0; lane < lanes; lane++)
+            {
+                var laneMass = sums[lane];
+                mass += laneMass;
+                weightedX += ((ulong)lanes * (((ulong)k * laneMass) - sums[8 + lane])) + ((ulong)lane * laneMass);
+            }
+
+            return lanes * k;
+        }
+
+        /// <summary>
+        /// Skips the background pixels at the start of <c>[<paramref name="x"/>, <paramref name="end"/>)</c> by whole vectors
+        /// of 4 or 8 pixels (<see cref="Matches"/>): returns the first pixel of the first vector that holds content, or the first
+        /// pixel after the last whole vector.
+        /// </summary>
+        public int SkipBackground<TPixel>(Span<TPixel> row, int x, int end)
+            where TPixel : unmanaged
+        {
+            if (!IsVectorized<TPixel>())
+                return x;
+
+            ref var start = ref unsafe(Unsafe.As<TPixel, byte>(ref MemoryMarshal.GetReference(row)));
+            if (Vector256.IsHardwareAccelerated)
+            {
+                var reference = new Lanes256<TPixel>(this);
+                for (; x + 8 <= end; x += 8)
+                {
+                    Lanes256<TPixel>.Load(ref start, x, out var c0, out var c1, out var c2, out var alpha);
+                    if (reference.Matches(c0, c1, c2, alpha) != Vector256<int>.AllBitsSet)
+                        return x;
+                }
+            }
+
+            var narrow = new Lanes128<TPixel>(this);
+            for (; x + 4 <= end; x += 4)
+            {
+                Lanes128<TPixel>.Load(ref start, x, out var c0, out var c1, out var c2, out var alpha);
+                if (narrow.Matches(c0, c1, c2, alpha) != Vector128<int>.AllBitsSet)
+                    return x;
+            }
+
+            return x;
+        }
+
+        /// <summary>
+        /// Skips the background pixels at the end of <c>(<paramref name="low"/>, <paramref name="x"/>]</c> by whole vectors
+        /// of 4 or 8 pixels: returns the last pixel of the last vector that holds content, or the last pixel before the first
+        /// whole vector.
+        /// </summary>
+        public int SkipBackgroundBackward<TPixel>(Span<TPixel> row, int x, int low)
+            where TPixel : unmanaged
+        {
+            if (!IsVectorized<TPixel>())
+                return x;
+
+            ref var start = ref unsafe(Unsafe.As<TPixel, byte>(ref MemoryMarshal.GetReference(row)));
+            if (Vector256.IsHardwareAccelerated)
+            {
+                var reference = new Lanes256<TPixel>(this);
+                for (; x - 8 >= low; x -= 8)
+                {
+                    Lanes256<TPixel>.Load(ref start, x - 7, out var c0, out var c1, out var c2, out var alpha);
+                    if (reference.Matches(c0, c1, c2, alpha) != Vector256<int>.AllBitsSet)
+                        return x;
+                }
+            }
+
+            var narrow = new Lanes128<TPixel>(this);
+            for (; x - 4 >= low; x -= 4)
+            {
+                Lanes128<TPixel>.Load(ref start, x - 3, out var c0, out var c1, out var c2, out var alpha);
+                if (narrow.Matches(c0, c1, c2, alpha) != Vector128<int>.AllBitsSet)
+                    return x;
+            }
+
+            return x;
+        }
+
+        /// <summary>Gets a value indicating whether the pixels have vector paths (<see cref="Lanes128{TPixel}"/>), and vectors are used.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsVectorized<TPixel>()
+            => (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32) || typeof(TPixel) == typeof(Rgba64))
+                && Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && !Resampler.TestForceScalar;
+
+        /// <summary>
+        /// The background and the tolerances in the lanes of 4 pixels of <see cref="Rgba32"/>, <see cref="Bgra32"/> or
+        /// <see cref="Rgba64"/>, and their samples: the first and third samples are those of the memory order (blue first
+        /// for <see cref="Bgra32"/>).
+        /// </summary>
+        [StructLayout(LayoutKind.Auto)]
+        private readonly struct Lanes128<TPixel>
+            where TPixel : unmanaged
+        {
+            private readonly Vector128<int> _firstWeight;
+            private readonly Vector128<int> _thirdWeight;
+            private readonly Vector128<int> _first;
+            private readonly Vector128<int> _second;
+            private readonly Vector128<int> _third;
+            private readonly Vector128<int> _alpha;
+            private readonly Vector128<int> _colorLimit;
+            private readonly Vector128<int> _alphaLimit;
+
+            public Lanes128(BackgroundTest test)
+            {
+                var bgr = typeof(TPixel) == typeof(Bgra32);
+                _firstWeight = Vector128.Create(bgr ? 722 : 2126);
+                _thirdWeight = Vector128.Create(bgr ? 2126 : 722);
+                _first = Vector128.Create((int)(bgr ? test._b : test._r));
+                _second = Vector128.Create((int)test._g);
+                _third = Vector128.Create((int)(bgr ? test._r : test._b));
+                _alpha = Vector128.Create((int)test._a);
+                _colorLimit = Vector128.Create((int)test._colorLimit);
+                _alphaLimit = Vector128.Create((int)test._alphaLimit);
+            }
+
+            /// <summary>Reads the samples of the 4 pixels from pixel <paramref name="pixel"/>.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void Load(ref byte start, int pixel, out Vector128<int> first, out Vector128<int> second, out Vector128<int> third, out Vector128<int> alpha)
+            {
+                if (typeof(TPixel) == typeof(Rgba64))
+                {
+                    var low = unsafe(Vector128.LoadUnsafe(ref start, (nuint)(8 * pixel))).AsUInt64();
+                    var high = unsafe(Vector128.LoadUnsafe(ref start, (nuint)((8 * pixel) + 16))).AsUInt64();
+                    var firstSecond = Vector128.Narrow(low, high).AsInt32();
+                    var thirdAlpha = Vector128.Narrow(Vector128.ShiftRightLogical(low, 32), Vector128.ShiftRightLogical(high, 32)).AsInt32();
+                    var mask = Vector128.Create(0xFFFF);
+                    first = firstSecond & mask;
+                    second = Vector128.ShiftRightLogical(firstSecond, 16);
+                    third = thirdAlpha & mask;
+                    alpha = Vector128.ShiftRightLogical(thirdAlpha, 16);
+                }
+                else
+                {
+                    var pixels = unsafe(Vector128.LoadUnsafe(ref start, (nuint)(4 * pixel))).AsInt32();
+                    var mask = Vector128.Create(0xFF);
+                    first = pixels & mask;
+                    second = Vector128.ShiftRightLogical(pixels, 8) & mask;
+                    third = Vector128.ShiftRightLogical(pixels, 16) & mask;
+                    alpha = Vector128.ShiftRightLogical(pixels, 24);
+                }
+            }
+
+            /// <summary>The color differences of <see cref="GetColorDifference"/>, below 2^30.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector128<int> GetDifference(Vector128<int> first, Vector128<int> second, Vector128<int> third)
+                => (Vector128.Abs(first - _first) * _firstWeight) + (Vector128.Abs(second - _second) * Vector128.Create(7152)) + (Vector128.Abs(third - _third) * _thirdWeight);
+
+            /// <summary>The results of <see cref="Matches"/>, all bits set for background pixels: transparent pixels are transparent black.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector128<int> Matches(Vector128<int> first, Vector128<int> second, Vector128<int> third, Vector128<int> alpha)
+            {
+                var transparent = Vector128.Equals(alpha, Vector128<int>.Zero);
+                var difference = GetDifference(Vector128.AndNot(first, transparent), Vector128.AndNot(second, transparent), Vector128.AndNot(third, transparent));
+                return Vector128.LessThanOrEqual(difference, _colorLimit) & Vector128.LessThan(Vector128.Abs(alpha - _alpha), _alphaLimit);
+            }
+
+            /// <summary>The masses of 16-bit pixels: a difference (below 2^30) times alpha (below 2^16), as two products below 2^31, of its low 15 bits and of the others.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector128<ulong> Lower, Vector128<ulong> Upper) MultiplyWide(Vector128<int> difference, Vector128<int> alpha)
+            {
+                var low = Vector128.Widen((difference & Vector128.Create(0x7FFF)).AsUInt32() * alpha.AsUInt32());
+                var high = Vector128.Widen(Vector128.ShiftRightLogical(difference, 15).AsUInt32() * alpha.AsUInt32());
+                return (low.Lower + Vector128.ShiftLeft(high.Lower, 15), low.Upper + Vector128.ShiftLeft(high.Upper, 15));
+            }
+        }
+
+        /// <summary>The lanes of 8 pixels of <see cref="Lanes128{TPixel}"/>.</summary>
+        [StructLayout(LayoutKind.Auto)]
+        private readonly struct Lanes256<TPixel>
+            where TPixel : unmanaged
+        {
+            private readonly Vector256<int> _firstWeight;
+            private readonly Vector256<int> _thirdWeight;
+            private readonly Vector256<int> _first;
+            private readonly Vector256<int> _second;
+            private readonly Vector256<int> _third;
+            private readonly Vector256<int> _alpha;
+            private readonly Vector256<int> _colorLimit;
+            private readonly Vector256<int> _alphaLimit;
+
+            public Lanes256(BackgroundTest test)
+            {
+                var bgr = typeof(TPixel) == typeof(Bgra32);
+                _firstWeight = Vector256.Create(bgr ? 722 : 2126);
+                _thirdWeight = Vector256.Create(bgr ? 2126 : 722);
+                _first = Vector256.Create((int)(bgr ? test._b : test._r));
+                _second = Vector256.Create((int)test._g);
+                _third = Vector256.Create((int)(bgr ? test._r : test._b));
+                _alpha = Vector256.Create((int)test._a);
+                _colorLimit = Vector256.Create((int)test._colorLimit);
+                _alphaLimit = Vector256.Create((int)test._alphaLimit);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void Load(ref byte start, int pixel, out Vector256<int> first, out Vector256<int> second, out Vector256<int> third, out Vector256<int> alpha)
+            {
+                if (typeof(TPixel) == typeof(Rgba64))
+                {
+                    var low = unsafe(Vector256.LoadUnsafe(ref start, (nuint)(8 * pixel))).AsUInt64();
+                    var high = unsafe(Vector256.LoadUnsafe(ref start, (nuint)((8 * pixel) + 32))).AsUInt64();
+                    var firstSecond = Vector256.Narrow(low, high).AsInt32();
+                    var thirdAlpha = Vector256.Narrow(Vector256.ShiftRightLogical(low, 32), Vector256.ShiftRightLogical(high, 32)).AsInt32();
+                    var mask = Vector256.Create(0xFFFF);
+                    first = firstSecond & mask;
+                    second = Vector256.ShiftRightLogical(firstSecond, 16);
+                    third = thirdAlpha & mask;
+                    alpha = Vector256.ShiftRightLogical(thirdAlpha, 16);
+                }
+                else
+                {
+                    var pixels = unsafe(Vector256.LoadUnsafe(ref start, (nuint)(4 * pixel))).AsInt32();
+                    var mask = Vector256.Create(0xFF);
+                    first = pixels & mask;
+                    second = Vector256.ShiftRightLogical(pixels, 8) & mask;
+                    third = Vector256.ShiftRightLogical(pixels, 16) & mask;
+                    alpha = Vector256.ShiftRightLogical(pixels, 24);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector256<int> GetDifference(Vector256<int> first, Vector256<int> second, Vector256<int> third)
+                => (Vector256.Abs(first - _first) * _firstWeight) + (Vector256.Abs(second - _second) * Vector256.Create(7152)) + (Vector256.Abs(third - _third) * _thirdWeight);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector256<int> Matches(Vector256<int> first, Vector256<int> second, Vector256<int> third, Vector256<int> alpha)
+            {
+                var transparent = Vector256.Equals(alpha, Vector256<int>.Zero);
+                var difference = GetDifference(Vector256.AndNot(first, transparent), Vector256.AndNot(second, transparent), Vector256.AndNot(third, transparent));
+                return Vector256.LessThanOrEqual(difference, _colorLimit) & Vector256.LessThan(Vector256.Abs(alpha - _alpha), _alphaLimit);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector256<ulong> Lower, Vector256<ulong> Upper) MultiplyWide(Vector256<int> difference, Vector256<int> alpha)
+            {
+                var low = Vector256.Widen((difference & Vector256.Create(0x7FFF)).AsUInt32() * alpha.AsUInt32());
+                var high = Vector256.Widen(Vector256.ShiftRightLogical(difference, 15).AsUInt32() * alpha.AsUInt32());
+                return (low.Lower + Vector256.ShiftLeft(high.Lower, 15), low.Upper + Vector256.ShiftLeft(high.Upper, 15));
+            }
         }
 
         /// <summary>Gets the color difference of a pixel from the background multiplied by its alpha (at most 10000 * max * max).</summary>

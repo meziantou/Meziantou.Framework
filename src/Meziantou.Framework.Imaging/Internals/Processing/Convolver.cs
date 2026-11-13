@@ -324,49 +324,129 @@ internal static class Convolver
     {
         var buffer = scratch.Buffer;
         var result = buffer.Slice(scratch.GetAccumulatorOffset(0), length);
+        var vectorized = !Resampler.TestForceScalar;
         switch (plan.Combination)
         {
             case KernelCombination.Magnitude:
-            {
-                var other = buffer.Slice(scratch.GetAccumulatorOffset(1), length);
-                for (var i = 0; i < result.Length; i++)
-                {
-                    result[i] = Math.Sqrt((result[i] * result[i]) + (other[i] * other[i]));
-                }
-
+                SetMagnitudes(result, buffer.Slice(scratch.GetAccumulatorOffset(1), length), vectorized);
                 break;
-            }
 
             case KernelCombination.Maximum:
                 for (var k = 1; k < plan.KernelCount; k++)
                 {
-                    var other = buffer.Slice(scratch.GetAccumulatorOffset(k), length);
-                    for (var i = 0; i < result.Length; i++)
-                    {
-                        result[i] = Math.Max(result[i], other[i]);
-                    }
+                    SetMaximums(result, buffer.Slice(scratch.GetAccumulatorOffset(k), length), absolute: false, vectorized);
                 }
 
                 break;
 
             case KernelCombination.MaximumAbsolute:
-                for (var i = 0; i < result.Length; i++)
-                {
-                    result[i] = Math.Abs(result[i]);
-                }
-
+                SetMaximums(result, result, absolute: true, vectorized);
                 for (var k = 1; k < plan.KernelCount; k++)
                 {
-                    var other = buffer.Slice(scratch.GetAccumulatorOffset(k), length);
-                    for (var i = 0; i < result.Length; i++)
-                    {
-                        result[i] = Math.Max(result[i], Math.Abs(other[i]));
-                    }
+                    SetMaximums(result, buffer.Slice(scratch.GetAccumulatorOffset(k), length), absolute: true, vectorized);
                 }
 
                 break;
         }
     }
+
+    /// <summary>Sets every value of <paramref name="result"/> to <c>sqrt(r * r + o * o)</c>, a vector at a time when <paramref name="vectorized"/>.</summary>
+    internal static void SetMagnitudes(Span<double> result, ReadOnlySpan<double> other, bool vectorized)
+    {
+        var length = Math.Min(result.Length, other.Length);
+        ref var resultStart = ref unsafe(MemoryMarshal.GetReference(result));
+        ref var otherStart = ref unsafe(MemoryMarshal.GetReference(other));
+        var i = 0;
+        if (vectorized && Vector256.IsHardwareAccelerated)
+        {
+            for (; i + Vector256<double>.Count <= length; i += Vector256<double>.Count)
+            {
+                unsafe
+                {
+                    var a = Vector256.LoadUnsafe(ref resultStart, (nuint)i);
+                    var b = Vector256.LoadUnsafe(ref otherStart, (nuint)i);
+                    Vector256.Sqrt((a * a) + (b * b)).StoreUnsafe(ref resultStart, (nuint)i);
+                }
+            }
+        }
+        else if (vectorized && Vector128.IsHardwareAccelerated)
+        {
+            for (; i + Vector128<double>.Count <= length; i += Vector128<double>.Count)
+            {
+                unsafe
+                {
+                    var a = Vector128.LoadUnsafe(ref resultStart, (nuint)i);
+                    var b = Vector128.LoadUnsafe(ref otherStart, (nuint)i);
+                    Vector128.Sqrt((a * a) + (b * b)).StoreUnsafe(ref resultStart, (nuint)i);
+                }
+            }
+        }
+
+        for (; i < length; i++)
+        {
+            result[i] = Math.Sqrt((result[i] * result[i]) + (other[i] * other[i]));
+        }
+    }
+
+    /// <summary>
+    /// Sets every value of <paramref name="result"/> to the maximum of <c>r</c> and <c>o</c> (<see cref="Maximum"/>), or of
+    /// <c>r</c> and <c>|o|</c> when <paramref name="absolute"/> (<paramref name="other"/> may be <paramref name="result"/>,
+    /// which takes absolute values), a vector at a time when <paramref name="vectorized"/>: <c>Max</c> of vectors orders -0
+    /// before 0 as <see cref="Math.Max(double, double)"/> does, and the value that is not a number is chosen as
+    /// <see cref="Maximum"/> chooses it.
+    /// </summary>
+    internal static void SetMaximums(Span<double> result, ReadOnlySpan<double> other, bool absolute, bool vectorized)
+    {
+        var length = Math.Min(result.Length, other.Length);
+        ref var resultStart = ref unsafe(MemoryMarshal.GetReference(result));
+        ref var otherStart = ref unsafe(MemoryMarshal.GetReference(other));
+        var i = 0;
+        if (vectorized && Vector256.IsHardwareAccelerated)
+        {
+            for (; i + Vector256<double>.Count <= length; i += Vector256<double>.Count)
+            {
+                unsafe
+                {
+                    var a = Vector256.LoadUnsafe(ref resultStart, (nuint)i);
+                    var b = Vector256.LoadUnsafe(ref otherStart, (nuint)i);
+                    b = absolute ? Vector256.Abs(b) : b;
+
+                    // The NaN of Maximum: the first operand when it is one, else the second
+                    var maximum = Vector256.ConditionalSelect(~Vector256.Equals(b, b), b, Vector256.Max(a, b));
+                    Vector256.ConditionalSelect(~Vector256.Equals(a, a), a, maximum).StoreUnsafe(ref resultStart, (nuint)i);
+                }
+            }
+        }
+        else if (vectorized && Vector128.IsHardwareAccelerated)
+        {
+            for (; i + Vector128<double>.Count <= length; i += Vector128<double>.Count)
+            {
+                unsafe
+                {
+                    var a = Vector128.LoadUnsafe(ref resultStart, (nuint)i);
+                    var b = Vector128.LoadUnsafe(ref otherStart, (nuint)i);
+                    b = absolute ? Vector128.Abs(b) : b;
+
+                    // The NaN of Maximum: the first operand when it is one, else the second
+                    var maximum = Vector128.ConditionalSelect(~Vector128.Equals(b, b), b, Vector128.Max(a, b));
+                    Vector128.ConditionalSelect(~Vector128.Equals(a, a), a, maximum).StoreUnsafe(ref resultStart, (nuint)i);
+                }
+            }
+        }
+
+        for (; i < length; i++)
+        {
+            result[i] = Maximum(result[i], absolute ? Math.Abs(other[i]) : other[i]);
+        }
+    }
+
+    /// <summary>
+    /// Gets <see cref="Math.Max(double, double)"/> of two values, with the value that is not a number chosen the same way on
+    /// every runtime: the first operand when it is one, else the second. <see cref="Math.Max(double, double)"/> returns a
+    /// value that is not a number when either is one, but not always the same one (on .NET 10 x64,
+    /// <c>Math.Max(-NaN, NaN)</c> is the second).
+    /// </summary>
+    private static double Maximum(double left, double right) => double.IsNaN(left) ? left : double.IsNaN(right) ? right : Math.Max(left, right);
 
     /// <summary>
     /// Adds the bias of a plan to the color working samples of a row: multiplied by the filtered alpha when the colors are
@@ -507,8 +587,32 @@ internal static class Convolver
             thresholds[c] = plan.SharpenThreshold * range;
         }
 
-        var amount = plan.SharpenAmount;
-        for (var i = 0; i < blurred.Length; i += channels)
+        BlendSharpened(original, blurred, thresholds, plan.SharpenAmount, vectorized: !Resampler.TestForceScalar);
+    }
+
+    /// <summary>
+    /// Replaces every blurred sample <c>b</c> of its original <c>o</c> by <c>o + amount (o - b)</c> (a fused multiply-add),
+    /// or by <c>o</c> when <c>|o - b|</c> is below the threshold of its channel; a vector at a time when
+    /// <paramref name="vectorized"/> and fused multiply-adds are instructions of the processor.
+    /// </summary>
+    internal static void BlendSharpened(ReadOnlySpan<double> original, Span<double> blurred, ReadOnlySpan<double> thresholds, double amount, bool vectorized)
+    {
+        var channels = thresholds.Length;
+        var length = Math.Min(original.Length, blurred.Length) / channels * channels;
+        var i = 0;
+        if (vectorized && Resampler.IsFmaAccelerated)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                i = BlendSharpenedVector256(original, blurred, thresholds, amount, length);
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                i = BlendSharpenedVector128(original, blurred, thresholds, amount, length);
+            }
+        }
+
+        for (; i < length; i += channels)
         {
             for (var c = 0; c < channels; c++)
             {
@@ -517,6 +621,72 @@ internal static class Convolver
                 blurred[i + c] = Math.Abs(difference) < thresholds[c] ? o : Math.FusedMultiplyAdd(amount, difference, o);
             }
         }
+    }
+
+    /// <returns>The number of samples blended: whole groups of <c>channels</c> vectors, whose thresholds repeat.</returns>
+    private static int BlendSharpenedVector256(ReadOnlySpan<double> original, Span<double> blurred, ReadOnlySpan<double> thresholds, double amount, int length)
+    {
+        var channels = thresholds.Length;
+        var lanes = Vector256<double>.Count;
+        Span<double> pattern = stackalloc double[channels * lanes];
+        for (var j = 0; j < pattern.Length; j++)
+        {
+            pattern[j] = thresholds[j % channels];
+        }
+
+        ref var originalStart = ref unsafe(MemoryMarshal.GetReference(original));
+        ref var blurredStart = ref unsafe(MemoryMarshal.GetReference(blurred));
+        ref var patternStart = ref unsafe(MemoryMarshal.GetReference(pattern));
+        var factor = Vector256.Create(amount);
+        var i = 0;
+        for (; i + pattern.Length <= length; i += pattern.Length)
+        {
+            for (var j = 0; j < pattern.Length; j += lanes)
+            {
+                unsafe
+                {
+                    var o = Vector256.LoadUnsafe(ref originalStart, (nuint)(i + j));
+                    var difference = o - Vector256.LoadUnsafe(ref blurredStart, (nuint)(i + j));
+                    var flat = Vector256.LessThan(Vector256.Abs(difference), Vector256.LoadUnsafe(ref patternStart, (nuint)j));
+                    Vector256.ConditionalSelect(flat, o, Vector256.FusedMultiplyAdd(factor, difference, o)).StoreUnsafe(ref blurredStart, (nuint)(i + j));
+                }
+            }
+        }
+
+        return i;
+    }
+
+    /// <returns>The number of samples blended: whole groups of <c>channels</c> vectors, whose thresholds repeat.</returns>
+    private static int BlendSharpenedVector128(ReadOnlySpan<double> original, Span<double> blurred, ReadOnlySpan<double> thresholds, double amount, int length)
+    {
+        var channels = thresholds.Length;
+        var lanes = Vector128<double>.Count;
+        Span<double> pattern = stackalloc double[channels * lanes];
+        for (var j = 0; j < pattern.Length; j++)
+        {
+            pattern[j] = thresholds[j % channels];
+        }
+
+        ref var originalStart = ref unsafe(MemoryMarshal.GetReference(original));
+        ref var blurredStart = ref unsafe(MemoryMarshal.GetReference(blurred));
+        ref var patternStart = ref unsafe(MemoryMarshal.GetReference(pattern));
+        var factor = Vector128.Create(amount);
+        var i = 0;
+        for (; i + pattern.Length <= length; i += pattern.Length)
+        {
+            for (var j = 0; j < pattern.Length; j += lanes)
+            {
+                unsafe
+                {
+                    var o = Vector128.LoadUnsafe(ref originalStart, (nuint)(i + j));
+                    var difference = o - Vector128.LoadUnsafe(ref blurredStart, (nuint)(i + j));
+                    var flat = Vector128.LessThan(Vector128.Abs(difference), Vector128.LoadUnsafe(ref patternStart, (nuint)j));
+                    Vector128.ConditionalSelect(flat, o, Vector128.FusedMultiplyAdd(factor, difference, o)).StoreUnsafe(ref blurredStart, (nuint)(i + j));
+                }
+            }
+        }
+
+        return i;
     }
 
     /// <summary>

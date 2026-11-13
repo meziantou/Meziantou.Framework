@@ -1066,41 +1066,9 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         var lowestRows = Math.Min(blocksWide, blocksHigh);
         var lowestColumns = Math.Max(blocksWide, blocksHigh);
         var ranks = GetRanks(JpegXlVarDctTables.Order[transform]);
-        var error = 0f;
-        var bits = 0f;
-        var nonZeroCount = 0;
-        var lastRank = 0;
         Span<float> thresholds = stackalloc float[4];
         GetZeroThresholds(1, blocksWide, blocksHigh, thresholds);
-        for (var row = 0; row < rows; row++)
-        {
-            var values = coefficients.Slice(row * columns, columns);
-            var steps = matrix.Slice(row * columns, columns);
-            var rowRanks = ranks.Slice(row * columns, columns);
-            for (var column = row < lowestRows ? lowestColumns : 0; column < columns; column++)
-            {
-                var step = steps[column] * scale;
-                var value = values[column];
-                var quantized = Quantize(value / step);
-                if (quantized is 1 or -1 && MathF.Abs(value / step) < thresholds[GetFrequencyQuarter(row, column, rows, columns)])
-                {
-                    quantized = 0;
-                }
-
-                if (quantized == 0)
-                {
-                    error += value * value;
-                }
-                else
-                {
-                    var difference = value - (quantized * step);
-                    error += difference * difference;
-                    bits += NonZeroBits + (MagnitudeBits * BitOperations.Log2((uint)Math.Abs(quantized)));
-                    nonZeroCount++;
-                    lastRank = Math.Max(lastRank, rowRanks[column]);
-                }
-            }
-        }
+        var (error, bits, nonZeroCount, lastRank) = GetQuantizationCost(coefficients, matrix, scale, ranks, rows, columns, lowestRows, lowestColumns, thresholds);
 
         if (nonZeroCount != 0)
         {
@@ -1138,6 +1106,133 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         var reference = _referenceStep * (blocksWide * blocksHigh) / fieldSum;
         return (error * size * (DistortionWeight / (reference * reference))) + bits;
     }
+
+    /// <summary>
+    /// Quantizes the coefficients of a transform for <see cref="GetTransformCost"/>, the lowest frequencies excepted: the sum
+    /// of the squared errors, in the order of the coefficients, and the bits of the values that are not zero.
+    /// </summary>
+    /// <param name="coefficients">The coefficients, in rows of <paramref name="columns"/> values.</param>
+    /// <param name="matrix">The dequantization matrix, in the same layout.</param>
+    /// <param name="scale">The factor of the matrix that gives the steps.</param>
+    /// <param name="ranks">The rank of each coefficient in the order of the transform.</param>
+    /// <param name="rows">The number of rows.</param>
+    /// <param name="columns">The number of columns.</param>
+    /// <param name="lowestRows">The number of rows that start with lowest frequencies.</param>
+    /// <param name="lowestColumns">The number of lowest frequencies at the start of these rows.</param>
+    /// <param name="thresholds">The zero thresholds of the four quarters of the frequencies (<see cref="GetZeroThresholds"/>).</param>
+    /// <remarks>
+    /// The vector path computes the terms of the error of a row one lane per coefficient, then adds them one after the other.
+    /// The bits of a value are 3.5 plus an integer, and their sum stays far below 2^22: every partial sum is exact, so it is
+    /// the same in any order.
+    /// </remarks>
+    internal static QuantizationCost GetQuantizationCost(ReadOnlySpan<float> coefficients, ReadOnlySpan<float> matrix, float scale, ReadOnlySpan<int> ranks, int rows, int columns, int lowestRows, int lowestColumns, ReadOnlySpan<float> thresholds)
+    {
+        if (!Vector.IsHardwareAccelerated || columns % Vector<float>.Count != 0 || columns > JpegXlForwardTransform.MaxSize)
+            return GetQuantizationCostScalar(coefficients, matrix, scale, ranks, rows, columns, lowestRows, lowestColumns, thresholds);
+
+        Span<float> errors = stackalloc float[JpegXlForwardTransform.MaxSize];
+        var error = 0f;
+        var nonZero = Vector<int>.Zero;
+        var log2Sum = Vector<int>.Zero;
+        var maxRank = Vector<int>.Zero;
+        var scaleVector = new Vector<float>(scale);
+        var half = new Vector<int>(columns / 2);
+        for (var row = 0; row < rows; row++)
+        {
+            var quarter = row >= rows / 2 ? 2 : 0;
+            var low = new Vector<float>(thresholds[quarter]);
+            var high = new Vector<float>(thresholds[quarter + 1]);
+            var start = row < lowestRows ? lowestColumns : 0;
+            var startVector = new Vector<int>(start);
+            var values = coefficients.Slice(row * columns, columns);
+            var steps = matrix.Slice(row * columns, columns);
+            var rowRanks = ranks.Slice(row * columns, columns);
+            for (var column = 0; column < columns; column += Vector<float>.Count)
+            {
+                var columnIndex = Vector<int>.Indices + new Vector<int>(column);
+                var value = new Vector<float>(values[column..]);
+                var step = new Vector<float>(steps[column..]) * scaleVector;
+                var quotient = value / step;
+                var magnitude = Vector.Abs(quotient);
+
+                // Quantize, then zero the magnitudes of one below the threshold of their quarter; the floor of the binary
+                // logarithm of a magnitude is the exponent of the rounded value (the conversion saturates at 2^31 - 1)
+                var rounding = magnitude + new Vector<float>(0.5f);
+                var rounded = Vector.ConvertToInt32(rounding);
+                var threshold = Vector.ConditionalSelect(Vector.GreaterThanOrEqual(columnIndex, half), high, low);
+                var isZeroed = Vector.Equals(rounded, Vector<int>.One) & Vector.LessThan(magnitude, threshold);
+                var isNonZero = Vector.AndNot(Vector.GreaterThanOrEqual(magnitude, new Vector<float>(ZeroThreshold)), isZeroed);
+                var quantized = Vector.ConvertToSingle(rounded);
+                quantized = Vector.ConditionalSelect(Vector.LessThan(quotient, Vector<float>.Zero), -quantized, quantized);
+                var difference = value - (quantized * step);
+                Vector.ConditionalSelect(isNonZero, difference * difference, value * value).CopyTo(errors[column..]);
+
+                var counted = isNonZero & Vector.GreaterThanOrEqual(columnIndex, startVector);
+                nonZero -= counted;
+                var log2 = Vector.Min(Vector.ShiftRightLogical(Vector.AsVectorInt32(rounding), 23) - new Vector<int>(127), new Vector<int>(30));
+                log2Sum += log2 & counted;
+                maxRank = Vector.Max(maxRank, new Vector<int>(rowRanks[column..]) & counted);
+            }
+
+            foreach (var term in errors[start..columns])
+            {
+                error += term;
+            }
+        }
+
+        var lastRank = 0;
+        for (var i = 0; i < Vector<int>.Count; i++)
+        {
+            lastRank = Math.Max(lastRank, maxRank[i]);
+        }
+
+        var nonZeroCount = Vector.Sum(nonZero);
+        return new QuantizationCost(error, (nonZeroCount * NonZeroBits) + (Vector.Sum(log2Sum) * MagnitudeBits), nonZeroCount, lastRank);
+    }
+
+    /// <summary>The scalar reference of <see cref="GetQuantizationCost"/>.</summary>
+    internal static QuantizationCost GetQuantizationCostScalar(ReadOnlySpan<float> coefficients, ReadOnlySpan<float> matrix, float scale, ReadOnlySpan<int> ranks, int rows, int columns, int lowestRows, int lowestColumns, ReadOnlySpan<float> thresholds)
+    {
+        var error = 0f;
+        var bits = 0f;
+        var nonZeroCount = 0;
+        var lastRank = 0;
+        for (var row = 0; row < rows; row++)
+        {
+            var values = coefficients.Slice(row * columns, columns);
+            var steps = matrix.Slice(row * columns, columns);
+            var rowRanks = ranks.Slice(row * columns, columns);
+            for (var column = row < lowestRows ? lowestColumns : 0; column < columns; column++)
+            {
+                var step = steps[column] * scale;
+                var value = values[column];
+                var quantized = Quantize(value / step);
+                if (quantized is 1 or -1 && MathF.Abs(value / step) < thresholds[GetFrequencyQuarter(row, column, rows, columns)])
+                {
+                    quantized = 0;
+                }
+
+                if (quantized == 0)
+                {
+                    error += value * value;
+                }
+                else
+                {
+                    var difference = value - (quantized * step);
+                    error += difference * difference;
+                    bits += NonZeroBits + (MagnitudeBits * BitOperations.Log2((uint)Math.Abs(quantized)));
+                    nonZeroCount++;
+                    lastRank = Math.Max(lastRank, rowRanks[column]);
+                }
+            }
+        }
+
+        return new QuantizationCost(error, bits, nonZeroCount, lastRank);
+    }
+
+    /// <summary>The squared error, the bits, the number and the last rank of the quantized values of <see cref="GetQuantizationCost"/>.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    internal readonly record struct QuantizationCost(float Error, float Bits, int NonZeroCount, int LastRank);
 
     /// <summary>Gets, for an order of coefficients, the rank of each position of a block.</summary>
     private ReadOnlySpan<int> GetRanks(int order)
@@ -1370,8 +1465,69 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     {
         Span<float> thresholds = stackalloc float[4];
         GetZeroThresholds(channel, blocksWide, blocksHigh, thresholds);
-        var columns = Math.Max(blocksWide, blocksHigh) * 8;
-        var rows = Math.Min(blocksWide, blocksHigh) * 8;
+        ZeroBelowThresholds(coefficients, channel == 1 ? default : luma, factor, matrix, scale, Math.Min(blocksWide, blocksHigh) * 8, Math.Max(blocksWide, blocksHigh) * 8, thresholds, quantized, dequantized);
+    }
+
+    /// <summary>
+    /// Zeroes the values of magnitude one that are below the threshold of their quarter of the frequencies: the work of
+    /// <see cref="ApplyZeroThresholds"/> once the thresholds are known.
+    /// </summary>
+    /// <param name="coefficients">The coefficients of the channel.</param>
+    /// <param name="luma">For X and B, the dequantized luma, which <paramref name="factor"/> times predicts them; empty for Y.</param>
+    /// <param name="factor">For X and B, the factor of the chroma from luma prediction.</param>
+    /// <param name="matrix">The dequantization matrix of the channel.</param>
+    /// <param name="scale">The factor of the matrix that gives the steps.</param>
+    /// <param name="rows">The number of rows of the transform.</param>
+    /// <param name="columns">The number of columns of the transform.</param>
+    /// <param name="thresholds">The thresholds of the four quarters of the frequencies.</param>
+    /// <param name="quantized">The quantized values, updated.</param>
+    /// <param name="dequantized">For Y, the dequantized values, updated with the values that are zeroed; empty otherwise.</param>
+    internal static void ZeroBelowThresholds(ReadOnlySpan<float> coefficients, ReadOnlySpan<float> luma, float factor, ReadOnlySpan<float> matrix, float scale, int rows, int columns, ReadOnlySpan<float> thresholds, Span<int> quantized, Span<float> dequantized)
+    {
+        if (!Vector.IsHardwareAccelerated || columns % Vector<int>.Count != 0)
+        {
+            ZeroBelowThresholdsScalar(coefficients, luma, factor, matrix, scale, rows, columns, thresholds, quantized, dequantized);
+            return;
+        }
+
+        // A vector of values none of which is one or minus one is left as it is
+        var isLuma = luma.IsEmpty;
+        var scaleVector = new Vector<float>(scale);
+        var factorVector = new Vector<float>(factor);
+        var half = new Vector<int>(columns / 2);
+        for (var row = 0; row < rows; row++)
+        {
+            var quarter = row >= rows / 2 ? 2 : 0;
+            var low = new Vector<float>(thresholds[quarter]);
+            var high = new Vector<float>(thresholds[quarter + 1]);
+            for (var column = 0; column < columns; column += Vector<int>.Count)
+            {
+                var k = (row * columns) + column;
+                var values = new Vector<int>(quantized[k..]);
+                var isOne = Vector.Equals(Vector.Abs(values), Vector<int>.One);
+                if (isOne == Vector<int>.Zero)
+                    continue;
+
+                var value = new Vector<float>(coefficients[k..]);
+                if (!isLuma)
+                {
+                    value -= factorVector * new Vector<float>(luma[k..]);
+                }
+
+                var threshold = Vector.ConditionalSelect(Vector.GreaterThanOrEqual(Vector<int>.Indices + new Vector<int>(column), half), high, low);
+                var isZeroed = isOne & Vector.LessThan(Vector.Abs(value / (new Vector<float>(matrix[k..]) * scaleVector)), threshold);
+                Vector.AndNot(values, isZeroed).CopyTo(quantized[k..]);
+                if (!dequantized.IsEmpty)
+                {
+                    Vector.ConditionalSelect(isZeroed, Vector<float>.Zero, new Vector<float>(dequantized[k..])).CopyTo(dequantized[k..]);
+                }
+            }
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="ZeroBelowThresholds"/>.</summary>
+    internal static void ZeroBelowThresholdsScalar(ReadOnlySpan<float> coefficients, ReadOnlySpan<float> luma, float factor, ReadOnlySpan<float> matrix, float scale, int rows, int columns, ReadOnlySpan<float> thresholds, Span<int> quantized, Span<float> dequantized)
+    {
         for (var row = 0; row < rows; row++)
         {
             for (var column = 0; column < columns; column++)
@@ -1380,7 +1536,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                 if (quantized[k] is not (1 or -1))
                     continue;
 
-                var value = channel == 1 ? coefficients[k] : coefficients[k] - (factor * luma[k]);
+                var value = luma.IsEmpty ? coefficients[k] : coefficients[k] - (factor * luma[k]);
                 if (MathF.Abs(value / (matrix[k] * scale)) < thresholds[GetFrequencyQuarter(row, column, rows, columns)])
                 {
                     quantized[k] = 0;
@@ -1497,12 +1653,57 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             var quantized = _tileQuantized!.Span[..size];
             QuantizeChroma(coefficients, luma, matrix, k0, scale, quantized);
             ClearLowestFrequencies(quantized, blocksWide, blocksHigh);
-            foreach (var value in quantized)
+            cost += GetCoefficientCost(quantized);
+        }
+
+        return cost;
+    }
+
+    /// <summary>The sum, over the values that are not zero, of two plus the number of bits of their magnitude.</summary>
+    /// <remarks>
+    /// The vector path takes the binary logarithm of a magnitude from the exponent of its conversion to a float, which is
+    /// exact below 2^24; a larger magnitude is shifted right by 8 bits first, which keeps its leading bit.
+    /// </remarks>
+    internal static int GetCoefficientCost(ReadOnlySpan<int> values)
+    {
+        var cost = 0;
+        var k = 0;
+        if (Vector.IsHardwareAccelerated)
+        {
+            var costs = Vector<int>.Zero;
+            for (; k <= values.Length - Vector<int>.Count; k += Vector<int>.Count)
             {
-                if (value != 0)
-                {
-                    cost += 2 + BitOperations.Log2((uint)Math.Abs(value));
-                }
+                var value = new Vector<int>(values[k..]);
+                var magnitude = Vector.Abs(value);
+                var isLarge = Vector.GreaterThan(magnitude, new Vector<int>(0xFFFFFF));
+                var exact = Vector.ConditionalSelect(isLarge, Vector.ShiftRightLogical(magnitude, 8), magnitude);
+                var log2 = Vector.ShiftRightLogical(Vector.AsVectorInt32(Vector.ConvertToSingle(exact)), 23) - new Vector<int>(127 - 2);
+                costs += Vector.AndNot(log2 + (isLarge & new Vector<int>(8)), Vector.Equals(value, Vector<int>.Zero));
+            }
+
+            cost = Vector.Sum(costs);
+        }
+
+        for (; k < values.Length; k++)
+        {
+            if (values[k] != 0)
+            {
+                cost += 2 + BitOperations.Log2((uint)Math.Abs(values[k]));
+            }
+        }
+
+        return cost;
+    }
+
+    /// <summary>The scalar reference of <see cref="GetCoefficientCost"/>.</summary>
+    internal static int GetCoefficientCostScalar(ReadOnlySpan<int> values)
+    {
+        var cost = 0;
+        foreach (var value in values)
+        {
+            if (value != 0)
+            {
+                cost += 2 + BitOperations.Log2((uint)Math.Abs(value));
             }
         }
 

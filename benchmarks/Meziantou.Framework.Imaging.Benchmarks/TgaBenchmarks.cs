@@ -17,6 +17,7 @@ public class TgaBenchmarks : IDisposable
     private readonly MemoryStream _output = new();
     private Image<Rgb24> _photo = null!;
     private Image<Rgba32> _transparent = null!;
+    private byte[] _tga15 = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -28,6 +29,7 @@ public class TgaBenchmarks : IDisposable
         WorkloadChecks.RequireLossless(BenchmarkInputs.TgaRgb, BenchmarkInputs.LargeRgb24Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.TgaRgba, BenchmarkInputs.ServiceRgba32Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.TgaUncompressed, BenchmarkInputs.LargeRgb24Source);
+        _tga15 = CreateTga15(BenchmarkInputs.LargeRgb24Source, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
     }
 
     [GlobalCleanup]
@@ -62,12 +64,41 @@ public class TgaBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("2048x1536 uncompressed 15-bit TGA (5-5-5) -> Rgb24")]
+    public int DecodeTga15()
+    {
+        using var image = Image.Load<Rgb24>(_tga15);
+        return image.Width;
+    }
+
+    [Benchmark]
     [Workload("2048x1536 Rgb24 -> run-length TGA", ReturnsOutputBytes = true)]
     public long EncodeTgaRgb() => ImageWorkloads.Encode(_photo, new TgaEncoder { Compression = TgaCompression.RunLength }, _output);
 
     [Benchmark]
     [Workload("1024x768 Rgba32 -> run-length TGA", ReturnsOutputBytes = true)]
     public long EncodeTgaRgba() => ImageWorkloads.Encode(_transparent, new TgaEncoder { Compression = TgaCompression.RunLength }, _output);
+
+    /// <summary>Writes an uncompressed top-down TGA of 15-bit pixels (the encoder writes 24- and 32-bit pixels only).</summary>
+    private static byte[] CreateTga15(Rgb24[] pixels, int width, int height)
+    {
+        var data = new byte[18 + (pixels.Length * 2)];
+        data[2] = 2;
+        data[12] = (byte)width;
+        data[13] = (byte)(width >> 8);
+        data[14] = (byte)height;
+        data[15] = (byte)(height >> 8);
+        data[16] = 16;
+        data[17] = 0x20;
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var value = ((pixels[i].R >> 3) << 10) | ((pixels[i].G >> 3) << 5) | (pixels[i].B >> 3);
+            data[18 + (2 * i)] = (byte)value;
+            data[19 + (2 * i)] = (byte)(value >> 8);
+        }
+
+        return data;
+    }
 
     public void Dispose()
     {

@@ -1,3 +1,7 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -33,6 +37,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal static class ButteraugliCalculator
 {
     private const int MinimumSize = 8;
+    private const float MaximumClampMul = 0.724216145665f;
     private const float IntensityTarget = 80f;
 
     private const double WMfMalta = 37.0819870399;
@@ -417,16 +422,7 @@ internal static class ButteraugliCalculator
             mf[i].Span.CopyTo(hf[i].Span);
             ButteraugliBlur.Blur(arena, mf[i], SigmaHf, mf[i], maxDegreeOfParallelism);
             var channel = i;
-            RowBands.For(size, maxDegreeOfParallelism, (start, end) =>
-            {
-                var mfValues = mf[channel].GetRows(start, end);
-                var hfValues = hf[channel].GetRows(start, end);
-                for (var j = 0; j < mfValues.Length; j++)
-                {
-                    hfValues[j] -= mfValues[j];
-                    mfValues[j] = channel is 0 ? RemoveRangeAroundZero(0.29f, mfValues[j]) : AmplifyRangeAroundZero(0.1f, mfValues[j]);
-                }
-            });
+            RowBands.For(size, maxDegreeOfParallelism, (start, end) => SeparateMediumFrequencies(mf[channel].GetRows(start, end), hf[channel].GetRows(start, end), channel));
         }
 
         // Suppress red-green by intensity change in the high frequencies
@@ -439,28 +435,7 @@ internal static class ButteraugliCalculator
             hf[i].Span.CopyTo(uhf[i].Span);
             ButteraugliBlur.Blur(arena, hf[i], SigmaUhf, hf[i], maxDegreeOfParallelism);
             var channel = i;
-            RowBands.For(size, maxDegreeOfParallelism, (start, end) =>
-            {
-                var hfValues = hf[channel].GetRows(start, end);
-                var uhfValues = uhf[channel].GetRows(start, end);
-                for (var j = 0; j < hfValues.Length; j++)
-                {
-                    if (channel is 0)
-                    {
-                        var hfValue = hfValues[j];
-                        var uhfValue = uhfValues[j] - hfValue;
-                        hfValues[j] = RemoveRangeAroundZero(1.5f, hfValue);
-                        uhfValues[j] = RemoveRangeAroundZero(0.04f, uhfValue);
-                    }
-                    else
-                    {
-                        var hfValue = MaximumClamp(hfValues[j], 28.4691806922f);
-                        var uhfValue = MaximumClamp(uhfValues[j] - hfValue, 5.19175294647f);
-                        uhfValues[j] = uhfValue * 2.69313763794f;
-                        hfValues[j] = AmplifyRangeAroundZero(0.132f, hfValue * 2.155f);
-                    }
-                }
-            });
+            RowBands.For(size, maxDegreeOfParallelism, (start, end) => SeparateHighFrequencies(hf[channel].GetRows(start, end), uhf[channel].GetRows(start, end), channel));
         }
 
         return new PsychoImage(lf, mf, hf, uhf);
@@ -506,12 +481,11 @@ internal static class ButteraugliCalculator
 
     private static float MaximumClamp(float v, float maxValue)
     {
-        const float Mul = 0.724216145665f;
         if (v >= maxValue)
-            return (v - maxValue) * Mul + maxValue;
+            return (v - maxValue) * MaximumClampMul + maxValue;
 
         if (v < -maxValue)
-            return (v + maxValue) * Mul - maxValue;
+            return (v + maxValue) * MaximumClampMul - maxValue;
 
         return v;
     }
@@ -521,6 +495,375 @@ internal static class ButteraugliCalculator
 
     /// <summary>Makes the area around zero more important (doubles it up to the limit).</summary>
     private static float AmplifyRangeAroundZero(float w, float x) => x > w ? x + w : x < -w ? x - w : x + x;
+
+    /// <summary>
+    /// Separates the medium and high frequencies of a channel (<c>SeparateMFAndHF</c>): <paramref name="hf"/> holds the
+    /// frame before the blur and <paramref name="mf"/> the blurred frame. The vectors select the result of every branch.
+    /// </summary>
+    internal static void SeparateMediumFrequencies(Span<float> mf, Span<float> hf, int channel)
+    {
+        var j = 0;
+        if (Vector128.IsHardwareAccelerated && hf.Length >= mf.Length)
+        {
+            ref var medium = ref unsafe(MemoryMarshal.GetReference(mf));
+            ref var high = ref unsafe(MemoryMarshal.GetReference(hf));
+            var length = mf.Length;
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; j + Vector256<float>.Count <= length; j += Vector256<float>.Count)
+                {
+                    unsafe
+                    {
+                        var mfValue = Vector256.LoadUnsafe(ref medium, (nuint)j);
+                        (Vector256.LoadUnsafe(ref high, (nuint)j) - mfValue).StoreUnsafe(ref high, (nuint)j);
+                        (channel is 0 ? RemoveRangeAroundZero(0.29f, mfValue) : AmplifyRangeAroundZero(0.1f, mfValue)).StoreUnsafe(ref medium, (nuint)j);
+                    }
+                }
+            }
+
+            for (; j + Vector128<float>.Count <= length; j += Vector128<float>.Count)
+            {
+                unsafe
+                {
+                    var mfValue = Vector128.LoadUnsafe(ref medium, (nuint)j);
+                    (Vector128.LoadUnsafe(ref high, (nuint)j) - mfValue).StoreUnsafe(ref high, (nuint)j);
+                    (channel is 0 ? RemoveRangeAroundZero(0.29f, mfValue) : AmplifyRangeAroundZero(0.1f, mfValue)).StoreUnsafe(ref medium, (nuint)j);
+                }
+            }
+        }
+
+        SeparateMediumFrequenciesScalar(mf, hf, channel, j);
+    }
+
+    /// <summary>The scalar reference of <see cref="SeparateMediumFrequencies"/>, from index <paramref name="start"/>.</summary>
+    internal static void SeparateMediumFrequenciesScalar(Span<float> mf, Span<float> hf, int channel, int start = 0)
+    {
+        for (var j = start; j < mf.Length; j++)
+        {
+            hf[j] -= mf[j];
+            mf[j] = channel is 0 ? RemoveRangeAroundZero(0.29f, mf[j]) : AmplifyRangeAroundZero(0.1f, mf[j]);
+        }
+    }
+
+    /// <summary>
+    /// Separates the high and ultra-high frequencies of a channel (<c>SeparateHFAndUHF</c>): <paramref name="uhf"/> holds the
+    /// frame before the blur and <paramref name="hf"/> the blurred frame. The vectors select the result of every branch.
+    /// </summary>
+    internal static void SeparateHighFrequencies(Span<float> hf, Span<float> uhf, int channel)
+    {
+        var j = 0;
+        if (Vector128.IsHardwareAccelerated && uhf.Length >= hf.Length)
+        {
+            ref var high = ref unsafe(MemoryMarshal.GetReference(hf));
+            ref var ultra = ref unsafe(MemoryMarshal.GetReference(uhf));
+            var length = hf.Length;
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; j + Vector256<float>.Count <= length; j += Vector256<float>.Count)
+                {
+                    unsafe
+                    {
+                        var hfValue = Vector256.LoadUnsafe(ref high, (nuint)j);
+                        var uhfValue = Vector256.LoadUnsafe(ref ultra, (nuint)j);
+                        if (channel is 0)
+                        {
+                            uhfValue -= hfValue;
+                            RemoveRangeAroundZero(1.5f, hfValue).StoreUnsafe(ref high, (nuint)j);
+                            RemoveRangeAroundZero(0.04f, uhfValue).StoreUnsafe(ref ultra, (nuint)j);
+                        }
+                        else
+                        {
+                            hfValue = MaximumClamp(hfValue, 28.4691806922f);
+                            uhfValue = MaximumClamp(uhfValue - hfValue, 5.19175294647f);
+                            (uhfValue * Vector256.Create(2.69313763794f)).StoreUnsafe(ref ultra, (nuint)j);
+                            AmplifyRangeAroundZero(0.132f, hfValue * Vector256.Create(2.155f)).StoreUnsafe(ref high, (nuint)j);
+                        }
+                    }
+                }
+            }
+
+            for (; j + Vector128<float>.Count <= length; j += Vector128<float>.Count)
+            {
+                unsafe
+                {
+                    var hfValue = Vector128.LoadUnsafe(ref high, (nuint)j);
+                    var uhfValue = Vector128.LoadUnsafe(ref ultra, (nuint)j);
+                    if (channel is 0)
+                    {
+                        uhfValue -= hfValue;
+                        RemoveRangeAroundZero(1.5f, hfValue).StoreUnsafe(ref high, (nuint)j);
+                        RemoveRangeAroundZero(0.04f, uhfValue).StoreUnsafe(ref ultra, (nuint)j);
+                    }
+                    else
+                    {
+                        hfValue = MaximumClamp(hfValue, 28.4691806922f);
+                        uhfValue = MaximumClamp(uhfValue - hfValue, 5.19175294647f);
+                        (uhfValue * Vector128.Create(2.69313763794f)).StoreUnsafe(ref ultra, (nuint)j);
+                        AmplifyRangeAroundZero(0.132f, hfValue * Vector128.Create(2.155f)).StoreUnsafe(ref high, (nuint)j);
+                    }
+                }
+            }
+        }
+
+        SeparateHighFrequenciesScalar(hf, uhf, channel, j);
+    }
+
+    /// <summary>The scalar reference of <see cref="SeparateHighFrequencies"/>, from index <paramref name="start"/>.</summary>
+    internal static void SeparateHighFrequenciesScalar(Span<float> hf, Span<float> uhf, int channel, int start = 0)
+    {
+        for (var j = start; j < hf.Length; j++)
+        {
+            if (channel is 0)
+            {
+                var hfValue = hf[j];
+                var uhfValue = uhf[j] - hfValue;
+                hf[j] = RemoveRangeAroundZero(1.5f, hfValue);
+                uhf[j] = RemoveRangeAroundZero(0.04f, uhfValue);
+            }
+            else
+            {
+                var hfValue = MaximumClamp(hf[j], 28.4691806922f);
+                var uhfValue = MaximumClamp(uhf[j] - hfValue, 5.19175294647f);
+                uhf[j] = uhfValue * 2.69313763794f;
+                hf[j] = AmplifyRangeAroundZero(0.132f, hfValue * 2.155f);
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<float> RemoveRangeAroundZero(float w, Vector256<float> x)
+    {
+        var weight = Vector256.Create(w);
+        return Vector256.ConditionalSelect(Vector256.GreaterThan(x, weight), x - weight, Vector256.ConditionalSelect(Vector256.LessThan(x, -weight), x + weight, Vector256<float>.Zero));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<float> RemoveRangeAroundZero(float w, Vector128<float> x)
+    {
+        var weight = Vector128.Create(w);
+        return Vector128.ConditionalSelect(Vector128.GreaterThan(x, weight), x - weight, Vector128.ConditionalSelect(Vector128.LessThan(x, -weight), x + weight, Vector128<float>.Zero));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<float> AmplifyRangeAroundZero(float w, Vector256<float> x)
+    {
+        var weight = Vector256.Create(w);
+        return Vector256.ConditionalSelect(Vector256.GreaterThan(x, weight), x + weight, Vector256.ConditionalSelect(Vector256.LessThan(x, -weight), x - weight, x + x));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<float> AmplifyRangeAroundZero(float w, Vector128<float> x)
+    {
+        var weight = Vector128.Create(w);
+        return Vector128.ConditionalSelect(Vector128.GreaterThan(x, weight), x + weight, Vector128.ConditionalSelect(Vector128.LessThan(x, -weight), x - weight, x + x));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<float> MaximumClamp(Vector256<float> v, float maxValue)
+    {
+        var max = Vector256.Create(maxValue);
+        var mul = Vector256.Create(MaximumClampMul);
+        return Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(v, max), ((v - max) * mul) + max, Vector256.ConditionalSelect(Vector256.LessThan(v, -max), ((v + max) * mul) - max, v));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<float> MaximumClamp(Vector128<float> v, float maxValue)
+    {
+        var max = Vector128.Create(maxValue);
+        var mul = Vector128.Create(MaximumClampMul);
+        return Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(v, max), ((v - max) * mul) + max, Vector128.ConditionalSelect(Vector128.LessThan(v, -max), ((v + max) * mul) - max, v));
+    }
+
+    /// <summary>
+    /// Computes row <paramref name="y"/> of <see cref="FuzzyErosion"/>: the vectors compute the columns whose neighbors 3
+    /// columns away are inside the row, and select the results of the branches of <see cref="StoreMin3(float, ref float, ref float, ref float)"/>.
+    /// </summary>
+    internal static void FuzzyErosionRow(ReadOnlySpan<float> from, Span<float> to, int width, int height, int y)
+    {
+        const int Step = 3;
+        var x = Math.Min(Step, width);
+        FuzzyErosionRowScalar(from, to, width, height, y, 0, x);
+        if (Vector128.IsHardwareAccelerated && from.Length >= width * height && to.Length >= width * height)
+        {
+            var end = width - Step;
+            var up = y >= Step;
+            var down = y < height - Step;
+            ref var source = ref unsafe(MemoryMarshal.GetReference(from));
+            ref var target = ref unsafe(MemoryMarshal.GetReference(to));
+            var row = y * width;
+            var above = (y - Step) * width;
+            var below = (y + Step) * width;
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; x + Vector256<float>.Count <= end; x += Vector256<float>.Count)
+                {
+                    unsafe
+                    {
+                        var min0 = Vector256.LoadUnsafe(ref source, (nuint)(row + x));
+                        var min1 = Vector256.Create(2f) * min0;
+                        var min2 = min1;
+                        StoreMin3(Vector256.LoadUnsafe(ref source, (nuint)(row + x - Step)), ref min0, ref min1, ref min2);
+                        if (up)
+                        {
+                            StoreMin3(Vector256.LoadUnsafe(ref source, (nuint)(above + x - Step)), ref min0, ref min1, ref min2);
+                        }
+
+                        if (down)
+                        {
+                            StoreMin3(Vector256.LoadUnsafe(ref source, (nuint)(below + x - Step)), ref min0, ref min1, ref min2);
+                        }
+
+                        StoreMin3(Vector256.LoadUnsafe(ref source, (nuint)(row + x + Step)), ref min0, ref min1, ref min2);
+                        if (up)
+                        {
+                            StoreMin3(Vector256.LoadUnsafe(ref source, (nuint)(above + x + Step)), ref min0, ref min1, ref min2);
+                        }
+
+                        if (down)
+                        {
+                            StoreMin3(Vector256.LoadUnsafe(ref source, (nuint)(below + x + Step)), ref min0, ref min1, ref min2);
+                        }
+
+                        if (up)
+                        {
+                            StoreMin3(Vector256.LoadUnsafe(ref source, (nuint)(above + x)), ref min0, ref min1, ref min2);
+                        }
+
+                        if (down)
+                        {
+                            StoreMin3(Vector256.LoadUnsafe(ref source, (nuint)(below + x)), ref min0, ref min1, ref min2);
+                        }
+
+                        ((Vector256.Create(0.45f) * min0) + (Vector256.Create(0.3f) * min1) + (Vector256.Create(0.25f) * min2)).StoreUnsafe(ref target, (nuint)(row + x));
+                    }
+                }
+            }
+
+            for (; x + Vector128<float>.Count <= end; x += Vector128<float>.Count)
+            {
+                unsafe
+                {
+                    var min0 = Vector128.LoadUnsafe(ref source, (nuint)(row + x));
+                    var min1 = Vector128.Create(2f) * min0;
+                    var min2 = min1;
+                    StoreMin3(Vector128.LoadUnsafe(ref source, (nuint)(row + x - Step)), ref min0, ref min1, ref min2);
+                    if (up)
+                    {
+                        StoreMin3(Vector128.LoadUnsafe(ref source, (nuint)(above + x - Step)), ref min0, ref min1, ref min2);
+                    }
+
+                    if (down)
+                    {
+                        StoreMin3(Vector128.LoadUnsafe(ref source, (nuint)(below + x - Step)), ref min0, ref min1, ref min2);
+                    }
+
+                    StoreMin3(Vector128.LoadUnsafe(ref source, (nuint)(row + x + Step)), ref min0, ref min1, ref min2);
+                    if (up)
+                    {
+                        StoreMin3(Vector128.LoadUnsafe(ref source, (nuint)(above + x + Step)), ref min0, ref min1, ref min2);
+                    }
+
+                    if (down)
+                    {
+                        StoreMin3(Vector128.LoadUnsafe(ref source, (nuint)(below + x + Step)), ref min0, ref min1, ref min2);
+                    }
+
+                    if (up)
+                    {
+                        StoreMin3(Vector128.LoadUnsafe(ref source, (nuint)(above + x)), ref min0, ref min1, ref min2);
+                    }
+
+                    if (down)
+                    {
+                        StoreMin3(Vector128.LoadUnsafe(ref source, (nuint)(below + x)), ref min0, ref min1, ref min2);
+                    }
+
+                    ((Vector128.Create(0.45f) * min0) + (Vector128.Create(0.3f) * min1) + (Vector128.Create(0.25f) * min2)).StoreUnsafe(ref target, (nuint)(row + x));
+                }
+            }
+        }
+
+        FuzzyErosionRowScalar(from, to, width, height, y, x, width);
+    }
+
+    /// <summary>The scalar reference of <see cref="FuzzyErosionRow"/>, for the columns <c>[start, end)</c>.</summary>
+    internal static void FuzzyErosionRowScalar(ReadOnlySpan<float> from, Span<float> to, int width, int height, int y, int start, int end)
+    {
+        const int Step = 3;
+        for (var x = start; x < end; x++)
+        {
+            var min0 = from[y * width + x];
+            var min1 = 2 * min0;
+            var min2 = min1;
+            if (x >= Step)
+            {
+                StoreMin3(from[y * width + x - Step], ref min0, ref min1, ref min2);
+                if (y >= Step)
+                {
+                    StoreMin3(from[(y - Step) * width + x - Step], ref min0, ref min1, ref min2);
+                }
+
+                if (y < height - Step)
+                {
+                    StoreMin3(from[(y + Step) * width + x - Step], ref min0, ref min1, ref min2);
+                }
+            }
+
+            if (x < width - Step)
+            {
+                StoreMin3(from[y * width + x + Step], ref min0, ref min1, ref min2);
+                if (y >= Step)
+                {
+                    StoreMin3(from[(y - Step) * width + x + Step], ref min0, ref min1, ref min2);
+                }
+
+                if (y < height - Step)
+                {
+                    StoreMin3(from[(y + Step) * width + x + Step], ref min0, ref min1, ref min2);
+                }
+            }
+
+            if (y >= Step)
+            {
+                StoreMin3(from[(y - Step) * width + x], ref min0, ref min1, ref min2);
+            }
+
+            if (y < height - Step)
+            {
+                StoreMin3(from[(y + Step) * width + x], ref min0, ref min1, ref min2);
+            }
+
+            to[y * width + x] = 0.45f * min0 + 0.3f * min1 + 0.25f * min2;
+        }
+    }
+
+    /// <summary><see cref="StoreMin3(float, ref float, ref float, ref float)"/> on every lane, with the results of its branches selected.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreMin3(Vector256<float> v, ref Vector256<float> min0, ref Vector256<float> min1, ref Vector256<float> min2)
+    {
+        var below2 = Vector256.LessThan(v, min2);
+        var below0 = Vector256.LessThan(v, min0);
+        var below1 = Vector256.LessThan(v, min1);
+        var newMin2 = Vector256.ConditionalSelect(below2, Vector256.ConditionalSelect(below0 | below1, min1, v), min2);
+        var newMin1 = Vector256.ConditionalSelect(below2, Vector256.ConditionalSelect(below0, min0, Vector256.ConditionalSelect(below1, v, min1)), min1);
+        min0 = Vector256.ConditionalSelect(below2 & below0, v, min0);
+        min1 = newMin1;
+        min2 = newMin2;
+    }
+
+    /// <inheritdoc cref="StoreMin3(Vector256{float}, ref Vector256{float}, ref Vector256{float}, ref Vector256{float})"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreMin3(Vector128<float> v, ref Vector128<float> min0, ref Vector128<float> min1, ref Vector128<float> min2)
+    {
+        var below2 = Vector128.LessThan(v, min2);
+        var below0 = Vector128.LessThan(v, min0);
+        var below1 = Vector128.LessThan(v, min1);
+        var newMin2 = Vector128.ConditionalSelect(below2, Vector128.ConditionalSelect(below0 | below1, min1, v), min2);
+        var newMin1 = Vector128.ConditionalSelect(below2, Vector128.ConditionalSelect(below0, min0, Vector128.ConditionalSelect(below1, v, min1)), min1);
+        min0 = Vector128.ConditionalSelect(below2 & below0, v, min0);
+        min1 = newMin1;
+        min2 = newMin2;
+    }
 
     private static FloatPlane DiffmapPsychoImage(FloatPlaneArena arena, PsychoImage pi0, PsychoImage pi1, int maxDegreeOfParallelism)
     {
@@ -607,12 +950,70 @@ internal static class ButteraugliCalculator
         }
     }
 
-    /// <summary>The weighted L2 difference, plus a penalty when the distorted value is much smaller or larger than the reference.</summary>
-    private static void L2DiffAsymmetric(ReadOnlySpan<float> i0, ReadOnlySpan<float> i1, float w0Gt1, float w0Lt1, Span<float> diffmap)
+    /// <summary>
+    /// The weighted L2 difference, plus a penalty when the distorted value is much smaller or larger than the reference.
+    /// The vectors select the results of the branches of <see cref="L2DiffAsymmetricScalar"/>.
+    /// </summary>
+    internal static void L2DiffAsymmetric(ReadOnlySpan<float> i0, ReadOnlySpan<float> i1, float w0Gt1, float w0Lt1, Span<float> diffmap)
+    {
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated && i1.Length >= i0.Length && diffmap.Length >= i0.Length)
+        {
+            var vw0Gt1 = (float)(w0Gt1 * 0.8);
+            var vw0Lt1 = (float)(w0Lt1 * 0.8);
+            ref var reference = ref unsafe(MemoryMarshal.GetReference(i0));
+            ref var distorted = ref unsafe(MemoryMarshal.GetReference(i1));
+            ref var target = ref unsafe(MemoryMarshal.GetReference(diffmap));
+            var length = i0.Length;
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; i + Vector256<float>.Count <= length; i += Vector256<float>.Count)
+                {
+                    unsafe
+                    {
+                        var val0 = Vector256.LoadUnsafe(ref reference, (nuint)i);
+                        var val1 = Vector256.LoadUnsafe(ref distorted, (nuint)i);
+                        var diff = val0 - val1;
+                        var total = (diff * diff * Vector256.Create(vw0Gt1)) + Vector256.LoadUnsafe(ref target, (nuint)i);
+                        var fabs0 = Vector256.Abs(val0);
+                        var tooSmall = Vector256.Create(0.4f) * fabs0;
+                        var tooBig = fabs0;
+                        var negative = Vector256.ConditionalSelect(Vector256.GreaterThan(val1, -tooSmall), val1 + tooSmall, Vector256.ConditionalSelect(Vector256.LessThan(val1, -tooBig), -val1 - tooBig, Vector256<float>.Zero));
+                        var positive = Vector256.ConditionalSelect(Vector256.LessThan(val1, tooSmall), tooSmall - val1, Vector256.ConditionalSelect(Vector256.GreaterThan(val1, tooBig), val1 - tooBig, Vector256<float>.Zero));
+                        var v = Vector256.ConditionalSelect(Vector256.LessThan(val0, Vector256<float>.Zero), negative, positive);
+                        ((Vector256.Create(vw0Lt1) * (v * v)) + total).StoreUnsafe(ref target, (nuint)i);
+                    }
+                }
+            }
+
+            for (; i + Vector128<float>.Count <= length; i += Vector128<float>.Count)
+            {
+                unsafe
+                {
+                    var val0 = Vector128.LoadUnsafe(ref reference, (nuint)i);
+                    var val1 = Vector128.LoadUnsafe(ref distorted, (nuint)i);
+                    var diff = val0 - val1;
+                    var total = (diff * diff * Vector128.Create(vw0Gt1)) + Vector128.LoadUnsafe(ref target, (nuint)i);
+                    var fabs0 = Vector128.Abs(val0);
+                    var tooSmall = Vector128.Create(0.4f) * fabs0;
+                    var tooBig = fabs0;
+                    var negative = Vector128.ConditionalSelect(Vector128.GreaterThan(val1, -tooSmall), val1 + tooSmall, Vector128.ConditionalSelect(Vector128.LessThan(val1, -tooBig), -val1 - tooBig, Vector128<float>.Zero));
+                    var positive = Vector128.ConditionalSelect(Vector128.LessThan(val1, tooSmall), tooSmall - val1, Vector128.ConditionalSelect(Vector128.GreaterThan(val1, tooBig), val1 - tooBig, Vector128<float>.Zero));
+                    var v = Vector128.ConditionalSelect(Vector128.LessThan(val0, Vector128<float>.Zero), negative, positive);
+                    ((Vector128.Create(vw0Lt1) * (v * v)) + total).StoreUnsafe(ref target, (nuint)i);
+                }
+            }
+        }
+
+        L2DiffAsymmetricScalar(i0, i1, w0Gt1, w0Lt1, diffmap, i);
+    }
+
+    /// <summary>The scalar reference of <see cref="L2DiffAsymmetric"/>, from index <paramref name="start"/>.</summary>
+    internal static void L2DiffAsymmetricScalar(ReadOnlySpan<float> i0, ReadOnlySpan<float> i1, float w0Gt1, float w0Lt1, Span<float> diffmap, int start = 0)
     {
         var vw0Gt1 = (float)(w0Gt1 * 0.8);
         var vw0Lt1 = (float)(w0Lt1 * 0.8);
-        for (var i = 0; i < i0.Length; i++)
+        for (var i = start; i < i0.Length; i++)
         {
             var val0 = i0[i];
             var val1 = i1[i];
@@ -710,54 +1111,9 @@ internal static class ButteraugliCalculator
     /// <summary>Looks for smooth areas near the area of degradation: if they are generally smooth, there is no masking.</summary>
     private static void FuzzyErosion(ReadOnlySpan<float> from, Span<float> to, int width, int height, int start, int end)
     {
-        const int Step = 3;
         for (var y = start; y < end; y++)
         {
-            for (var x = 0; x < width; x++)
-            {
-                var min0 = from[y * width + x];
-                var min1 = 2 * min0;
-                var min2 = min1;
-                if (x >= Step)
-                {
-                    StoreMin3(from[y * width + x - Step], ref min0, ref min1, ref min2);
-                    if (y >= Step)
-                    {
-                        StoreMin3(from[(y - Step) * width + x - Step], ref min0, ref min1, ref min2);
-                    }
-
-                    if (y < height - Step)
-                    {
-                        StoreMin3(from[(y + Step) * width + x - Step], ref min0, ref min1, ref min2);
-                    }
-                }
-
-                if (x < width - Step)
-                {
-                    StoreMin3(from[y * width + x + Step], ref min0, ref min1, ref min2);
-                    if (y >= Step)
-                    {
-                        StoreMin3(from[(y - Step) * width + x + Step], ref min0, ref min1, ref min2);
-                    }
-
-                    if (y < height - Step)
-                    {
-                        StoreMin3(from[(y + Step) * width + x + Step], ref min0, ref min1, ref min2);
-                    }
-                }
-
-                if (y >= Step)
-                {
-                    StoreMin3(from[(y - Step) * width + x], ref min0, ref min1, ref min2);
-                }
-
-                if (y < height - Step)
-                {
-                    StoreMin3(from[(y + Step) * width + x], ref min0, ref min1, ref min2);
-                }
-
-                to[y * width + x] = 0.45f * min0 + 0.3f * min1 + 0.25f * min2;
-            }
+            FuzzyErosionRow(from, to, width, height, y);
         }
     }
 

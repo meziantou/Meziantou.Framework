@@ -3374,6 +3374,117 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    public void AutoCropMassSumsMatchTheScalarReference()
+    {
+        CheckMassSums<Rgba32>(20);
+        CheckMassSums<Bgra32>(21);
+        CheckMassSums<Rgba64>(22);
+
+        // Chunks of every length up to the 512 pixels of a chunk around the vector widths, random pixels and backgrounds, and
+        // the extremes: the largest masses (opposite colors, opaque) and transparent pixels
+        [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+        static void CheckMassSums<TPixel>(int seed)
+            where TPixel : unmanaged
+        {
+            var random = new Random(seed);
+            var size = System.Runtime.CompilerServices.Unsafe.SizeOf<TPixel>();
+            foreach (var length in new[] { 0, 1, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 33, 100, 255, 504, 511, 512 })
+            {
+                foreach (var pattern in new[] { 0, 1, 2 })
+                {
+                    var bytes = new byte[length * size];
+                    random.NextBytes(bytes);
+                    if (pattern > 0)
+                    {
+                        // Samples at 0 or at their maximum, alpha too (pattern 1) or opaque (pattern 2)
+                        for (var i = 0; i < bytes.Length; i++)
+                        {
+                            bytes[i] = (pattern == 2 && i % size >= size * 3 / 4) || random.Next(2) == 0 ? (byte)0xFF : (byte)0;
+                        }
+                    }
+
+                    var pixels = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, TPixel>(bytes.AsSpan()));
+                    var background = pattern == 0
+                        ? new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536))
+                        : new Rgba64((ushort)(random.Next(2) * 65535), (ushort)(random.Next(2) * 65535), (ushort)(random.Next(2) * 65535), 65535);
+                    Assert.Equal(AutoCropAnalyzer.SumMasses(pixels, background, scalar: true), AutoCropAnalyzer.SumMasses(pixels, background, scalar: false));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void AutoCropBackgroundSkipsFindTheContentOfTheScalarScan()
+    {
+        CheckContent<Rgba32>(23);
+        CheckContent<Bgra32>(24);
+        CheckContent<Rgba64>(25);
+
+        // Rows of background pixels, pixels around the tolerances (colors and alpha), transparent pixels of any color (read
+        // as transparent black) and a few content pixels, of lengths around the vector widths
+        [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+        static void CheckContent<TPixel>(int seed)
+            where TPixel : unmanaged
+        {
+            var random = new Random(seed);
+            var wide = typeof(TPixel) == typeof(Rgba64);
+            var size = wide ? 8 : 4;
+            foreach (var threshold in new[] { 0, 1, 10, 35, 255 })
+            {
+                foreach (var length in new[] { 0, 1, 3, 4, 5, 7, 8, 9, 16, 17, 31, 33, 64, 100 })
+                {
+                    for (var iteration = 0; iteration < 20; iteration++)
+                    {
+                        var background = new Rgba64((ushort)(random.Next(256) * 257), (ushort)(random.Next(256) * 257), (ushort)(random.Next(256) * 257), (ushort)(iteration % 3 == 0 ? 65535 : random.Next(256) * 257));
+                        var bytes = new byte[length * size];
+                        var contentRate = iteration % 4 == 0 ? 0 : iteration % 4 == 1 ? 0.01 : 0.1;
+                        for (var i = 0; i < length; i++)
+                        {
+                            var kind = random.NextDouble();
+                            int r = background.R, g = background.G, b = background.B, a = background.A;
+                            if (kind < contentRate)
+                            {
+                                (r, g, b, a) = (random.Next(65536), random.Next(65536), random.Next(65536), random.Next(65536));
+                            }
+                            else if (kind < 0.3)
+                            {
+                                // Around the tolerances
+                                var delta = (threshold + 1) * 257;
+                                (r, g, b, a) = (Nudge(r, delta), Nudge(g, delta), Nudge(b, delta), Nudge(a, delta));
+                            }
+                            else if (kind < 0.4)
+                            {
+                                (r, g, b, a) = (random.Next(65536), random.Next(65536), random.Next(65536), 0);
+                            }
+
+                            if (wide)
+                            {
+                                System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(8 * i), (ushort)r);
+                                System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan((8 * i) + 2), (ushort)g);
+                                System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan((8 * i) + 4), (ushort)b);
+                                System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan((8 * i) + 6), (ushort)a);
+                            }
+                            else
+                            {
+                                var bgr = typeof(TPixel) == typeof(Bgra32);
+                                bytes[4 * i] = (byte)((bgr ? b : r) >> 8);
+                                bytes[(4 * i) + 1] = (byte)(g >> 8);
+                                bytes[(4 * i) + 2] = (byte)((bgr ? r : b) >> 8);
+                                bytes[(4 * i) + 3] = (byte)(a >> 8);
+                            }
+                        }
+
+                        var pixels = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, TPixel>(bytes.AsSpan()));
+                        Assert.Equal(AutoCropAnalyzer.FindContent(pixels, background, threshold, scalar: true), AutoCropAnalyzer.FindContent(pixels, background, threshold, scalar: false));
+                    }
+                }
+            }
+
+            int Nudge(int value, int delta) => Math.Clamp(value + random.Next(-delta, delta + 1), 0, 65535);
+        }
+    }
+
+    [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ImageBilinearSumsMatchTheScalarReferenceBitForBit()
     {

@@ -4145,6 +4145,84 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    public static TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace> WarpCases()
+    {
+        var data = new TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace>();
+        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Rgb24, PixelFormat.Rgba64, PixelFormat.RgbaFloat })
+        {
+            foreach (var filter in new[] { ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3, ResamplingFilter.Box })
+            {
+                data.Add(format, filter, ResizeWorkingSpace.Encoded);
+            }
+
+            data.Add(format, ResamplingFilter.Bicubic, ResizeWorkingSpace.LinearSrgb);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(WarpCases))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TransformationVectorizedSumsMatchTheScalarLoops(PixelFormat format, ResamplingFilter filter, ResizeWorkingSpace workingSpace)
+    {
+        // Rotations, skews and perspectives (which shrink parts of the frame, widening the kernels), with translucent
+        // backgrounds (opaque without alpha) read beyond the edges, and fully transparent pixels
+        var random = new Random(((int)format * 8) + (int)filter + 500);
+        const int Width = 29;
+        const int Height = 19;
+        var bytes = new byte[Width * Height * PixelFormats.GetBytesPerPixel(format)];
+        if (format == PixelFormat.RgbaFloat)
+        {
+            var floats = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(bytes.AsSpan()));
+            for (var i = 0; i < floats.Length; i++)
+            {
+                floats[i] = random.Next(10) == 0 ? 0 : (float)random.NextDouble();
+            }
+        }
+        else
+        {
+            random.NextBytes(bytes);
+            for (var i = 0; i < bytes.Length; i += 7 * PixelFormats.GetBytesPerPixel(format))
+            {
+                bytes.AsSpan(i, PixelFormats.GetBytesPerPixel(format)).Clear();
+            }
+        }
+
+        var options = new TransformOptions { Filter = filter, WorkingSpace = workingSpace, BackgroundColor = new Rgba64(9000, 30000, 65535, PixelFormats.HasAlpha(format) ? (ushort)40000 : ushort.MaxValue) };
+        Action<Image>[] transformations =
+        [
+            image => image.Rotate(17, options),
+            image => image.Rotate(-3, options),
+            image => image.Skew(10, -20, options),
+            image => image.CorrectPerspective(new PointD(2, 1), new PointD(27, 4), new PointD(25, 18), new PointD(0, 15), new Size(41, 23), options),
+        ];
+        foreach (var transformation in transformations)
+        {
+            Assert.Equal(Transform(forceScalar: true), Transform(forceScalar: false));
+
+            byte[] Transform(bool forceScalar)
+            {
+                using var image = format == PixelFormat.RgbaFloat
+                    ? Image.ImportPixelBytes<RgbaFloat>(bytes, Width, Height)
+                    : ImportBytes(format, bytes, Width, Height);
+                Resampler.TestForceScalar = forceScalar;
+                try
+                {
+                    transformation(image);
+                }
+                finally
+                {
+                    Resampler.TestForceScalar = false;
+                }
+
+                var result = new byte[image.Width * image.Height * PixelFormats.GetBytesPerPixel(format)];
+                image.Frames[0].CopyPixelBytesTo(result);
+                return result;
+            }
+        }
+    }
+
     // The sign of a NaN depends on the order of the operands of an addition, which the JIT may swap in the scalar loops too
     private static byte[] NormalizeNaNs(PixelFormat format, byte[] bytes)
     {

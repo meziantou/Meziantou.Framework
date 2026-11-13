@@ -80,7 +80,7 @@ public sealed class ChecksumTests
         var random = new Random(32);
         var data = new byte[70_000];
         random.NextBytes(data);
-        int[] lengths = [0, 1, 7, 8, 9, 15, 16, 17, 63, 64, 65, 79, 80, 81, 127, 128, 129, 191, 192, 193, 255, 5535, 5536, 5537, 5552, 11_073, 70_000];
+        int[] lengths = [0, 1, 7, 8, 9, 15, 16, 17, 63, 64, 65, 79, 80, 81, 127, 128, 129, 191, 192, 193, 255, 256, 257, 319, 320, 321, 383, 384, 511, 512, 513, 1000, 5535, 5536, 5537, 5552, 11_073, 70_000];
         foreach (var length in lengths)
         {
             foreach (var initial in new uint[] { 1, 0xFFF0FFF0, 0x12345678 % 65521, Crc32.Initial })
@@ -118,6 +118,21 @@ public sealed class ChecksumTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Crc32PathsMatchTheByteAtATimeReferenceForEveryShortLength()
+    {
+        // Every length up to 1100 covers every tail of the 16-byte to 256-byte steps; an odd start makes the loads unaligned
+        var random = new Random(34);
+        var data = new byte[1101];
+        random.NextBytes(data);
+        for (var length = 0; length <= 1100; length++)
+        {
+            AssertCrc32PathsMatchTheReference(Crc32.Initial, data.AsSpan(1, length));
+            AssertCrc32PathsMatchTheReference(0x12345678, data.AsSpan(0, length));
+        }
+    }
+
     private static void AssertCrc32PathsMatchTheReference(uint crc, ReadOnlySpan<byte> data)
     {
         var expected = Crc32.UpdateScalar(crc, data);
@@ -126,6 +141,16 @@ public sealed class ChecksumTests
         if (Pclmulqdq.IsSupported)
         {
             Assert.Equal(expected, Crc32.UpdateCarrylessMultiply(crc, data));
+        }
+
+        if (Pclmulqdq.V256.IsSupported)
+        {
+            Assert.Equal(expected, Crc32.UpdateCarrylessMultiply256(crc, data));
+        }
+
+        if (Pclmulqdq.V512.IsSupported)
+        {
+            Assert.Equal(expected, Crc32.UpdateCarrylessMultiply512(crc, data));
         }
     }
 
@@ -151,6 +176,11 @@ public sealed class ChecksumTests
         if (Avx2.IsSupported)
         {
             Assert.Equal(expected, Adler32.UpdateAvx2(adler, data));
+        }
+
+        if (Avx512BW.IsSupported)
+        {
+            Assert.Equal(expected, Adler32.UpdateAvx512(adler, data));
         }
     }
 }

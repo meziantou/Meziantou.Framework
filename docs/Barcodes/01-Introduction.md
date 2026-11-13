@@ -22,8 +22,8 @@ or as text for a terminal. It is written entirely in C# and has no native depend
   [SVG and PNG](06-SvgAndPng.md) and [Terminal output](07-TerminalOutput.md).
 - **Draw on images** with any brush, and print the human-readable text under a barcode with the bundled OCR-A and
   OCR-B fonts. See [Images](08-Images.md).
-- **Read QR codes, Data Matrix, PDF417 and Aztec symbols** from their modules, with error correction. See
-  [Reading](11-Reading.md).
+- **Read QR codes, Data Matrix, PDF417, Aztec symbols and linear barcodes** from their modules or from scan lines,
+  with error correction. See [Reading](11-Reading.md).
 
 The packages do not read symbols from photos or scans. See [Limitations](09-Limitations.md).
 
@@ -31,7 +31,7 @@ The packages do not read symbols from photos or scans. See [Limitations](09-Limi
 
 | Package | Namespace | Contains |
 | --- | --- | --- |
-| `Meziantou.Framework.Barcodes` | [Meziantou.Framework.Barcodes](cref:Meziantou.Framework.Barcodes) | QR codes, Data Matrix, PDF417 and Aztec symbols, barcodes, content helpers, SVG, PNG and text renderers, decoders of the two-dimensional symbols |
+| `Meziantou.Framework.Barcodes` | [Meziantou.Framework.Barcodes](cref:Meziantou.Framework.Barcodes) | QR codes, Data Matrix, PDF417 and Aztec symbols, barcodes, content helpers, SVG, PNG and text renderers, decoders |
 | `Meziantou.Framework.Imaging.Barcodes` | [Meziantou.Framework.Imaging.Barcodes](cref:Meziantou.Framework.Imaging.Barcodes) | Rendering to images and drawing on a canvas, OCR fonts |
 
 `Meziantou.Framework.Barcodes` writes PNG files on its own. Add `Meziantou.Framework.Imaging.Barcodes` only when you

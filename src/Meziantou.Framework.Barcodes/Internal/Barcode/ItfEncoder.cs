@@ -7,7 +7,7 @@ internal static class ItfEncoder
 
     private static readonly int[] StartPattern = [NarrowWidth, NarrowWidth, NarrowWidth, NarrowWidth];
     private static readonly int[] EndPattern = [WideWidth, NarrowWidth, NarrowWidth];
-    private static readonly int[][] Patterns =
+    internal static readonly int[][] Patterns =
     [
         [NarrowWidth, NarrowWidth, WideWidth, WideWidth, NarrowWidth], // 0
         [WideWidth, NarrowWidth, NarrowWidth, NarrowWidth, WideWidth], // 1

@@ -110,6 +110,25 @@ namespace Meziantou.Framework.Barcodes
         Aztec = 2,
     }
 
+    public sealed class BarcodeDecodeResult
+    {
+        public long End { get => throw null; }
+        public int FirstScanLine { get => throw null; }
+        public int LastScanLine { get => throw null; }
+        public long Start { get => throw null; }
+        public string Text { get => throw null; }
+        public Meziantou.Framework.Barcodes.BarcodeType Type { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public static class BarcodeDecoder
+    {
+        public static Meziantou.Framework.Barcodes.BarcodeDecodeResult Decode(Meziantou.Framework.Barcodes.Barcode barcode) => throw null;
+        public static Meziantou.Framework.Barcodes.BarcodeDecodeResult Decode(bool[,] modules) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Barcodes.BarcodeDecodeResult> DecodeScanLines(System.Collections.Generic.IReadOnlyList<int[]> scanLines) => throw null;
+        public static bool TryDecode(bool[,] modules, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Barcodes.BarcodeDecodeResult? result) => throw null;
+    }
+
     public sealed class BarcodePngOptions
     {
         public Meziantou.Framework.Barcodes.Color DarkColor { get => throw null; set { } }

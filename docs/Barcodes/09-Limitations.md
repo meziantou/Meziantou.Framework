@@ -3,11 +3,12 @@ title: Limitations
 description: What the barcode packages do not do.
 ---
 
-- **Reading two-dimensional symbols from their modules only.** [QRCodeDecoder](cref:Meziantou.Framework.Barcodes.QRCodeDecoder)
-  and [Barcode2DDecoder](cref:Meziantou.Framework.Barcodes.Barcode2DDecoder) read QR codes, Micro QR codes, rMQR codes,
-  Data Matrix, PDF417 and Aztec symbols from a matrix of modules. The packages do not read linear barcodes, and do not
-  detect or decode symbols in photos or scans. The decoders do not read the FNC1 modes of GS1 QR codes, Macro PDF417,
-  the structured append of Data Matrix and Aztec symbols, nor the Aztec runes.
+- **Reading from modules and scan lines only.** [QRCodeDecoder](cref:Meziantou.Framework.Barcodes.QRCodeDecoder),
+  [Barcode2DDecoder](cref:Meziantou.Framework.Barcodes.Barcode2DDecoder) and
+  [BarcodeDecoder](cref:Meziantou.Framework.Barcodes.BarcodeDecoder) read the symbols from their modules, or from the
+  widths of the bars of scan lines. The packages do not yet detect symbols in photos or scans. The decoders do not read
+  the FNC1 modes of GS1 QR codes, Macro PDF417, the structured append of Data Matrix and Aztec symbols, the Aztec runes,
+  nor the 2D composite components of the GS1 DataBar symbols.
 - **The symbologies listed** only: standard QR codes, Micro QR codes, rMQR codes, Data Matrix, PDF417, Aztec, Code 39,
   Code 93, Code 128, GS1-128, EAN-8, EAN-13, UPC-A, UPC-E, GS1 DataBar, Codabar and ITF. The variants of the
   two-dimensional codes are not supported (Data Matrix rectangular extension, Macro and Micro PDF417, Aztec Runes).

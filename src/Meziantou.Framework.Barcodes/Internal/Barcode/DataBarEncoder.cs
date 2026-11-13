@@ -5,15 +5,15 @@ internal static class DataBarEncoder
 {
     // The groups of the characters of GS1 DataBar Omnidirectional, Table 3: outside characters (groups 0 to 4), then
     // inside characters (groups 5 to 8)
-    private static readonly int[] OmnidirectionalGroupStarts = [0, 161, 961, 2015, 2715, 0, 336, 1036, 1516];
-    private static readonly int[] OmnidirectionalCombinations = [1, 10, 34, 70, 126, 4, 20, 48, 81];
-    private static readonly int[] OmnidirectionalOddModules = [12, 10, 8, 6, 4, 5, 7, 9, 11];
-    private static readonly int[] OmnidirectionalEvenModules = [4, 6, 8, 10, 12, 10, 8, 6, 4];
-    private static readonly int[] OmnidirectionalOddWidest = [8, 6, 4, 3, 1, 2, 4, 6, 8];
-    private static readonly int[] OmnidirectionalEvenWidest = [1, 3, 5, 6, 8, 7, 5, 3, 1];
+    internal static readonly int[] OmnidirectionalGroupStarts = [0, 161, 961, 2015, 2715, 0, 336, 1036, 1516];
+    internal static readonly int[] OmnidirectionalCombinations = [1, 10, 34, 70, 126, 4, 20, 48, 81];
+    internal static readonly int[] OmnidirectionalOddModules = [12, 10, 8, 6, 4, 5, 7, 9, 11];
+    internal static readonly int[] OmnidirectionalEvenModules = [4, 6, 8, 10, 12, 10, 8, 6, 4];
+    internal static readonly int[] OmnidirectionalOddWidest = [8, 6, 4, 3, 1, 2, 4, 6, 8];
+    internal static readonly int[] OmnidirectionalEvenWidest = [1, 3, 5, 6, 8, 7, 5, 3, 1];
 
     // Table 4: the 9 finder patterns, from the left
-    private static readonly int[] OmnidirectionalFinderPatterns =
+    internal static readonly int[] OmnidirectionalFinderPatterns =
     [
         3, 8, 2, 1, 1,
         3, 5, 5, 1, 1,
@@ -27,15 +27,15 @@ internal static class DataBarEncoder
     ];
 
     // The groups of the characters of GS1 DataBar Limited, Table 6
-    private static readonly int[] LimitedGroupStarts = [0, 183064, 820064, 1000776, 1491021, 1979845, 1996939];
-    private static readonly int[] LimitedCombinations = [28, 728, 6454, 203, 2408, 1, 16632];
-    private static readonly int[] LimitedOddModules = [17, 13, 9, 15, 11, 19, 7];
-    private static readonly int[] LimitedEvenModules = [9, 13, 17, 11, 15, 7, 19];
-    private static readonly int[] LimitedOddWidest = [6, 5, 3, 5, 4, 8, 1];
-    private static readonly int[] LimitedEvenWidest = [3, 4, 6, 4, 5, 1, 8];
+    internal static readonly int[] LimitedGroupStarts = [0, 183064, 820064, 1000776, 1491021, 1979845, 1996939];
+    internal static readonly int[] LimitedCombinations = [28, 728, 6454, 203, 2408, 1, 16632];
+    internal static readonly int[] LimitedOddModules = [17, 13, 9, 15, 11, 19, 7];
+    internal static readonly int[] LimitedEvenModules = [9, 13, 17, 11, 15, 7, 19];
+    internal static readonly int[] LimitedOddWidest = [6, 5, 3, 5, 4, 8, 1];
+    internal static readonly int[] LimitedEvenWidest = [3, 4, 6, 4, 5, 1, 8];
 
     // The 89 check characters of GS1 DataBar Limited, Table 7: the widths of their 14 elements, by checksum
-    private static readonly string[] LimitedCheckCharacters =
+    internal static readonly string[] LimitedCheckCharacters =
     [
         "11111111113311", "11111111123211", "11111111133111", "11111112113211", "11111112123111", // 0-4
         "11111113113111", "11111211113211", "11111211123111", "11111212113111", "11111311113111", // 5-9

@@ -2,9 +2,9 @@ namespace Meziantou.Framework.Barcodes.Internal.Linear;
 
 internal static class CodabarEncoder
 {
-    private const string PayloadCharacters = "0123456789-$:/.+";
+    internal const string PayloadCharacters = "0123456789-$:/.+";
 
-    private static readonly Dictionary<char, int> CharacterEncodings = new()
+    internal static readonly Dictionary<char, int> CharacterEncodings = new()
     {
         ['0'] = 0x003,
         ['1'] = 0x006,

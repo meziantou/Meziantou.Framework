@@ -1,6 +1,6 @@
 ---
 title: Reading
-description: Read the data of QR codes, Data Matrix, PDF417 and Aztec symbols from their modules, with error correction.
+description: Read the data of QR codes, Data Matrix, PDF417, Aztec symbols and linear barcodes from their modules or scan lines.
 ---
 
 [QRCodeDecoder](cref:Meziantou.Framework.Barcodes.QRCodeDecoder) reads the data of a QR code from its modules: it reads
@@ -145,3 +145,66 @@ Assert.Equal("(01)09521234543213(10)ABC123(21)XYZ", result.Text);
 Assert.Equal("010952123454321310ABC123\u001D21XYZ"u8.ToArray(), result.Bytes.ToArray());
 ```
 <!-- endref -->
+
+## Linear barcodes
+
+[BarcodeDecoder](cref:Meziantou.Framework.Barcodes.BarcodeDecoder) reads Code 39, Code 93, Code 128, GS1-128, EAN-8,
+EAN-13, UPC-A, UPC-E (with their 2- and 5-digit add-ons), Codabar, ITF and all the GS1 DataBar symbols. Pass a
+[Barcode](cref:Meziantou.Framework.Barcodes.Barcode) or its modules: the text is the one that
+[Barcode.Text](cref:Meziantou.Framework.Barcodes.Barcode.Text) gives for a generated barcode. The check characters of
+Code 39 and the start and stop characters of Codabar are part of it, the add-on follows a space, and GS1 data is its
+human-readable interpretation.
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/BarCode128Tests.cs;region=BarcodeDecoder_Decode;format=md-fenced-code-block;dedent=true -->
+```csharp
+var barcode = Barcode.CreateCode128("SKU-123456");
+
+var result = BarcodeDecoder.Decode(barcode);
+
+Assert.Equal((BarcodeType.Code128, "SKU-123456"), (result.Type, result.Text));
+```
+<!-- endref -->
+
+An EAN-13 symbol whose first digit is 0 has the same bars as a UPC-A symbol: the decoder reports it as
+[BarcodeType.UpcA](cref:Meziantou.Framework.Barcodes.BarcodeType.UpcA), with 12 digits.
+
+### Scan lines
+
+[BarcodeDecoder.DecodeScanLines](cref:Meziantou.Framework.Barcodes.BarcodeDecoder.DecodeScanLines) reads the barcodes
+that scan lines cross. A scan line is the widths of its light and dark runs, starting with a light run, in any unit,
+such as the pixels of a row of an image. The decoder reads each line in both directions, measures the widths relative to
+each other, corrects bars that are uniformly too wide or too narrow, and requires the quiet zones around a symbol. The
+rows of a stacked GS1 DataBar symbol are put together from the lines that cross them.
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/BarCode128Tests.cs;region=BarcodeDecoder_DecodeScanLines;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A scan line: the widths of its light and dark runs, starting with a light run, here 3 pixels per module
+var barcode = Barcode.CreateEan13("590123412345");
+var runs = new List<int> { 30 };
+for (var column = 0; column < barcode.Width; column++)
+{
+    if (barcode[0, column] != (runs.Count % 2 == 0))
+    {
+        runs.Add(0);
+    }
+
+    runs[^1] += 3;
+}
+
+// The quiet zone after the last bar
+runs.Add(30);
+
+var results = BarcodeDecoder.DecodeScanLines([runs.ToArray()]);
+
+var result = Assert.Single(results);
+Assert.Equal((BarcodeType.Ean13, "5901234123457"), (result.Type, result.Text));
+Assert.Equal((30, 30 + (95 * 3)), (result.Start, result.End));
+```
+<!-- endref -->
+
+A result gives the lines that cross the barcode
+([FirstScanLine](cref:Meziantou.Framework.Barcodes.BarcodeDecodeResult.FirstScanLine) and
+[LastScanLine](cref:Meziantou.Framework.Barcodes.BarcodeDecodeResult.LastScanLine)) and its position on them
+([Start](cref:Meziantou.Framework.Barcodes.BarcodeDecodeResult.Start) and
+[End](cref:Meziantou.Framework.Barcodes.BarcodeDecodeResult.End)). Code 39 without check character, Codabar and ITF
+have no check character: a damaged line can read as another text, so require several lines to agree.

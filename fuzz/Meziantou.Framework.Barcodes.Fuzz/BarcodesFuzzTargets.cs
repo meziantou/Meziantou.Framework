@@ -56,6 +56,52 @@ public static class BarcodesFuzzTargets
         "\0", "ABCXYZ", "abcxyz", "*,-./", "!\"%&'()+:;<=>?_", "991231", "250101", "001750",
     ];
 
+    // The decoder reads the text of the barcode back, from its modules and from scaled scan lines read from the right
+    private static void CheckLinearDecoding(Barcode barcode)
+    {
+        // An EAN-13 symbol whose first digit is 0 is a UPC-A symbol, a single-row GS1 DataBar Expanded Stacked symbol is GS1 DataBar Expanded
+        var (expectedType, expectedText) = barcode.Type switch
+        {
+            BarcodeType.Ean13 when barcode.Text[0] == '0' => (BarcodeType.UpcA, barcode.Text[1..]),
+            BarcodeType.Gs1DataBarExpandedStacked when barcode.Height == 34 => (BarcodeType.Gs1DataBarExpanded, barcode.Text),
+            _ => (barcode.Type, barcode.Text),
+        };
+
+        if (barcode.Width > 20000)
+            return;
+
+        var result = BarcodeDecoder.Decode(barcode);
+        FuzzAssert.Equal((expectedType, expectedText), (result.Type, result.Text), "The decoded barcode");
+
+        var lines = new List<int[]>();
+        for (var row = 0; row < barcode.Height; row++)
+        {
+            var runs = new List<int> { 30 };
+            for (var column = barcode.Width - 1; column >= 0; column--)
+            {
+                if (barcode[row, column] != (runs.Count % 2 == 0))
+                {
+                    runs.Add(0);
+                }
+
+                runs[^1] += 3;
+            }
+
+            if (runs.Count % 2 == 0)
+            {
+                runs.Add(30);
+            }
+            else
+            {
+                runs[^1] += 30;
+            }
+
+            lines.Add([.. runs]);
+        }
+
+        FuzzAssert.True(BarcodeDecoder.DecodeScanLines(lines).Any(result => result.Text == expectedText), "The scan lines of the barcode, read from the right, do not decode to its text");
+    }
+
     // The UPC-E numbers and GTINs of the unit tests, then element strings: application identifier and data, separated by NUL
     private static readonly string[] Gs1DataBarSeedTexts =
     [
@@ -197,6 +243,7 @@ public static class BarcodesFuzzTargets
 
         FuzzAssert.Equal(type, barcode.Type, "The barcode type");
         FuzzAssert.Equal(1, barcode.Height, "A linear barcode is one module high");
+        CheckLinearDecoding(barcode);
         FuzzAssert.True(barcode[0, 0] && barcode[0, barcode.Width - 1], "A linear barcode starts and ends with a bar");
         CheckText(barcode, type, text, extension, (flags & 4) != 0, (char)('A' + ((flags >> 2) & 3)), (char)('A' + ((flags >> 4) & 3)));
 
@@ -260,6 +307,7 @@ public static class BarcodesFuzzTargets
 
         FuzzAssert.Equal(type, barcode.Type, "The barcode type");
         FuzzAssert.Equal(type is BarcodeType.Gs1DataBarStacked or BarcodeType.Gs1DataBarStackedOmnidirectional or BarcodeType.Gs1DataBarExpandedStacked, barcode.IsStacked, "IsStacked");
+        CheckLinearDecoding(barcode);
         switch (type)
         {
             case BarcodeType.UpcE:

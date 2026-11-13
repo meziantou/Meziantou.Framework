@@ -462,6 +462,49 @@ public sealed class ZintMatrixTests
         }
     }
 
+    // zint chooses its own code sets: its symbols must decode to the data
+    [Fact]
+    public async Task ZintCode128_IsDecoded()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var random = new Random(4205);
+        string[] classes = ["0123456789", "\u0000\u0001\t\n\r\u001b\u001f", "ABCXYZ !@_^\\", "abcxyz`{|}~\u007f"];
+        for (var i = 0; i < 100; i++)
+        {
+            var data = new StringBuilder();
+            var length = random.Next(1, 30);
+            while (data.Length < length)
+            {
+                var characters = classes[random.Next(classes.Length)];
+                for (var j = random.Next(1, 7); j > 0; j--)
+                {
+                    data.Append(characters[random.Next(characters.Length)]);
+                }
+            }
+
+            // The digits of the dump are padded with light modules, which are part of the quiet zone
+            var arguments = new[] { "-b", "20", "--esc" };
+            var row = Assert.Single(await tools.GetZintRowsAsync(arguments, EscapeForZint(data.ToString())));
+            var modules = await tools.GetZintMatrixAsync(arguments, EscapeForZint(data.ToString()), row.Length * 4);
+            Assert.Equal(data.ToString(), BarcodeDecoder.Decode(modules).Text);
+        }
+    }
+
+    [Fact]
+    public async Task ZintGs1128_IsDecoded()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var random = new Random(4206);
+        for (var i = 0; i < 100; i++)
+        {
+            var zintData = CreateRandomGs1Data(random);
+            var arguments = new[] { "-b", "16", "--gs1nocheck" };
+            var row = Assert.Single(await tools.GetZintRowsAsync(arguments, zintData));
+            var result = BarcodeDecoder.Decode(await tools.GetZintMatrixAsync(arguments, zintData, row.Length * 4));
+            Assert.Equal((BarcodeType.Gs1128, Barcode.CreateGs1128([.. ParseGs1(zintData)]).Text), (result.Type, result.Text));
+        }
+    }
+
     // Element strings in the syntax of zint: [01]09521234543213[10]ABC
     internal static string CreateRandomGs1Data(Random random)
     {

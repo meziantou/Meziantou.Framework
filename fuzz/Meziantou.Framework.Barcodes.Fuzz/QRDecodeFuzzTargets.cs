@@ -25,6 +25,7 @@ internal static class QRDecodeFuzzTargets
     [
         new("barcodes-decode-qrcode", DecodeTarget) { Seeds = GetSeeds, Dictionary = ModuleTokens },
         new("barcodes-decode-2d", Decode2DTarget) { Seeds = Get2DSeeds, Dictionary = ModuleTokens },
+        new("barcodes-decode-linear", DecodeLinearTarget) { Seeds = GetLinearSeeds, Dictionary = ["\x01\x01\x01", "\x02\x02", "\x03", "\x04", "\x0A", "\x00"] },
     ];
 
     internal static bool[,] GetModules(QRCode qr)
@@ -229,5 +230,95 @@ internal static class QRDecodeFuzzTargets
         FuzzAssert.True(result.EciAssignmentNumber is null or (>= 0 and <= 999999 + 810900), $"ECI {result.EciAssignmentNumber}");
         FuzzAssert.True(!result.IsGs1 || type is Barcode2DType.DataMatrix, "Only Data Matrix symbols are read as GS1 data");
         FuzzAssert.True(Barcode2DDecoder.TryDecode(modules, type, out var other) && other.Text == result.Text && other.Bytes.Span.SequenceEqual(result.Bytes.Span), "Decoding twice gives different results");
+    }
+
+    // Each byte is the width of a run; a 0 byte separates the scan lines
+    private static IEnumerable<FuzzSeed> GetLinearSeeds()
+    {
+        Barcode[] barcodes =
+        [
+            Barcode.CreateCode39("ABC-123", includeChecksum: true), Barcode.CreateCode93("Hello 93"), Barcode.CreateCode128("SKU-123456"),
+            Barcode.CreateGs1128(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC")), Barcode.CreateEan8("5512345", "12"),
+            Barcode.CreateEan13("590123412345", "12345"), Barcode.CreateUpcA("03600029145"), Barcode.CreateUpcE("0425261"),
+            Barcode.CreateCodabar("40156"), Barcode.CreateItf("12345678"), Barcode.CreateGs1DataBar("0950110153001"),
+            Barcode.CreateGs1DataBarLimited("1501234567890"), Barcode.CreateGs1DataBarStacked("0950110153001"),
+            Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "90012345678908"), new Gs1Element("3103", "001750")),
+            Barcode.CreateGs1DataBarExpandedStacked(2, new Gs1Element("10", "ABC123"), new Gs1Element("21", "xyz")),
+        ];
+
+        foreach (var barcode in barcodes)
+        {
+            var bytes = new List<byte>();
+            var previous = -1;
+            for (var row = 0; row < barcode.Height; row++)
+            {
+                if (row > 0 && previous == row - 1 && Enumerable.Range(0, barcode.Width).All(column => barcode[row, column] == barcode[row - 1, column]))
+                    continue;
+
+                previous = row;
+                if (bytes.Count > 0)
+                {
+                    bytes.Add(0);
+                }
+
+                bytes.Add(20);
+                var runs = new List<int> { 0 };
+                for (var column = 0; column < barcode.Width; column++)
+                {
+                    if (barcode[row, column] != (runs.Count % 2 == 0))
+                    {
+                        runs.Add(0);
+                    }
+
+                    runs[^1] += 2;
+                }
+
+                // The quiet zones: the line starts with a light run, and ends with one
+                var tail = runs.Skip(1).ToList();
+                if (runs.Count % 2 == 1)
+                {
+                    tail[^1] += 20;
+                }
+                else
+                {
+                    tail.Add(20);
+                }
+
+                bytes.AddRange(tail.Select(width => (byte)width));
+            }
+
+            yield return new FuzzSeed($"decode-linear-{barcode.Type}", bytes.ToArray());
+        }
+    }
+
+    private static void DecodeLinearTarget(ReadOnlySpan<byte> data)
+    {
+        var lines = new List<int[]>();
+        var current = new List<int>();
+        foreach (var value in data)
+        {
+            if (value is 0)
+            {
+                lines.Add([.. current]);
+                current.Clear();
+                continue;
+            }
+
+            current.Add(value);
+        }
+
+        lines.Add([.. current]);
+        var results = BarcodeDecoder.DecodeScanLines(lines);
+        foreach (var result in results)
+        {
+            FuzzAssert.True(result.FirstScanLine >= 0 && result.FirstScanLine <= result.LastScanLine && result.LastScanLine < lines.Count, "The scan lines of a result");
+            var width = lines.Skip(result.FirstScanLine).Take(result.LastScanLine - result.FirstScanLine + 1).Max(line => line.Sum());
+            FuzzAssert.True(result.Start >= 0 && result.Start < result.End && result.End <= width + 1, $"The position {result.Start}-{result.End} of a result on lines {width} wide");
+            FuzzAssert.True(result.Text.Length > 0, "A result without text");
+        }
+
+        // Reading the lines again gives the same results
+        var again = BarcodeDecoder.DecodeScanLines(lines);
+        FuzzAssert.Equal(results.Count, again.Count, "The number of results of the same lines");
     }
 }

@@ -1,6 +1,6 @@
 # Meziantou.Framework.Barcodes
 
-QR and barcode generation library with SVG and PNG renderers, plus a console renderer for QR codes, and decoders that read QR codes, Data Matrix, PDF417 and Aztec symbols back from their modules. Implements QR code specifications from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes, Data Matrix (including GS1 Data Matrix), PDF417 and Aztec codes, and linear barcodes from Code 39 to ITF.
+QR and barcode generation library with SVG and PNG renderers, plus a console renderer for QR codes, and decoders that read all these symbols back from their modules or from scan lines. Implements QR code specifications from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes, Data Matrix (including GS1 Data Matrix), PDF417 and Aztec codes, and linear barcodes from Code 39 to ITF.
 
 ## Supported QR Code Types
 
@@ -310,7 +310,7 @@ Assert.StartsWith("BCD\n002\n1\nSCT\n", sepa);
 ```
 <!-- endref -->
 
-### Read QR codes and 2D barcodes
+### Read barcodes
 
 `QRCodeDecoder` reads the data of standard QR codes, Micro QR codes and rMQR codes from their modules, with error correction, ECI designators and structured append. To read QR codes from images, use `Meziantou.Framework.Imaging.Barcodes`.
 
@@ -335,5 +335,17 @@ var result = Barcode2DDecoder.Decode(dataMatrix);
 
 Assert.Equal("https://www.meziantou.net", result.Text);
 Assert.Equal(Barcode2DType.DataMatrix, result.Type);
+```
+<!-- endref -->
+
+`BarcodeDecoder` reads linear barcodes from their modules, or from the widths of the bars and spaces of scan lines.
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/BarCode128Tests.cs;region=BarcodeDecoder_Decode;format=md-fenced-code-block;dedent=true -->
+```csharp
+var barcode = Barcode.CreateCode128("SKU-123456");
+
+var result = BarcodeDecoder.Decode(barcode);
+
+Assert.Equal((BarcodeType.Code128, "SKU-123456"), (result.Type, result.Text));
 ```
 <!-- endref -->

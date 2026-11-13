@@ -9,15 +9,15 @@ internal static class DataBarExpandedEncoder
     private const int MaxSymbolCharacters = 22;
 
     // The groups of the characters, Table 9
-    private static readonly int[] GroupStarts = [0, 348, 1388, 2948, 3988];
-    private static readonly int[] Combinations = [4, 20, 52, 104, 204];
-    private static readonly int[] OddModules = [12, 10, 8, 6, 4];
-    private static readonly int[] EvenModules = [5, 7, 9, 11, 13];
-    private static readonly int[] OddWidest = [7, 5, 4, 3, 1];
-    private static readonly int[] EvenWidest = [2, 4, 5, 6, 8];
+    internal static readonly int[] GroupStarts = [0, 348, 1388, 2948, 3988];
+    internal static readonly int[] Combinations = [4, 20, 52, 104, 204];
+    internal static readonly int[] OddModules = [12, 10, 8, 6, 4];
+    internal static readonly int[] EvenModules = [5, 7, 9, 11, 13];
+    internal static readonly int[] OddWidest = [7, 5, 4, 3, 1];
+    internal static readonly int[] EvenWidest = [2, 4, 5, 6, 8];
 
     // The finder patterns A to F, Table 10, as they are read from the left in their first form (A1, B1, ...)
-    private static readonly int[][] FinderPatterns =
+    internal static readonly int[][] FinderPatterns =
     [
         [1, 8, 4, 1, 1],
         [3, 6, 4, 1, 1],
@@ -28,7 +28,7 @@ internal static class DataBarExpandedEncoder
     ];
 
     // The finder patterns of the symbols of 2 to 11 pairs of characters, Table 11 (0 for A, 5 for F)
-    private static readonly int[][] FinderSequences =
+    internal static readonly int[][] FinderSequences =
     [
         [0, 0],
         [0, 1, 1],

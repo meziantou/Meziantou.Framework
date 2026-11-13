@@ -355,6 +355,52 @@ public sealed class SvgPaintingTests : IDisposable
         Assert.Empty(Items(document).OfType<DrawPathItem>());
     }
 
+    [Theory]
+    [InlineData("xlink:href", "/icons/sprite.svg#copy", "https://example.com/")]
+    [InlineData("href", "/icons/sprite.svg#copy", "https://example.com/")]
+    [InlineData("xlink:href", "icons/sprite.svg#copy", "https://example.com/")]
+    [InlineData("xlink:href", "/icons/sprite.svg#copy", "http://localhost:5000/")]
+    [InlineData("xlink:href", "/icons/sprite.svg#copy", "http://127.0.0.1:5000/")]
+    public void Use_SymbolOfAnExternalSprite(string attribute, string href, string pageUrl)
+    {
+        var requests = new List<string>();
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            TimeProvider = _clock,
+            Viewport = new ViewportOptions { Width = 800, Height = 600 },
+            DocumentLoader = new SpriteLoader(requests),
+        });
+
+        // An icon whose only content is a use element that references a symbol of a sprite. The page upgrades the insecure
+        // requests: as in Chromium, the requests of a page served over http://localhost are not upgraded, so the request of
+        // the sprite (same-origin mode) is a same-origin request
+        var document = context.Navigate(pageUrl, _ => $$"""
+            <!DOCTYPE html><meta http-equiv=Content-Security-Policy content=upgrade-insecure-requests>
+            <style>body { margin: 0; font: 10px/1 Ahem; color: rgb(0, 128, 0) } .icon { height: 1em; fill: currentColor } button { all: unset }</style>
+            <button class=action type=button><svg class=icon role=img style='width:1em'><use {{attribute}}='{{href}}'></use></svg>copy</button>
+            """);
+        _contexts.EventLoop.RunUntilIdle();
+
+        Assert.Equal([pageUrl + "icons/sprite.svg#copy"], requests);
+        var path = Items(document).OfType<DrawPathItem>().Single();
+        Assert.Equal(DisplayColor.FromRgb(0, 128, 0), path.Paint.Color);
+        Assert.Contains("draw-path M0 0L448 0L448 512L0 512Z", Dump(document), StringComparison.Ordinal);
+    }
+
+    /// <summary>Serves an icon sprite (symbols with a viewBox, as UTF-8 bytes with a BOM and an XML declaration) for /icons/sprite.svg, and a 404 response for the other URLs.</summary>
+    private sealed class SpriteLoader(List<string> requests) : DocumentLoader
+    {
+        public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
+        {
+            requests.Add(request.Url);
+            if (!request.Url.Contains("/icons/sprite.svg", StringComparison.Ordinal))
+                return ValueTask.FromResult<DocumentResource?>(new DocumentResource("") { StatusCode = 404, Headers = [new("Content-Type", "text/plain")] });
+
+            const string Sprite = "\uFEFF<?xml version=\"1.0\" encoding=\"utf-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\"><symbol id=\"a\" viewBox=\"0 0 512 512\"><path d=\"M0 0H512V512Z\"/></symbol><symbol id=\"copy\" viewBox=\"0 0 448 512\"><path d=\"M0 0H448V512H0Z\"/></symbol></svg>";
+            return ValueTask.FromResult<DocumentResource?>(new DocumentResource(System.Text.Encoding.UTF8.GetBytes(Sprite)) { Headers = [new("Content-Type", "image/svg+xml")] });
+        }
+    }
+
     [Fact]
     public void Properties_ReferenceTheElementsOfExternalResourceDocuments()
     {

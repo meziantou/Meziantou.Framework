@@ -20,7 +20,7 @@ internal sealed class TestPages : IDisposable
     /// Loads a no-quirks document whose body has no margin and the 10px/1 Ahem font (the glyphs of Ahem are squares: the text is
     /// rendered the same way on every platform). The scripts run when a script engine is given.
     /// </summary>
-    public BrowsingContext Load(string html, double width = 200, double height = 100, double devicePixelRatio = 1, RenderingBackendKind backend = RenderingBackendKind.Imaging, bool scriptingEnabled = false, Scripting.ScriptEngine? scriptEngine = null, Action<string>? consoleMessage = null)
+    public BrowsingContext Load(string html, double width = 200, double height = 100, double devicePixelRatio = 1, RenderingBackendKind backend = RenderingBackendKind.Imaging, bool scriptingEnabled = false, Scripting.ScriptEngine? scriptEngine = null, Action<string>? consoleMessage = null, string url = "https://example.com/")
     {
         var context = new BrowsingContext(new BrowsingContextOptions
         {
@@ -34,7 +34,7 @@ internal sealed class TestPages : IDisposable
         });
 
         _contexts.Add(context);
-        context.Navigate("https://example.com/", _ => "<!DOCTYPE html><style>body { margin: 0; font: 10px/1 Ahem }</style>" + html);
+        context.Navigate(url, _ => "<!DOCTYPE html><style>body { margin: 0; font: 10px/1 Ahem }</style>" + html);
         context.EventLoop.RunUntilIdle();
         return context;
     }
@@ -67,7 +67,9 @@ internal sealed class TestPages : IDisposable
     {
         public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
         {
-            var path = request.Url[request.Url.IndexOf('/', "https://".Length, StringComparison.Ordinal)..];
+            // The fragment of the URL is not sent to the server
+            var url = request.Url.Split('#')[0];
+            var path = url[url.IndexOf('/', "https://".Length, StringComparison.Ordinal)..];
             if (pages.Resources.TryGetValue(path, out var resource))
                 return ValueTask.FromResult<DocumentResource?>(new DocumentResource(resource.Content) { Headers = [new("Content-Type", resource.ContentType)] });
 

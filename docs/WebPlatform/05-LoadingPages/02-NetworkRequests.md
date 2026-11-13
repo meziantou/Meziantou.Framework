@@ -140,6 +140,10 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   200-299 range is a network error.
 - The library reads the headers that change the document: `Content-Security-Policy`, `Referrer-Policy`, `Refresh`,
   `Link`, `X-Frame-Options`, `Content-Language`, `Document-Policy`... The other headers are ignored.
+- The `upgrade-insecure-requests` directive of a `Content-Security-Policy` upgrades the `http:` requests of the page to
+  `https:`. As in Chromium, the requests to `localhost` and to the loopback addresses (`127.0.0.1`, `[::1]`) are not
+  upgraded: a site served over `http://localhost` by a test server loads its same-origin resources (e.g. the SVG sprites
+  of its `<use>` elements) from the same origin.
 - The `Link` header of a page preloads (`preload`, `modulepreload`) and prefetches (`prefetch`) its resources. As in
   Firefox, its `stylesheet` and `icon` links are requested, but the style sheet does not apply and the icon is not
   rendered. As in Chromium, the `preload` links of the `Link` headers of the style sheets, images, scripts and fonts are

@@ -91,6 +91,19 @@ public sealed class UpgradeInsecureRequestsTests : IDisposable
         Assert.Equal(["Image https://other.example/a.png", "Image https://other.example/b.png"], Requests.Order());
     }
 
+    [Theory]
+    [InlineData("http://localhost:5000/")]
+    [InlineData("http://a.localhost/")]
+    [InlineData("http://127.0.0.1:5000/")]
+    [InlineData("http://[::1]:5000/")]
+    public void PotentiallyTrustworthyUrls_AreNotUpgraded(string url)
+    {
+        // As in Chromium, the URLs of localhost and of the loopback addresses are not upgraded: the same-origin requests
+        // (e.g. the request of the external resource of a use element, whose mode is same-origin) stay same-origin
+        Load(Meta + "<img src=a.png><svg><use href=sprite.svg#a /></svg><img src=http://other.example/b.png>", url);
+        Assert.Equal([$"Image {url}a.png", $"Image {url}sprite.svg#a", "Image https://other.example/b.png"], Requests.Order(StringComparer.Ordinal));
+    }
+
     [Fact]
     public void WithoutDirective_InsecureDocument_DoesNotUpgrade()
     {

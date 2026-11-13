@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Mermaid</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Description>Reads and writes the Mermaid text format: the 25 diagram types of Meziantou.Framework.Diagrams, and the pie, XY, quadrant, sankey and radar charts and treemaps of Mermaid drawn with Meziantou.Framework.Charts, with the front matter, the directives and the themes of Mermaid.</Description>
     <PackageTags>mermaid;mermaid-js;diagram;diagrams;chart;charts;svg;flowchart;uml;pie-chart;sankey;treemap;parser;markdown</PackageTags>
 

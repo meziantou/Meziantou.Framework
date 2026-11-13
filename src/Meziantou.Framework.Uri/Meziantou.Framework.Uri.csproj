@@ -6,7 +6,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Helpers to manipulate URIs, including an implementation of the WHATWG URL Pattern API</Description>
     <PackageTags>uri, url, urlpattern, whatwg, parsing</PackageTags>
-    <Version>2.0.23</Version>
+    <Version>2.0.24</Version>
     <RootNamespace>Meziantou.Framework</RootNamespace>
   </PropertyGroup>
 

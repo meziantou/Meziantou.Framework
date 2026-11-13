@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>3.0.6</Version>
+    <Version>3.0.7</Version>
     <Description>Text diffing library supporting line, word, and character-level comparison with configurable options</Description>
     <PackageTags>diff, text-diff, comparison, patch, unified-diff, merge, diff3</PackageTags>
     <!-- TextDiffOptions.Culture and CompareOptions compare chunks with ICU -->

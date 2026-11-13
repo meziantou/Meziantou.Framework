@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <Description>MSBuild task for embedding text and binary files as C# constants</Description>
     <PackageTags>msbuild, source-generator, constants, embedded-resources, codegen</PackageTags>
 

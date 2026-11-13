@@ -6,7 +6,7 @@
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.WebPlatform.DevToolsTool</RootNamespace>
 
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Description>CLI that runs a Chrome DevTools Protocol server whose browser is Meziantou.Framework.WebPlatform: Playwright (connectOverCDP), Puppeteer and the other CDP clients connect to it as to a headless Chromium</Description>
     <PackageTags>devtools, cdp, chrome-devtools-protocol, playwright, puppeteer, browser, automation, testing, cli, dotnet-tool</PackageTags>
   </PropertyGroup>

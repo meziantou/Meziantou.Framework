@@ -4927,12 +4927,47 @@ public sealed class VectorizedKernelTests
                 };
 
                 primitive.GetTurbulence(x, y, octaves, isFractal, isStitching, stitch, sums);
+                var vector = primitive.GetTurbulenceVector(x, y, octaves, isFractal, isStitching, stitch);
                 for (var channel = 0; channel < 4; channel++)
                 {
                     Assert.Equal(BitConverter.DoubleToInt64Bits(primitive.GetTurbulence(channel, x, y, octaves, isFractal, isStitching, stitch)), BitConverter.DoubleToInt64Bits(sums[channel]));
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(sums[channel]), BitConverter.DoubleToInt64Bits(vector[channel]));
                 }
             }
         }
+    }
+
+    [Fact]
+    public void DrawingTurbulenceMatchesTheScalarPath()
+    {
+        // The pixels of the filter, from the noise to the premultiplied colors, on subregions that start anywhere
+        foreach (var (type, format) in new[] { (FilterTurbulenceType.FractalNoise, PixelFormat.RgbaFloat), (FilterTurbulenceType.Turbulence, PixelFormat.RgbaFloat), (FilterTurbulenceType.FractalNoise, PixelFormat.Rgba64) })
+        {
+            foreach (var stitch in new[] { false, true })
+            {
+                Check(new FilterGraph(new TurbulencePrimitive(type, 0.07, 0.11, 3, 42) { StitchTiles = stitch, Subregion = new RectangleD(3, 2, 51, 17) }), format, $"{type} {format} {stitch}");
+            }
+        }
+
+        static void Check(FilterGraph graph, PixelFormat format, string name)
+        {
+            using var expected = DrawingTestSupport.Create(format, 67, 23);
+            using var actual = DrawingTestSupport.Create(format, 67, 23);
+            Resampler.TestForceScalar = true;
+            try
+            {
+                Draw(expected, graph);
+            }
+            finally
+            {
+                Resampler.TestForceScalar = false;
+            }
+
+            Draw(actual, graph);
+            Assert.True(DrawingTestSupport.ReadSamples(expected.Frames[0]).SequenceEqual(DrawingTestSupport.ReadSamples(actual.Frames[0])), name);
+        }
+
+        static void Draw(Image image, FilterGraph graph) => image.Draw(canvas => canvas.Filter(graph, static _ => { }), TestContext.Current.CancellationToken);
     }
 
     [Fact]

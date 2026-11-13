@@ -1,4 +1,6 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Drawing;
@@ -28,6 +30,9 @@ public sealed class TurbulencePrimitive : FilterPrimitive
     private const long RandomMultiplier = 16807;
     private const long RandomQuotient = 127773;
     private const long RandomRemainder = 2836;
+
+    // The number of values of a component of the gradients: four channels at each point of the lattice
+    private const int GradientPlane = 4 * (LatticeSize + LatticeSize + 2);
 
     private readonly int[] _lattice = new int[LatticeSize + LatticeSize + 2];
     private readonly double[] _gradients = new double[4 * (LatticeSize + LatticeSize + 2) * 2];
@@ -115,6 +120,12 @@ public sealed class TurbulencePrimitive : FilterPrimitive
         var octaves = Math.Min(Octaves, MaxOctaves);
         var isFractal = Type == FilterTurbulenceType.FractalNoise;
         var values = result.Values;
+        if (Vector256.IsHardwareAccelerated && !Resampler.TestForceScalar)
+        {
+            EvaluateVector(context, result, subregion, frequencyX, frequencyY, octaves, isFractal, isStitching, stitch);
+            return;
+        }
+
         Span<double> color = stackalloc double[4];
         Span<double> sums = stackalloc double[4];
         for (var y = subregion.Top; y < subregion.Bottom; y++)
@@ -138,6 +149,36 @@ public sealed class TurbulencePrimitive : FilterPrimitive
                 values[offset + 1] = (float)(color[1] * color[3]);
                 values[offset + 2] = (float)(color[2] * color[3]);
                 values[offset + 3] = (float)color[3];
+            }
+        }
+    }
+
+    /// <summary>
+    /// The pixels of <see cref="Evaluate"/>, the four channels of a pixel in the lanes of a vector: the same operations in
+    /// the same order on each channel.
+    /// </summary>
+    private void EvaluateVector(FilterGraphContext context, FilterSurface result, Rectangle subregion, double frequencyX, double frequencyY, int octaves, bool isFractal, bool isStitching, Stitch stitch)
+    {
+        var values = result.Values;
+        var zero = Vector256<double>.Zero;
+        var one = Vector256.Create(1.0);
+        var two = Vector256.Create(2.0);
+        for (var y = subregion.Top; y < subregion.Bottom; y++)
+        {
+            context.Processor.CancellationToken.ThrowIfCancellationRequested();
+            for (var x = subregion.Left; x < subregion.Right; x++)
+            {
+                var (pointX, pointY) = context.Processor.ToDrawing(x, y);
+                var sum = GetTurbulenceVector(pointX * frequencyX, pointY * frequencyY, octaves, isFractal, isStitching, stitch);
+                var value = isFractal ? (sum + one) / two : sum;
+
+                // Written so that a value that is not a number is zero
+                var color = Vector256.ConditionalSelect(Vector256.GreaterThan(value, zero), Vector256.ConditionalSelect(Vector256.LessThan(value, one), value, one), zero);
+
+                // The colors times the alpha, and the alpha times one: itself
+                var alpha = color.GetElement(3);
+                var premultiplied = color * Vector256.Create(alpha, alpha, alpha, 1.0);
+                Vector256.Narrow(premultiplied, premultiplied).GetLower().CopyTo(values[result.IndexOf(x, y)..]);
             }
         }
     }
@@ -213,8 +254,9 @@ public sealed class TurbulencePrimitive : FilterPrimitive
         }
     }
 
-    // The gradients of the four channels at a point of the lattice are side by side: the noise computes them together
-    private static int GradientIndex(int channel, int index, int component) => (((index * 4) + channel) * 2) + component;
+    // The gradients of the four channels at a point of the lattice are side by side, in a plane for each component: the
+    // noise computes the four channels together
+    private static int GradientIndex(int channel, int index, int component) => (component * GradientPlane) + (index * 4) + channel;
 
     /// <summary>
     /// The sums of the octaves at a point for the four channels: <see cref="GetTurbulence(int, double, double, int, bool, bool, Stitch)"/>
@@ -243,6 +285,33 @@ public sealed class TurbulencePrimitive : FilterPrimitive
                 stitch.WrapY = (2 * stitch.WrapY) - PerlinOffset;
             }
         }
+    }
+
+    /// <summary>
+    /// The sums of the octaves at a point for the four channels in the lanes of a vector: <see cref="GetTurbulence(double, double, int, bool, bool, Stitch, Span{double})"/>
+    /// with the same operations in the same order on each lane.
+    /// </summary>
+    internal Vector256<double> GetTurbulenceVector(double x, double y, int octaves, bool isFractal, bool isStitching, Stitch stitch)
+    {
+        var sums = Vector256<double>.Zero;
+        double ratio = 1;
+        for (var octave = 0; octave < octaves; octave++)
+        {
+            var noise = new LatticeCell(_lattice, x, y, isStitching, stitch).GetNoiseVector(_gradients);
+            sums += (isFractal ? noise : Vector256.Abs(noise)) / Vector256.Create(ratio);
+            x *= 2;
+            y *= 2;
+            ratio *= 2;
+            if (isStitching)
+            {
+                stitch.Width *= 2;
+                stitch.WrapX = (2 * stitch.WrapX) - PerlinOffset;
+                stitch.Height *= 2;
+                stitch.WrapY = (2 * stitch.WrapY) - PerlinOffset;
+            }
+        }
+
+        return sums;
     }
 
     /// <summary>The noise of an octave at a point for the four channels: <see cref="GetNoise(int, double, double, bool, Stitch)"/> for each of them.</summary>
@@ -359,6 +428,26 @@ public sealed class TurbulencePrimitive : FilterPrimitive
             v = (_rx1 * gradients[GradientIndex(channel, _b11, 0)]) + (_ry1 * gradients[GradientIndex(channel, _b11, 1)]);
             var b = Lerp(_sx, u, v);
             return Lerp(_sy, a, b);
+        }
+
+        /// <summary><see cref="GetNoise(double[], int)"/> of the four channels, in the lanes of a vector.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector256<double> GetNoiseVector(double[] gradients)
+        {
+            var rx0 = Vector256.Create(_rx0);
+            var rx1 = Vector256.Create(_rx1);
+            var ry0 = Vector256.Create(_ry0);
+            var ry1 = Vector256.Create(_ry1);
+            var sx = Vector256.Create(_sx);
+            var u = (rx0 * Load(gradients, _b00, 0)) + (ry0 * Load(gradients, _b00, 1));
+            var v = (rx1 * Load(gradients, _b10, 0)) + (ry0 * Load(gradients, _b10, 1));
+            var a = u + (sx * (v - u));
+            u = (rx0 * Load(gradients, _b01, 0)) + (ry1 * Load(gradients, _b01, 1));
+            v = (rx1 * Load(gradients, _b11, 0)) + (ry1 * Load(gradients, _b11, 1));
+            var b = u + (sx * (v - u));
+            return a + (Vector256.Create(_sy) * (b - a));
+
+            static Vector256<double> Load(double[] gradients, int index, int component) => Vector256.Create(gradients.AsSpan(GradientIndex(0, index, component), 4));
         }
     }
 

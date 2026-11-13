@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -164,6 +165,12 @@ internal static class HevcForwardTransform
             return;
         }
 
+        if (Avx2.IsSupported)
+        {
+            ForwardVector256(residual, coefficients, log2TrafoSize, bitDepth);
+            return;
+        }
+
         var nTbS = 1 << log2TrafoSize;
         var size = nTbS * nTbS;
         residual = residual[..size];
@@ -225,6 +232,123 @@ internal static class HevcForwardTransform
             }
         }
     }
+
+    // ForwardVector with AVX2, which has no multiply-accumulate by a lane: 8 rows of the residual at a time, then 8 columns
+    // of the intermediate values at a time, so that each broadcast weight multiplies 8 lanes
+    [SkipLocalsInit]
+    private static void ForwardVector256(ReadOnlySpan<int> residual, Span<int> coefficients, int log2TrafoSize, int bitDepth)
+    {
+        var nTbS = 1 << log2TrafoSize;
+        var size = nTbS * nTbS;
+        residual = residual[..size];
+        coefficients = coefficients[..size];
+        var rowBasis = GetRowBasis(log2TrafoSize, trType: 0);
+        var columnBasis = GetColumnBasis(log2TrafoSize, trType: 0);
+        var rowShift = GetRowShift(log2TrafoSize, bitDepth);
+        Span<int> intermediate = unsafe(stackalloc int[32 * 32])[..size];
+        Span<Vector256<int>> samples = unsafe(stackalloc Vector256<int>[32])[..nTbS];
+        Span<Vector256<int>> outputs = unsafe(stackalloc Vector256<int>[32])[..nTbS];
+        Span<Vector256<int>> odd = unsafe(stackalloc Vector256<int>[16]);
+
+        // The rows: samples[ i ] has the sample i of the rows y to y + 7, and outputs[ k ] their coefficient k
+        for (var y = 0; y < nTbS; y += 8)
+        {
+            for (var x = 0; x < nTbS; x += 4)
+            {
+                var r0 = Vector128.Create(residual[((y * nTbS) + x)..]);
+                var r1 = Vector128.Create(residual[(((y + 1) * nTbS) + x)..]);
+                var r2 = Vector128.Create(residual[(((y + 2) * nTbS) + x)..]);
+                var r3 = Vector128.Create(residual[(((y + 3) * nTbS) + x)..]);
+                var r4 = Vector128.Create(residual[(((y + 4) * nTbS) + x)..]);
+                var r5 = Vector128.Create(residual[(((y + 5) * nTbS) + x)..]);
+                var r6 = Vector128.Create(residual[(((y + 6) * nTbS) + x)..]);
+                var r7 = Vector128.Create(residual[(((y + 7) * nTbS) + x)..]);
+                HevcSimd.Transpose4x4(ref r0, ref r1, ref r2, ref r3);
+                HevcSimd.Transpose4x4(ref r4, ref r5, ref r6, ref r7);
+                samples[x] = Vector256.Create(r0, r4);
+                samples[x + 1] = Vector256.Create(r1, r5);
+                samples[x + 2] = Vector256.Create(r2, r6);
+                samples[x + 3] = Vector256.Create(r3, r7);
+            }
+
+            Transform1D(samples, outputs, odd, log2TrafoSize, rowBasis);
+            for (var k = 0; k < nTbS; k += 4)
+            {
+                var o0 = Round(outputs[k], rowShift);
+                var o1 = Round(outputs[k + 1], rowShift);
+                var o2 = Round(outputs[k + 2], rowShift);
+                var o3 = Round(outputs[k + 3], rowShift);
+                HevcSimd.Transpose4x4(ref o0, ref o1, ref o2, ref o3);
+
+                // Each 128-bit half has 4 rows: the rows y to y + 3 in the low halves, y + 4 to y + 7 in the high ones
+                o0.GetLower().CopyTo(intermediate[((y * nTbS) + k)..]);
+                o1.GetLower().CopyTo(intermediate[(((y + 1) * nTbS) + k)..]);
+                o2.GetLower().CopyTo(intermediate[(((y + 2) * nTbS) + k)..]);
+                o3.GetLower().CopyTo(intermediate[(((y + 3) * nTbS) + k)..]);
+                o0.GetUpper().CopyTo(intermediate[(((y + 4) * nTbS) + k)..]);
+                o1.GetUpper().CopyTo(intermediate[(((y + 5) * nTbS) + k)..]);
+                o2.GetUpper().CopyTo(intermediate[(((y + 6) * nTbS) + k)..]);
+                o3.GetUpper().CopyTo(intermediate[(((y + 7) * nTbS) + k)..]);
+            }
+        }
+
+        // The columns: samples[ y ] has the intermediate values k to k + 7 of the row y, and outputs[ j ] their coefficients
+        // of the row j, clipped to the range of the coefficients
+        var min = Vector256.Create(HevcInverseTransform.CoeffMin);
+        var max = Vector256.Create(HevcInverseTransform.CoeffMax);
+        for (var k = 0; k < nTbS; k += 8)
+        {
+            for (var y = 0; y < nTbS; y++)
+            {
+                samples[y] = Vector256.Create(intermediate[((y * nTbS) + k)..]);
+            }
+
+            Transform1D(samples, outputs, odd, log2TrafoSize, columnBasis);
+            for (var j = 0; j < nTbS; j++)
+            {
+                Vector256.Min(Vector256.Max(Round(outputs[j], ColumnShift), min), max).CopyTo(coefficients[((j * nTbS) + k)..]);
+            }
+        }
+    }
+
+    // Transform1D of 8 lanes
+    private static void Transform1D(Span<Vector256<int>> samples, Span<Vector256<int>> outputs, Span<Vector256<int>> odd, int log2TrafoSize, ReadOnlySpan<int> basis)
+    {
+        var nTbS = 1 << log2TrafoSize;
+        var level = 0;
+        for (var n = nTbS; n > 2; n >>= 1, level++)
+        {
+            var half = n >> 1;
+            var differences = odd[..half];
+            for (var i = 0; i < differences.Length; i++)
+            {
+                var first = samples[i];
+                var last = samples[n - 1 - i];
+                samples[i] = first + last;
+                differences[i] = first - last;
+            }
+
+            for (var m = 0; m < half; m++)
+            {
+                var k = ((2 * m) + 1) << level;
+                var weights = basis.Slice(k * nTbS, half);
+                var sum = (differences[0] * weights[0]) + (differences[1] * weights[1]);
+                for (var i = 2; i < half; i += 2)
+                {
+                    sum += (differences[i] * weights[i]) + (differences[i + 1] * weights[i + 1]);
+                }
+
+                outputs[k] = sum;
+            }
+        }
+
+        var scale = basis[0];
+        outputs[0] = (samples[0] + samples[1]) * scale;
+        outputs[nTbS / 2] = (samples[0] - samples[1]) * scale;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<int> Round(Vector256<int> value, int bits) => (value + Vector256.Create(1 << (bits - 1)) + (value >> 31)) >> bits;
 
     // The transform of a 4x4 block in 4 vectors: its columns (the transposed rows), then the transposed intermediate values
     private static void Forward4x4(ReadOnlySpan<int> residual, Span<int> coefficients, int trType, int bitDepth)

@@ -7243,6 +7243,44 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HevcForwardTransformMatchesTheScalarReference(int bitDepth)
+    {
+        // Every size and type, with random residuals, residuals of the extremes of the range and sparse ones
+        var random = new Random(bitDepth);
+        var max = (1 << 12) - 1;
+        for (var log2TrafoSize = 2; log2TrafoSize <= 5; log2TrafoSize++)
+        {
+            var count = 1 << (log2TrafoSize << 1);
+            for (var trType = 0; trType <= (log2TrafoSize is 2 ? 1 : 0); trType++)
+            {
+                for (var round = 0; round < 300; round++)
+                {
+                    var residual = new int[count];
+                    for (var i = 0; i < count; i++)
+                    {
+                        residual[i] = (round % 4) switch
+                        {
+                            0 => random.Next(2) is 0 ? -max : max,
+                            1 => random.Next(8) is 0 ? random.Next(-max, max + 1) : 0,
+                            _ => random.Next(-max, max + 1),
+                        };
+                    }
+
+                    var expected = new int[count];
+                    var actual = new int[count];
+                    HevcForwardTransform.ForwardScalar(residual, expected, log2TrafoSize, trType, bitDepth);
+                    HevcForwardTransform.Forward(residual, actual, log2TrafoSize, trType, bitDepth);
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void HevcInterPredictionMatchesTheScalarReferences(int bitDepth)
     {
         // Every fractional position of the luma and chroma filters, the block sizes of the prediction units, blocks inside

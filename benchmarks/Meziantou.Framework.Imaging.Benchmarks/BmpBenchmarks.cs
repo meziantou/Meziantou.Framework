@@ -18,6 +18,10 @@ public class BmpBenchmarks : IDisposable
     private Image<Rgb24> _photo = null!;
     private Image<Rgba32> _transparent = null!;
     private Image<Rgb24> _indexed = null!;
+    private Image<Rgb24> _sixteenColors = null!;
+    private Image<Gray8> _bilevel = null!;
+    private byte[] _bmp565 = null!;
+    private byte[] _bmpIndexed4 = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -30,6 +34,16 @@ public class BmpBenchmarks : IDisposable
         WorkloadChecks.RequireLossless(BenchmarkInputs.BmpRgb, BenchmarkInputs.LargeRgb24Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.BmpRgba, BenchmarkInputs.ServiceRgba32Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.BmpRunLength8, BenchmarkInputs.IndexedRgb24Source);
+
+        // 16 colors: the red channel reduced to 4 levels, green and blue to 2
+        var sixteenColors = BenchmarkInputs.LargeRgb24Source.Select(static p => new Rgb24((byte)((p.R >> 6) * 85), (byte)((p.G >> 7) * 255), (byte)((p.B >> 7) * 255))).ToArray();
+        _sixteenColors = Image.ImportPixelData<Rgb24>(sixteenColors, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
+        _bilevel = Image.ImportPixelData<Gray8>(BenchmarkInputs.LargeBilevelSource, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
+        _bmp565 = Encode(_photo, new BmpEncoder { PixelLayout = BmpPixelLayout.Bgr565, AllowBitDepthReduction = true });
+        _bmpIndexed4 = Encode(_sixteenColors, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4 });
+        WorkloadChecks.RequireLossless(_bmpIndexed4, sixteenColors);
+        WorkloadChecks.RequireLossless(Encode(_sixteenColors, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4, Compression = BmpCompression.RunLength }), sixteenColors);
+        WorkloadChecks.RequireLossless(Encode(_bilevel, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed1 }), BenchmarkInputs.LargeBilevelSource.Select(static p => new Rgb24(p.Value, p.Value, p.Value)).ToArray());
     }
 
     [GlobalCleanup]
@@ -38,6 +52,8 @@ public class BmpBenchmarks : IDisposable
         _photo?.Dispose();
         _transparent?.Dispose();
         _indexed?.Dispose();
+        _sixteenColors?.Dispose();
+        _bilevel?.Dispose();
     }
 
     [Benchmark]
@@ -65,6 +81,22 @@ public class BmpBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("2048x1536 BMP 16-bit (5-6-5 bit fields) -> Rgb24")]
+    public int DecodeBmpRgb565()
+    {
+        using var image = Image.Load<Rgb24>(_bmp565);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 BMP 4-bit indexed (16 colors) -> Rgb24")]
+    public int DecodeBmpIndexed4()
+    {
+        using var image = Image.Load<Rgb24>(_bmpIndexed4);
+        return image.Width;
+    }
+
+    [Benchmark]
     [Workload("1024x768 BMP 32-bit with an alpha mask -> Rgba32")]
     public int DecodeBmpRgba()
     {
@@ -85,8 +117,26 @@ public class BmpBenchmarks : IDisposable
     public long EncodeBmpRunLength8() => ImageWorkloads.Encode(_indexed, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, Compression = BmpCompression.RunLength }, _output);
 
     [Benchmark]
+    [Workload("2048x1536 Rgb24 of 16 colors -> BMP 4-bit indexed", ReturnsOutputBytes = true)]
+    public long EncodeBmpIndexed4() => ImageWorkloads.Encode(_sixteenColors, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4 }, _output);
+
+    [Benchmark]
+    [Workload("2048x1536 Rgb24 of 16 colors -> BMP 4-bit indexed run-length", ReturnsOutputBytes = true)]
+    public long EncodeBmpRunLength4() => ImageWorkloads.Encode(_sixteenColors, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4, Compression = BmpCompression.RunLength }, _output);
+
+    [Benchmark]
+    [Workload("2048x1536 Gray8 bilevel (text page) -> BMP 1-bit indexed", ReturnsOutputBytes = true)]
+    public long EncodeBmpIndexed1() => ImageWorkloads.Encode(_bilevel, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed1 }, _output);
+
+    [Benchmark]
     [Workload("1024x768 Rgba32 -> BMP 32-bit", ReturnsOutputBytes = true)]
     public long EncodeBmpRgba() => ImageWorkloads.Encode(_transparent, new BmpEncoder(), _output);
+
+    private byte[] Encode(Image image, BmpEncoder encoder)
+    {
+        ImageWorkloads.Encode(image, encoder, _output);
+        return _output.ToArray();
+    }
 
     public void Dispose()
     {

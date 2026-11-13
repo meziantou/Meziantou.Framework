@@ -2,6 +2,7 @@ using BenchmarkDotNet.Attributes;
 using Meziantou.Framework.Imaging.Benchmarks.Infrastructure;
 using Meziantou.Framework.Imaging.Benchmarks.Workloads;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Benchmarks;
 
@@ -18,6 +19,10 @@ public class TiffBenchmarks : IDisposable
     private readonly MemoryStream _output = new();
     private Image<Rgb24> _photo = null!;
     private ImageDecodeOptions _options = ImageDecodeOptions.Default;
+    private Image<Rgba64> _rgba16 = null!;
+    private Image<Gray8> _bilevel = null!;
+    private Image<RgbaFloat> _float = null!;
+    private byte[] _tiffFloat = null!;
 
     /// <summary>Gets or sets <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> (1 is the default configuration).</summary>
     [Params(1, 8)]
@@ -40,10 +45,27 @@ public class TiffBenchmarks : IDisposable
         WorkloadChecks.RequireLossless(BenchmarkInputs.TiffBilevel, BenchmarkInputs.LargeBilevelSource);
         WorkloadChecks.RequireLossless(BenchmarkInputs.TiffCcittGroup4, BenchmarkInputs.LargeBilevelSource);
         WorkloadChecks.RequireLossless(BenchmarkInputs.TiffRgb16, BenchmarkInputs.Rgb16Pixels);
+        _rgba16 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.LargeRgba64Source, BenchmarkInputs.Large16Width, BenchmarkInputs.Large16Height, configuration: configuration);
+        _bilevel = Image.ImportPixelData<Gray8>(BenchmarkInputs.LargeBilevelSource, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight, configuration: configuration);
+        var floats = BenchmarkInputs.LargeRgba64Source.Select(static p => new RgbaFloat(p.R / 65535f, p.G / 65535f, p.B / 65535f, p.A / 65535f)).ToArray();
+        _float = Image.ImportPixelData<RgbaFloat>(floats, BenchmarkInputs.Large16Width, BenchmarkInputs.Large16Height, configuration: configuration);
+        _float.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        ImageWorkloads.Encode(_float, new TiffEncoder { Compression = TiffCompression.None }, _output);
+        _tiffFloat = _output.ToArray();
+        WorkloadChecks.RequireLossless(_tiffFloat, floats);
+        WorkloadChecks.RequireLossless(Encode(_rgba16, new TiffEncoder { Compression = TiffCompression.Lzw, Predictor = TiffPredictor.HorizontalDifferencing, BigEndian = true }), BenchmarkInputs.LargeRgba64Source);
+        WorkloadChecks.RequireLossless(Encode(_photo, new TiffEncoder { Compression = TiffCompression.PackBits }), BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(Encode(_float, new TiffEncoder { Compression = TiffCompression.Lzw }), floats);
     }
 
     [GlobalCleanup]
-    public void Cleanup() => _photo?.Dispose();
+    public void Cleanup()
+    {
+        _photo?.Dispose();
+        _rgba16?.Dispose();
+        _bilevel?.Dispose();
+        _float?.Dispose();
+    }
 
     [Benchmark]
     [Workload("2048x1536 TIFF RGB LZW -> Rgb24")]
@@ -126,12 +148,46 @@ public class TiffBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("1024x768 TIFF RGBA 32-bit float little-endian, uncompressed -> RgbaFloat")]
+    public int DecodeTiffFloat()
+    {
+        using var image = Image.Load<RgbaFloat>(_tiffFloat, _options);
+        return image.Width;
+    }
+
+    [Benchmark]
     [Workload("2048x1536 Rgb24 -> TIFF LZW", ReturnsOutputBytes = true)]
     public long EncodeTiffLzw() => ImageWorkloads.Encode(_photo, new TiffEncoder { Compression = TiffCompression.Lzw }, _output);
 
     [Benchmark]
     [Workload("2048x1536 Rgb24 -> TIFF Deflate", ReturnsOutputBytes = true)]
     public long EncodeTiffDeflate() => ImageWorkloads.Encode(_photo, new TiffEncoder { Compression = TiffCompression.Deflate }, _output);
+
+    [Benchmark]
+    [Workload("2048x1536 Rgb24 -> TIFF PackBits", ReturnsOutputBytes = true)]
+    public long EncodeTiffPackBits() => ImageWorkloads.Encode(_photo, new TiffEncoder { Compression = TiffCompression.PackBits }, _output);
+
+    [Benchmark]
+    [Workload("1024x768 Rgba64 -> TIFF RGBA 16-bit big-endian LZW with the horizontal predictor", ReturnsOutputBytes = true)]
+    public long EncodeTiffPredictor16() => ImageWorkloads.Encode(_rgba16, new TiffEncoder { Compression = TiffCompression.Lzw, Predictor = TiffPredictor.HorizontalDifferencing, BigEndian = true }, _output);
+
+    [Benchmark]
+    [Workload("2048x1536 Gray8 bilevel (text page) -> TIFF bilevel, uncompressed", ReturnsOutputBytes = true)]
+    public long EncodeTiffBilevel() => ImageWorkloads.Encode(_bilevel, new TiffEncoder { Compression = TiffCompression.None, PixelLayout = TiffPixelLayout.Bilevel }, _output);
+
+    [Benchmark]
+    [Workload("1024x768 RgbaFloat -> TIFF RGBA 32-bit float little-endian, uncompressed", ReturnsOutputBytes = true)]
+    public long EncodeTiffFloat() => ImageWorkloads.Encode(_float, new TiffEncoder { Compression = TiffCompression.None }, _output);
+
+    [Benchmark]
+    [Workload("1024x768 RgbaFloat -> TIFF RGBA 32-bit float LZW with the floating-point predictor", ReturnsOutputBytes = true)]
+    public long EncodeTiffFloatLzw() => ImageWorkloads.Encode(_float, new TiffEncoder { Compression = TiffCompression.Lzw }, _output);
+
+    private byte[] Encode(Image image, TiffEncoder encoder)
+    {
+        ImageWorkloads.Encode(image, encoder, _output);
+        return _output.ToArray();
+    }
 
     public void Dispose()
     {

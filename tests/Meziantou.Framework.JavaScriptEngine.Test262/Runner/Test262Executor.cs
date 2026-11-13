@@ -7,7 +7,9 @@ namespace Meziantou.Framework.JavaScriptEngine.Test262.Runner;
 /// <summary>Runs a test262 file with the engine, in each of its modes (https://github.com/tc39/test262/blob/main/INTERPRETING.md).</summary>
 internal static class Test262Executor
 {
-    private static readonly ConcurrentDictionary<string, string> HarnessFiles = new(StringComparer.Ordinal);
+    // The harness files are parsed once: their compiled code (the bytecode, and the .NET code of the compiled run) is
+    // shared by the engines of all the tests, as a JsPreparedScript run by many engines is
+    private static readonly ConcurrentDictionary<string, JsPreparedScript> HarnessFiles = new(StringComparer.Ordinal);
 
     public static IReadOnlyList<Test262Result> Run(Test262Test test)
     {
@@ -99,7 +101,7 @@ internal static class Test262Executor
             {
                 foreach (var include in GetIncludes(metadata))
                 {
-                    realm.Execute(GetHarnessFile(include), include);
+                    realm.Execute(GetHarnessFile(include));
                 }
             }
 
@@ -184,7 +186,7 @@ internal static class Test262Executor
         }
     }
 
-    private static string GetHarnessFile(string name) => HarnessFiles.GetOrAdd(name, static n => File.ReadAllText(Test262Paths.Harness / n));
+    private static JsPreparedScript GetHarnessFile(string name) => HarnessFiles.GetOrAdd(name, n => JsPreparedScript.Parse(File.ReadAllText(Test262Paths.Harness / n), n));
 
     /// <summary>The name of the constructor of an error, read without running code.</summary>
     private static string GetErrorName(JsValue value)

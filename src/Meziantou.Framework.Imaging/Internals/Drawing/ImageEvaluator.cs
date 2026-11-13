@@ -331,6 +331,13 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
                 _tapColumns = ResampleWeights.Rent<int>(_scope, taps);
                 _tapCapacity = taps;
             }
+
+            // The sums of the rows only save time: on the calling thread, before any pixel changes, so that a paint shared
+            // by workers never fails halfway for want of room
+            if (UseVectorKernels)
+            {
+                TryRentRowSums();
+            }
         }
 
         if (_keepsRows && !_isEmpty && _regionWidth > _rowCapacity)
@@ -682,6 +689,11 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             worker._tapCounts = RentLike(_scope, _tapCounts);
             worker._tapWeights = RentLike(_scope, _tapWeights);
             worker._tapColumns = RentLike(_scope, _tapColumns);
+            if (_rowSums is not null)
+            {
+                // Without room for them, the worker evaluates its runs with the scalar reference
+                worker.TryRentRowSums();
+            }
         }
         catch
         {
@@ -1389,7 +1401,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         where TLanes : struct, IColorLanes<TLanes>
     {
         var count = samples.Length;
-        if (!TryGetRunTaps(y, x, count) || !TryRentRowSums())
+        if (_rowSums is null || !TryGetRunTaps(y, x, count))
         {
             InvalidateRunTaps();
             return false;
@@ -1488,8 +1500,12 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         return true;
     }
 
-    /// <summary>Rents the sums of the rows of the image for the pixels of a run: a slot per row a pixel of the canvas reads, fewer when they would take too much room.</summary>
-    /// <returns><see langword="false"/> when even one slot would exceed the allocation limit.</returns>
+    /// <summary>
+    /// Rents the sums of the rows of the image for the pixels of a run: a slot per row a pixel of the canvas reads, fewer
+    /// when they would take too much room. Called on the thread that prepares the paint (<see cref="Prepare(ImageFrame, Rectangle?, AffineTransform, ImageWrapMode, ImageWrapMode, ImageSampling, ImageFrame, int, string)"/>,
+    /// <see cref="CreateWorker"/>), never while workers paint: they share the scope.
+    /// </summary>
+    /// <returns><see langword="false"/> when even one slot would exceed the allocation limit: the sums are not rented.</returns>
     private bool TryRentRowSums()
     {
         // The rows a pixel reads, at most: those within a span on each side of its position

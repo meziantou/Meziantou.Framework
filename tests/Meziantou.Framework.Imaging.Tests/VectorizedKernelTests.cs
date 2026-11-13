@@ -103,6 +103,39 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    public void PngPaethVectorMatchesTheScalarPredictorForEveryTriple()
+    {
+        var count = Vector<byte>.Count;
+        var upperLeft = new byte[count];
+        for (var a = 0; a < 256; a++)
+        {
+            var left = new Vector<byte>((byte)a);
+            for (var b = 0; b < 256; b++)
+            {
+                var above = new Vector<byte>((byte)b);
+                for (var c0 = 0; c0 < 256; c0 += count)
+                {
+                    for (var lane = 0; lane < count; lane++)
+                    {
+                        upperLeft[lane] = (byte)(c0 + lane);
+                    }
+
+                    var c = new Vector<byte>(upperLeft);
+                    var actual = PngFilters.PaethVector(left, above, c);
+                    if (actual != PngFilters.PaethVectorWide(left, above, c))
+                        Assert.Fail($"The Paeth predictors of the vector paths differ for a = {a}, b = {b}, c = {c0}..{c0 + count - 1}.");
+
+                    for (var lane = 0; lane < count; lane++)
+                    {
+                        if (actual[lane] != PngFilters.PaethPredictor((byte)a, (byte)b, upperLeft[lane]))
+                            Assert.Fail($"The vector Paeth predictor differs from the scalar one for a = {a}, b = {b}, c = {upperLeft[lane]}.");
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void PngAdaptiveCostMatchesTheScalarReferenceOnLongRows()
     {
         // Long rows of extreme values exercise the 16-bit partial sums and their flushes
@@ -196,6 +229,14 @@ public sealed class VectorizedKernelTests
                     PngFilters.GetAdaptiveCosts(row, previous, bytesPerPixel, actual);
                     Assert.Equal(expected, actual);
 
+                    // The Paeth bytes written with the costs are the ones of the filter (the bytes after the row untouched)
+                    var expectedPaeth = new byte[length + 5];
+                    var actualPaeth = new byte[length + 5];
+                    PngFilters.FilterScalar(PngFilters.Paeth, row, previous, bytesPerPixel, expectedPaeth);
+                    Array.Clear(actual);
+                    PngFilters.GetAdaptiveCosts(row, previous, bytesPerPixel, actual, actualPaeth);
+                    Assert.Equal(expected, actual);
+                    Assert.Equal(expectedPaeth, actualPaeth);
                 }
             }
         }

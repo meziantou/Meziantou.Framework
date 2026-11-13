@@ -453,9 +453,11 @@ internal sealed class PngImageDataEncoder : IDisposable
 
     private Span<byte> FilterAdaptive(ReadOnlySpan<byte> current, ReadOnlySpan<byte> previous, int bytesPerPixel, int length)
     {
-        // The filter of the smallest cost, the lowest type on a tie; only the winner is written
+        // The filter of the smallest cost, the lowest type on a tie. The costs come with the Paeth bytes, the slowest to
+        // compute again; another winner is written over them
+        var filtered = _filtered!.RawBuffer.AsSpan(0, length + 1);
         Span<long> costs = stackalloc long[5];
-        PngFilters.GetAdaptiveCosts(current, previous, bytesPerPixel, costs);
+        PngFilters.GetAdaptiveCosts(current, previous, bytesPerPixel, costs, filtered[1..]);
         byte best = PngFilters.None;
         for (byte type = PngFilters.Sub; type <= PngFilters.Paeth; type++)
         {
@@ -465,9 +467,12 @@ internal sealed class PngImageDataEncoder : IDisposable
             }
         }
 
-        var filtered = _filtered!.RawBuffer.AsSpan(0, length + 1);
         filtered[0] = best;
-        PngFilters.Filter(best, current, previous, bytesPerPixel, filtered[1..]);
+        if (best != PngFilters.Paeth)
+        {
+            PngFilters.Filter(best, current, previous, bytesPerPixel, filtered[1..]);
+        }
+
         return filtered;
     }
 

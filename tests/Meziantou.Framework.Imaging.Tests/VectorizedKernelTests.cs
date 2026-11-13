@@ -3516,6 +3516,60 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void SsimStatisticsAndScoresMatchTheScalarReference()
+    {
+        var random = new Random(20261118);
+        foreach (var width in new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 20 })
+        {
+            foreach (var windowHeight in new[] { 1, 2, 5, 7 })
+            {
+                // The statistics of a window of rows, then of the next one: a row leaves and another one enters
+                var rows = Enumerable.Range(0, windowHeight + 1).Select(_ => NextRow(random, width)).ToArray();
+                var expectedColumns = new int[width * 20];
+                var actualColumns = new int[width * 20];
+                for (var row = 0; row < windowHeight; row++)
+                {
+                    SsimAccumulator.UpdateColumnStatisticsScalar(rows[row].Expected, rows[row].Actual, expectedColumns, 1);
+                    SsimAccumulator.UpdateColumnStatistics(rows[row].Expected, rows[row].Actual, actualColumns, 1);
+                }
+
+                Assert.Equal(expectedColumns, actualColumns);
+                var windowWidth = Math.Min(7, width);
+                AssertScores(expectedColumns, width, windowWidth, windowHeight, random);
+
+                SsimAccumulator.UpdateColumnStatisticsScalar(rows[0].Expected, rows[0].Actual, expectedColumns, -1);
+                SsimAccumulator.UpdateColumnStatistics(rows[0].Expected, rows[0].Actual, actualColumns, -1);
+                SsimAccumulator.UpdateColumnStatisticsScalar(rows[windowHeight].Expected, rows[windowHeight].Actual, expectedColumns, 1);
+                SsimAccumulator.UpdateColumnStatistics(rows[windowHeight].Expected, rows[windowHeight].Actual, actualColumns, 1);
+                Assert.Equal(expectedColumns, actualColumns);
+                AssertScores(expectedColumns, width, windowWidth, windowHeight, random);
+            }
+        }
+
+        static void AssertScores(int[] columns, int width, int windowWidth, int windowHeight, Random random)
+        {
+            var expected = Enumerable.Range(0, 4).Select(_ => random.NextDouble() * 100).ToArray();
+            var actual = (double[])expected.Clone();
+            SsimAccumulator.AccumulateWindowsScalar(columns, width, windowWidth, windowHeight, expected);
+            SsimAccumulator.AccumulateWindows(columns, width, windowWidth, windowHeight, actual);
+            Assert.Equal(Array.ConvertAll(expected, BitConverter.DoubleToInt64Bits), Array.ConvertAll(actual, BitConverter.DoubleToInt64Bits));
+        }
+
+        static (byte[] Expected, byte[] Actual) NextRow(Random random, int width)
+        {
+            var expected = Enumerable.Range(0, width * 4).Select(_ => random.Next(4) switch
+            {
+                0 => (byte)0,
+                1 => byte.MaxValue,
+                _ => (byte)random.Next(256),
+            }).ToArray();
+            var actual = expected.Select(value => random.Next(3) == 0 ? value : (byte)random.Next(256)).ToArray();
+            return (expected, actual);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WideSsimStatisticsAndScoresMatchTheScalarReference()
     {
         var random = new Random(20261115);

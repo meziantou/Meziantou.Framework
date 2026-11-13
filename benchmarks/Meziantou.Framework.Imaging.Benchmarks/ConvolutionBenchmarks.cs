@@ -29,6 +29,7 @@ public class ConvolutionBenchmarks
     private Image<Rgba64> _rgba64 = null!;
     private Image<Rgba32> _opaque32 = null!;
     private Image<RgbaFloat> _float = null!;
+    private Image<RgbaHalf> _half = null!;
 
     /// <summary>Gets or sets <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> (1 is the default configuration).</summary>
     [Params(1, 2, 4)]
@@ -42,6 +43,7 @@ public class ConvolutionBenchmarks
         _rgba64 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.ResizeRgba64Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration);
         _opaque32 = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32OpaqueSource, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration);
         _float = _rgba64.CloneAs<RgbaFloat>();
+        _half = _rgba64.CloneAs<RgbaHalf>();
     }
 
     [GlobalCleanup]
@@ -51,6 +53,7 @@ public class ConvolutionBenchmarks
         _rgba64?.Dispose();
         _opaque32?.Dispose();
         _float?.Dispose();
+        _half?.Dispose();
     }
 
     [Benchmark(Baseline = true)]
@@ -84,6 +87,14 @@ public class ConvolutionBenchmarks
     [Benchmark]
     [Workload("1920x1080 Rgba64 3x3 box blur (9 weights)")]
     public int Box3Rgba64() => Convolve(_rgba64, new ConvolutionOptions(BoxKernel));
+
+    [Benchmark]
+    [Workload("1920x1080 RgbaFloat 3x3 box blur (9 weights)")]
+    public int Box3Float() => Convolve(_float, new ConvolutionOptions(BoxKernel));
+
+    [Benchmark]
+    [Workload("1920x1080 RgbaHalf 3x3 box blur (9 weights)")]
+    public int Box3Half() => Convolve(_half, new ConvolutionOptions(BoxKernel));
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 Gaussian blur, deviation 2 (13 weights per direction)")]

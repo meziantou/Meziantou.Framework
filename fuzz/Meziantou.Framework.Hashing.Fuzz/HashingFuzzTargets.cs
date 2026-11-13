@@ -61,7 +61,7 @@ public static partial class HashingFuzzTargets
         FuzzAssert.Equal(crc, Crc32.Append(Crc32.Compute(message.AsSpan(0, split)), message.AsSpan(split)), $"CRC-32 appended at {split}");
         FuzzAssert.Equal(adler, Adler32.Append(Adler32.Compute(message.AsSpan(0, split)), message.AsSpan(split)), $"Adler-32 appended at {split}");
 
-        // The vector paths load 16 to 64 bytes at a time: a copy that is not aligned on them gives the same checksums
+        // The vector paths load 16 to 256 bytes at a time: a copy that is not aligned on them gives the same checksums
         var offset = (options & 0x0F) + 1;
         var unaligned = new byte[message.Length + offset];
         message.CopyTo(unaligned, offset);
@@ -647,6 +647,7 @@ public static partial class HashingFuzzTargets
         yield return Seed("empty", [0], [], []);
         yield return Seed("text", [0x80], [], "The quick brown fox jumps over the lazy dog"u8);
         yield return Seed("vector-blocks", [0x47], [], "0123456789abcdef"u8, 200);
+        yield return Seed("wide-vector-blocks", [0x9B], [], "The quick brown fox jumps over the lazy dog"u8, 1000);
         yield return Seed("ones-adler-interval", [0x13], [], [0xFF], 5553);
         yield return Seed("ones-long", [0xFE], [], [0xFF], 65535);
         yield return Seed("zeros", [0x31], [], [], 4096);

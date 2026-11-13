@@ -389,10 +389,11 @@ internal static class Convolver
     }
 
     /// <summary>
-    /// Sets every value of <paramref name="result"/> to <c>Math.Max(r, o)</c>, or <c>Math.Max(r, |o|)</c> when
-    /// <paramref name="absolute"/> (<paramref name="other"/> may be <paramref name="result"/>, which takes absolute values),
-    /// a vector at a time when <paramref name="vectorized"/>: <c>Max</c> of vectors orders -0 before 0 as
-    /// <see cref="Math.Max(double, double)"/> does, and the value that is not a number is chosen as it does.
+    /// Sets every value of <paramref name="result"/> to the maximum of <c>r</c> and <c>o</c> (<see cref="Maximum"/>), or of
+    /// <c>r</c> and <c>|o|</c> when <paramref name="absolute"/> (<paramref name="other"/> may be <paramref name="result"/>,
+    /// which takes absolute values), a vector at a time when <paramref name="vectorized"/>: <c>Max</c> of vectors orders -0
+    /// before 0 as <see cref="Math.Max(double, double)"/> does, and the value that is not a number is chosen as
+    /// <see cref="Maximum"/> chooses it.
     /// </summary>
     internal static void SetMaximums(Span<double> result, ReadOnlySpan<double> other, bool absolute, bool vectorized)
     {
@@ -410,7 +411,7 @@ internal static class Convolver
                     var b = Vector256.LoadUnsafe(ref otherStart, (nuint)i);
                     b = absolute ? Vector256.Abs(b) : b;
 
-                    // The NaN of Math.Max: the first operand when it is one, else the second
+                    // The NaN of Maximum: the first operand when it is one, else the second
                     var maximum = Vector256.ConditionalSelect(~Vector256.Equals(b, b), b, Vector256.Max(a, b));
                     Vector256.ConditionalSelect(~Vector256.Equals(a, a), a, maximum).StoreUnsafe(ref resultStart, (nuint)i);
                 }
@@ -426,7 +427,7 @@ internal static class Convolver
                     var b = Vector128.LoadUnsafe(ref otherStart, (nuint)i);
                     b = absolute ? Vector128.Abs(b) : b;
 
-                    // The NaN of Math.Max: the first operand when it is one, else the second
+                    // The NaN of Maximum: the first operand when it is one, else the second
                     var maximum = Vector128.ConditionalSelect(~Vector128.Equals(b, b), b, Vector128.Max(a, b));
                     Vector128.ConditionalSelect(~Vector128.Equals(a, a), a, maximum).StoreUnsafe(ref resultStart, (nuint)i);
                 }
@@ -435,9 +436,17 @@ internal static class Convolver
 
         for (; i < length; i++)
         {
-            result[i] = Math.Max(result[i], absolute ? Math.Abs(other[i]) : other[i]);
+            result[i] = Maximum(result[i], absolute ? Math.Abs(other[i]) : other[i]);
         }
     }
+
+    /// <summary>
+    /// Gets <see cref="Math.Max(double, double)"/> of two values, with the value that is not a number chosen the same way on
+    /// every runtime: the first operand when it is one, else the second. <see cref="Math.Max(double, double)"/> returns a
+    /// value that is not a number when either is one, but not always the same one (on .NET 10 x64,
+    /// <c>Math.Max(-NaN, NaN)</c> is the second).
+    /// </summary>
+    private static double Maximum(double left, double right) => double.IsNaN(left) ? left : double.IsNaN(right) ? right : Math.Max(left, right);
 
     /// <summary>
     /// Adds the bias of a plan to the color working samples of a row: multiplied by the filtered alpha when the colors are

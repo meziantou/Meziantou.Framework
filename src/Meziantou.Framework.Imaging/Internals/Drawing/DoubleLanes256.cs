@@ -15,6 +15,9 @@ internal readonly struct DoubleLanes256 : IDoubleLanes<Vector256<double>>
     public static Vector256<double> Sequence(int start) => Vector256.Create((double)start) + Vector256.Create(0.0, 1.0, 2.0, 3.0);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector256<double> Create(double a, double b, double c, double d, int lane) => Vector256.Create(a, b, c, d);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector256<double> Load(ReadOnlySpan<double> source) => Vector256.Create(source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1979,18 +1979,12 @@ internal static class DrawingKernels
         Span<ushort> single = [color.C0, color.C1, color.C2, color.Alpha];
         Span<ushort> chunkColors = stackalloc ushort[ChunkSize * 4];
 
-        // The four samples of the paint, then the three color samples of the pixel and a zero, then the results
-        Span<double> values = stackalloc double[8];
+        // The color of a single paint from 0 to 1, computed once: the lanes of the first two samples, and of the last two
+        // when a vector has two lanes
         Span<double> results = stackalloc double[4];
-        values[7] = 0;
         var isSingle = colors.IsEmpty;
-        if (isSingle)
-        {
-            for (var c = 0; c < 4; c++)
-            {
-                values[c] = single[c];
-            }
-        }
+        var singleLow = TLanes.Divide(TLanes.Create(single[0], single[1], single[2], single[3], 0), maxes);
+        var singleHigh = TLanes.Divide(TLanes.Create(single[0], single[1], single[2], single[3], 2), maxes);
 
         for (var start = 0; start < coverage.Length; start += ChunkSize)
         {
@@ -2009,25 +2003,17 @@ internal static class DrawingKernels
                 if (paint[3] == 0 || backdropSample == 0)
                     continue;
 
-                if (!isSingle)
-                {
-                    values[0] = paint[0];
-                    values[1] = paint[1];
-                    values[2] = paint[2];
-                    values[3] = paint[3];
-                }
-
-                values[4] = double.CreateTruncating(pixel[0]);
-                values[5] = double.CreateTruncating(pixel[1]);
-                values[6] = double.CreateTruncating(pixel[2]);
+                var pixel0 = double.CreateTruncating(pixel[0]);
+                var pixel1 = double.CreateTruncating(pixel[1]);
+                var pixel2 = double.CreateTruncating(pixel[2]);
 
                 // An opaque backdrop without alpha is 1, which M / M is
                 var backdrop = TLanes.Create(backdropSample / max);
                 var kept = TLanes.Subtract(one, backdrop);
                 for (var lane = 0; lane < 4; lane += count)
                 {
-                    var s = TLanes.Divide(TLanes.Load(values[lane..]), maxes);
-                    var d = TLanes.Divide(TLanes.Load(values[(4 + lane)..]), maxes);
+                    var s = isSingle ? (lane == 0 ? singleLow : singleHigh) : TLanes.Divide(TLanes.Create(paint[0], paint[1], paint[2], paint[3], lane), maxes);
+                    var d = TLanes.Divide(TLanes.Create(pixel0, pixel1, pixel2, 0, lane), maxes);
                     var mixed = TLanes.Add(TLanes.Multiply(kept, s), TLanes.Multiply(backdrop, TBlend.Blend<TLanes, TVector>(s, d)));
 
                     // Written so that a value that is not a number is zero

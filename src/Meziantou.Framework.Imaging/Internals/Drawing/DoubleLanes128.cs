@@ -15,6 +15,9 @@ internal readonly struct DoubleLanes128 : IDoubleLanes<Vector128<double>>
     public static Vector128<double> Sequence(int start) => Vector128.Create((double)start) + Vector128.Create(0.0, 1.0);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<double> Create(double a, double b, double c, double d, int lane) => lane == 0 ? Vector128.Create(a, b) : Vector128.Create(c, d);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector128<double> Load(ReadOnlySpan<double> source) => Vector128.Create(source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -15,6 +15,9 @@ internal readonly struct DoubleLanes512 : IDoubleLanes<Vector512<double>>
     public static Vector512<double> Sequence(int start) => Vector512.Create((double)start) + Vector512.Create(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector512<double> Create(double a, double b, double c, double d, int lane) => Vector512.Create(a, b, c, d, 0, 0, 0, 0);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector512<double> Load(ReadOnlySpan<double> source) => Vector512.Create(source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

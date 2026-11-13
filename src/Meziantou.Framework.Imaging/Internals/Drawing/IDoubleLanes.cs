@@ -19,6 +19,12 @@ internal interface IDoubleLanes<TVector>
     /// <summary>The lanes <c>start</c>, <c>start + 1</c>, ...: whole numbers, exact.</summary>
     static abstract TVector Sequence(int start);
 
+    /// <summary>
+    /// The four values from <paramref name="lane"/> of <c>(a, b, c, d)</c> followed by zeros: <c>(a, b)</c> or <c>(c, d)</c> for two
+    /// lanes, built in registers (a vector read just after its values were stored one by one waits for the stores).
+    /// </summary>
+    static abstract TVector Create(double a, double b, double c, double d, int lane);
+
     /// <summary>The first <see cref="Count"/> values of a span.</summary>
     static abstract TVector Load(ReadOnlySpan<double> source);
 

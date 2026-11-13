@@ -458,6 +458,38 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PaletteColorKeysMatchTheScalarReference()
+    {
+        // Every alpha (0 and 255 included) with random colors, at every length around the vector sizes
+        var random = new Random(47);
+        foreach (var length in new[] { 0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 100, 256, 257 })
+        {
+            var rgba = new byte[4 * length];
+            for (var round = 0; round < 8; round++)
+            {
+                random.NextBytes(rgba);
+                for (var x = 0; x < length; x++)
+                {
+                    rgba[(4 * x) + 3] = (round % 4) switch
+                    {
+                        0 => rgba[(4 * x) + 3],
+                        1 => (byte)(random.Next(3) * 127),
+                        2 => (byte)(random.Next(2) * 255),
+                        _ => (byte)((x + round) % 256),
+                    };
+                }
+
+                var expected = new int[length + 1];
+                var actual = new int[length + 1];
+                FrameQuantization.GetKeysScalar(rgba, expected);
+                FrameQuantization.GetKeys(rgba, actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void GifInvalidIndexSearchMatchesTheScalarReference()
     {
         var random = new Random(31);

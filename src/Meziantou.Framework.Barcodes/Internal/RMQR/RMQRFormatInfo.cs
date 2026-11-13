@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Meziantou.Framework.Barcodes.Internal.RMQR;
 
 internal static class RMQRFormatInfo
@@ -36,6 +38,29 @@ internal static class RMQRFormatInfo
     public static int GetSubFinderSideFormatInfo(ErrorCorrectionLevel ecLevel, int version)
     {
         return SubFinderSideMaskedPatterns[GetPatternIndex(ecLevel, version)];
+    }
+
+    /// <summary>
+    /// Finds the format information closest to the bits read from the two sides of a symbol: its error correction level
+    /// and its version. BCH(18,6) corrects up to 3 bit errors.
+    /// </summary>
+    public static bool TryDecode(int finderSide, int subFinderSide, out ErrorCorrectionLevel ecLevel, out int version)
+    {
+        var bestIndex = -1;
+        var bestDistance = int.MaxValue;
+        for (var i = 0; i < FinderSideMaskedPatterns.Length; i++)
+        {
+            var distance = Math.Min(BitOperations.PopCount((uint)(FinderSideMaskedPatterns[i] ^ finderSide)), BitOperations.PopCount((uint)(SubFinderSideMaskedPatterns[i] ^ subFinderSide)));
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestIndex = i;
+            }
+        }
+
+        ecLevel = bestIndex < 32 ? ErrorCorrectionLevel.M : ErrorCorrectionLevel.H;
+        version = (bestIndex % 32) + 1;
+        return bestDistance <= 3;
     }
 
     private static int GetPatternIndex(ErrorCorrectionLevel ecLevel, int version)

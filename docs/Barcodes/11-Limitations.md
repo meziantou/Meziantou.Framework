@@ -3,7 +3,16 @@ title: Limitations
 description: What the barcode packages do not do.
 ---
 
-- **No reading.** The packages generate QR codes and barcodes; they do not detect or decode them in photos or scans.
+- **Reading clean images.** [ReadQRCodes](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageReader.ReadQRCodes),
+  [ReadBarcodes2D](cref:Meziantou.Framework.Imaging.Barcodes.Barcode2DImageReader.ReadBarcodes2D) and
+  [ReadBarcodes](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeImageReader.ReadBarcodes) read generated, printed or
+  scanned codes, photographed straight on: not damaged symbols, curved labels or heavily distorted photos. The rows of a
+  PDF417 symbol must be about horizontal or vertical, and a linear barcode is read when one of the scan lines (at 0°,
+  30°, 60°, 90°, 120° and 150°) crosses all its bars: a long and short barcode turned between two of these angles can
+  be missed.
+- **Not every option of the symbologies is read.** The decoders do not read the FNC1 modes of GS1 QR codes, Macro
+  PDF417, the structured append of Data Matrix and Aztec symbols, the Aztec runes, the Data Matrix rectangular extension
+  (DMRE), nor the 2D composite components of the GS1 DataBar symbols.
 - **The symbologies listed** only: standard QR codes, Micro QR codes, rMQR codes, Data Matrix, PDF417, Aztec, Code 39,
   Code 93, Code 128, GS1-128, EAN-8, EAN-13, UPC-A, UPC-E, GS1 DataBar, Codabar and ITF. The variants of the
   two-dimensional codes are not supported (Data Matrix rectangular extension, Macro and Micro PDF417, Aztec Runes).

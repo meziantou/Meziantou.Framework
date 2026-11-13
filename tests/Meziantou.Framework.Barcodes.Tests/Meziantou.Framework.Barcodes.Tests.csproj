@@ -5,6 +5,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Barcodes.Tests</RootNamespace>
+    <!-- The decoders take module matrices, as the generators return them -->
+    <NoWarn>$(NoWarn);CA1814</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

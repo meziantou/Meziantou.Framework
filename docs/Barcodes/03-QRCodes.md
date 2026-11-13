@@ -152,8 +152,8 @@ kana is not split: it stays in one byte-mode segment.
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_EncodingModes;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Uppercase letters, digits and " $%*+-./:" take fewer bits than other characters
-Assert.Equal(2, QRCode.Create("HTTPS://WWW.MEZIANTOU.NET/BLOG/").Version);
-Assert.Equal(3, QRCode.Create("https://www.meziantou.net/blog/").Version);
+Assert.Equal(2, QRCode.Create("HTTPS://WWW.EXAMPLE.COM/BLOG/QRCODE").Version);
+Assert.Equal(3, QRCode.Create("https://www.example.com/blog/qrcode").Version);
 
 // Digits alone take even fewer
 Assert.Equal(1, QRCode.Create("0123456789012345678901234567890123").Version);

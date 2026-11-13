@@ -444,4 +444,80 @@ public class BarCode128Tests
         Assert.DoesNotContain(102, codewords);
         Assert.Equal("(01)09521234543213", Code128Symbols.Interpret(codewords));
     }
+
+    [Fact]
+    public void Documentation_Decode()
+    {
+        #region BarcodeDecoder_Decode
+        var barcode = Barcode.CreateCode128("SKU-123456");
+
+        var result = BarcodeDecoder.Decode(barcode);
+
+        Assert.Equal((BarcodeType.Code128, "SKU-123456"), (result.Type, result.Text));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DecodeScanLines()
+    {
+        #region BarcodeDecoder_DecodeScanLines
+        // A scan line: the widths of its light and dark runs, starting with a light run, here 3 pixels per module
+        var barcode = Barcode.CreateEan13("590123412345");
+        var runs = new List<int> { 30 };
+        for (var column = 0; column < barcode.Width; column++)
+        {
+            if (barcode[0, column] != (runs.Count % 2 == 0))
+            {
+                runs.Add(0);
+            }
+
+            runs[^1] += 3;
+        }
+
+        // The quiet zone after the last bar
+        runs.Add(30);
+
+        var results = BarcodeDecoder.DecodeScanLines([runs.ToArray()]);
+
+        var result = Assert.Single(results);
+        Assert.Equal((BarcodeType.Ean13, "5901234123457"), (result.Type, result.Text));
+        Assert.Equal((30, 30 + (95 * 3)), (result.Start, result.End));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("HELLO")]
+    [InlineData("hello world")]
+    [InlineData("12345678")]
+    [InlineData("SKU-123456")]
+    [InlineData("A\nB")]
+    [InlineData("\u0000\u0001ABC123456\u001f")]
+    [InlineData("ab\t\n\rcd 0123456789 XYZ")]
+    [InlineData("1")]
+    public void Decode_Code128(string data)
+    {
+        data = System.Text.RegularExpressions.Regex.Unescape(data);
+        var result = BarcodeDecoder.Decode(Barcode.CreateCode128(data));
+        Assert.Equal((BarcodeType.Code128, data), (result.Type, result.Text));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void Decode_Code128_RandomAscii()
+    {
+        var random = new Random(77);
+        for (var i = 0; i < 500; i++)
+        {
+            var data = string.Concat(Enumerable.Range(0, random.Next(1, 30)).Select(_ => (char)random.Next(0, 128)));
+            Assert.Equal(data, BarcodeDecoder.Decode(Barcode.CreateCode128(data)).Text);
+        }
+    }
+
+    [Fact]
+    public void Decode_Gs1128()
+    {
+        var barcode = Barcode.CreateGs1128(new Gs1Element("01", "09521234543213"), new Gs1Element("17", "250101"), new Gs1Element("10", "ABC123"), new Gs1Element("21", "XYZ"));
+        var result = BarcodeDecoder.Decode(barcode);
+        Assert.Equal((BarcodeType.Gs1128, barcode.Text), (result.Type, result.Text));
+    }
 }

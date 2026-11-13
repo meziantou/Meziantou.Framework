@@ -51,6 +51,9 @@ public sealed class Barcode2D
     /// <returns><see langword="true"/> if the module is dark; otherwise, <see langword="false"/>.</returns>
     public bool this[int row, int column] => _modules[row, column];
 
+    /// <summary>Gets the modules, without copying them: the callers must not modify them.</summary>
+    internal bool[,] Modules => _modules;
+
     /// <summary>
     /// Creates a Data Matrix (ECC 200) symbol from the specified text.
     /// </summary>

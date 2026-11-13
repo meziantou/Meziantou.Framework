@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Text;
+using Meziantou.Framework.Barcodes.Internal;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Barcodes;
@@ -54,6 +56,52 @@ public static class BarcodesFuzzTargets
         "\0", "ABCXYZ", "abcxyz", "*,-./", "!\"%&'()+:;<=>?_", "991231", "250101", "001750",
     ];
 
+    // The decoder reads the text of the barcode back, from its modules and from scaled scan lines read from the right
+    private static void CheckLinearDecoding(Barcode barcode)
+    {
+        // An EAN-13 symbol whose first digit is 0 is a UPC-A symbol, a single-row GS1 DataBar Expanded Stacked symbol is GS1 DataBar Expanded
+        var (expectedType, expectedText) = barcode.Type switch
+        {
+            BarcodeType.Ean13 when barcode.Text[0] == '0' => (BarcodeType.UpcA, barcode.Text[1..]),
+            BarcodeType.Gs1DataBarExpandedStacked when barcode.Height == 34 => (BarcodeType.Gs1DataBarExpanded, barcode.Text),
+            _ => (barcode.Type, barcode.Text),
+        };
+
+        if (barcode.Width > 20000)
+            return;
+
+        var result = BarcodeDecoder.Decode(barcode);
+        FuzzAssert.Equal((expectedType, expectedText), (result.Type, result.Text), "The decoded barcode");
+
+        var lines = new List<int[]>();
+        for (var row = 0; row < barcode.Height; row++)
+        {
+            var runs = new List<int> { 30 };
+            for (var column = barcode.Width - 1; column >= 0; column--)
+            {
+                if (barcode[row, column] != (runs.Count % 2 == 0))
+                {
+                    runs.Add(0);
+                }
+
+                runs[^1] += 3;
+            }
+
+            if (runs.Count % 2 == 0)
+            {
+                runs.Add(30);
+            }
+            else
+            {
+                runs[^1] += 30;
+            }
+
+            lines.Add([.. runs]);
+        }
+
+        FuzzAssert.True(BarcodeDecoder.DecodeScanLines(lines).Any(result => result.Text == expectedText), "The scan lines of the barcode, read from the right, do not decode to its text");
+    }
+
     // The UPC-E numbers and GTINs of the unit tests, then element strings: application identifier and data, separated by NUL
     private static readonly string[] Gs1DataBarSeedTexts =
     [
@@ -91,6 +139,7 @@ public static class BarcodesFuzzTargets
         new("barcodes-draw", DrawTarget) { Seeds = () => Enumerable.Range(0, 12).Select(kind => new FuzzSeed($"draw-{kind}", (byte[])[(byte)kind, (byte)(kind % 8), (byte)(kind * 37), (byte)(kind * 11), (byte)(kind % 3), .. FuzzText.Encode(kind < 3 ? "HELLO" : "12345678")])), Dictionary = Tokens },
         .. Gs1FuzzTargets.All,
         .. QRSegmentFuzzTargets.All,
+        .. QRDecodeFuzzTargets.All,
     ];
 
     private static void QRCodeTarget(ReadOnlySpan<byte> data)
@@ -105,6 +154,26 @@ public static class BarcodesFuzzTargets
         CheckSize(qr);
         CheckFinderPattern(qr);
         CheckFormatInformation(qr, level);
+
+        // The decoder reads the text back, also with a damaged module, which the error correction fixes (M1 only detects errors)
+        var expectedText = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(text));
+        var decoded = QRCodeDecoder.Decode(qr);
+        FuzzAssert.Equal(expectedText, decoded.Text, "The decoded text");
+        FuzzAssert.Equal((qr.Type, qr.Version, qr.ErrorCorrectionLevel, 0), (decoded.Type, decoded.Version, decoded.ErrorCorrectionLevel, decoded.CorrectedErrorCount), "The decoded symbol parameters");
+        var damaged = QRDecodeFuzzTargets.GetModules(qr);
+        var hash = 17u;
+        foreach (var c in text)
+        {
+            hash = (hash * 31) + c;
+        }
+
+        var damagedRow = (int)(hash % (uint)qr.Height);
+        var damagedColumn = (int)((hash / 7919) % (uint)qr.Width);
+        damaged[damagedRow, damagedColumn] = !damaged[damagedRow, damagedColumn];
+        if (QRCodeDecoder.TryDecode(damaged, out var repaired) || !(qr.Type is QRCodeType.MicroQR && qr.Version is 1))
+        {
+            FuzzAssert.True(repaired is not null && repaired.Text == expectedText, $"A damaged module at ({damagedRow}, {damagedColumn}) gives '{repaired?.Text}'");
+        }
 
         // The encoding is deterministic
         TryCreateQRCode(type, text, level, out var other);
@@ -174,6 +243,7 @@ public static class BarcodesFuzzTargets
 
         FuzzAssert.Equal(type, barcode.Type, "The barcode type");
         FuzzAssert.Equal(1, barcode.Height, "A linear barcode is one module high");
+        CheckLinearDecoding(barcode);
         FuzzAssert.True(barcode[0, 0] && barcode[0, barcode.Width - 1], "A linear barcode starts and ends with a bar");
         CheckText(barcode, type, text, extension, (flags & 4) != 0, (char)('A' + ((flags >> 2) & 3)), (char)('A' + ((flags >> 4) & 3)));
 
@@ -237,6 +307,7 @@ public static class BarcodesFuzzTargets
 
         FuzzAssert.Equal(type, barcode.Type, "The barcode type");
         FuzzAssert.Equal(type is BarcodeType.Gs1DataBarStacked or BarcodeType.Gs1DataBarStackedOmnidirectional or BarcodeType.Gs1DataBarExpandedStacked, barcode.IsStacked, "IsStacked");
+        CheckLinearDecoding(barcode);
         switch (type)
         {
             case BarcodeType.UpcE:
@@ -469,6 +540,10 @@ public static class BarcodesFuzzTargets
                 break;
         }
 
+        // The decoder of the library reads the data back, the independent Data Matrix decoder of this project agrees, and
+        // the error correction fixes a damaged module
+        CheckBarcode2DDecoding(barcode, (flags & 0x40) != 0 && type is Barcode2DType.DataMatrix ? CreateGs1Elements(text) : null, binary ? bytes : null, text);
+
         // The encoding is deterministic
         var other = Create();
         FuzzAssert.True(other is not null && SameModules(barcode, other), "Encoding the same data twice gives different symbols");
@@ -479,6 +554,55 @@ public static class BarcodesFuzzTargets
         using var fromImaging = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 1, QuietZoneModules = 0 });
         CheckPixels(fromImaging, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToImage");
         FuzzAssert.True(barcode.ToSvg().StartsWith("<svg ", StringComparison.Ordinal), "ToSvg does not start with <svg");
+    }
+
+    private static void CheckBarcode2DDecoding(Barcode2D barcode, List<Gs1Element>? gs1Elements, byte[]? bytes, string text)
+    {
+        var result = Barcode2DDecoder.Decode(barcode);
+        FuzzAssert.Equal((barcode.Type, 0), (result.Type, result.CorrectedErrorCount), "The decoded symbol");
+        if (gs1Elements is not null)
+        {
+            FuzzAssert.True(result.IsGs1, "GS1 data is not read as GS1");
+            FuzzAssert.Equal(Gs1ElementStrings.FormatHumanReadable(Encoding.ASCII.GetString(result.Bytes.Span)) ?? Encoding.ASCII.GetString(result.Bytes.Span), result.Text, "The human-readable text of GS1 data");
+        }
+        else if (bytes is not null)
+        {
+            FuzzAssert.True(result.Bytes.Span.SequenceEqual(bytes), "The decoded bytes");
+            FuzzAssert.Equal((int?)null, result.EciAssignmentNumber, "Binary data has an ECI designator");
+        }
+        else
+        {
+            FuzzAssert.Equal(ReplaceLoneSurrogates(text), result.Text, "The decoded text");
+            FuzzAssert.Equal(Ascii.IsValid(text) ? null : 26, result.EciAssignmentNumber, "The ECI assignment number");
+        }
+
+        if (barcode.Type is Barcode2DType.DataMatrix)
+        {
+            var (message, _) = DataMatrixDecoder.Decode(barcode);
+            // The FNC1 separators are GS bytes, the FNC1 that marks GS1 data is not part of the bytes
+            var expected = message.Select(value => value is DataMatrixDecoder.Fnc1 ? (byte)0x1D : (byte)value).ToArray();
+            if (gs1Elements is not null)
+            {
+                expected = expected[1..];
+            }
+
+            FuzzAssert.True(result.Bytes.Span.SequenceEqual(expected), "The library and the independent decoder of this project read different bytes");
+        }
+
+        // A damaged module in the middle of the symbol (a Data Matrix of 10x10 modules has 5 error correction codewords)
+        var modules = new bool[barcode.Height, barcode.Width];
+        for (var row = 0; row < barcode.Height; row++)
+        {
+            for (var column = 0; column < barcode.Width; column++)
+            {
+                modules[row, column] = barcode[row, column];
+            }
+        }
+
+        var damagedRow = barcode.Height / 2;
+        var damagedColumn = (barcode.Width / 2) + 1;
+        modules[damagedRow, damagedColumn] = !modules[damagedRow, damagedColumn];
+        FuzzAssert.True(Barcode2DDecoder.TryDecode(modules, barcode.Type, out var repaired) && repaired.Bytes.Span.SequenceEqual(result.Bytes.Span), $"A damaged module at ({damagedRow}, {damagedColumn}) is not repaired");
     }
 
     // The text as element strings: an application identifier of 2 digits, its data, and GS between the elements

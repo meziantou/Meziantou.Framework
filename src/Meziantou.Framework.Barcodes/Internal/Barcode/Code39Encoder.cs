@@ -4,9 +4,9 @@ internal static class Code39Encoder
 {
     private const int NarrowWidth = 1;
     private const int WideWidth = 2;
-    private const string Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%";
+    internal const string Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%";
 
-    private static readonly Dictionary<char, string> CharacterPatterns = new()
+    internal static readonly Dictionary<char, string> CharacterPatterns = new()
     {
         ['0'] = "nnnwwnwnn",
         ['1'] = "wnnwnnnnw",

@@ -17,7 +17,7 @@ internal static class Code128Encoder
     private const int StartCodeC = 105;
     private const int StopCode = 106;
 
-    private static readonly string[] Patterns =
+    internal static readonly string[] Patterns =
     [
         "212222", "222122", "222221", "121223", "121322", "131222", "122213", "122312", "132212", "221213", // 0-9
         "221312", "231212", "112232", "122132", "122231", "113222", "123122", "123221", "223211", "221132", // 10-19

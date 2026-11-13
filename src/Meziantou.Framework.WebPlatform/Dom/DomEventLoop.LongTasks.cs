@@ -73,9 +73,18 @@ public sealed partial class DomEventLoop
     /// </summary>
     private void RunTaskAndMicrotasks(Action task)
     {
-        using var scope = EnterTask();
-        task();
-        PerformMicrotaskCheckpoint();
+        // The continuations of the asynchronous operations the task completes run in the task (see SuspendSynchronizationContext)
+        var synchronizationContext = SuspendSynchronizationContext();
+        try
+        {
+            using var scope = EnterTask();
+            task();
+            PerformMicrotaskCheckpoint();
+        }
+        finally
+        {
+            RestoreSynchronizationContext(synchronizationContext);
+        }
     }
 
     /// <summary>

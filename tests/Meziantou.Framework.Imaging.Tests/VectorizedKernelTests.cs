@@ -923,6 +923,45 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TiffEncoderDifferencingMatchesTheScalarReference()
+    {
+        var random = new Random(4134);
+        foreach (var samplesPerPixel in new[] { 1, 2, 3, 4, 5, 8, 9 })
+        {
+            foreach (var pixels in new[] { 1, 2, 3, 5, 8, 9, 16, 17, 33, 100 })
+            {
+                foreach (var bigEndian in new[] { false, true })
+                {
+                    for (var round = 0; round < 3; round++)
+                    {
+                        // Random samples, and extremes whose differences wrap around
+                        var line = new byte[pixels * samplesPerPixel * 2];
+                        random.NextBytes(line);
+                        if (round == 1)
+                        {
+                            for (var i = 0; i < line.Length; i++)
+                            {
+                                line[i] = (i & 2) == 0 ? (byte)0xFF : (byte)0x01;
+                            }
+                        }
+
+                        var expected = line.ToArray();
+                        var actual = line.ToArray();
+                        TiffDocumentWriter.ApplyDifferencing16Scalar(expected, samplesPerPixel, bigEndian);
+                        TiffDocumentWriter.ApplyDifferencing16(actual, samplesPerPixel, bigEndian);
+                        Assert.Equal(expected, actual);
+
+                        // The differences undone are the samples
+                        TiffBlockReader.UndoDifferencing16(actual, samplesPerPixel, bigEndian);
+                        Assert.Equal(line, actual);
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void RunLengthSearchesMatchTheScalarReferences()
     {
         var random = new Random(4130);

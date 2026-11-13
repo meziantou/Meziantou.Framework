@@ -1,6 +1,8 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -844,7 +846,35 @@ internal sealed class TiffDocumentWriter : IDisposable
     /// its difference from the sample of the same channel on its left, modulo 2^16 (the inverse of
     /// <see cref="TiffBlockReader.UndoDifferencing16"/>).
     /// </summary>
+    /// <remarks>
+    /// The samples are rewritten from the end of the row, 8 at a time with 128-bit hardware vectors: a sample and the sample
+    /// it is subtracted from are both read before any of them is rewritten. The result equals
+    /// <see cref="ApplyDifferencing16Scalar"/>.
+    /// </remarks>
     internal static void ApplyDifferencing16(Span<byte> row, int samplesPerPixel, bool bigEndian)
+    {
+        var count = row.Length / sizeof(ushort);
+        var end = count;
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+        {
+            ref var samples = ref unsafe(Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(row)));
+            for (; end - Vector128<ushort>.Count >= samplesPerPixel; end -= Vector128<ushort>.Count)
+            {
+                var start = (nuint)(end - Vector128<ushort>.Count);
+                var current = unsafe(Vector128.LoadUnsafe(ref samples, start));
+                var previous = unsafe(Vector128.LoadUnsafe(ref samples, start - (nuint)samplesPerPixel));
+                var difference = bigEndian ? SwapBytes(SwapBytes(current) - SwapBytes(previous)) : current - previous;
+                unsafe { difference.StoreUnsafe(ref samples, start); }
+            }
+        }
+
+        ApplyDifferencing16Scalar(row[..(end * sizeof(ushort))], samplesPerPixel, bigEndian);
+
+        static Vector128<ushort> SwapBytes(Vector128<ushort> value) => (value << 8) | (value >>> 8);
+    }
+
+    /// <summary>The sample-at-a-time reference of <see cref="ApplyDifferencing16"/>.</summary>
+    internal static void ApplyDifferencing16Scalar(Span<byte> row, int samplesPerPixel, bool bigEndian)
     {
         for (var i = (row.Length / sizeof(ushort)) - 1; i >= samplesPerPixel; i--)
         {
@@ -870,6 +900,23 @@ internal sealed class TiffDocumentWriter : IDisposable
         var bigEndian = IsBigEndian;
         var samples = destination;
         var isHalf = _page.PixelFormat == PixelFormat.RgbaHalf;
+        if (!isHalf && samplesPerPixel == 4)
+        {
+            // RGBA floats are the samples, in the byte order of the file
+            var words = unsafe(MemoryMarshal.Cast<byte, uint>(source[..(width * 16)]));
+            var target = unsafe(MemoryMarshal.Cast<byte, uint>(destination[..(width * 16)]));
+            if (bigEndian == BitConverter.IsLittleEndian)
+            {
+                BinaryPrimitives.ReverseEndianness(words, target);
+            }
+            else
+            {
+                words.CopyTo(target);
+            }
+
+            return;
+        }
+
         var halves = unsafe(MemoryMarshal.Cast<byte, Half>(source));
         var singles = unsafe(MemoryMarshal.Cast<byte, float>(source));
         var position = 0;

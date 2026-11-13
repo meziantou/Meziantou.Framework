@@ -189,7 +189,10 @@ internal sealed class PaletteQuantizer : IDisposable
         _exactCountsOffset = _exactOffset + (ExactSlots * sizeof(int));
         _vectorPaletteOffset = _exactCountsOffset + (ExactSlots * sizeof(int));
         _premultipliedPlanesOffset = _vectorPaletteOffset + (3 * VectorPlaneLength * sizeof(int));
-        _buildScratchOffset = _premultipliedPlanesOffset + (4 * PremultipliedPlaneLength * sizeof(double));
+
+        // Only a quantizer of translucent colors searches them often enough for the planes of the vector search: an opaque
+        // one searches its few translucent colors with the scalar reference
+        _buildScratchOffset = _premultipliedPlanesOffset + (translucent ? 4 * PremultipliedPlaneLength * sizeof(double) : 0);
         _stateLength = _buildScratchOffset + BuildScratchLength;
         _state = scope.Rent(_stateLength, AllocationKind.Temporary, clear: false);
     }
@@ -1163,7 +1166,7 @@ internal sealed class PaletteQuantizer : IDisposable
             red = green = blue = 0;
         }
 
-        var best = UseRgbaVectors && _paletteCount > 0 ? FindNearestPremultipliedVector(red, green, blue, alpha) : FindNearestPremultipliedScalar(red, green, blue, alpha);
+        var best = UseRgbaVectors && _translucent && _paletteCount > 0 ? FindNearestPremultipliedVector(red, green, blue, alpha) : FindNearestPremultipliedScalar(red, green, blue, alpha);
         cacheKeys[slot] = key;
         cacheIndexes[slot] = (byte)best;
         return best;
@@ -1171,7 +1174,7 @@ internal sealed class PaletteQuantizer : IDisposable
 
     /// <summary>
     /// Gets or sets a value indicating whether <see cref="FindNearestRgba"/> compares a color with several entries at once (the
-    /// default with 128-bit hardware vectors). Tests turn it off to compare both paths.
+    /// default with 128-bit hardware vectors, for a quantizer of translucent colors). Tests turn it off to compare both paths.
     /// </summary>
     internal bool UseRgbaVectors { get; set; } = Vector128.IsHardwareAccelerated;
 
@@ -1289,10 +1292,12 @@ internal sealed class PaletteQuantizer : IDisposable
     /// <summary>
     /// Gets the premultiplied coordinates of the palette entries as double planes (R·A, G·A, B·A, A·255), each padded to whole
     /// vectors of 8 entries with an entry farther than any color (never selected); refreshed when the palette changes. They
-    /// are a region of the working memory of their own, charged to the scope with the rest of it.
+    /// are a region of the working memory of their own, charged to the scope with the rest of it, that only a quantizer of
+    /// translucent colors has.
     /// </summary>
     private Span<double> GetPremultipliedPlanes()
     {
+        Debug.Assert(_translucent);
         var planes = unsafe(MemoryMarshal.Cast<byte, double>(GetState().Slice(_premultipliedPlanesOffset, 4 * PremultipliedPlaneLength * sizeof(double))));
         if (_premultipliedPlanesVersion != PaletteVersion)
         {

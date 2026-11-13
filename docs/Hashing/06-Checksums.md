@@ -55,4 +55,4 @@ and the carry-less multiplication of x64 processors for [Crc32](cref:Meziantou.F
 them.
 
 On x64 processors with 256-bit or 512-bit vectors (VPCLMULQDQ, AVX-512), [Crc32](cref:Meziantou.Framework.Hashing.Crc32) processes 128 or 256 bytes per
-step, which makes it 2 to 4 times faster on large inputs, and [Adler32](cref:Meziantou.Framework.Hashing.Adler32) processes 64 bytes per step, about 1.75 times faster.
+step, and [Adler32](cref:Meziantou.Framework.Hashing.Adler32) processes 64 bytes per step.

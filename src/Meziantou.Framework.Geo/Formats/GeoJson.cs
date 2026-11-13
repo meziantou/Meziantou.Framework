@@ -512,6 +512,10 @@ public static class GeoJson
             case JsonElement element:
                 element.WriteTo(writer);
                 break;
+            case var _ when GeoPropertyValue.TryGetFiniteDecimalFloatingPointText(value, out var decimalText):
+                // All the digits of a Decimal32, Decimal64 or Decimal128, even beyond the range of a double
+                writer.WriteRawValue(decimalText);
+                break;
             case var _ when GeoPropertyValue.TryGetNumber(value, out var number):
                 if (double.IsFinite(number))
                 {

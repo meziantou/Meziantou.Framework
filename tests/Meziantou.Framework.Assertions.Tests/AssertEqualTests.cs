@@ -1383,6 +1383,45 @@ public sealed class AssertEqualTests
             """);
     }
 
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void Ieee754DecimalPrecision_RoundsBeforeComparing()
+    {
+        var pi32 = System.Numerics.Decimal32.Parse("3.14159", System.Globalization.CultureInfo.InvariantCulture);
+        var pi64 = System.Numerics.Decimal64.Parse("3.14159", System.Globalization.CultureInfo.InvariantCulture);
+        var pi128 = System.Numerics.Decimal128.Parse("3.14159", System.Globalization.CultureInfo.InvariantCulture);
+
+        AssertionsAssert.Equal(pi32, System.Numerics.Decimal32.Parse("3.1416", System.Globalization.CultureInfo.InvariantCulture), 3);
+        AssertionsAssert.Equal(pi64, System.Numerics.Decimal64.Parse("3.1416", System.Globalization.CultureInfo.InvariantCulture), 3);
+        AssertionsAssert.Equal(pi128, System.Numerics.Decimal128.Parse("3.1416", System.Globalization.CultureInfo.InvariantCulture), 3);
+        AssertionsAssert.NotEqual(pi32, System.Numerics.Decimal32.Parse("3.0", System.Globalization.CultureInfo.InvariantCulture), 2);
+        AssertionsAssert.NotEqual(pi64, System.Numerics.Decimal64.Parse("3.0", System.Globalization.CultureInfo.InvariantCulture), 2);
+        AssertionsAssert.NotEqual(pi128, System.Numerics.Decimal128.Parse("3.0", System.Globalization.CultureInfo.InvariantCulture), 2);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(pi64, System.Numerics.Decimal64.Parse("3.1416", System.Globalization.CultureInfo.InvariantCulture), 3));
+
+        var half = System.Numerics.Decimal64.Parse("2.5", System.Globalization.CultureInfo.InvariantCulture);
+        var three = System.Numerics.Decimal64.Parse("3", System.Globalization.CultureInfo.InvariantCulture);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(half, three, 0));
+        AssertionsAssert.Equal(half, three, 0, MidpointRounding.AwayFromZero);
+        AssertionsAssert.NotEqual(half, three, 0, MidpointRounding.ToEven);
+        AssertionsAssert.Equal((System.Numerics.Decimal128)2.5m, (System.Numerics.Decimal128)3m, 0, MidpointRounding.AwayFromZero);
+        AssertionsAssert.NotEqual((System.Numerics.Decimal32)2.5m, (System.Numerics.Decimal32)3m, 0, MidpointRounding.ToEven);
+    }
+
+    [Fact]
+    public void Ieee754DecimalPrecision_Fails()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(System.Numerics.Decimal128.Parse("3.14159", System.Globalization.CultureInfo.InvariantCulture), System.Numerics.Decimal128.Parse("3.1", System.Globalization.CultureInfo.InvariantCulture), 2), """
+            Assert.Equal() assertion failed.
+            Expected expression: System.Numerics.Decimal128.Parse("3.14159", System.Globalization.CultureInfo.InvariantCulture)
+            Actual expression:   System.Numerics.Decimal128.Parse("3.1", System.Globalization.CultureInfo.InvariantCulture)
+            Expected: 3.14 (rounded from 3.14159)
+            Actual:   3.1 (rounded from 3.1)
+            Precision: 2 decimal places
+            """);
+    }
+#endif
+
     [Fact]
     public void DateTimePrecision()
     {

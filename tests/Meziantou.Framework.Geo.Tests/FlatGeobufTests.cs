@@ -143,6 +143,25 @@ public sealed class FlatGeobufTests
         Assert.Equal(2_100_000, cities.Single(city => city.Properties["name"] is "Paris").Properties["population"]);
     }
 
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void WriteRead_Ieee754Properties()
+    {
+        var properties = new Dictionary<string, object?>
+        {
+            ["bfloat16"] = (System.Numerics.BFloat16)1.5f,
+            ["decimal32"] = System.Numerics.Decimal32.Parse("0.25", CultureInfo.InvariantCulture),
+            ["decimal128"] = System.Numerics.Decimal128.Parse("-2.5", CultureInfo.InvariantCulture),
+        };
+
+        var feature = Assert.Single(FlatGeobuf.Read(FlatGeobuf.Write([new GeoFeature(new GeoPoint(new(1, 2)), properties)])));
+
+        Assert.Equal(1.5f, feature.Properties["bfloat16"]);
+        Assert.Equal(0.25, feature.Properties["decimal32"]);
+        Assert.Equal(-2.5, feature.Properties["decimal128"]);
+    }
+#endif
+
     [Fact]
     public void Read_Span_DoesNotKeepTheData()
     {

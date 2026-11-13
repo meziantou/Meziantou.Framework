@@ -42,13 +42,13 @@ public static partial class SimpleQueryLanguageFuzzTargets
         new(5, "JOHN", 1, Rank: 2, new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc), new DateOnly(2026, 3, 1), 2, IsOpen: false, (QueryItemStatus)(-1), ["bug"]) { Previous = (QueryItemStatus)42 },
     ];
 
-    private static readonly string[] QueryBuilderKeys = ["name", "age", "rank", "created", "day", "score", "open", "status", "is", "tag"];
+    private static readonly string[] QueryBuilderKeys = ["name", "age", "rank", "created", "day", "score", "price", "open", "status", "is", "tag"];
     private static readonly string[] ExpressionQueryBuilderKeys = ["name", "age", "rank", "created", "day", "score", "open", "status", "tag"];
 
     private static readonly string[] Tokens =
     [
         "AND", "OR", "NOT", "and", "or", "not", "-", "(", ")", ":", "=", "<", "<=", ">", ">=", "<>", "\"", "\"\"", "..", "*", " ", "\t", "\u00A0", "\u3000",
-        "name", "previous", "age", "rank", "created", "day", "score", "open", "status", "is", "tag", "other", "today", "yesterday", "this week", "this_week", "this month",
+        "name", "previous", "price", "age", "rank", "created", "day", "score", "open", "status", "is", "tag", "other", "today", "yesterday", "this week", "this_week", "this month",
         "last_month", "this year", "last year", "@today", "@today-1w", "@today+3d", "2026-03-15", "2022-01-01T00:00:00Z", "10:00", "true", "false", "Active",
         "Closed", "Pending", "closed", "John", "Doe", "john", "1", "-1", "0", "1.5", "1e308", "NaN", "Infinity", "2147483647", "2147483648",
     ];
@@ -751,6 +751,13 @@ public static partial class SimpleQueryLanguageFuzzTargets
         builder.AddRangeHandler<DateTime>("created", (item, range) => range.IsInRange(item.Created));
         builder.AddRangeHandler<DateOnly>("day", (item, range) => range.IsInRange(item.Day));
         builder.AddRangeHandler<double>("score", (item, range) => range.IsInRange(item.Score));
+
+        // The decimal floating-point type of .NET 11 (decimal on .NET 10), compared with the score
+#if NET11_0_OR_GREATER
+        builder.AddRangeHandler<System.Numerics.Decimal64>("price", (item, range) => range.IsInRange((System.Numerics.Decimal64)item.Score));
+#else
+        builder.AddRangeHandler<decimal>("price", (item, range) => double.IsFinite(item.Score) && Math.Abs(item.Score) < 1e28 && range.IsInRange((decimal)item.Score));
+#endif
         builder.AddHandler<bool>("open", (item, value) => item.IsOpen == value);
         builder.AddHandler<QueryItemStatus>("status", (item, op, value) => op switch
         {
@@ -1183,6 +1190,7 @@ public static partial class SimpleQueryLanguageFuzzTargets
             "is_open:true AND NOT \"free form text\"", "status:Active OR (rank<=0 -tag:bug) day>=2026-01-01 score:1.5..*", "is:open tag<abc other:value \"a \"\" b\"",
             "status<Closed", "status>=pending", "status:Active..Closed", "status<>Closed..*", "-status>1", "previous<=Closed OR previous:*..Active", "previous<>pending",
             "status:42 OR status<-1", "name:John", "name:john -name:doe", "name<>JOHN", "name:\"\"", "name<John",
+            "price:1,000.5", "price>=1.5e1", "price:0.1..2.5", "price:NaN", "price<-Infinity",
         ];
 
         var result = new HashSet<string>(StringComparer.Ordinal);

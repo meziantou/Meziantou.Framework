@@ -72,7 +72,7 @@ Assert.True(types[2].GetBoolean());
 | `JSValue.String(string)` | string |
 | `JSValue.Boolean(bool)` | boolean |
 | `JSValue.BigInt(BigInteger)` | `BigInt`. `long`, `ulong`, `Int128` and `UInt128` convert implicitly to `BigInteger`. |
-| `JSValue.Number(...)` | `Number`, from `double`, `float`, `Half`, `decimal` and all the integer types. `NaN`, infinities and `-0` are preserved. A value that is not exactly representable is rounded to the nearest double, as `Number` would. |
+| `JSValue.Number(...)` | `Number`, from `double`, `float`, `Half`, `decimal`, all the integer types, and on .NET 11 `BFloat16`, `Decimal32`, `Decimal64` and `Decimal128`. `NaN`, infinities and `-0` are preserved. A value that is not exactly representable is rounded to the nearest double, as `Number` would. |
 | `JSValue.Date(DateTimeOffset)`, `JSValue.Date(DateTime)` | `Date`, truncated to the millisecond. A local or unspecified `DateTime` is a local time. |
 | `JSValue.Uint8Array(ReadOnlyMemory<byte>)` | `Uint8Array` |
 

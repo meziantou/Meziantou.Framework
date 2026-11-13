@@ -56,7 +56,8 @@ Assert.Equal("""
 | `Type` | Full name of the type, followed by the name of its assembly |
 
 Many other types have their own converter, among them `Guid`, `Uri`, `Version`, `TimeSpan`, `DateOnly`, `TimeOnly`,
-`IPAddress`, `CultureInfo`, `Regex`, `StringBuilder`, `BigInteger`, `Int128`, `Half`, `Complex`, `BitArray`,
+`IPAddress`, `CultureInfo`, `Regex`, `StringBuilder`, `BigInteger`, `Int128`, `Half`, `Complex`, and on .NET 11
+`BFloat16`, `Decimal32`, `Decimal64`, `Decimal128` and `Complex<T>`, `BitArray`,
 `Memory<T>`, value tuples, multi-dimensional arrays, `IAsyncEnumerable<T>`, LINQ groupings, expression trees,
 reflection objects, F# options and discriminated unions, `JsonNode`, `JsonElement`, `XmlNode` and `XElement`.
 

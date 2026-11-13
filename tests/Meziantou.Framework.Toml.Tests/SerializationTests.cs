@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
@@ -231,7 +232,11 @@ public class SerializationTests
         "string", "bool", "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "nint", "nuint", "float", "float-nan",
         "double", "double-negative-zero", "decimal", "decimal-integer", "half", "int128", "uint128", "char", "guid", "timespan", "uri",
         "version", "enum", "toml-datetime", "datetime-utc", "datetime-local", "datetime-unspecified", "datetimeoffset", "dateonly",
-        "timeonly", "poco", "list");
+        "timeonly", "poco", "list", "complex"
+#if NET11_0_OR_GREATER
+        , "bfloat16", "decimal32", "decimal64", "decimal128", "decimal128-nan", "complex-decimal64"
+#endif
+        );
 
     private static object CreateClrValue(string name) => name switch
     {
@@ -256,6 +261,15 @@ public class SerializationTests
         "half" => (Half)1.5,
         "int128" => (Int128)6,
         "uint128" => (UInt128)6,
+        "complex" => new System.Numerics.Complex(1.5, -2),
+#if NET11_0_OR_GREATER
+        "bfloat16" => (System.Numerics.BFloat16)1.5f,
+        "decimal32" => System.Numerics.Decimal32.Parse("1.25", CultureInfo.InvariantCulture),
+        "decimal64" => System.Numerics.Decimal64.Parse("-0", CultureInfo.InvariantCulture),
+        "decimal128" => System.Numerics.Decimal128.Parse("1234567890123456789012345678901.234", CultureInfo.InvariantCulture),
+        "decimal128-nan" => System.Numerics.Decimal128.NaN,
+        "complex-decimal64" => new System.Numerics.Complex<System.Numerics.Decimal64>(System.Numerics.Decimal64.One, System.Numerics.Decimal64.Zero),
+#endif
         "char" => 'c',
         "guid" => new Guid("3f2504e0-4f89-11d3-9a0c-0305e82c3301"),
         "timespan" => TimeSpan.FromMinutes(90),

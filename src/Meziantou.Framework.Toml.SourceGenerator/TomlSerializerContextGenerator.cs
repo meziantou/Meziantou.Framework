@@ -1013,6 +1013,19 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 .Append(GetConverterCreationExpression(staticOptionsConverterType!))
                 .AppendLine(");");
         }
+        else if (TryGetComplexPartType(type, out var complexPartType, out var isGenericComplex))
+        {
+            if (isGenericComplex)
+            {
+                builder.Append("        return CreateSourceGeneratedComplexTypeInfo<")
+                    .Append(complexPartType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+                    .AppendLine(">(this, options);");
+            }
+            else
+            {
+                builder.AppendLine("        return CreateSourceGeneratedComplexTypeInfo(this, options);");
+            }
+        }
         else if (IsBuiltInType(type))
         {
             if (usesStringEnumConverter)
@@ -4115,6 +4128,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
+            // The parts of a complex number are resolved from the context, like the elements of a collection
+            if (TryGetComplexPartType(current, out var complexPartType, out _))
+            {
+                queue.Enqueue(complexPartType);
+                continue;
+            }
+
             if (TryGetArrayElementType(current, out var arrayElementType))
             {
                 if (IsSupportedMemberType(arrayElementType, model.Options, derivedTypeMappings))
@@ -4409,7 +4429,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         // v1 generator milestone: built-in scalars/containers and POCOs.
-        if (IsBuiltInType(type))
+        if (IsBuiltInType(type) || TryGetComplexPartType(type, out _, out _))
         {
             return true;
         }
@@ -4853,7 +4873,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return false;
         }
 
-        if (IsBuiltInType(type))
+        if (IsBuiltInType(type) || TryGetComplexPartType(type, out _, out _))
         {
             return false;
         }
@@ -7089,6 +7109,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             "global::System.Uri" or
             "global::System.Version" or
             "global::System.Half" or
+            "global::System.Numerics.BFloat16" or
+            "global::System.Numerics.Decimal32" or
+            "global::System.Numerics.Decimal64" or
+            "global::System.Numerics.Decimal128" or
             "global::System.Int128" or
             "global::System.UInt128" or
             "global::Meziantou.Framework.Toml.TomlDateTime" or
@@ -7098,6 +7122,51 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             "global::Meziantou.Framework.Toml.Model.TomlTable" or
             "global::Meziantou.Framework.Toml.Model.TomlArray" or
             "global::Meziantou.Framework.Toml.Model.TomlTableArray";
+    }
+
+    // A System.Numerics.Complex (whose parts are double), or a Complex<T> whose parts are a floating-point type with a built-in
+    // converter. Other parts, such as NFloat, have no TOML representation, so the type is handled like any other struct.
+    private static bool TryGetComplexPartType(ITypeSymbol type, out ITypeSymbol partType, out bool isGeneric)
+    {
+        partType = null!;
+        isGeneric = false;
+        if (type is not INamedTypeSymbol named)
+        {
+            return false;
+        }
+
+        if (named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::System.Numerics.Complex")
+        {
+            if (named.GetMembers("Real").OfType<IPropertySymbol>().FirstOrDefault()?.Type is { } realType)
+            {
+                partType = realType;
+                return true;
+            }
+
+            return false;
+        }
+
+        if (named is not { IsGenericType: true, TypeArguments.Length: 1 } ||
+            named.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) != "global::System.Numerics.Complex<T>")
+        {
+            return false;
+        }
+
+        var argument = named.TypeArguments[0];
+        if (argument.SpecialType is SpecialType.System_Single or SpecialType.System_Double ||
+            argument.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) is
+                "global::System.Half" or
+                "global::System.Numerics.BFloat16" or
+                "global::System.Numerics.Decimal32" or
+                "global::System.Numerics.Decimal64" or
+                "global::System.Numerics.Decimal128")
+        {
+            partType = argument;
+            isGeneric = true;
+            return true;
+        }
+
+        return false;
     }
 
     // The unique name of the type info property of each type of the context being emitted. The generated members of a

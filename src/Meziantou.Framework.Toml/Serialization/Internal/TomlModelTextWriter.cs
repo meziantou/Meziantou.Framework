@@ -56,7 +56,7 @@ internal static class TomlModelTextWriter
                     }
 
                     break;
-                case string or bool or sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal:
+                case string or bool or sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal or TomlFloatLiteral:
                 case TomlDateTime or DateTime or DateTimeOffset or DateOnly or TimeOnly:
                     break;
                 default:
@@ -511,6 +511,9 @@ internal static class TomlModelTextWriter
                     return;
                 case decimal dec:
                     _writer.Write(ToTomlFloatString(dec));
+                    return;
+                case TomlFloatLiteral literal:
+                    WriteFloatWithDecimalPoint(literal.Text);
                     return;
                 case TomlDateTime dt:
                     _writer.Write(TomlFormatHelper.ToString(dt));

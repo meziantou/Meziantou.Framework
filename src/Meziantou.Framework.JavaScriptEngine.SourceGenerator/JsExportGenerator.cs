@@ -523,7 +523,8 @@ public sealed class JsExportGenerator : IIncrementalGenerator
                 or SpecialType.System_SByte or SpecialType.System_UInt16 or SpecialType.System_UInt32 or SpecialType.System_UInt64
                 or SpecialType.System_Decimal or SpecialType.System_DateTime
             || knownTypes.IsBigInteger(type)
-            || knownTypes.IsDateTimeOffset(type);
+            || knownTypes.IsDateTimeOffset(type)
+            || knownTypes.IsOtherFloatingPointNumber(type);
     }
 
     private static ResultKind? GetResultKind(ITypeSymbol type, KnownTypes knownTypes, bool allowTask)
@@ -551,7 +552,6 @@ public sealed class JsExportGenerator : IIncrementalGenerator
 
         if (IsConvertibleValueType(type, knownTypes)
             || type.SpecialType is SpecialType.System_String or SpecialType.System_Object or SpecialType.System_Char
-            || knownTypes.IsHalf(type)
             || knownTypes.IsJsValue(type)
             || knownTypes.InheritsFromJsObject(type)
             || knownTypes.IsJsonElement(type)
@@ -949,6 +949,10 @@ public sealed class JsExportGenerator : IIncrementalGenerator
         private readonly INamedTypeSymbol? _bigInteger = compilation.GetTypeByMetadataName("System.Numerics.BigInteger");
         private readonly INamedTypeSymbol? _dateTimeOffset = compilation.GetTypeByMetadataName("System.DateTimeOffset");
         private readonly INamedTypeSymbol? _half = compilation.GetTypeByMetadataName("System.Half");
+        private readonly INamedTypeSymbol? _bfloat16 = compilation.GetTypeByMetadataName("System.Numerics.BFloat16");
+        private readonly INamedTypeSymbol? _decimal32 = compilation.GetTypeByMetadataName("System.Numerics.Decimal32");
+        private readonly INamedTypeSymbol? _decimal64 = compilation.GetTypeByMetadataName("System.Numerics.Decimal64");
+        private readonly INamedTypeSymbol? _decimal128 = compilation.GetTypeByMetadataName("System.Numerics.Decimal128");
         private readonly INamedTypeSymbol? _jsonElement = compilation.GetTypeByMetadataName("System.Text.Json.JsonElement");
         private readonly INamedTypeSymbol? _jsonNode = compilation.GetTypeByMetadataName("System.Text.Json.Nodes.JsonNode");
         private readonly INamedTypeSymbol? _task = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task");
@@ -994,7 +998,8 @@ public sealed class JsExportGenerator : IIncrementalGenerator
 
         public bool IsDateTimeOffset(ITypeSymbol type) => Is(type, _dateTimeOffset);
 
-        public bool IsHalf(ITypeSymbol type) => Is(type, _half);
+        // The floating-point types that have no special type: Half, and on .NET 11 BFloat16, Decimal32, Decimal64 and Decimal128
+        public bool IsOtherFloatingPointNumber(ITypeSymbol type) => Is(type, _half) || Is(type, _bfloat16) || Is(type, _decimal32) || Is(type, _decimal64) || Is(type, _decimal128);
 
         public bool IsJsonElement(ITypeSymbol type) => Is(type, _jsonElement);
 

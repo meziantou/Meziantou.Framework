@@ -42,7 +42,7 @@ Assert.Equal("A-12,2024,7,true", realm.Execute("""
 | --- | --- |
 | `null` | `null` |
 | `bool`, `string`, `char` | a boolean, a string |
-| The numeric types | a number: a `long` or a `decimal` can lose precision |
+| The numeric types, including `Half`, and on .NET 11 `BFloat16`, `Decimal32`, `Decimal64` and `Decimal128` | a number: a `long`, a `decimal` or a decimal floating-point number can lose precision |
 | `BigInteger` | a BigInt |
 | `DateTimeOffset`, `DateTime` | a `Date` (a `DateTime` whose kind is unspecified is UTC) |
 | `JsonElement`, `JsonNode` | the value that `JSON.parse` would create |
@@ -86,7 +86,8 @@ Assert.Null(engine.ToDotNet<int?>(JsValue.Undefined));
   itself cannot be converted. The object of a class marked with `[JsExport]` becomes its .NET object.
 - With a type, the conversion follows the rules of JavaScript (`ToNumber`, `ToString`, `ToBoolean`), then checks the
   result: an integer type rejects a fraction (a `TypeError`) and a value out of its range (a `RangeError`), as does
-  `decimal`. A `Date` outside the years 1 to 9999 cannot be a `DateTimeOffset` or a `DateTime` (a `RangeError`).
+  `decimal`. The floating-point types (`float`, `Half`, and on .NET 11 `BFloat16`, `Decimal32`, `Decimal64` and
+  `Decimal128`) round the number to their precision and keep `NaN` and the infinities. A `Date` outside the years 1 to 9999 cannot be a `DateTimeOffset` or a `DateTime` (a `RangeError`).
   `undefined` and `null` convert to `null` for a reference type or a nullable type, to `false` for `bool`, and throw for
   the other value types. A class marked with `[JsExport]` takes the objects of its JavaScript class, and of the classes
   derived from it: another value is a `TypeError`.

@@ -411,6 +411,11 @@ public abstract class YamlReaderWriterBase
                 return YamlBigIntegerConverter.Instance;
             }
 
+            if (typeToConvert == typeof(System.Numerics.Complex))
+            {
+                return YamlComplexConverter.Instance;
+            }
+
             if (typeToConvert == typeof(System.Version))
             {
                 return YamlVersionConverter.Instance;
@@ -663,6 +668,13 @@ public abstract class YamlReaderWriterBase
                     var converterType = typeof(YamlKeyValuePairConverter<,>).MakeGenericType(args[0], args[1]);
                     return (YamlConverter)Activator.CreateInstance(converterType)!;
                 }
+
+#if NET11_0_OR_GREATER
+                if (definition == typeof(System.Numerics.Complex<>) && YamlComplexConverter.CreateGeneric(args[0]) is { } complexConverter)
+                {
+                    return complexConverter;
+                }
+#endif
             }
 
             // The frozen collections are abstract: the instance is always one of their internal implementations.

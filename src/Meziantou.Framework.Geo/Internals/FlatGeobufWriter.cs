@@ -260,7 +260,14 @@ internal static class FlatGeobufWriter
                     stream.Write(scratch[..8]);
                     break;
                 case FlatGeobufFormat.ColumnFloat:
-                    BinaryPrimitives.WriteSingleLittleEndian(scratch, value is Half half ? (float)half : (float)value!);
+                    BinaryPrimitives.WriteSingleLittleEndian(scratch, value switch
+                    {
+                        Half half => (float)half,
+#if NET11_0_OR_GREATER
+                        System.Numerics.BFloat16 bfloat16 => (float)bfloat16,
+#endif
+                        _ => (float)value!,
+                    });
                     stream.Write(scratch[..4]);
                     break;
                 case FlatGeobufFormat.ColumnDouble:
@@ -364,6 +371,10 @@ internal static class FlatGeobufWriter
         ulong => FlatGeobufFormat.ColumnULong,
         float or Half => FlatGeobufFormat.ColumnFloat,
         double or decimal => FlatGeobufFormat.ColumnDouble,
+#if NET11_0_OR_GREATER
+        System.Numerics.BFloat16 => FlatGeobufFormat.ColumnFloat,
+        System.Numerics.Decimal32 or System.Numerics.Decimal64 or System.Numerics.Decimal128 => FlatGeobufFormat.ColumnDouble,
+#endif
         DateTime or DateTimeOffset or DateOnly => FlatGeobufFormat.ColumnDateTime,
         byte[] => FlatGeobufFormat.ColumnBinary,
         JsonElement { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined } => null,

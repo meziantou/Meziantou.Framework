@@ -360,7 +360,8 @@ public sealed class VectorizedKernelTests
     public void PaletteRefinementAssignmentMatchesTheScalarReference()
     {
         // Items below 2^15 are opaque histogram buckets, the others translucent ones; the coordinates span every value or a
-        // few (ties between entries and with the current entry), and the extremes (the largest distance)
+        // few (ties between entries and with the current entry), and the extremes (the largest distance). Every other round,
+        // the opaque items and the entries have the alpha 255, as in a palette build (the alpha plane is then skipped)
         var random = new Random(41);
         using var quantizer = new PaletteQuantizer(new AllocationScope(new ImageResourceLimits()), translucent: true);
         var colors = new int[1 << 16];
@@ -382,7 +383,7 @@ public sealed class VectorizedKernelTests
                     coordinates[4 * entry] = Sample();
                     coordinates[(4 * entry) + 1] = Sample();
                     coordinates[(4 * entry) + 2] = Sample();
-                    coordinates[(4 * entry) + 3] = Sample();
+                    coordinates[(4 * entry) + 3] = round % 2 == 0 ? 255 : Sample();
                     entryTranslucent[entry] = (round / 3) switch
                     {
                         0 => false,
@@ -398,7 +399,7 @@ public sealed class VectorizedKernelTests
                 {
                     items[i] = random.Next(1 << 16);
                     owners[i] = random.Next(entries);
-                    colors[items[i]] = (Sample() << 24) | (Sample() << 16) | (Sample() << 8) | Sample();
+                    colors[items[i]] = ((round % 2 == 0 && items[i] < (1 << 15) ? 255 : Sample()) << 24) | (Sample() << 16) | (Sample() << 8) | Sample();
                 }
 
                 var expected = owners.ToArray();

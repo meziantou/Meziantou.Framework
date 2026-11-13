@@ -1449,6 +1449,13 @@ internal sealed class PaletteQuantizer : IDisposable
             }
         }
 
+        // An opaque item has the alpha 255, as the opaque entries have: the alpha adds nothing to their distances (checked)
+        var opaqueAlphas = true;
+        for (var entry = 0; entry < entries; entry++)
+        {
+            opaqueAlphas &= entryTranslucent[entry] || alphas[entry] == byte.MaxValue;
+        }
+
         var moved = false;
         for (var i = 0; i < itemCount; i++)
         {
@@ -1463,7 +1470,15 @@ internal sealed class PaletteQuantizer : IDisposable
             if (ownerDistance == 0)
                 continue;
 
-            var nearest = FindNearestEntryKey(planes, length, IsTranslucentItem(item, exact) ? translucentEntries : opaqueEntries, r, g, b, a);
+            int nearest;
+            if (IsTranslucentItem(item, exact))
+            {
+                nearest = FindNearestEntryKey<WithAlpha>(planes, length, translucentEntries, r, g, b, a);
+            }
+            else
+            {
+                nearest = opaqueAlphas && a == byte.MaxValue ? FindNearestEntryKey<WithoutAlpha>(planes, length, opaqueEntries, r, g, b, a) : FindNearestEntryKey<WithAlpha>(planes, length, opaqueEntries, r, g, b, a);
+            }
 
             // No entry of the class gives int.MaxValue, whose distance (2^23 - 1) is larger than any distance
             if ((nearest >> 8) < ownerDistance)
@@ -1476,8 +1491,13 @@ internal sealed class PaletteQuantizer : IDisposable
         return moved;
     }
 
-    /// <summary>Gets the smallest key <c>(distance &lt;&lt; 8) | entry</c> of the entries of the planes of <see cref="AssignItemsVector"/>.</summary>
-    private static int FindNearestEntryKey(ReadOnlySpan<int> planes, int length, ReadOnlySpan<int> entryNumbers, int r, int g, int b, int a)
+    /// <summary>
+    /// Gets the smallest key <c>(distance &lt;&lt; 8) | entry</c> of the entries of the planes of <see cref="AssignItemsVector"/>;
+    /// <typeparamref name="TAlpha"/> is <see cref="WithoutAlpha"/> when the alpha of every entry it compares equals the one of
+    /// the item (the alpha plane is not read).
+    /// </summary>
+    private static int FindNearestEntryKey<TAlpha>(ReadOnlySpan<int> planes, int length, ReadOnlySpan<int> entryNumbers, int r, int g, int b, int a)
+        where TAlpha : struct
     {
         Debug.Assert(length % 16 == 0 && length <= AssignPlaneLength && entryNumbers.Length >= length);
         ref var reds = ref unsafe(MemoryMarshal.GetReference(planes));
@@ -1498,8 +1518,12 @@ internal sealed class PaletteQuantizer : IDisposable
                 var dr = unsafe(Vector512.LoadUnsafe(ref reds, (nuint)block)) - red;
                 var dg = unsafe(Vector512.LoadUnsafe(ref greens, (nuint)block)) - green;
                 var db = unsafe(Vector512.LoadUnsafe(ref blues, (nuint)block)) - blue;
-                var da = unsafe(Vector512.LoadUnsafe(ref alphas, (nuint)block)) - alpha;
-                var distance = (dr * dr) + (dg * dg) + (db * db) + (da * da);
+                var distance = (dr * dr) + (dg * dg) + (db * db);
+                if (typeof(TAlpha) == typeof(WithAlpha))
+                {
+                    var da = unsafe(Vector512.LoadUnsafe(ref alphas, (nuint)block)) - alpha;
+                    distance += da * da;
+                }
                 keys = Vector512.Min(keys, Vector512.ShiftLeft(distance, 8) | unsafe(Vector512.LoadUnsafe(ref numbers, (nuint)block)));
             }
 
@@ -1518,8 +1542,12 @@ internal sealed class PaletteQuantizer : IDisposable
                 var dr = unsafe(Vector256.LoadUnsafe(ref reds, (nuint)block)) - red;
                 var dg = unsafe(Vector256.LoadUnsafe(ref greens, (nuint)block)) - green;
                 var db = unsafe(Vector256.LoadUnsafe(ref blues, (nuint)block)) - blue;
-                var da = unsafe(Vector256.LoadUnsafe(ref alphas, (nuint)block)) - alpha;
-                var distance = (dr * dr) + (dg * dg) + (db * db) + (da * da);
+                var distance = (dr * dr) + (dg * dg) + (db * db);
+                if (typeof(TAlpha) == typeof(WithAlpha))
+                {
+                    var da = unsafe(Vector256.LoadUnsafe(ref alphas, (nuint)block)) - alpha;
+                    distance += da * da;
+                }
                 keys = Vector256.Min(keys, Vector256.ShiftLeft(distance, 8) | unsafe(Vector256.LoadUnsafe(ref numbers, (nuint)block)));
             }
 
@@ -1537,8 +1565,12 @@ internal sealed class PaletteQuantizer : IDisposable
                 var dr = unsafe(Vector128.LoadUnsafe(ref reds, (nuint)block)) - red;
                 var dg = unsafe(Vector128.LoadUnsafe(ref greens, (nuint)block)) - green;
                 var db = unsafe(Vector128.LoadUnsafe(ref blues, (nuint)block)) - blue;
-                var da = unsafe(Vector128.LoadUnsafe(ref alphas, (nuint)block)) - alpha;
-                var distance = (dr * dr) + (dg * dg) + (db * db) + (da * da);
+                var distance = (dr * dr) + (dg * dg) + (db * db);
+                if (typeof(TAlpha) == typeof(WithAlpha))
+                {
+                    var da = unsafe(Vector128.LoadUnsafe(ref alphas, (nuint)block)) - alpha;
+                    distance += da * da;
+                }
                 smallest = Vector128.Min(smallest, Vector128.ShiftLeft(distance, 8) | unsafe(Vector128.LoadUnsafe(ref numbers, (nuint)block)));
             }
         }
@@ -1850,6 +1882,12 @@ internal sealed class PaletteQuantizer : IDisposable
         Debug.Assert(length >= 0);
         Debug.Assert(_paletteRed.Length >= length && _paletteGreen.Length >= length && _paletteBlue.Length >= length);
     }
+
+    /// <summary>Selects the distances of <see cref="FindNearestEntryKey{TAlpha}"/> over the four coordinates.</summary>
+    private readonly struct WithAlpha;
+
+    /// <summary>Selects the distances of <see cref="FindNearestEntryKey{TAlpha}"/> over the color coordinates only.</summary>
+    private readonly struct WithoutAlpha;
 
     private Span<byte> GetState() => (_state ?? throw new ObjectDisposedException(nameof(PaletteQuantizer))).RawBuffer.AsSpan(0, _stateLength);
 }

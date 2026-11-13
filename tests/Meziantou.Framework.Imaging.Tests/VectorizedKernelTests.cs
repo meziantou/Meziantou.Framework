@@ -3473,6 +3473,39 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Ssimulacra2XybConversionMatchesTheScalarReference()
+    {
+        var random = new Random(20261119);
+        foreach (var length in new[] { 0, 1, 3, 4, 5, 7, 8, 9, 15, 16, 17, 33, 1000 })
+        {
+            // Linear samples in [0, 1], out of gamut, zeros of both signs, tiny and huge, and every exact 8-bit level
+            var red = Enumerable.Range(0, length).Select(i => length == 1000 ? i % 256 / 255f : NextLinear(random)).ToArray();
+            var green = Enumerable.Range(0, length).Select(i => length == 1000 ? (i * 7) % 256 / 255f : NextLinear(random)).ToArray();
+            var blue = Enumerable.Range(0, length).Select(i => length == 1000 ? (i * 13) % 256 / 255f : NextLinear(random)).ToArray();
+            var expected = Enumerable.Range(0, 3).Select(_ => Enumerable.Repeat(float.NaN, length).ToArray()).ToArray();
+            var actual = Enumerable.Range(0, 3).Select(_ => Enumerable.Repeat(float.NaN, length).ToArray()).ToArray();
+            Ssimulacra2Calculator.ToPositiveXybScalar(red, green, blue, expected[0], expected[1], expected[2]);
+            Ssimulacra2Calculator.ToPositiveXyb(red, green, blue, actual[0], actual[1], actual[2]);
+            for (var c = 0; c < 3; c++)
+            {
+                Assert.Equal(Array.ConvertAll(expected[c], BitConverter.SingleToInt32Bits), Array.ConvertAll(actual[c], BitConverter.SingleToInt32Bits));
+            }
+        }
+
+        static float NextLinear(Random random) => random.Next(10) switch
+        {
+            0 => 0f,
+            1 => -0f,
+            2 => (float)-random.NextDouble(),
+            3 => (float)(random.NextDouble() * 1e-30),
+            4 => (float)(random.NextDouble() * 1e6),
+            5 => 1f,
+            _ => (float)random.NextDouble(),
+        };
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void SsimMapStatisticsAndScoresMatchTheScalarReference()
     {
         var random = new Random(20261114);

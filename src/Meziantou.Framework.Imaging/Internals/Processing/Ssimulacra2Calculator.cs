@@ -256,16 +256,77 @@ internal static class Ssimulacra2Calculator
         }
     }
 
-    /// <summary>Converts linear sRGB to XYB (enc_xyb.cc, intensity target 255), then rescales it (MakePositiveXYB).</summary>
+    /// <summary>
+    /// Converts linear sRGB to XYB (enc_xyb.cc, intensity target 255), then rescales it (MakePositiveXYB). The vectors
+    /// compute consecutive samples with the fused multiply-adds of <see cref="ToPositiveXybScalar"/> when the processor has them.
+    /// </summary>
     private static void ToPositiveXyb(FloatPlane[] linear, FloatPlane[] xyb, int start, int end)
+        => ToPositiveXyb(linear[0].GetRows(start, end), linear[1].GetRows(start, end), linear[2].GetRows(start, end), xyb[0].GetRows(start, end), xyb[1].GetRows(start, end), xyb[2].GetRows(start, end));
+
+    /// <inheritdoc cref="ToPositiveXyb(FloatPlane[], FloatPlane[], int, int)"/>
+    internal static void ToPositiveXyb(ReadOnlySpan<float> red, ReadOnlySpan<float> green, ReadOnlySpan<float> blue, Span<float> outX, Span<float> outY, Span<float> outB)
     {
-        var red = linear[0].GetRows(start, end);
-        var green = linear[1].GetRows(start, end);
-        var blue = linear[2].GetRows(start, end);
-        var outX = xyb[0].GetRows(start, end);
-        var outY = xyb[1].GetRows(start, end);
-        var outB = xyb[2].GetRows(start, end);
-        for (var i = 0; i < red.Length; i++)
+        var i = 0;
+        var length = red.Length;
+        if (Resampler.IsFmaAccelerated && Vector128.IsHardwareAccelerated && green.Length >= length && blue.Length >= length && outX.Length >= length && outY.Length >= length && outB.Length >= length)
+        {
+            ref var r0 = ref unsafe(MemoryMarshal.GetReference(red));
+            ref var g0 = ref unsafe(MemoryMarshal.GetReference(green));
+            ref var b0 = ref unsafe(MemoryMarshal.GetReference(blue));
+            ref var x0 = ref unsafe(MemoryMarshal.GetReference(outX));
+            ref var y0 = ref unsafe(MemoryMarshal.GetReference(outY));
+            ref var bOut0 = ref unsafe(MemoryMarshal.GetReference(outB));
+            if (Vector256.IsHardwareAccelerated)
+            {
+                var bias = Vector256.Create(OpsinBias);
+                for (; i + Vector256<float>.Count <= length; i += Vector256<float>.Count)
+                {
+                    unsafe
+                    {
+                        var r = Vector256.LoadUnsafe(ref r0, (nuint)i);
+                        var g = Vector256.LoadUnsafe(ref g0, (nuint)i);
+                        var b = Vector256.LoadUnsafe(ref b0, (nuint)i);
+                        var mixed0 = CubeRootAndAdd(Vector256.FusedMultiplyAdd(Vector256.Create(M00), r, Vector256.FusedMultiplyAdd(Vector256.Create(M01), g, Vector256.FusedMultiplyAdd(Vector256.Create(M02), b, bias))));
+                        var mixed1 = CubeRootAndAdd(Vector256.FusedMultiplyAdd(Vector256.Create(M10), r, Vector256.FusedMultiplyAdd(Vector256.Create(M11), g, Vector256.FusedMultiplyAdd(Vector256.Create(M12), b, bias))));
+                        var mixed2 = CubeRootAndAdd(Vector256.FusedMultiplyAdd(Vector256.Create(M20), r, Vector256.FusedMultiplyAdd(Vector256.Create(M21), g, Vector256.FusedMultiplyAdd(Vector256.Create(M22), b, bias))));
+                        var x = Vector256.Create(0.5f) * (mixed0 - mixed1);
+                        var y = Vector256.Create(0.5f) * (mixed0 + mixed1);
+                        ((mixed2 - y) + Vector256.Create(0.55f)).StoreUnsafe(ref bOut0, (nuint)i);
+                        ((x * Vector256.Create(14f)) + Vector256.Create(0.42f)).StoreUnsafe(ref x0, (nuint)i);
+                        (y + Vector256.Create(0.01f)).StoreUnsafe(ref y0, (nuint)i);
+                    }
+                }
+            }
+
+            {
+                var bias = Vector128.Create(OpsinBias);
+                for (; i + Vector128<float>.Count <= length; i += Vector128<float>.Count)
+                {
+                    unsafe
+                    {
+                        var r = Vector128.LoadUnsafe(ref r0, (nuint)i);
+                        var g = Vector128.LoadUnsafe(ref g0, (nuint)i);
+                        var b = Vector128.LoadUnsafe(ref b0, (nuint)i);
+                        var mixed0 = CubeRootAndAdd(Vector128.FusedMultiplyAdd(Vector128.Create(M00), r, Vector128.FusedMultiplyAdd(Vector128.Create(M01), g, Vector128.FusedMultiplyAdd(Vector128.Create(M02), b, bias))));
+                        var mixed1 = CubeRootAndAdd(Vector128.FusedMultiplyAdd(Vector128.Create(M10), r, Vector128.FusedMultiplyAdd(Vector128.Create(M11), g, Vector128.FusedMultiplyAdd(Vector128.Create(M12), b, bias))));
+                        var mixed2 = CubeRootAndAdd(Vector128.FusedMultiplyAdd(Vector128.Create(M20), r, Vector128.FusedMultiplyAdd(Vector128.Create(M21), g, Vector128.FusedMultiplyAdd(Vector128.Create(M22), b, bias))));
+                        var x = Vector128.Create(0.5f) * (mixed0 - mixed1);
+                        var y = Vector128.Create(0.5f) * (mixed0 + mixed1);
+                        ((mixed2 - y) + Vector128.Create(0.55f)).StoreUnsafe(ref bOut0, (nuint)i);
+                        ((x * Vector128.Create(14f)) + Vector128.Create(0.42f)).StoreUnsafe(ref x0, (nuint)i);
+                        (y + Vector128.Create(0.01f)).StoreUnsafe(ref y0, (nuint)i);
+                    }
+                }
+            }
+        }
+
+        ToPositiveXybScalar(red, green, blue, outX, outY, outB, i);
+    }
+
+    /// <summary>The scalar reference of <see cref="ToPositiveXyb(ReadOnlySpan{float}, ReadOnlySpan{float}, ReadOnlySpan{float}, Span{float}, Span{float}, Span{float})"/>, from index <paramref name="start"/>.</summary>
+    internal static void ToPositiveXybScalar(ReadOnlySpan<float> red, ReadOnlySpan<float> green, ReadOnlySpan<float> blue, Span<float> outX, Span<float> outY, Span<float> outB, int start = 0)
+    {
+        for (var i = start; i < red.Length; i++)
         {
             var r = red[i];
             var g = green[i];
@@ -279,6 +340,50 @@ internal static class Ssimulacra2Calculator
             outX[i] = x * 14f + 0.42f;
             outY[i] = y + 0.01f;
         }
+    }
+
+    /// <summary><see cref="CubeRootAndAdd(float)"/> on every lane.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<float> CubeRootAndAdd(Vector256<float> mixed)
+    {
+        var oneThird = Vector256.Create(1.0f / 3);
+        var x = Vector256.Max(mixed, Vector256<float>.Zero);
+        var xThird = oneThird * x;
+        var bits = x.AsInt32();
+        var estimate = Vector256.ConditionalSelect(Vector256.Equals(bits, Vector256<int>.Zero), Vector256<int>.Zero, Vector256.Create(0x54800000) - (Vector256.ShiftRightArithmetic(bits, 23) * Vector256.Create(0x002AAAAA)));
+        var r = estimate.AsSingle();
+        for (var i = 0; i < 3; i++)
+        {
+            var r2 = r * r;
+            r = Vector256.FusedMultiplyAdd(-xThird, r2 * r2, Vector256.Create(4.0f / 3) * r);
+        }
+
+        var square = r * r;
+        r = Vector256.FusedMultiplyAdd(oneThird, Vector256.FusedMultiplyAdd(-x, square * square, r), r);
+        square = r * r;
+        return Vector256.FusedMultiplyAdd(square, x, Vector256.Create(NegativeCubeRootBias));
+    }
+
+    /// <summary><see cref="CubeRootAndAdd(float)"/> on every lane.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<float> CubeRootAndAdd(Vector128<float> mixed)
+    {
+        var oneThird = Vector128.Create(1.0f / 3);
+        var x = Vector128.Max(mixed, Vector128<float>.Zero);
+        var xThird = oneThird * x;
+        var bits = x.AsInt32();
+        var estimate = Vector128.ConditionalSelect(Vector128.Equals(bits, Vector128<int>.Zero), Vector128<int>.Zero, Vector128.Create(0x54800000) - (Vector128.ShiftRightArithmetic(bits, 23) * Vector128.Create(0x002AAAAA)));
+        var r = estimate.AsSingle();
+        for (var i = 0; i < 3; i++)
+        {
+            var r2 = r * r;
+            r = Vector128.FusedMultiplyAdd(-xThird, r2 * r2, Vector128.Create(4.0f / 3) * r);
+        }
+
+        var square = r * r;
+        r = Vector128.FusedMultiplyAdd(oneThird, Vector128.FusedMultiplyAdd(-x, square * square, r), r);
+        square = r * r;
+        return Vector128.FusedMultiplyAdd(square, x, Vector128.Create(NegativeCubeRootBias));
     }
 
     /// <summary>
@@ -313,7 +418,27 @@ internal static class Ssimulacra2Calculator
 
     private static void Multiply(ReadOnlySpan<float> a, ReadOnlySpan<float> b, Span<float> product)
     {
-        for (var i = 0; i < product.Length; i++)
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated && a.Length >= product.Length && b.Length >= product.Length)
+        {
+            ref var a0 = ref unsafe(MemoryMarshal.GetReference(a));
+            ref var b0 = ref unsafe(MemoryMarshal.GetReference(b));
+            ref var target = ref unsafe(MemoryMarshal.GetReference(product));
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; i + Vector256<float>.Count <= product.Length; i += Vector256<float>.Count)
+                {
+                    unsafe { (Vector256.LoadUnsafe(ref a0, (nuint)i) * Vector256.LoadUnsafe(ref b0, (nuint)i)).StoreUnsafe(ref target, (nuint)i); }
+                }
+            }
+
+            for (; i + Vector128<float>.Count <= product.Length; i += Vector128<float>.Count)
+            {
+                unsafe { (Vector128.LoadUnsafe(ref a0, (nuint)i) * Vector128.LoadUnsafe(ref b0, (nuint)i)).StoreUnsafe(ref target, (nuint)i); }
+            }
+        }
+
+        for (; i < product.Length; i++)
         {
             product[i] = a[i] * b[i];
         }

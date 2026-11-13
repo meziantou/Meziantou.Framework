@@ -42,6 +42,15 @@ internal readonly struct DoubleLanes256 : IDoubleLanes<Vector256<double>>
     public static Vector256<double> Floor(Vector256<double> value) => Vector256.Floor(value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector256<double> Min(Vector256<double> left, Vector256<double> right) => Vector256.Min(left, right);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector256<double> Max(Vector256<double> left, Vector256<double> right) => Vector256.Max(left, right);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector256<double> LessThanOrEqual(Vector256<double> left, Vector256<double> right) => Vector256.LessThanOrEqual(left, right);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector256<double> Equal(Vector256<double> left, Vector256<double> right) => Vector256.Equals(left, right);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

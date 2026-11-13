@@ -39,11 +39,19 @@ internal interface IDoubleLanes<TVector>
 
     static abstract TVector Floor(TVector value);
 
+    /// <summary>The smaller of the lanes; only used on numbers, where every definition of the minimum agrees.</summary>
+    static abstract TVector Min(TVector left, TVector right);
+
+    /// <summary>The larger of the lanes; only used on numbers, where every definition of the maximum agrees.</summary>
+    static abstract TVector Max(TVector left, TVector right);
+
     /// <summary>All the bits of the lanes where <c>left == right</c>, none elsewhere.</summary>
     static abstract TVector Equal(TVector left, TVector right);
 
     /// <summary>All the bits of the lanes where <c>left &lt; right</c>, none elsewhere (and where a lane is not a number).</summary>
     static abstract TVector LessThan(TVector left, TVector right);
+
+    static abstract TVector LessThanOrEqual(TVector left, TVector right);
 
     static abstract TVector GreaterThan(TVector left, TVector right);
 

@@ -1878,7 +1878,176 @@ internal static class DrawingKernels
     /// Composites a paint whose color is first mixed with the color of each pixel by a blend mode: the paint of each
     /// pixel becomes a color of its own, composited as any paint.
     /// </summary>
+    /// <remarks>
+    /// A separable blend mode on color pixels is computed on vectors (<see cref="CompositeSeparableBlended{TSample, TBlend, TLanes, TVector}"/>), the others
+    /// by <see cref="CompositeBlendedScalar"/>.
+    /// </remarks>
     private static void CompositeBlended<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        if (channels >= 3 && source.Blend < BlendMode.Hue && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                CompositeSeparableBlended<TSample, DoubleLanes256, Vector256<double>>(samples, channels, coverage, source);
+            }
+            else
+            {
+                CompositeSeparableBlended<TSample, DoubleLanes128, Vector128<double>>(samples, channels, coverage, source);
+            }
+
+            return;
+        }
+
+        CompositeBlendedScalar(samples, channels, coverage, source, isBlueFirst);
+    }
+
+    /// <summary>Chooses the blend mode of <see cref="CompositeSeparableBlended{TSample, TBlend, TLanes, TVector}"/> once for a run.</summary>
+    private static void CompositeSeparableBlended<TSample, TLanes, TVector>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+        where TLanes : IDoubleLanes<TVector>
+        where TVector : unmanaged
+    {
+        switch (source.Blend)
+        {
+            case BlendMode.Screen:
+                CompositeSeparableBlended<TSample, BlendFunctions.ScreenBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.Overlay:
+                CompositeSeparableBlended<TSample, BlendFunctions.OverlayBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.Darken:
+                CompositeSeparableBlended<TSample, BlendFunctions.DarkenBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.Lighten:
+                CompositeSeparableBlended<TSample, BlendFunctions.LightenBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.ColorDodge:
+                CompositeSeparableBlended<TSample, BlendFunctions.ColorDodgeBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.ColorBurn:
+                CompositeSeparableBlended<TSample, BlendFunctions.ColorBurnBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.HardLight:
+                CompositeSeparableBlended<TSample, BlendFunctions.HardLightBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.SoftLight:
+                CompositeSeparableBlended<TSample, BlendFunctions.SoftLightBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.Difference:
+                CompositeSeparableBlended<TSample, BlendFunctions.DifferenceBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.Exclusion:
+                CompositeSeparableBlended<TSample, BlendFunctions.ExclusionBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            default:
+                CompositeSeparableBlended<TSample, BlendFunctions.MultiplyBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// <see cref="CompositeBlendedScalar"/> for a separable blend mode and color pixels, the components of a pixel in the
+    /// lanes of vectors: in the order they are stored, since each one is blended with the same component of the pixel.
+    /// </summary>
+    private static void CompositeSeparableBlended<TSample, TBlend, TLanes, TVector>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+        where TBlend : BlendFunctions.ISeparableBlend
+        where TLanes : IDoubleLanes<TVector>
+        where TVector : unmanaged
+    {
+        const int ChunkSize = 64;
+        var max = double.CreateTruncating(TSample.MaxValue);
+        var maxes = TLanes.Create(max);
+        var zero = TLanes.Create(0);
+        var one = TLanes.Create(1);
+        var half = TLanes.Create(0.5);
+        var bias = TLanes.Create(1.0 / 1048576);
+        var count = TLanes.Count;
+        var colors = source.Colors;
+        var color = source.Color;
+        Span<ushort> single = [color.C0, color.C1, color.C2, color.Alpha];
+        Span<ushort> chunkColors = stackalloc ushort[ChunkSize * 4];
+
+        // The four samples of the paint, then the three color samples of the pixel and a zero, then the results
+        Span<double> values = stackalloc double[8];
+        Span<double> results = stackalloc double[4];
+        values[7] = 0;
+        var isSingle = colors.IsEmpty;
+        if (isSingle)
+        {
+            for (var c = 0; c < 4; c++)
+            {
+                values[c] = single[c];
+            }
+        }
+
+        for (var start = 0; start < coverage.Length; start += ChunkSize)
+        {
+            var length = Math.Min(ChunkSize, coverage.Length - start);
+            for (var k = 0; k < length; k++)
+            {
+                var i = start + k;
+                if (coverage[i] == 0)
+                    continue;
+
+                var paint = isSingle ? single : colors.Slice(i * 4, 4);
+                var blended = chunkColors.Slice(k * 4, 4);
+                paint.CopyTo(blended);
+                var pixel = samples.Slice(i * channels, channels);
+                var backdropSample = channels == 4 ? double.CreateTruncating(pixel[3]) : max;
+                if (paint[3] == 0 || backdropSample == 0)
+                    continue;
+
+                if (!isSingle)
+                {
+                    values[0] = paint[0];
+                    values[1] = paint[1];
+                    values[2] = paint[2];
+                    values[3] = paint[3];
+                }
+
+                values[4] = double.CreateTruncating(pixel[0]);
+                values[5] = double.CreateTruncating(pixel[1]);
+                values[6] = double.CreateTruncating(pixel[2]);
+
+                // An opaque backdrop without alpha is 1, which M / M is
+                var backdrop = TLanes.Create(backdropSample / max);
+                var kept = TLanes.Subtract(one, backdrop);
+                for (var lane = 0; lane < 4; lane += count)
+                {
+                    var s = TLanes.Divide(TLanes.Load(values[lane..]), maxes);
+                    var d = TLanes.Divide(TLanes.Load(values[(4 + lane)..]), maxes);
+                    var mixed = TLanes.Add(TLanes.Multiply(kept, s), TLanes.Multiply(backdrop, TBlend.Blend<TLanes, TVector>(s, d)));
+
+                    // Written so that a value that is not a number is zero
+                    var rounded = TLanes.Floor(TLanes.Add(TLanes.Add(TLanes.Multiply(mixed, maxes), half), bias));
+                    rounded = TLanes.Select(TLanes.GreaterThanOrEqual(rounded, maxes), maxes, TLanes.Select(TLanes.GreaterThan(rounded, zero), rounded, zero));
+                    TLanes.Store(rounded, results[lane..]);
+                }
+
+                blended[0] = (ushort)results[0];
+                blended[1] = (ushort)results[1];
+                blended[2] = (ushort)results[2];
+            }
+
+            // The pixels without coverage are not written: their entry is not read
+            CompositeCore(samples.Slice(start * channels, length * channels), channels, coverage.Slice(start, length), new DrawingSource(chunkColors[..(length * 4)], source.Mode));
+        }
+    }
+
+    /// <summary>The reference of <see cref="CompositeBlended"/>: the color of each pixel blended component by component.</summary>
+    internal static void CompositeBlendedScalar<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
         var max = double.CreateTruncating(TSample.MaxValue);

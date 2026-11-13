@@ -4570,6 +4570,73 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingBlendedPaintsMatchTheScalarReference()
+    {
+        // Every blend mode with every operator, on 8-bit and 16-bit color pixels, with a paint per pixel or a single paint:
+        // transparent and opaque paints and pixels, and every coverage
+        var random = new Random(20261113);
+        for (var blend = BlendMode.Multiply; blend <= BlendMode.Luminosity; blend++)
+        {
+            foreach (var mode in Enum.GetValues<CompositeMode>())
+            {
+                foreach (var (channels, isBlueFirst) in new[] { (3, false), (4, false), (4, true), (1, false) })
+                {
+                    Check<byte>(random, channels, isBlueFirst, blend, mode, random.Next(1, 200));
+                    Check<ushort>(random, channels, isBlueFirst, blend, mode, random.Next(1, 200));
+                }
+            }
+        }
+
+        static void Check<TSample>(Random random, int channels, bool isBlueFirst, BlendMode blend, CompositeMode mode, int length)
+            where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+        {
+            var max = int.CreateTruncating(TSample.MaxValue);
+            var pixels = new TSample[length * channels];
+            var coverage = new uint[length];
+            var colors = new ushort[length * 4];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = TSample.CreateTruncating(Next(random, max));
+            }
+
+            for (var i = 0; i < colors.Length; i++)
+            {
+                colors[i] = (ushort)Next(random, max);
+            }
+
+            for (var i = 0; i < length; i++)
+            {
+                coverage[i] = random.Next(3) switch
+                {
+                    0 => CoverageRasterizer.FullCoverage,
+                    1 => 0,
+                    _ => (uint)random.Next((int)CoverageRasterizer.FullCoverage + 1),
+                };
+            }
+
+            var single = new DrawingColor(colors[0], colors[1], colors[2], colors[3]);
+            foreach (var isSingle in new[] { false, true })
+            {
+                var source = isSingle ? new DrawingSource(single, mode, blend) : new DrawingSource(colors, mode, blend);
+                var expected = (TSample[])pixels.Clone();
+                DrawingKernels.CompositeBlendedScalar<TSample>(expected, channels, coverage, source, isBlueFirst);
+                var actual = (TSample[])pixels.Clone();
+                DrawingKernels.CompositeWithFormulas<TSample>(actual, channels, coverage, source, isBlueFirst);
+                Assert.Equal(expected, actual);
+            }
+        }
+
+        // The extremes, for the branches of the blend modes, and any sample
+        static int Next(Random random, int max) => random.Next(4) switch
+        {
+            0 => 0,
+            1 => max,
+            _ => random.Next(max + 1),
+        };
+    }
+
+    [Fact]
     public void DrawingColorsReadFromAFrameOfTheSameFormatAreItsConvertedColors()
     {
         // Every sample of every channel (the channels are converted on their own), and every 16-bit gray

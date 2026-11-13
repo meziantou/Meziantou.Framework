@@ -394,6 +394,10 @@ internal static class FuzzOracle
         if (variant % 12 is 10 && CheckLossyAvif(image, variant) is { Length: > 0 } lossyAvif)
             return lossyAvif;
 
+        // The variant of the JPEG XL encoder also writes the part as a lossy file: transform choice, quantization, zero thresholds
+        if (variant % 12 == 6 && CheckLossyJpegXl(image, variant) is { Length: > 0 } lossyJpegXl)
+            return lossyJpegXl;
+
         // Processing on whatever geometry and orientation the input declared
         image.AutoOrient();
         image.Resize(new ResizeOptions(Math.Max(1, image.Width / 2), Math.Max(1, (image.Height * 2) / 3)) { Mode = ResizeMode.Stretch });
@@ -635,6 +639,30 @@ internal static class FuzzOracle
         using var reloaded = Image.Load<Rgba32>(output.ToArray(), new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
         if (reloaded.Width != converted.Width || reloaded.Height != converted.Height || reloaded.Frames.Count != 1)
             return $"lossy-avif-structure: the image of {converted.Width}x{converted.Height} written as a lossy AVIF (variant {variant}) decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s)";
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckLossyJpegXl(Image image, int variant)
+    {
+        // The corner of CheckLosslessRoundTrip, at an effort that chooses the transforms by their cost (3 and above)
+        using var still = image.CloneFrame(0);
+        still.Crop(new Rectangle(0, 0, Math.Min(still.Width, 40), Math.Min(still.Height, 40)));
+        using var converted = still.CloneAs<Rgba32>(Conversion);
+        var encoder = new JpegXlEncoder
+        {
+            MetadataHandling = MetadataHandling.Strip,
+            Compression = JpegXlCompression.Lossy,
+            Quality = 10 + ((variant >> 4) % 91),
+            Effort = 3 + (2 * ((variant >> 6) & 3)),
+            Progressive = (variant & 256) != 0,
+        };
+        using var output = new MemoryStream();
+        converted.Save(output, encoder);
+        using var reloaded = Image.Load(output.ToArray(), new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+        if (reloaded.Width != converted.Width || reloaded.Height != converted.Height || reloaded.Frames.Count != 1)
+            return $"lossy-jpegxl-structure: the image of {converted.Width}x{converted.Height} written as a lossy JPEG XL file (variant {variant}) decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s)";
 
         return string.Empty;
     }

@@ -133,7 +133,6 @@ internal static class Pdf417Decoder
             values[i] = Pdf417Patterns.TryGetCodeword(ReadPattern(row, width * (i + 1), width), out var cluster, out var value) ? (cluster, value) : (-1, -1);
         }
 
-        var rowCluster = -1;
         var clusterCounts = new int[3];
         foreach (var (cluster, _) in values)
         {
@@ -147,7 +146,7 @@ internal static class Pdf417Decoder
         if (best is 0)
             return;
 
-        rowCluster = Array.IndexOf(clusterCounts, best);
+        var rowCluster = Array.IndexOf(clusterCounts, best);
         var (leftCluster, left) = values[0];
         var (rightCluster, right) = values[^1];
         var rowGroup = leftCluster == rowCluster ? left / 30 : rightCluster == rowCluster ? right / 30 : -1;

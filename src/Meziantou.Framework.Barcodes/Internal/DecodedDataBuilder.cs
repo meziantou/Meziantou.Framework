@@ -45,8 +45,13 @@ internal sealed class DecodedDataBuilder
 
     public void SetEci(int assignmentNumber)
     {
-        Flush();
-        _eci = assignmentNumber;
+        // A repeated ECI designator does not split the bytes of a character
+        if (_eci != assignmentNumber)
+        {
+            Flush();
+            _eci = assignmentNumber;
+        }
+
         FirstEci ??= assignmentNumber;
     }
 

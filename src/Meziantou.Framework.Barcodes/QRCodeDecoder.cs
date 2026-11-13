@@ -144,7 +144,7 @@ public static class QRCodeDecoder
         error = failure ?? "";
         var height = modules.GetLength(0);
         var width = modules.GetLength(1);
-        if (height != width)
+        if (height != width || !IsSquareQRCodeSize(height))
             return false;
 
         // A mirrored symbol, once its finder patterns are in place, is the transpose of the symbol
@@ -161,6 +161,9 @@ public static class QRCodeDecoder
         return result is not null;
     }
 
+    // The sizes of the standard QR codes (21 to 177 modules) and of the Micro QR codes (11 to 17 modules)
+    private static bool IsSquareQRCodeSize(int size) => size is 11 or 13 or 15 or 17 || (size is >= 21 and <= 177 && (size - 17) % 4 is 0);
+
     // Returns null on success, or the reason of the failure
     private static string? TryDecodeOriented(bool[,] modules, bool isMirrored, out QRCodeDecodeResult? result)
     {
@@ -170,11 +173,8 @@ public static class QRCodeDecoder
         if (height != width)
             return TryDecodeRMQR(modules, isMirrored, out result);
 
-        if (height is 11 or 13 or 15 or 17)
-            return TryDecodeMicroQR(modules, isMirrored, out result);
-
-        if (height is >= 21 and <= 177 && (height - 17) % 4 is 0)
-            return TryDecodeStandard(modules, isMirrored, out result);
+        if (IsSquareQRCodeSize(height))
+            return height < 21 ? TryDecodeMicroQR(modules, isMirrored, out result) : TryDecodeStandard(modules, isMirrored, out result);
 
         return $"A matrix of {height}x{width} modules is not the size of a QR code.";
     }

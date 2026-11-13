@@ -49,7 +49,7 @@ public sealed class QRCodeDecodeResult
     /// <summary>Gets the number of codewords that the error correction fixed.</summary>
     public int CorrectedErrorCount { get; }
 
-    /// <summary>Gets whether the symbol was read mirrored: its rows and columns were swapped.</summary>
+    /// <summary>Gets whether the symbol was read mirrored: its rows and columns were swapped. Only square symbols (standard and Micro QR codes) are read mirrored.</summary>
     public bool IsMirrored { get; }
 
     /// <inheritdoc/>

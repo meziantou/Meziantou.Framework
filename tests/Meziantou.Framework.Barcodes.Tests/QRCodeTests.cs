@@ -1786,6 +1786,27 @@ public class QRCodeTests
         Assert.Throws<ArgumentNullException>("results", () => QRCodeDecoder.MergeStructuredAppend(null!));
     }
 
+    [Fact]
+    public void Decode_StructuredAppend_CharacterSplitAcrossSymbolsWithTheSameEci()
+    {
+        // Each symbol repeats the ECI designator, and the first one ends in the middle of the 2 bytes of 'é'
+        var text = new string('\u00E9', 20);
+        var symbols = QRCode.CreateStructuredAppend([QRCodeSegment.CreateEci(QRCodeOptions.Utf8EciAssignmentNumber), QRCodeSegment.CreateByte(text)], ErrorCorrectionLevel.L, new QRCodeOptions { MaximumVersion = 1 });
+
+        var results = symbols.Select(QRCodeDecoder.Decode).ToArray();
+
+        Assert.HasCountGreaterThan(1, results);
+        Assert.Equal(26, results[1].Segments[0].EciAssignmentNumber);
+        Assert.Equal(text, QRCodeDecoder.MergeStructuredAppend(results));
+    }
+
+    [Fact]
+    public void Decode_LargeMatrixThatIsNotAQRCode_IsRejectedWithoutTransposing()
+    {
+        // 10,000 x 10,000 modules: a mirrored retry would copy them for nothing
+        Assert.False(QRCodeDecoder.TryDecode(new bool[10_000, 10_000], out _));
+    }
+
     [Theory]
     [InlineData(ErrorCorrectionLevel.L)]
     [InlineData(ErrorCorrectionLevel.M)]

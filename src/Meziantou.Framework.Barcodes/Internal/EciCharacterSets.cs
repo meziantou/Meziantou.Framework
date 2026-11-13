@@ -38,8 +38,14 @@ internal static class EciCharacterSets
                     break;
 
                 case QRCodeSegmentMode.Eci:
-                    Flush();
-                    assignmentNumber = segment.EciAssignmentNumber;
+                    // The symbols of a structured append sequence repeat the ECI designator: the same one keeps the bytes of
+                    // a character that spans two symbols together
+                    if (segment.EciAssignmentNumber != assignmentNumber)
+                    {
+                        Flush();
+                        assignmentNumber = segment.EciAssignmentNumber;
+                    }
+
                     break;
 
                 default:

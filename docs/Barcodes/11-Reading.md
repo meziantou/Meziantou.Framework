@@ -125,7 +125,7 @@ Assert.True(result.CorrectedErrorCount > 0);
 ```
 <!-- endref -->
 
-A symbol read in a mirror has its rows and columns swapped: the decoder reads it too, and sets
+A standard or Micro QR code read in a mirror has its rows and columns swapped: the decoder reads it too, and sets
 [IsMirrored](cref:Meziantou.Framework.Barcodes.QRCodeDecodeResult.IsMirrored).
 
 ## What the result holds

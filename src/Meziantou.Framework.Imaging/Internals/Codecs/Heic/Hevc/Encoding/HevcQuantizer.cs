@@ -62,14 +62,37 @@ internal static class HevcQuantizer
                 // 8 coefficients at a time are skipped when they are all quantized to zero. The magnitudes are compared as
                 // unsigned values, which is exact for int.MinValue too
                 var limit = Vector128.Create(zeroLimit);
+
+                // The other ones are divided as single-precision values. The factor is levelScale[ qP % 6 ] * 2^shift, and
+                // ( n / 2^shift ) / levelScale rounded down twice is n / factor rounded down: n / 2^shift is below 2^24, so
+                // that it is exact in single precision and its quotient by levelScale (at most 72) is never rounded up to
+                // the next integer. magnitudeLimit keeps n below 2^31 and n / 2^shift below 2^24, or the scalar path quantizes
+                // the 8 coefficients
+                var shift = 4 + (qP / 6);
+                var divisor = Vector128.Create((float)HevcQuantizationTables.LevelScale[qP % 6]);
+                var magnitudeLimit = Vector128.Create((uint)Math.Min((Math.Min(int.MaxValue, (1L << (24 + shift)) - 1) - offset) >> bdShift, uint.MaxValue));
+                var offsets = Vector128.Create((int)offset);
+                var maxLevel = Vector128.Create(MaxLevel);
                 for (; i <= coefficients.Length - 8; i += 8)
                 {
-                    var low = Vector128.LessThan(Vector128.Abs(Vector128.Create(coefficients.Slice(i, 4))).AsUInt32(), limit);
-                    var high = Vector128.LessThan(Vector128.Abs(Vector128.Create(coefficients.Slice(i + 4, 4))).AsUInt32(), limit);
-                    if ((low & high) == Vector128<uint>.AllBitsSet)
+                    var c0 = Vector128.Create(coefficients.Slice(i, 4));
+                    var c1 = Vector128.Create(coefficients.Slice(i + 4, 4));
+                    var m0 = Vector128.Abs(c0).AsUInt32();
+                    var m1 = Vector128.Abs(c1).AsUInt32();
+                    if ((Vector128.LessThan(m0, limit) & Vector128.LessThan(m1, limit)) == Vector128<uint>.AllBitsSet)
                     {
                         Vector128<int>.Zero.CopyTo(levels.Slice(i, 4));
                         Vector128<int>.Zero.CopyTo(levels.Slice(i + 4, 4));
+                        continue;
+                    }
+
+                    if (Vector128.LessThanOrEqualAll(Vector128.Max(m0, m1), magnitudeLimit))
+                    {
+                        var l0 = QuantizeFlat(c0, m0.AsInt32(), bdShift, offsets, shift, divisor, maxLevel);
+                        var l1 = QuantizeFlat(c1, m1.AsInt32(), bdShift, offsets, shift, divisor, maxLevel);
+                        l0.CopyTo(levels.Slice(i, 4));
+                        l1.CopyTo(levels.Slice(i + 4, 4));
+                        count += BitOperations.PopCount(Vector128.ExtractMostSignificantBits(~Vector128.Equals(l0, Vector128<int>.Zero)) | (Vector128.ExtractMostSignificantBits(~Vector128.Equals(l1, Vector128<int>.Zero)) << 4));
                         continue;
                     }
 
@@ -102,6 +125,34 @@ internal static class HevcQuantizer
         }
 
         return count;
+    }
+
+    /// <summary>
+    /// The levels of <see cref="Quantize"/> without scaling list, one coefficient at a time: the reference of the vector
+    /// path.
+    /// </summary>
+    internal static int QuantizeFlatScalar(ReadOnlySpan<int> coefficients, Span<int> levels, int log2TrafoSize, int qP, int bitDepth, int rounding)
+    {
+        var bdShift = GetBdShift(log2TrafoSize, bitDepth);
+        var factor = FlatScalingFactor * GetLevelScale(qP);
+        var offset = (factor * rounding) / RoundingScale;
+        var count = 0;
+        for (var i = 0; i < coefficients.Length; i++)
+        {
+            count += QuantizeFlat(coefficients[i], ref levels[i], bdShift, factor, offset);
+        }
+
+        return count;
+    }
+
+    // The levels of 4 coefficients whose magnitudes are below the limit of the vector path of Quantize
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<int> QuantizeFlat(Vector128<int> coefficients, Vector128<int> magnitudes, int bdShift, Vector128<int> offset, int shift, Vector128<float> divisor, Vector128<int> maxLevel)
+    {
+        var sign = coefficients >> 31;
+        var reduced = ((magnitudes << bdShift) + offset) >>> shift;
+        var level = Vector128.Min(Vector128.ConvertToInt32(Vector128.ConvertToSingle(reduced) / divisor), maxLevel);
+        return (level ^ sign) - sign;
     }
 
     // The level of a coefficient without scaling list, without branches on its sign or its magnitude, which are hard to

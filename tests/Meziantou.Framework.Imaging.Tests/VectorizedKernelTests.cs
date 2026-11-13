@@ -7281,6 +7281,55 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HevcQuantizationMatchesTheScalarReference(int bitDepth)
+    {
+        // Every size and quantization parameter, the rounding offsets of the encoder and others, with coefficients of the
+        // range of the transforms, coefficients just around the steps, and magnitudes that the vector path leaves to the
+        // scalar one
+        var random = new Random(bitDepth);
+        var qpBdOffset = 6 * (bitDepth - 8);
+        for (var log2TrafoSize = 2; log2TrafoSize <= 5; log2TrafoSize++)
+        {
+            var count = 1 << (log2TrafoSize << 1);
+            for (var qP = 0; qP <= 51 + qpBdOffset; qP++)
+            {
+                var factor = 16 * HevcQuantizer.GetLevelScale(qP);
+                var bdShift = HevcQuantizer.GetBdShift(log2TrafoSize, bitDepth);
+                foreach (var rounding in new[] { 0, 1, 43, 85, 128, 171, 255 })
+                {
+                    for (var round = 0; round < 6; round++)
+                    {
+                        var coefficients = new int[count];
+                        for (var i = 0; i < count; i++)
+                        {
+                            var step = (int)Math.Max(1, factor >> bdShift);
+                            coefficients[i] = (round % 6) switch
+                            {
+                                0 => random.Next(HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax + 1),
+                                1 => random.Next(2) is 0 ? HevcInverseTransform.CoeffMin : HevcInverseTransform.CoeffMax,
+                                2 => (random.Next(-4, 5) * step) + random.Next(-2, 3),
+                                3 => random.Next(4) is 0 ? random.Next(int.MinValue, int.MaxValue) : random.Next(-step, step + 1),
+                                4 => random.Next(2) is 0 ? int.MinValue : int.MaxValue,
+                                _ => random.Next(-4 * step, (4 * step) + 1),
+                            };
+                        }
+
+                        var expected = new int[count];
+                        var actual = new int[count];
+                        var expectedCount = HevcQuantizer.QuantizeFlatScalar(coefficients, expected, log2TrafoSize, qP, bitDepth, rounding);
+                        Assert.Equal(expectedCount, HevcQuantizer.Quantize(coefficients, actual, log2TrafoSize, qP, bitDepth, [], rounding));
+                        Assert.Equal(expected, actual);
+                    }
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void HevcInterPredictionMatchesTheScalarReferences(int bitDepth)
     {
         // Every fractional position of the luma and chroma filters, the block sizes of the prediction units, blocks inside

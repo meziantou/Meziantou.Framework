@@ -580,7 +580,7 @@ internal static class FuzzOracle
             5 => (new WebPEncoder { MetadataHandling = MetadataHandling.Strip, Effort = option * 3 }, eightBit),
             6 => (new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip }, source),
             7 => (new Jpeg2000Encoder { MetadataHandling = MetadataHandling.Strip }, source),
-            8 => (new PngEncoder { MetadataHandling = MetadataHandling.Strip, Interlaced = alternative }, source),
+            8 => (new PngEncoder { MetadataHandling = MetadataHandling.Strip, Interlaced = alternative, Optimization = option switch { 2 => PngOptimization.Layout, 3 => PngOptimization.MinimumSize, _ => PngOptimization.None } }, source),
             9 => (new IcoEncoder { MetadataHandling = MetadataHandling.Strip, Kind = (variant & 32) != 0 ? IconKind.Cursor : IconKind.Icon, PayloadFormat = dibPayload ? IconPayloadFormat.Dib : IconPayloadFormat.Png }, dibPayload ? eightBit : source),
             10 => (new AvifEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),
             _ => (new HeicEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),

@@ -848,7 +848,7 @@ public sealed class ImageRendererTests
         foreach (var moduleSize in (int[])[2, 3, 5, 10])
         {
             data.Add("HELLO WORLD", QRCodeType.Standard, moduleSize);
-            data.Add("https://www.meziantou.net/a-long-url-to-get-a-larger-version-of-the-qr-code?query=string&other=value", QRCodeType.Standard, moduleSize);
+            data.Add("https://www.example.com/a-long-url-to-get-a-larger-version-of-the-qr-code?query=string&other=value", QRCodeType.Standard, moduleSize);
             data.Add("12345", QRCodeType.MicroQR, moduleSize);
             data.Add("MICRO QR", QRCodeType.MicroQR, moduleSize);
             data.Add("hello micro", QRCodeType.MicroQR, moduleSize);
@@ -1037,7 +1037,7 @@ public sealed class ImageRendererTests
             foreach (var type in (Barcode2DType[])[Barcode2DType.DataMatrix, Barcode2DType.Pdf417, Barcode2DType.Aztec])
             {
                 data.Add(type, "Hello", moduleSize);
-                data.Add(type, "https://www.meziantou.net/a-longer-text-for-a-larger-symbol-0123456789", moduleSize);
+                data.Add(type, "https://www.example.com/a-longer-text-for-a-larger-symbol-0123456789", moduleSize);
             }
         }
 

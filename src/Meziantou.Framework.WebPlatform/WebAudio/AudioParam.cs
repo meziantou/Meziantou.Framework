@@ -267,10 +267,7 @@ public sealed class AudioParam
             }
             else
             {
-                for (var i = 0; i < values.Length; i++)
-                {
-                    values[i] += input[i];
-                }
+                AudioVectors.Add(values, input[..values.Length], values);
 
                 constant = false;
             }

@@ -1704,6 +1704,85 @@ public sealed class BrowsingContextTests
         Assert.Equal(1, calls);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RunTask_RunsWithoutTheSynchronizationContextOfTheThreadAndRestoresIt(bool throws)
+    {
+        using var context = new BrowsingContext();
+        var eventLoop = context.EventLoop;
+        var synchronizationContext = new SynchronizationContext();
+        var contexts = new List<SynchronizationContext?>();
+        eventLoop.QueueTask(() =>
+        {
+            contexts.Add(SynchronizationContext.Current);
+            eventLoop.QueueMicrotask(() => contexts.Add(SynchronizationContext.Current));
+            if (throws)
+                throw new InvalidOperationException("task");
+        });
+
+        var originalContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(synchronizationContext);
+        try
+        {
+            if (throws)
+            {
+                Assert.Throws<InvalidOperationException>(() => eventLoop.RunTask());
+            }
+            else
+            {
+                Assert.True(eventLoop.RunTask());
+            }
+
+            Assert.Same(synchronizationContext, SynchronizationContext.Current);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(originalContext);
+        }
+
+        Assert.Equal(throws ? [null] : [null, null], contexts);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PerformMicrotaskCheckpoint_RunsWithoutTheSynchronizationContextOfTheThreadAndRestoresIt(bool throws)
+    {
+        using var context = new BrowsingContext();
+        var eventLoop = context.EventLoop;
+        var synchronizationContext = new SynchronizationContext();
+        var contexts = new List<SynchronizationContext?>();
+        eventLoop.QueueMicrotask(() =>
+        {
+            contexts.Add(SynchronizationContext.Current);
+            if (throws)
+                throw new InvalidOperationException("microtask");
+        });
+
+        var originalContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(synchronizationContext);
+        try
+        {
+            if (throws)
+            {
+                Assert.Throws<InvalidOperationException>(eventLoop.PerformMicrotaskCheckpoint);
+            }
+            else
+            {
+                eventLoop.PerformMicrotaskCheckpoint();
+            }
+
+            Assert.Same(synchronizationContext, SynchronizationContext.Current);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(originalContext);
+        }
+
+        Assert.Equal([null], contexts);
+    }
+
     [Fact]
     public void Dispose_DiscardsThePendingTasksAndDestroysTheDocuments()
     {

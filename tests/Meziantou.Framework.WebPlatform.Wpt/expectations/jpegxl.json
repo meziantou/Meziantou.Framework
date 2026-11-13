@@ -71,6 +71,9 @@
   "jpegxl/css-list-style-image.html": {
     "reftest": "FAIL"
   },
+  "jpegxl/custom-primaries-icc-overflow-crash.html": {
+    "crashtest": "PASS"
+  },
   "jpegxl/gray-decode-reftest.html": {
     "reftest": "PASS"
   },
@@ -108,19 +111,13 @@
     "reftest": "PASS"
   },
   "jpegxl/imagedecoder-animation.https.html": {
-    "total": 4,
-    "failures": {
-      "Animated JPEG XL reports multiple frames and decodes frame sequence.": "FAIL",
-      "Animated JXL with infinite repetition count repeats indefinitely.": "FAIL",
-      "Animated JXL with repetition count 0 plays exactly once.": "FAIL",
-      "Animated JXL with repetition count 1 plays exactly twice.": "FAIL"
-    }
+    "total": 4
   },
   "jpegxl/imagedecoder.https.html": {
-    "total": 1,
-    "failures": {
-      "ImageDecoder decodes JPEG XL image stream.": "FAIL"
-    }
+    "total": 1
+  },
+  "jpegxl/incomplete-codestream-trailing-box-crash.html": {
+    "crashtest": "PASS"
   },
   "jpegxl/jxl-art-basic-reftest.html": {
     "reftest": "PASS"

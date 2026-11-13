@@ -1,4 +1,7 @@
 {
+  "css/css-tables/absolute-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-tables/absolute-tables-001.html": {
     "total": 8
   },
@@ -230,8 +233,110 @@
   "css/css-tables/colspan-004.html": {
     "reftest": "PASS"
   },
+  "css/css-tables/colspan-zero-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-tables/column-track-merging.html": {
     "total": 13
+  },
+  "css/css-tables/crashtests/atomic-item-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/border-collapse-dynamic-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/caption-repaint-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/caption-with-multicol-table-cell.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/cell-contents-with-negative-outer-size.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/col_span_dynamic_crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/dialog-table-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/dynamic-recompute-baseline.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/dynamic_col_width_crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/dynamic_table_layout_crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/empty-tbody-after-tall-section-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/empty_cells_crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/empty_table_with_cols.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/expression_width_crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/inline-splitting-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/large-border-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/large-col-widths.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/legacy_ng_mix_crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/move-oof-inside-section-row-with-borders.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/negative-section-distribution.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/negative_caption_margin.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/orthogonal-cell-borders.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/orthogonal-cell-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/remove-table-column-group.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/row-size-distribution-rowspan-sorting.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/rtl-replace-cells-with-colspan-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/table-column-display-change-chrome-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/table-content-size-blending-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/textarea-intrinsic-size-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/transition-table-row-group-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/uninitialized_read_crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/vertical_percentage_crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/crashtests/webkit-background-clip-on-row-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-tables/display-contents-001.html": {
     "reftest": "PASS"
@@ -360,10 +465,7 @@
     }
   },
   "css/css-tables/html5-table-formatting-1.html": {
-    "total": 6,
-    "failures": {
-      "Empty tables do not take table-rows into account": "FAIL"
-    }
+    "total": 6
   },
   "css/css-tables/html5-table-formatting-2.html": {
     "total": 12
@@ -403,6 +505,12 @@
   },
   "css/css-tables/min-max-size-table-content-box.html": {
     "reftest": "PASS"
+  },
+  "css/css-tables/multicol-table-collapsed-border-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-tables/multicol-table-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-tables/no-overflow-with-table-cell-margins.html": {
     "total": 1
@@ -566,6 +674,9 @@
   "css/css-tables/table-as-item-cell-percentage-004.html": {
     "reftest": "PASS"
   },
+  "css/css-tables/table-caption-after-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-tables/table-cell-baseline-static-position.html": {
     "reftest": "PASS"
   },
@@ -601,6 +712,9 @@
   },
   "css/css-tables/table-cell-writing-mode-computed.html": {
     "total": 1
+  },
+  "css/css-tables/table-collapsed-row-or-column-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-tables/table-colspan-percent-auto.html": {
     "reftest": "PASS"
@@ -660,7 +774,10 @@
     "reftest": "PASS"
   },
   "css/css-tables/tentative/baseline-table.html": {
-    "total": 15
+    "total": 15,
+    "failures": {
+      ".container 11": "FAIL"
+    }
   },
   "css/css-tables/tentative/baseline-td.html": {
     "total": 5
@@ -771,7 +888,12 @@
     "total": 8
   },
   "css/css-tables/tentative/table-height-redistribution.html": {
-    "total": 31
+    "total": 31,
+    "failures": {
+      "table 11": "FAIL",
+      "table 12": "FAIL",
+      "table 25": "FAIL"
+    }
   },
   "css/css-tables/tentative/table-limited-quirks.html": {
     "total": 7
@@ -795,7 +917,11 @@
     "total": 22
   },
   "css/css-tables/tentative/tbody-height-redistribution.html": {
-    "total": 12
+    "total": 12,
+    "failures": {
+      "table 10": "FAIL",
+      "table 11": "FAIL"
+    }
   },
   "css/css-tables/tentative/td-box-sizing-001.html": {
     "total": 14
@@ -836,6 +962,9 @@
   "css/css-tables/visibility-collapse-col-005.html": {
     "total": 2
   },
+  "css/css-tables/visibility-collapse-colgroup-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-tables/visibility-collapse-colspan-001.html": {
     "total": 2
   },
@@ -844,6 +973,9 @@
   },
   "css/css-tables/visibility-collapse-colspan-003.html": {
     "reftest": "FAIL"
+  },
+  "css/css-tables/visibility-collapse-colspan-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-tables/visibility-collapse-non-rowcol-001.html": {
     "total": 6
@@ -895,6 +1027,9 @@
   },
   "css/css-tables/visibility-collapse-rowspan-005.html": {
     "reftest": "FAIL"
+  },
+  "css/css-tables/visibility-collapse-rowspan-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-tables/visibility-hidden-col-001.html": {
     "total": 2

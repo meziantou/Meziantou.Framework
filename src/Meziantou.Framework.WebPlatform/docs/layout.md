@@ -5367,7 +5367,8 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   elements, the SVG `image` elements, the generated content, the list markers and all the CSS images (backgrounds, border
   images, masks), as in the browsers. The painter draws the frame of an animated image (GIF, APNG, WebP) displayed now
   (`Painter.GetDisplayedFrame` → `PaintImage.GetDisplayedFrame(backend, out nextChange)`: the elapsed time since the image
-  became available on the clock of the event loop, `PaintImage.AnimationClock`; the frames of 10 ms or less last 100 ms;
+  became available on the clock of the event loop, `PaintImage.AnimationClock`, or the position given by the `image-animation`
+  of the element, `ImageAnimationTimelines.GetPlayback` → `PaintImage.GetFrameAt`; the frames of 10 ms or less last 100 ms;
   the repetition count of the image), and `Painter.Paint(..., out nextFrameDelay)` gives the time of the next frame:
   `LayoutEngine.GetDisplayList` paints again after it (no rendering update is scheduled for the animations: a screenshot
   paints the current frame). `Painter.PaintCanvas` draws the bitmap of a canvas: the snapshot of the surface of its 2D
@@ -5378,8 +5379,7 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   behind the block); the
   caret; the scrollbars; `element()`; the `BackgroundImage`
   inputs, the masks of the inline boxes split over several lines (applied per fragment), the hit testing of the masks,
-  `SaveLayerItem.Bounds` (unset: the ink overflow does not include the shadows and the outlines); the
-  `image-animation` property (the animations always play).
+  `SaveLayerItem.Bounds` (unset: the ink overflow does not include the shadows and the outlines).
 
 #### SVG painting
 

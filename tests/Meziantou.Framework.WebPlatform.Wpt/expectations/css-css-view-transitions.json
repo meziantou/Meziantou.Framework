@@ -95,6 +95,9 @@
   "css/css-view-transitions/content-visibility-auto-ancestor-skipped-after-finish.html": {
     "total": 1
   },
+  "css/css-view-transitions/content-visibility-auto-relock-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-view-transitions/content-visibility-auto-shared-element.html": {
     "reftest": "PASS"
   },
@@ -146,6 +149,9 @@
   "css/css-view-transitions/document-active-view-transition.html": {
     "total": 1
   },
+  "css/css-view-transitions/document-element-detached-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-view-transitions/duplicate-tag-rejects-capture.html": {
     "total": 1
   },
@@ -173,6 +179,9 @@
   "css/css-view-transitions/empty-render-target-capture.html": {
     "reftest": "PASS"
   },
+  "css/css-view-transitions/empty-render-target-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-view-transitions/escaped-name.html": {
     "reftest": "PASS"
   },
@@ -187,6 +196,9 @@
   },
   "css/css-view-transitions/finished-promise-defers-cleanup.tentative.html": {
     "total": 1
+  },
+  "css/css-view-transitions/first-line-reparent-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-view-transitions/fractional-box-new.html": {
     "reftest": "PASS"
@@ -220,6 +232,9 @@
   },
   "css/css-view-transitions/fragmented-during-transition-skips.html": {
     "reftest": "PASS"
+  },
+  "css/css-view-transitions/get-computed-style-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-view-transitions/group-animation-for-root-transition.html": {
     "total": 1
@@ -275,6 +290,9 @@
   "css/css-view-transitions/iframe-old-has-scrollbar.html": {
     "reftest": "PASS"
   },
+  "css/css-view-transitions/iframe-transition-destroyed-document-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-view-transitions/iframe-transition.sub.html": {
     "reftest": "PASS"
   },
@@ -310,6 +328,9 @@
   },
   "css/css-view-transitions/japanese-tag.html": {
     "reftest": "FAIL"
+  },
+  "css/css-view-transitions/list-style-position-style-change-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-view-transitions/massive-element-below-and-on-top-of-viewport-partially-onscreen-new.html": {
     "reftest": "PASS"
@@ -441,9 +462,10 @@
     "total": 1
   },
   "css/css-view-transitions/navigation/mismatched-snapshot-containing-block-size-skips.html": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "\n  View transitions: mismatched snapshot containing block size skips transition.\n": "FAIL"
+      "\n  View transitions: mismatched snapshot containing block size skips transition.\n": "TIMEOUT"
     }
   },
   "css/css-view-transitions/navigation/navigation-auto-excludes-reload.html": {
@@ -463,6 +485,9 @@
   },
   "css/css-view-transitions/navigation/opt-in-removed-during-transition.html": {
     "total": 1
+  },
+  "css/css-view-transitions/navigation/opt-in-without-frame-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-view-transitions/navigation/outbound-transition-ready-after-pagehide.html": {
     "total": 1
@@ -1109,6 +1134,12 @@
   "css/css-view-transitions/ready_resolves_after_dom_before_raf.html": {
     "total": 1
   },
+  "css/css-view-transitions/remove-document-element-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/remove-root-element-firefox-bug-1982469-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-view-transitions/render-pass-backing-logical-bounds.html": {
     "reftest": "PASS"
   },
@@ -1117,6 +1148,24 @@
   },
   "css/css-view-transitions/root-captured-as-different-tag.html": {
     "reftest": "PASS"
+  },
+  "css/css-view-transitions/root-element-cv-hidden-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/root-element-display-none-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/root-element-display-none-during-transition-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/root-preserve3d-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/root-reconstruct-frame-tree-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/root-replace-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-view-transitions/root-style-change-during-animation.html": {
     "reftest": "PASS"
@@ -1183,6 +1232,54 @@
     "failures": {
       "collision": "FAIL"
     }
+  },
+  "css/css-view-transitions/scoped/crashtests/container-query.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/display-change-after-capture.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/display-change-contents-after-capture.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/display-inline.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/display-none-animation-on-group.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/element-moved-to-new-document.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/element-scoped-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/first-letter-pseudo.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/implicit-stacking-context.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/mask-image.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/participating-scope.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/replace-html.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/scroll-marker.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/shadow-dom.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/shuffle.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-view-transitions/scoped/crashtests/zindex-part.html": {
+    "crashtest": "PASS"
   },
   "css/css-view-transitions/scoped/display-change-during-transition.html": {
     "reftest": "PASS"
@@ -1431,6 +1528,9 @@
   "css/css-view-transitions/table-caption.html": {
     "reftest": "PASS"
   },
+  "css/css-view-transitions/table-root-transition-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-view-transitions/to-keyframe-values.html": {
     "total": 1
   },
@@ -1474,6 +1574,9 @@
   },
   "css/css-view-transitions/update-callback-timeout.html": {
     "total": 1
+  },
+  "css/css-view-transitions/view-transition-class-non-existing-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-view-transitions/view-transition-name-is-backdrop-filter-root.html": {
     "reftest": "FAIL"

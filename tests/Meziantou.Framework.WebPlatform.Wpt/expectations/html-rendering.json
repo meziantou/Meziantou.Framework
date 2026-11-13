@@ -129,6 +129,9 @@
       "<select><optgroup><option> - align-content": "FAIL"
     }
   },
+  "html/rendering/non-replaced-elements/form-controls/select-fixedpos-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/rendering/non-replaced-elements/form-controls/select-sizing-001.html": {
     "reftest": "PASS"
   },
@@ -418,6 +421,9 @@
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/absolute-fixed-in-legend.html": {
     "reftest": "PASS"
   },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/crashtests/fieldset-middleclick.html": {
+    "crashtest": "PASS"
+  },
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/empty-scrollable.html": {
     "reftest": "PASS"
   },
@@ -478,6 +484,9 @@
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-content-rtl.html": {
     "reftest": "PASS"
   },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-default-style.html": {
     "total": 18
   },
@@ -489,6 +498,9 @@
   },
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-dynamic-baseline.html": {
     "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-dynamic-oof-container-crash.html": {
+    "crashtest": "PASS"
   },
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-dynamic-pseudo.html": {
     "reftest": "PASS"
@@ -555,6 +567,9 @@
   },
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/grid-template-propagation.html": {
     "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/insert-legend-in-multicol-fieldset-crash.html": {
+    "crashtest": "PASS"
   },
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-align-justify-self.html": {
     "total": 13
@@ -637,6 +652,9 @@
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-sans-fieldset-display.html": {
     "total": 9
   },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-sticky-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-tall.html": {
     "reftest": "FAIL"
   },
@@ -646,6 +664,15 @@
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/min-inline-size.html": {
     "total": 6
   },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/multicol-legend-becomes-floated-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/second-legend-becomes-rendered-legend-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/sticky-content-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/sticky-content.html": {
     "reftest": "PASS"
   },
@@ -654,6 +681,9 @@
   },
   "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/exceed-then-not-exceed.html": {
     "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/frame-no-frameset-crash.html": {
+    "crashtest": "PASS"
   },
   "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/frameset-visibility-hidden.html": {
     "reftest": "PASS"
@@ -675,6 +705,9 @@
   },
   "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/large-rows-relsize.html": {
     "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/multicol-table-crash.html": {
+    "crashtest": "PASS"
   },
   "html/rendering/non-replaced-elements/the-hr-element-0/align.html": {
     "reftest": "PASS"
@@ -784,6 +817,9 @@
   "html/rendering/non-replaced-elements/the-page/body_text_dynamic.html": {
     "reftest": "PASS"
   },
+  "html/rendering/non-replaced-elements/the-page/crashtests/body-huge-attr-value-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/rendering/non-replaced-elements/the-page/iframe-body-margin-attributes.html": {
     "total": 3
   },
@@ -866,6 +902,9 @@
   "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-border-radius.html": {
     "reftest": "PASS"
   },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-image-content-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-image-inline-alt.html": {
     "reftest": "PASS"
   },
@@ -904,6 +943,9 @@
   },
   "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/video-default-object-width-constrained-by-max-height.html": {
     "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/video-inline-size-containment-no-crash.html": {
+    "crashtest": "PASS"
   },
   "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/video-intrinsic-width-height.html": {
     "total": 6
@@ -1151,6 +1193,9 @@
   "html/rendering/the-details-element/details-after.html": {
     "reftest": "PASS"
   },
+  "html/rendering/the-details-element/details-autofocus-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/rendering/the-details-element/details-before.html": {
     "reftest": "PASS"
   },
@@ -1159,6 +1204,12 @@
   },
   "html/rendering/the-details-element/details-content-pseudo-attr.html": {
     "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/rendering/the-details-element/details-display-list-item-crash.html": {
+    "crashtest": "PASS"
   },
   "html/rendering/the-details-element/details-display-type-001-ref.html": {
     "reftest": "PASS"
@@ -1214,6 +1265,15 @@
   "html/rendering/the-details-element/details-summary-display-inline-002.html": {
     "reftest": "PASS"
   },
+  "html/rendering/the-details-element/empty-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/rendering/the-details-element/firefox-bug-1928736-1-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/rendering/the-details-element/firefox-bug-1928736-2-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/rendering/the-details-element/summary-display-flex.html": {
     "reftest": "PASS"
   },
@@ -1237,6 +1297,9 @@
   },
   "html/rendering/the-details-element/summary-text-decoration.html": {
     "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/two-summaries-removal-crash.html": {
+    "crashtest": "PASS"
   },
   "html/rendering/unmapped-attributes.html": {
     "total": 62
@@ -1310,6 +1373,9 @@
   "html/rendering/widgets/button-layout/inline-level.html": {
     "reftest": "PASS"
   },
+  "html/rendering/widgets/button-layout/input-fragmentation-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/rendering/widgets/button-layout/input-type-button-clip.html": {
     "reftest": "FAIL"
   },
@@ -1360,6 +1426,12 @@
   },
   "html/rendering/widgets/field-sizing-textarea.html": {
     "total": 10
+  },
+  "html/rendering/widgets/file-type-label-update-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "html/rendering/widgets/input-checkbox-appearance-none-dynamic-crash.html": {
+    "crashtest": "PASS"
   },
   "html/rendering/widgets/input-checkbox-disabled-checked.html": {
     "reftest": "PASS"

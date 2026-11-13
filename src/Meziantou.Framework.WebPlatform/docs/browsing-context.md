@@ -3657,7 +3657,8 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   a `message` event (`origin` and `source` are the origin and the window of the caller), or a `messageerror` event when
   the message cannot be deserialized (e.g. a `SharedArrayBuffer` sent to another agent cluster).
 - The caller (the incumbent settings object) is the realm of the script that calls the method (`ScriptEngine.GetCurrentGlobal()`),
-  or the target window itself for a call from .NET.
+  or, when no script has run since a callback was called (e.g. a bound `postMessage` used as an event listener), the
+  callback context of the callback, or the target window itself for a call from .NET.
 
 The agent clusters of a cross-origin isolated browsing context group (`Cross-Origin-Opener-Policy: same-origin` with a
 compatible `Cross-Origin-Embedder-Policy`) are origin-keyed. A `SharedArrayBuffer` can be posted (or sent to a

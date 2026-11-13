@@ -2,6 +2,9 @@
   "quirks/blocks-ignore-line-height.html": {
     "total": 4
   },
+  "quirks/body-fill-html-quirk-intrinsic-crash.html": {
+    "crashtest": "PASS"
+  },
   "quirks/body-fills-html-quirk-float.html": {
     "reftest": "PASS"
   },
@@ -22,6 +25,9 @@
   },
   "quirks/classname-query-after-sibling-adoption.html": {
     "total": 1
+  },
+  "quirks/crashtests/list-item-whole-line-quirks-crash.html": {
+    "crashtest": "PASS"
   },
   "quirks/dd-dl-firefox-001.html": {
     "reftest": "PASS"
@@ -118,6 +124,9 @@
       "The table cell width calculation quirk, the quirk shouldn't apply for <object>": "FAIL",
       "The table cell width calculation quirk, the quirk shouldn't apply for <video poster>": "FAIL"
     }
+  },
+  "quirks/table-replaced-descendant-percentage-height-crash.html": {
+    "crashtest": "PASS"
   },
   "quirks/tables-inherit-color-from-body-quirk-001.html": {
     "reftest": "PASS"

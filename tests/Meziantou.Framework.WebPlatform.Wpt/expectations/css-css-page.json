@@ -29,6 +29,36 @@
   "css/css-page/body-background-vrl-print.html": {
     "reftest": "FAIL"
   },
+  "css/css-page/crashtests/counter-containment-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-page/crashtests/counter-containment-002.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-page/crashtests/match-media-listener-relayout-contained-inline-subtree-print.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-page/crashtests/match-media-listener-relayout-contained-subtree-print.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-page/crashtests/match-media-listener-relayout-inside-fixed-size-overflow-hidden-print.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-page/crashtests/match-media-listener-shrink-content-print.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-page/crashtests/negative-margin-print.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-page/crashtests/percentage-padding-print.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-page/crashtests/root-element-remove-print.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-page/crashtests/tall-inline-block-in-float-in-table-cell-print.html": {
+    "crashtest": "PASS"
+  },
   "css/css-page/cssom/dynamic-001-print.html": {
     "reftest": "PASS"
   },
@@ -766,5 +796,8 @@
   },
   "css/css-page/tentative/safe-printable-inset-large-crash-print.html": {
     "reftest": "PASS"
+  },
+  "css/css-page/trailing-declaration-crash.html": {
+    "crashtest": "PASS"
   }
 }

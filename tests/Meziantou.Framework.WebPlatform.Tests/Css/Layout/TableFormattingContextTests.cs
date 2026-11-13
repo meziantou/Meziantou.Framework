@@ -49,6 +49,16 @@ public sealed class TableFormattingContextTests : IDisposable
         Assert.Equal(50, OffsetWidth(document, "t"));
     }
 
+    [Theory]
+    [InlineData("<tr style='height: 100px'></tr>")]
+    [InlineData("<tbody style='height: 100px'><tr></tr></tbody>")]
+    public void TableWithoutColumns_IgnoresTheHeightsOfItsRows(string rows)
+    {
+        // https://drafts.csswg.org/css-tables-3/#table-layout-algorithm: a table without slot is empty, it is as tall as its height
+        var document = Parse("<table id=t style='height: 50px'>" + rows + "</table>");
+        Assert.Equal(50, OffsetHeight(document, "t"));
+    }
+
     [Fact]
     public void AutoLayout_NarrowTable_ColumnsShrinkToTheirMinContentWidth()
     {

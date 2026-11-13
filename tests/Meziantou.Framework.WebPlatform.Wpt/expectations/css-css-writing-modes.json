@@ -947,6 +947,9 @@
   "css/css-writing-modes/bidi-embed-011.html": {
     "reftest": "PASS"
   },
+  "css/css-writing-modes/bidi-inline-fragment-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-writing-modes/bidi-isolate-001.html": {
     "reftest": "PASS"
   },
@@ -1552,6 +1555,30 @@
   },
   "css/css-writing-modes/contiguous-floated-table-vrl-008.xht": {
     "reftest": "PASS"
+  },
+  "css/css-writing-modes/crashtests/bidi-inline-continuation-first-in-flow.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-writing-modes/crashtests/chrome-bug-1512988.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-writing-modes/crashtests/orthogonal-percent-height-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-writing-modes/crashtests/orthogonal-scroll-percent-height-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-writing-modes/crashtests/orthogonal-table-in-flex-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-writing-modes/crashtests/table-root-direction-propagation-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-writing-modes/crashtests/unicode-bidi-select-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-writing-modes/crashtests/wm-body-propagation-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-writing-modes/different-block-flow-dir-001.xht": {
     "reftest": "PASS"
@@ -2311,6 +2338,9 @@
   "css/css-writing-modes/line-box-height-vrl-012.xht": {
     "reftest": "PASS"
   },
+  "css/css-writing-modes/link-writing-mode-dependency-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-writing-modes/logical-physical-mapping-001.html": {
     "reftest": "PASS"
   },
@@ -2685,6 +2715,9 @@
   },
   "css/css-writing-modes/percentage-padding-in-shrink-to-fit.html": {
     "reftest": "PASS"
+  },
+  "css/css-writing-modes/placeholder-sideways-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-writing-modes/relpos-inline-overflowing-block-vrl.html": {
     "reftest": "PASS"
@@ -3400,6 +3433,9 @@
   "css/css-writing-modes/text-combine-upright-sideways-002.html": {
     "reftest": "PASS"
   },
+  "css/css-writing-modes/text-combine-upright-sideways-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-writing-modes/text-combine-upright-value-all-001.html": {
     "reftest": "FAIL"
   },
@@ -3438,6 +3474,9 @@
   },
   "css/css-writing-modes/text-combine-upright-value-none-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-writing-modes/text-combine-webkit-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-writing-modes/text-indent-vlr-003.xht": {
     "reftest": "PASS"

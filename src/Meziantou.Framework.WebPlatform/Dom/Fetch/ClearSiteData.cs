@@ -9,8 +9,8 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <see cref="NavigationalPrefetch.ProcessClearSiteData"/> (called here for the responses that are not the ones of a
 /// navigation); this class clears the other data:
 /// <list type="bullet">
-/// <item><c>"cache"</c>: the stored responses of the HTTP cache of the URLs of the origin, and the documents of the origin kept in the back/forward cache, in the partition of the request.</item>
-/// <item><c>"cookies"</c>: the cookies of the registrable domain of the origin.</item>
+/// <item><c>"cache"</c>: the stored responses of the HTTP cache of the URLs of the origin, its compression dictionaries, and the documents of the origin kept in the back/forward cache, in the partition of the request.</item>
+/// <item><c>"cookies"</c>: the cookies of the registrable domain of the origin, and the compression dictionaries of the origin in the partition of the request.</item>
 /// <item><c>"storage"</c>: the local storage and the session storage, the IndexedDB databases (without open connection), the caches of the Cache API and the service worker registrations of the origin.</item>
 /// <item><c>"executionContexts"</c>: the documents of the origin in the tree of the browsing context of the request are reloaded.</item>
 /// </list>
@@ -119,6 +119,16 @@ internal static class ClearSiteData
         if (types.HasFlag(DataTypes.Cache))
         {
             ClearCache(request, options, browsingContext, origin, serializedOrigin, cachePartition, partitionSite);
+        }
+
+        // https://www.rfc-editor.org/rfc/rfc9842#section-9.1: the compression dictionaries are cleared with the cache and with the
+        // cookies (they could be used to track the user), in the partition of the request
+        if (types.HasFlag(DataTypes.Cache) || types.HasFlag(DataTypes.Cookies))
+        {
+            if (options.DocumentLoader is { } loader && cachePartition is not null)
+            {
+                CompressionDictionaries.Get(loader).ClearOrigin(serializedOrigin, cachePartition);
+            }
         }
 
         if (types.HasFlag(DataTypes.Cookies) && (request.CookieContext is null ? request.Client?.CookieJar : request.CookieContext.CookieJar) is { } cookieJar)

@@ -96,7 +96,7 @@ internal sealed record WptTest(string RelativePath, WptTestKind Kind, string Var
 
 internal static partial class WptTestDiscovery
 {
-    private static readonly string[] ExcludedDirectories = ["resources", "support", "crashtests", "tools", "reference", "references"];
+    private static readonly string[] ExcludedDirectories = ["resources", "support", "tools", "reference", "references"];
 
     /// <summary>The patterns of the tests listed in wpt-skip.json (a trailing * matches any suffix). The reasons why they are skipped are only used by the WPT coverage report.</summary>
     private static readonly Lazy<string[]> Skipped = new(() =>
@@ -144,11 +144,17 @@ internal static partial class WptTestDiscovery
             var fileName = segments[^1];
             // Reftest references ('-ref' / '-notref') are excluded by the testharness.js check below: a file that includes
             // testharness.js is a testharness test whatever its name (e.g. custom-state-set-strong-ref.html)
-            if (fileName.Contains("-manual.", StringComparison.Ordinal) || fileName.Contains("-crash.", StringComparison.Ordinal))
+            if (fileName.Contains("-manual.", StringComparison.Ordinal))
                 continue;
 
             var isHtml = fileName.EndsWith(".html", StringComparison.Ordinal) || fileName.EndsWith(".htm", StringComparison.Ordinal);
             var isXml = fileName.EndsWith(".xhtml", StringComparison.Ordinal) || fileName.EndsWith(".xht", StringComparison.Ordinal) || fileName.EndsWith(".svg", StringComparison.Ordinal) || fileName.EndsWith(".xml", StringComparison.Ordinal);
+
+            // The markup files of the crashtests directories and the -crash. files are crash tests (see WptCrashtestDiscovery);
+            // the .any.js, .window.js and .worker.js files are testharness.js tests wherever they are, as for the manifest
+            if ((isHtml || isXml) && WptCrashtestDiscovery.IsCrashtestPath(relativePath))
+                continue;
+
             if (isHtml || isXml)
             {
                 var content = File.ReadAllText(file);
@@ -163,7 +169,7 @@ internal static partial class WptTestDiscovery
             else if (fileName.EndsWith(".any.js", StringComparison.Ordinal))
             {
                 var meta = ParseMeta(File.ReadAllText(file));
-                foreach (var kind in GetAnyJsKinds(meta, includeServiceWorkers: relativePath.StartsWith("service-workers/", StringComparison.Ordinal)))
+                foreach (var kind in GetAnyJsKinds(meta, includeServiceWorkers: ServiceWorkerDirectories.Any(directory => relativePath.StartsWith(directory, StringComparison.Ordinal))))
                 {
                     foreach (var variant in GetVariants(meta.Where(m => m.Key == "variant").Select(m => m.Value)))
                     {
@@ -203,9 +209,15 @@ internal static partial class WptTestDiscovery
     }
 
     /// <summary>
+    /// The directories whose <c>.any.js</c> tests also run in the service worker globals: the tests of the service workers, and
+    /// of the APIs whose service worker part is implemented (the cookie change subscriptions, the persistent notifications).
+    /// </summary>
+    private static readonly string[] ServiceWorkerDirectories = ["service-workers/", "cookiestore/", "notifications/"];
+
+    /// <summary>
     /// The globals in which a <c>.any.js</c> test runs (https://web-platform-tests.org/writing-tests/testharness.html#specifying-a-test-scope):
-    /// the window and the dedicated worker by default. The service worker globals are only run for the tests of the service
-    /// workers (<paramref name="includeServiceWorkers"/>); the ShadowRealms are not supported.
+    /// the window and the dedicated worker by default. The service worker globals are only run for the tests of
+    /// <see cref="ServiceWorkerDirectories"/> (<paramref name="includeServiceWorkers"/>); the ShadowRealms are not supported.
     /// </summary>
     private static IEnumerable<WptTestKind> GetAnyJsKinds(List<KeyValuePair<string, string>> meta, bool includeServiceWorkers)
     {

@@ -8,6 +8,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Encodings;
 using Meziantou.Framework.WebPlatform.Html.Parsing;
 using Meziantou.Framework.WebPlatform.Infra;
+using Meziantou.Framework.WebPlatform.Rendering;
 using Meziantou.Framework.WebPlatform.Urls;
 using Meziantou.Framework.WebPlatform.WebAssembly;
 using Meziantou.Framework.WebPlatform.WebAudio.Decoding;
@@ -234,6 +235,134 @@ public static partial class WebPlatformFuzzTargets
         }
 
         _ = document.ToHtml();
+    }
+
+    /// <summary>The tokens of the image metadata target: the signatures, the chunks and the blocks of the formats (ASCII only: the tokens are encoded in UTF-8).</summary>
+    private static string[] ImageMetadataTokens =>
+    [
+        "GIF89a", "GIF87a", "\u000BNETSCAPE2.0", "!", ",", ";",
+        "PNG\r\n\u001A\n", "IHDR", "acTL", "fcTL", "fdAT", "IDAT", "IEND", "eXIf",
+        "RIFF", "WEBP", "VP8X", "VP8 ", "VP8L", "ANIM", "ANMF",
+        "ftyp", "avis", "avif", "mif1", "msf1",
+    ];
+
+    /// <summary>
+    /// Reads the metadata of an encoded image (whether it is animated, its repetition count, its orientation): a prefix of an
+    /// animated image is never more animated than the whole image (the frames are only counted when their headers are complete,
+    /// so a longer input only finds more frames).
+    /// </summary>
+    public static void ImageMetadataTarget(ReadOnlySpan<byte> data)
+    {
+        var isAnimated = ImageMetadata.IsAnimated(data);
+        _ = ImageMetadata.GetAnimationRepetitionCount(data);
+        _ = ImageMetadata.GetExifOrientation(data);
+        FuzzAssert.True(!isAnimated || !ImageMetadata.IsStill(data), "The input is both an animated image and a still image");
+        foreach (var length in new[] { 1, 8, 16, 32, data.Length / 2, data.Length - 1 })
+        {
+            if (length > 0 && length < data.Length && ImageMetadata.IsAnimated(data[..length]))
+            {
+                FuzzAssert.True(isAnimated, $"The first {length} bytes are an animated image, but not the whole input");
+            }
+
+            // What the start of an image shows as still cannot become an animation
+            if (length > 0 && length < data.Length && ImageMetadata.IsStill(data[..length]))
+            {
+                FuzzAssert.True(!isAnimated, $"The first {length} bytes are a still image, but the whole input is an animated image");
+            }
+        }
+    }
+
+    /// <summary>
+    /// The seeds of the image metadata target: minimal images (headers and chunks without valid pixel data) of the animated
+    /// formats, animated and still: GIF, PNG and APNG, WebP, AVIF.
+    /// </summary>
+    private static IEnumerable<FuzzSeed> GetImageMetadataSeeds()
+    {
+        yield return new FuzzSeed("gif-animated", CreateGif(frames: 2));
+        yield return new FuzzSeed("gif-still", CreateGif(frames: 1));
+        yield return new FuzzSeed("apng-animated", CreatePng(animationFrames: 2));
+        yield return new FuzzSeed("apng-one-frame", CreatePng(animationFrames: 1));
+        yield return new FuzzSeed("png-still", CreatePng(animationFrames: null));
+        yield return new FuzzSeed("webp-animated", CreateWebP(animated: true));
+        yield return new FuzzSeed("webp-still", CreateWebP(animated: false));
+        yield return new FuzzSeed("avif-sequence", CreateFileType("avis", "avif", "msf1"));
+        yield return new FuzzSeed("avif-still", CreateFileType("avif", "mif1", "miaf"));
+
+        static byte[] CreateGif(int frames)
+        {
+            // The header, a 1x1 logical screen with a global color table of 2 colors, then the frames (a graphic control
+            // extension, an image descriptor, the LZW code size and one sub-block of image data) and the trailer
+            List<byte> bytes = [.. "GIF89a"u8, 1, 0, 1, 0, 0x80, 0, 0, 0, 0, 0, 255, 255, 255];
+            for (var i = 0; i < frames; i++)
+            {
+                bytes.AddRange([0x21, 0xF9, 4, 0, 10, 0, 0, 0]);
+                bytes.AddRange([0x2C, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 0x44, 0x01, 0]);
+            }
+
+            bytes.Add(0x3B);
+            return [.. bytes];
+        }
+
+        static byte[] CreatePng(int? animationFrames)
+        {
+            List<byte> bytes = [.. ImageMetadata.PngSignature];
+            AddChunk(bytes, "IHDR"u8, [0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0]);
+            if (animationFrames is { } frames)
+            {
+                AddChunk(bytes, "acTL"u8, [0, 0, 0, (byte)frames, 0, 0, 0, 0]);
+            }
+
+            AddChunk(bytes, "IDAT"u8, [0x78, 0x9C, 0x63, 0x60, 0, 0, 0, 2, 0, 1]);
+            AddChunk(bytes, "IEND"u8, []);
+            return [.. bytes];
+
+            static void AddChunk(List<byte> bytes, ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
+            {
+                var length = new byte[4];
+                BinaryPrimitives.WriteInt32BigEndian(length, data.Length);
+                bytes.AddRange(length);
+                bytes.AddRange(type);
+                bytes.AddRange(data);
+                bytes.AddRange([0, 0, 0, 0]);
+            }
+        }
+
+        static byte[] CreateWebP(bool animated)
+        {
+            List<byte> chunks = [];
+            AddChunk(chunks, "VP8X"u8, [(byte)(animated ? 0x02 : 0), 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+            if (animated)
+            {
+                AddChunk(chunks, "ANIM"u8, [0, 0, 0, 0, 0, 0]);
+                AddChunk(chunks, "ANMF"u8, new byte[16]);
+                AddChunk(chunks, "ANMF"u8, new byte[16]);
+            }
+
+            var size = new byte[4];
+            BinaryPrimitives.WriteInt32LittleEndian(size, chunks.Count + 4);
+            return [.. "RIFF"u8, .. size, .. "WEBP"u8, .. chunks];
+
+            static void AddChunk(List<byte> bytes, ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
+            {
+                var length = new byte[4];
+                BinaryPrimitives.WriteInt32LittleEndian(length, data.Length);
+                bytes.AddRange(type);
+                bytes.AddRange(length);
+                bytes.AddRange(data);
+            }
+        }
+
+        static byte[] CreateFileType(string majorBrand, params string[] compatibleBrands)
+        {
+            // The ftyp box: its size, its type, the major brand, the minor version and the compatible brands
+            List<byte> bytes = [0, 0, 0, (byte)(16 + (4 * compatibleBrands.Length)), .. "ftyp"u8, .. Encoding.ASCII.GetBytes(majorBrand), 0, 0, 0, 0];
+            foreach (var brand in compatibleBrands)
+            {
+                bytes.AddRange(Encoding.ASCII.GetBytes(brand));
+            }
+
+            return [.. bytes];
+        }
     }
 
     /// <summary>Parses a WebVTT file (an option byte gives the chunks) in one call and in chunks, and the text of its cues.</summary>

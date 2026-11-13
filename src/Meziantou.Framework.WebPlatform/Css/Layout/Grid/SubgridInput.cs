@@ -48,10 +48,11 @@ internal sealed class SubgridAxisInput
     /// The extra margins of the items at the start and end edges of the subgrid: "the sum of the subgrid's margin, padding, scrollbar
     /// gutter, and border at each edge are applied as an extra layer of (potentially negative) margin to the items at those edges.
     /// This extra layer of margin accumulates through multiple levels of subgrids" (https://drafts.csswg.org/css-grid-2/#subgrid-margins).
+    /// They change when the grid lanes placement moves a subgrid that has an automatic position (its extra margins in its parent).
     /// </summary>
-    public double EdgeStart { get; init; }
+    public double EdgeStart { get; set; }
 
-    public double EdgeEnd { get; init; }
+    public double EdgeEnd { get; set; }
 
     /// <summary>The used gap of the parent grid in the axis (the difference with the gap of the subgrid is an extra margin of the items not at the edges, https://drafts.csswg.org/css-grid-2/#subgrid-gaps).</summary>
     public double ParentGap { get; init; }

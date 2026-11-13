@@ -1,4 +1,7 @@
 {
+  "css/css-highlight-api/Highlight-invalid-static-range-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-highlight-api/Highlight-iteration-with-modifications.html": {
     "total": 6
   },
@@ -34,6 +37,15 @@
   },
   "css/css-highlight-api/HighlightRegistry-maplike.html": {
     "total": 3
+  },
+  "css/css-highlight-api/crashtests/highlight-first-letter-float-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-highlight-api/crashtests/highlight-image-multiple-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-highlight-api/crashtests/highlight-overlap-with-aria-invalid-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-highlight-api/custom-highlight-escaped-star-001.html": {
     "reftest": "PASS"

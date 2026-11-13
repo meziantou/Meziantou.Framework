@@ -43,6 +43,7 @@ public sealed class WebPlatformFeaturesTests : IDisposable
           ComputePressureEnabled: typeof PressureObserver + typeof PressureRecord,
           IdleDetectionEnabled: typeof IdleDetector,
           DevicePostureEnabled: typeof navigator.devicePosture + typeof DevicePosture + ('devicePosture' in navigator),
+          WebAuthenticationEnabled: typeof navigator.credentials + typeof Credential + typeof CredentialsContainer + typeof PublicKeyCredential + typeof AuthenticatorResponse + typeof AuthenticatorAttestationResponse + typeof AuthenticatorAssertionResponse + ('credentials' in navigator),
           ScreenOrientationEnabled: typeof screen.orientation + typeof ScreenOrientation + ('orientation' in screen),
           VirtualKeyboardEnabled: typeof navigator.virtualKeyboard + typeof VirtualKeyboard + ('virtualKeyboard' in navigator) + ('virtualKeyboardPolicy' in HTMLElement.prototype),
           IndexedDBEnabled: typeof indexedDB + typeof IDBFactory + typeof IDBKeyRange + ('indexedDB' in self),

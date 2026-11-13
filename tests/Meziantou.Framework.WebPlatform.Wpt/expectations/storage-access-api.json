@@ -1,0 +1,193 @@
+{
+  "storage-access-api/hasStorageAccess-ABA.sub.https.window.js": {
+    "total": 3
+  },
+  "storage-access-api/hasStorageAccess-insecure.sub.window.js": {
+    "total": 15
+  },
+  "storage-access-api/hasStorageAccess.sub.https.window.js": {
+    "total": 15
+  },
+  "storage-access-api/idlharness.window.js": {
+    "total": 12
+  },
+  "storage-access-api/requestStorageAccess-ABA.sub.https.window.js": {
+    "total": 4
+  },
+  "storage-access-api/requestStorageAccess-cross-origin-fetch.sub.https.window.js": {
+    "total": 2
+  },
+  "storage-access-api/requestStorageAccess-cross-origin-iframe-navigation-relax.sub.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Same-site-initiated same-origin navigations preserve storage access": "FAIL"
+    }
+  },
+  "storage-access-api/requestStorageAccess-cross-origin-iframe-navigation.sub.https.window.js": {
+    "total": 4
+  },
+  "storage-access-api/requestStorageAccess-cross-site-fetch.sub.https.window.js": {
+    "total": 1
+  },
+  "storage-access-api/requestStorageAccess-cross-site-iframe.sub.https.window.js": {
+    "total": 4,
+    "failures": {
+      "[cross-site-frame] document.requestStorageAccess() should resolve in top-level frame or same-site iframe, otherwise reject with a NotAllowedError with no user gesture.": "FAIL"
+    }
+  },
+  "storage-access-api/requestStorageAccess-cross-site-sibling-iframes.sub.https.window.js": {
+    "total": 2
+  },
+  "storage-access-api/requestStorageAccess-dedicated-worker.sub.https.window.js": {
+    "total": 2
+  },
+  "storage-access-api/requestStorageAccess-insecure.sub.window.js": {
+    "total": 13
+  },
+  "storage-access-api/requestStorageAccess-nested-cross-origin-iframe.sub.https.window.js": {
+    "total": 4
+  },
+  "storage-access-api/requestStorageAccess-nested-cross-site-iframe.sub.https.window.js": {
+    "total": 4,
+    "failures": {
+      "[nested-cross-site-frame] document.requestStorageAccess() should resolve in top-level frame or same-site iframe, otherwise reject with a NotAllowedError with no user gesture.": "FAIL"
+    }
+  },
+  "storage-access-api/requestStorageAccess-nested-same-origin-iframe.sub.https.window.js": {
+    "total": 4
+  },
+  "storage-access-api/requestStorageAccess-non-fully-active.sub.https.window.js": {
+    "total": 2
+  },
+  "storage-access-api/requestStorageAccess-same-site-iframe.sub.https.window.js": {
+    "total": 4
+  },
+  "storage-access-api/requestStorageAccess-sandboxed-iframe-allow-storage-access.sub.https.window.js": {
+    "total": 1
+  },
+  "storage-access-api/requestStorageAccess-sandboxed-iframe-no-storage-access.sub.https.window.js": {
+    "total": 3
+  },
+  "storage-access-api/requestStorageAccess-service-worker.sub.https.tentative.window.js": {
+    "total": 3,
+    "failures": {
+      "ServiceWorker WebSocket doesn't inherit storage access": "FAIL"
+    }
+  },
+  "storage-access-api/requestStorageAccess-shared-worker.sub.https.tentative.window.js": {
+    "total": 3,
+    "failures": {
+      "SharedWorker WebSocket doesn't inherit storage access": "FAIL",
+      "SharedWorkers don't inherit storage access for fetch": "FAIL",
+      "SharedWorkers don't observe parent's storage access": "FAIL"
+    }
+  },
+  "storage-access-api/requestStorageAccess-web-socket.sub.https.window.js": {
+    "total": 2,
+    "failures": {
+      "WebSocket inherits storage access": "FAIL"
+    }
+  },
+  "storage-access-api/requestStorageAccess.sub.https.window.js": {
+    "total": 4
+  },
+  "storage-access-api/storage-access-beyond-cookies.BlobURLDedicatedWorker.sub.https.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify that if the third-party context creates a blob URL using the StorageAccessHandle and sends it to the dedicated worker, the dedicated worker fetch succeeds.": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.BlobURLSharedWorker.sub.https.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify a blob URL created via URL.createObjectURL from the third-party context shouldn't be useable as the shared worker script when it's passed to saa_handle.SharedWorker.": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.BroadcastChannel.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for Broadcast Channel": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.SharedWorker.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for Shared Worker": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.blobStorage.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for Blob Storage": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.caches.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for Cache Storage": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.cookies.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for Cookies": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.estimate.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for Quota": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.getDirectory.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for Origin Private File System": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.indexedDB.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for IndexedDB": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.localStorage.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for Local Storage": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.locks.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for Web Locks": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.none.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for None": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.sessionStorage.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for Session Storage": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-beyond-cookies.thirdPartyBlobStorage.sub.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Verify StorageAccessAPIBeyondCookies for third-party context accessing first-party Blob URLs": "FAIL"
+    }
+  },
+  "storage-access-api/storage-access-headers.tentative.https.sub.window.js": {
+    "total": 4
+  },
+  "storage-access-api/storage-access-permission.sub.https.window.js": {
+    "total": 7
+  },
+  "storage-access-api/storageAccess.testdriver.sub.html": {
+    "total": 1
+  }
+}

@@ -157,6 +157,12 @@
   "css/css-fonts/font-display/font-display.html": {
     "reftest": "FAIL"
   },
+  "css/css-fonts/font-face-array-buffer-parsing-failure-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-fonts/font-face-local-css-wide-keyword-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-fonts/font-face-local-not-family.html": {
     "reftest": "PASS"
   },
@@ -346,6 +352,9 @@
   "css/css-fonts/font-features-across-space-3.html": {
     "reftest": "PASS"
   },
+  "css/css-fonts/font-features-two-stylesheets-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-fonts/font-kerning-01.html": {
     "reftest": "PASS"
   },
@@ -499,6 +508,9 @@
   "css/css-fonts/font-palette-non-ident-font-family.html": {
     "reftest": "PASS"
   },
+  "css/css-fonts/font-palette-relative-color-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-fonts/font-palette-remove-2.html": {
     "reftest": "PASS"
   },
@@ -562,6 +574,9 @@
   "css/css-fonts/font-size-adjust-014.html": {
     "reftest": "PASS"
   },
+  "css/css-fonts/font-size-adjust-generic-font-fallback-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-fonts/font-size-adjust-ic-height.html": {
     "reftest": "PASS"
   },
@@ -570,6 +585,9 @@
   },
   "css/css-fonts/font-size-adjust-metrics-override.html": {
     "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-nan-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-fonts/font-size-adjust-order-001.html": {
     "reftest": "PASS"
@@ -1060,6 +1078,9 @@
   "css/css-fonts/idlharness.html": {
     "total": 97
   },
+  "css/css-fonts/infinite-size-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-fonts/inheritance.html": {
     "total": 39
   },
@@ -1114,6 +1135,9 @@
   "css/css-fonts/math-script-level-and-math-style/font-size-math-002.tentative.html": {
     "reftest": "PASS"
   },
+  "css/css-fonts/math-script-level-and-math-style/math-depth-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-fonts/math-script-level-and-math-style/math-script-level-001.tentative.html": {
     "total": 7
   },
@@ -1155,6 +1179,9 @@
   },
   "css/css-fonts/oblique-last-resort-weight-selection.html": {
     "reftest": "PASS"
+  },
+  "css/css-fonts/oblique-request-italic-only-family-no-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-fonts/palette-values-rule-add-2.html": {
     "reftest": "PASS"
@@ -1611,6 +1638,9 @@
   },
   "css/css-fonts/test_font_feature_values_parsing.html": {
     "total": 302
+  },
+  "css/css-fonts/variable-in-feature-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-fonts/variable-in-font-variation-settings.html": {
     "total": 1

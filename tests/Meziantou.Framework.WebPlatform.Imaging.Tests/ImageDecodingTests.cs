@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Dom.FileApi;
 using Meziantou.Framework.WebPlatform.Rendering;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Meziantou.Framework.Imaging;
 using ImagingFormats = Meziantou.Framework.Imaging.Formats;
 using ImagingMetadata = Meziantou.Framework.Imaging.Metadata;
@@ -66,6 +67,169 @@ public sealed class ImageDecodingTests : IDisposable
     }
 
     [Fact]
+    public async Task ImageDecoder_DecodesTheFramesOfAnAnimation()
+    {
+        #region WebPlatformImaging_ImageDecoder
+        using var context = new BrowsingContext(new BrowsingContextOptions { RenderingBackend = new ImagingRenderingBackend() });
+        context.Navigate("https://example.com/", _ => "<p>Animation</p>");
+        context.EventLoop.RunUntilIdle();
+
+        // A 2x2 GIF of 3 frames that plays once: red (200 ms), transparent (200 ms), green
+        var gif = Convert.FromBase64String("R0lGODlhAgACAPEAAAAAAP8AAAD/AAAA/yH5BAkUAAAALAAAAAACAAIAAAIDjKMAACH5BAkUAAIALAAAAAACAAIAAAIDlKUAACwAAAAAAgACAAACA5SlAAA7");
+        var decoder = new WebCodecs.ImageDecoder(context.Window, new WebCodecs.ImageDecoderInit { Type = "image/gif", Data = gif });
+
+        // The decoder works in the tasks of the event loop of the window
+        var decoding = decoder.Decode(new WebCodecs.ImageDecodeOptions { FrameIndex = 1 });
+        context.EventLoop.RunUntilIdle();
+
+        var track = decoder.Tracks.SelectedTrack!;
+        Assert.True(track.Animated);
+        Assert.Equal(3u, track.FrameCount);
+        Assert.Equal(0f, track.RepetitionCount);
+
+        // The frame: its timestamp and duration are in microseconds, its pixels are RGBA
+        var frame = (await decoding).Image;
+        Assert.Equal(200_000L, frame.Timestamp);
+        Assert.Equal(200_000UL, frame.Duration);
+        Assert.Equal(WebCodecs.VideoPixelFormat.RGBA, frame.Format);
+
+        var pixels = new byte[frame.AllocationSize()];
+        var copy = frame.CopyTo(pixels);
+        context.EventLoop.RunUntilIdle();
+        await copy;
+        Assert.Equal([0, 0, 0, 0], pixels[..4]);
+        frame.Close();
+        decoder.Close();
+        #endregion
+
+        Assert.Equal(16, pixels.Length);
+        Assert.Equal(0u, frame.DisplayWidth);
+    }
+
+    [Fact]
+    public async Task ImageDecoder_KnowsThatAStreamedAnimationIsAnimated()
+    {
+        // The GIF of 3 frames arrives 8 bytes at a time: its first frame is complete long before the second one arrives
+        var engine = TestScriptEngines.Create();
+        try
+        {
+            var context = _pages.Load("""
+                <script>
+                  const bytes = Uint8Array.from(atob('R0lGODlhAgACAPEAAAAAAP8AAAD/AAAA/yH5BAkUAAAALAAAAAACAAIAAAIDjKMAACH5BAkUAAIALAAAAAACAAIAAAIDlKUAACwAAAAAAgACAAACA5SlAAA7'), c => c.charCodeAt(0));
+                  let offset = 0;
+                  const data = new ReadableStream({
+                    pull(controller) {
+                      if (offset >= bytes.length) {
+                        controller.close();
+                        return;
+                      }
+
+                      controller.enqueue(bytes.slice(offset, offset + 8));
+                      offset += 8;
+                    },
+                  }, { highWaterMark: 0 });
+                  const decoder = new ImageDecoder({ type: 'image/gif', data });
+                  decoder.tracks.ready.then(() => {
+                    const track = decoder.tracks.selectedTrack;
+                    document.title = track.animated + ' ' + track.repetitionCount;
+                  }, e => document.title = e.name);
+                </script>
+                """, scriptEngine: engine);
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            while (context.Document.Title.Length == 0)
+            {
+                Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30), "The tracks were not established");
+                using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                await context.EventLoop.RunUntilIdleAsync(cancellation.Token);
+                if (context.Document.Title.Length == 0)
+                {
+                    await Task.Delay(1);
+                }
+            }
+
+            Assert.Equal("true 0", context.Document.Title);
+        }
+        finally
+        {
+            TestScriptEngines.Dispose(engine);
+        }
+    }
+
+    [Fact]
+    public async Task ImageDecoder_DecodesAStillImageOfAStreamThatIsNotClosed()
+    {
+        // The whole GIF of one frame (its trailer included) is in the stream, which stays open: the data shows the image
+        // is still, so the track is established and the frame decoded without waiting for the end of the stream
+        var engine = TestScriptEngines.Create();
+        try
+        {
+            var context = _pages.Load("""
+                <script>
+                  const bytes = Uint8Array.from(atob('R0lGODlhAQABAIAAAP8AAAAAACwAAAAAAQABAAACAkQBADs='), c => c.charCodeAt(0));
+                  let sent = false;
+                  const data = new ReadableStream({
+                    pull(controller) {
+                      if (!sent) {
+                        sent = true;
+                        controller.enqueue(bytes);
+                      }
+                    },
+                  }, { highWaterMark: 0 });
+                  const decoder = new ImageDecoder({ type: 'image/gif', data });
+                  decoder.decode().then(result => {
+                    const track = decoder.tracks.selectedTrack;
+                    document.title = track.animated + ' ' + result.image.codedWidth + ' ' + decoder.complete;
+                  }, e => document.title = e.name);
+                </script>
+                """, scriptEngine: engine);
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            while (context.Document.Title.Length == 0)
+            {
+                Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30), "The frame was not decoded");
+                using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                await context.EventLoop.RunUntilIdleAsync(cancellation.Token);
+                if (context.Document.Title.Length == 0)
+                {
+                    await Task.Delay(1);
+                }
+            }
+
+            Assert.Equal("false 1 false", context.Document.Title);
+        }
+        finally
+        {
+            TestScriptEngines.Dispose(engine);
+        }
+    }
+
+    [Fact]
+    public async Task ImageDecoder_RejectsTheFramesTheImageDoesNotHave()
+    {
+        using var context = new BrowsingContext(new BrowsingContextOptions { RenderingBackend = new ImagingRenderingBackend() });
+        context.Navigate("https://example.com/", _ => "<p>Image</p>");
+        context.EventLoop.RunUntilIdle();
+
+        var decoder = new WebCodecs.ImageDecoder(context.Window, new WebCodecs.ImageDecoderInit { Type = "image/gif", Data = ResetGifOfWpt.AsMemory() });
+        var outOfRange = decoder.Decode(new WebCodecs.ImageDecodeOptions { FrameIndex = 3 });
+        var aborted = decoder.Decode(new WebCodecs.ImageDecodeOptions { FrameIndex = 0 });
+        decoder.Reset();
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("AbortError", (await Assert.ThrowsAsync<DomException>(() => outOfRange)).Name);
+        Assert.Equal("AbortError", (await Assert.ThrowsAsync<DomException>(() => aborted)).Name);
+
+        outOfRange = decoder.Decode(new WebCodecs.ImageDecodeOptions { FrameIndex = 3 });
+        context.EventLoop.RunUntilIdle();
+        await Assert.ThrowsAsync<RangeErrorException>(() => outOfRange);
+
+        // A truncated image whose data is complete cannot be decoded: the decoder is closed
+        var truncated = new WebCodecs.ImageDecoder(context.Window, new WebCodecs.ImageDecoderInit { Type = "image/gif", Data = ResetGifOfWpt[..40] });
+        var first = truncated.Decode();
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("EncodingError", (await Assert.ThrowsAsync<DomException>(() => first)).Name);
+        Assert.Throws<TypeErrorException>(() => new WebCodecs.ImageDecoder(context.Window, new WebCodecs.ImageDecoderInit { Type = "text/plain", Data = ResetGifOfWpt }));
+    }
+
+    [Fact]
     public void Gif_AnimationFollowsTheClockOfTheEventLoop()
     {
         _pages.Resources["/a.gif"] = (ResetGifOfWpt, "image/gif");
@@ -87,6 +251,111 @@ public sealed class ImageDecodingTests : IDisposable
         {
             Assert.Equal(Colors.Lime, screenshot.GetPixel(5, 5));
         }
+    }
+
+    [Theory]
+    [InlineData("gif", true)]
+    [InlineData("apng", true)]
+    [InlineData("webp", true)]
+    [InlineData("avif", true)]
+    [InlineData("jxl", false)]
+    public void ImageMetadata_IsAnimated(string format, bool expected)
+    {
+        var animation = CreateAnimation(format, totalPlays: null);
+        Assert.Equal(expected, ImageMetadata.IsAnimated(animation));
+        Assert.False(ImageMetadata.IsStill(animation));
+    }
+
+    [Theory]
+    [InlineData("png")]
+    [InlineData("gif")]
+    [InlineData("webp")]
+    [InlineData("avif")]
+    [InlineData("jpeg")]
+    public void ImageMetadata_IsAnimated_StillImage(string format)
+    {
+        var image = CreateTestImage(format);
+        Assert.False(ImageMetadata.IsAnimated(image));
+
+        // The whole image shows it is still (a JPEG image is never animated: it is not one of the formats IsStill reads),
+        // but not its first bytes (its header only, before the data that tells it)
+        Assert.Equal(format != "jpeg", ImageMetadata.IsStill(image));
+        Assert.False(ImageMetadata.IsStill(image.AsSpan(0, 8)));
+    }
+
+    [Fact]
+    public void ImageAnimation_Stopped()
+    {
+        _pages.Resources["/a.gif"] = (CreateAnimation("gif", totalPlays: null), "image/gif");
+        var context = _pages.Load("<img src='/a.gif' style='width: 20px; height: 20px; image-rendering: pixelated; image-animation: stopped'><div style='width: 20px; height: 20px; background: url(/a.gif) 0 0 / 20px 20px; image-animation: stopped'></div>");
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(150));
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal(Colors.Red, screenshot.GetPixel(5, 5));
+        Assert.Equal(Colors.Red, screenshot.GetPixel(5, 35));
+    }
+
+    [Fact]
+    public void ImageAnimation_PausedRunningAndStopped()
+    {
+        // The animation (red for 100ms, blue for 200ms, lime for 30ms) is not playing while paused: it starts from its first frame
+        _pages.Resources["/a.gif"] = (CreateAnimation("gif", totalPlays: null), "image/gif");
+        var context = _pages.Load("<img src='/a.gif' style='width: 20px; height: 20px; image-rendering: pixelated; image-animation: paused'>");
+        var image = context.Document.QuerySelector("img")!;
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(150));
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Red, screenshot.GetPixel(5, 5));
+        }
+
+        // running continues from the displayed frame
+        image.SetAttribute("style", "width: 20px; height: 20px; image-rendering: pixelated; image-animation: running");
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Red, screenshot.GetPixel(5, 5));
+        }
+
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(150));
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Blue, screenshot.GetPixel(5, 5));
+        }
+
+        // paused keeps the displayed frame
+        image.SetAttribute("style", "width: 20px; height: 20px; image-rendering: pixelated; image-animation: paused");
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Blue, screenshot.GetPixel(5, 5));
+        }
+
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(1000));
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Blue, screenshot.GetPixel(5, 5));
+        }
+
+        // stopped shows the first frame, and running starts again from it
+        image.SetAttribute("style", "width: 20px; height: 20px; image-rendering: pixelated; image-animation: stopped");
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Red, screenshot.GetPixel(5, 5));
+        }
+
+        image.SetAttribute("style", "width: 20px; height: 20px; image-rendering: pixelated; image-animation: running");
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(50));
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Red, screenshot.GetPixel(5, 5));
+        }
+    }
+
+    [Fact]
+    public void ImageAnimation_AnimatedImagePseudoClass()
+    {
+        _pages.Resources["/a.gif"] = (CreateAnimation("gif", totalPlays: null), "image/gif");
+        _pages.Resources["/b.gif"] = (CreateTestImage("gif"), "image/gif");
+        var context = _pages.Load("<img id=a src='/a.gif'><img id=b src='/b.gif'>");
+        Assert.True(context.Document.GetElementById("a")!.Matches(":animated-image"));
+        Assert.False(context.Document.GetElementById("b")!.Matches(":animated-image"));
     }
 
     [Fact]

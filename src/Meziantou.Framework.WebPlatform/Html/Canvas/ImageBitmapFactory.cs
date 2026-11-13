@@ -188,8 +188,11 @@ internal static class ImageBitmapFactory
                 return ScaleToNaturalSize(Decode(decoder, paintImage.Orientation, convertColors, paintImage.IsCorsSameOrigin), paintImage);
             }
 
+            case WebCodecs.VideoFrame videoFrame:
+                // A copy of the visible pixels of the frame, rendered with its rotation and flip
+                return videoFrame.GetRenderedPixels() ?? throw InvalidState("The video frame is closed");
+
             default:
-                // A video frame or another source
                 throw InvalidState("The image source cannot be used");
         }
     }

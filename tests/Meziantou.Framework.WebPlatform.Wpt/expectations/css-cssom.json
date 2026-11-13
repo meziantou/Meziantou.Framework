@@ -74,6 +74,12 @@
   "css/cssom/CSSRule-type.html": {
     "total": 14
   },
+  "css/cssom/CSSRuleList-appendRule-keyframe-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/cssom/CSSRuleList-appendRule-keyframe-002-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/cssom/CSSRuleList.html": {
     "total": 1
   },
@@ -227,6 +233,9 @@
   "css/cssom/adoptedstylesheets-cascade-order.html": {
     "total": 13
   },
+  "css/cssom/adoptedstylesheets-invalid-assignment-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/cssom/adoptedstylesheets-modify-array-and-sheet.html": {
     "total": 3
   },
@@ -288,6 +297,9 @@
       "document.caretRangeFromPoint() should return null for a document with no viewport": "FAIL",
       "document.caretRangeFromPoint() should return null if given coordinates outside of the viewport": "FAIL"
     }
+  },
+  "css/cssom/change-rule-with-layers-crash.html": {
+    "crashtest": "PASS"
   },
   "css/cssom/computed-style-001.html": {
     "total": 4
@@ -421,6 +433,9 @@
   "css/cssom/cssstyledeclaration-setter-logical.html": {
     "total": 1
   },
+  "css/cssom/declaration-block-all-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/cssom/delete-namespace-rule-when-child-rule-exists.html": {
     "total": 1
   },
@@ -478,8 +493,17 @@
   "css/cssom/getComputedStyle-important.html": {
     "total": 2
   },
+  "css/cssom/getComputedStyle-in-unrendered-subframe-with-query-container-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/cssom/getComputedStyle-inset-inline-containing-block-vertical.html": {
     "total": 2
+  },
+  "css/cssom/getComputedStyle-insets-absolute-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/cssom/getComputedStyle-insets-absolute-logical-crash.html": {
+    "crashtest": "PASS"
   },
   "css/cssom/getComputedStyle-insets-absolute-roundtrip.html": {
     "total": 4
@@ -492,6 +516,9 @@
   },
   "css/cssom/getComputedStyle-insets-grid.html": {
     "total": 5
+  },
+  "css/cssom/getComputedStyle-insets-multicol-absolute-crash.html": {
+    "crashtest": "PASS"
   },
   "css/cssom/getComputedStyle-insets-nobox.html": {
     "total": 216
@@ -592,6 +619,9 @@
   "css/cssom/getComputedStyle-shadow-inherit.html": {
     "total": 2
   },
+  "css/cssom/getComputedStyle-special-chars-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/cssom/getComputedStyle-sticky-pos-percent.html": {
     "total": 1
   },
@@ -625,6 +655,15 @@
   "css/cssom/inline-style-001.html": {
     "total": 5
   },
+  "css/cssom/insert-dir-rule-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/cssom/insert-dir-rule-in-iframe-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/cssom/insert-invalid-where-rule-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/cssom/insertRule-across-context.html": {
     "total": 2
   },
@@ -640,6 +679,12 @@
   "css/cssom/insertRule-import-no-index.html": {
     "total": 2
   },
+  "css/cssom/insertRule-import-no-sheet-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/cssom/insertRule-import-trailing-garbage-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/cssom/insertRule-namespace-after-import.html": {
     "total": 2
   },
@@ -648,6 +693,9 @@
   },
   "css/cssom/insertRule-no-index.html": {
     "total": 2
+  },
+  "css/cssom/insertRule-page-detached-grouping-rule-crash.html": {
+    "crashtest": "PASS"
   },
   "css/cssom/insertRule-syntax-error-01.html": {
     "total": 1
@@ -700,6 +748,9 @@
   "css/cssom/property-accessors.html": {
     "total": 9
   },
+  "css/cssom/removerule-invalidation-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/cssom/resolved-border-width.html": {
     "total": 2
   },
@@ -750,6 +801,12 @@
   },
   "css/cssom/set-selector-text-attachment.html": {
     "total": 1
+  },
+  "css/cssom/set-selector-text-detached-rule-delete-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/cssom/set-selector-text-detached-rule-replace-crash.html": {
+    "crashtest": "PASS"
   },
   "css/cssom/setproperty-custom-property-override-important.html": {
     "total": 5

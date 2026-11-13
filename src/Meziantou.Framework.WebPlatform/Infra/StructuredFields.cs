@@ -207,6 +207,157 @@ internal static class StructuredFields
         return members;
     }
 
+    /// <summary>https://www.rfc-editor.org/rfc/rfc8941#name-serializing-a-dictionary</summary>
+    public static string SerializeDictionary(IReadOnlyList<KeyValuePair<string, StructuredFieldMember>> dictionary)
+    {
+        var result = new System.Text.StringBuilder();
+        foreach (var (key, member) in dictionary)
+        {
+            if (result.Length > 0)
+            {
+                result.Append(", ");
+            }
+
+            result.Append(key);
+            if (member.Item is { Value: true } booleanItem)
+            {
+                AppendParameters(result, booleanItem.Parameters);
+            }
+            else
+            {
+                result.Append('=');
+                AppendMember(result, member);
+            }
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>https://www.rfc-editor.org/rfc/rfc8941#name-serializing-a-list: the members of a list.</summary>
+    public static string SerializeList(IReadOnlyList<StructuredFieldMember> list)
+    {
+        var result = new System.Text.StringBuilder();
+        foreach (var member in list)
+        {
+            if (result.Length > 0)
+            {
+                result.Append(", ");
+            }
+
+            AppendMember(result, member);
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>https://www.rfc-editor.org/rfc/rfc8941#name-serializing-an-item</summary>
+    public static string SerializeItem(StructuredFieldItem item)
+    {
+        var result = new System.Text.StringBuilder();
+        AppendBareItem(result, item.Value);
+        AppendParameters(result, item.Parameters);
+        return result.ToString();
+    }
+
+    /// <summary>https://www.rfc-editor.org/rfc/rfc8941#name-serializing-an-inner-list</summary>
+    public static string SerializeInnerList(IReadOnlyList<StructuredFieldItem> items, IReadOnlyList<KeyValuePair<string, object>> parameters)
+    {
+        var result = new System.Text.StringBuilder();
+        AppendInnerList(result, items, parameters);
+        return result.ToString();
+    }
+
+    private static void AppendMember(System.Text.StringBuilder result, StructuredFieldMember member)
+    {
+        if (member.InnerList is { } innerList)
+        {
+            AppendInnerList(result, innerList, member.InnerListParameters);
+        }
+        else
+        {
+            AppendBareItem(result, member.Item!.Value);
+            AppendParameters(result, member.Item.Parameters);
+        }
+    }
+
+    private static void AppendInnerList(System.Text.StringBuilder result, IReadOnlyList<StructuredFieldItem> items, IReadOnlyList<KeyValuePair<string, object>> parameters)
+    {
+        result.Append('(');
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (i > 0)
+            {
+                result.Append(' ');
+            }
+
+            AppendBareItem(result, items[i].Value);
+            AppendParameters(result, items[i].Parameters);
+        }
+
+        result.Append(')');
+        AppendParameters(result, parameters);
+    }
+
+    private static void AppendParameters(System.Text.StringBuilder result, IReadOnlyList<KeyValuePair<string, object>> parameters)
+    {
+        foreach (var (key, value) in parameters)
+        {
+            result.Append(';').Append(key);
+            if (value is not true)
+            {
+                result.Append('=');
+                AppendBareItem(result, value);
+            }
+        }
+    }
+
+    /// <summary>https://www.rfc-editor.org/rfc/rfc8941#name-serializing-a-bare-item</summary>
+    private static void AppendBareItem(System.Text.StringBuilder result, object value)
+    {
+        switch (value)
+        {
+            case long integer:
+                result.Append(integer.ToString(CultureInfo.InvariantCulture));
+                break;
+
+            case decimal number:
+                // https://www.rfc-editor.org/rfc/rfc8941#name-serializing-a-decimal: rounded to three decimal places (the
+                // parser keeps at most three), with at least one fractional digit
+                result.Append(Math.Round(number, 3, MidpointRounding.ToEven).ToString("0.0##", CultureInfo.InvariantCulture));
+                break;
+
+            case string text:
+                result.Append('"');
+                foreach (var c in text)
+                {
+                    if (c is '"' or '\\')
+                    {
+                        result.Append('\\');
+                    }
+
+                    result.Append(c);
+                }
+
+                result.Append('"');
+                break;
+
+            case StructuredFieldToken token:
+                result.Append(token.Value);
+                break;
+
+            case byte[] bytes:
+                result.Append(':').Append(Convert.ToBase64String(bytes)).Append(':');
+                break;
+
+            case bool boolean:
+                result.Append(boolean ? "?1" : "?0");
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(value));
+        }
+    }
+
     /// <summary>https://www.rfc-editor.org/rfc/rfc8941#name-parsing-an-inner-list</summary>
     private static List<StructuredFieldItem>? ParseInnerList(string value, ref int position, out IReadOnlyList<KeyValuePair<string, object>> parameters)
     {

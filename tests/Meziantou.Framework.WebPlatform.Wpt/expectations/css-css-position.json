@@ -59,6 +59,60 @@
   "css/css-position/containing-block-change-scrollframe.html": {
     "reftest": "PASS"
   },
+  "css/css-position/crashtests/content-visibility-abspos-continuations-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/dynamic-change-inset-svg-text-subtree.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/dynamic-fixed-in-nested-absolutes-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/inline-containing-block-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/inline-containing-block-delete-continuations-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/inline-containing-block-dynamic-change-2.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/inline-containing-block-dynamic-change-3.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/inline-containing-block-dynamic-change.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/inline-containing-block-multicol-balancing-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/inline-containing-block-multicol-balancing-002.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/nested-scroll-in-activating-scroll-container.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/position-absolute-crash-014.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/scroll-tree-parent-construction.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/sticky-in-activating-scroll-container.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/sticky-in-transform-in-activating-scroll-container.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/top-layer-dialog-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/top-layer-slot-adopt-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/crashtests/top-layer-slot-remove-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-position/fixed-z-index-blend.html": {
     "reftest": "PASS"
   },
@@ -137,6 +191,9 @@
   "css/css-position/nested-inline-abspos-child.html": {
     "reftest": "PASS"
   },
+  "css/css-position/nested-positions-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-position/out-of-flow-in-inline-content-intrinsic-size-001.html": {
     "total": 17
   },
@@ -157,6 +214,9 @@
   },
   "css/css-position/overlay/overlay-invalid.html": {
     "total": 6
+  },
+  "css/css-position/overlay/overlay-popover-backdrop-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-position/overlay/overlay-transition-backdrop-entry.html": {
     "reftest": "PASS"
@@ -454,6 +514,9 @@
   },
   "css/css-position/position-absolute-in-inline-012.html": {
     "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-position/position-absolute-in-inline-dynamic.html": {
     "total": 9
@@ -822,6 +885,12 @@
   "css/css-position/sticky/position-sticky-contained-by-display-table.html": {
     "reftest": "PASS"
   },
+  "css/css-position/sticky/position-sticky-continuation-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-details-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-position/sticky/position-sticky-escape-scroller-001.html": {
     "reftest": "PASS"
   },
@@ -875,6 +944,12 @@
   },
   "css/css-position/sticky/position-sticky-hyperlink.html": {
     "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-ib-split-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-ib-split-execcommand-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-position/sticky/position-sticky-in-fixed-container.html": {
     "reftest": "PASS"
@@ -996,6 +1071,9 @@
   "css/css-position/sticky/position-sticky-rtl.html": {
     "reftest": "PASS"
   },
+  "css/css-position/sticky/position-sticky-scroll-offset-clamp-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-position/sticky/position-sticky-scroll-reposition.html": {
     "reftest": "PASS"
   },
@@ -1016,6 +1094,9 @@
     "failures": {
       "Constraints apply independently across nested single-axis scrollers": "FAIL"
     }
+  },
+  "css/css-position/sticky/position-sticky-single-axis-dynamic-axis-change-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-position/sticky/position-sticky-single-axis-dynamic.html": {
     "total": 1
@@ -1115,6 +1196,9 @@
   },
   "css/css-position/sticky/sticky-after-input.html": {
     "total": 1
+  },
+  "css/css-position/sticky/sticky-continuation-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-position/z-index-blend-will-change-overlapping-layers.html": {
     "reftest": "PASS"

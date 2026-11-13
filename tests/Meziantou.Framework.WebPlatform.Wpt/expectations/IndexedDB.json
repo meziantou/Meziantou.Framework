@@ -89,6 +89,15 @@
   "IndexedDB/close-in-upgradeneeded.any.js#sharedworker": {
     "total": 1
   },
+  "IndexedDB/crashtests/create-index.any.js": {
+    "total": 1
+  },
+  "IndexedDB/crashtests/create-index.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/crashtests/create-index.any.js#sharedworker": {
+    "total": 1
+  },
   "IndexedDB/cursor-overloads.any.js": {
     "total": 1
   },

@@ -14,6 +14,9 @@
   "css/css-paint-api/color-custom-property-animation.https.html": {
     "reftest": "PASS"
   },
+  "css/css-paint-api/column-count-crash.https.html": {
+    "crashtest": "PASS"
+  },
   "css/css-paint-api/dynamic-import.https.html": {
     "reftest": "PASS"
   },

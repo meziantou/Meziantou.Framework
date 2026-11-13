@@ -3749,6 +3749,9 @@
   "encoding/streams/backpressure.any.js#sharedworker": {
     "total": 4
   },
+  "encoding/streams/crashtests/from-cross-realm.html": {
+    "crashtest": "PASS"
+  },
   "encoding/streams/decode-attributes.any.js": {
     "total": 28
   },
@@ -3844,6 +3847,9 @@
   },
   "encoding/streams/realms.window.js": {
     "total": 12
+  },
+  "encoding/streams/stringification-crash.html": {
+    "crashtest": "PASS"
   },
   "encoding/textdecoder-arguments.any.js": {
     "total": 4

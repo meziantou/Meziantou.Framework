@@ -236,6 +236,54 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         return !Adapter.IsUndefined(Adapter.Call(getStream, Adapter.Undefined, [value]));
     }
 
+    /// <summary>Converts a ReadableStream (see <see cref="IsReadableStream"/>) to the value given to the .NET members, which read its chunks through this realm.</summary>
+    internal JsReadableStream ToJsReadableStream(TValue value)
+    {
+        var fetchSupport = Adapter.Get(GetStreams(), Key("fetchSupport"));
+        var record = Adapter.Call(Adapter.Get(fetchSupport, Key("getStream")), Adapter.Undefined, [value]);
+        return new JsReadableStream(new ReadableStreamSource(this, fetchSupport, record));
+    }
+
+    /// <summary>The operations of the .NET members on a ReadableStream of Streams.js (the record of the stream).</summary>
+    private sealed class ReadableStreamSource(WebIdlRealm<TAdapter, TValue> realm, TValue fetchSupport, TValue record) : IJsReadableStreamSource
+    {
+        public bool IsLocked => CallBoolean("isLocked");
+
+        public bool IsDisturbed => CallBoolean("isDisturbed");
+
+        public Action ReadChunks(Action<byte[]> onChunk, Action onEnd, Action onError, Action onInvalidChunk)
+        {
+            var adapter = realm.Adapter;
+            if (IsLocked)
+                throw new TypeErrorException("The stream is locked");
+
+            var chunk = adapter.CreateFunction("onChunk", 1, (_, args) =>
+            {
+                onChunk(realm.ToBufferSource(args[0], 1u << (int)JsBufferKind.Uint8Array, allowShared: true, "Uint8Array").ToArray());
+                return adapter.Undefined;
+            });
+            var end = adapter.CreateFunction("onEnd", 0, (_, _) =>
+            {
+                onEnd();
+                return adapter.Undefined;
+            });
+            var error = adapter.CreateFunction("onError", 1, (_, _) =>
+            {
+                onError();
+                return adapter.Undefined;
+            });
+            var invalidChunk = adapter.CreateFunction("onInvalidChunk", 0, (_, _) =>
+            {
+                onInvalidChunk();
+                return adapter.Undefined;
+            });
+            var cancel = adapter.Call(adapter.Get(fetchSupport, realm.Key("readChunks")), adapter.Undefined, [record, chunk, end, error, invalidChunk]);
+            return () => adapter.Call(cancel, adapter.Undefined, []);
+        }
+
+        private bool CallBoolean(string name) => realm.Adapter.ToBoolean(realm.Adapter.Call(realm.Adapter.Get(fetchSupport, realm.Key(name)), realm.Adapter.Undefined, [record]));
+    }
+
     /// <summary>The kinds of the BufferSource type: all the buffer source types except SharedArrayBuffer.</summary>
     private const uint BufferSourceKinds = ((1u << ((int)JsBufferKind.Float64Array + 1)) - 1) & ~(1u << (int)JsBufferKind.SharedArrayBuffer);
 

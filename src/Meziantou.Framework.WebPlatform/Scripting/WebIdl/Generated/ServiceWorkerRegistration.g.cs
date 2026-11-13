@@ -27,6 +27,7 @@ internal static class Binding_ServiceWorkerRegistration<TAdapter, TValue> where 
     private static TValue Get_updateViaCache(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>(t, Binding); return r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ServiceWorkerUpdateViaCache(o.UpdateViaCache)); }
     private static TValue Get_onupdatefound(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "updatefound");
     private static void Set_onupdatefound(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "updatefound", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_cookies(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>(t, Binding); return r.Wrap(o.Cookies); }
     private static TValue Op_update(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>(t, Binding);
@@ -37,6 +38,20 @@ internal static class Binding_ServiceWorkerRegistration<TAdapter, TValue> where 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>(t, Binding);
         var result = o.Unregister(); return r.ToPromise(result, static (r, value) => r.FromBoolean(value));
     }
+    private static TValue Op_showNotification(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("showNotification", 1, a.Length);
+        var a0 = r.ToDomString(a[0]);
+        var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Dom.NotificationOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_NotificationOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_NotificationOptions(r, a[1]);
+        var result = o.ShowNotification(a0, a1); return r.ToPromise(result);
+    }
+    private static TValue Op_getNotifications(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>(t, Binding);
+        var a0 = r.IsMissing(a, 0) ? (global::Meziantou.Framework.WebPlatform.Dom.GetNotificationOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_GetNotificationOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_GetNotificationOptions(r, a[0]);
+        var result = o.GetNotifications(a0); return r.ToPromise(result, static (r, value) => r.FromSequence(value, static (r, e) => r.Wrap(e)));
+    }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "installing", Get_installing, null);
@@ -46,7 +61,10 @@ internal static class Binding_ServiceWorkerRegistration<TAdapter, TValue> where 
         r.DefineAttribute(instanceTarget, "scope", Get_scope, null);
         r.DefineAttribute(instanceTarget, "updateViaCache", Get_updateViaCache, null);
         r.DefineAttribute(instanceTarget, "onupdatefound", Get_onupdatefound, Set_onupdatefound);
+        if (r.IsExposed(global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.ServiceWorker)) r.DefineAttribute(instanceTarget, "cookies", Get_cookies, null);
         r.DefineOperation(instanceTarget, "update", 0, Op_update, returnsPromise: true);
         r.DefineOperation(instanceTarget, "unregister", 0, Op_unregister, returnsPromise: true);
+        r.DefineOperation(instanceTarget, "showNotification", 1, Op_showNotification, returnsPromise: true);
+        r.DefineOperation(instanceTarget, "getNotifications", 0, Op_getNotifications, returnsPromise: true);
     }
 }

@@ -23,6 +23,9 @@
   "css/css-font-loading/fontface-fonts-loading.html": {
     "total": 1
   },
+  "css/css-font-loading/fontface-from-arraybuffer-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-font-loading/fontface-from-arraybuffer.html": {
     "reftest": "PASS"
   },
@@ -77,11 +80,17 @@
   "css/css-font-loading/fontfaceset-load-var.html": {
     "total": 4
   },
+  "css/css-font-loading/fontfaceset-loading-worker-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-font-loading/fontfaceset-ready-unused-face-failed-local-source.html": {
     "total": 1
   },
   "css/css-font-loading/fontfaceset-update-after-stylesheet-change.html": {
     "total": 1
+  },
+  "css/css-font-loading/fontfaceset-worker-fontface-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-font-loading/fontfacesetloadevent-constructor.html": {
     "total": 2

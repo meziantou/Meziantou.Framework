@@ -1113,12 +1113,26 @@ internal static partial class WptPythonHandlers
         response.Set("Access-Control-Allow-Origin", request.Header("origin"));
     }
 
+    // xhr/resources/access-control-preflight-request-must-not-contain-cookie.py: a preflight with the foo cookie fails, and
+    // the request gets the value of the cookie
     private static void AccessControlPreflightNoCookie(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
     {
+        var cookie = ParseRequestCookies(request).FindLast(cookie => cookie.Key == "foo").Value;
+        if (request.Method == "OPTIONS" && !string.IsNullOrEmpty(cookie))
+        {
+            response.Status = 400;
+            return;
+        }
+
         response.Set("Cache-Control", "no-store");
         response.Set("Access-Control-Allow-Origin", request.Header("origin"));
         response.Set("Access-Control-Allow-Credentials", "true");
         response.Set("Access-Control-Allow-Headers", "X-Proprietary-Header");
+        response.Set("Connection", "close");
+        if (!string.IsNullOrEmpty(cookie))
+        {
+            response.Content = cookie;
+        }
     }
 
     private static void Conditional(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
@@ -1481,12 +1495,20 @@ internal static partial class WptPythonHandlers
     }
 
     // fetch/api/resources/preflight.py
+    // fetch/api/resources/preflight.py: the data of the preflights of a token (whether a preflight was received, its
+    // headers and the number of OPTIONS requests), and the next non-OPTIONS request of a token fails the CORS check
+    // (fail-next)
     private static void Preflight(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
     {
         response.Add("Content-Type", "text/plain");
-        var stashedData = new Dictionary<string, string?>(StringComparer.Ordinal) { ["control_request_headers"] = "", ["preflight"] = "0", ["preflight_referrer"] = "" };
         var token = request.Get("token");
-        if (request.Has("origin"))
+        var stashedData = token is not null && stash.TakeValue(token) is PreflightData data ? data : new PreflightData();
+        var shouldFail = request.Method != "OPTIONS" && stashedData.FailNext;
+        if (shouldFail)
+        {
+            stashedData.FailNext = false;
+        }
+        else if (request.Has("origin"))
         {
             foreach (var origin in request.Get("origin")!.Split(", "))
             {
@@ -1500,7 +1522,23 @@ internal static partial class WptPythonHandlers
 
         if (request.Has("clear-stash"))
         {
-            response.Content = token is not null && stash.TakeValue(token) is not null ? "1" : "0";
+            // The stash was taken above
+            response.Content = stashedData.Preflight == "1" ? "1" : "0";
+            return;
+        }
+
+        if (request.Has("options-count"))
+        {
+            PutData();
+            response.Content = stashedData.OptionsCount.ToString(CultureInfo.InvariantCulture);
+            return;
+        }
+
+        if (request.Has("fail-next"))
+        {
+            stashedData.FailNext = true;
+            PutData();
+            response.Content = "1";
             return;
         }
 
@@ -1527,7 +1565,7 @@ internal static partial class WptPythonHandlers
 
             if (request.Has("control_request_headers"))
             {
-                stashedData["control_request_headers"] = request.Header("Access-Control-Request-Headers");
+                stashedData.ControlRequestHeaders = request.Header("Access-Control-Request-Headers");
             }
 
             if (request.Has("max_age"))
@@ -1546,23 +1584,15 @@ internal static partial class WptPythonHandlers
             }
 
             response.Status = ParseInt(request.Get("preflight_status"), 200);
-            stashedData["preflight"] = "1";
-            stashedData["preflight_referrer"] = request.Header("Referer") ?? "";
-            stashedData["preflight_user_agent"] = request.Header("User-Agent") ?? "";
-            if (token is not null)
-            {
-                stash.Put(token, stashedData);
-            }
-
+            stashedData.Preflight = "1";
+            stashedData.PreflightReferrer = request.Header("Referer") ?? "";
+            stashedData.PreflightUserAgent = request.Header("User-Agent") ?? "";
+            stashedData.OptionsCount++;
+            PutData();
             return;
         }
 
-        if (token is not null && stash.TakeValue(token) is Dictionary<string, string?> data)
-        {
-            stashedData = data;
-        }
-
-        if (request.Has("checkUserAgentHeaderInPreflight") && request.Header("User-Agent") != stashedData.GetValueOrDefault("preflight_user_agent"))
+        if (request.Has("checkUserAgentHeaderInPreflight") && request.Header("User-Agent") != stashedData.PreflightUserAgent)
         {
             response.Status = 400;
             response.Content = "ERROR: No user-agent header in preflight";
@@ -1570,19 +1600,40 @@ internal static partial class WptPythonHandlers
         }
 
         response.Add("Access-Control-Expose-Headers", "x-did-preflight, x-control-request-headers, x-referrer, x-preflight-referrer, x-origin");
-        response.Add("x-did-preflight", stashedData["preflight"]);
-        if (stashedData["control_request_headers"] is { } controlRequestHeaders)
+        response.Add("x-did-preflight", stashedData.Preflight);
+        if (stashedData.ControlRequestHeaders is { } controlRequestHeaders)
         {
             response.Add("x-control-request-headers", controlRequestHeaders);
         }
 
-        response.Add("x-preflight-referrer", stashedData["preflight_referrer"]);
+        response.Add("x-preflight-referrer", stashedData.PreflightReferrer);
         response.Add("x-referrer", request.Header("Referer") ?? "");
         response.Add("x-origin", request.Header("Origin") ?? "");
-        if (token is not null)
+        PutData();
+
+        void PutData()
         {
-            stash.Put(token, stashedData);
+            if (token is not null)
+            {
+                stash.Put(token, stashedData);
+            }
         }
+    }
+
+    /// <summary>The data that fetch/api/resources/preflight.py stashes for a token.</summary>
+    private sealed class PreflightData
+    {
+        public string? ControlRequestHeaders { get; set; } = "";
+
+        public string Preflight { get; set; } = "0";
+
+        public string PreflightReferrer { get; set; } = "";
+
+        public string PreflightUserAgent { get; set; } = "";
+
+        public int OptionsCount { get; set; }
+
+        public bool FailNext { get; set; }
     }
 
     // fetch/api/resources/stash-put.py

@@ -35,6 +35,9 @@
   "css/css-ruby/break-within-bases/basic.html": {
     "reftest": "FAIL"
   },
+  "css/css-ruby/break-within-bases/break-spaces-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-ruby/break-within-bases/no-break-opportunity-at-end.html": {
     "reftest": "FAIL"
   },
@@ -43,6 +46,33 @@
   },
   "css/css-ruby/collapse-trailing-whitespace.html": {
     "reftest": "FAIL"
+  },
+  "css/css-ruby/crashtests/bidi.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-ruby/crashtests/huge-base.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-ruby/crashtests/justification.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-ruby/crashtests/oof-display-contents.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-ruby/crashtests/oof-in-nested-ruby.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-ruby/crashtests/overhang.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-ruby/crashtests/rt-margin.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-ruby/crashtests/whitespace-reframe.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-ruby/crashtests/zero-width-base.html": {
+    "crashtest": "PASS"
   },
   "css/css-ruby/empty-ruby-base-container.html": {
     "reftest": "PASS"
@@ -193,6 +223,9 @@
   "css/css-ruby/ruby-bidi-004.html": {
     "reftest": "PASS"
   },
+  "css/css-ruby/ruby-body-element-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-ruby/ruby-box-generation-001.html": {
     "reftest": "PASS"
   },
@@ -235,6 +268,9 @@
   "css/css-ruby/ruby-dynamic-removal-003.html": {
     "reftest": "PASS"
   },
+  "css/css-ruby/ruby-dynamic-removal-004-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-ruby/ruby-float-handling-001.html": {
     "reftest": "PASS"
   },
@@ -252,6 +288,9 @@
   },
   "css/css-ruby/ruby-inlinize-blocks-005.html": {
     "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-inlinize-fieldset-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-ruby/ruby-inlinize-recursive-simple.html": {
     "reftest": "FAIL"
@@ -403,6 +442,9 @@
   "css/css-ruby/ruby-overhang-spaces-align-005.html": {
     "reftest": "PASS"
   },
+  "css/css-ruby/ruby-overhang-spaces-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-ruby/ruby-overhang-spaces-no-overlap.html": {
     "total": 1
   },
@@ -459,6 +501,9 @@
   },
   "css/css-ruby/ruby-tab-in-base-003.html": {
     "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-tab-in-base-max-content-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-ruby/ruby-text-collapse.html": {
     "reftest": "PASS"

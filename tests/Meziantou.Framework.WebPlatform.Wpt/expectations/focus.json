@@ -65,6 +65,9 @@
   "focus/focus-double-sync-calls.html": {
     "total": 1
   },
+  "focus/focus-element-crash.html": {
+    "crashtest": "PASS"
+  },
   "focus/focus-event-after-focusing-iframes.html": {
     "total": 2
   },
@@ -138,5 +141,8 @@
   },
   "focus/scroll-matches-focus.html": {
     "total": 1
+  },
+  "focus/synthetic-focus-event-crash.html": {
+    "crashtest": "PASS"
   }
 }

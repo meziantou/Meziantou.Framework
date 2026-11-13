@@ -65,6 +65,9 @@
   "intersection-observer/grow-height-and-scrolled.html": {
     "total": 3
   },
+  "intersection-observer/hidden-iframe-target-crash.html": {
+    "crashtest": "PASS"
+  },
   "intersection-observer/idlharness.window.js": {
     "total": 50
   },
@@ -331,6 +334,12 @@
   },
   "intersection-observer/transformed-iframe-004-same-origin.html": {
     "total": 2
+  },
+  "intersection-observer/transformed-non-invertible-iframe-cross-origin-crash.sub.html": {
+    "crashtest": "PASS"
+  },
+  "intersection-observer/transformed-non-invertible-iframe-same-origin-crash.html": {
+    "crashtest": "PASS"
   },
   "intersection-observer/unclipped-root.html": {
     "total": 3

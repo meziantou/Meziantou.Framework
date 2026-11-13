@@ -4444,6 +4444,102 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void BlurWindowRunsSumTheSamePositionsAsTheWholeWindow()
+    {
+        Span<FilterProcessor.WindowRun> buffer = stackalloc FilterProcessor.WindowRun[FilterProcessor.MaxWindowRuns];
+        foreach (var mode in new[] { FilterEdgeMode.Transparent, FilterEdgeMode.Duplicate, FilterEdgeMode.Wrap, FilterEdgeMode.Mirror })
+        {
+            foreach (var (edgeStart, edgeEnd) in new[] { (0, 20), (5, 25), (-7, 1), (3, 4), (3, 3) })
+            {
+                foreach (var start in new[] { edgeStart, edgeStart + 2, edgeStart - 4 })
+                {
+                    foreach (var (before, after) in new[] { (0, 0), (2, 1), (30, 29), (41, 40), (1000, 999), (9400, 9399) })
+                    {
+                        // Position by position, as the window is defined
+                        var expected = new SortedDictionary<int, double>();
+                        for (var offset = -before; offset <= after; offset++)
+                        {
+                            var position = start + offset;
+                            if (FilterProcessor.TryMap(ref position, edgeStart, edgeEnd, mode))
+                            {
+                                expected[position] = expected.GetValueOrDefault(position) + 1;
+                            }
+                        }
+
+                        var runs = buffer[..FilterProcessor.GetFirstWindow(before, after, start, edgeStart, edgeEnd, mode, buffer)];
+                        var actual = new SortedDictionary<int, double>();
+                        var steps = 0;
+                        foreach (var run in runs)
+                        {
+                            for (var offset = run.First; offset <= run.Last; offset++)
+                            {
+                                steps++;
+                                var position = start + offset;
+                                if (FilterProcessor.TryMap(ref position, edgeStart, edgeEnd, mode))
+                                {
+                                    actual[position] = actual.GetValueOrDefault(position) + run.Weight;
+                                }
+                            }
+                        }
+
+                        Assert.Equal(expected, actual);
+
+                        // A window far wider than the edges takes at most two periods of steps (a mirror repeats every
+                        // twice the size of the edges)
+                        var size = Math.Max(edgeEnd - edgeStart, 0);
+                        Assert.InRange(steps, 0, Math.Min(before + after + 1, 4 * size));
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void CurvesEnlargedFarBeyondTheCanvasKeepTheirVisiblePart()
+    {
+        // A lens of two quadratic curves, enlarged 10^12 times along y: the canvas shows a thin slice of its middle,
+        // where it spans x from 5 to 15. Only that slice is cut finely; the rest of the curves, far from the canvas,
+        // does not change a pixel
+        var lens = new VectorPathBuilder().MoveTo(5, 0).QuadraticBezierTo(10, -1, 15, 0).QuadraticBezierTo(10, 1, 5, 0).Close().Build();
+        using var image = new Image<Rgba32>(20, 20);
+        image.Draw(canvas => canvas.Transform(AffineTransform.CreateScale(1, 1e12), inner => inner.Fill(White, lens)), Ct);
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 20; x++)
+            {
+                Assert.Equal(x is >= 5 and < 15 ? (byte)255 : (byte)0, image.Frames[0][x, y].A);
+            }
+        }
+    }
+
+    [Fact]
+    public void BlurOfALargeDeviationAveragesTheEdgeModes()
+    {
+        // A deviation far larger than the canvas: the window of each pixel holds the whole row many times over (wrap,
+        // mirror) or mostly its two ends (duplicate), so every pixel gets close to the mean of the row
+        using var image = new Image<Rgba32>(20, 4);
+        foreach (var mode in new[] { FilterEdgeMode.Duplicate, FilterEdgeMode.Wrap, FilterEdgeMode.Mirror })
+        {
+            image.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+            image.Draw(
+                canvas => canvas.Filter(new BlurFilter(5000, 0) { EdgeMode = mode }, layer =>
+                {
+                    for (var x = 0; x < 20; x++)
+                    {
+                        layer.FillRectangle(new SolidBrush(new Rgba32((byte)(x * 12), 0, 0)), new Rectangle(x, 0, 1, 4));
+                    }
+                }),
+                Ct);
+
+            for (var x = 0; x < 20; x++)
+            {
+                Assert.InRange(image.Frames[0][x, 2].R, 112, 116);
+                Assert.Equal(255, image.Frames[0][x, 2].A);
+            }
+        }
+    }
+
+    [Fact]
     public void TryGetBoundsGivesWhereAFilterPaints()
     {
         var bounds = new RectangleD(10, 10, 4, 4);

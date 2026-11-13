@@ -295,8 +295,8 @@ public sealed class HeicDecodingTests
         }
     }
 
-    /// <summary>The files of <see cref="ARegionHasThePixelsOfTheFullDecodeInThatArea"/>: grids of lossless and lossy 4:2:0 tiles, images that are not grids, with and without alpha, and a sequence.</summary>
-    public static TheoryData<string> RegionFiles => ["grid", "large-grid", "lossy-grid", "transparent-grid", "rgba", "gray", "sequence"];
+    /// <summary>The files of <see cref="ARegionHasThePixelsOfTheFullDecodeInThatArea"/>: grids of lossless and lossy 4:2:0 tiles, images that are not grids, with and without alpha, large enough that a region does not decode their last rows, and a sequence.</summary>
+    public static TheoryData<string> RegionFiles => ["grid", "large-grid", "lossy-grid", "transparent-grid", "rgba", "gray", "large-still", "large-transparent-still", "large-lossless-still", "sequence"];
 
     private static byte[] GetRegionFile(string name)
     {
@@ -312,6 +312,12 @@ public sealed class HeicDecodingTests
                 return HeicTestFiles.Gray;
             case "sequence":
                 return HeicTestFiles.Sequence;
+            case "large-still":
+                return CreateLargeStill(transparent: false, lossless: false);
+            case "large-transparent-still":
+                return CreateLargeStill(transparent: true, lossless: false);
+            case "large-lossless-still":
+                return CreateLargeStill(transparent: false, lossless: true);
             default:
                 // Tiles of 64x64 of 4:2:0 samples, whose chroma is upsampled across the edges of the tiles
                 using (var source = HeifEncoderTestImages.CreateImage(200, 150, seed: 3, transparent: name == "transparent-grid"))
@@ -362,6 +368,52 @@ public sealed class HeicDecodingTests
         var fullPeak = full.Owner.Scope.GetDiagnostics().PeakLiveBytes;
         var regionPeak = region.Owner.Scope.GetDiagnostics().PeakLiveBytes;
         Assert.True(regionPeak * 4 < fullPeak, string.Create(CultureInfo.InvariantCulture, $"Peak {regionPeak} bytes for the region, {fullPeak} bytes for the image."));
+    }
+
+    [Fact]
+    public void ARegionOfAnImageThatIsNotAGridHoldsItsRowsOnly()
+    {
+        var data = CreateLargeStill(transparent: true, lossless: false, width: 512, height: 1024);
+        using var full = Image.Load(data);
+        using var region = Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(100, 20, 64, 40) });
+        var fullPeak = full.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        var regionPeak = region.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+
+        // The planes of the color image and of the alpha plane hold the rows of coding tree blocks down to the region and
+        // its margin: 128 of the 1024 rows. The state of the HEVC decoder is the one of the whole picture
+        Assert.True(regionPeak * 3 < fullPeak, string.Create(CultureInfo.InvariantCulture, $"Peak {regionPeak} bytes for the region, {fullPeak} bytes for the image."));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(16)]
+    public void TheRowsOfAnImageThatIsNotAGridBelowARegionAreNotDecoded(int workers)
+    {
+        // The end of the slice data is damaged: the whole image fails, an area at the top is decoded without reading it
+        var data = CreateLargeStill(transparent: false, lossless: false, width: 256, height: 512);
+        var region = new Rectangle(30, 10, 100, 50);
+        using var full = Image.Load(data);
+        var expected = Crop(GetFrameBytes(full.Frames[0]), full.Width, PixelFormats.GetBytesPerPixel(full.PixelFormat), region);
+        var damaged = HeifFileBuilder.From(data);
+        var item = damaged.GetItem(damaged.PrimaryItemId!.Value);
+        var bytes = item.Data.ToArray();
+        bytes.AsSpan(bytes.Length - (bytes.Length / 4)).Fill(0xFF);
+        item.Data = bytes;
+        var damagedData = damaged.Build();
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(damagedData, WithWorkers(workers)));
+        using var actual = Image.Load(damagedData, new ImageDecodeOptions { Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+        Assert.Equal(expected, GetFrameBytes(actual.Frames[0]));
+    }
+
+    // An image that is not a grid, of lossy 4:2:0 samples or lossless 4:4:4 samples, of several rows of coding tree blocks
+    private static byte[] CreateLargeStill(bool transparent, bool lossless, int width = 240, int height = 400)
+    {
+        using var source = HeifEncoderTestImages.CreateSmoothImage(width, height, transparent);
+        using var output = new MemoryStream();
+        source.Save(output, lossless
+            ? new HeicEncoder { Compression = HeicCompression.Lossless, Effort = 0 }
+            : new HeicEncoder { Compression = HeicCompression.Lossy, ChromaSubsampling = HeicChromaSubsampling.Ratio420, Quality = 60, Effort = 0 });
+        return output.ToArray();
     }
 
     [Fact]

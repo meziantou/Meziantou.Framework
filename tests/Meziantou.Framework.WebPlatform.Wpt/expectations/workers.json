@@ -819,45 +819,33 @@
     "total": 16
   },
   "workers/same-site-cookies/first-party.all.tentative.https.window.js": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Check SharedWorker sameSiteCookies option all for first-party": "TIMEOUT"
-    }
+    "total": 1
   },
   "workers/same-site-cookies/first-party.default.tentative.https.window.js": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Check SharedWorker sameSiteCookies option default for first-party": "TIMEOUT"
-    }
+    "total": 1
   },
   "workers/same-site-cookies/first-party.none.tentative.https.window.js": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Check SharedWorker sameSiteCookies option none for first-party": "TIMEOUT"
+      "Check SharedWorker sameSiteCookies option none for first-party": "FAIL"
     }
   },
   "workers/same-site-cookies/third-party.all.tentative.sub.https.window.js": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Check SharedWorker sameSiteCookies option all for third-party": "TIMEOUT"
+      "Check SharedWorker sameSiteCookies option all for third-party": "FAIL"
     }
   },
   "workers/same-site-cookies/third-party.default.tentative.sub.https.window.js": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Check SharedWorker sameSiteCookies option default for third-party": "TIMEOUT"
+      "Check SharedWorker sameSiteCookies option default for third-party": "FAIL"
     }
   },
   "workers/same-site-cookies/third-party.none.tentative.sub.https.window.js": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Check SharedWorker sameSiteCookies option none for third-party": "TIMEOUT"
+      "Check SharedWorker sameSiteCookies option none for third-party": "FAIL"
     }
   },
   "workers/semantics/encodings/001.html": {

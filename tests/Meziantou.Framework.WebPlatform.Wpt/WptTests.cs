@@ -258,6 +258,8 @@ public sealed class WptTests
 
     public static TheoryData<string> DeviceMemoryTests => GetTests("device-memory");
 
+    public static TheoryData<string> WebAuthnTests => GetTests("webauthn");
+
     public static TheoryData<string> SaveDataTests => GetTests("savedata");
 
     public static TheoryData<string> GpcTests => GetTests("gpc");
@@ -293,6 +295,8 @@ public sealed class WptTests
     public static TheoryData<string> CookiesTests => GetTests("cookies");
 
     public static TheoryData<string> CookieStoreTests => GetTests("cookiestore");
+
+    public static TheoryData<string> StorageAccessApiTests => GetTests("storage-access-api");
 
     public static TheoryData<string> WebSocketsTests => GetTests("websockets");
 
@@ -619,6 +623,8 @@ public sealed class WptTests
 
     public static TheoryData<string> WebAudioTests => GetTests("webaudio");
 
+    public static TheoryData<string> WebCodecsTests => GetTests("webcodecs");
+
     public static TheoryData<string> CssLayoutApiTests => GetTests("css/css-layout-api");
 
     public static TheoryData<string> AnimationWorkletTests => GetTests("animation-worklet");
@@ -626,6 +632,8 @@ public sealed class WptTests
     public static TheoryData<string> SpeculationRulesTests => GetTests("speculation-rules");
 
     public static TheoryData<string> CssImagesTests => GetTests("css/css-images", "css/css-images/parsing");
+
+    public static TheoryData<string> CssImageAnimationTests => GetTests("css/css-image-animation");
 
     public static TheoryData<string> CssInlineTests => GetTests("css/css-inline", "css/css-inline/parsing");
 
@@ -1240,6 +1248,10 @@ public sealed class WptTests
     public void DeviceMemory(string test) => Run("device-memory", test);
 
     [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebAuthnTests))]
+    public void WebAuthn(string test) => Run("webauthn", test);
+
+    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(SaveDataTests))]
     public void SaveData(string test) => Run("savedata", test);
 
@@ -1310,6 +1322,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CookieStoreTests))]
     public void CookieStore(string test) => Run("cookiestore", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(StorageAccessApiTests))]
+    public void StorageAccessApi(string test) => Run("storage-access-api", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebSocketsTests))]
@@ -1964,6 +1980,10 @@ public sealed class WptTests
     public void WebAudio(string test) => Run("webaudio", test);
 
     [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebCodecsTests))]
+    public void WebCodecs(string test) => Run("webcodecs", test);
+
+    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CssLayoutApiTests))]
     public void CssLayoutApi(string test) => Run("css/css-layout-api", test);
 
@@ -1978,6 +1998,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CssImagesTests))]
     public void CssImages(string test) => Run("css/css-images", test, "css/css-images/parsing");
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(CssImageAnimationTests))]
+    public void CssImageAnimation(string test) => Run("css/css-image-animation", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CssInlineTests))]

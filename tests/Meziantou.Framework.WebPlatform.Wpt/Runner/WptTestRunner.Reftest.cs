@@ -195,6 +195,7 @@ internal sealed partial class WptTestRunner
         private bool _paintsDone;
         private bool _testRenderedFired;
         private DateTimeOffset? _start;
+        private Document? _document;
 
         public TimeSpan Timeout { get; set; } = ReftestTimeout;
 
@@ -224,6 +225,14 @@ internal sealed partial class WptTestRunner
             var document = runner._browsingContext?.Document;
             if (document is null || document.IsInitialAboutBlank)
                 return false;
+
+            // A page that navigates itself (e.g. location.search = ...) is ready once the new document is: the steps start again
+            if (!ReferenceEquals(document, _document))
+            {
+                _document = document;
+                _state = State.Load;
+                _testRenderedFired = false;
+            }
 
             while (true)
             {

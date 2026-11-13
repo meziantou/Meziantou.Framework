@@ -39,6 +39,22 @@ internal static class WptReport
         }));
     }
 
+    /// <summary>Writes the result of a crash test: its status (<c>crashtest</c>) and the error of the page (<c>message</c>).</summary>
+    public static void Append(WptCrashtest test, WptCrashtestResult result, TimeSpan duration)
+    {
+        if (Path is null)
+            return;
+
+        Write(JsonSerializer.Serialize(new
+        {
+            test = test.Id,
+            crashtest = result.Status,
+            durationMs = (int)duration.TotalMilliseconds,
+            message = result.Message,
+            log = result.Log,
+        }));
+    }
+
     private static string? Path => Environment.GetEnvironmentVariable("WPT_REPORT") is { Length: > 0 } path ? path : null;
 
     private static void Write(string line)

@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Html;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Html;
 
@@ -238,6 +239,45 @@ public sealed class EditingInsertionTests : IDisposable
     public void InsertText_EmptyStringAtCaretDoesNothing()
     {
         Assert.Equal("a&nbsp;&nbsp;b", Run("a[]&nbsp;&nbsp;b", "insertText="));
+    }
+
+    [Theory]
+    // The text that replaces a selection that starts with an image after a text is in this text, and the inline elements
+    // that the deletion empties are removed
+    [InlineData("<div>abc[<b><i><img src=\"a.png\">def]</i></b>ghi</div>", "<div>abcxghi</div>")]
+    [InlineData("<div>abc[<b><i><img src=\"a.png\">def</i></b>]ghi</div>", "<div>abcxghi</div>")]
+    [InlineData("<div>abc<b><i>[<img src=\"a.png\">de]f</i></b>ghi</div>", "<div>abc<b><i>xf</i></b>ghi</div>")]
+    public void InsertText_ReplacingSelectionThatStartsWithImage(string html, string expected)
+    {
+        Assert.Equal(expected, Run(html, "insertText=x"));
+    }
+
+    [Theory]
+    // The states set at a caret are restored on the typed text in the order of the commands: the first one is the outermost
+    [InlineData("italic", "bold", "a<i><b>b</b></i>c")]
+    [InlineData("bold", "italic", "a<b><i>b</i></b>c")]
+    [InlineData("underline", "bold", "a<u><b>b</b></u>c")]
+    public void InsertText_RestoresStatesInTheOrderOfTheCommands(string first, string second, string expected)
+    {
+        Assert.Equal(expected, Run("a[]c", first, second, "insertText=b"));
+    }
+
+    [Fact]
+    public void InsertText_TypingInEditingHostOfShadowTree()
+    {
+        var (document, host) = Load("abc[]");
+        var shadowHost = document.CreateElement("div");
+        document.Body!.AppendChild(shadowHost);
+        var shadowRoot = shadowHost.AttachShadow(new ShadowRootInit { Mode = ShadowRootMode.Open });
+        shadowRoot.InnerHtml = "<div contenteditable>editable</div>";
+        var editingHost = shadowRoot.QuerySelector("div")!;
+        document.GetSelection()!.Collapse(editingHost.FirstChild, 0);
+
+        // The selection in a shadow tree is not exposed to the commands, but the user types in it
+        Assert.False(document.ExecCommand("insertText", showUI: false, "X"));
+        Editing.UserEdit(editingHost, "insertText", "A");
+        Assert.Equal("Aeditable", editingHost.InnerHtml);
+        Assert.Equal("abc", host.InnerHtml);
     }
 
     [Theory]

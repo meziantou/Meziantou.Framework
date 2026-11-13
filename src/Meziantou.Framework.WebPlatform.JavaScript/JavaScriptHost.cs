@@ -55,7 +55,7 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
 
         // Prepare to run a callback with the incumbent settings object (the backup incumbent settings object stack), and
         // push the script execution context of the active script
-        owner.BackupIncumbentGlobals.Push(state.Incumbent);
+        owner.PrepareToRunCallback(state.Incumbent);
         state.Incumbent?.EventLoop.RecordScriptEvaluation(state.Incumbent);
         var continuationState = state.ContinuationState;
         var previousContinuationState = continuationState?.EventLoop.CurrentContinuationState;
@@ -80,7 +80,7 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
                 continuationState.EventLoop.CurrentContinuationState = previousContinuationState;
             }
 
-            owner.BackupIncumbentGlobals.Pop();
+            owner.CleanUpAfterRunningCallback();
         }
     }
 
@@ -183,13 +183,13 @@ internal sealed class WebIdlHost(JavaScriptScriptEngine engine) : IWebIdlHost, I
 
     public IDisposable EnterBackupIncumbent(GlobalScope incumbent)
     {
-        engine.BackupIncumbentGlobals.Push(incumbent);
+        engine.PrepareToRunCallback(incumbent);
         return new BackupIncumbentScope(engine);
     }
 
     private sealed class BackupIncumbentScope(JavaScriptScriptEngine engine) : IDisposable
     {
-        public void Dispose() => engine.BackupIncumbentGlobals.Pop();
+        public void Dispose() => engine.CleanUpAfterRunningCallback();
     }
 }
 

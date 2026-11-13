@@ -32,6 +32,9 @@
   "css/css-values/animations/line-height-lh-transition.html": {
     "total": 1
   },
+  "css/css-values/animations/scale-interpolation-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-values/attr-IACVT.html": {
     "total": 1
   },
@@ -49,6 +52,9 @@
   },
   "css/css-values/attr-container-style-query.html": {
     "total": 1
+  },
+  "css/css-values/attr-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-values/attr-css-wide-keywords.html": {
     "total": 21
@@ -219,6 +225,9 @@
   },
   "css/css-values/calc-ch-ex-lang.html": {
     "reftest": "PASS"
+  },
+  "css/css-values/calc-complex-sign-function-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-values/calc-complex-unresolved-serialize.html": {
     "total": 12
@@ -558,6 +567,9 @@
   "css/css-values/calc-size/calc-size-replaced-element.html": {
     "total": 33
   },
+  "css/css-values/calc-size/calc-size-svg-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-values/calc-size/calc-size-table.html": {
     "total": 6
   },
@@ -669,6 +681,12 @@
   "css/css-values/ch-unit-019.html": {
     "reftest": "FAIL"
   },
+  "css/css-values/chrome-interpolation-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-values/chrome-typed-arithmetic-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-values/clamp-color-computed.html": {
     "total": 15
   },
@@ -695,6 +713,24 @@
   },
   "css/css-values/clamp-partial-serialize.tentative.html": {
     "total": 16
+  },
+  "css/css-values/crashtests/calc-with-percent-and-number-in-line-height.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-values/crashtests/chrome-405422528-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-values/crashtests/chrome-bug-492735384.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-values/crashtests/chrome-bug-493952652.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-values/crashtests/chrome-bug-508472243.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-values/crashtests/viewport-unit-inline-style-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-values/dynamic-viewport-units-rule-cache.html": {
     "total": 1
@@ -822,6 +858,9 @@
   "css/css-values/if-media-invalidation.html": {
     "total": 1
   },
+  "css/css-values/if-range-with-attr-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-values/if-style-invalidation.html": {
     "total": 1
   },
@@ -892,6 +931,9 @@
   "css/css-values/max-20-arguments.html": {
     "reftest": "PASS"
   },
+  "css/css-values/max-function-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-values/max-length-percent-001.html": {
     "reftest": "PASS"
   },
@@ -961,6 +1003,9 @@
   "css/css-values/minmax-time-serialize.html": {
     "total": 22
   },
+  "css/css-values/mod-length-degrees-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-values/negative-calc-to-non-negative-integer.html": {
     "reftest": "PASS"
   },
@@ -978,6 +1023,9 @@
   },
   "css/css-values/position/position-valid.tentative.html": {
     "total": 34
+  },
+  "css/css-values/premature-comment-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-values/progress-computed.html": {
     "total": 36
@@ -1060,6 +1108,9 @@
   "css/css-values/rch-invalidation.html": {
     "total": 1
   },
+  "css/css-values/rem-length-degrees-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-values/rem-root-font-size-restyle-1.html": {
     "reftest": "PASS"
   },
@@ -1089,6 +1140,9 @@
   },
   "css/css-values/round-function.html": {
     "total": 219
+  },
+  "css/css-values/round-length-degrees-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-values/round-mod-rem-computed.html": {
     "total": 243
@@ -1214,6 +1268,15 @@
   },
   "css/css-values/tree-counting/trig-functions-with-runtime-angle-arguments.html": {
     "total": 4
+  },
+  "css/css-values/typed-arithmetic-different-categories-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-values/typed-arithmetic-inside-calc-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-values/typed-arithmetic-mixed-units-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-values/typed-arithmetic-negated-product.html": {
     "total": 6
@@ -1527,6 +1590,9 @@
       "max(1svw, 1svh) computes to 1.84375px": "FAIL",
       "min(1lvw, 1lvh) computes to 0.84375px": "FAIL"
     }
+  },
+  "css/css-values/viewport-units-scrollbars-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-values/viewport-units-scrollbars-custom-001.html": {
     "reftest": "FAIL"

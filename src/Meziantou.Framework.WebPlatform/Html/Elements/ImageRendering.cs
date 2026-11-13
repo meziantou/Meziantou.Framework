@@ -92,6 +92,9 @@ public partial class HtmlImageElement
         return !origin.IsOpaque && OriginRecord.IsSameOrigin(origin, OriginRecord.FromUrl(url));
     }
 
+    /// <summary>Whether the element matched <c>:animated-image</c> when its image data last changed (see <see cref="InvalidateRendering"/>).</summary>
+    private bool _matchesAnimatedImage;
+
     /// <summary>
     /// Marks the layout of the document as out of date after a change of the image data (the natural size, the state of the
     /// request): the box tree is built again when the element starts or stops being rendered as its alternative text.
@@ -99,6 +102,15 @@ public partial class HtmlImageElement
     private void InvalidateRendering()
     {
         var document = NodeDocument;
+
+        // :animated-image matches the element while its image is an animated image
+        var matchesAnimatedImage = GetPaintImage() is { IsAnimated: true };
+        if (matchesAnimatedImage != _matchesAnimatedImage)
+        {
+            _matchesAnimatedImage = matchesAnimatedImage;
+            document.IncrementElementStateVersion();
+        }
+
         if (document.LayoutEngineOrNull is null)
             return;
 

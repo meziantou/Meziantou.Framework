@@ -57,6 +57,9 @@
   "css/mediaqueries/display-state.tentative.html": {
     "total": 16
   },
+  "css/mediaqueries/duplicate-media-stylesheet-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/mediaqueries/dynamic-range.html": {
     "total": 23
   },

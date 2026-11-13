@@ -71,6 +71,9 @@
   "touch-events/single-touch.html": {
     "total": 227
   },
+  "touch-events/touch-action-document-crash.html": {
+    "crashtest": "PASS"
+  },
   "touch-events/touch-globaleventhandler-interface.html": {
     "total": 3,
     "failures": {

@@ -31,8 +31,21 @@
   response, and a directory gets the listing of wptserve, after a `301` redirect when its path has no trailing slash), the raw HTTP responses of the `.asis` files, and the Python handlers. Their delays use the virtual clock,
   except for the synchronous requests of the windows (a synchronous request of a worker only blocks the thread of the
   worker). The redirects are not followed by the loader: the library follows them.
+- The runner plays the network layer of a browser (`Runner/WptHttpMessage.cs`): the responses get the `Server` and `Date`
+  headers that wptserve adds, a missing image, font, media or subresource file is a `404` response (not a network
+  error), the body of a file ends at the `Content-Length` of its `.headers` file, a line break in a header value ends the
+  header unless it is an obsolete line folding (then it is a space), and the bodies sent with the `gzip`, `deflate`, `br` or
+  `zstd` content codings are decoded (a body that cannot be decoded fails after the headers; the window limit of `zstd` is
+  not enforced). The handlers
+  that write a whole HTTP/1.1 message themselves (`response.writer.write()`, e.g. `fetch/h1-parsing/resources/status-code.py`)
+  set `WptHandlerResponse.RawMessage`: the message is parsed as RFC 9112 requires (a bare CR, a NUL byte, an invalid
+  status line or field line is a network error), and its body is framed by its `Content-Length` (values that differ are a
+  network error, a value that is not a number is ignored, a longer value makes the body fail). There are no sockets: each
+  request is sent on a new connection.
 - The Python handlers of the WPT server (`.py` files) cannot run: the ones the tests use are ported to .NET, the generic
-  handlers of `common` in `Runner/WptPythonHandlers.cs`, the ones of the `xhr` and `fetch/api` tests in
+  handlers of `common` in `Runner/WptPythonHandlers.cs`, the ones that check the network layer (raw messages, content
+  codings, chunked bodies, connections, ranges) in `WptPythonHandlers.Network.cs`, the resources of other tests (slow and
+  revalidated resources, refreshes, stashes) in `WptPythonHandlers.Resources.cs`, the ones of the `xhr` and `fetch/api` tests in
   `WptPythonHandlers.Fetch.cs`, the ones of the `cookies` and `cookiestore` tests in `WptPythonHandlers.Cookies.cs`, the ones of the
   `content-security-policy` and `x-frame-options` tests and the report collector (`reporting/resources/report.py`) in
   `WptPythonHandlers.ContentSecurityPolicy.cs`, the
@@ -396,7 +409,7 @@ need what the library does not have stay in the expectations as failures, with t
 run (see the disabled tests of [the WPT coverage](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md) and their reasons):
 
 - The specifications that are not implemented: `css-layout-api`, `css-paint-api`,
-  `css-navigation`, `css-image-animation`, `css-exclusions`, `css-device-adapt`.
+  `css-navigation`, `css-exclusions`, `css-device-adapt`.
 
 ## Forced colors mode
 
@@ -474,6 +487,20 @@ rendering of its references. `WptReftests` runs the reftests of the fetched dire
 - **Cost**: the ~28,200 reftests of the fetched directories take about 7 minutes of CPU time (Release, measured on a busy
   machine; about 1.5 minutes on 16 cores, ~5 GB peak working set). In a full run they overlap with the testharness.js
   tests. `WPT_REFTESTS=0` skips them.
+
+## Crash tests
+
+The [crash tests](https://web-platform-tests.org/writing-tests/crashtest.html) pass when their page loads and is rendered
+without crashing or hanging. `WptCrashtests` runs the `crashtest` items of the manifest whose file is fetched, except the
+ones of `wpt-skip.json` (`Runner/WptCrashtest.cs`): the page is loaded as the page of a reftest, the runner waits for the
+`load` event and for the removal of the `test-wait` (or `reftest-wait`) class of the root element, and the page is
+rendered. An exception of the library is a crash (`ERROR`), a page that never becomes ready is a `TIMEOUT`, and the errors
+of the scripts do not matter. The expectations are `{ "crashtest": "PASS" }`, and the reasons of the crash tests that do
+not pass are in the `failingCrashtests` section of `wpt-reasons.json`. A stack overflow of the library kills the test host:
+the crash tests found two (a `CSSUnparsedValue` that contains itself, and a `grid-template-columns` value of 100,000
+tracks). The `.any.js`, `.window.js` and `.worker.js` files of the `crashtests` directories and the `-crash.` files are
+testharness.js tests, as for the manifest: `WptTests` runs them. The ~2,050 crash tests take about one minute.
+`WPT_CRASHTESTS=0` skips them.
 
 ## Fonts
 

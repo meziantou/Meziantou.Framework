@@ -60,7 +60,7 @@ internal sealed class Av1FrameCodingState : IDisposable
     /// <returns>The frame, which stays <see cref="CurrentFrame"/> until <see cref="StoreFrame"/>.</returns>
     /// <exception cref="InvalidImageContentException">The frame refers to an empty reference slot.</exception>
     /// <exception cref="ImageResourceLimitException">The buffers exceed the live-allocation limit.</exception>
-    public Av1FrameBuffer BeginFrame(Av1SequenceHeader sequence, Av1FrameHeader header)
+    public Av1FrameBuffer BeginFrame(Av1SequenceHeader sequence, Av1FrameHeader header, int? decodedMiRows = null)
     {
         Scratch ??= new Av1TileScratch(_scope);
         _contexts ??= Av1PooledArray<ushort>.Rent(_scope, 3L * Av1CdfLayout.TotalLength, clear: false);
@@ -68,7 +68,7 @@ internal sealed class Av1FrameCodingState : IDisposable
         var frame = new Av1FrameBuffer(sequence, header);
         CurrentFrame?.Release();
         CurrentFrame = frame;
-        frame.Allocate(_scope);
+        frame.Allocate(_scope, decodedMiRows);
 
         // The reference frames of the frame, and load_previous_segment_ids
         References.Clear();

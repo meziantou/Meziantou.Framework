@@ -286,6 +286,13 @@ internal abstract class RenderingImageDecoder : IDisposable
     /// <returns>The pixels of the frame, or null when the frame cannot be decoded (the data is corrupted). An incomplete frame is decoded up to its last complete row.</returns>
     public abstract RenderingImage? DecodeFrame(int index, ExifOrientation orientation, bool convertToSrgb);
 
+    /// <summary>
+    /// Gets whether the last frame returned by <see cref="DecodeFrame"/> is incomplete: the data ended (or is corrupted) before
+    /// its last row, so only its first rows are decoded (e.g. the <c>ImageDecoder</c> of WebCodecs waits for the rest of the
+    /// data of a stream).
+    /// </summary>
+    public bool IsLastFrameIncomplete { get; protected set; }
+
     /// <summary>Releases the resources of the decoder.</summary>
     public void Dispose()
     {

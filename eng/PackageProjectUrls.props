@@ -144,11 +144,11 @@
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Versioning'">https://meziantou.github.io/Meziantou.Framework/versioning/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WPF'">https://meziantou.github.io/Meziantou.Framework/wpf/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform'">https://meziantou.github.io/Meziantou.Framework/webplatform/</PackageProjectUrl>
+    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform.DevTools'">https://meziantou.github.io/Meziantou.Framework/webplatform/devtools-protocol/</PackageProjectUrl>
+    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform.DevTools.Tool'">https://meziantou.github.io/Meziantou.Framework/webplatform/devtools-protocol/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform.Imaging'">https://meziantou.github.io/Meziantou.Framework/webplatform/rendering/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform.JavaScript'">https://meziantou.github.io/Meziantou.Framework/webplatform/scripting/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform.PdfRendering'">https://meziantou.github.io/Meziantou.Framework/webplatform/rendering/</PackageProjectUrl>
-    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform.Playwright'">https://meziantou.github.io/Meziantou.Framework/webplatform/playwright/</PackageProjectUrl>
-    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform.Playwright.Tool'">https://meziantou.github.io/Meziantou.Framework/webplatform/playwright/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform.Wasmtime'">https://meziantou.github.io/Meziantou.Framework/webplatform/scripting/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Win32.AccessToken'">https://meziantou.github.io/Meziantou.Framework/win32/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Win32.Amsi'">https://meziantou.github.io/Meziantou.Framework/win32/</PackageProjectUrl>

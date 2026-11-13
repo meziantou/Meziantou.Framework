@@ -8,9 +8,9 @@ namespace SpecUpdate;
 /// <summary>
 /// Generates the WPT coverage group of the documentation (docs/WebPlatform/10-WptCoverage): an overview and a page per section. For each section of the
 /// web-platform-tests, the testharness.js tests that run in a window or in a dedicated or shared worker and the reftests (from the manifest
-/// of the pinned revision), the tests that are run and pass (from the expectations), and why the other tests do not pass (wpt-skip.json and
-/// wpt-reasons.json). The tentative tests (experimental features, not yet required by a specification) and the reftests are reported
-/// separately from the stable testharness.js tests.
+/// of the pinned revision) and the crash tests, the tests that are run and pass (from the expectations), and why the other tests do not pass
+/// (wpt-skip.json and wpt-reasons.json). The tentative tests (experimental features, not yet required by a specification), the reftests and
+/// the crash tests are reported separately from the stable testharness.js tests.
 /// </summary>
 internal static partial class WptCoverage
 {
@@ -28,19 +28,24 @@ internal static partial class WptCoverage
     {
         HashSet<string> wptTests;
         HashSet<string> reftests;
+        HashSet<string> crashtests;
         using (var manifest = WptManifest.Open(manifestPath))
         {
             wptTests = ReadTestharnessTests(manifest);
             // (the print reftests compare the pages of the printed documents)
             reftests = [.. WptManifest.ReadItems(manifest, "reftest").Keys, .. WptManifest.ReadItems(manifest, "print-reftest").Keys];
+            crashtests = [.. WptManifest.ReadItems(manifest, "crashtest").Keys];
         }
 
-        var (runTests, runReftests) = ReadExpectations(Path.Combine(wptProjectDirectory, "expectations"));
+        var (runTests, runReftests, runCrashtests) = ReadExpectations(Path.Combine(wptProjectDirectory, "expectations"));
 
         // A few tests are not testharness.js tests for the manifest (e.g. the harness is inserted by document.write())
         wptTests.UnionWith(runTests.Keys);
         reftests.UnionWith(runReftests.Keys);
         reftests.ExceptWith(wptTests);
+        crashtests.UnionWith(runCrashtests.Keys);
+        crashtests.ExceptWith(wptTests);
+        crashtests.ExceptWith(reftests);
 
         var invalidReasons = new List<string>();
         using var skipDocument = JsonDocument.Parse(File.ReadAllText(Path.Combine(wptProjectDirectory, "wpt-skip.json")));
@@ -53,34 +58,38 @@ internal static partial class WptCoverage
         // reason for its reftests (e.g. a painting feature) that does not apply to its testharness.js tests
         var failingReftestReasons = new ReasonPatterns(ReadReasons(reasonsDocument.RootElement.GetProperty("failingReftests"), "wpt-reasons.json failingReftests", invalidReasons));
 
+        // The reasons of the crash tests that do not pass (an exception of the library or a timeout) are separate too
+        var failingCrashtestReasons = new ReasonPatterns(ReadReasons(reasonsDocument.RootElement.GetProperty("failingCrashtests"), "wpt-reasons.json failingCrashtests", invalidReasons));
+
         var tests = new List<TestEntry>();
-        AddTests(wptTests, runTests, failingReasons, isReftest: false);
-        AddTests(reftests, runReftests, failingReftestReasons, isReftest: true);
+        AddTests(wptTests, runTests, failingReasons, TestKind.Testharness);
+        AddTests(reftests, runReftests, failingReftestReasons, TestKind.Reftest);
+        AddTests(crashtests, runCrashtests, failingCrashtestReasons, TestKind.Crashtest);
         tests.Sort((a, b) => string.CompareOrdinal(a.Path, b.Path));
 
         var pages = new Writer(tests, commit).Write();
         return new CoverageResult(
             pages,
             [.. tests.Where(t => !t.IsPassing && t.Reasons is null).Select(t => t.Path)],
-            [.. notRunReasons.UnusedPatterns.Select(p => "notRun: " + p), .. failingReasons.UnusedPatterns.Select(p => "failing: " + p), .. failingReftestReasons.UnusedPatterns.Select(p => "failingReftests: " + p)],
+            [.. notRunReasons.UnusedPatterns.Select(p => "notRun: " + p), .. failingReasons.UnusedPatterns.Select(p => "failing: " + p), .. failingReftestReasons.UnusedPatterns.Select(p => "failingReftests: " + p), .. failingCrashtestReasons.UnusedPatterns.Select(p => "failingCrashtests: " + p)],
             invalidReasons);
 
-        void AddTests(HashSet<string> paths, Dictionary<string, TestResult> results, ReasonPatterns failing, bool isReftest)
+        void AddTests(HashSet<string> paths, Dictionary<string, TestResult> results, ReasonPatterns failing, TestKind kind)
         {
             foreach (var path in paths.Where(p => p.Contains('/', StringComparison.Ordinal)))
             {
                 // The tests of wpt-skip.json are not run, even when they have expectations
                 if (skipped.Find(path) is { } skipReason)
                 {
-                    tests.Add(new TestEntry(path, Result: null, skipReason, isReftest));
+                    tests.Add(new TestEntry(path, Result: null, skipReason, kind));
                 }
                 else if (results.TryGetValue(path, out var result))
                 {
-                    tests.Add(new TestEntry(path, result, result.IsPassing ? null : failing.Find(path), isReftest));
+                    tests.Add(new TestEntry(path, result, result.IsPassing ? null : failing.Find(path), kind));
                 }
                 else
                 {
-                    tests.Add(new TestEntry(path, Result: null, notRunReasons.Find(path), isReftest));
+                    tests.Add(new TestEntry(path, Result: null, notRunReasons.Find(path), kind));
                 }
             }
         }
@@ -108,20 +117,32 @@ internal static partial class WptCoverage
     }
 
     /// <summary>
-    /// The results of the testharness.js tests and of the reftests listed in the expectations, by source file (the variants of a
-    /// file are merged). The result of a reftest (<c>{ "reftest": "FAIL" }</c>) is a test with one subtest, whose harness status
-    /// is <c>OK</c> when the comparisons ran (<c>PASS</c> or <c>FAIL</c>).
+    /// The results of the testharness.js tests, of the reftests and of the crash tests listed in the expectations, by source file
+    /// (the variants of a file are merged). The result of a reftest (<c>{ "reftest": "FAIL" }</c>) is a test with one subtest,
+    /// whose harness status is <c>OK</c> when the comparisons ran (<c>PASS</c> or <c>FAIL</c>). The result of a crash test
+    /// (<c>{ "crashtest": "PASS" }</c>) is a test with one subtest, whose harness status is its status unless it passes.
     /// </summary>
-    private static (Dictionary<string, TestResult> Tests, Dictionary<string, TestResult> Reftests) ReadExpectations(string expectationsDirectory)
+    private static (Dictionary<string, TestResult> Tests, Dictionary<string, TestResult> Reftests, Dictionary<string, TestResult> Crashtests) ReadExpectations(string expectationsDirectory)
     {
         var result = new Dictionary<string, TestResult>(StringComparer.Ordinal);
         var reftests = new Dictionary<string, TestResult>(StringComparer.Ordinal);
+        var crashtests = new Dictionary<string, TestResult>(StringComparer.Ordinal);
         foreach (var file in Directory.EnumerateFiles(expectationsDirectory, "*.json").Order(StringComparer.Ordinal))
         {
             using var document = JsonDocument.Parse(File.ReadAllText(file));
             foreach (var test in document.RootElement.EnumerateObject())
             {
                 var path = test.Name.Split('?', '#')[0];
+                if (test.Value.TryGetProperty("crashtest", out var crashtestElement))
+                {
+                    var status = crashtestElement.GetString()!;
+                    var crashtest = new TestResult(1, status is "PASS" ? 0 : 1, status is "PASS" ? "OK" : status);
+                    crashtests[path] = crashtests.TryGetValue(path, out var previous)
+                        ? new TestResult(previous.Total + 1, previous.Failures + crashtest.Failures, previous.Harness is "OK" ? crashtest.Harness : previous.Harness)
+                        : crashtest;
+                    continue;
+                }
+
                 if (test.Value.TryGetProperty("reftest", out var reftestElement))
                 {
                     var status = reftestElement.GetString()!;
@@ -141,7 +162,7 @@ internal static partial class WptCoverage
             }
         }
 
-        return (result, reftests);
+        return (result, reftests, crashtests);
     }
 
     /// <summary>Reads the reasons of a pattern: an array of <c>{ "kind": "...", "features": [...], "description": "..." }</c>. The invalid reasons are added to <paramref name="errors"/>.</summary>
@@ -259,7 +280,7 @@ internal static partial class WptCoverage
     }
 
     /// <summary>A test of the manifest. <see cref="Result"/> is null when the test is not run (disabled).</summary>
-    private sealed record TestEntry(string Path, TestResult? Result, IReadOnlyList<Reason>? Reasons, bool IsReftest)
+    private sealed record TestEntry(string Path, TestResult? Result, IReadOnlyList<Reason>? Reasons, TestKind Kind)
     {
         /// <summary>
         /// Whether the test makes assertions that no specification requires yet (proposals, experimental features): its file
@@ -267,12 +288,24 @@ internal static partial class WptCoverage
         /// </summary>
         public bool IsTentative { get; } = Path.Contains(".tentative.", StringComparison.Ordinal) || Path.Split('/').SkipLast(1).Contains("tentative", StringComparer.Ordinal);
 
-        /// <summary>The group of the test in the pages: the reftests are reported separately from the testharness.js tests (stable or tentative).</summary>
-        public TestGroup Group => IsReftest ? TestGroup.Reftest : IsTentative ? TestGroup.Tentative : TestGroup.Stable;
+        /// <summary>The group of the test in the pages: the reftests and the crash tests are reported separately from the testharness.js tests (stable or tentative).</summary>
+        public TestGroup Group => Kind switch
+        {
+            TestKind.Reftest => TestGroup.Reftest,
+            TestKind.Crashtest => TestGroup.Crashtest,
+            _ => IsTentative ? TestGroup.Tentative : TestGroup.Stable,
+        };
 
         public bool IsDisabled => Result is null;
 
         public bool IsPassing => Result is { IsPassing: true };
+    }
+
+    private enum TestKind
+    {
+        Testharness,
+        Reftest,
+        Crashtest,
     }
 
     private enum TestGroup
@@ -280,6 +313,7 @@ internal static partial class WptCoverage
         Stable,
         Tentative,
         Reftest,
+        Crashtest,
     }
 
     /// <summary>The reasons of wpt-skip.json and wpt-reasons.json: a pattern is a path, or a prefix followed by '*'. The longest matching pattern wins.</summary>
@@ -352,7 +386,7 @@ internal static partial class WptCoverage
                 $"at the revision [`{commit[..12]}`](https://github.com/web-platform-tests/wpt/tree/{commit}). This page gives the pass rate of each section of the test suite. " +
                 "The page of a section lists its tests, with the reason why each test that does not pass fails.");
             Line();
-            Line("The tests are split in three groups:");
+            Line("The tests are split in four groups:");
             Line();
             Line("- **Stable tests**: the testharness.js tests that are not marked as tentative: they test the behaviors defined by a specification (some of these specifications are still drafts or incubations). " +
                 "They measure the conformance of the library.");
@@ -362,15 +396,17 @@ internal static partial class WptCoverage
             Line("- **Reftests**: the [reftests](https://web-platform-tests.org/writing-tests/reftests.html) (tentative ones included), which compare the rendering of a page with the rendering of its references, " +
                 "and the [print reftests](https://web-platform-tests.org/writing-tests/print-reftests.html), which compare the pages of the printed documents: " +
                 "they measure the layout, the pagination and the painting.");
+            Line("- **Crash tests**: the [crash tests](https://web-platform-tests.org/writing-tests/crashtest.html) (tentative ones included), which pass when the page is loaded and rendered " +
+                "without crashing or hanging: an exception of the library is a crash.");
             Line();
             Line("The columns:");
             Line();
-            Line("- **Tests**: the testharness.js test files of the section that run in a window or in a dedicated or shared worker (or in a service worker for the tests of `service-workers`) and the reftests, according to the " +
+            Line("- **Tests**: the testharness.js test files of the section that run in a window or in a dedicated or shared worker (or in a service worker for the tests of `service-workers`) the reftests and the crash tests, according to the " +
                 "[WPT manifest](https://github.com/web-platform-tests/wpt/releases) of the revision, and the other files that are run (a file with several variants counts once: " +
-                "a `.any.js` test passes when it passes in all its globals, a reftest when all its variants pass). " +
-                "Visual tests, crash tests, manual tests, WebDriver tests, the tests that only run in a ShadowRealm, and the tests outside of `service-workers` that only run in service workers are not counted: " +
+                "a `.any.js` test passes when it passes in all its globals, a reftest or a crash test when all its variants pass). " +
+                "Visual tests, manual tests, WebDriver tests, the tests that only run in a ShadowRealm, and the tests outside of `service-workers` that only run in service workers are not counted: " +
                 "the library has no ShadowRealm, and the service workers are only tested by the tests of `service-workers`.");
-            Line("- **Passing**: the testharness.js tests whose harness status is `OK` and whose subtests all pass with the JavaScript engine (`Meziantou.Framework.JavaScriptEngine`), and the reftests whose rendering matches their references.");
+            Line("- **Passing**: the testharness.js tests whose harness status is `OK` and whose subtests all pass with the JavaScript engine (`Meziantou.Framework.JavaScriptEngine`), the reftests whose rendering matches their references, and the crash tests that complete.");
             Line("- **Disabled**: the tests that are not run: they are skipped, or their directory is not part of the tested directories. The page of the section gives the reason.");
             Line("- **Pass rate**: the passing tests among the tests that are run (the tests that are not disabled).");
             Line();
@@ -398,6 +434,7 @@ internal static partial class WptCoverage
             Line(Row("[Stable](#stable-tests)", Stats.From(tests.Where(t => t.Group is TestGroup.Stable))));
             Line(Row("[Tentative](#tentative-tests)", Stats.From(tests.Where(t => t.Group is TestGroup.Tentative))));
             Line(Row("[Reftests](#reftests)", Stats.From(tests.Where(t => t.Group is TestGroup.Reftest))));
+            Line(Row("[Crash tests](#crash-tests)", Stats.From(tests.Where(t => t.Group is TestGroup.Crashtest))));
             Line(Row("**All**", Stats.From(tests), bold: true));
 
             WriteFailureReasons(Line, tests);
@@ -405,6 +442,7 @@ internal static partial class WptCoverage
             WriteIndexTable(Line, "Stable tests", sections, TestGroup.Stable);
             WriteIndexTable(Line, "Tentative tests", sections, TestGroup.Tentative);
             WriteIndexTable(Line, "Reftests", sections, TestGroup.Reftest);
+            WriteIndexTable(Line, "Crash tests", sections, TestGroup.Crashtest);
 
             foreach (var section in sections)
             {
@@ -430,6 +468,7 @@ internal static partial class WptCoverage
                 {
                     TestGroup.Tentative => "#tentative-tests",
                     TestGroup.Reftest => "#reftests",
+                    TestGroup.Crashtest => "#crash-tests",
                     _ => "",
                 };
                 line(Row($"[`{section}`]({GetPagePath(section)}{anchor})", Stats.From(sectionTests)));
@@ -488,6 +527,7 @@ internal static partial class WptCoverage
             var stableTests = sectionTests.Where(t => t.Group is TestGroup.Stable).ToList();
             var tentativeTests = sectionTests.Where(t => t.Group is TestGroup.Tentative).ToList();
             var reftests = sectionTests.Where(t => t.Group is TestGroup.Reftest).ToList();
+            var crashtests = sectionTests.Where(t => t.Group is TestGroup.Crashtest).ToList();
             var indexLink = string.Concat(Enumerable.Repeat("../", pagePath.Count(c => c == '/'))) + IndexPath;
             Line("---");
             Line($"title: \"{section}\"");
@@ -498,13 +538,14 @@ internal static partial class WptCoverage
             Line();
             Line($"[WPT coverage]({indexLink}) of the tests of [`{section}`](https://github.com/web-platform-tests/wpt/tree/{commit}/{section}) " +
                 $"at the revision `{commit[..12]}`. The tests link to their results in the browsers on [wpt.fyi](https://wpt.fyi). " +
-                $"The [tentative tests]({indexLink}#tentative-tests) (experimental features) and the [reftests]({indexLink}#reftests) are listed separately from the stable tests.");
+                $"The [tentative tests]({indexLink}#tentative-tests) (experimental features), the [reftests]({indexLink}#reftests) and the [crash tests]({indexLink}#crash-tests) are listed separately from the stable tests.");
             Line();
             Line("| Group | Passing | Tests | Disabled | Pass rate |");
             Line("|---|--:|--:|--:|--:|");
             Line(Row(stableTests.Count > 0 ? "[Stable](#stable-tests)" : "Stable", Stats.From(stableTests)));
             Line(Row(tentativeTests.Count > 0 ? "[Tentative](#tentative-tests)" : "Tentative", Stats.From(tentativeTests)));
             Line(Row(reftests.Count > 0 ? "[Reftests](#reftests)" : "Reftests", Stats.From(reftests)));
+            Line(Row(crashtests.Count > 0 ? "[Crash tests](#crash-tests)" : "Crash tests", Stats.From(crashtests)));
             Line(Row("**All**", Stats.From(sectionTests), bold: true));
 
             WriteFailureReasons(Line, sectionTests);
@@ -512,6 +553,7 @@ internal static partial class WptCoverage
             WriteTestTable("Stable tests", stableTests, "Subtests");
             WriteTestTable("Tentative tests", tentativeTests, "Subtests");
             WriteTestTable("Reftests", reftests, "Variants");
+            WriteTestTable("Crash tests", crashtests, "Variants");
 
             _pages[pagePath] = output.ToString();
 

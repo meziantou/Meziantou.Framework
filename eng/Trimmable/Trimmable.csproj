@@ -365,10 +365,10 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.VectorGraphics\Meziantou.Framework.VectorGraphics.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.DevTools\Meziantou.Framework.WebPlatform.DevTools.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.JavaScript\Meziantou.Framework.WebPlatform.JavaScript.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.PdfRendering\Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Playwright\Meziantou.Framework.WebPlatform.Playwright.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Wasmtime\Meziantou.Framework.WebPlatform.Wasmtime.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.CredentialManager\Meziantou.Framework.Win32.CredentialManager.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.RecentDocuments\Meziantou.Framework.Win32.RecentDocuments.csproj" />
@@ -729,10 +729,10 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.VectorGraphics" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Versioning" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.DevTools" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.Imaging" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.JavaScript" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.PdfRendering" />
-    <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.Playwright" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.Wasmtime" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Win32.CredentialManager" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Win32.RecentDocuments" />

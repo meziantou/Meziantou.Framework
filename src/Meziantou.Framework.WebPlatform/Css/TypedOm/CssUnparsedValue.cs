@@ -141,7 +141,14 @@ public sealed class CssUnparsedValue : CssStyleValue, IReadOnlyList<CssUnparsedS
         return builder.ToString();
     }
 
-    internal void Serialize(StringBuilder builder)
+    internal void Serialize(StringBuilder builder) => Serialize(builder, path: null);
+
+    /// <summary>
+    /// Serializes the segments. A script can make a value contain itself (the fallback of one of its references, directly or
+    /// not): the fallback of a reference that is on the <paramref name="path"/> of the values being serialized is omitted,
+    /// so the serialization ends.
+    /// </summary>
+    private void Serialize(StringBuilder builder, HashSet<CssUnparsedValue>? path)
     {
         foreach (var token in _tokens)
         {
@@ -154,10 +161,13 @@ public sealed class CssUnparsedValue : CssStyleValue, IReadOnlyList<CssUnparsedS
                 case CssVariableReferenceValue reference:
                     CssSubstitution.AppendSeparated(builder, "var(");
                     builder.Append(CssSerializer.SerializeIdentifier(reference.Variable));
-                    if (reference.Fallback is { } fallback)
+                    if (reference.Fallback is { } fallback && (path is null || !path.Contains(fallback)) && fallback != this)
                     {
+                        path ??= new(ReferenceEqualityComparer.Instance);
+                        path.Add(this);
                         builder.Append(',');
-                        fallback.Serialize(builder);
+                        fallback.Serialize(builder, path);
+                        path.Remove(this);
                     }
 
                     builder.Append(')');

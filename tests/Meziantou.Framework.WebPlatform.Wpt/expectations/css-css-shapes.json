@@ -26,6 +26,9 @@
   "css/css-shapes/basic-shape-interpolation.html": {
     "total": 3
   },
+  "css/css-shapes/crashtests/shape-outside-extreme-percent.html": {
+    "crashtest": "PASS"
+  },
   "css/css-shapes/inheritance.html": {
     "total": 6
   },
@@ -154,6 +157,9 @@
   },
   "css/css-shapes/shape-functions/xywh-function-valid.html": {
     "total": 7
+  },
+  "css/css-shapes/shape-outside-infinite-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-shapes/shape-outside-invalid-001.html": {
     "total": 1
@@ -650,6 +656,9 @@
   "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-056.html": {
     "reftest": "PASS"
   },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-integer-overflow-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-013.html": {
     "reftest": "PASS"
   },
@@ -763,6 +772,9 @@
   },
   "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-054.html": {
     "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-integer-overflow-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-010.html": {
     "reftest": "PASS"
@@ -899,6 +911,9 @@
   "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-032.html": {
     "reftest": "PASS"
   },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-shapes/shape-outside/supported-shapes/shape/shape-outside-shape-000.html": {
     "reftest": "PASS"
   },
@@ -910,6 +925,9 @@
   },
   "css/css-shapes/shape-outside/supported-shapes/shape/shape-outside-shape-003.html": {
     "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/shape/shape-outside-shape-vertical-writing-mode-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-shapes/shape-outside/values/shape-image-threshold-000.html": {
     "total": 10

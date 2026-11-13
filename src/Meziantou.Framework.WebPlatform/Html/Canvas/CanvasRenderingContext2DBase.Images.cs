@@ -264,6 +264,15 @@ public abstract partial class CanvasRenderingContext2DBase
                 return paintImage.GetDecodedImage(backend) is { } decoded ? new UsableImage(paintImage, decoded.Width, decoded.Height, paintImage.IsCorsSameOrigin) : null;
             }
 
+            case WebCodecs.VideoFrame videoFrame:
+            {
+                // The rendered pixels of the frame (rotated and flipped), whose size is its display size
+                if (videoFrame.GetRenderedPixels() is not { } pixels)
+                    throw new DomException("The video frame is closed", "InvalidStateError");
+
+                return pixels.GetPaintImage(backend) is { } videoFrameImage ? new UsableImage(videoFrameImage, videoFrame.DisplayWidth, videoFrame.DisplayHeight, pixels.IsOriginClean) : null;
+            }
+
             default:
                 throw new TypeErrorException("The value is not an image source");
         }

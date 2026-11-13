@@ -1210,7 +1210,7 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("<body><iframe id=target frameborder=no></iframe>", "border-top-style", "inset")]
     [InlineData("<body><iframe id=target frameborder=1></iframe>", "border-top-width", "2px")]
     [InlineData("<body><table><col id=target width=0></table>", "width", "0px")]
-    [InlineData("<body><table><tbody id=target height=10 align=middle></tbody></table>", "height", "10px")]
+    [InlineData("<body><table><tbody id=target height=10 align=middle><tr><td></td></tr></tbody></table>", "height", "10px")]
     [InlineData("<body><table><tbody id=target height=10 align=middle></tbody></table>", "text-align", "center")]
     [InlineData("<body><table><tr><td id=target align=RIGHT></td></tr></table>", "text-align", "right")]
     [InlineData("<body><table id=target bordercolor=red></table>", "border-left-color", "rgb(255, 0, 0)")]

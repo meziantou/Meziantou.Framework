@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
+using Meziantou.Framework.Imaging.TestHarness.Hevc;
 using Meziantou.Framework.Imaging.Tests.Conformance.Hardening;
 
 namespace Meziantou.Framework.Imaging.Tests.Conformance;
@@ -113,6 +114,143 @@ public sealed class HevcDecoderConformanceTests
         finally
         {
             HevcDecoder.TestIgnoreMinimumSize = false;
+        }
+    }
+
+    /// <summary>
+    /// The decode window (<see cref="HevcDecoder.DecodeWindow"/>): the first picture of every vector, decoded for areas of
+    /// it, by one worker and by bands of in-loop filters, has in each area the samples of the whole picture. A first picture
+    /// that is not made of I slices is not decoded for a window (<see cref="DecodeWindowNotApplicableException"/>).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(SupportedVectors))]
+    public void ADecodeWindowHasTheSamplesOfTheWholePicture(string id)
+    {
+        var input = GetFirstAccessUnit(id);
+        var whole = DecodeFirstPicture(input, window: null, out var sps, out _);
+        HevcDecoder.TestIgnoreMinimumSize = true;
+        try
+        {
+            foreach (var window in GetDecodeWindows(sps.OutputWidth, sps.OutputHeight))
+            {
+                foreach (var workers in (int[])[1, 3])
+                {
+                    ushort[][] planes;
+                    int decodedHeight;
+                    try
+                    {
+                        planes = DecodeFirstPicture(input, window, out _, out decodedHeight, workers);
+                    }
+                    catch (DecodeWindowNotApplicableException)
+                    {
+                        continue;
+                    }
+
+                    Assert.True(decodedHeight >= Math.Min(sps.PicHeightInLumaSamples, sps.OutputTop + window.Bottom), $"{id}: the window {window} decodes {decodedHeight} rows.");
+                    for (var plane = 0; plane < planes.Length; plane++)
+                    {
+                        var subWidth = plane is 0 ? 1 : sps.SubWidthC;
+                        var subHeight = plane is 0 ? 1 : sps.SubHeightC;
+                        var width = sps.PicWidthInLumaSamples / subWidth;
+                        for (var y = (sps.OutputTop + window.Top) / subHeight; y <= (sps.OutputTop + window.Bottom - 1) / subHeight; y++)
+                        {
+                            for (var x = (sps.OutputLeft + window.Left) / subWidth; x <= (sps.OutputLeft + window.Right - 1) / subWidth; x++)
+                            {
+                                if (whole[plane][(y * width) + x] != planes[plane][(y * width) + x])
+                                    Assert.Fail($"{id}: the sample ({x}, {y}) of the plane {plane} decoded for the window {window} by {workers} worker(s) differs from the whole picture.");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        finally
+        {
+            HevcDecoder.TestIgnoreMinimumSize = false;
+        }
+    }
+
+    /// <summary>The vectors exercise the decode window: many first pictures stop before their last rows, with slices and rows of the wavefront.</summary>
+    [Fact]
+    public void ADecodeWindowStopsTheDecodingOfManyVectors()
+    {
+        var windowed = 0;
+        var substreams = 0;
+        foreach (var id in GoldenCorpus.Default.HevcVectors.Where(vector => !vector.HasFeatureKey("hevc.unsupported")).Select(vector => vector.Id))
+        {
+            try
+            {
+                var input = GetFirstAccessUnit(id);
+                DecodeFirstPicture(input, new Rectangle(0, 0, 1, 1), out var sps, out var decodedHeight);
+                if (decodedHeight < sps.PicHeightInLumaSamples)
+                {
+                    windowed++;
+                    var vector = GoldenCorpus.Default.GetHevcVector(id);
+                    substreams += vector.HasFeatureKey("hevc.wpp") || vector.HasFeatureKey("hevc.tiles") ? 1 : 0;
+                }
+            }
+            catch (DecodeWindowNotApplicableException)
+            {
+            }
+        }
+
+        Assert.True(windowed >= 50, $"Only {windowed} vectors are decoded for a window.");
+        Assert.True(substreams >= 3, $"Only {substreams} vectors with substreams are decoded for a window.");
+    }
+
+    // Areas of an output picture: single pixels, rows and columns, areas across coding tree blocks, the whole picture
+    private static Rectangle[] GetDecodeWindows(int width, int height) =>
+    [
+        new(0, 0, 1, 1),
+        new(width - 1, height - 1, 1, 1),
+        new(width / 3, height / 4, 1, 1),
+        new(width / 2, 0, width - (width / 2), Math.Max(1, height / 3)),
+        new(0, height / 2, width, 1),
+        new(width * 3 / 4, height / 3, Math.Min(9, width - (width * 3 / 4)), Math.Min(9, height - (height / 3))),
+        new(0, 0, width, height),
+    ];
+
+    private static byte[] GetFirstAccessUnit(string id)
+    {
+        var corpus = GoldenCorpus.Default;
+        var data = File.ReadAllBytes(corpus.GetHevcVectorPath(corpus.GetHevcVector(id)));
+        return ReferenceHevcStream.ToLengthPrefixed(ReferenceHevcStream.GroupAccessUnits(ReferenceHevcStream.SplitAnnexB(data))[0]);
+    }
+
+    // The planes of the first picture of an access unit, decoded whole or for a window: the rows that are not decoded are zero
+    private static ushort[][] DecodeFirstPicture(byte[] input, Rectangle? window, out HevcSequenceParameterSet sps, out int decodedHeight, int maxDegreeOfParallelism = 1)
+    {
+        using var decoder = new HevcDecoder(AllocationScope.Create(ImageConfiguration.Default, "window")) { DecodeWindow = window, MaxDegreeOfParallelism = maxDegreeOfParallelism };
+        decoder.SetInput(input, 0, input.Length, 4);
+        var picture = decoder.DecodeNextOutputPicture(TestContext.Current.CancellationToken);
+        if (picture is null)
+        {
+            decoder.EndOfSequence();
+            picture = decoder.DecodeNextOutputPicture(TestContext.Current.CancellationToken);
+        }
+
+        Assert.NotNull(picture);
+        try
+        {
+            sps = picture.Sps;
+            decodedHeight = picture.DecodedHeight;
+            var planes = new ushort[picture.PlaneCount][];
+            for (var i = 0; i < planes.Length; i++)
+            {
+                var plane = picture.GetPlane(i);
+                var fullHeight = i is 0 ? sps.PicHeightInLumaSamples : sps.PicHeightInLumaSamples / sps.SubHeightC;
+                planes[i] = new ushort[plane.Width * fullHeight];
+                for (var y = 0; y < plane.Height; y++)
+                {
+                    plane.GetRow(y).CopyTo(planes[i].AsSpan(y * plane.Width));
+                }
+            }
+
+            return planes;
+        }
+        finally
+        {
+            picture.Release();
         }
     }
 

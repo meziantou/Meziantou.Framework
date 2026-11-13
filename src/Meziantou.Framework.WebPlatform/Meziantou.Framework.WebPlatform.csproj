@@ -32,6 +32,8 @@
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.PdfRendering" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.PdfRendering.Tests" />
+    <!-- The DevTools protocol server reads the session history and sets the files of the file inputs -->
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.DevTools" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Scripting\WebIdl\Streams.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.Streams.js" />
@@ -59,6 +61,14 @@
     <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
     <!-- The word lists and the dictionary break engines of ICU (the lexical word breaking of the Southeast Asian scripts) -->
     <ProjectReference Include="..\Meziantou.Framework.Unicode.Dictionaries\Meziantou.Framework.Unicode.Dictionaries.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_WEBPLATFORM</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The Zstandard decoder of Meziantou.Framework.Imaging (the "dcz" content coding of the compression dictionaries) -->
+    <Compile Include="../Meziantou.Framework.Imaging/Internals/Compression/ZstdDecoder.cs" Link="Compression/Shared/ZstdDecoder.cs" />
+    <Compile Include="../Meziantou.Framework.Imaging/Internals/Compression/XxHash64.cs" Link="Compression/Shared/XxHash64.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Adler32 is only available from 11.0 -->

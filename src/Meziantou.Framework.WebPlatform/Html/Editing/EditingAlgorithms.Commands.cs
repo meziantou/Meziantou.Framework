@@ -1888,14 +1888,22 @@ internal sealed partial class EditingAlgorithms
 
         // As in the browsers, the text that replaces a selection that begins with an image (or another atomic element)
         // after a text is inserted at the end of this text: it does not get the formatting of the image
-        var precedingText = deletesSelection && ActiveRange.StartContainer is Text startText && ActiveRange.StartOffset == startText.Length
+        var precedingText = deletesSelection && GetTextEndingAtSelectionStart() is { } startText
             && GetAllEffectivelyContainedNodes(ActiveRange).Find(IsFormattableNode) is { } firstNode && IsAtomicElement(firstNode) ? startText : null;
         var keptLineBreak = deletesSelection ? GetUnnecessaryLineBreakAfterSelection() : null;
         DeleteSelection(stripWrappers: false);
         var range = ActiveRange;
         if (precedingText is { ParentNode: not null } && IsEditable(precedingText) && range.Collapsed)
         {
+            // The inline elements that the deletion emptied (the formatting of the image) are removed, as in Chrome and
+            // Firefox: the text does not get their formatting
+            var emptied = range.StartContainer;
             CollapseTo(precedingText, NodeLength(precedingText));
+            while (emptied is Element && !emptied.HasChildNodes() && IsInlineNode(emptied) && IsEditable(emptied) && !IsEditingHost(emptied) && emptied.ParentNode is { } emptiedParent)
+            {
+                RemoveNode(emptied);
+                emptied = emptiedParent;
+            }
         }
 
         if (!IsEditableOrEditingHost(range.StartContainer))
@@ -2008,6 +2016,18 @@ internal sealed partial class EditingAlgorithms
         }
 
         return true;
+    }
+
+    /// <summary>The Text node that ends at the start of the active range (the start node, or the child before the start offset), or null.</summary>
+    private Text? GetTextEndingAtSelectionStart()
+    {
+        var range = ActiveRange;
+        return range.StartContainer switch
+        {
+            Text text when range.StartOffset == text.Length => text,
+            Element element => ChildAt(element, (int)range.StartOffset - 1) as Text,
+            _ => null,
+        };
     }
 
     /// <summary>

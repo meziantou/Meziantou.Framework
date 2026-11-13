@@ -137,6 +137,15 @@
   "css/motion/offset-path-coord-box-corner-shape.html": {
     "total": 4
   },
+  "css/motion/offset-path-huge-angle-deg-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/motion/offset-path-huge-angle-grad-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/motion/offset-path-huge-angle-turn-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/motion/offset-path-ray-001.html": {
     "reftest": "PASS"
   },
@@ -352,6 +361,9 @@
   },
   "css/motion/offset-path-url-012.html": {
     "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-crash.html": {
+    "crashtest": "PASS"
   },
   "css/motion/offset-rotate-001.html": {
     "reftest": "PASS"

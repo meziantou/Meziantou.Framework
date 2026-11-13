@@ -104,6 +104,36 @@ A screenshot paints the current state of the page: the layout is computed when i
 animations are painted at the time of the clock of the event loop. Take it from the thread of the event loop, after the
 resources are loaded ([RunUntilIdleAsync()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunUntilIdleAsync)): an image that is not loaded yet is not drawn.
 
+## Animated images
+
+The animated images (GIF, animated PNG, WebP and AVIF) play on the clock of the event loop: a screenshot shows the frame
+displayed at the time it is taken. To get the same pixels every time, freeze the animations with the `image-animation`
+property ([CSS Image Animation](https://drafts.csswg.org/css-image-animation-1/)), which applies to the `img` elements,
+the poster frames of the `video` elements and the CSS images (backgrounds, `content`, list markers, border images, masks):
+
+```css
+/* every image shows its first frame */
+:root { image-animation: stopped }
+```
+
+| Value | Effect |
+| --- | --- |
+| `normal` | The default: the images play, and the images of the same URL show the same frame |
+| `running` | The images play on a timeline of the element: they start when they are added, and continue from the displayed frame when the value changes to `running` |
+| `paused` | The images keep the frame displayed when the value changed to `paused` (the first frame when they were not playing) |
+| `stopped` | The images show their first frame |
+
+The property is inherited. Setting it from a script (`element.style.imageAnimation = "paused"`) freezes the frame displayed
+when the style is next computed. An element hidden by `display: none` starts its animations again from the first frame when
+it is displayed again. The background propagated from the `body` element to the canvas follows the value of the root
+element. The `:animated-image` pseudo-class matches the `img` elements, the image buttons and the `video` elements whose
+image (or poster frame) is an animated image of more than one frame, so a page can pause only them:
+`img:animated-image { image-animation: paused }`.
+
+The SVG images are always drawn in their initial state: their animations do not play, whatever the value.
+
+## Other painting details
+
 The elements with `content-visibility: auto` that are close to the viewport are painted with their contents, also in a
 screenshot taken before the first animation frame of the page: as in a browser, the screenshot finds them before it
 paints. The ones far from the viewport stay skipped until the page is scrolled to them and a rendering update runs.

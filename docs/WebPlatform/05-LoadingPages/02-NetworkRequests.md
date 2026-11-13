@@ -147,6 +147,19 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
 - The responses are stored in an HTTP cache shared by the browsing contexts of the loader, as in a browser: a fresh
   response is used without a request, a stale one is revalidated with `If-None-Match` and `If-Modified-Since`, and a stale
   response within its `stale-while-revalidate` window is used while a request revalidates it in the background.
+- [Compression dictionaries](https://www.rfc-editor.org/rfc/rfc9842) are supported. A response of a secure URL with a
+  `Use-As-Dictionary` header (fetched with CORS or from the same origin) registers its body as a dictionary for the URLs
+  of its `match` pattern, while it would be fresh in the HTTP cache. The next requests of these URLs announce the best
+  dictionary in their `Available-Dictionary` and `Dictionary-ID` headers (and `Accept-Encoding: dcb, dcz`), and the
+  library decodes the responses compressed with it (`Content-Encoding: dcb`, Brotli, or `dcz`, Zstandard); the loader
+  decodes the other content codings. A response that cannot be decoded has a body that fails. The dictionaries are
+  partitioned like the HTTP cache, and the `cache` and `cookies` types of `Clear-Site-Data` clear them. A dictionary is
+  at most 16 MiB (as a body of the HTTP cache), and the dictionaries of a document loader take at most 64 MiB: the ones
+  registered the longest ago are removed first. A
+  `<link rel="compression-dictionary">` element and a `Link` header with this relation fetch a dictionary once the page
+  is loaded. The Brotli decoder of .NET has no dictionary support: the library decodes most `dcb` streams, but a stream
+  whose dictionary and data do not fit in its window, or whose first literals would depend on the bytes before the
+  stream, is not supported (its body fails).
 - [Document Policy](https://wicg.github.io/document-policy/) is applied as in Chromium: `Document-Policy: sync-xhr=?0`
   makes the synchronous `XMLHttpRequest` requests fail, and `Document-Policy-Report-Only` reports them
   (`document-policy-violation` reports). A page requires a policy from the pages of its frames with the
@@ -170,6 +183,12 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   no hash or are not CORS requests; `Integrity-Policy-Report-Only` only reports them (`integrity-violation` reports, sent to
   the `endpoints` of the policy). The documents that inherit the policies of the page (its `srcdoc` and `about:blank`
   frames and popups) inherit both policies too.
+- [Signature-based Subresource Integrity](https://wicg.github.io/signature-based-sri/) is supported: an `integrity`
+  attribute (or the `integrity` option of `fetch()`) with Ed25519 public keys (`ed25519-<base64 key>`) requires a valid
+  signature of one of them, sent in the `Signature` and `Signature-Input` headers (HTTP Message Signatures, with the
+  `ed25519-integrity` tag) and covering the `Unencoded-Digest` header. The requests announce the keys in their
+  `Accept-Signature` header. A response whose signature of this profile is not valid is a network error, whatever its
+  request.
 - As in the browsers, a request whose URL has both a newline or a tab and a `<` (e.g. `<img src='https://evil.example/?`
   whose quote is not closed, which captures the markup that follows it) is blocked: the dangling markup mitigation.
 - The `Content-DPR` header of an image gives its density: its natural size is divided by it (`Content-DPR: 2` displays a

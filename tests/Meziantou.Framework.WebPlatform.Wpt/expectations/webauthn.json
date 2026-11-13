@@ -1,0 +1,201 @@
+{
+  "webauthn/conditional-mediation.https.html": {
+    "total": 2
+  },
+  "webauthn/createcredential-abort.https.html": {
+    "total": 6
+  },
+  "webauthn/createcredential-attachment.https.html": {
+    "total": 4
+  },
+  "webauthn/createcredential-badargs-authnrselection.https.html": {
+    "total": 6
+  },
+  "webauthn/createcredential-badargs-challenge.https.html": {
+    "total": 6
+  },
+  "webauthn/createcredential-badargs-rp.https.html": {
+    "total": 12
+  },
+  "webauthn/createcredential-badargs-sharedarraybuffer.https.html": {
+    "total": 6
+  },
+  "webauthn/createcredential-badargs-user.https.html": {
+    "total": 17
+  },
+  "webauthn/createcredential-clientdata.https.html": {
+    "total": 2
+  },
+  "webauthn/createcredential-cross-origin-iframe.https.sub.html": {
+    "total": 5
+  },
+  "webauthn/createcredential-excludecredentials.https.html": {
+    "total": 7
+  },
+  "webauthn/createcredential-extensions.https.html": {
+    "total": 7,
+    "failures": {
+      "appid in create request": "FAIL",
+      "empty appid in create request": "FAIL",
+      "null appid in create request": "FAIL"
+    }
+  },
+  "webauthn/createcredential-getpublickey.https.html": {
+    "total": 2
+  },
+  "webauthn/createcredential-hints.https.html": {
+    "total": 8
+  },
+  "webauthn/createcredential-large-blob-not-supported.https.html": {
+    "total": 6
+  },
+  "webauthn/createcredential-large-blob-supported.https.html": {
+    "total": 4
+  },
+  "webauthn/createcredential-minpinlength.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "webauthn/createcredential-nested-frame.https.html": {
+    "total": 5,
+    "failures": {
+      "navigator.credentials.create({publicKey}) in a javascript url should should succeed.": "FAIL",
+      "navigator.credentials.create({publicKey}) in about:blank embedded in a secure context should succeed.": "FAIL",
+      "navigator.credentials.create({publicKey}) in srcdoc should succeed.": "FAIL"
+    }
+  },
+  "webauthn/createcredential-passing.https.html": {
+    "total": 50
+  },
+  "webauthn/createcredential-prf.https.html": {
+    "total": 4
+  },
+  "webauthn/createcredential-pubkeycredparams.https.html": {
+    "total": 10
+  },
+  "webauthn/createcredential-resident-key.https.html": {
+    "total": 15
+  },
+  "webauthn/createcredential-timeout.https.html": {
+    "total": 1
+  },
+  "webauthn/credblob-not-supported.https.html": {
+    "total": 1,
+    "failures": {
+      "creation requesting credBlob without authenticator support": "FAIL"
+    }
+  },
+  "webauthn/credblob-supported.https.html": {
+    "total": 2,
+    "failures": {
+      "assertion with credBlob": "FAIL",
+      "assertion without credBlob": "FAIL"
+    }
+  },
+  "webauthn/getclientcapabilities.https.html": {
+    "total": 2
+  },
+  "webauthn/getcredential-abort.https.html": {
+    "total": 6
+  },
+  "webauthn/getcredential-allowcredentials.https.html": {
+    "total": 6
+  },
+  "webauthn/getcredential-attachment.https.html": {
+    "total": 4
+  },
+  "webauthn/getcredential-badargs-rpid.https.html": {
+    "total": 7
+  },
+  "webauthn/getcredential-badargs-sharedarraybuffer.https.html": {
+    "total": 4
+  },
+  "webauthn/getcredential-badargs-userverification.https.html": {
+    "total": 2
+  },
+  "webauthn/getcredential-extensions.https.html": {
+    "total": 10,
+    "failures": {
+      "Payment extension is only supported at registration": "FAIL",
+      "credProps is only supported at registration": "FAIL"
+    }
+  },
+  "webauthn/getcredential-hints.https.html": {
+    "total": 8
+  },
+  "webauthn/getcredential-large-blob-not-supported.https.html": {
+    "total": 5
+  },
+  "webauthn/getcredential-large-blob-supported.https.html": {
+    "total": 3
+  },
+  "webauthn/getcredential-nested-frame.https.html": {
+    "total": 6
+  },
+  "webauthn/getcredential-passing.https.html": {
+    "total": 15
+  },
+  "webauthn/getcredential-prf.https.html": {
+    "total": 10
+  },
+  "webauthn/getcredential-rk-passing.https.html": {
+    "total": 3
+  },
+  "webauthn/getcredential-timeout.https.html": {
+    "total": 1
+  },
+  "webauthn/getcredential-ui-mode-immediate.https.html": {
+    "total": 6,
+    "failures": {
+      "Immediate mediation (optional) with a resident credential": "FAIL",
+      "Immediate mediation (optional) with no credentials": "FAIL",
+      "Immediate mediation (required) with a resident credential": "FAIL",
+      "Immediate mediation fails if allowCredentials is not empty": "FAIL",
+      "Immediate mediation fails without user activation": "FAIL",
+      "Immediate mediation is incompatible with conditional mediation": "FAIL"
+    }
+  },
+  "webauthn/idlharness.https.window.js": {
+    "total": 114
+  },
+  "webauthn/isuserverifyingplatformauthenticatoravailable.https.html": {
+    "total": 3
+  },
+  "webauthn/public-key-credential-creation-options-from-json.https.window.js": {
+    "total": 4
+  },
+  "webauthn/public-key-credential-request-options-from-json.https.window.js": {
+    "total": 2
+  },
+  "webauthn/public-key-credential-to-json.https.window.js": {
+    "total": 1
+  },
+  "webauthn/remote-desktop-client-override.tentative.https.html": {
+    "total": 2,
+    "failures": {
+      "create() with remoteDesktopClientOverride": "FAIL",
+      "get() with remoteDesktopClientOverride on an unauthorized site": "FAIL"
+    }
+  },
+  "webauthn/securecontext.http.html": {
+    "total": 1
+  },
+  "webauthn/securecontext.https.html": {
+    "total": 1
+  },
+  "webauthn/signal-all-accepted-credentials.https.html": {
+    "total": 8
+  },
+  "webauthn/signal-current-user-details.https.html": {
+    "total": 4
+  },
+  "webauthn/signal-unknown-credential.https.html": {
+    "total": 4
+  },
+  "webauthn/storecredential.https.html": {
+    "total": 1
+  },
+  "webauthn/webauthn-testdriver-basic.https.html": {
+    "total": 4
+  }
+}

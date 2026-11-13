@@ -677,8 +677,10 @@ internal sealed class BlockFormattingContext : FormattingContext
         }
 
         // The state of the block formatting context follows the same steps as the placement of the children: at the end of the
-        // contents of the root, its position (with the pending margins) is the block size of the contents
-        Debug.Assert(!isNewFormattingContext || !collapsesMargins || Math.Abs(blockFormattingContext.BlockOffset + blockFormattingContext.CurrentMargin.Sum - (result.BlockSize + result.EndMargin.Sum)) < 0.01, "The block formatting context state is out of sync with the placement of the children");
+        // contents of the root, its position (with the pending margins) is the block size of the contents. The two are summed
+        // in different orders: the tolerance grows with their magnitude (lengths of billions of pixels differ by more than
+        // 0.01 after rounding)
+        Debug.Assert(!isNewFormattingContext || !collapsesMargins || IsSameLength(blockFormattingContext.BlockOffset + blockFormattingContext.CurrentMargin.Sum, result.BlockSize + result.EndMargin.Sum), "The block formatting context state is out of sync with the placement of the children");
 
         // https://drafts.csswg.org/css2/#root-height: "if the element has any floating descendants whose bottom margin edge is
         // below the element's bottom content edge, then the height is increased to include those edges. Only floats that
@@ -1494,4 +1496,7 @@ internal sealed class BlockFormattingContext : FormattingContext
             return (_position, _startMargin, _currentMargin, _nextMarginCollapsesWithParentStartMargin);
         }
     }
+
+    /// <summary>Whether two lengths computed in different orders are the same, within the rounding of their magnitude.</summary>
+    private static bool IsSameLength(double left, double right) => Math.Abs(left - right) < Math.Max(0.01, 1e-9 * Math.Max(Math.Abs(left), Math.Abs(right)));
 }

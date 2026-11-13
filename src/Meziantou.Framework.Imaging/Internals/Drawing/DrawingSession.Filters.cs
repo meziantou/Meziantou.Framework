@@ -157,11 +157,8 @@ internal sealed partial class DrawingSession
             while (start < run.Length)
             {
                 var isFull = run[start] == CoverageRasterizer.FullCoverage;
-                var end = start + 1;
-                while (end < run.Length && (run[end] == CoverageRasterizer.FullCoverage) == isFull)
-                {
-                    end++;
-                }
+                var length = isFull ? run[start..].IndexOfAnyExcept(CoverageRasterizer.FullCoverage) : run[start..].IndexOf(CoverageRasterizer.FullCoverage);
+                var end = length < 0 ? run.Length : start + length;
 
                 var part = paint.Slice(start * 4, (end - start) * 4);
                 if (isFull)

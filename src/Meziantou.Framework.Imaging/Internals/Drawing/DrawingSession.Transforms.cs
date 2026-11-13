@@ -298,6 +298,14 @@ internal sealed partial class DrawingSession
         var transformed = _transformSink ??= new TransformSink();
         transformed.Configure(sink, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
         transformed.Tolerance = _curveTolerance;
+
+        // A transformation that enlarges a length more than a projection ever cuts a curve finer for makes the curves
+        // far larger than the canvas: cut uniformly for the whole factor, a single glyph would get millions of chords
+        // (the most a curve gets, 2^24), nearly all of them beyond the canvas. The flattener then cuts finely only what
+        // is seen (ProjectiveView): the chords of a part of a curve that is not seen stay in the convex hull of its
+        // control points, so they do not change a pixel of the canvas. The vertices still go through the transformation,
+        // its range and its checks.
+        transformed.Projection = _transformScale > ProjectiveView.MaxScale ? GeometryView : null;
         return transformed;
     }
 

@@ -101,8 +101,11 @@ it runs. A trusted event of the user input also requests a frame, which sets the
 A host that runs an event loop on its own thread (instead of calling `RunUntilIdleAsync()`) sets `DomEventLoop.WorkSignal`:
 the callback is invoked, from any thread, when a task or a timer is queued (e.g. by a document loaded by the
 `DocumentLoader` on another thread) or when an asynchronous operation ends, so that the thread wakes up and calls
-`RunTask()` and `PromoteDueTimers()`. The callback must not run the event loop itself. The Playwright server
-(Meziantou.Framework.WebPlatform.Playwright) runs the pages of each browser context this way.
+`RunTask()` and `PromoteDueTimers()`. The callback must not run the event loop itself. Run the tasks without a
+`SynchronizationContext`: the library completes its asynchronous operations (e.g. the load of a document) from a task and
+continues them with `ConfigureAwait(false)`, and .NET runs these continuations on the thread pool, instead of inline, when
+the thread has a synchronization context. The DevTools protocol server (Meziantou.Framework.WebPlatform.DevTools) runs the
+pages of each browser context this way.
 
 ### Render blocking
 
@@ -3654,7 +3657,8 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   a `message` event (`origin` and `source` are the origin and the window of the caller), or a `messageerror` event when
   the message cannot be deserialized (e.g. a `SharedArrayBuffer` sent to another agent cluster).
 - The caller (the incumbent settings object) is the realm of the script that calls the method (`ScriptEngine.GetCurrentGlobal()`),
-  or the target window itself for a call from .NET.
+  or, when no script has run since a callback was called (e.g. a bound `postMessage` used as an event listener), the
+  callback context of the callback, or the target window itself for a call from .NET.
 
 The agent clusters of a cross-origin isolated browsing context group (`Cross-Origin-Opener-Policy: same-origin` with a
 compatible `Cross-Origin-Embedder-Policy`) are origin-keyed. A `SharedArrayBuffer` can be posted (or sent to a

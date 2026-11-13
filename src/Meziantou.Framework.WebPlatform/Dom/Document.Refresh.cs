@@ -149,6 +149,19 @@ public partial class Document
         }
     }
 
+    /// <summary>Runs a callback once the document is completely loaded (https://html.spec.whatwg.org/multipage/document-lifecycle.html#completely-loaded-time), or now when it is.</summary>
+    internal void RunWhenCompletelyLoaded(Action callback)
+    {
+        if (CompletelyLoaded)
+        {
+            callback();
+        }
+        else
+        {
+            (_completelyLoadedCallbacks ??= []).Add(callback);
+        }
+    }
+
     /// <summary>Runs the callbacks waiting for the document to be completely loaded (https://html.spec.whatwg.org/multipage/document-lifecycle.html#completely-loaded-time).</summary>
     private void RunCompletelyLoadedCallbacks()
     {

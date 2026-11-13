@@ -233,6 +233,9 @@
   "css/css-properties-values-api/at-property-cssom.html": {
     "total": 40
   },
+  "css/css-properties-values-api/at-property-non-matching-media-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-properties-values-api/at-property-optional-initial-value.html": {
     "total": 1
   },
@@ -256,6 +259,21 @@
   },
   "css/css-properties-values-api/conditional-rules.html": {
     "total": 3
+  },
+  "css/css-properties-values-api/crashtests/computed-property-universal-syntax.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-properties-values-api/crashtests/consume-color-contrast-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-properties-values-api/crashtests/initial-in-audio-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-properties-values-api/crashtests/transition-to-none-crash-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-properties-values-api/crashtests/transition-to-none-crash-002.html": {
+    "crashtest": "PASS"
   },
   "css/css-properties-values-api/custom-property-explicit-inherit-invalidation.html": {
     "total": 2
@@ -352,6 +370,9 @@
   },
   "css/css-properties-values-api/registered-property-initial.html": {
     "total": 29
+  },
+  "css/css-properties-values-api/registered-property-parse-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-properties-values-api/registered-property-revert.html": {
     "total": 4

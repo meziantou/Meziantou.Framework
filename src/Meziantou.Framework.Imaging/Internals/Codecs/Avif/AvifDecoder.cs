@@ -59,13 +59,16 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
             return;
         }
 
-        // A region decodes the tiles of a grid that it needs, into planes that hold these tiles only
+        // A region decodes the tiles of a grid that it needs, into planes that hold these tiles only, and the rows and the
+        // AV1 tiles of an image that is not a grid that it needs
         var area = GetOutputArea(_request, plan.Crop, ImageFormat.Avif);
         var window = GetGridWindow(plan, area);
-        using var color = DecodeImage(structure, plan.Color, window);
+        using var color = DecodeImage(structure, plan.Color, window, GetDecodeWindow(plan, plan.Color, area));
         structure.SetBitstreamColorDescription(color.Format);
-        using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha, window);
-        HeifFrameWriter.WriteFrame(_context, sink, structure, color, alpha, window.GetCodedSize(plan.Color), window.ToPlanes(plan.Color, area));
+        using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha, window, GetDecodeWindow(plan, plan.Alpha, area));
+        var codedSize = window.GetCodedSize(plan.Color);
+        codedSize = new Size(codedSize.Width, Math.Min(codedSize.Height, Math.Min(color.Height, alpha?.Height ?? int.MaxValue)));
+        HeifFrameWriter.WriteFrame(_context, sink, structure, color, alpha, codedSize, window.ToPlanes(plan.Color, area));
         sink.UpdateMetadata(structure.Metadata);
         sink.EndImage();
     }
@@ -176,14 +179,16 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
     // With several workers (ImageConfiguration.MaxDegreeOfParallelism), up to that many tiles of a grid are decoded at once,
     // each by a decoder of its own; the tiles are checked against each other and copied on the calling thread, in the order
     // of the tiles, so the planes and the errors are those of a sequential decoding.
-    private AvifPlanarImage DecodeImage(HeifStructureParser structure, HeifCodedImage image, HeifGridWindow window)
+    // An image that is not a grid is decoded down to the rows, and the AV1 tiles, that the decode window needs when it has one:
+    // its planes hold these rows only
+    private AvifPlanarImage DecodeImage(HeifStructureParser structure, HeifCodedImage image, HeifGridWindow window, Rectangle? decodeWindow = null)
     {
         AvifPlanarImage? result = null;
         try
         {
             if (!image.IsGrid)
             {
-                var frame = DecodePreparedTile(image, PrepareTile(structure, image, 0), _context.Tracker, _context.Configuration.MaxDegreeOfParallelism);
+                var frame = DecodePreparedTile(image, PrepareTile(structure, image, 0), _context.Tracker, _context.Configuration.MaxDegreeOfParallelism, decodeWindow);
                 if (frame.Header.FilmGrain is null)
                 {
                     try
@@ -230,8 +235,9 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
                 if (result is not null && !result.Sequence.IsSameSequence(frame.Sequence))
                     throw AvifBinding.Instance.Invalid("the tiles of a grid do not have the same sequence header.");
 
-                // The planes hold whole tiles: the tiles of the last row and column may exceed the image
-                result ??= AvifPlanarImage.Create(_context.Scope, frame.Sequence, window.Columns * image.TileSize.Width, window.Rows * image.TileSize.Height);
+                // The planes hold whole tiles: the tiles of the last row and column may exceed the image. An image that is not a
+                // grid holds the rows of its frame, which a decode window may limit
+                result ??= AvifPlanarImage.Create(_context.Scope, frame.Sequence, window.Columns * image.TileSize.Width, image.IsGrid ? window.Rows * image.TileSize.Height : frame.DecodedHeight);
                 CopyTile(frame, frame.Header.FilmGrain, result, ((index % image.Columns) - window.FirstColumn) * image.TileSize.Width, ((index / image.Columns) - window.FirstRow) * image.TileSize.Height);
             }
             finally
@@ -240,6 +246,11 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
             }
         }
     }
+
+    // The area of an image that is not a grid that a region needs, when the request has a region and the image has the size
+    // of the color image (an alpha plane may be smaller)
+    private Rectangle? GetDecodeWindow(HeifImagePlan plan, HeifCodedImage image, Rectangle area)
+        => _request.Region is not null && !image.IsGrid && image.Size == plan.Color.Size ? area : null;
 
     // Reads the data of a coded item, on the calling thread
     private PreparedTile PrepareTile(HeifStructureParser structure, HeifCodedImage image, int index)
@@ -251,14 +262,15 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
 
     // Decodes a prepared coded item and checks its frame against the file. It uses no state of the decoder: the tiles of a
     // grid are decoded on several threads.
-    private Av1FrameBuffer DecodePreparedTile(HeifCodedImage image, in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism)
+    private Av1FrameBuffer DecodePreparedTile(HeifCodedImage image, in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism, Rectangle? decodeWindow = null)
     {
-        var frame = DecodeCodedItem(tile, tracker, maxDegreeOfParallelism);
+        var frame = DecodeCodedItem(tile, tracker, maxDegreeOfParallelism, decodeWindow);
         try
         {
+            // A frame decoded for a window holds its first rows only
             var plane = frame.GetPlane(0);
             HeifStructureParser.EnsureMatchesConfiguration(image, AvifBinding.ToBitstreamFormat(frame.Sequence));
-            if (plane.Width != image.TileSize.Width || plane.Height != image.TileSize.Height)
+            if (plane.Width != image.TileSize.Width || frame.Header.FrameHeight != image.TileSize.Height)
                 throw AvifBinding.Instance.Invalid("the size of an AV1 image does not match its 'ispe' property.");
         }
         catch
@@ -315,10 +327,27 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
     // Decodes the frame of a coded item: the reference state of the decoder is released, the frame is kept by the caller.
     // A layered item holds a frame per spatial layer: the frame of the selected layer is the image, or the frame of the
     // highest layer of the operating point, which the lower layers only help to decode or to show progressively
-    private Av1FrameBuffer DecodeCodedItem(in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism)
+    // With a decode window, an item that is not a single shown intra frame is decoded again, whole.
+    private Av1FrameBuffer DecodeCodedItem(in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism, Rectangle? decodeWindow = null)
+    {
+        if (decodeWindow is not null)
+        {
+            try
+            {
+                return DecodeCodedItemCore(tile, tracker, maxDegreeOfParallelism, decodeWindow);
+            }
+            catch (DecodeWindowNotApplicableException)
+            {
+            }
+        }
+
+        return DecodeCodedItemCore(tile, tracker, maxDegreeOfParallelism, decodeWindow: null);
+    }
+
+    private Av1FrameBuffer DecodeCodedItemCore(in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism, Rectangle? decodeWindow)
     {
         var layer = tile.Layer;
-        using var decoder = new Av1Decoder(_context.Scope, tracker, tile.OperatingPoint) { MaxDegreeOfParallelism = maxDegreeOfParallelism };
+        using var decoder = new Av1Decoder(_context.Scope, tracker, tile.OperatingPoint) { MaxDegreeOfParallelism = maxDegreeOfParallelism, DecodeWindow = decodeWindow };
         if (layer is { } selected)
             decoder.MaxSpatialLayer = selected;
 

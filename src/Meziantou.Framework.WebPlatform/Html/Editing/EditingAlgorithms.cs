@@ -31,7 +31,10 @@ internal sealed partial class EditingAlgorithms
     /// <summary>The active range (https://w3c.github.io/editing/docs/execCommand/#active-range): the range of the selection, or null.</summary>
     private readonly DomRange? _activeRange;
 
-    public EditingAlgorithms(Document document)
+    /// <summary>Initializes the algorithms for the selection of a document.</summary>
+    /// <param name="document">The document.</param>
+    /// <param name="composed">Whether the range of the selection may be in a shadow tree (an edit of the user).</param>
+    public EditingAlgorithms(Document document, bool composed = false)
     {
         _document = document;
         _state = document.EditingState;
@@ -40,11 +43,15 @@ internal sealed partial class EditingAlgorithms
         // The algorithms need the boundary points of the active range to be in Text or Element nodes of the document
         if (document.GetSelection()?.RangeOrNull is { } range
             && range.StartContainer is Text or Element && range.EndContainer is Text or Element
-            && document.IsInclusiveAncestorOf(range.StartContainer) && document.IsInclusiveAncestorOf(range.EndContainer))
+            && IsInDocument(document, range.StartContainer, composed) && IsInDocument(document, range.EndContainer, composed))
         {
             _activeRange = range;
         }
     }
+
+    /// <summary>Whether the node is in the document tree of the document, or in a shadow tree of this document when <paramref name="composed"/> is true.</summary>
+    internal static bool IsInDocument(Document document, Node node, bool composed)
+        => composed ? document.IsShadowIncludingInclusiveAncestorOf(node) : document.IsInclusiveAncestorOf(node);
 
     private DomRange ActiveRange => _activeRange!;
 

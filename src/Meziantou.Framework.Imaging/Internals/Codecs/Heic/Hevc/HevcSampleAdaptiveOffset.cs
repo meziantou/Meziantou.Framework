@@ -57,7 +57,8 @@ internal static class HevcSampleAdaptiveOffset
             var nCtbSw = sps.CtbSizeY / (cIdx is 0 ? 1 : sps.SubWidthC);
             var nCtbSh = sps.CtbSizeY / (cIdx is 0 ? 1 : sps.SubHeightC);
             var lineLength = nCtbSw + 2;
-            var ctbRows = sps.PicHeightInCtbsY;
+            // A picture decoded for a window holds its first rows of coding tree blocks only
+            var ctbRows = Math.Min(sps.PicHeightInCtbsY, (picture.DecodedHeight + sps.CtbSizeY - 1) >> sps.CtbLog2SizeY);
             var bands = Math.Clamp(workers, 1, ctbRows);
             var bandLength = (2 * plane.Width) + (2 * nCtbSh) + (3 * lineLength);
             using var buffers = Av1PooledArray<ushort>.Rent(scope, ((long)bands * bandLength) + ((bands - 1L) * plane.Width), clear: false);

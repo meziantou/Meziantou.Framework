@@ -168,6 +168,9 @@
   "service-workers/cache-storage/common.https.window.js": {
     "total": 1
   },
+  "service-workers/cache-storage/crashtests/cache-response-clone.https.html": {
+    "crashtest": "TIMEOUT"
+  },
   "service-workers/cache-storage/credentials.https.html": {
     "total": 1
   },
@@ -395,6 +398,9 @@
   },
   "service-workers/service-worker/detached-context.https.html": {
     "total": 4
+  },
+  "service-workers/service-worker/detached-register-crash.https.html": {
+    "crashtest": "PASS"
   },
   "service-workers/service-worker/embed-and-object-are-not-intercepted.https.html": {
     "total": 8
@@ -638,6 +644,9 @@
   "service-workers/service-worker/local-url-inherit-controller.https.html": {
     "total": 9
   },
+  "service-workers/service-worker/messageport-transfer-crash.html": {
+    "crashtest": "PASS"
+  },
   "service-workers/service-worker/mime-sniffing.https.html": {
     "total": 1
   },
@@ -765,10 +774,7 @@
     "total": 1
   },
   "service-workers/service-worker/partitioned-cookies.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Service Worker: Partitioned Cookies": "FAIL"
-    }
+    "total": 4
   },
   "service-workers/service-worker/partitioned-getRegistrations.tentative.https.html": {
     "total": 1
@@ -895,10 +901,7 @@
     "total": 5
   },
   "service-workers/service-worker/resource-timing.sub.https.html": {
-    "total": 2,
-    "failures": {
-      "Controlled resource loads": "FAIL"
-    }
+    "total": 2
   },
   "service-workers/service-worker/respond-with-body-accessed-response.https.html": {
     "total": 20

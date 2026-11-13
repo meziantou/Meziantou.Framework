@@ -212,6 +212,33 @@
   "html/syntax/parsing/cdata-in-integration-point-fragment.html": {
     "total": 15
   },
+  "html/syntax/parsing/crashtests/adoption-agency-001.html": {
+    "crashtest": "PASS"
+  },
+  "html/syntax/parsing/crashtests/adoption-agency-002.html": {
+    "crashtest": "PASS"
+  },
+  "html/syntax/parsing/crashtests/adoption-agency-bailout-001.html": {
+    "crashtest": "PASS"
+  },
+  "html/syntax/parsing/crashtests/adoption-agency-custom-furthest-block.html": {
+    "crashtest": "PASS"
+  },
+  "html/syntax/parsing/crashtests/adoption-agency-cycle-mutation.html": {
+    "crashtest": "PASS"
+  },
+  "html/syntax/parsing/crashtests/adoption-agency-pagehide-reentrant-write.html": {
+    "crashtest": "PASS"
+  },
+  "html/syntax/parsing/crashtests/adoption-agency-shift-001.html": {
+    "crashtest": "PASS"
+  },
+  "html/syntax/parsing/crashtests/adoption-agency-swap-empty-list-001.html": {
+    "crashtest": "PASS"
+  },
+  "html/syntax/parsing/crashtests/reconstruct-active-formatting-elements-001.html": {
+    "crashtest": "PASS"
+  },
   "html/syntax/parsing/custom-element-reparenting-shadow-cycle.html": {
     "total": 1
   },
@@ -880,6 +907,9 @@
   },
   "html/syntax/serializing-html-fragments/processing-instructions.html": {
     "total": 3
+  },
+  "html/syntax/serializing-html-fragments/range-on-pi-contextual-fragment-crash.html": {
+    "crashtest": "PASS"
   },
   "html/syntax/serializing-html-fragments/serializing-cdata-in-html-document.html": {
     "total": 1

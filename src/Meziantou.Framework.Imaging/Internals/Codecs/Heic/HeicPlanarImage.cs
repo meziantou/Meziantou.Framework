@@ -34,13 +34,15 @@ internal sealed class HeicPlanarImage : HeifPlanarImage
     /// <exception cref="ImageResourceLimitException">The copy exceeds the live-allocation limit.</exception>
     public static HeicPlanarImage FromPicture(AllocationScope scope, HevcPicture picture, in HeifBitstreamFormat format)
     {
+        // A picture decoded for a window holds its first rows only
         var sps = picture.Sps;
+        var height = Math.Min(sps.OutputHeight, picture.DecodedHeight - sps.OutputTop);
         if (sps.OutputLeft is 0 && sps.OutputTop is 0)
-            return new HeicPlanarImage(format, sps.OutputWidth, sps.OutputHeight) { _picture = picture };
+            return new HeicPlanarImage(format, sps.OutputWidth, height) { _picture = picture };
 
         try
         {
-            var image = Create(scope, format, sps.OutputWidth, sps.OutputHeight);
+            var image = Create(scope, format, sps.OutputWidth, height);
             image.CopyPicture(picture, 0, 0);
             return image;
         }
@@ -133,7 +135,7 @@ internal sealed class HeicPlanarImage : HeifPlanarImage
             var left = sps.OutputLeft >> subX;
             var top = sps.OutputTop >> subY;
             var width = (sps.OutputWidth + subX) >> subX;
-            var height = (sps.OutputHeight + subY) >> subY;
+            var height = Math.Min((sps.OutputHeight + subY) >> subY, (picture.DecodedHeight - sps.OutputTop + subY) >> subY);
             for (var row = 0; row < height; row++)
             {
                 source.Samples.Slice(((top + row) * source.Stride) + left, width).CopyTo(target.Samples[((((y >> subY) - _rowOrigins[plane] + row) * target.Stride) + (x >> subX))..]);

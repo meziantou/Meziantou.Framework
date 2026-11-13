@@ -14,7 +14,9 @@ namespace Meziantou.Framework.WebPlatform.Rendering;
 /// <para>
 /// The frame of an animated image displayed at a time (<see cref="GetDisplayedFrame"/>) depends on the time elapsed since the
 /// image became available, on the clock of its event loop (the virtual clock of the tests): the animation is shared by the
-/// elements that display the same image, as in the browsers.
+/// elements that display the same image, as in the browsers (<c>image-animation: normal</c>). The other values of
+/// <c>image-animation</c> give the position of the animation of an element (<see cref="ImageAnimationTimelines"/>,
+/// <see cref="GetFrameAt"/>).
 /// </para>
 /// </remarks>
 internal sealed class PaintImage
@@ -146,6 +148,20 @@ internal sealed class PaintImage
     }
 
     /// <summary>
+    /// Whether the image is an animated image (<see cref="ImageMetadata.IsAnimated"/>, read from its encoded bytes when it is
+    /// created): the <c>:animated-image</c> pseudo-class (https://drafts.csswg.org/css-image-animation-1/#selectordef-animated-image)
+    /// matches the elements that display it.
+    /// </summary>
+    public bool IsAnimated
+    {
+        get => _resource.IsAnimated;
+        init => _resource.IsAnimated = value;
+    }
+
+    /// <summary>The image of the resource of this image (with the orientation of the resource and its first frame): the same object for all its variants.</summary>
+    public PaintImage Root => _resource.Root!;
+
+    /// <summary>
     /// Returns the image with or without the EXIF orientation of its resource (<c>image-orientation</c>): an image that is not
     /// CORS-same-origin always keeps its orientation.
     /// </summary>
@@ -259,10 +275,23 @@ internal sealed class PaintImage
     /// </summary>
     public PaintImage GetDisplayedFrame(RenderingBackend backend, out double? nextChange)
     {
-        nextChange = null;
         if (AnimationClock is not ({ } clock, var start))
+        {
+            nextChange = null;
             return this;
+        }
 
+        return GetFrameAt(backend, clock.GetElapsedTime(start).TotalMilliseconds, playing: true, out nextChange);
+    }
+
+    /// <summary>
+    /// Returns the frame of the animation displayed at a position of its timeline, in milliseconds from its start, and, when the
+    /// animation is playing, the time in milliseconds until the next frame is displayed (null when the image no longer changes:
+    /// a still image, an animation that ended or is paused, an image that the backend cannot decode).
+    /// </summary>
+    public PaintImage GetFrameAt(RenderingBackend backend, double position, bool playing, out double? nextChange)
+    {
+        nextChange = null;
         int frameCount;
         int repetitions;
         double[] durations;
@@ -282,7 +311,7 @@ internal sealed class PaintImage
             total += duration;
         }
 
-        var elapsed = Math.Max(0, clock.GetElapsedTime(start).TotalMilliseconds);
+        var elapsed = Math.Max(0, position);
         if (repetitions >= 0 && elapsed >= total * (repetitions + 1))
             return GetFrame(frameCount - 1);
 
@@ -291,7 +320,11 @@ internal sealed class PaintImage
         {
             if (time < durations[i])
             {
-                nextChange = durations[i] - time;
+                if (playing)
+                {
+                    nextChange = durations[i] - time;
+                }
+
                 return GetFrame(i);
             }
 
@@ -339,6 +372,8 @@ internal sealed class PaintImage
         public double ContentDpr { get; set; } = 1;
 
         public (TimeProvider Clock, long Start)? AnimationClock { get; set; }
+
+        public bool IsAnimated { get; set; }
 
         public Dictionary<(ExifOrientation Orientation, int Frame), PaintImage>? Variants { get; set; }
 

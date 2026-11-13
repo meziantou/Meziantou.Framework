@@ -289,5 +289,9 @@ A host that has its own event loop, such as a browser, overrides more methods of
   has elapsed on the [TimeProvider](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeProvider) of the options.
 - [MakeJobCallback](cref:Meziantou.Framework.JavaScriptEngine.JsHost.MakeJobCallback) and [CallJobCallback](cref:Meziantou.Framework.JavaScriptEngine.JsHost.CallJobCallback) capture a state of the host when a callback is registered (by `then`...) and
   restore it when the callback runs.
+- [GetActiveScriptOrModule](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.GetActiveScriptOrModule) returns the script or the module of the innermost running code, and
+  [ExecutionContextDepth](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.ExecutionContextDepth) the number of execution contexts on the stack. A host that calls a callback saves the depth, and compares
+  it later to know whether code has run since: a browser uses it to skip the scripts below a callback when it looks for
+  the incumbent settings object.
 - `engine.EnterNestedJobQueue()` sends the new jobs to a separate queue until the returned scope is disposed, for a
   nested event loop.

@@ -109,6 +109,12 @@
   "FileAPI/blob/Blob-slice.any.js#dedicatedworker": {
     "total": 150
   },
+  "FileAPI/blob/Blob-stream-byob-crash.html": {
+    "crashtest": "PASS"
+  },
+  "FileAPI/blob/Blob-stream-sync-xhr-crash.html": {
+    "crashtest": "PASS"
+  },
   "FileAPI/blob/Blob-stream.any.js": {
     "total": 6
   },

@@ -1,18 +1,20 @@
 using System.Buffers.Binary;
 using System.Numerics;
 
-// Compiled into Meziantou.Framework.Imaging and Meziantou.Framework.Geo.GeoParquet, internal to each, in the namespace of
-// each library.
+// Compiled into Meziantou.Framework.Imaging, Meziantou.Framework.Geo.GeoParquet and Meziantou.Framework.WebPlatform, internal
+// to each, in the namespace of each library.
 #if MEZIANTOU_FRAMEWORK_IMAGING
 namespace Meziantou.Framework.Imaging.Internals;
+#elif MEZIANTOU_FRAMEWORK_WEBPLATFORM
+namespace Meziantou.Framework.WebPlatform.Compression;
 #else
 namespace Meziantou.Framework.Geo.Internals;
 #endif
 
 /// <summary>
 /// A decoder of Zstandard frames (RFC 8878) into a buffer that holds the whole output, so that a match reads the bytes
-/// decoded before it in place. Dictionaries are not supported. An instance keeps its decoding tables between calls and is
-/// not thread-safe.
+/// decoded before it in place. The dictionaries are not supported, except the raw content dictionaries of
+/// <see cref="DecompressWithRawDictionary"/>. An instance keeps its decoding tables between calls and is not thread-safe.
 /// </summary>
 /// <remarks>The sections cited are those of RFC 8878.</remarks>
 internal sealed class ZstdDecoder
@@ -51,6 +53,12 @@ internal sealed class ZstdDecoder
     private readonly byte[] _literals = new byte[MaxBlockSize + 8];
     private readonly int[] _sequences = new int[3 * ((MaxBlockSize / 3) + 1)];
     private int _huffmanMaxBits = -1;
+
+    // The length of the raw content dictionary that precedes the content of the frame in the output (DecompressWithRawDictionary)
+    private int _prefixLength;
+
+    // Whether the last error is an output that is too short for the decoded data (DecompressWithRawDictionary)
+    private bool _outputOverflowed;
 
     /// <summary>
     /// Decodes the frames of <paramref name="source"/> (skippable frames are skipped) into <paramref name="destination"/>,
@@ -99,7 +107,110 @@ internal sealed class ZstdDecoder
             throw Corrupt(string.Create(CultureInfo.InvariantCulture, $"the frames produce {written} bytes; {destination.Length} are expected."));
     }
 
+    /// <summary>
+    /// Decodes the frames of <paramref name="source"/> (skippable frames are skipped), compressed with a raw content dictionary
+    /// (section 5: the content of the dictionary precedes the content of each frame, and the repeated offsets and the
+    /// entropy tables have their initial values). The decoded length does not have to be known.
+    /// </summary>
+    /// <param name="source">One or more frames, and nothing else.</param>
+    /// <param name="dictionary">The content of the dictionary.</param>
+    /// <param name="maxLength">The maximum length of the decoded data.</param>
+    /// <returns>The decoded data.</returns>
+    /// <exception cref="InvalidDataException">The data are not valid Zstandard frames, use a dictionary that is not a raw content dictionary, or decode to more than <paramref name="maxLength"/> bytes.</exception>
+    public byte[] DecompressWithRawDictionary(ReadOnlySpan<byte> source, ReadOnlySpan<byte> dictionary, int maxLength)
+    {
+        var result = new List<byte[]>();
+        var total = 0;
+        var position = 0;
+        var frames = 0;
+        try
+        {
+            _prefixLength = dictionary.Length;
+            while (position < source.Length)
+            {
+                if (source.Length - position < 4)
+                    throw Corrupt("the data end inside a frame magic number.");
+
+                var magic = BinaryPrimitives.ReadUInt32LittleEndian(source[position..]);
+                if ((magic & 0xFFFFFFF0) == 0x184D2A50)
+                {
+                    if (source.Length - position < 8)
+                        throw Corrupt("a skippable frame is truncated.");
+
+                    var size = BinaryPrimitives.ReadUInt32LittleEndian(source[(position + 4)..]);
+                    if (size > (uint)(source.Length - position - 8))
+                        throw Corrupt("a skippable frame is truncated.");
+
+                    position += 8 + (int)size;
+                    continue;
+                }
+
+                if (magic != FrameMagic)
+                    throw Corrupt("a frame does not start with the Zstandard magic number.");
+
+                position += 4;
+
+                // The output of a frame is [dictionary][content]: the buffer grows until the content fits
+                var frame = source[position..];
+                var capacity = (long)Math.Max(64 * 1024, frame.Length * 4L);
+                while (true)
+                {
+                    var bufferLength = dictionary.Length + Math.Min(capacity, maxLength - total);
+                    if (bufferLength > Array.MaxLength)
+                        throw Corrupt("the decoded data are too long.");
+
+                    var buffer = new byte[bufferLength];
+                    dictionary.CopyTo(buffer);
+                    var written = dictionary.Length;
+                    try
+                    {
+                        _outputOverflowed = false;
+                        position += DecodeFrame(frame, buffer, ref written);
+                    }
+                    catch (InvalidDataException) when (_outputOverflowed && capacity < maxLength - total)
+                    {
+                        capacity *= 2;
+                        continue;
+                    }
+                    catch (InvalidDataException) when (_outputOverflowed)
+                    {
+                        throw Corrupt("the decoded data are too long.");
+                    }
+
+                    result.Add(buffer[dictionary.Length..written]);
+                    total += written - dictionary.Length;
+                    break;
+                }
+
+                frames++;
+            }
+        }
+        finally
+        {
+            _prefixLength = 0;
+        }
+
+        if (frames == 0)
+            throw Corrupt("the data have no frame.");
+
+        var output = new byte[total];
+        var offset = 0;
+        foreach (var part in result)
+        {
+            part.CopyTo(output, offset);
+            offset += part.Length;
+        }
+
+        return output;
+    }
+
     private static InvalidDataException Corrupt(string message) => new("The Zstandard data are invalid: " + message);
+
+    private InvalidDataException Overflow()
+    {
+        _outputOverflowed = true;
+        return new("The Zstandard data are invalid: the frames produce more bytes than expected.");
+    }
 
     /// <summary>Decodes one frame (section 3.1.1) after its magic number.</summary>
     /// <returns>The number of bytes of the frame.</returns>
@@ -193,7 +304,7 @@ internal sealed class ZstdDecoder
                         throw Corrupt("a raw block is truncated.");
 
                     if (output.Length - written < blockSize)
-                        throw Corrupt("the frames produce more bytes than expected.");
+                        throw Overflow();
 
                     frame.Slice(position, blockSize).CopyTo(output[written..]);
                     written += blockSize;
@@ -205,7 +316,7 @@ internal sealed class ZstdDecoder
                         throw Corrupt("an RLE block is truncated.");
 
                     if (output.Length - written < blockSize)
-                        throw Corrupt("the frames produce more bytes than expected.");
+                        throw Overflow();
 
                     output.Slice(written, blockSize).Fill(frame[position]);
                     written += blockSize;
@@ -270,7 +381,7 @@ internal sealed class ZstdDecoder
                 throw Corrupt("a sequence copies more literals than the block has.");
 
             if (literalLength > output.Length - written)
-                throw Corrupt("the frames produce more bytes than expected.");
+                throw Overflow();
 
             literals.Slice(literalPosition, literalLength).CopyTo(output[written..]);
             literalPosition += literalLength;
@@ -313,11 +424,13 @@ internal sealed class ZstdDecoder
                 }
             }
 
-            if (offset <= 0 || offset > written - frameStart || offset > window)
+            // A match may copy the bytes of a raw content dictionary, which precede the content of the frame (section 5)
+            var frameContentLength = written - frameStart;
+            if (offset <= 0 || offset > frameContentLength + _prefixLength || (offset <= frameContentLength && offset > window))
                 throw Corrupt("a match copies bytes from before the start of the frame or the window.");
 
             if (matchLength > output.Length - written)
-                throw Corrupt("the frames produce more bytes than expected.");
+                throw Overflow();
 
             var source = written - offset;
             if (offset >= matchLength)
@@ -338,7 +451,7 @@ internal sealed class ZstdDecoder
 
         var rest = literals.Length - literalPosition;
         if (rest > output.Length - written)
-            throw Corrupt("the frames produce more bytes than expected.");
+            throw Overflow();
 
         literals[literalPosition..].CopyTo(output[written..]);
         written += rest;

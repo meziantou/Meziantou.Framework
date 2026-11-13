@@ -1,0 +1,124 @@
+using System.Collections.Concurrent;
+using Meziantou.Framework.WebPlatform.Dom;
+using Microsoft.Playwright;
+
+namespace Meziantou.Framework.WebPlatform.DevTools.Tests;
+
+/// <summary>
+/// A DevTools server and a browser connected with ConnectOverCDPAsync shared by the tests of a class. The pages of the tests are served by an
+/// in-memory loader (<c>https://test.local/...</c>): nothing is fetched from the network.
+/// </summary>
+public sealed class DevToolsServerFixture : IAsyncLifetime
+{
+    private readonly ConcurrentDictionary<string, Func<DocumentRequest, DocumentResource?>> _resources = new(StringComparer.Ordinal);
+    private IPlaywright? _playwright;
+
+    public DevToolsServer Server { get; private set; } = null!;
+
+    public IBrowser Browser { get; private set; } = null!;
+
+    public ConcurrentQueue<DocumentRequest> Requests { get; } = new();
+
+    /// <summary>Serves an HTML page at an URL of the test server.</summary>
+    public string AddPage(string path, string html) => AddResource(path, _ => new DocumentResource(html) { Headers = [new("Content-Type", "text/html; charset=utf-8")] });
+
+    /// <summary>Serves a resource at an URL of the test server.</summary>
+    public string AddResource(string path, Func<DocumentRequest, DocumentResource?> resource)
+    {
+        var url = "https://test.local/" + path.TrimStart('/');
+        _resources[url] = resource;
+        return url;
+    }
+
+    public async ValueTask InitializeAsync()
+    {
+        Server = new DevToolsServer(new DevToolsServerOptions { DocumentLoader = new TestLoader(this) });
+        await Server.StartAsync();
+        _playwright = await Microsoft.Playwright.Playwright.CreateAsync();
+        Browser = await _playwright.Chromium.ConnectOverCDPAsync(Server.HttpEndpoint.ToString());
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Browser is not null)
+        {
+            await WithTimeoutAsync(Browser.CloseAsync(), "IBrowser.CloseAsync");
+        }
+
+        if (_playwright is not null)
+        {
+            // Dispose closes the input of the driver and waits for it to exit, without a timeout
+            await WithTimeoutAsync(Task.Run(_playwright.Dispose), "IPlaywright.Dispose");
+        }
+
+        if (Server is not null)
+        {
+            await WithTimeoutAsync(Server.DisposeAsync().AsTask(), "DevToolsServer.DisposeAsync");
+        }
+    }
+
+    /// <summary>
+    /// Waits for a step of the cleanup. Microsoft.Playwright never notices that its driver (a node process) exited, so its
+    /// calls can wait forever: the cleanup fails with the name of the step instead of hanging the test run.
+    /// </summary>
+    private static async Task WithTimeoutAsync(Task task, string step)
+    {
+        var timeout = TimeSpan.FromMinutes(1);
+        try
+        {
+            await task.WaitAsync(timeout);
+        }
+        catch (TimeoutException ex)
+        {
+            throw new TimeoutException($"{step} did not complete within {timeout.TotalSeconds} seconds. {DescribeDrivers()}", ex);
+        }
+    }
+
+    /// <summary>Describes the Playwright drivers that are running from the output directory of the tests, to tell a driver that exited from a server that stopped responding.</summary>
+    public static string DescribeDrivers()
+    {
+        var directory = Path.Combine(AppContext.BaseDirectory, ".playwright");
+        var drivers = new List<int>();
+        foreach (var process in System.Diagnostics.Process.GetProcessesByName("node"))
+        {
+            using (process)
+            {
+                try
+                {
+                    if (process.MainModule?.FileName is { } fileName && fileName.StartsWith(directory, StringComparison.OrdinalIgnoreCase))
+                    {
+                        drivers.Add(process.Id);
+                    }
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
+                {
+                    // The process exited, or it belongs to another user
+                }
+            }
+        }
+
+        return $"Running Playwright drivers: {drivers.Count} ({string.Join(", ", drivers)}).";
+    }
+
+    /// <summary>Creates a context and a page; the context is closed with the returned scope.</summary>
+    public async Task<(IBrowserContext Context, IPage Page)> NewPageAsync(BrowserNewContextOptions? options = null)
+    {
+        var context = await Browser.NewContextAsync(options);
+        var page = await context.NewPageAsync();
+        return (context, page);
+    }
+
+    private sealed class TestLoader(DevToolsServerFixture fixture) : DocumentLoader
+    {
+        public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
+        {
+            fixture.Requests.Enqueue(request);
+            var url = request.Url;
+            var query = url.IndexOf('?', StringComparison.Ordinal);
+            if (fixture._resources.TryGetValue(url, out var resource) || (query >= 0 && fixture._resources.TryGetValue(url[..query], out resource)))
+                return ValueTask.FromResult(resource(request));
+
+            return ValueTask.FromResult<DocumentResource?>(new DocumentResource("Not found") { StatusCode = 404, StatusText = "Not Found", Headers = [new("Content-Type", "text/plain")] });
+        }
+    }
+}

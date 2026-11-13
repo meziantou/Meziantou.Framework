@@ -127,7 +127,20 @@ public partial class HtmlVideoElement
     internal ImageNaturalSize? PosterNaturalSize { get; private set; }
 
     /// <summary>The image of the poster frame painted in the box of the element (see <see cref="Document.CreatePaintImage"/>), or null.</summary>
-    internal PaintImage? PosterImage { get; private set; }
+    internal PaintImage? PosterImage
+    {
+        get;
+        private set
+        {
+            // :animated-image matches the element while its poster frame is an animated image
+            if ((field?.IsAnimated ?? false) != (value?.IsAnimated ?? false))
+            {
+                NodeDocument.IncrementElementStateVersion();
+            }
+
+            field = value;
+        }
+    }
 
     /// <summary>Whether video data is available: the ready state is at least <c>HAVE_CURRENT_DATA</c> and the media resource has a video channel.</summary>
     private bool HasVideoData => ReadyState >= HaveCurrentData && MediaVideoWidth > 0 && MediaVideoHeight > 0;
@@ -137,7 +150,7 @@ public partial class HtmlVideoElement
     /// there is a poster frame, and no video data is available, or the show poster flag is set (the element is paused at
     /// the first frame of the video).
     /// </summary>
-    private bool RepresentsPosterFrame => PosterNaturalSize is not null && (!HasVideoData || ShowPoster);
+    internal bool RepresentsPosterFrame => PosterNaturalSize is not null && (!HasVideoData || ShowPoster);
 
     /// <summary>
     /// The natural dimensions of the playback area of the element: the ones of the poster frame when the element represents

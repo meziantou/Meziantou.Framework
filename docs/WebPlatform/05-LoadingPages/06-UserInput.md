@@ -75,6 +75,12 @@ Escape closes the dialogs and the popovers. Outside of the editable content, the
 `Home` and `End` scroll the focused scroll container (or the viewport). As in the browsers, a scroll container that the
 user can scroll and that has no focusable descendant can be focused by Tab and by `focus()` (not by a click).
 
+Tab follows the `reading-flow` property of the flex, grid and grid lanes containers: the visual order of the items
+instead of the order of the document. A grid lanes container (`display: grid-lanes`) accepts `source-order`,
+`grid-lanes-order` (the `order` property, then the order of the document), `grid-lanes-track` (one track after the
+other, each from its start edge) and `grid-lanes-flow` (across the tracks, row by row of items). The way
+`grid-lanes-flow` groups the items into rows is not specified yet: the library groups them as Chromium does.
+
 ## Pending input
 
 A long script can call `navigator.scheduling.isInputPending()` to yield when the user is waiting. The library dispatches
@@ -106,5 +112,5 @@ always get false.
 [HtmlElement.Click()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.Click), [Focus()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.Focus) and [DispatchEvent()](cref:Meziantou.Framework.WebPlatform.Dom.EventTarget.DispatchEvent) act on an element directly, as the same methods of a script: the
 events they fire are not trusted, and no hit testing is done. Use them when you do not need to simulate a user.
 
-To automate pages with a higher-level API (locators, auto-waiting, assertions), drive the engine with Playwright: see
-[Playwright](../08-Playwright/01-Overview.md).
+To automate pages with a higher-level API (locators, auto-waiting, assertions), drive the engine with Playwright over the
+Chrome DevTools Protocol: see [DevTools protocol](../08-DevTools/01-Overview.md).

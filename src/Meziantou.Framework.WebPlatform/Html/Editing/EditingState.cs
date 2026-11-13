@@ -10,6 +10,7 @@ namespace Meziantou.Framework.WebPlatform.Html;
 internal sealed class EditingState
 {
     private Dictionary<string, bool>? _stateOverrides;
+    private List<string>? _stateOverrideOrder;
     private Dictionary<string, string>? _valueOverrides;
     private (Node StartNode, uint StartOffset, Node EndNode, uint EndOffset)? _overridesRange;
 
@@ -42,6 +43,7 @@ internal sealed class EditingState
         }
 
         _stateOverrides?.Clear();
+        _stateOverrideOrder?.Clear();
         _valueOverrides?.Clear();
         _overridesRange = current;
     }
@@ -55,13 +57,32 @@ internal sealed class EditingState
     public void SetStateOverride(DomRange range, string command, bool state)
     {
         ResetOverrides(range);
-        (_stateOverrides ??= new(StringComparer.Ordinal))[command] = state;
+        _stateOverrides ??= new(StringComparer.Ordinal);
+        if (!_stateOverrides.ContainsKey(command))
+        {
+            (_stateOverrideOrder ??= []).Add(command);
+        }
+
+        _stateOverrides[command] = state;
     }
 
     public void UnsetStateOverride(DomRange range, string command)
     {
         ResetOverrides(range);
-        _stateOverrides?.Remove(command);
+        if (_stateOverrides?.Remove(command) is true)
+        {
+            _stateOverrideOrder?.Remove(command);
+        }
+    }
+
+    /// <summary>
+    /// The position of the state override of a command among the state overrides, in the order they were set (the commands
+    /// run at a caret), or -1 when the command has no state override.
+    /// </summary>
+    public int GetStateOverrideOrder(DomRange range, string command)
+    {
+        ResetOverrides(range);
+        return _stateOverrideOrder?.IndexOf(command) ?? -1;
     }
 
     public string? GetValueOverride(DomRange range, string command)

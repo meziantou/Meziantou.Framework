@@ -654,6 +654,34 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void ExecutionContextDepth()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var depths = new List<int>();
+        realm.GlobalObject.SetProperty("probe", realm.CreateFunction("probe", 0, (_, _) =>
+        {
+            depths.Add(engine.ExecutionContextDepth);
+            return default;
+        }));
+        Assert.Equal(0, engine.ExecutionContextDepth);
+
+        // A .NET function does not push an execution context: the depth is the one of its caller
+        realm.Execute("probe(); (function f() { probe(); })(); probe.call(null);", "depth.js");
+        Assert.Equal(depths[0] + 1, depths[1]);
+        Assert.Equal(depths[0], depths[2]);
+
+        // The script contexts pushed by the host count
+        using (engine.EnterActiveScriptOrModule(scriptOrModule: null))
+        {
+            Assert.Equal(1, engine.ExecutionContextDepth);
+        }
+
+        Assert.Equal(0, engine.ExecutionContextDepth);
+    }
+
+    [Fact]
     public void ExecutionLimits()
     {
         using (var engine = new JsEngine(new JsEngineOptions { MaxStatements = 100 }))

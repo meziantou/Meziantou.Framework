@@ -57,7 +57,8 @@ internal static class IcoEntryDecoder
         }
 
         using var owner = copy;
-        using var parser = PngCodec.Instance.CreateDecodeParser(request, context);
+        // An icon representation is decoded at full size, even when it is an interlaced PNG image
+        using var parser = PngCodec.Instance.CreateDecodeParser(request with { TargetSize = null }, context);
         var image = ImageInputPump.Run(payload, parser, context);
         try
         {

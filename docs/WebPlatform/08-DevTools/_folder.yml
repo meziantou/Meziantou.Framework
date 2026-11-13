@@ -1,0 +1,5 @@
+title: DevTools protocol
+description: Automate the pages of the engine with the Chrome DevTools Protocol clients, such as Playwright (connectOverCDP) and Puppeteer, as a headless Chromium.
+packageIds:
+- Meziantou.Framework.WebPlatform.DevTools
+- Meziantou.Framework.WebPlatform.DevTools.Tool

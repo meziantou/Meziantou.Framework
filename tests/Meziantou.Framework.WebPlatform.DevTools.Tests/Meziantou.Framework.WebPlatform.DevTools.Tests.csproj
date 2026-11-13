@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!-- The tests of the DevTools server: the official Playwright client (Microsoft.Playwright) connects to the server with ConnectOverCDPAsync -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- The tests use the assertions of xUnit.net -->
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <!-- Test method names describe behavior with underscores -->
+    <NoWarn>$(NoWarn);CA1707;CA1515;CA2007</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Any version of the client can connect: the tests use a recent one -->
+    <PackageReference Include="Microsoft.Playwright" Version="1.64.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.DevTools\Meziantou.Framework.WebPlatform.DevTools.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

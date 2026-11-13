@@ -626,6 +626,16 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
         var result = o.GetSelection(); return r.Wrap(result);
     }
+    private static TValue Op_hasStorageAccess(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
+        var result = o.HasStorageAccess(); return r.ToPromise(result, static (r, value) => r.FromBoolean(value));
+    }
+    private static TValue Op_requestStorageAccess(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
+        var result = o.RequestStorageAccess(); return r.ToPromise(result);
+    }
     private static TValue Op_getBoxQuads(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
@@ -951,6 +961,8 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         r.DefineOperation(instanceTarget, "releaseEvents", 0, Op_releaseEvents);
         r.DefineOperation(instanceTarget, "exitPointerLock", 0, Op_exitPointerLock);
         r.DefineOperation(instanceTarget, "getSelection", 0, Op_getSelection);
+        r.DefineOperation(instanceTarget, "hasStorageAccess", 0, Op_hasStorageAccess, returnsPromise: true);
+        r.DefineOperation(instanceTarget, "requestStorageAccess", 0, Op_requestStorageAccess, returnsPromise: true);
         r.DefineOperation(instanceTarget, "getBoxQuads", 0, Op_getBoxQuads);
         r.DefineOperation(instanceTarget, "convertQuadFromNode", 2, Op_convertQuadFromNode);
         r.DefineOperation(instanceTarget, "convertRectFromNode", 2, Op_convertRectFromNode);

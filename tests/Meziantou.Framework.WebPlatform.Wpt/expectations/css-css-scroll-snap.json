@@ -5,6 +5,9 @@
       "The third item should be snapped to by default, not the second's child.": "FAIL"
     }
   },
+  "css/css-scroll-snap/crashtests/fractional-covering-area-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-scroll-snap/ignore-snap-points-orthogonal-to-snap-axis.html": {
     "total": 1
   },
@@ -256,6 +259,9 @@
   },
   "css/css-scroll-snap/scroll-snap-stop-change.html": {
     "total": 2
+  },
+  "css/css-scroll-snap/scroll-snap-stop-dynamic-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-scroll-snap/scroll-snap-type-change.html": {
     "total": 2

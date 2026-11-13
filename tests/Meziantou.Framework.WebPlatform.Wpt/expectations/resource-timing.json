@@ -99,11 +99,7 @@
     "total": 1
   },
   "resource-timing/decoded-body-size-compressed.https.html": {
-    "total": 8,
-    "failures": {
-      "decodedBodySize for dictionary-compressed brotli (dcb) resource": "FAIL",
-      "decodedBodySize for dictionary-compressed zstd (dcz) resource": "FAIL"
-    }
+    "total": 8
   },
   "resource-timing/delivery-type.tentative.any.js": {
     "total": 4
@@ -118,11 +114,7 @@
     "total": 1
   },
   "resource-timing/encoded-body-size-cached.https.html": {
-    "total": 2,
-    "failures": {
-      "encodedBodySize and transferSize for dictionary-compressed (dcb) resource served from cache": "FAIL",
-      "encodedBodySize and transferSize for dictionary-compressed (dcz) resource served from cache": "FAIL"
-    }
+    "total": 2
   },
   "resource-timing/entries-for-network-errors.sub.https.html": {
     "total": 9

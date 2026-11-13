@@ -2,6 +2,18 @@
   "permissions/all-permissions.html": {
     "total": 19
   },
+  "permissions/crashtests/permissions-query-worker.window.js": {
+    "total": 1
+  },
+  "permissions/crashtests/permissions-query.any.js": {
+    "total": 18
+  },
+  "permissions/crashtests/permissions-query.any.js#dedicatedworker": {
+    "total": 18
+  },
+  "permissions/crashtests/permissions-query.any.js#sharedworker": {
+    "total": 18
+  },
   "permissions/edge-cases.https.html": {
     "total": 1
   },

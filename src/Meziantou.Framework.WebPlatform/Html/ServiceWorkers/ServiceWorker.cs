@@ -219,6 +219,48 @@ public sealed class ServiceWorkerRegistration : EventTarget
         return promise.Task;
     }
 
+    /// <summary>Gets the cookie change subscriptions of the registration (https://cookiestore.spec.whatwg.org/#dom-serviceworkerregistration-cookies).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-serviceworkerregistration-cookies"/>
+    [IdlMember("cookies", "https://cookiestore.spec.whatwg.org/#dom-serviceworkerregistration-cookies")]
+    public CookieStoreManager Cookies => field ??= new CookieStoreManager(this);
+
+    /// <summary>
+    /// Shows a persistent notification associated with the registration (https://notifications.spec.whatwg.org/#dom-serviceworkerregistration-shownotification),
+    /// with <see cref="BrowsingContextOptions.ShowNotification"/>: the user activates or closes it by firing the
+    /// <c>notificationclick</c> and <c>notificationclose</c> events at the active worker of the registration.
+    /// </summary>
+    /// <param name="title">The title of the notification.</param>
+    /// <param name="options">The options of the notification.</param>
+    /// <returns>
+    /// A task completed once the notification is shown, or failed with a <see cref="TypeErrorException"/> when the registration
+    /// has no active worker, when the options are not valid, or when the <c>notifications</c> permission is not granted.
+    /// </returns>
+    /// <seealso href="https://notifications.spec.whatwg.org/#dom-serviceworkerregistration-shownotification"/>
+    [IdlMember("showNotification", "https://notifications.spec.whatwg.org/#dom-serviceworkerregistration-shownotification")]
+    public Task ShowNotification(string title, NotificationOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(title);
+        bool hasActiveWorker;
+        lock (Record.Registry.Lock)
+        {
+            hasActiveWorker = Record.Active is not null;
+        }
+
+        if (!hasActiveWorker)
+            return Task.FromException(new TypeErrorException("The registration has no active worker"));
+
+        return Notification.ShowPersistentNotification(Global, Record, title, options ?? new NotificationOptions());
+    }
+
+    /// <summary>
+    /// Returns the persistent notifications of the registration that are shown (https://notifications.spec.whatwg.org/#dom-serviceworkerregistration-getnotifications),
+    /// in creation order: new <see cref="Notification"/> objects that represent them.
+    /// </summary>
+    /// <param name="filter">The tag of the notifications to return (all the notifications when it is empty).</param>
+    /// <seealso href="https://notifications.spec.whatwg.org/#dom-serviceworkerregistration-getnotifications"/>
+    [IdlMember("getNotifications", "https://notifications.spec.whatwg.org/#dom-serviceworkerregistration-getnotifications")]
+    public Task<IReadOnlyList<Notification>> GetNotifications(GetNotificationOptions? filter = null) => Notification.GetPersistentNotifications(Global, Record, filter?.Tag ?? "");
+
     /// <summary>Gets or sets the event handler of the <c>updatefound</c> event.</summary>
     /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-onupdatefound"/>
     [IdlMember("onupdatefound", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-onupdatefound")]

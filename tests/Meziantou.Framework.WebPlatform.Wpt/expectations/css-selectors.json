@@ -35,6 +35,9 @@
   "css/selectors/attribute-selectors/style-attribute-selector.html": {
     "total": 11
   },
+  "css/selectors/backdrop-input-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/selectors/caret-color-visited-inheritance.html": {
     "reftest": "PASS"
   },
@@ -46,6 +49,9 @@
   },
   "css/selectors/child-indexed-pseudo-class.html": {
     "total": 57
+  },
+  "css/selectors/chrome-40257746-crash.html": {
+    "crashtest": "PASS"
   },
   "css/selectors/class-prefix-selector-has-invalidation.tentative.html": {
     "total": 8
@@ -70,6 +76,12 @@
   },
   "css/selectors/class-selector-escape-exclamation.html": {
     "total": 1
+  },
+  "css/selectors/crashtests/chrome-bug-565742178.html": {
+    "crashtest": "TIMEOUT"
+  },
+  "css/selectors/crashtests/empty-pseudo-with-first-line.html": {
+    "crashtest": "PASS"
   },
   "css/selectors/dir-pseudo-in-has.html": {
     "reftest": "PASS"
@@ -139,6 +151,12 @@
   },
   "css/selectors/dir-style-04.html": {
     "reftest": "PASS"
+  },
+  "css/selectors/eof-right-after-selector-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/selectors/eof-some-after-selector-crash.html": {
+    "crashtest": "PASS"
   },
   "css/selectors/featureless-001.html": {
     "reftest": "PASS"
@@ -440,8 +458,14 @@
   "css/selectors/has-matches-to-uninserted-elements.html": {
     "total": 12
   },
+  "css/selectors/has-nth-of-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/selectors/has-relative-argument.html": {
     "total": 35
+  },
+  "css/selectors/has-sibling-chrome-crash.html": {
+    "crashtest": "PASS"
   },
   "css/selectors/has-specificity.html": {
     "total": 8
@@ -674,6 +698,12 @@
   "css/selectors/invalidation/class-id-attr.html": {
     "reftest": "PASS"
   },
+  "css/selectors/invalidation/crashtests/has-pseudoclass-only-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/selectors/invalidation/crashtests/nth-child-of-attribute-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/selectors/invalidation/defined-in-has.html": {
     "total": 1
   },
@@ -733,6 +763,15 @@
   },
   "css/selectors/invalidation/has-invalidation-for-wiping-an-element.html": {
     "total": 5
+  },
+  "css/selectors/invalidation/has-nested-pseudo-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/selectors/invalidation/has-nested-pseudo-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/selectors/invalidation/has-nested-pseudo-003-crash.html": {
+    "crashtest": "PASS"
   },
   "css/selectors/invalidation/has-pseudo-element-subject-child-mutation.html": {
     "total": 4
@@ -1028,6 +1067,9 @@
   "css/selectors/invalidation/nth-last-child-when-sibling-changes.html": {
     "reftest": "PASS"
   },
+  "css/selectors/invalidation/nth-of-namespace-class-invalidation-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/selectors/invalidation/open-pseudo-class-in-has.html": {
     "total": 9
   },
@@ -1103,6 +1145,9 @@
   "css/selectors/is-where-basic.html": {
     "total": 15
   },
+  "css/selectors/is-where-error-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/selectors/is-where-error-recovery.html": {
     "total": 1
   },
@@ -1126,6 +1171,9 @@
   },
   "css/selectors/last-of-type.html": {
     "total": 9
+  },
+  "css/selectors/link-sharing-crash.html": {
+    "crashtest": "PASS"
   },
   "css/selectors/media/media-loading-state-timing.sub.html": {
     "total": 1
@@ -1231,6 +1279,9 @@
   },
   "css/selectors/nth-child-specificity-4.html": {
     "reftest": "PASS"
+  },
+  "css/selectors/nth-child-spurious-brace-crash.html": {
+    "crashtest": "PASS"
   },
   "css/selectors/nth-last-child-invalid.html": {
     "total": 1
@@ -2251,6 +2302,9 @@
   "css/selectors/pseudo-enabled-disabled.html": {
     "total": 4
   },
+  "css/selectors/pseudo-where-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/selectors/query/query-is.html": {
     "total": 6
   },
@@ -2425,6 +2479,9 @@
   "css/selectors/sharing-in-svg-use.html": {
     "reftest": "PASS"
   },
+  "css/selectors/spurious-brace-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/selectors/text-emphasis-visited-inheritance.html": {
     "reftest": "PASS"
   },
@@ -2477,6 +2534,9 @@
   },
   "css/selectors/visited-nested.html": {
     "reftest": "PASS"
+  },
+  "css/selectors/visited-part-crash.html": {
+    "crashtest": "PASS"
   },
   "css/selectors/webkit-pseudo-element.html": {
     "total": 6

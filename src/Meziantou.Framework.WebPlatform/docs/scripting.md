@@ -63,6 +63,14 @@ Console.WriteLine(document.Body!.InnerHtml); // <ul id="list"><li>a</li><li>b</l
   cleanup of a `FinalizationRegistry`, `Atomics.waitAsync()`: tasks and timers of the event loop of the realm,
   `HostEnqueueGenericJob`, `HostEnqueueTimeoutJob`), the module loading and `import.meta`. The functions of the WebIDL bindings run in the
   realm of their caller.
+- The incumbent settings object (https://html.spec.whatwg.org/multipage/webappapis.html#incumbent) is the realm of the
+  topmost running script, else the top of the backup incumbent settings object stack. A callback (an event listener, an
+  event handler set by its IDL attribute, a `NodeFilter`, an `XPathNSResolver`) records the incumbent when the value is
+  converted (its callback context), and calling it pushes the callback context onto the stack: the scripts that were
+  running below the callback are skipped (the skip-when-determining-incumbent counter, implemented with the depth of the
+  execution context stack of the engine). A built-in function used as a listener (e.g. a bound `postMessage`) then posts
+  with the global object that called `addEventListener()` as its source. The other callback functions (timers,
+  `requestAnimationFrame()`, ...) do not record their callback context yet.
 - The `console` namespace of the [Console Standard](https://console.spec.whatwg.org/) is implemented by the WebIDL
   bindings (`Scripting/WebIdl/WebIdlRealm.Console.cs`): its formatter works on the JavaScript values. The messages are
   given to `BrowsingContextOptions.ConsoleMessage` (a `ConsoleMessage`: the method, the level, the formatted text, the

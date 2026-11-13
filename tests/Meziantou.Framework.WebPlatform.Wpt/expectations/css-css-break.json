@@ -41,6 +41,15 @@
   "css/css-break/area-002.html": {
     "reftest": "PASS"
   },
+  "css/css-break/area-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/area-in-inline-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/auto-overflow-inside-second-abspos-fragment-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/avoid-border-break.html": {
     "reftest": "PASS"
   },
@@ -107,14 +116,29 @@
   "css/css-break/block-in-inline-003.html": {
     "reftest": "PASS"
   },
+  "css/css-break/block-in-inline-004-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/block-in-inline-004.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/block-in-inline-005-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/block-in-inline-006-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/block-in-inline-007-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/block-in-inline-008.html": {
     "reftest": "PASS"
   },
   "css/css-break/block-in-inline-009.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/block-in-inline-010-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/block-in-inline-011.html": {
     "reftest": "PASS"
@@ -281,11 +305,20 @@
   "css/css-break/box-decoration-break-clone-031.html": {
     "reftest": "PASS"
   },
+  "css/css-break/box-decoration-break-clone-032-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/box-decoration-break-clone-033.html": {
     "reftest": "PASS"
   },
   "css/css-break/box-decoration-break-clone-034.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/box-decoration-break-clone-035-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/box-decoration-break-clone-036-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/box-decoration-break-clone-037.html": {
     "reftest": "PASS"
@@ -317,6 +350,12 @@
   "css/css-break/br-clear-all.html": {
     "reftest": "PASS"
   },
+  "css/css-break/break-after-in-parallel-flow-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/break-after-oof-before-preceding-pushed-float-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/break-at-end-container-edge-000.html": {
     "reftest": "PASS"
   },
@@ -334,6 +373,18 @@
   },
   "css/css-break/break-at-end-container-edge-005.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/break-before-broken-leading-float-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/break-before-broken-leading-float-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/break-before-float-after-line-after-floats-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/break-before-with-no-fragmentation-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/break-between-avoid-000.html": {
     "reftest": "PASS"
@@ -431,6 +482,30 @@
   "css/css-break/change-inline-color.html": {
     "reftest": "PASS"
   },
+  "css/css-break/chrome-bug-1283776-000-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/chrome-bug-1283776-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/chrome-bug-1285596-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/chrome-bug-1287342-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/chrome-bug-1288769-000-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/chrome-bug-1288769-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/chrome-bug-1289999-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/chrome-bug-1318455-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/class-c-breakpoint-after-float-000.html": {
     "reftest": "PASS"
   },
@@ -445,6 +520,15 @@
   },
   "css/css-break/class-c-breakpoint-after-float-004.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/clear-br-in-size-containment-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/clear-float-in-size-containment-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/clear-past-float-with-oof-twice-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/clearance-parallel-flow-001.html": {
     "reftest": "PASS"
@@ -461,8 +545,14 @@
   "css/css-break/clipping-002.html": {
     "reftest": "PASS"
   },
+  "css/css-break/column-balancing-with-oofs-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/contain-strict-with-opacity-and-oof.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/empty-fieldset-tall-bottom-padding-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/empty-multicol-at-scrollport-edge.html": {
     "total": 1
@@ -497,14 +587,38 @@
   "css/css-break/fieldset.html": {
     "reftest": "PASS"
   },
+  "css/css-break/firefox-bug-1693616-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/firefox-bug-1693616-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/firefox-bug-1903652-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/firefox-bug-2021187-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/firefox-bug-2026295-print.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/flex-item-padding-block-in-inline-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/flexbox/auto-block-size-with-max-block-size-dynamic.html": {
     "total": 6
   },
   "css/css-break/flexbox/auto-block-size-with-max-block-size.html": {
     "total": 52
+  },
+  "css/css-break/flexbox/auto-height-flex-item-in-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/flexbox/button-in-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/flexbox/fixed-flex-item-inside-abs-flex-in-multicol-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/flexbox/flex-container-fragmentation-001.html": {
     "reftest": "PASS"
@@ -557,8 +671,23 @@
   "css/css-break/flexbox/flex-item-content-overflow-003.html": {
     "reftest": "PASS"
   },
+  "css/css-break/flexbox/flexbox-fragmentation-layout-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/flexbox/float-in-webkit-box-in-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/flexbox/image-in-fragmented-flexbox-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/flexbox/image-in-fragmented-flexbox-002-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/flexbox/increase-fragmentainer-size-flex-item-trailing-margin.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/flexbox/monolithic-item-in-fragmented-flexbox-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/flexbox/monolithic-overflow-001.tentative.html": {
     "reftest": "PASS"
@@ -1070,6 +1199,9 @@
   "css/css-break/flexbox/nested-flex-item-expansion-in-mulicol.html": {
     "reftest": "PASS"
   },
+  "css/css-break/flexbox/quirks-flex-in-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/flexbox/single-line-column-flex-fragmentation-001.html": {
     "reftest": "PASS"
   },
@@ -1463,6 +1595,15 @@
   "css/css-break/flexbox/single-line-row-flex-fragmentation-050.html": {
     "reftest": "PASS"
   },
+  "css/css-break/flexbox/slider-in-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/flexbox/small-definite-flex-line-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/flexbox/textarea-input-flex-items-in-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/float-000.html": {
     "reftest": "PASS"
   },
@@ -1496,6 +1637,9 @@
   "css/css-break/float-010.html": {
     "reftest": "PASS"
   },
+  "css/css-break/float-011-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/float-012.html": {
     "reftest": "PASS"
   },
@@ -1513,6 +1657,12 @@
   },
   "css/css-break/float-017.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/float-after-self-collapsing-block-in-inline-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/float-in-inline-widows-orphans-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/float-in-self-collapsing-block-000.html": {
     "reftest": "PASS"
@@ -1535,6 +1685,9 @@
   "css/css-break/float-with-large-margin-bottom-cross-page-002-print.html": {
     "reftest": "PASS"
   },
+  "css/css-break/floated-multicol-in-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/floats-and-text-narrow-and-short-dynamic.html": {
     "reftest": "PASS"
   },
@@ -1556,11 +1709,26 @@
   "css/css-break/form-control.html": {
     "reftest": "PASS"
   },
+  "css/css-break/fragmentainer-1px-clamping-000-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/fragmentainer-1px-clamping-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/fragmented-autowidth-fc-root-beside-floats.html": {
     "reftest": "PASS"
   },
+  "css/css-break/fragmented-empty-contenteditable-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/fragmented-float-in-inline-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/fragmented-float-overflowing-container.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/fragmented-oof-in-inline-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/grid/grid-container-fragmentation-001.html": {
     "reftest": "PASS"
@@ -1796,35 +1964,44 @@
   "css/css-break/grid/grid-item-oof-014.html": {
     "reftest": "PASS"
   },
+  "css/css-break/grid/grid-item-oof-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/grid/grid-item-overflow-001.html": {
     "reftest": "PASS"
   },
+  "css/css-break/grid/grid-item-placement-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/grid/grid-item-placement-multiple-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/grid/grid-lanes/column-early-breaks-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-003.html": {
     "reftest": "FAIL"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-005.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-006.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-007.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-008.html": {
     "reftest": "FAIL"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-009.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-010.html": {
     "reftest": "PASS"
@@ -2228,6 +2405,12 @@
   "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-010.html": {
     "reftest": "PASS"
   },
+  "css/css-break/grid/grid-large-end-border-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/grid/grid-nested-columns-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/grid/monolithic-overflow-001.tentative.html": {
     "reftest": "PASS"
   },
@@ -2300,6 +2483,9 @@
   "css/css-break/hit-test-transformed.html": {
     "total": 17
   },
+  "css/css-break/iframe-in-repeated-table-header-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/increase-fragmentainer-size-tall-border.html": {
     "reftest": "PASS"
   },
@@ -2318,6 +2504,12 @@
   "css/css-break/inline-skipping-fragmentainer-002.html": {
     "reftest": "PASS"
   },
+  "css/css-break/inline-skipping-fragmentainer-003-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/inline-skipping-fragmentainer-004-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/inline-with-float-001.html": {
     "reftest": "PASS"
   },
@@ -2330,8 +2522,14 @@
   "css/css-break/inline-with-float-004.html": {
     "reftest": "PASS"
   },
+  "css/css-break/large-text-node-oof-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/line-after-unbreakable-float-after-padding.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/line-and-fragmentainer-break-before-float-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/line-pushed-by-float-000.html": {
     "reftest": "PASS"
@@ -2356,6 +2554,9 @@
   },
   "css/css-break/margin-at-break-005.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/max-height-with-margin-pushed-below-fragmentation-line-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/monolithic-content-with-forced-break-001.html": {
     "reftest": "PASS"
@@ -2393,6 +2594,54 @@
   "css/css-break/monolithic-with-overflow.html": {
     "reftest": "PASS"
   },
+  "css/css-break/nested-fixedpos-in-inline-000-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-fixedpos-in-inline-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-fixedpos-in-inline-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-fixedpos-in-inline-003-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-float-in-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-multicol-with-spanner-and-oof-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-multicol-with-spanner-and-oof-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-multicol-with-spanner-and-oof-003-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-multicol-with-spanner-and-oof-004-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-multicol-with-spanner-and-oof-005-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-multicol-with-spanner-and-oof-006-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-multicol-with-spanner-and-oof-007-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-multicol-with-spanner-and-oof-008-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-multicol-with-spanners-and-oofs-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/nested-oof-in-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/no-room-for-line-in-first-fragmentainer-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/offset-top-block-in-inline.html": {
     "total": 1
   },
@@ -2404,6 +2653,9 @@
   },
   "css/css-break/orphans-in-parallel-flow.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/out-of-flow-in-inline-with-negative-offset-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/out-of-flow-in-multicolumn-001.html": {
     "reftest": "PASS"
@@ -2792,6 +3044,9 @@
   "css/css-break/out-of-flow-in-multicolumn-129.html": {
     "reftest": "PASS"
   },
+  "css/css-break/out-of-flow-in-multicolumn-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/out-of-flow-in-multicolumn-paint-order-001.html": {
     "reftest": "PASS"
   },
@@ -2803,6 +3058,21 @@
   },
   "css/css-break/out-of-flow-in-multicolumn-paint-order-004.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/out-of-flow-in-nested-spanner-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/out-of-flow-in-new-column-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/out-of-flow-with-negative-offset-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/out-of-order-float-in-inline-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/overflow-auto-height-with-bottom-padding-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/overflow-clip-000.html": {
     "reftest": "PASS"
@@ -2930,6 +3200,9 @@
   "css/css-break/parallel-flow-trailing-margin-002.html": {
     "reftest": "PASS"
   },
+  "css/css-break/parallel-flow-trailing-margin-003-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/parsing/box-decoration-break-computed.html": {
     "total": 2
   },
@@ -2993,6 +3266,9 @@
   "css/css-break/remove-inline-child.html": {
     "total": 1
   },
+  "css/css-break/resumed-float-and-inline-block-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/root-margin-001-print.html": {
     "reftest": "PASS"
   },
@@ -3017,6 +3293,9 @@
   "css/css-break/svg-with-transform.html": {
     "reftest": "PASS"
   },
+  "css/css-break/table-cell-padding-block-in-inline-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/table/border-collapse-001.html": {
     "reftest": "PASS"
   },
@@ -3025,6 +3304,9 @@
   },
   "css/css-break/table/border-spacing.html": {
     "total": 1
+  },
+  "css/css-break/table/bottom-padding-repeated-header-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/table/break-after-table-cell-child.html": {
     "reftest": "PASS"
@@ -3062,6 +3344,9 @@
   "css/css-break/table/break-before-expansion-002.html": {
     "reftest": "PASS"
   },
+  "css/css-break/table/break-before-repeated-footer-instead-of-border-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/table/break-before-second-row.html": {
     "reftest": "PASS"
   },
@@ -3076,6 +3361,9 @@
   },
   "css/css-break/table/break-inside-cell-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/table/caption-bottom-margin-at-boundary-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/table/caption-margin-001.html": {
     "reftest": "PASS"
@@ -3092,8 +3380,14 @@
   "css/css-break/table/caption-margin-005.html": {
     "reftest": "PASS"
   },
+  "css/css-break/table/cell-large-bottom-padding-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/table/dynamic-caption-child-change-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/table/dynamic-caption-child-change-002-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/table/final-border-spacing-at-fragmentainer-boundary.html": {
     "reftest": "PASS"
@@ -3167,6 +3461,15 @@
   "css/css-break/table/repeated-section/block-in-inline.tentative.html": {
     "reftest": "PASS"
   },
+  "css/css-break/table/repeated-section/border-spacing-taller-than-fragmentainer-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/table/repeated-section/border-spacing-taller-than-fragmentainer-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/table/repeated-section/border-spacing-taller-than-fragmentainer-003-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/table/repeated-section/break-avoidance-in-bottom-caption.tentative.html": {
     "reftest": "PASS"
   },
@@ -3218,6 +3521,12 @@
   "css/css-break/table/repeated-section/multiple-row-groups.tentative.html": {
     "reftest": "PASS"
   },
+  "css/css-break/table/repeated-section/nested-repeated-header-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/table/repeated-section/repeated-footer-insufficient-space-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/table/repeated-section/repeated-header-border-spacing.tentative.html": {
     "reftest": "PASS"
   },
@@ -3230,6 +3539,9 @@
   "css/css-break/table/repeated-section/repeated-section-in-clipped-overflow-003.tentative.html": {
     "reftest": "PASS"
   },
+  "css/css-break/table/repeated-section/special-elements-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/table/repeated-section/tall-monolithic-after-repeated-header.tentative.html": {
     "reftest": "PASS"
   },
@@ -3241,6 +3553,18 @@
   },
   "css/css-break/table/repeated-section/variable-fragmentainer-size-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/table/repeated-section/variable-fragmentainer-size-003-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/table/repeated-section/variable-fragmentainer-size-004-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/table/repeated-section/variable-fragmentainer-size-005-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/table/repeated-section/variable-fragmentainer-size-006-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/table/section-with-overflow-000.html": {
     "reftest": "PASS"
@@ -3416,6 +3740,9 @@
   "css/css-break/table/table-grid-paint-vrl-rtl.html": {
     "reftest": "PASS"
   },
+  "css/css-break/table/table-in-abspos-multicol-with-nested-meter-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/table/table-parts-offsetheight.html": {
     "total": 7
   },
@@ -3427,6 +3754,15 @@
   },
   "css/css-break/table/table-parts-offsets.tentative.html": {
     "total": 17
+  },
+  "css/css-break/table/table-row-end-border-1-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/table/table-row-end-border-2-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/table/table-row-end-padding-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/table/table-row-paint-htb-ltr.html": {
     "reftest": "PASS"
@@ -3452,8 +3788,14 @@
   "css/css-break/table/tall-bottom-aligned-cell-with-bottom-padding.html": {
     "reftest": "PASS"
   },
+  "css/css-break/table/tall-padding-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/table/truncated-border-spacing-at-fragmentainer-end.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/table/zero-height-repeated-footer-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/tall-break-inside-avoid-at-start.html": {
     "reftest": "PASS"
@@ -3605,8 +3947,17 @@
   "css/css-break/truncated-margin-at-fragmentainer-end-002.html": {
     "reftest": "PASS"
   },
+  "css/css-break/uncontained-oof-in-inline-after-break-000-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-break/uncontained-oof-in-inline-after-break-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-break/underflow-from-next-page-print.html": {
     "reftest": "FAIL"
+  },
+  "css/css-break/wide-line-after-floats-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-break/widows-001.html": {
     "reftest": "PASS"

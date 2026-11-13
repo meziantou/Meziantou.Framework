@@ -1,5 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -21,6 +23,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The frame is read from its working copy (<see cref="WorkingFrameCopy"/>), so its rows are rewritten in place in any
 /// order: large frames are split into row bands, one per worker, and every pixel is computed alone, so the result does not
 /// depend on the number of workers.
+/// </para>
+/// <para>
+/// Pixels of 4 working samples are summed in the lanes of a vector of 4 doubles (two vectors of 2 doubles without 256-bit
+/// vectors), each lane in the order of the scalar sums.
 /// </para>
 /// </remarks>
 internal static class RadialBlurrer
@@ -56,6 +62,7 @@ internal static class RadialBlurrer
         var centerX = options.Center.X;
         var centerY = options.Center.Y;
         var maxSampleCount = options.MaxSampleCount;
+        var vector = channels == 4 && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar;
 
         // By sample count n, at offset n (n - 1) / 2: the cosines and sines of the n angles of a spin, or the n scales of a zoom
         var rotations = spin ? CreateRotations(amount, wholeCircle, maxSampleCount) : null;
@@ -79,6 +86,20 @@ internal static class RadialBlurrer
                     for (var c = 0; c < channels; c++)
                     {
                         pixel[c] = row[(x * channels) + c];
+                    }
+
+                    continue;
+                }
+
+                if (vector)
+                {
+                    if (Vector256.IsHardwareAccelerated)
+                    {
+                        BlurPixelVector256(copy, rotations, scales, count, centerX, centerY, dx, dy, pixel);
+                    }
+                    else
+                    {
+                        BlurPixelVector128(copy, rotations, scales, count, centerX, centerY, dx, dy, pixel);
                     }
 
                     continue;
@@ -189,6 +210,154 @@ internal static class RadialBlurrer
         }
     }
 
+    /// <summary>Sets a pixel of 4 working samples to the mean of its samples (<paramref name="rotations"/> of a spin, or <paramref name="scales"/> of a zoom), summed in two vectors of 2 lanes.</summary>
+    private static void BlurPixelVector128(WorkingFrameCopy copy, (double Cos, double Sin)[]? rotations, double[]? scales, int count, double centerX, double centerY, double dx, double dy, Span<double> pixel)
+    {
+        var sums = default(VectorSums);
+        var offset = count * (count - 1) / 2;
+        if (rotations is not null)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                var (cos, sin) = rotations[offset + i];
+                sums = AddBilinearSample(copy, centerX + (dx * cos) - (dy * sin), centerY + (dx * sin) + (dy * cos), sums);
+            }
+        }
+        else
+        {
+            for (var i = 0; i < count; i++)
+            {
+                var scale = scales![offset + i];
+                sums = AddBilinearSample(copy, centerX + (dx * scale), centerY + (dy * scale), sums);
+            }
+        }
+
+        var divisor = Vector128.Create((double)count);
+        unsafe
+        {
+            ref var first = ref MemoryMarshal.GetReference(pixel);
+            Vector128.StoreUnsafe(sums.Low / divisor, ref first);
+            Vector128.StoreUnsafe(sums.High / divisor, ref first, 2);
+        }
+    }
+
+    /// <summary>Sets a pixel of 4 working samples to the mean of its samples, summed in the 4 lanes of one vector.</summary>
+    private static void BlurPixelVector256(WorkingFrameCopy copy, (double Cos, double Sin)[]? rotations, double[]? scales, int count, double centerX, double centerY, double dx, double dy, Span<double> pixel)
+    {
+        var sums = Vector256<double>.Zero;
+        var offset = count * (count - 1) / 2;
+        if (rotations is not null)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                var (cos, sin) = rotations[offset + i];
+                sums = AddBilinearSample(copy, centerX + (dx * cos) - (dy * sin), centerY + (dx * sin) + (dy * cos), sums);
+            }
+        }
+        else
+        {
+            for (var i = 0; i < count; i++)
+            {
+                var scale = scales![offset + i];
+                sums = AddBilinearSample(copy, centerX + (dx * scale), centerY + (dy * scale), sums);
+            }
+        }
+
+        unsafe { Vector256.StoreUnsafe(sums / Vector256.Create((double)count), ref MemoryMarshal.GetReference(pixel)); }
+    }
+
+    /// <summary>Adds the bilinear interpolation of the 4 working samples at a point to the lanes of <paramref name="sums"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<double> AddBilinearSample(WorkingFrameCopy copy, double x, double y, Vector256<double> sums)
+    {
+        const double Bound = 1 << 30;
+        var u = Math.Clamp(x - 0.5, -Bound, Bound);
+        var v = Math.Clamp(y - 0.5, -Bound, Bound);
+        var x0 = Math.Floor(u);
+        var y0 = Math.Floor(v);
+        var fx = u - x0;
+        var fy = v - y0;
+        var column = (int)x0;
+        var row = (int)y0;
+        var size = copy.Size;
+        if (column >= 0 && column + 1 < size.Width && row >= 0 && row + 1 < size.Height)
+        {
+            var top = copy.GetRow(row);
+            var bottom = copy.GetRow(row + 1);
+            var offset = column * 4;
+            sums = AddPixel(top, offset, (1 - fx) * (1 - fy), sums);
+            sums = AddPixel(top, offset + 4, fx * (1 - fy), sums);
+            sums = AddPixel(bottom, offset, (1 - fx) * fy, sums);
+            return AddPixel(bottom, offset + 4, fx * fy, sums);
+        }
+
+        var pair = AddOutsideSample(copy, row, column, fx, fy, new VectorSums { Low = sums.GetLower(), High = sums.GetUpper() });
+        return Vector256.Create(pair.Low, pair.High);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<double> AddPixel(ReadOnlySpan<float> samples, int offset, double weight, Vector256<double> sums)
+    {
+        if (weight == 0)
+            return sums;
+
+        var pixel = unsafe(Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(samples.Slice(offset, 4))));
+        return sums + (Vector256.Create(weight) * Avx.ConvertToVector256Double(pixel));
+    }
+
+    /// <summary>Adds the bilinear interpolation of the 4 working samples at a point to <paramref name="sums"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static VectorSums AddBilinearSample(WorkingFrameCopy copy, double x, double y, VectorSums sums)
+    {
+        const double Bound = 1 << 30;
+        var u = Math.Clamp(x - 0.5, -Bound, Bound);
+        var v = Math.Clamp(y - 0.5, -Bound, Bound);
+        var x0 = Math.Floor(u);
+        var y0 = Math.Floor(v);
+        var fx = u - x0;
+        var fy = v - y0;
+        var column = (int)x0;
+        var row = (int)y0;
+        var size = copy.Size;
+        if (column >= 0 && column + 1 < size.Width && row >= 0 && row + 1 < size.Height)
+        {
+            var top = copy.GetRow(row);
+            var bottom = copy.GetRow(row + 1);
+            var offset = column * 4;
+            sums = AddPixel(top, offset, (1 - fx) * (1 - fy), sums);
+            sums = AddPixel(top, offset + 4, fx * (1 - fy), sums);
+            sums = AddPixel(bottom, offset, (1 - fx) * fy, sums);
+            return AddPixel(bottom, offset + 4, fx * fy, sums);
+        }
+
+        return AddOutsideSample(copy, row, column, fx, fy, sums);
+    }
+
+    /// <summary>Adds a sample that reads pixels beyond the edges with the scalar sums, which hold the sums of the lanes in the meantime.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static VectorSums AddOutsideSample(WorkingFrameCopy copy, int row, int column, double fx, double fy, VectorSums vectorSums)
+    {
+        var sums = new Sums { S0 = vectorSums.Low.GetElement(0), S1 = vectorSums.Low.GetElement(1), S2 = vectorSums.High.GetElement(0), S3 = vectorSums.High.GetElement(1) };
+        AddRow(copy, row, column, fx, 1 - fy, channels: 4, ref sums);
+        if (fy != 0)
+        {
+            AddRow(copy, row + 1, column, fx, fy, channels: 4, ref sums);
+        }
+
+        return new VectorSums { Low = Vector128.Create(sums.S0, sums.S1), High = Vector128.Create(sums.S2, sums.S3) };
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static VectorSums AddPixel(ReadOnlySpan<float> samples, int offset, double weight, VectorSums sums)
+    {
+        if (weight == 0)
+            return sums;
+
+        var pixel = unsafe(Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(samples.Slice(offset, 4))));
+        var factor = Vector128.Create(weight);
+        return new VectorSums { Low = sums.Low + (factor * Vector128.WidenLower(pixel)), High = sums.High + (factor * Vector128.WidenUpper(pixel)) };
+    }
+
     private static void AddRow(WorkingFrameCopy copy, int row, int column, double fx, double rowWeight, int channels, ref Sums sums)
     {
         var source = copy.MapRow(row);
@@ -228,6 +397,14 @@ internal static class RadialBlurrer
                 sums.S3 += weight * samples[offset + 3];
             }
         }
+    }
+
+    /// <summary>The sums of the 4 working samples of a pixel: samples 0 and 1 in the lanes of <see cref="Low"/>, 2 and 3 in those of <see cref="High"/>.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private struct VectorSums
+    {
+        public Vector128<double> Low;
+        public Vector128<double> High;
     }
 
     /// <summary>The sums of the samples of a pixel, one per working sample (1, 3 or 4).</summary>

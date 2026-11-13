@@ -4076,6 +4076,69 @@ public sealed class VectorizedKernelTests
     [Theory]
     [MemberData(nameof(BilateralCases))]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void RadialBlurVectorizedSumsMatchTheScalarLoops(PixelFormat format, ConvolutionEdgeMode mode)
+    {
+        // Zooms and spins (whole circle included) around centers inside and outside the frame, whose samples read pixels
+        // beyond the edges, pixel centers (weights of 0) and floating-point samples that are not numbers or infinite
+        var random = new Random(((int)format * 8) + (int)mode + 100);
+        const int Width = 23;
+        const int Height = 17;
+        RadialBlurOptions[] options =
+        [
+            new(RadialBlurKind.Zoom, new PointD(11.5, 8.5), 0.3) { EdgeMode = mode },
+            new(RadialBlurKind.Zoom, new PointD(3, 20), 1.5) { EdgeMode = mode, MaxSampleCount = 7 },
+            new(RadialBlurKind.Spin, new PointD(10, 7), 30) { EdgeMode = mode },
+            new(RadialBlurKind.Spin, new PointD(-4, 9.25), 360) { EdgeMode = mode },
+        ];
+        var bytes = new byte[Width * Height * PixelFormats.GetBytesPerPixel(format)];
+        if (format == PixelFormat.RgbaFloat)
+        {
+            var floats = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(bytes.AsSpan()));
+            for (var i = 0; i < floats.Length; i++)
+            {
+                floats[i] = random.Next(60) switch
+                {
+                    0 => float.NaN,
+                    1 => float.PositiveInfinity,
+                    2 => -0.25f,
+                    _ => (float)random.NextDouble(),
+                };
+            }
+        }
+        else
+        {
+            random.NextBytes(bytes);
+        }
+
+        foreach (var option in options)
+        {
+            Assert.Equal(Blur(forceScalar: true), Blur(forceScalar: false));
+
+            byte[] Blur(bool forceScalar)
+            {
+                using var image = format == PixelFormat.RgbaFloat
+                    ? Image.ImportPixelBytes<RgbaFloat>(bytes, Width, Height)
+                    : ImportBytes(format, bytes, Width, Height);
+                Resampler.TestForceScalar = forceScalar;
+                try
+                {
+                    image.RadialBlur(option);
+                }
+                finally
+                {
+                    Resampler.TestForceScalar = false;
+                }
+
+                var result = new byte[bytes.Length];
+                image.Frames[0].CopyPixelBytesTo(result);
+                return NormalizeNaNs(format, result);
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(BilateralCases))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void GuidedFilterAndBoxBlurVectorizedWindowSumsMatchTheScalarLoops(PixelFormat format, ConvolutionEdgeMode mode)
     {
         // Window sums of 1 to 25 values per pixel: windows wider and taller than the frame, and blocks of windows that end

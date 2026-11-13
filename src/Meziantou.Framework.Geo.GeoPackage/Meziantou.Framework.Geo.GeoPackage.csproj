@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Geo</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Description>Reads the feature tables of GeoPackage files (.gpkg), the SQLite format of GDAL, QGIS and ArcGIS, as the features of Meziantou.Framework.Geo, with a streaming reader and the R-tree spatial index to read a region.</Description>
     <PackageTags>geo;gis;geopackage;gpkg;sqlite;features;spatial-index</PackageTags>
 

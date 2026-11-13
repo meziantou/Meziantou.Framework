@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>3.0.16</Version>
+    <Version>3.0.17</Version>
     <Description>FullPath makes it easier to deal with paths</Description>
     <PackageTags>path, file-system, io, full-path, normalization</PackageTags>
   </PropertyGroup>

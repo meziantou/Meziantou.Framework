@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>4.0.4</Version>
+    <Version>4.0.5</Version>
     <Description>Generate optimized enum helper methods</Description>
     <PackageTags>enum, source-generator, roslyn, performance, codegen</PackageTags>
 

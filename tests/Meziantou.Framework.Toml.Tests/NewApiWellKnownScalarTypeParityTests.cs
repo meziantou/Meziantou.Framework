@@ -116,7 +116,7 @@ public sealed class NewApiWellKnownScalarTypeParityTests
     {
         var toml = TomlSerializer.Serialize(new ComplexPayload { Value = new Complex(1.5, -2) });
 
-        Assert.Equal("Value = {Real = 1.5, Imaginary = -2.0}" + Environment.NewLine, toml);
+        Assert.Equal("Value = {Real = 1.5, Imaginary = -2.0}\n", toml);
         Assert.Equal(new Complex(1.5, -2), TomlSerializer.Deserialize<ComplexPayload>(toml)!.Value);
     }
 
@@ -127,7 +127,7 @@ public sealed class NewApiWellKnownScalarTypeParityTests
 
         var toml = TomlSerializer.Serialize(new ComplexPayload { Value = new Complex(1, 2) }, options);
 
-        Assert.Equal("value = {real = 1.0, imaginary = 2.0}" + Environment.NewLine, toml);
+        Assert.Equal("value = {real = 1.0, imaginary = 2.0}\n", toml);
         Assert.Equal(new Complex(1, 2), TomlSerializer.Deserialize<ComplexPayload>(toml, options)!.Value);
     }
 
@@ -156,7 +156,7 @@ public sealed class NewApiWellKnownScalarTypeParityTests
 
         Assert.True(double.IsNaN(value.Real));
         Assert.Equal(double.NegativeInfinity, value.Imaginary);
-        Assert.Equal("Value = {Real = nan, Imaginary = -inf}" + Environment.NewLine, TomlSerializer.Serialize(new ComplexPayload { Value = value }));
+        Assert.Equal("Value = {Real = nan, Imaginary = -inf}\n", TomlSerializer.Serialize(new ComplexPayload { Value = value }));
     }
 
     [Fact]
@@ -193,7 +193,7 @@ public sealed class NewApiWellKnownScalarTypeParityTests
 
         var toml = TomlSerializer.Serialize(new ComplexPayload { Value = new Complex(1.5, -2) }, options);
 
-        Assert.Equal("Value = {Real = \"1.5\", Imaginary = \"-2\"}" + Environment.NewLine, toml);
+        Assert.Equal("Value = {Real = \"1.5\", Imaginary = \"-2\"}\n", toml);
         Assert.Equal(new Complex(1.5, -2), TomlSerializer.Deserialize<ComplexPayload>(toml, options)!.Value);
     }
 
@@ -206,7 +206,7 @@ public sealed class NewApiWellKnownScalarTypeParityTests
             Real = 1.0
             Imaginary = 2.0
 
-            """.ReplaceLineEndings(), toml);
+            """.ReplaceLineEndings("\n"), toml);
         Assert.Equal(new Complex(1, 2), TomlSerializer.Deserialize<Complex>(toml));
     }
 
@@ -217,7 +217,7 @@ public sealed class NewApiWellKnownScalarTypeParityTests
 
         var toml = TomlSerializer.Serialize(new Dictionary<string, List<Complex>> { ["Values"] = value });
 
-        Assert.Equal("Values = [{Real = 1.0, Imaginary = 2.0}, {Real = 3.0, Imaginary = 4.0}]" + Environment.NewLine, toml);
+        Assert.Equal("Values = [{Real = 1.0, Imaginary = 2.0}, {Real = 3.0, Imaginary = 4.0}]\n", toml);
         Assert.Equal(value, TomlSerializer.Deserialize<Dictionary<string, List<Complex>>>(toml)!["Values"]);
     }
 
@@ -277,7 +277,7 @@ public sealed class NewApiWellKnownScalarTypeParityTests
             ComplexDecimal128 = {Real = 0.1, Imaginary = 1E-400}
             NullableComplexSingle = {Real = 0.1, Imaginary = 2.0}
 
-            """.ReplaceLineEndings(), toml);
+            """.ReplaceLineEndings("\n"), toml);
 
         var roundtrip = TomlSerializer.Deserialize<Ieee754Payload>(toml)!;
         Assert.Equal(payload.BFloat16, roundtrip.BFloat16);
@@ -324,7 +324,7 @@ public sealed class NewApiWellKnownScalarTypeParityTests
     {
         var toml = TomlSerializer.Serialize(new Payload<Decimal64> { Value = Decimal64.Parse(value, CultureInfo.InvariantCulture) });
 
-        Assert.Equal("Value = " + expected + Environment.NewLine, toml);
+        Assert.Equal("Value = " + expected + "\n", toml);
         var roundtrip = TomlSerializer.Deserialize<Payload<Decimal64>>(toml)!.Value;
         Assert.Equal(value, roundtrip.ToString(CultureInfo.InvariantCulture));
     }
@@ -339,7 +339,7 @@ public sealed class NewApiWellKnownScalarTypeParityTests
 
         var toml = TomlSerializer.Serialize(new Payload<Decimal64> { Value = decimal64 });
 
-        Assert.Equal("Value = " + expected + Environment.NewLine, toml);
+        Assert.Equal("Value = " + expected + "\n", toml);
         var roundtrip = TomlSerializer.Deserialize<Payload<Decimal64>>(toml)!.Value;
         Assert.Equal(decimal64, roundtrip);
         Assert.Equal(Decimal64.IsNegative(decimal64), Decimal64.IsNegative(roundtrip));
@@ -399,7 +399,7 @@ public sealed class NewApiWellKnownScalarTypeParityTests
             decimal128 = 0.10
             complex = {Real = 1.0, Imaginary = 2.0}
 
-            """.ReplaceLineEndings(), toml);
+            """.ReplaceLineEndings("\n"), toml);
     }
 #endif
 

@@ -1,4 +1,181 @@
 {
+  "accessibility/crashtests/activedescendant-crash.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/add-detached-node.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/animated-textarea.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/append-image-using-illegal-map.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-hidden-with-select.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-modal-aria-hidden.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owned-with-role-change.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-deferred-parent-cycle.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-deferred-parent-restoration.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-destroyed-by-content-replacement.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-fallback-content.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-from-aria-hidden-subtree.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-inside-map.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-new-cycle.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-overlapping.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-owned-becomes-aria-hidden.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-owner-becomes-aria-hidden.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-presentation.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-remove-subtree-cycle.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-reparent.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-select.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-owns-with-role-change.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/aria-role-case-sensitive-fallback.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/bdo-table-cell.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/br-in-changed-subtree.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/content-visibility-focusable-scroller-descendant.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/content-visibility-generated-content-removal.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/delayed-ignored-change.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/detached-line.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/display-table-column.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/first-letter-inside-before-pseudo.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/hidden-textfield-with-combobox.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/iframe-owns-child.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/iframe-srcdoc.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/illegal-aria-owns-from-br.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/illegal-optgroup-structure.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/image-with-detached-text-child.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/img-map-pseudo.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/in-page-link-with-aria-hidden.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/included-descendant-dom-removal.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/included-descendant-layout-removal.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/inert-br-child.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/input-time-datalist.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/map-inside-map-2.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/map-inside-map.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/map-update-crash.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/missing-parent-map.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/missing-parent-multi-col.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/missing-parent.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/move-owned-inside-another-owned.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/multicol-with-text-change-role-relayout-crash.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/null-node.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/object-with-unrendered-text-fallback.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/remaining-invalid-objects.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/removed-from-flat-tree.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/select-in-display-none.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/slot-assignment-lockup.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/table-ignored-child.html": {
+    "crashtest": "PASS"
+  },
+  "accessibility/crashtests/validation-message.html": {
+    "crashtest": "PASS"
+  },
   "accessibility/svg-mouse-listener.html": {
     "total": 1
   }

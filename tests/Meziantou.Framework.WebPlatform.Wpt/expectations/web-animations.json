@@ -75,6 +75,12 @@
   "web-animations/animation-model/keyframe-effects/computed-keyframes-shorthands.html": {
     "total": 1
   },
+  "web-animations/animation-model/keyframe-effects/effect-in-removed-iframe-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/animation-model/keyframe-effects/effect-on-marquee-parent-crash.html": {
+    "crashtest": "PASS"
+  },
   "web-animations/animation-model/keyframe-effects/effect-value-context-filling.html": {
     "total": 14
   },
@@ -141,6 +147,129 @@
       "Basic event-based animation-trigger with 'repeat' behavior": "FAIL"
     }
   },
+  "web-animations/crashtests/animate-shorthand-var.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/animation-composited-timing-001.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/animation-composited-timing-002.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/animation-constructor-after-detach-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/animation-with-null-timeline-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/background-trailing-comma.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/color-mix-crashtest.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/css-length-range.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/d-path-neutral-value.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/detached-document-element-animate.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/effectively-infinite-timing-parameters.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/element-animate-font-style.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/element-animate-position.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/firefox-bug-2061293-1-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/firefox-bug-2061293-2-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/firefox-bug-2061293-3-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/get-computed-timing-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/get-keyframe-fontsize-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/get-timing-bad-pseudo-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/infinite-active-duration.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/iteration-composite-incompatible-length.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/iteration-composite-non-additive-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/iteration-composite-unsupported-propery.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/keyframe-effect-cross-doc-target.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/keyframe-effect-null-target.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/keyframeeffect-no-target.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/keyword-composition.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/length-interpolation-2.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/neutral-keyframe-crashtest.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/non-interpolable-transition.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/null-timeline-backdrop-filter-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/partially-overlapping-animations-one-not-current-001.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/regression-1063652-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/reparent-animating-element-001.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/reparent-animating-element-002.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/report-violation-in-detached-document-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/set-timeline-undefined-progress.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/sibling-index-offset-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/single-frame-filter-animation-no-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/stroke-animation-with-color-mix.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/crashtests/svg-length-unittype-crash.html": {
+    "crashtest": "PASS"
+  },
   "web-animations/idlharness.window.js": {
     "total": 218,
     "failures": {
@@ -196,10 +325,8 @@
   "web-animations/interfaces/Animatable/animate-no-browsing-context.html": {
     "total": 4,
     "failures": {
-      "Element.animate() creates an animation with the correct timeline when called on an element in a document without a browsing context": "FAIL",
       "Replacing the timeline of an animation targetting an element in a document without a browsing context and then adopting that element causes it to start updating style": "FAIL",
-      "Replacing the timeline of an animation targetting an element in a document without a browsing context leaves it in the pending state": "FAIL",
-      "The timeline associated with an animation trigger on an element in a document without a browsing context is inactive": "FAIL"
+      "Replacing the timeline of an animation targetting an element in a document without a browsing context leaves it in the pending state": "FAIL"
     }
   },
   "web-animations/interfaces/Animatable/animate.html": {
@@ -228,6 +355,12 @@
   },
   "web-animations/interfaces/Animation/cancel.html": {
     "total": 4
+  },
+  "web-animations/interfaces/Animation/commitStyles-crash.html": {
+    "crashtest": "PASS"
+  },
+  "web-animations/interfaces/Animation/commitStyles-svg-crash.html": {
+    "crashtest": "PASS"
   },
   "web-animations/interfaces/Animation/commitStyles.html": {
     "total": 36

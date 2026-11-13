@@ -83,6 +83,43 @@ internal sealed class RMQRMatrixBuilder
         }
     }
 
+    /// <summary>
+    /// Reads the codewords from the data modules of a symbol of this version, in the order of <see cref="PlaceDataBits"/>,
+    /// and removes the mask.
+    /// </summary>
+    public byte[] ReadDataBits(bool[,] modules)
+    {
+        ReserveFunctionPattern();
+        var codewords = new byte[RMQRVersion.GetTotalCodewords(_version)];
+        var bitIndex = 0;
+        var totalBits = codewords.Length * 8;
+        var readingUp = true;
+        for (var x = _width - 2; x > 0; x -= 2)
+        {
+            for (var row = 0; row < _height; row++)
+            {
+                var y = readingUp ? _height - 1 - row : row;
+                for (var colOffset = 0; colOffset < 2; colOffset++)
+                {
+                    var xx = x - colOffset;
+                    if (_isReserved[y, xx] || bitIndex >= totalBits)
+                        continue;
+
+                    if (modules[y, xx] != GetMaskBit(xx, y))
+                    {
+                        codewords[bitIndex >> 3] |= (byte)(0x80 >> (bitIndex & 7));
+                    }
+
+                    bitIndex++;
+                }
+            }
+
+            readingUp = !readingUp;
+        }
+
+        return codewords;
+    }
+
     private void PlaceFinderPattern()
     {
         for (var r = 0; r < 7; r++)
@@ -317,7 +354,7 @@ internal sealed class RMQRMatrixBuilder
         }
     }
 
-    private static (int Row, int Col)[] GetFinderSideFormatCoordinates()
+    public static (int Row, int Col)[] GetFinderSideFormatCoordinates()
     {
         var coordinates = new (int Row, int Col)[18];
         var index = 0;
@@ -338,7 +375,7 @@ internal sealed class RMQRMatrixBuilder
         return coordinates;
     }
 
-    private (int Row, int Col)[] GetSubFinderSideFormatCoordinates()
+    public (int Row, int Col)[] GetSubFinderSideFormatCoordinates()
     {
         var coordinates = new (int Row, int Col)[18];
         var index = 0;

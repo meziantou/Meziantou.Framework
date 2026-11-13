@@ -2,6 +2,9 @@
   "css/css-borders/border-image-color-scheme.html": {
     "reftest": "PASS"
   },
+  "css/css-borders/border-image-gradient-zero-size-transform-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-borders/border-image-width-interpolation-math-functions.html": {
     "total": 48
   },
@@ -190,6 +193,9 @@
   },
   "css/css-borders/border-shape/border-shape-two-shapes-shadow.html": {
     "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/crashtests/border-shape-shape-arc-animation-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-borders/border-width-hairline.html": {
     "total": 5
@@ -418,6 +424,9 @@
   },
   "css/css-borders/corner-shape/corner-shape-video-border.html": {
     "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-zoom-overlap-extreme-values-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-borders/corner-shape/corner-shorthand-rendering.html": {
     "reftest": "PASS"

@@ -23,6 +23,9 @@
   "css/css-animations/CSSAnimation-getCurrentTime.tentative.html": {
     "total": 2
   },
+  "css/css-animations/CSSAnimation-getKeyframes-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-animations/CSSAnimation-id.tentative.html": {
     "total": 1
   },
@@ -207,6 +210,9 @@
   "css/css-animations/animation-transform-pause-and-set-time.html": {
     "reftest": "PASS"
   },
+  "css/css-animations/animation-transition-color-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-animations/animationevent-interface.html": {
     "total": 42
   },
@@ -227,6 +233,114 @@
   },
   "css/css-animations/computed-style-animation-parsing.html": {
     "total": 7
+  },
+  "css/css-animations/crashtests/add-pseudo-while-animating-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/animation-end.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/animation-transition-collision.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/background-shorthand.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/base-render-style-body.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/base-render-style.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/cancel-update.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/checkbox-padding-animation.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/chrome-bug-404743651.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/chrome-bug-405795970.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/chrome-bug-415627003.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/chrome-bug-576322434.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/composited-identity-animation-layer-squash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/css-animation-null-effect.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/font-builder.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/inherit.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/keyframe-easing-var-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/keyframe-timing-function-unset.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/keyframes-rename-after-remove-rule.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/marquee-element-move-and-toggle-visibility.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/multiple-same-animations-asan.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/option-element.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/option-opacity-inherit.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/pause.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/pseudo-element-animation-with-color.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/pseudo-element-animation-with-marker.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/replace-keyframes-animating-filter-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/servo-bug-45008.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/svg-element-css-animation.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/svg-use-animation-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/transform-css-animation-squash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/transform-properties-from-none-to-none-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/universal-selector-opacity-inherit.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/update-delay-of-paused-animation.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/webkit-filter-default-arg.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/crashtests/zoomed-length.html": {
+    "crashtest": "PASS"
   },
   "css/css-animations/dialog-animation.html": {
     "total": 1
@@ -261,6 +375,9 @@
   "css/css-animations/display-none-to-display-block.html": {
     "reftest": "PASS"
   },
+  "css/css-animations/display-via-custom-prop-animation-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-animations/empty-pseudo-class-with-animation.html": {
     "total": 1
   },
@@ -294,6 +411,9 @@
   "css/css-animations/jump-start-animation-before-phase.html": {
     "reftest": "PASS"
   },
+  "css/css-animations/keyframes-remove-documentElement-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-animations/keyframes-rule-caching.html": {
     "total": 1
   },
@@ -302,6 +422,9 @@
   },
   "css/css-animations/keyframes-unrelated-custom-property.html": {
     "total": 1
+  },
+  "css/css-animations/keyframes-zero-angle-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-animations/missing-values-first-keyframe.html": {
     "total": 1
@@ -314,6 +437,15 @@
   },
   "css/css-animations/nested-scale-animations.html": {
     "reftest": "PASS"
+  },
+  "css/css-animations/neutral-var-keyframe-cycle-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/neutral-var-keyframe-cycle-registered-additive-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-animations/neutral-var-keyframe-cycle-registered-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-animations/parent-after-change-style-pseudo-element-flicker.html": {
     "reftest": "PASS"
@@ -476,6 +608,9 @@
   "css/css-animations/sample-on-last-keyframe.html": {
     "total": 1
   },
+  "css/css-animations/simultaneous-animations-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-animations/stability/animation-event-destroy-renderer.html?animationiteration": {
     "total": 1
   },
@@ -511,5 +646,8 @@
   },
   "css/css-animations/translation-animation-subpixel-offset.html": {
     "reftest": "PASS"
+  },
+  "css/css-animations/webkit-writing-mode-crash.html": {
+    "crashtest": "PASS"
   }
 }

@@ -9,21 +9,31 @@ internal sealed class DataMatrixPlacement
     private readonly int _columns;
     private readonly bool[,] _bits;
     private readonly bool[,] _placed;
+    private readonly bool _isReading;
 
-    private DataMatrixPlacement(int[] codewords, int rows, int columns)
+    private DataMatrixPlacement(int[] codewords, int rows, int columns, bool[,]? source)
     {
         _codewords = codewords;
         _rows = rows;
         _columns = columns;
-        _bits = new bool[rows, columns];
+        _bits = source ?? new bool[rows, columns];
         _placed = new bool[rows, columns];
+        _isReading = source is not null;
     }
 
     public static bool[,] Place(int[] codewords, int rows, int columns)
     {
-        var placement = new DataMatrixPlacement(codewords, rows, columns);
+        var placement = new DataMatrixPlacement(codewords, rows, columns, source: null);
         placement.Place();
         return placement._bits;
+    }
+
+    /// <summary>Reads the codewords from the mapping matrix, in the placement order.</summary>
+    public static int[] Read(bool[,] mapping, int codewordCount)
+    {
+        var placement = new DataMatrixPlacement(new int[codewordCount], mapping.GetLength(0), mapping.GetLength(1), mapping);
+        placement.Place();
+        return placement._codewords;
     }
 
     private void Place()
@@ -88,7 +98,7 @@ internal sealed class DataMatrixPlacement
         while (row < _rows || column < _columns);
 
         // The bottom-right corner is not covered by any codeword in some sizes: it is a fixed pattern
-        if (!_placed[_rows - 1, _columns - 1])
+        if (!_isReading && !_placed[_rows - 1, _columns - 1])
         {
             _bits[_rows - 1, _columns - 1] = true;
             _bits[_rows - 2, _columns - 2] = true;
@@ -110,8 +120,18 @@ internal sealed class DataMatrixPlacement
         }
 
         // Bit 1 is the most significant bit of the codeword
-        _bits[row, column] = position < _codewords.Length && (_codewords[position] & (1 << (8 - bit))) != 0;
         _placed[row, column] = true;
+        if (_isReading)
+        {
+            if (position < _codewords.Length && _bits[row, column])
+            {
+                _codewords[position] |= 1 << (8 - bit);
+            }
+
+            return;
+        }
+
+        _bits[row, column] = position < _codewords.Length && (_codewords[position] & (1 << (8 - bit))) != 0;
     }
 
     private void Utah(int row, int column, int position)

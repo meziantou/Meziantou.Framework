@@ -7,7 +7,9 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// several browsing contexts (<see cref="BrowsingContextOptions.Permissions"/>), and used from any thread.
 /// </summary>
 /// <remarks>
-/// The state is keyed by the top-level origin of the document that queries it (the permission key of the specification).
+/// The state is keyed by the top-level origin of the document that queries it (the permission key of the specification),
+/// except the state of the <c>storage-access</c> permission, keyed by the sites of the top-level origin and of the origin
+/// of the document, separated by a space (e.g. <c>https://news.example https://social.example</c>).
 /// The documents that are not allowed to use a feature by their permissions policy, and the documents and workers that are
 /// not secure contexts, see the permissions as <see cref="PermissionState.Denied"/>. Changing a state fires the
 /// <c>change</c> event of the <see cref="PermissionStatus"/> objects whose state changed.

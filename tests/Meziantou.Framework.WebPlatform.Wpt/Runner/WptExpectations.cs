@@ -144,6 +144,49 @@ internal static class WptExpectations
         Assert.Fail(errors.ToString());
     }
 
+    /// <summary>Returns the expected status of a crash test (<c>{ "crashtest": "ERROR" }</c>), or null when it has no expectations.</summary>
+    public static string? GetExpectedStatus(WptCrashtest test)
+    {
+        lock (LockObject)
+        {
+            return GetFile(GetFileName(test.RelativePath))[test.Id]?["crashtest"]?.GetValue<string>();
+        }
+    }
+
+    /// <summary>Checks the result of a crash test: its status (<c>PASS</c>, <c>ERROR</c>, <c>TIMEOUT</c>) is the one of the expectations.</summary>
+    public static void Check(WptCrashtest test, WptCrashtestResult result)
+    {
+        if (UpdateMode)
+        {
+            Write(test.RelativePath, test.Id, new JsonObject { ["crashtest"] = result.Status });
+            return;
+        }
+
+        var expected = GetExpectedStatus(test);
+        if (expected == result.Status)
+            return;
+
+        var errors = new StringBuilder();
+        if (expected is null)
+        {
+            errors.AppendLine("The test has no expectations. Run the tests with WPT_UPDATE_EXPECTATIONS=1 to add them.");
+        }
+
+        errors.AppendLine($"{(result.Status == "PASS" ? "UNEXPECTED PASS" : "REGRESSION")}: expected {expected ?? "PASS"}, actual {result.Status}");
+        if (result.Message is not null)
+        {
+            errors.AppendLine(result.Message);
+        }
+
+        errors.AppendLine().AppendLine("Log:");
+        foreach (var line in result.Log)
+        {
+            errors.AppendLine(line);
+        }
+
+        Assert.Fail(errors.ToString());
+    }
+
     private static void Update(WptTest test, WptResult result)
     {
         var entry = new JsonObject();

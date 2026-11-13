@@ -19,6 +19,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     };
 
     private static TValue Get_clipboard(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Clipboard); }
+    private static TValue Get_credentials(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Credentials); }
     private static TValue Get_devicePosture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.DevicePosture); }
     private static TValue Get_geolocation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Geolocation); }
     private static TValue Get_userActivation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.UserActivation); }
@@ -128,6 +129,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "clipboard", Get_clipboard, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "credentials", Get_credentials, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "devicePosture", Get_devicePosture, null);
         r.DefineAttribute(instanceTarget, "geolocation", Get_geolocation, null);
         r.DefineAttribute(instanceTarget, "userActivation", Get_userActivation, null);

@@ -26,6 +26,9 @@
   "resize-observer/iframe-same-origin.html": {
     "reftest": "PASS"
   },
+  "resize-observer/multiple-observers-with-mutation-crash.html": {
+    "crashtest": "PASS"
+  },
   "resize-observer/notify.html": {
     "total": 15
   },

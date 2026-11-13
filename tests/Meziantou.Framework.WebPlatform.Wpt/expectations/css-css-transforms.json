@@ -355,6 +355,72 @@
   "css/css-transforms/composited-under-rotateY-180deg.html": {
     "reftest": "PASS"
   },
+  "css/css-transforms/crashtests/fragmented-block-in-inline-with-perspective.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/large-scale3d-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/large-scaley-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/locked-display-transform-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/preserve3d-containing-block-inline-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/preserve3d-containing-block-inline-002.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/preserve3d-containing-br-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/preserve3d-containing-br-002.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/preserve3d-inline-hit-test.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/preserve3d-scene-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/preserve3d-scene-002.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/preserve3d-svg-foreign-object-hit-test.svg": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/transform-marquee-resize-div-image-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/transform-origin.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/transformed-scroller-snapping.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/uninvertible-transform-and-script-queries.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/w-crossing-zero-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/w-negative-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/w-negative-002.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/w-negative-003.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/zero-perspective-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transforms/crashtests/zero-perspective-002.html": {
+    "crashtest": "PASS"
+  },
   "css/css-transforms/css-rotate-2d-3d-001.html": {
     "reftest": "PASS"
   },
@@ -768,6 +834,9 @@
   },
   "css/css-transforms/inline-with-filter-and-hidden-backface.html": {
     "total": 1
+  },
+  "css/css-transforms/large-matrix-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-transforms/matrix/svg-matrix-001.html": {
     "reftest": "PASS"
@@ -1443,8 +1512,14 @@
   "css/css-transforms/text-perspective-001.html": {
     "reftest": "PASS"
   },
+  "css/css-transforms/transform-2d-clip-and-filter-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-transforms/transform-2d-getComputedStyle-001.html": {
     "total": 5
+  },
+  "css/css-transforms/transform-3d-fixed-under-fixed-opacity-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-transforms/transform-3d-rotateY-stair-above-001.xht": {
     "reftest": "PASS"
@@ -2181,6 +2256,9 @@
   "css/css-transforms/transform-percent-010.html": {
     "reftest": "PASS"
   },
+  "css/css-transforms/transform-preserve3d-grouping-property-root-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-transforms/transform-propagate-inherit-boolean-001.html": {
     "reftest": "PASS"
   },
@@ -2240,6 +2318,9 @@
   },
   "css/css-transforms/transform-scaley-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-transforms/transform-scroll-child-tweak-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-transforms/transform-singular-001.html": {
     "reftest": "PASS"
@@ -2738,6 +2819,9 @@
   },
   "css/css-transforms/ttwf-transform-translatey-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-transforms/webkit-transform-origin-x-supports-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-transforms/z-index-does-not-apply.html": {
     "reftest": "PASS"

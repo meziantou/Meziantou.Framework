@@ -82,8 +82,9 @@ public sealed class ImageDecodeOptions
     /// <para>
     /// The decoded image has <c>ceil(width / ScaleDenominator)</c> by <c>ceil(height / ScaleDenominator)</c> pixels,
     /// computed from fewer samples than a full decode, for less time and memory, by the formats that support it (see the
-    /// format reference of the readme). The pixels are close to a resize of the full image, not equal to it. The metadata
-    /// is the one of the file, like after a resize.
+    /// format reference of the readme). The pixels are close to a resize of the full image, not equal to it; an interlaced
+    /// PNG image gives the pixel at the top left of each block, from its first Adam7 passes. The metadata is the one of the
+    /// file, like after a resize.
     /// </para>
     /// <para>
     /// A file that cannot be decoded at this scale (a format that only decodes at full resolution, or a scale that the file
@@ -157,9 +158,12 @@ public sealed class ImageDecodeOptions
     /// </para>
     /// <para>
     /// A TIFF page reads and decompresses only the strips or the tiles that the area meets, and an AVIF or HEIC grid decodes
-    /// only the tiles that the area needs (an AVIF or HEIC image that is not a grid is decoded whole, and only the area is
-    /// kept). The pixels are those of a full decode in that area. The blocks and the tiles that are not decoded are not
-    /// validated: an error in them is not reported.
+    /// only the tiles that the area needs. An AVIF or HEIC image that is not a grid is decoded down to the rows the area needs
+    /// (with a margin for the in-loop filters, a row of 64 or 128 pixels at most), into planes that hold these rows only, and
+    /// an AVIF frame of several tiles skips the tiles far from the area; an image that is not a single intra picture (an AVIF
+    /// image of several layers), an image built from other images and each image of a sequence are decoded whole, and only
+    /// the area is kept. The pixels are those of a full decode in that area. The blocks, the rows and the tiles that are not
+    /// decoded are not validated: an error in them is not reported.
     /// </para>
     /// <para>
     /// The other formats cannot decode an area: a load with a region is an <see cref="UnsupportedImageFeatureException"/>, and

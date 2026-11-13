@@ -38,6 +38,12 @@ internal enum LinkResourceKind
 
     /// <summary>https://html.spec.whatwg.org/multipage/links.html#link-type-dns-prefetch: nothing is fetched (the loader has no DNS cache).</summary>
     DnsPrefetch,
+
+    /// <summary>
+    /// A compression dictionary (https://www.rfc-editor.org/rfc/rfc9842#section-2.1.5): the resource is fetched in CORS mode
+    /// once the document is completely loaded, and its response registers a dictionary (see <see cref="CompressionDictionaries"/>).
+    /// </summary>
+    CompressionDictionary,
 }
 
 /// <summary>
@@ -238,6 +244,7 @@ public partial class HtmlLinkElement
         var isIcon = false;
         var isPreconnect = false;
         var isDnsPrefetch = false;
+        var isCompressionDictionary = false;
         foreach (var token in (GetAttributeValue("rel") ?? "").Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries))
         {
             isStyleSheet |= InfraAscii.EqualsIgnoreAsciiCase(token, "stylesheet");
@@ -255,6 +262,7 @@ public partial class HtmlLinkElement
             // dependent: the library preconnects (it does not fetch the next document of the series)
             isPreconnect |= InfraAscii.EqualsIgnoreAsciiCase(token, "preconnect") || InfraAscii.EqualsIgnoreAsciiCase(token, "next");
             isDnsPrefetch |= InfraAscii.EqualsIgnoreAsciiCase(token, "dns-prefetch");
+            isCompressionDictionary |= InfraAscii.EqualsIgnoreAsciiCase(token, "compression-dictionary");
         }
 
         LinkResourceKind kind;
@@ -303,6 +311,11 @@ public partial class HtmlLinkElement
             // https://html.spec.whatwg.org/multipage/links.html#link-type-prefetch: the destination is the empty string
             kind = LinkResourceKind.Prefetch;
         }
+        else if (isCompressionDictionary)
+        {
+            // https://www.rfc-editor.org/rfc/rfc9842#section-2.1.5: the destination is the empty string
+            kind = LinkResourceKind.CompressionDictionary;
+        }
         else if (isIcon && environmentDocument.ContentSecurityPoliciesOrNull is { Count: > 0 })
         {
             // The icon of a document with content security policies: its fetch is blocked by img-src (nothing is rendered, so
@@ -330,8 +343,9 @@ public partial class HtmlLinkElement
 
         // https://html.spec.whatwg.org/multipage/semantics.html#create-a-link-request: a potential-CORS request, whose mode is
         // "cors" when the element has a crossorigin attribute (a font preload without the attribute does not match the
-        // request of the font, which is always a CORS request)
-        return new LinkResource(kind, url, destination, Cors: HasAttribute("crossorigin"), alternate, moduleType);
+        // request of the font, which is always a CORS request). As in Chromium, a compression dictionary is always fetched in
+        // "cors" mode.
+        return new LinkResource(kind, url, destination, Cors: kind == LinkResourceKind.CompressionDictionary || HasAttribute("crossorigin"), alternate, moduleType);
     }
 
     /// <summary>
@@ -353,6 +367,7 @@ public partial class HtmlLinkElement
         {
             { Kind: LinkResourceKind.StyleSheet } value => string.Join(' ', value.Kind, value.Destination, value.Cors, value.Alternate, ReferrerPolicy, value.Url.Serialize()),
             { Kind: LinkResourceKind.Preload } value => string.Join(' ', value.Kind, value.Destination, value.Url.Serialize()),
+            { Kind: LinkResourceKind.CompressionDictionary } value => string.Join(' ', value.Kind, !HasAttribute("crossorigin") ? "none" : SubresourceFetching.UsesCredentials(this) ? "use-credentials" : "anonymous", ReferrerPolicy, value.Url.Serialize()),
             { } value => string.Join(' ', value.Kind, value.Url.Serialize()),
             _ => null,
         };
@@ -562,6 +577,22 @@ public partial class HtmlLinkElement
                 Nonce = CryptographicNonce,
             };
             engine.PreloadModuleScript(window, linkResource.Url.Serialize(), moduleType, linkResource.Destination, options, this, success => document.QueueElementTask(() => FireLoadOrError(success)));
+            return;
+        }
+
+        if (linkResource.Kind == LinkResourceKind.CompressionDictionary)
+        {
+            // https://www.rfc-editor.org/rfc/rfc9842#section-2.1.5: "the client SHOULD fetch the dictionary [...] when the client
+            // is idle": the dictionary is fetched once the document is completely loaded, and its response registers it. As in
+            // Chromium, the integrity attribute is ignored.
+            document.RunWhenCompletelyLoaded(() =>
+            {
+                if (generation != _fetchGeneration || document.BrowsingContext is null)
+                    return;
+
+                var dictionaryRequest = SubresourceFetching.CreateRequest(document, linkResource.Url, RequestDestination.Empty, cors: true, ReferrerPolicy, this, useCredentials: SubresourceFetching.UsesCredentials(this));
+                SubresourceFetching.FetchResponse(document, dictionaryRequest, response => FireLoadOrError(!response.IsNetworkError));
+            });
             return;
         }
 

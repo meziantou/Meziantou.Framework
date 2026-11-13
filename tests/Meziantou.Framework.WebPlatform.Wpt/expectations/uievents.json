@@ -86,6 +86,9 @@
   "uievents/mouse/cancel-mousedown-in-subframe.html": {
     "total": 2
   },
+  "uievents/mouse/crashtests/retrieve_coords_after_moving_target_outside_subdoc_and_hide_the_subdoc.html": {
+    "crashtest": "PASS"
+  },
   "uievents/mouse/layer-coords-transform.html": {
     "total": 2,
     "failures": {

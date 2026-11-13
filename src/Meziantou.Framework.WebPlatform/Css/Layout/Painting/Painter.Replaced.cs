@@ -379,7 +379,7 @@ internal sealed partial class Painter
 
         // https://drafts.csswg.org/css-images-3/#the-image-orientation: the EXIF orientation of the image (unless it is none), and
         // the frame of an animated image displayed now
-        image = GetDisplayedFrame(image.WithOrientation(fragment.Box.Style.Layout.Replaced.ImageOrientation.FromImage));
+        image = GetDisplayedFrame(image.WithOrientation(fragment.Box.Style.Layout.Replaced.ImageOrientation.FromImage), fragment.Box.Style);
 
         var sampling = fragment.Box.Style.GetComputedValue("image-rendering") switch
         {

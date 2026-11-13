@@ -80,6 +80,9 @@
   "css/css-contain/contain-content-011.html": {
     "reftest": "PASS"
   },
+  "css/css-contain/contain-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-contain/contain-flexbox-outline.html": {
     "total": 1
   },
@@ -938,6 +941,9 @@
   "css/css-contain/contain-style-ol-ordinal.html": {
     "reftest": "PASS"
   },
+  "css/css-contain/contain-style-remove-element-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-contain/contain-subgrid-001.html": {
     "reftest": "PASS"
   },
@@ -1286,6 +1292,9 @@
   "css/css-contain/content-visibility/content-visibility-animation-with-scroll-timeline-in-hidden-subtree.html": {
     "total": 1
   },
+  "css/css-contain/content-visibility/content-visibility-auto-applied-to-th-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-contain/content-visibility/content-visibility-auto-first-observation-immediate.html": {
     "total": 1
   },
@@ -1310,6 +1319,9 @@
   "css/css-contain/content-visibility/content-visibility-auto-relevancy-updates.html": {
     "total": 3
   },
+  "css/css-contain/content-visibility/content-visibility-auto-selection-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-contain/content-visibility/content-visibility-auto-state-changed-first-observation.html": {
     "total": 2
   },
@@ -1331,14 +1343,23 @@
   "css/css-contain/content-visibility/content-visibility-auto-with-inline-size-containment.html": {
     "total": 2
   },
+  "css/css-contain/content-visibility/content-visibility-background-clip-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-contain/content-visibility/content-visibility-canvas.html": {
     "reftest": "PASS"
+  },
+  "css/css-contain/content-visibility/content-visibility-continuations-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-contain/content-visibility/content-visibility-fieldset-size.html": {
     "reftest": "PASS"
   },
   "css/css-contain/content-visibility/content-visibility-forced-layout-client-rects.html": {
     "total": 5
+  },
+  "css/css-contain/content-visibility/content-visibility-form-controls-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-contain/content-visibility/content-visibility-hidden-and-float-inside-skipped-subtree.html": {
     "reftest": "PASS"
@@ -1364,8 +1385,17 @@
   "css/css-contain/content-visibility/content-visibility-hidden-with-column-spanner.html": {
     "reftest": "PASS"
   },
+  "css/css-contain/content-visibility/content-visibility-hit-test-contents-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-contain/content-visibility/content-visibility-img.html": {
     "total": 1
+  },
+  "css/css-contain/content-visibility/content-visibility-in-relpos-before-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/content-visibility-in-svg-000-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-contain/content-visibility/content-visibility-input-image.html": {
     "total": 1
@@ -1394,6 +1424,9 @@
   "css/css-contain/content-visibility/content-visibility-on-ruby.html": {
     "reftest": "PASS"
   },
+  "css/css-contain/content-visibility/content-visibility-output-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-contain/content-visibility/content-visibility-paint-containment-001.html": {
     "reftest": "PASS"
   },
@@ -1408,6 +1441,9 @@
   },
   "css/css-contain/content-visibility/content-visibility-resize-observer-no-error.html": {
     "reftest": "PASS"
+  },
+  "css/css-contain/content-visibility/content-visibility-selection-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-contain/content-visibility/content-visibility-size-containment-001.html": {
     "total": 13,
@@ -1461,6 +1497,9 @@
   },
   "css/css-contain/content-visibility/content-visibility-web-animation-in-auto-subtree.html": {
     "total": 1
+  },
+  "css/css-contain/content-visibility/content-visibility-with-float-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-contain/content-visibility/content-visibility-with-popover-top-layer-000.html": {
     "reftest": "PASS"
@@ -1525,6 +1564,39 @@
   "css/css-contain/content-visibility/content-visibility-with-top-layer-in-auto-subtree-removal.html": {
     "reftest": "PASS"
   },
+  "css/css-contain/content-visibility/contentvisibility-nestedslot-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/crashtests/area-focus-in-hidden.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/crashtests/container-query-force-visible-for-accessibility.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/crashtests/content-visibility-transition-finished-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/crashtests/div-in-hidden.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/crashtests/fieldset.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/crashtests/first-line-and-inline-block.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/crashtests/grid-dynamic.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/crashtests/scroll-into-view-target-moved-to-other-document.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/detach-locked-slot-children-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/display-ruby-text-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-contain/content-visibility/document-element-computed-style.html": {
     "total": 1
   },
@@ -1540,8 +1612,20 @@
   "css/css-contain/content-visibility/element-reassigned-to-slot-in-skipped-subtree.html": {
     "reftest": "PASS"
   },
+  "css/css-contain/content-visibility/hidden-execcommand-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/hidden-pseudo-element-removed-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-contain/content-visibility/inheritance.html": {
     "total": 2
+  },
+  "css/css-contain/content-visibility/locked-frame-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/meter-selection-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-contain/content-visibility/parsing/content-visibility-computed.html": {
     "total": 3
@@ -1558,6 +1642,75 @@
   "css/css-contain/content-visibility/scrollIntoView-with-focus-target-with-contents-hidden.html": {
     "reftest": "PASS"
   },
+  "css/css-contain/content-visibility/slot-content-visibility-1-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-10-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-11-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-12-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-13-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-14-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-15-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-16-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-17-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-18-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-19-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-2-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-20-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-21-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-22-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-3-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-4-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-5-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-6-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-7-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-8-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/slot-content-visibility-9-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/content-visibility/touch-action-beside-display-locked-fixedpos-iframe-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-contain/counter-scoping-001.html": {
     "reftest": "PASS"
   },
@@ -1569,6 +1722,42 @@
   },
   "css/css-contain/counter-scoping-004.html": {
     "reftest": "PASS"
+  },
+  "css/css-contain/crashtests/change-text-node-data-ellipsis.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/crashtests/change-text-node-data.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/crashtests/contain-dynamic-change-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/crashtests/contain-nested-crash-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/crashtests/contain-nested-crash-002.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/crashtests/contain-nested-crash-003.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/crashtests/contain-nested-crash-004.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/crashtests/contain-nested-relayout-boundary.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/crashtests/contain-style-discarded-item.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/crashtests/contain-style-first-letter-colgroup.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/crashtests/contain-style-first-letter.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-contain/crashtests/flex-item-with-inline-block-with-contain.html": {
+    "crashtest": "PASS"
   },
   "css/css-contain/inheritance.html": {
     "total": 2
@@ -1611,5 +1800,8 @@
   },
   "css/css-contain/quote-scoping-invalidation-004.html": {
     "reftest": "PASS"
+  },
+  "css/css-contain/quote-scoping-shadow-dom-crash.html": {
+    "crashtest": "PASS"
   }
 }

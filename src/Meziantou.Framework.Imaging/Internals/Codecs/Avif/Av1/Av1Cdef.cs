@@ -44,7 +44,7 @@ internal static class Av1Cdef
     /// block whose direction is not known yet, which receives it.
     /// </param>
     public static void Apply(Av1FrameBuffer frame, Av1FrameState state, Span<ushort> source, CancellationToken cancellationToken, Span<int> directions = default)
-        => ApplyRows(frame, state, source, default, default, 0, frame.Header.MiRows, cancellationToken, directions);
+        => ApplyRows(frame, state, source, default, default, 0, frame.DecodedMiRows, cancellationToken, directions);
 
     /// <summary>Returns the number of samples of the copies of <see cref="SaveBandEdge"/>: 2 rows above and 2 rows below the edge of a band, for each plane.</summary>
     public static int GetBandEdgeLength(Av1FrameBuffer frame) => frame.Sequence.PlaneCount * BandEdgeRows * frame.GetPlane(0).Stride;
@@ -93,7 +93,8 @@ internal static class Av1Cdef
         var cdefIdx = state.CdefIdx;
         var flags = state.Flags;
         var miCols = header.MiCols;
-        var miRows = header.MiRows;
+        // A frame decoded for a window ends with its decoded rows
+        var miRows = frame.DecodedMiRows;
 
         // The offsets of the taps of the interior blocks of each plane in each direction, and their lowest and highest values
         Span<int> taps = stackalloc int[3 * 8 * TapStride];

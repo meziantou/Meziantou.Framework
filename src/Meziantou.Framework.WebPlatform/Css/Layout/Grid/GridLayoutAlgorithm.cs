@@ -1303,6 +1303,16 @@ internal sealed partial class GridLayoutAlgorithm
 
             state.ItemRows = itemRows;
         }
+        else if (_isLanes && _lanesPlaced && _items.Count > 0)
+        {
+            var areas = new Dictionary<ContainerBox, GridLanesItemArea>(_items.Count);
+            foreach (var item in _items)
+            {
+                areas[item.Box] = new GridLanesItemArea(item.GetStart(_laneAxis), item.GetEnd(_laneAxis), item.LanesBoxStart, item.LanesBoxEnd);
+            }
+
+            state.LanesItemAreas = areas;
+        }
 
         _box.LayoutState = state;
         var columns = _input?.Columns is not null ? GridTrackSizes.ForSubgrid(_columns.Length, _explicitColumns.ExplicitLineNames) : CreateTrackSizes(_columns, _explicitColumns, _columnOffset);

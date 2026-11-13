@@ -6174,11 +6174,12 @@ public sealed class VectorizedKernelTests
     public void DrawingFilterBlurColumnStripsMatchTheColumnByColumnReference()
     {
         // Surfaces narrower than a strip, between two strips, shorter than the windows; edges inside, around and across
-        // the surface; the weights below a deviation of 2 and the three boxes of odd and even sizes above it
+        // the surface; the weights below a deviation of 2 and the three boxes of odd and even sizes above it, up to boxes
+        // many times wider than the edges, whose first windows sum repeated positions once with a weight
         var random = new Random(20261019);
         var scope = AllocationScope.Create(configuration: null);
         (int Width, int Height)[] sizes = [(1, 1), (1, 19), (19, 1), (3, 2), (7, 13), (8, 8), (9, 30), (17, 5), (33, 12)];
-        double[] sigmas = [0.4, 1, 1.7, 1.99, 2, 2.6, 3, 3.5, 5.5, 12];
+        double[] sigmas = [0.4, 1, 1.7, 1.99, 2, 2.6, 3, 3.5, 5.5, 12, 60];
         foreach (var (width, height) in sizes)
         {
             foreach (var sigma in sigmas)

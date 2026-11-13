@@ -94,6 +94,20 @@ internal sealed class WptHandlerResponse
     /// </summary>
     public bool ChunksError { get; set; }
 
+    /// <summary>
+    /// The bytes of a whole HTTP/1.1 response that the handler writes on the connection itself (<c>response.writer.write()</c>
+    /// with <c>add_required_headers = False</c>, then <c>close_connection</c>), or null: the network layer parses it
+    /// (<see cref="WptHttpMessage.Parse"/>), and the other properties are ignored.
+    /// </summary>
+    public byte[]? RawMessage { get; set; }
+
+    /// <summary>
+    /// Whether <see cref="Body"/> is encoded with the content coding of the <c>Content-Encoding</c> header, as it is sent on the
+    /// connection: the network layer decodes it, and a body that cannot be decoded fails after the headers. By default the
+    /// body of a handler is the decoded content.
+    /// </summary>
+    public bool BodyIsContentEncoded { get; set; }
+
     /// <summary>Sets the content as a byte string.</summary>
     public string Content
     {

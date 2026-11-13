@@ -25,7 +25,7 @@ public static class ChartsFuzzTargets
     [
         ",", "\n", "@", "-", "+", ".", "e", "E", "0", "1", "-1", "0.5", "1e308", "-1e308", "1e-308", "5e-324", "-0", "NaN", "Infinity", "-Infinity",
         "@0", "@-730000", "@2900000", "@36524", "<", ">", "&", "\"", "'", "\t", "\r", "\u00E9", "\U0001F600", "\uD800", "\uFFFE", "\0",
-        "a", "b", "c", "/", "a/b", "a/b/c", "//",
+        "a", "b", "c", "/", "a/b", "a/b/c", "//", "$", "^", "$1.50", "^0.5", "$NaN", "^-Infinity", "$1E+300",
     ];
 
     private static readonly string[] GeoJsonTokens =
@@ -424,6 +424,21 @@ public static class ChartsFuzzTargets
         if (field[0] is '@' && long.TryParse(field.AsSpan(1), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var days) && days is >= -730_000 and <= 2_900_000)
             return TimeOrigin.AddDays(days);
 
+        // '$' and '^' select the other number types: a decimal floating-point (System.Decimal on .NET 10) and a 16-bit float
+#if NET11_0_OR_GREATER
+        if (field[0] is '$' && System.Numerics.Decimal64.TryParse(field.AsSpan(1), NumberStyles.Float, CultureInfo.InvariantCulture, out var decimal64))
+            return decimal64;
+
+        if (field[0] is '^' && System.Numerics.BFloat16.TryParse(field.AsSpan(1), NumberStyles.Float, CultureInfo.InvariantCulture, out var bfloat16))
+            return bfloat16;
+#else
+        if (field[0] is '$' && decimal.TryParse(field.AsSpan(1), NumberStyles.Float, CultureInfo.InvariantCulture, out var decimalValue))
+            return decimalValue;
+
+        if (field[0] is '^' && Half.TryParse(field.AsSpan(1), NumberStyles.Float, CultureInfo.InvariantCulture, out var half))
+            return half;
+#endif
+
         if (double.TryParse(field, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
             return number;
 
@@ -473,6 +488,8 @@ public static class ChartsFuzzTargets
         yield return FuzzSeed.FromText("area-faceted", [(byte)PlotKind.Area, 0, 0x85, 0x45], Numbers);
         yield return FuzzSeed.FromText("layers-dark", [(byte)PlotKind.Layers, 0, 0x29, 0], Numbers);
         yield return FuzzSeed.FromText("arc-gauge", [(byte)PlotKind.Arc, 0xC0, 0, 0], Categories);
+        yield return FuzzSeed.FromText("dot-number-types", [(byte)PlotKind.Dot, 0, 0, 0], "Number types\n$1.50,^2,a,1\n$-3.25,^0.5,b,2\n$NaN,^NaN,a,1\n$1E+300,^-Infinity,b,2\n");
+        yield return FuzzSeed.FromText("bar-number-types", [(byte)PlotKind.Bar, 0, 0, 0], "Number types\na,$10.5\nb,$20\nc,^-5\n");
         yield return FuzzSeed.FromText("tiny", [(byte)PlotKind.Bar, 6 | (1 << 3), 0x3F, 0x22], Categories);
         yield return FuzzSeed.FromText("empty", [(byte)PlotKind.Line, 0, 0, 0], "");
     }

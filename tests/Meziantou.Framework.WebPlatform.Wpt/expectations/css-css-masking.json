@@ -584,6 +584,9 @@
   "css/css-masking/clip-path/animations/clip-path-transition-allow-discrete.html": {
     "reftest": "PASS"
   },
+  "css/css-masking/clip-path/animations/clip-path-transition-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-masking/clip-path/animations/clip-path-transition-custom-timing-function.html": {
     "reftest": "PASS"
   },
@@ -812,6 +815,9 @@
   "css/css-masking/clip-path/clip-path-nested-clippath-zoom.html": {
     "reftest": "PASS"
   },
+  "css/css-masking/clip-path/clip-path-nesting-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-masking/clip-path/clip-path-on-fixed-position-scroll.html": {
     "reftest": "PASS"
   },
@@ -919,6 +925,9 @@
   },
   "css/css-masking/clip-path/clip-path-reference-restore.html": {
     "reftest": "PASS"
+  },
+  "css/css-masking/clip-path/clip-path-restyle-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-masking/clip-path/clip-path-rotated-will-change-transform.html": {
     "reftest": "PASS"
@@ -1079,6 +1088,9 @@
   "css/css-masking/clip-path/clip-path-xywh-003.html": {
     "reftest": "PASS"
   },
+  "css/css-masking/clip-path/crashtests/clip-path-shape-arc-animation-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-masking/clip-path/interpolation.html": {
     "total": 3
   },
@@ -1196,6 +1208,9 @@
   "css/css-masking/clip/clip-transform-order.html": {
     "reftest": "PASS"
   },
+  "css/css-masking/crashtests/mask-repeat-round-one-tile.html": {
+    "crashtest": "PASS"
+  },
   "css/css-masking/hit-test/clip-path-element-objectboundingbox-001.html": {
     "total": 1
   },
@@ -1243,6 +1258,9 @@
   },
   "css/css-masking/mask-image/bad-mask-image.html": {
     "reftest": "PASS"
+  },
+  "css/css-masking/mask-image/firefox-bug-1928736-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-masking/mask-image/mask-clip-1.html": {
     "reftest": "PASS"

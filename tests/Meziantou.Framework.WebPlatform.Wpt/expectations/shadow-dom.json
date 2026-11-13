@@ -69,6 +69,87 @@
   "shadow-dom/capturing-and-bubbling-event-listeners-across-shadow-trees.html": {
     "total": 5
   },
+  "shadow-dom/crashtests/add-host-child-element-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/add-host-child-text-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/character-data-set-data-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/cross-shadow-slot-assign.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/css-focus-recalc.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/cyclic-detach-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/cyclic-detach-crash2.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/detach-node-call-recalc-assignment-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/editing-shadow-overflow-scroll-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/highlight-api-orphan-node-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/highlight-api-remove-node-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/imperative-slot-api-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/li-layout-after-attachshadow-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/list-item-delete-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/manual-assignment-beforeattrmodified.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/modify-sibling-of-shadowroot-after-attach.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/modify-style-element-in-disconnected-shadow-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/move-to-new-tree-1343016.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/scrollbar-pseudo-attach-shadow-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slot-dir-attribute-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slot-dir-auto-unbound.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slot-nested-reattach-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slots-in-document-tree-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slots-in-v0-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slots-nested-in-document-tree-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/cross-shadow-boundary-selection-remove-splittext-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/cross-shadow-boundary-selection-splittext-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/declarative/declarative-after-attachshadow.html": {
     "total": 1
   },
@@ -246,6 +327,9 @@
       "document.importNode resolves shadowrootadoptedstylesheets against the destination document.": "FAIL"
     }
   },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-document-parse-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-fetched-module.html": {
     "total": 1,
     "failures": {
@@ -362,6 +446,9 @@
   "shadow-dom/directionality-002.tentative.html": {
     "reftest": "PASS"
   },
+  "shadow-dom/directionality-003-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/dragenter-related-target.html": {
     "total": 1
   },
@@ -388,6 +475,9 @@
   },
   "shadow-dom/event-inside-slotted-node.html": {
     "total": 20
+  },
+  "shadow-dom/event-on-pseudo-element-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/event-post-dispatch-listenerless.html": {
     "total": 3
@@ -504,133 +594,52 @@
     "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-001.html": {
-    "total": 3,
-    "failures": {
-      "`source-order` groups by `reading-order` and breaks ties by `source-order`": "FAIL"
-    }
+    "total": 3
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-002.html": {
     "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-003.html": {
-    "total": 1,
-    "failures": {
-      "`grid-lanes-track` follows CSS order right-to-left within columns in `vertical-rl`": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-004.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow reads down each stacking axis with auto-placement": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-006.html": {
-    "total": 1,
-    "failures": {
-      "Grid-lanes-order uses CSS order and source order for ties": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-007.html": {
-    "total": 2,
-    "failures": {
-      "Grid-lanes-track reads left-to-right columns with track-reverse placement": "FAIL",
-      "Grid-lanes-track reads top-to-bottom within columns with fill-reverse placement": "FAIL"
-    }
+    "total": 2
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-008.html": {
-    "total": 2,
-    "failures": {
-      "Grid-lanes-track follows visual column order after dense backfill": "FAIL",
-      "Grid-lanes-track reads spanning items once in visual column order": "FAIL"
-    }
+    "total": 2
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-010.html": {
-    "total": 1,
-    "failures": {
-      "Grid-lanes-track reads fill-reverse columns from top-to-bottom": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-011.html": {
-    "total": 2,
-    "failures": {
-      "Fill-reverse reads each complete column in reversed order across fragments": "FAIL",
-      "Grid-lanes-track reads each complete column across fragments": "FAIL"
-    }
+    "total": 2
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-012.html": {
     "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-013.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: stacking axis reading flow with densely-packed items": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-014.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across columns tracks with auto-placement": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-014.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across columns tracks with auto-placement": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-015.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across column tracks with track-reverse": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-015.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across column tracks with track-reverse": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-016.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across columns tracks with auto-placement and fill-reverse": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-016.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across columns tracks with auto-placement and fill-reverse": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-017.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across columns tracks with auto-placement, fill-reverse, and track-reverse": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-017.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across columns tracks with auto-placement, fill-reverse, and track-reverse": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-018.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: tentative across-track dense backfill in column tracks with start alignment": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-018.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: tentative across-track dense backfill in column tracks with start alignment": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-019.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: tentative across-track reading flow in column tracks in vertical-rl with RTL": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-019.tentative.html": {
     "total": 1,
@@ -638,121 +647,38 @@
       "CSS Grid Lanes: tentative across-track reading flow in column tracks in vertical-rl with RTL": "FAIL"
     }
   },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-020.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across column tracks where row gaps affect the reading row": "FAIL"
-    }
-  },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-020.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across column tracks where row gaps affect the reading row": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-021.html": {
-    "total": 1,
-    "failures": {
-      "Grid-rows reads across fragmented column tracks": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-021.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Grid-lanes-flow reads across fragmented column tracks": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-001.html": {
-    "total": 2,
-    "failures": {
-      "Grid-lanes-track reads left-to-right within rows with fill-reverse placement": "FAIL",
-      "Grid-lanes-track reads top-to-bottom rows with track-reverse placement": "FAIL"
-    }
+    "total": 2
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-002.html": {
-    "total": 2,
-    "failures": {
-      "Grid-lanes-track follows visual row order after dense backfill": "FAIL",
-      "Grid-lanes-track reads spanning items once in visual row order": "FAIL"
-    }
+    "total": 2
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-003.html": {
-    "total": 1,
-    "failures": {
-      "Grid-lanes-track reads each row completely before the next": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-004.html": {
-    "total": 1,
-    "failures": {
-      "Grid-lanes-track reverses nested dense items within each row, not the rows": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-005.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across row tracks with auto-placement": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-005.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across row tracks with auto-placement": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-006.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across row tracks with track-reverse": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-006.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across row tracks with track-reverse": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-007.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across row tracks with auto-placement and fill-reverse": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-007.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across row tracks with auto-placement and fill-reverse": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-008.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across row tracks with auto-placement, fill-reverse, and track-reverse": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-008.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: reading-flow across row tracks with auto-placement, fill-reverse, and track-reverse": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-009.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: tentative across-track dense backfill in row tracks with mixed alignment": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-009.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: tentative across-track dense backfill in row tracks with mixed alignment": "FAIL"
-    }
-  },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-010.html": {
-    "total": 1,
-    "failures": {
-      "CSS Grid Lanes: tentative across-track reading flow in row tracks in vertical-rl with RTL": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-010.tentative.html": {
     "total": 1,
@@ -760,17 +686,8 @@
       "CSS Grid Lanes: tentative across-track reading flow in row tracks in vertical-rl with RTL": "FAIL"
     }
   },
-  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-011.html": {
-    "total": 1,
-    "failures": {
-      "Grid-columns reads across fragmented row tracks": "FAIL"
-    }
-  },
   "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-011.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Grid-lanes-flow reads across fragmented row tracks": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/grid-order-across-scopes.html": {
     "total": 1
@@ -1128,6 +1045,9 @@
   "shadow-dom/host-with-namespace.xhtml": {
     "total": 2
   },
+  "shadow-dom/imperative-slot-api-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/imperative-slot-api-cross-shadow-root.html": {
     "total": 2,
     "failures": {
@@ -1142,6 +1062,9 @@
   },
   "shadow-dom/imperative-slot-api.html": {
     "total": 16
+  },
+  "shadow-dom/imperative-slot-assign-not-slotable-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/imperative-slot-fallback-clear.html": {
     "total": 2
@@ -1163,6 +1086,9 @@
   },
   "shadow-dom/inserting-fragment-under-shadow-host.html": {
     "total": 1
+  },
+  "shadow-dom/invalidate-shadow-dom-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/invalidate-sibling-different-slots.html": {
     "reftest": "PASS"
@@ -1196,6 +1122,9 @@
   },
   "shadow-dom/nested-hover-pseudo-class-removal.html": {
     "reftest": "PASS"
+  },
+  "shadow-dom/nested-slot-remove-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/offsetParent-across-shadow-boundaries.html": {
     "total": 22
@@ -1410,17 +1339,38 @@
       "shadowRootReferenceTarget is present on HTMLTemplateElement": "FAIL"
     }
   },
+  "shadow-dom/restyle-on-disconnected-child-after-attach-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/scroll-restore-shadow.html": {
     "total": 1
   },
   "shadow-dom/scroll-to-the-fragment-in-shadow-tree.html": {
     "total": 10
   },
+  "shadow-dom/shadow-host-child-restyle-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/shadow-root-clonable.html": {
     "total": 6
   },
   "shadow-dom/shadow-style-invalidation-vw-units.html": {
     "reftest": "PASS"
+  },
+  "shadow-dom/slot-dir-attach-child-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/slot-dir-attach-child-details-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/slot-dir-attach-child-meter-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/slot-dir-attach-child-progress-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/slot-dir-attach-child-textarea-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/slot-display-contents-display-toggle.html": {
     "reftest": "PASS"
@@ -1451,6 +1401,9 @@
   },
   "shadow-dom/slot-reconciliation-at-node-removal.html": {
     "total": 1
+  },
+  "shadow-dom/slot-with-slottable-slot-in-display-none-subtree-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/slotchange-customelements.html": {
     "total": 1
@@ -1658,6 +1611,9 @@
     "failures": {
       "A_07_01_02_T01": "FAIL"
     }
+  },
+  "shadow-dom/user-agent-shadow-root-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/wheel-event-related-target.html": {
     "total": 1,

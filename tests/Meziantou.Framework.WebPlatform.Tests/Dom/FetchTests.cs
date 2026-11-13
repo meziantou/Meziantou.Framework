@@ -954,6 +954,130 @@ public sealed class FetchTests : IDisposable
         Assert.Equal(["PUT X-Test=1;Accept=*/*"], requests);
     }
 
+    [Theory]
+    [InlineData("match=\"/app/*\"", true)]
+    [InlineData("match=\"/app/*\", id=\"v1\", match-dest=(\"script\" \"\"), type=raw, unknown=?1", true)]
+    [InlineData("match=\"/app/*\", type=other", false)]
+    [InlineData("match=\"https://other.example/app/*\"", false)]
+    [InlineData("match=\"/app/(\\\\d+)\"", false)]
+    [InlineData("match=\"{\"", false)]
+    [InlineData("id=\"v1\"", false)]
+    [InlineData("?0", false)]
+    [InlineData("match=\"/app/*\", match-dest=\"script\"", false)]
+    public void CompressionDictionary_ParseUseAsDictionary(string value, bool valid)
+    {
+        var url = global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/app/dictionary.txt", baseUrl: null)!;
+        Assert.Equal(valid, CompressionDictionaries.ParseUseAsDictionary(value, url) is not null);
+    }
+
+    [Fact]
+    public void CompressionDictionary_BestMatch()
+    {
+        var url = global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/app/dictionary.txt", baseUrl: null)!;
+        var dictionaries = new CompressionDictionaries();
+        var now = DateTimeOffset.UnixEpoch;
+        KeyValuePair<string, string>[] headers = [new("Cache-Control", "max-age=60")];
+        dictionaries.Register("partition", url, CompressionDictionaries.ParseUseAsDictionary("match=\"/app/*\", id=\"general\"", url)!, [1], 200, headers, now, now);
+        dictionaries.Register("partition", url, CompressionDictionaries.ParseUseAsDictionary("match=\"/app/scripts/*\", id=\"specific\"", url)!, [2], 200, headers, now, now);
+        dictionaries.Register("partition", url, CompressionDictionaries.ParseUseAsDictionary("match=\"/app/*\", match-dest=(\"style\"), id=\"style\"", url)!, [3], 200, headers, now, now);
+
+        Assert.Equal("specific", dictionaries.FindBestMatch("partition", global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/app/scripts/a.js", baseUrl: null)!, "script", now)?.Options.Id);
+        Assert.Equal("style", dictionaries.FindBestMatch("partition", global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/app/scripts/a.css", baseUrl: null)!, "style", now)?.Options.Id);
+        Assert.Equal("general", dictionaries.FindBestMatch("partition", global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/app/a.js", baseUrl: null)!, "", now)?.Options.Id);
+        Assert.Null(dictionaries.FindBestMatch("other", global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/app/a.js", baseUrl: null)!, "", now));
+        Assert.Equal(":" + Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData([1])) + ":", CompressionDictionaries.GetAvailableDictionaryValue(dictionaries.FindBestMatch("partition", global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/app/a.js", baseUrl: null)!, "", now)!));
+        Assert.Equal("\"a\\\"b\\\\c\"", CompressionDictionaries.GetDictionaryIdValue("a\"b\\c"));
+        Assert.Null(dictionaries.FindBestMatch("partition", global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/app/a.js", baseUrl: null)!, "", now.AddMinutes(2)));
+    }
+
+    [Fact]
+    public void CompressionDictionary_StoreIsBounded()
+    {
+        var dictionaries = new CompressionDictionaries();
+        var now = DateTimeOffset.UnixEpoch;
+        KeyValuePair<string, string>[] headers = [new("Cache-Control", "max-age=60")];
+        global::Meziantou.Framework.WebPlatform.Urls.UrlRecord Url(string path) => global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com" + path, baseUrl: null)!;
+        void Register(string path, byte[] content) => dictionaries.Register("partition", Url(path), CompressionDictionaries.ParseUseAsDictionary("match=\"" + path + "*\"", Url(path))!, content, 200, headers, now, now);
+
+        // A body longer than the HTTP cache stores is not registered
+        Register("/too-long/", new byte[HttpCache.MaxBodyLength + 1]);
+        Assert.Null(dictionaries.FindBestMatch("partition", Url("/too-long/a.js"), "", now));
+
+        // The dictionaries registered the longest ago are removed when the others take too many bytes (the same array is
+        // registered for each one: the store counts the bytes of each dictionary)
+        var content = new byte[HttpCache.MaxBodyLength];
+        var count = (int)(CompressionDictionaries.MaxTotalLength / content.Length);
+        for (var i = 0; i <= count; i++)
+        {
+            Register("/d" + i.ToString(CultureInfo.InvariantCulture) + "/", content);
+        }
+
+        Assert.Null(dictionaries.FindBestMatch("partition", Url("/d0/a.js"), "", now));
+        for (var i = 1; i <= count; i++)
+        {
+            Assert.NotNull(dictionaries.FindBestMatch("partition", Url("/d" + i.ToString(CultureInfo.InvariantCulture) + "/a.js"), "", now));
+        }
+    }
+
+    // The test key of RFC 9421 (https://www.rfc-editor.org/rfc/rfc9421.html#name-example-ed25519-test-key)
+    private static readonly byte[] SignatureTestPrivateKey = Convert.FromBase64String("n4Ni+HpISpVObnQMW0wOhCKROaIKqKtW/2ZYb2p9KcU=");
+
+    [Theory]
+    [InlineData("tag=\"ed25519-integrity\"", false, true)]
+    [InlineData("tag=\"other\"", false, false)]
+    [InlineData("tag=\"ed25519-integrity\";alg=\"ed25519\"", false, false)]
+    [InlineData("tag=\"ed25519-integrity\"", true, false)]
+    public void IntegritySignatures_Verify(string extraParameters, bool tamper, bool valid)
+    {
+        var publicKey = global::Meziantou.Framework.WebPlatform.Cryptography.Ed25519.GetPublicKey(SignatureTestPrivateKey);
+        var keyId = Convert.ToBase64String(publicKey);
+        var url = global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/script.js?x=1", baseUrl: null)!;
+        var digest = "sha-256=:" + Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData("body"u8)) + ":";
+        var input = "(\"unencoded-digest\";sf \"@path\";req \"@status\");keyid=\"" + keyId + "\";" + extraParameters;
+        var signatureBase = "\"unencoded-digest\";sf: " + digest + "\n\"@path\";req: /script.js\n\"@status\": 200\n\"@signature-params\": " + input;
+        var signature = global::Meziantou.Framework.WebPlatform.Cryptography.Ed25519.Sign(SignatureTestPrivateKey, Encoding.UTF8.GetBytes(signatureBase));
+        if (tamper)
+        {
+            signature[0] ^= 1;
+        }
+
+        KeyValuePair<string, string>[] headers = [new("Unencoded-Digest", digest), new("Signature-Input", "sig=" + input), new("Signature", "sig=:" + Convert.ToBase64String(signature) + ":")];
+        var result = IntegritySignatures.Verify(new IntegritySignatureContext(url, "GET", [], 200, headers), DateTimeOffset.UnixEpoch);
+        var isOfProfile = !extraParameters.Contains("other", StringComparison.Ordinal) && !extraParameters.Contains("alg", StringComparison.Ordinal);
+        Assert.Equal(isOfProfile && !valid, result.Failed);
+        Assert.Equal(valid, SubresourceIntegrity.Matches("body"u8, opaque: false, "ed25519-" + keyId, result));
+        Assert.Equal("sig0=(\"unencoded-digest\";sf);keyid=\"" + keyId + "\";tag=\"ed25519-integrity\"", IntegritySignatures.GetAcceptSignature("ed25519-" + keyId + " sha256-abc"));
+    }
+
+    [Fact]
+    public void IntegritySignatures_RequestComponentsAreTheHeadersThatWereSent()
+    {
+        // The server signs the Accept-Signature header it received, which the fetch adds to its copy of the request
+        var keyId = Convert.ToBase64String(global::Meziantou.Framework.WebPlatform.Cryptography.Ed25519.GetPublicKey(SignatureTestPrivateKey));
+        string? received = null;
+        _loader.Handler = request =>
+        {
+            if (request.Url != "https://example.com/signed.js")
+                return null;
+
+            received = HeaderList.Get(request.Headers, "Accept-Signature");
+            var body = "document.title = 'ran';";
+            var digest = "sha-256=:" + Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(body))) + ":";
+            var input = "(\"unencoded-digest\";sf \"accept-signature\";req);keyid=\"" + keyId + "\";tag=\"ed25519-integrity\"";
+            var signatureBase = "\"unencoded-digest\";sf: " + digest + "\n\"accept-signature\";req: " + received + "\n\"@signature-params\": " + input;
+            var signature = global::Meziantou.Framework.WebPlatform.Cryptography.Ed25519.Sign(SignatureTestPrivateKey, Encoding.UTF8.GetBytes(signatureBase));
+            return new DocumentResource(body)
+            {
+                Headers = [new("Content-Type", "text/javascript"), new("Unencoded-Digest", digest), new("Signature-Input", "sig=" + input), new("Signature", "sig=:" + Convert.ToBase64String(signature) + ":")],
+            };
+        };
+
+        var document = Load("<script src='signed.js' integrity='ed25519-" + keyId + "'></script>");
+
+        Assert.Equal(IntegritySignatures.GetAcceptSignature("ed25519-" + keyId), received);
+        Assert.Equal("ran", document.Title);
+    }
+
     private sealed class StubLoader : DocumentLoader
     {
         public Dictionary<string, DocumentResource> Responses { get; } = new(StringComparer.Ordinal);

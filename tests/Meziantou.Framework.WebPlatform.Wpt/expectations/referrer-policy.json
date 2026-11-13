@@ -1041,7 +1041,7 @@
     "total": 9
   },
   "referrer-policy/css-integration/svg/filter-no-referrer.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "referrer-policy/css-integration/svg/inline-style-with-differentorigin-base-tag.tentative.html": {
     "total": 9

@@ -1,4 +1,7 @@
 {
+  "css/css-shadow/chrome-1492368-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-shadow/css-scoping-shadow-assigned-node-with-before-after.html": {
     "reftest": "PASS"
   },
@@ -473,6 +476,9 @@
   "css/css-shadow/reslot-text-inheritance.html": {
     "reftest": "PASS"
   },
+  "css/css-shadow/same-rules-bug-2044746-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-shadow/same-rules-bug-2044746.html": {
     "reftest": "PASS"
   },
@@ -547,6 +553,9 @@
   },
   "css/css-shadow/shadow-reassign-dynamic-004.html": {
     "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-reassign-dynamic-005-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-shadow/shadow-reassign-dynamic-006.html": {
     "reftest": "PASS"

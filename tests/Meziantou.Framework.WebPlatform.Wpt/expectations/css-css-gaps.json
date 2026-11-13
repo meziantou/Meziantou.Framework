@@ -5,6 +5,21 @@
   "css/css-gaps/agnostic/gap-decorations-004.html": {
     "reftest": "PASS"
   },
+  "css/css-gaps/agnostic/gap-decorations-007-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-gaps/agnostic/gap-decorations-008-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-gaps/agnostic/gap-decorations-009-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-gaps/agnostic/gap-decorations-010-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-gaps/agnostic/gap-decorations-011-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-gaps/animation/column-rule-inset-interpolation.html": {
     "total": 672
   },
@@ -61,6 +76,9 @@
   },
   "css/css-gaps/animation/rule-color-interpolation-conversion-002.html": {
     "total": 1
+  },
+  "css/css-gaps/animation/rule-color-interpolation-conversion-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-gaps/animation/rule-color-interpolation-multiple-values-001.html": {
     "total": 48
@@ -160,6 +178,9 @@
   },
   "css/css-gaps/flex/flex-gap-decorations-025.html": {
     "reftest": "PASS"
+  },
+  "css/css-gaps/flex/flex-gap-decorations-026-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-gaps/flex/flex-gap-decorations-027.html": {
     "reftest": "PASS"
@@ -392,8 +413,17 @@
   "css/css-gaps/flex/fragmentation/flex-gap-decorations-fragmentation-021.html": {
     "reftest": "PASS"
   },
+  "css/css-gaps/flex/fragmentation/flex-gap-decorations-fragmentation-022-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-gaps/flex/fragmentation/flex-gap-decorations-fragmentation-023-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-gaps/flex/fragmentation/flex-gap-decorations-fragmentation-023.html": {
     "reftest": "PASS"
+  },
+  "css/css-gaps/flex/fragmentation/flex-gap-decorations-fragmentation-024-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-gaps/flex/fragmentation/flex-gap-decorations-fragmentation-024.html": {
     "reftest": "PASS"
@@ -1082,6 +1112,12 @@
   "css/css-gaps/grid/fragmentation/grid-gap-decorations-fragmentation-017.html": {
     "reftest": "PASS"
   },
+  "css/css-gaps/grid/fragmentation/grid-gap-decorations-fragmentation-018-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-gaps/grid/fragmentation/grid-gap-decorations-fragmentation-019-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-gaps/grid/fragmentation/grid-gap-decorations-fragmentation-020.html": {
     "reftest": "PASS"
   },
@@ -1129,6 +1165,9 @@
   },
   "css/css-gaps/grid/fragmentation/grid-gap-decorations-fragmentation-037.html": {
     "reftest": "PASS"
+  },
+  "css/css-gaps/grid/fragmentation/grid-gap-decorations-fragmentation-038-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-gaps/grid/fragmentation/grid-gap-decorations-fragmentation-038.html": {
     "reftest": "PASS"
@@ -1262,8 +1301,17 @@
   "css/css-gaps/grid/grid-gap-decorations-040.html": {
     "reftest": "PASS"
   },
+  "css/css-gaps/grid/grid-gap-decorations-041-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-gaps/grid/grid-gap-decorations-042.html": {
     "reftest": "PASS"
+  },
+  "css/css-gaps/grid/grid-gap-decorations-043-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-gaps/grid/grid-gap-decorations-044-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-gaps/grid/grid-gap-decorations-045.html": {
     "reftest": "PASS"
@@ -1303,6 +1351,15 @@
   },
   "css/css-gaps/grid/grid-gap-decorations-057.html": {
     "reftest": "PASS"
+  },
+  "css/css-gaps/grid/grid-gap-decorations-058-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-gaps/grid/grid-gap-decorations-059-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-gaps/grid/grid-gap-decorations-060-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-gaps/grid/grid-gap-decorations-061.html": {
     "reftest": "PASS"
@@ -1747,6 +1804,9 @@
   },
   "css/css-gaps/parsing/gap-decorations-important.html": {
     "total": 1
+  },
+  "css/css-gaps/parsing/gap-decorations-rule-initial-value-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-gaps/parsing/gap-decorations-rule-shorthand-computed.html": {
     "total": 39

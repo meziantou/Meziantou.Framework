@@ -256,6 +256,7 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
     /// <inheritdoc/>
     public override RenderingImage? DecodeFrame(int index, ExifOrientation orientation, bool convertToSrgb)
     {
+        IsLastFrameIncomplete = false;
         var image = DecodeFrameCore(index, orientation, convertToSrgb);
 
         // The colors of a still image outside of the gamut of sRGB are decoded again, without clipping, when a bitmap of a
@@ -379,6 +380,8 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
                     {
                         return null;
                     }
+
+                    IsLastFrameIncomplete = true;
                 }
 
                 var result = image;
@@ -676,6 +679,7 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
                 // An incomplete (or corrupted) image is decoded up to its last decoded row: the reader writes the rows in the
                 // frame as it decodes them
                 var pixels = CopyPixels(frame);
+                IsLastFrameIncomplete = true;
                 return HasDecodedPixels(pixels) ? pixels : null;
             }
         }

@@ -184,7 +184,7 @@ internal sealed class DbaseWriter
         switch (field.Kind)
         {
             case Kind.Integer:
-                if (value is double or float or Half or decimal or JsonElement)
+                if (value is JsonElement || GeoPropertyValue.IsBinaryFloatingPointNumber(value) || GeoPropertyValue.IsDecimalNumber(value))
                 {
                     GeoPropertyValue.TryGetNumber(value, out var whole);
                     return double.IsFinite(whole) ? ((long)whole).ToString(CultureInfo.InvariantCulture) : null;

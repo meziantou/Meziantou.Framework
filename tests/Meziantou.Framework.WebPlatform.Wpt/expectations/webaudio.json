@@ -415,6 +415,12 @@
   "webaudio/the-audio-api/the-audiobuffer-interface/audiobuffer.html": {
     "total": 1
   },
+  "webaudio/the-audio-api/the-audiobuffer-interface/crashtests/copyFromChannel-bufferOffset-1.html": {
+    "crashtest": "PASS"
+  },
+  "webaudio/the-audio-api/the-audiobuffer-interface/crashtests/copyToChannel-bufferOffset-1.html": {
+    "crashtest": "PASS"
+  },
   "webaudio/the-audio-api/the-audiobuffer-interface/ctor-audiobuffer.html": {
     "total": 62
   },
@@ -586,6 +592,9 @@
     "failures": {
       "currentTime and getOutputTimestamp().contextTime should not reset after setSinkId": "FAIL"
     }
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/crashtests/currentTime-after-discard.html": {
+    "crashtest": "PASS"
   },
   "webaudio/the-audio-api/the-audiocontext-interface/processing-after-resume.https.html": {
     "total": 1
@@ -1101,6 +1110,9 @@
   "webaudio/the-audio-api/the-iirfilternode-interface/ctor-iirfilter.html": {
     "total": 6
   },
+  "webaudio/the-audio-api/the-iirfilternode-interface/iir-filter-silent-block-crash.html": {
+    "crashtest": "PASS"
+  },
   "webaudio/the-audio-api/the-iirfilternode-interface/iirfilter-basic.html": {
     "total": 43
   },
@@ -1123,11 +1135,17 @@
       "Executing \"start-playback-and-capture\"": "FAIL"
     }
   },
+  "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource-mediaStreamAudioDestination-stream-crash.html": {
+    "crashtest": "PASS"
+  },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSourceToScriptProcessorTest.html": {
     "total": 1,
     "failures": {
       "Element Source tests completed": "FAIL"
     }
+  },
+  "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource_closed_context-crash.html": {
+    "crashtest": "PASS"
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource_volumeChange.html": {
     "total": 2,
@@ -1284,6 +1302,9 @@
   },
   "webaudio/the-audio-api/the-offlineaudiocontext-interface/startrendering-after-discard.html": {
     "total": 1
+  },
+  "webaudio/the-audio-api/the-oscillatornode-interface/crashtests/stop-before-start.html": {
+    "crashtest": "PASS"
   },
   "webaudio/the-audio-api/the-oscillatornode-interface/ctor-oscillator.html": {
     "total": 62

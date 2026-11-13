@@ -35,7 +35,7 @@ list at the root, set `RootValueHandling = TomlRootValueHandling.WrapInRootKey`:
 | Category | Types |
 | --- | --- |
 | Boolean | `bool` |
-| Numbers | `sbyte`, `byte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `nint`, `nuint`, `float`, `double`, `decimal`, `Half`, `Int128`, `UInt128` |
+| Numbers | `sbyte`, `byte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `nint`, `nuint`, `float`, `double`, `decimal`, `Half`, `Int128`, `UInt128`, `Complex`; on .NET 11, `BFloat16`, `Decimal32`, `Decimal64`, `Decimal128` and `Complex<T>` |
 | Text | `char`, `string` |
 | Dates and times | `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, [TomlDateTime](cref:Meziantou.Framework.Toml.TomlDateTime) |
 | Other | `Guid`, `TimeSpan`, `Uri`, `Version`, enums |
@@ -55,6 +55,22 @@ Enums are written as numbers. To write their names, use [TomlStringEnumConverter
 
 TOML integers are signed 64-bit values. A `ulong`, `nuint`, `Int128` or `UInt128` value larger than `long.MaxValue`
 throws a [TomlException](cref:Meziantou.Framework.Toml.TomlException) when it is written. Floating-point values are written so that they read back to the same value.
+
+`decimal`, `Decimal32`, `Decimal64` and `Decimal128` values are written with all their digits, such as
+`1234567890123456789012345678901.234`, and read from the literal, so no digit is lost to a `double`. An integral value
+gets a `.0` suffix to stay a TOML float, so `12` reads back as `12.0`: the same value, with a different number of decimal
+places. TOML readers treat floats as 64-bit floating-point numbers, so a value that overflows a `double`, such as
+`1E+400`, throws a [TomlException](cref:Meziantou.Framework.Toml.TomlException) when it is written. Not-a-number and infinities are written `nan`, `+inf` and `-inf`.
+
+A `Complex` or a `Complex<T>` is an inline table with the keys `Real` and `Imaginary`, renamed by the
+[PropertyNamingPolicy](cref:Meziantou.Framework.Toml.TomlSerializerOptions.PropertyNamingPolicy):
+
+```toml
+impedance = {Real = 1.5, Imaginary = -2.0}
+```
+
+A missing key is `0`. The parts of a `Complex<T>` must be a `float`, `double`, `Half`, `BFloat16`, `Decimal32`,
+`Decimal64` or `Decimal128`.
 
 ### No null
 

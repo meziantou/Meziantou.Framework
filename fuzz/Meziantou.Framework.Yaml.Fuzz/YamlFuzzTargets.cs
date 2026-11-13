@@ -28,6 +28,20 @@ public static class YamlFuzzTargets
 
     private static readonly YamlSerializerOptions LoadOptions =new() { MaxDepth = 64, MaxAliasExpansionNodeCount = 10_000 };
 
+    private static readonly string[] NumericsTokens =
+    [
+        "Real", "Imaginary", "real", "imaginary", "Magnitude", "Phase", "Complex", "Optional", "Values", "Ratio", "BFloat16",
+        "Decimal32", "Decimal64", "Decimal128", "ComplexDouble", "ComplexHalf", "ComplexDecimal", ".nan", ".inf", "-.inf",
+        "1.50", "1E+400", "1e-400", "1_000.5", "9.999999E+96", "0.1000000000000000000000000000000001", "{Real: 1.5, Imaginary: -2.0}",
+    ];
+
+    private static readonly YamlSerializerOptions[] NumericsOptions =
+    [
+        new() { MaxDepth = 64 },
+        new() { MaxDepth = 64, PropertyNamingPolicy = YamlNamingPolicy.CamelCase },
+        new() { MaxDepth = 64, PropertyNameCaseInsensitive = true },
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("yaml-parser", Parser) { Seeds = GetSeeds, Dictionary = Tokens },
@@ -35,6 +49,7 @@ public static class YamlFuzzTargets
         new("yaml-model", Model) { Seeds = GetSeeds, Dictionary = Tokens },
         new("yaml-deserialize", Deserialize) { Seeds = GetDeserializeSeeds, Dictionary = Tokens },
         new("yaml-emitter", EmitterRoundTrip) { Seeds = GetEmitterSeeds, Dictionary = Tokens },
+        new("yaml-numerics", Numerics) { Seeds = GetNumericsSeeds, Dictionary = [.. Tokens, .. NumericsTokens] },
     ];
 
     private static void Parser(ReadOnlySpan<byte> data)
@@ -477,6 +492,95 @@ public static class YamlFuzzTargets
     }
 
     /// <summary>Each case with the default options, and with options that vary from one case to the next.</summary>
+    /// <summary>
+    /// Byte 0: the options. Then a document read into members of the complex and floating-point types. A document that is
+    /// read must be written, and the written YAML must read back to values that write the same YAML.
+    /// </summary>
+    private static void Numerics(ReadOnlySpan<byte> data)
+    {
+        var options = FuzzInput.Pick(NumericsOptions, FuzzInput.ReadByte(ref data));
+        var yaml = FuzzText.Decode(data);
+
+        NumericsPayload? payload;
+        try
+        {
+            payload = YamlSerializer.Deserialize<NumericsPayload>(yaml, options);
+        }
+        catch (YamlException)
+        {
+            return;
+        }
+
+        if (payload is null)
+            return;
+
+        var written = YamlSerializer.Serialize(payload, options);
+        NumericsPayload? roundTrip;
+        try
+        {
+            roundTrip = YamlSerializer.Deserialize<NumericsPayload>(written, options);
+        }
+        catch (YamlException ex)
+        {
+            FuzzAssert.Fail($"The written YAML cannot be read back: {ex.Message}\n{written}");
+            return;
+        }
+
+        FuzzAssert.Equal(written, YamlSerializer.Serialize(roundTrip, options), "The written values do not read back to the same values");
+    }
+
+    private static IEnumerable<FuzzSeed> GetNumericsSeeds()
+    {
+        string[] documents =
+        [
+            "Complex:\n  Real: 1.5\n  Imaginary: -2.0\n",
+            "complex: {real: 3, imaginary: 4}\n",
+            "Complex: {Real: 3.0, Imaginary: 4.0, Magnitude: 5.0, Phase: 0.93}\n",
+            "Complex: {IMAGINARY: 2}\n",
+            "Optional: {Real: .nan, Imaginary: -.inf}\n",
+            "Optional: null\n",
+            "Values:\n  - {Real: 1, Imaginary: 2}\n  - &a {Real: 3, Imaginary: 4}\n  - *a\n",
+            "Complex: 1.5\n",
+            "Complex: {Real: abc}\n",
+            "Ratio: 1_000.5\n",
+            "BFloat16: 1.5\nDecimal32: -5.30\nDecimal64: 123.456\nDecimal128: 0.1000000000000000000000000000000001\n",
+            "Decimal64: .inf\nDecimal128: 1E+400\nDecimal32: 9.999999E+96\n",
+            "ComplexDouble: {Real: 0.5, Imaginary: 0.25}\nComplexHalf: {Real: 1.0, Imaginary: -.inf}\nComplexDecimal: {Real: 1.50, Imaginary: .nan}\n",
+        ];
+
+        for (var i = 0; i < documents.Length; i++)
+        {
+            yield return FuzzSeed.FromText("numerics-" + i.ToString(CultureInfo.InvariantCulture), [(byte)i], documents[i]);
+        }
+    }
+
+    private sealed class NumericsPayload
+    {
+        public System.Numerics.Complex Complex { get; set; }
+
+        public System.Numerics.Complex? Optional { get; set; }
+
+        public List<System.Numerics.Complex>? Values { get; set; }
+
+        public Half Ratio { get; set; }
+#if NET11_0_OR_GREATER
+
+        public System.Numerics.BFloat16 BFloat16 { get; set; }
+
+        public System.Numerics.Decimal32 Decimal32 { get; set; }
+
+        public System.Numerics.Decimal64? Decimal64 { get; set; }
+
+        public System.Numerics.Decimal128 Decimal128 { get; set; }
+
+        public System.Numerics.Complex<double> ComplexDouble { get; set; }
+
+        public System.Numerics.Complex<Half> ComplexHalf { get; set; }
+
+        public System.Numerics.Complex<System.Numerics.Decimal64>? ComplexDecimal { get; set; }
+#endif
+    }
+
     private static IEnumerable<FuzzSeed> GetDeserializeSeeds()
     {
         var index = 0;

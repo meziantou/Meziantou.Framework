@@ -5,7 +5,7 @@
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.1.6</Version>
+    <Version>2.1.7</Version>
     <Description>Generate deterministic avatar images from names and bigrams, as SVG or as vector scenes to draw as PNG</Description>
     <PackageTags>avatar, identicon, initials, svg, png, image</PackageTags>
   </PropertyGroup>

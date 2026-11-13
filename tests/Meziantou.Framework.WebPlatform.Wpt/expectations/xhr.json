@@ -267,10 +267,7 @@
     "total": 1
   },
   "xhr/access-control-preflight-request-must-not-contain-cookie.htm": {
-    "total": 1,
-    "failures": {
-      "Preflight request must not contain any cookie header": "FAIL"
-    }
+    "total": 1
   },
   "xhr/access-control-preflight-sync-header-denied.htm": {
     "total": 1
@@ -327,10 +324,7 @@
     "total": 1
   },
   "xhr/cookies.http.html": {
-    "total": 1,
-    "failures": {
-      "Basic non-cross-site cookie handling in XHR": "FAIL"
-    }
+    "total": 1
   },
   "xhr/cors-expose-star.sub.any.js": {
     "total": 3
@@ -339,28 +333,10 @@
     "total": 3
   },
   "xhr/cors-upload-listener-timing.any.js": {
-    "harness": "ERROR",
-    "total": 6,
-    "failures": {
-      "CORS allow, upload listeners early": "NOTRUN",
-      "CORS allow, upload listeners late": "FAIL",
-      "CORS allow, upload listeners late with upload object": "NOTRUN",
-      "CORS deny, upload listeners early": "NOTRUN",
-      "CORS deny, upload listeners late": "NOTRUN",
-      "CORS deny, upload listeners late with upload object": "NOTRUN"
-    }
+    "total": 6
   },
   "xhr/cors-upload-listener-timing.any.js#dedicatedworker": {
-    "harness": "ERROR",
-    "total": 6,
-    "failures": {
-      "CORS allow, upload listeners early": "NOTRUN",
-      "CORS allow, upload listeners late": "FAIL",
-      "CORS allow, upload listeners late with upload object": "NOTRUN",
-      "CORS deny, upload listeners early": "NOTRUN",
-      "CORS deny, upload listeners late": "NOTRUN",
-      "CORS deny, upload listeners late with upload object": "NOTRUN"
-    }
+    "total": 6
   },
   "xhr/cors-upload.any.js": {
     "total": 2
@@ -567,10 +543,7 @@
     "total": 1
   },
   "xhr/getresponseheader-server-date.htm": {
-    "total": 1,
-    "failures": {
-      "XMLHttpRequest: getResponseHeader() server and date": "FAIL"
-    }
+    "total": 1
   },
   "xhr/getresponseheader-special-characters.htm": {
     "total": 1
@@ -742,13 +715,7 @@
     "total": 77
   },
   "xhr/overridemimetype-chunked-response.window.js": {
-    "total": 4,
-    "failures": {
-      "Response charset is used for every chunk of a chunked response": "FAIL",
-      "Response charset is used for every chunk of a chunked response when overrideMimeType() has no charset": "FAIL",
-      "overrideMimeType() charset is used for every chunk of a chunked response": "FAIL",
-      "overrideMimeType() charset overrides the response charset for every chunk of a chunked response": "FAIL"
-    }
+    "total": 4
   },
   "xhr/overridemimetype-done-state.any.js": {
     "total": 1
@@ -1159,22 +1126,10 @@
     "total": 1
   },
   "xhr/split-byte-order-mark.any.js": {
-    "total": 4,
-    "failures": {
-      "JSON response strips a UTF-8 byte order mark split across chunks": "FAIL",
-      "responseText does not strip a UTF-8 byte order mark in a later chunk": "FAIL",
-      "responseText strips a UTF-8 byte order mark split across chunks": "FAIL",
-      "responseText uses a UTF-16LE byte order mark split across chunks": "FAIL"
-    }
+    "total": 4
   },
   "xhr/split-byte-order-mark.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "JSON response strips a UTF-8 byte order mark split across chunks": "FAIL",
-      "responseText does not strip a UTF-8 byte order mark in a later chunk": "FAIL",
-      "responseText strips a UTF-8 byte order mark split across chunks": "FAIL",
-      "responseText uses a UTF-16LE byte order mark split across chunks": "FAIL"
-    }
+    "total": 4
   },
   "xhr/status-async.htm": {
     "total": 27

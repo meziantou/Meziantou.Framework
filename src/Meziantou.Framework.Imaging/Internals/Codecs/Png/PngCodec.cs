@@ -14,6 +14,12 @@ internal class PngCodec : ImageCodec
 
     public override ImageFormat Format => ImageFormat.Png;
 
+    /// <summary>
+    /// Gets a value indicating that an interlaced image is decoded at 1/2, 1/4 or 1/8 of its size from its first Adam7 passes
+    /// (<see cref="PngDecoder"/>); another image is decoded at full size for a target size and rejected for an exact scale.
+    /// </summary>
+    public override bool SupportsScaledDecoding => true;
+
     public static bool MatchesSignature(ReadOnlySpan<byte> prefix) => prefix.StartsWith(Signature);
 
     public override bool IsMatch(ReadOnlySpan<byte> prefix) => MatchesSignature(prefix);

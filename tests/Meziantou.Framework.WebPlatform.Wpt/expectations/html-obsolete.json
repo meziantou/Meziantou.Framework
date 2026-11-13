@@ -29,6 +29,15 @@
   "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/window-external.html": {
     "total": 2
   },
+  "html/obsolete/requirements-for-implementations/the-marquee-element-0/crashtests/marquee-with-calc.html": {
+    "crashtest": "PASS"
+  },
+  "html/obsolete/requirements-for-implementations/the-marquee-element-0/crashtests/marquee-with-table.html": {
+    "crashtest": "PASS"
+  },
+  "html/obsolete/requirements-for-implementations/the-marquee-element-0/marquee-adopt-to-inactive-document-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/obsolete/requirements-for-implementations/the-marquee-element-0/marquee-events-historical.html": {
     "total": 2
   },

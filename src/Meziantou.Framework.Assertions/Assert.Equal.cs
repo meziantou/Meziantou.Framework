@@ -85,6 +85,38 @@ public partial class Assert
         EqualWithPrecision(expected, actual, precision, rounding, message, actualExpression, expectedExpression);
     }
 
+#if NET11_0_OR_GREATER
+    public static void Equal(System.Numerics.Decimal32 expected, System.Numerics.Decimal32 actual, int precision, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        EqualWithPrecision(expected, actual, precision, rounding: null, message, actualExpression, expectedExpression);
+    }
+
+    public static void Equal(System.Numerics.Decimal32 expected, System.Numerics.Decimal32 actual, int precision, MidpointRounding rounding, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        EqualWithPrecision(expected, actual, precision, rounding, message, actualExpression, expectedExpression);
+    }
+
+    public static void Equal(System.Numerics.Decimal64 expected, System.Numerics.Decimal64 actual, int precision, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        EqualWithPrecision(expected, actual, precision, rounding: null, message, actualExpression, expectedExpression);
+    }
+
+    public static void Equal(System.Numerics.Decimal64 expected, System.Numerics.Decimal64 actual, int precision, MidpointRounding rounding, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        EqualWithPrecision(expected, actual, precision, rounding, message, actualExpression, expectedExpression);
+    }
+
+    public static void Equal(System.Numerics.Decimal128 expected, System.Numerics.Decimal128 actual, int precision, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        EqualWithPrecision(expected, actual, precision, rounding: null, message, actualExpression, expectedExpression);
+    }
+
+    public static void Equal(System.Numerics.Decimal128 expected, System.Numerics.Decimal128 actual, int precision, MidpointRounding rounding, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        EqualWithPrecision(expected, actual, precision, rounding, message, actualExpression, expectedExpression);
+    }
+#endif
+
     private static void EqualWithPrecision<T>(T expected, T actual, int precision, MidpointRounding? rounding, string? message, string? actualExpression, string? expectedExpression)
         where T : struct, IFloatingPoint<T>
     {

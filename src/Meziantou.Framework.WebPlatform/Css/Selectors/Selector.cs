@@ -677,6 +677,9 @@ public enum PseudoClass : byte
     /// <summary>The <c>:volume-locked</c> pseudo-class.</summary>
     VolumeLocked,
 
+    /// <summary>The <c>:animated-image</c> pseudo-class (https://drafts.csswg.org/css-image-animation-1/#selectordef-animated-image).</summary>
+    AnimatedImage,
+
     // Scroll markers (https://drafts.csswg.org/css-overflow-5/#active-scroll-marker)
     /// <summary>The <c>:target-current</c> pseudo-class: the active scroll marker of a scroll marker group.</summary>
     TargetCurrent,

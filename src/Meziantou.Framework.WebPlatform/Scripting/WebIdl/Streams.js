@@ -3600,8 +3600,9 @@
   fetchSupport.readAllBytes = readAllBytes;
 
   // Reads the chunks of a stream (the body of a response given by a service worker to a client that reads it as it arrives):
-  // onChunk is called with each chunk, then onEnd or onError. Returns the function that cancels the stream.
-  fetchSupport.readChunks = (stream, onChunk, onEnd, onError) => {
+  // onChunk is called with each chunk, then onEnd or onError (or onInvalidChunk, when it is given, for a chunk that is not a
+  // Uint8Array: the stream is canceled). Returns the function that cancels the stream.
+  fetchSupport.readChunks = (stream, onChunk, onEnd, onError, onInvalidChunk) => {
     const reader = acquireReadableStreamDefaultReader(stream);
     let canceled = false;
     const readLoop = () => {
@@ -3611,7 +3612,11 @@
           if (getViewKind(chunk) !== 'Uint8Array') {
             const error = new TypeError_('The chunk is not a Uint8Array');
             canceled = true;
-            onError(error);
+            if (onInvalidChunk !== undefined) {
+              onInvalidChunk();
+            } else {
+              onError(error);
+            }
             setPromiseIsHandledToTrue(readableStreamReaderGenericCancel(reader, error));
             return;
           }

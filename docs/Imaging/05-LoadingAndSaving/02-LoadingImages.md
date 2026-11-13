@@ -103,8 +103,8 @@ supported throws a `NotSupportedException` before anything is read.
 | [FrameLimit](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.FrameLimit) | `null` (every frame) | Decode only the first frames of an animation |
 | [Conversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Conversion) | [PixelConversionOptions.Default](cref:Meziantou.Framework.Imaging.PixelConversionOptions.Default) | How a typed load converts the pixels: background color for the alpha, floating-point samples out of range, color profile, CMYK colors ([CmykConversion](cref:Meziantou.Framework.Imaging.PixelConversionOptions.CmykConversion)) |
 | [CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion) | `null` (rejected) | Convert a CMYK image (a JPEG, a TIFF page, a JPEG 2000 or a JPEG XL file) to RGB, unless it is a JPEG or a TIFF page loaded as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64): see [Color management](../09-Color/03-ColorManagement.md) |
-| [TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) | `null` (full size) | Decode a JPEG or JPEG 2000 file, a lossy JPEG XL file, or a TIFF file that stores reduced-resolution images, at a reduced size that is still at least this size: see [Decode a smaller image](#decode-a-smaller-image) |
-| [ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) | 1 (full size) | Decode a JPEG file at exactly 1/2, 1/4 or 1/8 of its size, a JPEG 2000 file at 1/2, 1/4, ... down to its lowest resolution level, a lossy JPEG XL file at 1/8, or a TIFF file at the scale of one of its reduced-resolution images |
+| [TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) | `null` (full size) | Decode a JPEG or JPEG 2000 file, a lossy JPEG XL file, an interlaced PNG file, or a TIFF file that stores reduced-resolution images, at a reduced size that is still at least this size: see [Decode a smaller image](#decode-a-smaller-image) |
+| [ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) | 1 (full size) | Decode a JPEG file at exactly 1/2, 1/4 or 1/8 of its size, a JPEG 2000 file at 1/2, 1/4, ... down to its lowest resolution level, a lossy JPEG XL file at 1/8, an interlaced PNG file at 1/2, 1/4 or 1/8, or a TIFF file at the scale of one of its reduced-resolution images |
 | [Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) | `null` (whole image) | Decode an area of a JPEG, JPEG 2000, TIFF, AVIF or HEIC image: see [Decode an area](#decode-an-area) |
 
 The options are immutable: create them once and share them.
@@ -142,16 +142,17 @@ decoded at a lower resolution level of its wavelet transformation, each halving 
 number of levels of the file: see [JPEG 2000](../10-Formats/16-Jpeg2000.md#thumbnails-and-viewports). A TIFF file that
 stores reduced-resolution images of its first page (a pyramid, such as a Cloud Optimized GeoTIFF file or a scan for a
 slide viewer) is decoded from one of them: see [TIFF](../10-Formats/10-Tiff.md#pyramids). A lossy JPEG XL file is decoded
-at 1/8 from the LF image of its frame: see [JPEG XL](../10-Formats/15-JpegXl.md#decode-a-thumbnail). This is what a
-thumbnail or a preview of a large photo needs:
+at 1/8 from the LF image of its frame: see [JPEG XL](../10-Formats/15-JpegXl.md#decode-a-thumbnail). An interlaced PNG file
+is decoded at 1/2, 1/4 or 1/8 from its first Adam7 passes, which hold the pixel at the top left of each block: see
+[PNG](../10-Formats/02-Png.md#decode-a-thumbnail). This is what a thumbnail or a preview of a large photo needs:
 
-- [TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) asks for an image at least that large in both directions: a JPEG, JPEG 2000, lossy JPEG XL or pyramid TIFF file is decoded at
+- [TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) asks for an image at least that large in both directions: a JPEG, JPEG 2000, lossy JPEG XL, interlaced PNG or pyramid TIFF file is decoded at
   the smallest of these scales that keeps that size, and any other file at full size. Resize the result to the exact size you want, as
   [Create thumbnails](../03-Guides/02-CreateThumbnails.md) does.
 - [ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) asks for exactly one scale: the image has `ceil(width / n)` by `ceil(height / n)` pixels. A file
   that cannot be decoded at that scale (another format, a lossless JPEG file, a scale beyond 1/8, beyond the resolution levels of a JPEG 2000
-  file, a JPEG XL file at another scale than 1/8 or that is not lossy, or a scale that no reduced-resolution image of a
-  TIFF file has) throws an
+  file, a JPEG XL file at another scale than 1/8 or that is not lossy, a PNG file that is not interlaced or that is an
+  animation, or a scale that no reduced-resolution image of a TIFF file has) throws an
   [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
 
 The sizes are those of the stored pixels, before the orientation is applied. The metadata is the one of the file, as
@@ -173,8 +174,8 @@ without decoding the rest:
 public static Image LoadViewport(string path, Rectangle viewport)
 {
     // The area is in pixels of the stored image, before its orientation. A JPEG file transforms only the blocks the
-    // area reads, a tiled TIFF page reads only the tiles the area meets, an AVIF or HEIC grid decodes only the tiles it
-    // needs, and the pixels are those of a full decode. Other formats throw UnsupportedImageFeatureException
+    // area reads, a tiled TIFF page reads only the tiles the area meets, an AVIF or HEIC image decodes only the grid tiles
+    // and the rows it needs, and the pixels are those of a full decode. Other formats throw UnsupportedImageFeatureException
     return Image.Load(path, new ImageDecodeOptions { Region = viewport });
 }
 ```
@@ -189,7 +190,7 @@ depends on how the file is stored:
 | JPEG | The blocks of the area and of a margin around it (the chrominance upsampling reads its neighbors), and nothing below it in a sequential file: the entropy-coded data after the last row it needs are skipped. The output holds the area only. A progressive file still decodes every scan and keeps the coefficients of its whole frame |
 | JPEG 2000 | The tiles it meets and, in them, the code-blocks that reach it: see [JPEG 2000](../10-Formats/16-Jpeg2000.md#thumbnails-and-viewports) |
 | TIFF | The strips or the tiles it meets, each one whole: a tiled page makes the viewports of a large page cheap. The pages of an [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) take the option too |
-| AVIF, HEIC | The tiles of a grid it meets, such as the tiles of a phone photo. An image that is not a grid, and each frame of an image sequence, is decoded whole, and only the area is kept |
+| AVIF, HEIC | The tiles of a grid it meets, such as the tiles of a phone photo. An image that is not a grid is decoded down to the rows the area needs, plus a margin for the in-loop filters, and an AVIF image of several tiles skips the tiles far from the area: a viewport at the top of a large image costs a fraction of its memory. An image of several layers, an image built from other images, and each frame of an image sequence, is decoded whole, and only the area is kept |
 
 Any other format, and a rectangle outside the image, throws an
 [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) before decoding. A JPEG file decoded at a reduced size

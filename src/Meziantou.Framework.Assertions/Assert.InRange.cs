@@ -77,6 +77,12 @@ public partial class Assert
             float f => float.IsNaN(f),
             Half h => Half.IsNaN(h),
             NFloat n => NFloat.IsNaN(n),
+#if NET11_0_OR_GREATER
+            System.Numerics.BFloat16 b => System.Numerics.BFloat16.IsNaN(b),
+            System.Numerics.Decimal32 d => System.Numerics.Decimal32.IsNaN(d),
+            System.Numerics.Decimal64 d => System.Numerics.Decimal64.IsNaN(d),
+            System.Numerics.Decimal128 d => System.Numerics.Decimal128.IsNaN(d),
+#endif
             _ => false,
         };
     }

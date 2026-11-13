@@ -14,6 +14,9 @@
   "css/css-display/display-change-object-iframe.html": {
     "reftest": "PASS"
   },
+  "css/css-display/display-contents-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-display/display-contents-alignment-001.html": {
     "reftest": "PASS"
   },
@@ -212,6 +215,9 @@
   "css/css-display/display-contents-svg-elements.html": {
     "reftest": "PASS"
   },
+  "css/css-display/display-contents-svg-pseudo-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-display/display-contents-svg-switch-child.html": {
     "total": 1
   },
@@ -317,6 +323,9 @@
   "css/css-display/display-none-inline-img.html": {
     "reftest": "PASS"
   },
+  "css/css-display/display-none-root-hit-test-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-display/display-on-svg-text-content-element.html": {
     "reftest": "PASS"
   },
@@ -360,20 +369,10 @@
     "total": 7
   },
   "css/css-display/reading-flow/reading-flow-grid-lanes-computed.tentative.html": {
-    "total": 3,
-    "failures": {
-      "Property reading-flow value 'grid-lanes-flow'": "FAIL",
-      "Property reading-flow value 'grid-lanes-order'": "FAIL",
-      "Property reading-flow value 'grid-lanes-track'": "FAIL"
-    }
+    "total": 3
   },
   "css/css-display/reading-flow/reading-flow-grid-lanes-valid.tentative.html": {
-    "total": 3,
-    "failures": {
-      "e.style['reading-flow'] = \"grid-lanes-flow\" should set the property value": "FAIL",
-      "e.style['reading-flow'] = \"grid-lanes-order\" should set the property value": "FAIL",
-      "e.style['reading-flow'] = \"grid-lanes-track\" should set the property value": "FAIL"
-    }
+    "total": 3
   },
   "css/css-display/reading-flow/reading-flow-invalid.html": {
     "total": 9

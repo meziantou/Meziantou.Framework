@@ -49,6 +49,17 @@ internal sealed class BarcodeTools
             throw new InvalidOperationException($"'{path}' does not report version {expectedVersion}: {output}");
     }
 
+    /// <summary>Encodes data with zint and renders the symbol to an image file, PNG for a <c>.png</c> path.</summary>
+    /// <param name="arguments">The options (<c>-b</c>, <c>--scale</c>, <c>--rotate</c>, ...), without <c>-d</c> and <c>-o</c>.</param>
+    /// <param name="data">The data to encode.</param>
+    /// <param name="path">The path of the image file.</param>
+    public async Task RenderWithZintAsync(IEnumerable<string> arguments, string data, string path)
+    {
+        var result = await RunAsync(ZintPath, [.. arguments, "-o", path, "-d", data], XunitCancellationToken).ConfigureAwait(false);
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException($"zint failed (exit code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardError}{result.StandardOutput}");
+    }
+
     /// <summary>Encodes data with zint and returns its module matrix (<c>--dump</c>).</summary>
     /// <param name="arguments">The options (<c>-b</c>, <c>--vers</c>, <c>--mask</c>, <c>--secure</c>, ...), without <c>-d</c>.</param>
     /// <param name="data">The data to encode.</param>

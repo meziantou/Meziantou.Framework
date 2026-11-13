@@ -6,6 +6,8 @@ internal static class DataAnalyzer
 
     private static readonly Encoding ShiftJis = GetShiftJisEncoding();
 
+    private static readonly Encoding StrictShiftJis = Encoding.GetEncoding("shift_jis", EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+
     private static Encoding GetShiftJisEncoding()
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -182,5 +184,18 @@ internal static class DataAnalyzer
     public static byte[] GetShiftJisBytes(string data)
     {
         return ShiftJis.GetBytes(data);
+    }
+
+    /// <summary>Decodes Shift JIS bytes, or returns <see langword="null"/> when they are not valid Shift JIS.</summary>
+    public static string? GetShiftJisString(ReadOnlySpan<byte> bytes)
+    {
+        try
+        {
+            return StrictShiftJis.GetString(bytes);
+        }
+        catch (DecoderFallbackException)
+        {
+            return null;
+        }
     }
 }

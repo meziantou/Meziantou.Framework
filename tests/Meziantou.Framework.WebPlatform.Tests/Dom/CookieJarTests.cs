@@ -272,4 +272,47 @@ public sealed class CookieJarTests
         Assert.Equal(["lang", "session", "theme"], names);
         #endregion
     }
+
+    [Fact]
+    public void Documentation_ThirdPartyCookies()
+    {
+        #region WebPlatform_ThirdPartyCookies
+        var cookies = new CookieJar { BlockThirdPartyCookies = true };
+        cookies.SetCookie("https://embed.example/", "id=42; Path=/; Secure; SameSite=None");
+
+        // The request of an iframe of https://embed.example in a page of https://top.example
+        var request = new DocumentRequest("https://embed.example/widget")
+        {
+            CookieJar = cookies,
+            SiteForCookies = "https://top.example",
+            TopLevelOrigin = "https://top.example",
+            Origin = "https://top.example",
+            Destination = RequestDestination.Iframe,
+        };
+        Assert.Null(request.GetCookieHeader());
+
+        // Allow the cookies of https://embed.example in the pages of https://top.example
+        cookies.SetThirdPartyCookieAccess("https://top.example/", "https://embed.example/", blocked: false);
+        Assert.Equal("id=42", request.GetCookieHeader());
+        #endregion
+    }
+
+    [Fact]
+    public void SetThirdPartyCookieAccess_TheMostSpecificRuleWins()
+    {
+        var jar = new CookieJar();
+        jar.SetCookie("https://embed.example/", "id=1; Secure; SameSite=None");
+        jar.SetThirdPartyCookieAccess(topLevelUrl: null, embeddedUrl: null, blocked: true);
+        Assert.Null(GetCookieHeader(jar, "https://embed.example/", siteForCookies: "https://top.example"));
+
+        // The rule of the top-level site overrides the rule of every site, and a rule of a pair of sites overrides both
+        jar.SetThirdPartyCookieAccess("https://top.example/", embeddedUrl: null, blocked: false);
+        Assert.Equal("id=1", GetCookieHeader(jar, "https://embed.example/", siteForCookies: "https://top.example"));
+        jar.SetThirdPartyCookieAccess("https://www.top.example/", "https://sub.embed.example/", blocked: true);
+        Assert.Null(GetCookieHeader(jar, "https://embed.example/", siteForCookies: "https://top.example"));
+
+        // A first-party request is never blocked
+        Assert.Equal("id=1", GetCookieHeader(jar, "https://embed.example/", siteForCookies: "https://embed.example"));
+        Assert.Throws<ArgumentException>(() => jar.SetThirdPartyCookieAccess("not a url", embeddedUrl: null, blocked: true));
+    }
 }

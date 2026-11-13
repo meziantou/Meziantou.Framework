@@ -1843,6 +1843,9 @@ becomes `https://a:8080/`):
 - The navigations of the child navigables (`iframe`, `frame`, `embed`, `object`) and the form submissions are upgraded.
   The other navigations of a top-level navigable are upgraded when the host and port of their URL are the ones of a
   document whose policy has the directive (its upgrade insecure navigations set), e.g. the same-origin links.
+- As in Chromium, the potentially trustworthy URLs are not upgraded: `http://localhost`, `http://*.localhost`, and the
+  loopback addresses (`http://127.0.0.1`, `http://[::1]`). The same-origin requests of a document served over
+  `http://localhost` (e.g. the external resources of the `use` elements) stay same-origin.
 - Every navigation request has the `Upgrade-Insecure-Requests: 1` header.
 - The documents of the child navigables inherit the policy and the upgrade insecure navigations set of their parent
   document, and the workers the ones of their creator. As in the browsers, a document inherits the policy of its parent
@@ -3657,7 +3660,8 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   a `message` event (`origin` and `source` are the origin and the window of the caller), or a `messageerror` event when
   the message cannot be deserialized (e.g. a `SharedArrayBuffer` sent to another agent cluster).
 - The caller (the incumbent settings object) is the realm of the script that calls the method (`ScriptEngine.GetCurrentGlobal()`),
-  or the target window itself for a call from .NET.
+  or, when no script has run since a callback was called (e.g. a bound `postMessage` used as an event listener), the
+  callback context of the callback, or the target window itself for a call from .NET.
 
 The agent clusters of a cross-origin isolated browsing context group (`Cross-Origin-Opener-Policy: same-origin` with a
 compatible `Cross-Origin-Embedder-Policy`) are origin-keyed. A `SharedArrayBuffer` can be posted (or sent to a

@@ -104,6 +104,191 @@ public sealed class Av1DecoderConformanceTests
     }
 
     /// <summary>
+    /// The decode window (<see cref="Av1Decoder.DecodeWindow"/>): the first output frame of every vector, decoded for areas of
+    /// it, by one worker and by several workers with bands of filters, has in each area the samples of the whole frame. A first
+    /// frame that is not a shown intra frame, or a layered one, is not decoded for a window
+    /// (<see cref="DecodeWindowNotApplicableException"/>).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Vectors))]
+    public void ADecodeWindowHasTheSamplesOfTheWholeFrame(string id)
+    {
+        var data = File.ReadAllBytes(GoldenCorpus.Default.RootDirectory / GoldenCorpus.Default.GetAv1Vector(id).Input.Path);
+        var whole = DecodeFirstFrame(data, window: null, out _);
+        Av1PostFilter.TestIgnoreMinimumSize = true;
+        try
+        {
+            var width = whole.Header.UpscaledWidth;
+            var height = whole.Header.FrameHeight;
+            foreach (var window in GetDecodeWindows(width, height))
+            {
+                foreach (var workers in (int[])[1, 3])
+                {
+                    Av1FrameBuffer frame;
+                    try
+                    {
+                        frame = DecodeFirstFrame(data, window, out _, workers);
+                    }
+                    catch (DecodeWindowNotApplicableException)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        Assert.True(frame.DecodedHeight >= Math.Min(height, window.Bottom), $"{id}: the window {window} decodes {frame.DecodedHeight} rows.");
+                        for (var plane = 0; plane < frame.PlaneCount; plane++)
+                        {
+                            var subX = plane > 0 ? frame.Sequence.SubsamplingX : 0;
+                            var subY = plane > 0 ? frame.Sequence.SubsamplingY : 0;
+                            var x0 = window.Left >> subX;
+                            var x1 = ((window.Right - 1) >> subX) + 1;
+                            for (var y = window.Top >> subY; y <= (window.Bottom - 1) >> subY; y++)
+                            {
+                                if (!whole.GetPlane(plane).GetRow(y)[x0..x1].SequenceEqual(frame.GetPlane(plane).GetRow(y)[x0..x1]))
+                                    Assert.Fail($"{id}: the row {y} of the plane {plane} decoded for the window {window} by {workers} worker(s) differs from the whole frame.");
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        frame.Release();
+                    }
+                }
+            }
+        }
+        finally
+        {
+            Av1PostFilter.TestIgnoreMinimumSize = false;
+            whole.Release();
+        }
+    }
+
+    /// <summary>The vectors exercise the decode window: first frames stop before their last rows, and frames of several tiles leave tiles out.</summary>
+    [Fact]
+    public void ADecodeWindowStopsTheDecodingOfManyVectors()
+    {
+        var windowed = 0;
+        var skippedTiles = 0;
+        foreach (var vector in GoldenCorpus.Default.Av1Vectors)
+        {
+            var data = File.ReadAllBytes(GoldenCorpus.Default.RootDirectory / vector.Input.Path);
+            try
+            {
+                var frame = DecodeFirstFrame(data, new Rectangle(0, 0, 1, 1), out var skipped);
+                windowed += frame.DecodedHeight < frame.Header.FrameHeight ? 1 : 0;
+                skippedTiles += skipped > 0 ? 1 : 0;
+                frame.Release();
+            }
+            catch (DecodeWindowNotApplicableException)
+            {
+            }
+        }
+
+        Assert.True(windowed >= 10, $"Only {windowed} vectors are decoded for a window.");
+        Assert.True(skippedTiles >= 2, $"Only {skippedTiles} vectors leave tiles out for a window.");
+    }
+
+    /// <summary>
+    /// A frame of 8x8 tiles of 64x64 samples with loop restoration units of 256x256 samples: an area in a tile far from the
+    /// first ones does not decode the tiles on its right and below it, but decodes the tiles above and on its left that hold
+    /// the loop restoration units that reach it.
+    /// </summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void ADecodeWindowLeavesOutTheTilesItDoesNotNeed(int workers)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(ADecodeWindowLeavesOutTheTilesItDoesNotNeed));
+        var settings = new Av1EncoderSettings(512, 512, 8, Monochrome: false, 1, 1, 1, 13, 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: false, Quality: 30, Effort: 0, MinTileColsLog2: 3, MinTileRowsLog2: 3);
+        byte[] data;
+        using (var encoder = new Av1Encoder(scope, settings))
+        {
+            for (var plane = 0; plane < 3; plane++)
+            {
+                var source = encoder.GetSourcePlane(plane);
+                for (var y = 0; y < source.Height; y++)
+                {
+                    var row = source.GetRow(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        // Gradients with noise: the restoration filters of the units are not all identity
+                        var noise = (int)(((uint)((x * 73856093) ^ (y * 19349663) ^ (plane * 83492791)) >> 24) & 31);
+                        row[x] = (ushort)Math.Clamp(((x + y) * 255 / (2 * row.Length)) + noise - 16 + (plane * 20), 0, 255);
+                    }
+                }
+            }
+
+            encoder.BeginFrame();
+            while (!encoder.Encode(TestContext.Current.CancellationToken))
+            {
+            }
+
+            Assert.True(encoder.RestoredUnitCount > 0, "The frame has no loop restoration unit with a filter.");
+            data = encoder.Payload.ToArray();
+        }
+
+        var whole = DecodeFirstFrame(data, window: null, out _);
+        Av1PostFilter.TestIgnoreMinimumSize = true;
+        try
+        {
+            Assert.True(whole.Header.UsesLr && whole.Header.TileCount is 64);
+            // The area in the last tiles is reached by the restoration units of the tiles above it and on its left: every tile is
+            // decoded. The other areas leave out the tiles on their right and below them
+            foreach (var (window, isCut) in (ReadOnlySpan<(Rectangle, bool)>)[(new(400, 400, 20, 20), false), (new(450, 300, 30, 4), true), (new(20, 20, 9, 9), true), (new(511, 0, 1, 1), true)])
+            {
+                var frame = DecodeFirstFrame(data, window, out var skipped, workers);
+                try
+                {
+                    Assert.Equal(isCut, skipped > 0, $"The window {window} leaves out {skipped} tiles.");
+                    for (var plane = 0; plane < 3; plane++)
+                    {
+                        var shift = plane > 0 ? 1 : 0;
+                        var x0 = window.Left >> shift;
+                        var x1 = ((window.Right - 1) >> shift) + 1;
+                        for (var y = window.Top >> shift; y <= (window.Bottom - 1) >> shift; y++)
+                        {
+                            Assert.True(whole.GetPlane(plane).GetRow(y)[x0..x1].SequenceEqual(frame.GetPlane(plane).GetRow(y)[x0..x1]), $"The row {y} of the plane {plane} decoded for the window {window} differs from the whole frame.");
+                        }
+                    }
+                }
+                finally
+                {
+                    frame.Release();
+                }
+            }
+        }
+        finally
+        {
+            Av1PostFilter.TestIgnoreMinimumSize = false;
+            whole.Release();
+        }
+    }
+
+    // Areas of a frame: single pixels, rows and columns, areas across superblocks, the whole frame
+    private static Rectangle[] GetDecodeWindows(int width, int height) =>
+    [
+        new(0, 0, 1, 1),
+        new(width - 1, height - 1, 1, 1),
+        new(width / 3, height / 4, 1, 1),
+        new(width / 2, 0, width - (width / 2), Math.Max(1, height / 3)),
+        new(0, height / 2, width, 1),
+        new(width * 3 / 4, height / 3, Math.Min(9, width - (width * 3 / 4)), Math.Min(9, height - (height / 3))),
+        new(0, 0, width, height),
+    ];
+
+    // The first output frame, decoded whole or for a window; the caller releases it
+    private static Av1FrameBuffer DecodeFirstFrame(byte[] data, Rectangle? window, out int skippedTiles, int maxDegreeOfParallelism = 1)
+    {
+        using var decoder = new Av1Decoder(AllocationScope.Create(ImageConfiguration.Default, "window")) { DecodeWindow = window, MaxDegreeOfParallelism = maxDegreeOfParallelism };
+        decoder.SetInput(data, 0, data.Length);
+        var frame = decoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken);
+        Assert.NotNull(frame);
+        skippedTiles = decoder.SkippedTileCount;
+        return frame;
+    }
+
+    /// <summary>
     /// The vectors whose tiles workers decode (<see cref="DecodedPlanesDoNotDependOnTheNumberOfWorkers"/>): tile groups of
     /// several tiles, uniform and explicit tile sizes, superblocks of 64x64 and of 128x128, every chroma format, inter
     /// frames, and frames that keep the distributions of a tile other than the first one (<c>context_update_tile_id</c>)

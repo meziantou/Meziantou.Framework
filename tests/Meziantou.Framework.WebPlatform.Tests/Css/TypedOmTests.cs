@@ -178,6 +178,19 @@ public sealed class TypedOmTests : IDisposable
     }
 
     [Fact]
+    public void UnparsedValue_CycleInFallback_OmitsTheCyclicFallback()
+    {
+        var value = new CssUnparsedValue([]);
+        value[0u] = new CssVariableReferenceValue("--a", value);
+        Assert.Equal("var(--a)", value.ToString());
+
+        var outer = new CssUnparsedValue(["a "]);
+        var inner = new CssUnparsedValue([new CssVariableReferenceValue("--b", outer)]);
+        outer[1u] = new CssVariableReferenceValue("--a", inner);
+        Assert.Equal("a var(--a,var(--b))", outer.ToString());
+    }
+
+    [Fact]
     public void Parse_Image() => Assert.IsType<CssImageValue>(CssStyleValue.Parse("background-image", "linear-gradient(red, blue)"));
 
     [Fact]

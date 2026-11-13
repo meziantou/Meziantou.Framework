@@ -137,6 +137,9 @@
   "scroll-animations/animation-trigger/animation-trigger-untriggered-animations-exposed.tentative.html": {
     "total": 1
   },
+  "scroll-animations/animation-trigger/crashtests/selection-pseudo-crash.html": {
+    "crashtest": "PASS"
+  },
   "scroll-animations/animation-trigger/parsing/animation-trigger-parsing.tentative.html": {
     "total": 58,
     "failures": {
@@ -348,6 +351,42 @@
     "failures": {
       "Among un-scoped triggers with same name, last in tree-order is selected.": "FAIL"
     }
+  },
+  "scroll-animations/crashtests/change-timeline-from-finite-to-monotonic-crash-002.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/change-timeline-from-finite-to-monotonic-crash.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/clip-path-with-view-timeline.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/effect-target-set-to-null.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/invalid-animation-range.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/keyframe-offset-out-of-range-crash.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/remove-pseudo-element-subject.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/scroll-timeline-becomes-scrollable-after-sampling.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/scroll-timeline-completion-crash.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/scroll-timeline-resize.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/scroll-timeline-with-long-duration.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/viewport-100vh.html": {
+    "crashtest": "PASS"
   },
   "scroll-animations/css/animation-duration-auto.tentative.html": {
     "total": 5
@@ -714,8 +753,14 @@
   "scroll-animations/scroll-timelines/animation-with-animatable-interface.html": {
     "reftest": "PASS"
   },
+  "scroll-animations/scroll-timelines/animation-with-delay-crash.html": {
+    "crashtest": "PASS"
+  },
   "scroll-animations/scroll-timelines/animation-with-display-none.html": {
     "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/animation-with-offsets-crash.html": {
+    "crashtest": "PASS"
   },
   "scroll-animations/scroll-timelines/animation-with-overflow-hidden.html": {
     "reftest": "PASS"
@@ -768,6 +813,9 @@
   "scroll-animations/scroll-timelines/layout-changes-on-percentage-based-timeline.html": {
     "reftest": "PASS"
   },
+  "scroll-animations/scroll-timelines/null-scroll-source-crash.html": {
+    "crashtest": "PASS"
+  },
   "scroll-animations/scroll-timelines/pause-animation.html": {
     "total": 7
   },
@@ -794,6 +842,9 @@
   },
   "scroll-animations/scroll-timelines/scroll-animation.html": {
     "total": 4
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-in-removed-iframe-crash.html": {
+    "crashtest": "PASS"
   },
   "scroll-animations/scroll-timelines/scroll-timeline-invalidation-002.html": {
     "total": 6
@@ -839,6 +890,9 @@
   },
   "scroll-animations/scroll-timelines/setting-playback-rate.html": {
     "total": 14
+  },
+  "scroll-animations/scroll-timelines/setting-scroll-timeline-with-null-source-crash.html": {
+    "crashtest": "PASS"
   },
   "scroll-animations/scroll-timelines/setting-start-time.html": {
     "total": 14
@@ -929,6 +983,9 @@
   },
   "scroll-animations/view-timelines/sticky/view-timeline-sticky-zero-size-subject.tentative.html": {
     "total": 1
+  },
+  "scroll-animations/view-timelines/subject-br-crash.html": {
+    "crashtest": "PASS"
   },
   "scroll-animations/view-timelines/svg-graphics-element-001.html": {
     "total": 1

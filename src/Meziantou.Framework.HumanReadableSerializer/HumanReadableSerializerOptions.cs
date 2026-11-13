@@ -636,6 +636,9 @@ public sealed record HumanReadableSerializerOptions
             new ByteConverter(),
             new CharConverter(),
             new ComplexConverter(),
+#if NET11_0_OR_GREATER
+            new ComplexGenericConverterFactory(),
+#endif
             new ConstructorInfoConverter(),
             new CultureInfoConverter(),
             new DateOnlyConverter(),

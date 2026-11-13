@@ -360,4 +360,134 @@ public class Pdf417Tests
 
         return sb.ToString();
     }
+
+    [Theory]
+    [InlineData("Hello, World!")]
+    [InlineData("HELLO WORLD")]
+    [InlineData("hello world")]
+    [InlineData("MiXeD CaSe 123 & #-.$/+%*=^ ;<>@[\\]_`~!\"|()?{}'")]
+    [InlineData("1234567890123456789012345678901234567890123456789012345678901234567890")]
+    [InlineData("Invoice 12345678901234567 total 99.95 EUR")]
+    [InlineData("\t\r\n tabs and lines\r\n")]
+    [InlineData("caf\u00E9 cr\u00E8me")]
+    [InlineData("Ελληνικά 漢字 😀")]
+    [InlineData("a")]
+    public void Decode_Text(string text)
+    {
+        text = System.Text.RegularExpressions.Regex.Unescape(text);
+        var result = Barcode2DDecoder.Decode(Barcode2D.CreatePdf417(text));
+        Assert.Equal((text, 0), (result.Text, result.CorrectedErrorCount));
+        Assert.Equal(Ascii.IsValid(text) ? null : 26, result.EciAssignmentNumber);
+    }
+
+    [Fact]
+    public void Decode_Binary()
+    {
+        // Byte compaction: groups of 6 bytes, then the bytes left one codeword each (901) or none left (924)
+        for (var length = 1; length <= 20; length++)
+        {
+            var bytes = Enumerable.Range(0, length).Select(i => (byte)(200 + i)).ToArray();
+            Assert.Equal(bytes, Barcode2DDecoder.Decode(Barcode2D.CreatePdf417(bytes)).Bytes.ToArray());
+        }
+
+        // A single byte between texts is a shift from the Text compaction
+        var shifted = "ABCDEF\u00FFGHIJKL"u8.ToArray();
+        shifted[6] = 0xFF;
+        Assert.Equal(shifted, Barcode2DDecoder.Decode(Barcode2D.CreatePdf417(shifted)).Bytes.ToArray());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(4)]
+    [InlineData(8)]
+    public void Decode_SecurityLevelsAndShapes(int level)
+    {
+        foreach (var (columns, rowHeight) in new[] { (1, 1), (2, 3), (5, 2), (10, 4), (30, 3) })
+        {
+            Barcode2D barcode;
+            try
+            {
+                barcode = Barcode2D.CreatePdf417("PDF417 security level test 0123456789", new Pdf417Options { SecurityLevel = level, Columns = columns, RowHeight = rowHeight });
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+
+            Assert.Equal("PDF417 security level test 0123456789", Barcode2DDecoder.Decode(barcode).Text);
+        }
+    }
+
+    [Fact]
+    public void Decode_ReadFromEitherSideOrTurned()
+    {
+        var barcode = Barcode2D.CreatePdf417("Turned PDF417 symbol", new Pdf417Options { Columns = 3 });
+        var modules = DataMatrixTests.GetModules(barcode);
+        for (var transform = 0; transform < Internal.MatrixTransforms.Count; transform++)
+        {
+            Assert.Equal("Turned PDF417 symbol", Barcode2DDecoder.Decode(Internal.MatrixTransforms.Apply(modules, transform), Barcode2DType.Pdf417).Text);
+        }
+    }
+
+    [Fact]
+    public void Decode_CorrectsErrors()
+    {
+        var barcode = Barcode2D.CreatePdf417("Error correction of a PDF417 symbol", new Pdf417Options { SecurityLevel = 3, Columns = 4, RowHeight = 2 });
+        var modules = DataMatrixTests.GetModules(barcode);
+
+        // Erase whole codewords: level 3 has 16 error correction codewords, which correct 8 errors
+        foreach (var (row, column) in new[] { (0, 0), (1, 2), (2, 1), (3, 3), (4, 0), (5, 2) })
+        {
+            for (var y = row * 2; y < (row * 2) + 2; y++)
+            {
+                for (var x = 17 * (column + 2); x < 17 * (column + 3); x++)
+                {
+                    modules[y, x] = false;
+                }
+            }
+        }
+
+        var result = Barcode2DDecoder.Decode(modules, Barcode2DType.Pdf417);
+        Assert.Equal(("Error correction of a PDF417 symbol", 6), (result.Text, result.CorrectedErrorCount));
+    }
+
+    [Fact]
+    public void Decode_InvalidMatrix()
+    {
+        Assert.Throws<FormatException>(() => Barcode2DDecoder.Decode(new bool[10, 10], Barcode2DType.Pdf417));
+        Assert.Throws<FormatException>(() => Barcode2DDecoder.Decode(new bool[9, (17 * 5) + 1], Barcode2DType.Pdf417));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void ErrorCorrection_CorrectsUpToHalfTheCodewords()
+    {
+        var random = new Random(3);
+        for (var iteration = 0; iteration < 300; iteration++)
+        {
+            var level = random.Next(0, 6);
+            var errorCorrectionCount = Pdf417ErrorCorrection.GetCodewordCount(level);
+            var dataCount = random.Next(1, 100);
+            var codewords = new int[dataCount + errorCorrectionCount];
+            for (var i = 0; i < dataCount; i++)
+            {
+                codewords[i] = random.Next(929);
+            }
+
+            Pdf417ErrorCorrection.Encode(codewords.AsSpan(0, dataCount), level, codewords.AsSpan(dataCount));
+            var original = codewords.ToArray();
+            Assert.Equal(0, Pdf417ErrorCorrection.Correct(codewords, errorCorrectionCount));
+
+            var errorCount = random.Next(0, (errorCorrectionCount / 2) + 1);
+            foreach (var position in Enumerable.Range(0, codewords.Length).OrderBy(_ => random.Next()).Take(errorCount))
+            {
+                codewords[position] = (codewords[position] + random.Next(1, 929)) % 929;
+            }
+
+            Assert.Equal(errorCount, Pdf417ErrorCorrection.Correct(codewords, errorCorrectionCount));
+            Assert.Equal(original, codewords);
+        }
+    }
 }

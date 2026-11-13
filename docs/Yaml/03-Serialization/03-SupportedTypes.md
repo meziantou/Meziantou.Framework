@@ -16,6 +16,7 @@ description: The scalar types, collections and dictionaries the serializer handl
 | Collections | arrays, `List<>`, `HashSet<>`, `ImmutableArray<>`, `ImmutableList<>`, `ImmutableHashSet<>`, `FrozenSet<>`, `Queue<>`, `Stack<>`, `ConcurrentQueue<>`, `ConcurrentStack<>`, `ConcurrentBag<>`, `ArraySegment<>`, and the interfaces `IEnumerable<>`, `ICollection<>`, `IList<>`, `IReadOnlyCollection<>`, `IReadOnlyList<>`, `ISet<>`, `IReadOnlySet<>` |
 | Dictionaries | `Dictionary<,>`, `OrderedDictionary<,>`, `FrozenDictionary<,>`, `IDictionary<,>`, `IReadOnlyDictionary<,>` |
 | Pairs | `KeyValuePair<,>`, written as a mapping with a `Key` and a `Value` entry |
+| Complex numbers | `Complex`; on .NET 11, `Complex<T>` whose parts are a `float`, `double`, `Half`, `BFloat16`, `Decimal32`, `Decimal64` or `Decimal128`; written as a mapping with a `Real` and an `Imaginary` entry |
 | Untyped | `object`, `object[]`, `List<object>`, `Dictionary<string, object>` |
 | Documents | any node of the [document object model](../05-DocumentObjectModel.md) ([YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping), [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence), [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue), …) |
 | Unions | [C# unions](09-Unions.md) |
@@ -30,6 +31,10 @@ A few details of the scalar types:
 - `double`, `float` and `Half` are always written so that they are read back as floating-point numbers: a whole number
   keeps a fraction (`3.0`), and the special values are `.inf`, `-.inf` and `.nan`. `decimal` keeps the exact text of its
   value.
+- A complex number is a mapping, such as `{Real: 1.5, Imaginary: -2.0}`, whose entry names follow the
+  [naming policy](04-MembersAndNames.md). Its parts are written like any value of their type, so they can be `.nan` or
+  `.inf`. A missing entry is zero, and an unknown entry, such as the `Magnitude` and the `Phase` that earlier versions
+  wrote for `Complex`, is skipped.
 - `Uri` is written with its original string and read as a relative or absolute URI. `CultureInfo` is written with its
   name. `Version` and `BigInteger` are written with their text, and `Rune` as a one-character scalar.
 - A string that would be read back as another type, such as `true` or `123`, is quoted: see

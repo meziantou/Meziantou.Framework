@@ -63,8 +63,9 @@ Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try {
   `MemoryLimit` or cancellation token applies, the engine computes it at once with `BigInteger`. On .NET 10, only the
   parsing is faster at once: there, the split multiplications, powers and decimal conversions to strings are as fast as
   `BigInteger` or faster.
-- The interpreter does not use the .NET stack for JavaScript calls, so a deep recursion of JavaScript code never
-  overflows the stack of the thread; a recursion through .NET functions throws a `RangeError` before it does.
+- The interpreter and the compiled code of the hot functions do not use the .NET stack for JavaScript calls, so a deep
+  recursion of JavaScript code never overflows the stack of the thread; a recursion through .NET functions throws a
+  `RangeError` before it does.
 
 ### What the limits cover
 

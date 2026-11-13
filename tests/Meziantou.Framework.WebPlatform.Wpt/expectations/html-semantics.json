@@ -83,6 +83,12 @@
   "html/semantics/document-metadata/the-base-element/base_target_does_not_affect_location_assignment.html": {
     "total": 1
   },
+  "html/semantics/document-metadata/the-base-element/crashtests/base-clone-with-speculation-rules-onerror.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/document-metadata/the-base-element/crashtests/base-with-speculation-rules-onerror.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/document-metadata/the-link-element/attr-link-fetchpriority.html": {
     "total": 2
   },
@@ -91,6 +97,12 @@
   },
   "html/semantics/document-metadata/the-link-element/link-error-fired-before-scripting-unblocked.html": {
     "total": 1
+  },
+  "html/semantics/document-metadata/the-link-element/link-error-handler-triggers-abort-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/document-metadata/the-link-element/link-href-attribute-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/document-metadata/the-link-element/link-load-error-events.html": {
     "total": 17
@@ -142,6 +154,9 @@
   },
   "html/semantics/document-metadata/the-link-element/link-stylesheet-error-status-fires-error.html": {
     "total": 2
+  },
+  "html/semantics/document-metadata/the-link-element/link-type-attribute-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/document-metadata/the-link-element/link-type-attribute.html": {
     "reftest": "PASS"
@@ -295,6 +310,9 @@
   },
   "html/semantics/document-metadata/the-meta-element/the-lang-attribute-012.html": {
     "total": 1
+  },
+  "html/semantics/document-metadata/the-style-element/crashtests/style-with-title-mutations-while-parsing.xhtml": {
+    "crashtest": "PASS"
   },
   "html/semantics/document-metadata/the-style-element/historical.html": {
     "total": 1
@@ -493,6 +511,9 @@
   "html/semantics/embedded-content/bfcache/embedded-type-only.html": {
     "total": 2
   },
+  "html/semantics/embedded-content/crashtests/iframe-load-before-load.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/embedded-content/image-maps/image-map-processing-model/hash-name-reference-dynamic.html": {
     "total": 8
   },
@@ -541,6 +562,12 @@
       "Test controlsList allowed values for <audio>": "FAIL",
       "Test controlsList allowed values for <video>": "FAIL"
     }
+  },
+  "html/semantics/embedded-content/media-elements/crashtests/no-blocking-loads-gc-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/embedded-content/media-elements/crashtests/reinsert-audio-element-onerror-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/embedded-content/media-elements/error-codes/error.html": {
     "total": 6
@@ -1604,6 +1631,12 @@
   "html/semantics/embedded-content/media-elements/track/track-element/cors/046.html": {
     "total": 1
   },
+  "html/semantics/embedded-content/media-elements/track/track-element/crashtests/track-element-src-aborted-load-onerror-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/embedded-content/media-elements/track/track-element/crashtests/track-element-track-showing-without-cues.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/embedded-content/media-elements/track/track-element/no-cuechange-before-play.html": {
     "total": 1
   },
@@ -1950,6 +1983,12 @@
   "html/semantics/embedded-content/the-area-element/area-stringifier.html": {
     "total": 11
   },
+  "html/semantics/embedded-content/the-area-element/chrome-531745321-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/embedded-content/the-audio-element/audio-appendChild-to-inactive-document-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/embedded-content/the-audio-element/audio-loading-autoplay-deferred.html": {
     "total": 1
   },
@@ -1988,6 +2027,12 @@
   },
   "html/semantics/embedded-content/the-audio-element/audio-loading-load-preload-metadata-deferred.html": {
     "total": 1
+  },
+  "html/semantics/embedded-content/the-audio-element/audio-play-in-inactive-document-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/embedded-content/the-audio-element/audio-with-replaced-after-pseudo-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/embedded-content/the-audio-element/audio_001.htm": {
     "reftest": "PASS"
@@ -2250,6 +2295,9 @@
   "html/semantics/embedded-content/the-embed-element/embed-javascript-url.html": {
     "total": 3
   },
+  "html/semantics/embedded-content/the-embed-element/embed-named-attribute-detached-context-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/embedded-content/the-embed-element/embed-network-error.sub.html": {
     "total": 4
   },
@@ -2319,6 +2367,9 @@
   "html/semantics/embedded-content/the-iframe-element/historical.html": {
     "total": 2
   },
+  "html/semantics/embedded-content/the-iframe-element/hittest-detached-iframe-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/embedded-content/the-iframe-element/iframe-allow.html": {
     "total": 1
   },
@@ -2331,11 +2382,20 @@
   "html/semantics/embedded-content/the-iframe-element/iframe-display-none-with-object.html": {
     "total": 1
   },
+  "html/semantics/embedded-content/the-iframe-element/iframe-document-move-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/embedded-content/the-iframe-element/iframe-document-move-to-active-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/embedded-content/the-iframe-element/iframe-error-status-fires-load.html": {
     "total": 2
   },
   "html/semantics/embedded-content/the-iframe-element/iframe-first-load-canceled-second-load-blank.html": {
     "total": 1
+  },
+  "html/semantics/embedded-content/the-iframe-element/iframe-hit-test-during-load-event-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/embedded-content/the-iframe-element/iframe-initially-empty-is-updated.html": {
     "reftest": "PASS"
@@ -2448,6 +2508,9 @@
   },
   "html/semantics/embedded-content/the-iframe-element/iframe-loading-lazy-reload-navigation-reload.html": {
     "total": 1
+  },
+  "html/semantics/embedded-content/the-iframe-element/iframe-loading-lazy-simple-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/embedded-content/the-iframe-element/iframe-loading-lazy-to-eager-srcdoc.html": {
     "total": 1
@@ -2626,6 +2689,9 @@
   "html/semantics/embedded-content/the-iframe-element/move_iframe_in_dom_04.html": {
     "total": 1
   },
+  "html/semantics/embedded-content/the-iframe-element/multiple-iframes-with-allow-scripts-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/embedded-content/the-iframe-element/same-origin-contextual-fragment.html": {
     "total": 1
   },
@@ -2640,6 +2706,9 @@
   },
   "html/semantics/embedded-content/the-iframe-element/sandbox-inherit-to-blank-document-unsandboxed.html": {
     "total": 4
+  },
+  "html/semantics/embedded-content/the-iframe-element/sandbox-toggle-in-inactive-document-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/embedded-content/the-iframe-element/sandbox-top-close.tentative.sub.window.js": {
     "total": 3
@@ -2765,6 +2834,9 @@
     "failures": {
       "requestStorageAccess() from about:blank Document before it gets replaced with a srcdoc resource does not crash the host process": "FAIL"
     }
+  },
+  "html/semantics/embedded-content/the-iframe-element/srcdoc-removed-iframe-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/embedded-content/the-iframe-element/srcdoc_change_hash.html": {
     "total": 1
@@ -2900,6 +2972,9 @@
   "html/semantics/embedded-content/the-img-element/document-base-url.html": {
     "reftest": "PASS"
   },
+  "html/semantics/embedded-content/the-img-element/document-destroyed-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/embedded-content/the-img-element/empty-src-no-current-request.html": {
     "total": 2,
     "failures": {
@@ -3026,6 +3101,9 @@
   "html/semantics/embedded-content/the-img-element/image-loading-lazy-srcset.html": {
     "total": 1
   },
+  "html/semantics/embedded-content/the-img-element/image-loading-lazy-subframe-detached-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/embedded-content/the-img-element/image-loading-lazy-to-eager.html": {
     "total": 1
   },
@@ -3049,6 +3127,9 @@
   },
   "html/semantics/embedded-content/the-img-element/img-complete-invalid-url.html": {
     "total": 1
+  },
+  "html/semantics/embedded-content/the-img-element/img-created-in-active-document-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/embedded-content/the-img-element/img-picture-ancestor.html": {
     "total": 4
@@ -3236,6 +3317,9 @@
   "html/semantics/embedded-content/the-img-element/sizes/sizes-auto-dynamic-attributes.html": {
     "total": 3
   },
+  "html/semantics/embedded-content/the-img-element/sizes/sizes-auto-many-commas-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/embedded-content/the-img-element/sizes/sizes-auto-rendering-2.html": {
     "reftest": "PASS"
   },
@@ -3359,6 +3443,9 @@
   "html/semantics/embedded-content/the-img-element/width-height-attribute-parsing.html": {
     "total": 17
   },
+  "html/semantics/embedded-content/the-object-element/block-object-with-ruby-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/embedded-content/the-object-element/document-getters-return-null-for-cross-origin.html": {
     "total": 2
   },
@@ -3373,6 +3460,9 @@
   },
   "html/semantics/embedded-content/the-object-element/object-constraint-validation.html": {
     "total": 1
+  },
+  "html/semantics/embedded-content/the-object-element/object-construct-in-document-with-null-browsing-context-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/embedded-content/the-object-element/object-events.html": {
     "total": 4
@@ -3416,6 +3506,9 @@
   },
   "html/semantics/embedded-content/the-object-element/object-param-url.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/embedded-content/the-object-element/object-remove-param-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/embedded-content/the-object-element/object-setcustomvalidity.html": {
     "total": 1
@@ -3469,6 +3562,9 @@
   },
   "html/semantics/embedded-content/the-video-element/resize-during-playback.html": {
     "total": 2
+  },
+  "html/semantics/embedded-content/the-video-element/video-import-to-inactive-document-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/embedded-content/the-video-element/video-loading-autoplay-deferred.html": {
     "total": 1
@@ -3670,11 +3766,17 @@
   "html/semantics/forms/constraints/inputwillvalidate.html": {
     "total": 2
   },
+  "html/semantics/forms/constraints/number-input-lang-validationMessage-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/constraints/radio-group-valueMissing.html": {
     "total": 2
   },
   "html/semantics/forms/constraints/radio-valueMissing.html": {
     "total": 6
+  },
+  "html/semantics/forms/constraints/reportValidity-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/constraints/using-form-attribute.html": {
     "total": 1
@@ -3761,6 +3863,9 @@
   },
   "html/semantics/forms/form-submission-0/action-encoding.html": {
     "total": 1
+  },
+  "html/semantics/forms/form-submission-0/construct-entry-list-disassociate-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/form-submission-0/constructing-form-data-set.html": {
     "total": 13
@@ -3903,6 +4008,9 @@
   "html/semantics/forms/input-change-event-properties.html": {
     "total": 11
   },
+  "html/semantics/forms/resetting-a-form/form-attribute-detach-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/resetting-a-form/reset-event.html": {
     "total": 1
   },
@@ -3969,6 +4077,9 @@
   "html/semantics/forms/textfieldselection/textarea-selection-while-parsing.xhtml": {
     "total": 1
   },
+  "html/semantics/forms/textfieldselection/textarea-setRangeText-utf16-code-unit-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/textfieldselection/textfieldselection-setRangeText.html": {
     "total": 88
   },
@@ -3998,6 +4109,9 @@
   },
   "html/semantics/forms/the-button-element/button-events.html": {
     "total": 9
+  },
+  "html/semantics/forms/the-button-element/button-form-refers-to-elements-with-duplicate-ids-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-button-element/button-labels.html": {
     "total": 1
@@ -4099,6 +4213,12 @@
   "html/semantics/forms/the-datalist-element/input-text-datalist-removal.html": {
     "reftest": "PASS"
   },
+  "html/semantics/forms/the-datalist-element/list-id-insertion-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/forms/the-datalist-element/remove-datalist-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-fieldset-element/HTMLFieldSetElement.html": {
     "total": 4
   },
@@ -4132,6 +4252,9 @@
   "html/semantics/forms/the-fieldset-element/fieldset-willvalidate.html": {
     "total": 1
   },
+  "html/semantics/forms/the-form-element/form-action-in-inactive-document-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-form-element/form-action-reflection-with-base-url.html": {
     "total": 3
   },
@@ -4153,8 +4276,17 @@
   "html/semantics/forms/the-form-element/form-autocomplete.html": {
     "total": 67
   },
+  "html/semantics/forms/the-form-element/form-check-validity-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-form-element/form-checkvalidity.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-form-element/form-controls-id-removal-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/forms/the-form-element/form-controls-nested-id-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-form-element/form-elements-filter.html": {
     "total": 2
@@ -4285,6 +4417,12 @@
   "html/semantics/forms/the-input-element/defaultValue-clobbering.html": {
     "total": 2
   },
+  "html/semantics/forms/the-input-element/disabled-attempt-focus-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/forms/the-input-element/disabled-file-input-click-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-input-element/dynamic-value-update.html": {
     "reftest": "PASS"
   },
@@ -4390,8 +4528,14 @@
   "html/semantics/forms/the-input-element/input-disabled-fieldset-dynamic.html": {
     "total": 1
   },
+  "html/semantics/forms/the-input-element/input-form-detach-style-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-input-element/input-height.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-input-element/input-importNode-to-detached-document-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-input-element/input-labels.html": {
     "total": 1
@@ -4432,6 +4576,12 @@
   "html/semantics/forms/the-input-element/input-type-button.html": {
     "total": 5
   },
+  "html/semantics/forms/the-input-element/input-type-change-during-activation-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/forms/the-input-element/input-type-change-empty-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-input-element/input-type-change-submit.html": {
     "total": 20
   },
@@ -4448,6 +4598,9 @@
   },
   "html/semantics/forms/the-input-element/input-type-checkbox.html": {
     "total": 7
+  },
+  "html/semantics/forms/the-input-element/input-type-number-rtl-invalid-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-input-element/input-untrusted-key-event.html": {
     "total": 44
@@ -4502,6 +4655,12 @@
   },
   "html/semantics/forms/the-input-element/input-willvalidate.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-input-element/invalid-datalist-options-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/forms/the-input-element/large-step-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-input-element/maxlength-number.html": {
     "total": 1
@@ -4699,11 +4858,17 @@
   "html/semantics/forms/the-input-element/time-2.html": {
     "total": 17
   },
+  "html/semantics/forms/the-input-element/time-datalist-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-input-element/time-focus-dynamic-value-change.html": {
     "total": 1
   },
   "html/semantics/forms/the-input-element/time.html": {
     "total": 32
+  },
+  "html/semantics/forms/the-input-element/type-change-file-to-text-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-input-element/type-change-in-keypress-listener.html": {
     "total": 1
@@ -4716,6 +4881,9 @@
   },
   "html/semantics/forms/the-input-element/type-change-text-to-file-to-text.html": {
     "total": 3
+  },
+  "html/semantics/forms/the-input-element/type-change-to-password-when-parent-has-spellcheck-attr-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-input-element/type-change-to-password.html": {
     "reftest": "PASS"
@@ -4770,6 +4938,12 @@
   },
   "html/semantics/forms/the-label-element/labels-live-label-removal.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-label-element/move-form-associated-element-into-label-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/forms/the-label-element/move-label-into-form-and-then-move-form-into-ancestor-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-label-element/proxy-click-to-associated-element.html": {
     "total": 3
@@ -4969,6 +5143,9 @@
       "<selectedcontent> should update in response to user interaction.": "FAIL"
     }
   },
+  "html/semantics/forms/the-select-element/customizable-select/all-revert-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-select-element/customizable-select/appearance-base-and-base-select.tentative.html": {
     "reftest": "PASS"
   },
@@ -4998,6 +5175,9 @@
   },
   "html/semantics/forms/the-select-element/customizable-select/nested-options.html": {
     "total": 3
+  },
+  "html/semantics/forms/the-select-element/customizable-select/nested-select-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/option-color-inheritance.html": {
     "total": 1
@@ -5046,6 +5226,9 @@
   },
   "html/semantics/forms/the-select-element/customizable-select/select-accessibility-minimum-target-size.html": {
     "total": 6
+  },
+  "html/semantics/forms/the-select-element/customizable-select/select-add-multiple-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-anchor-regression.html": {
     "total": 1
@@ -5230,6 +5413,9 @@
   "html/semantics/forms/the-select-element/customizable-select/select-grid-before-after.html": {
     "reftest": "PASS"
   },
+  "html/semantics/forms/the-select-element/customizable-select/select-highlight-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-select-element/customizable-select/select-home-end-pagedown-pageup-detailed.optional.html": {
     "total": 4
   },
@@ -5261,11 +5447,23 @@
   "html/semantics/forms/the-select-element/customizable-select/select-keyboard-focus-change-for-hidden-options.optional.html": {
     "total": 1
   },
+  "html/semantics/forms/the-select-element/customizable-select/select-listitems-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/forms/the-select-element/customizable-select/select-listitems-hr-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-select-element/customizable-select/select-mouse-behavior.html": {
     "total": 8
   },
   "html/semantics/forms/the-select-element/customizable-select/select-mousedown-slot-mutation.optional.html": {
     "total": 2
+  },
+  "html/semantics/forms/the-select-element/customizable-select/select-multiple-keydown-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/forms/the-select-element/customizable-select/select-multiple-mousemove-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-multiple-removed.html": {
     "total": 1
@@ -5281,6 +5479,9 @@
   },
   "html/semantics/forms/the-select-element/customizable-select/select-optgroup-arrow-keys.optional.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-select-element/customizable-select/select-optgroup-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-optgroup-legend-label-mutation.html": {
     "reftest": "PASS"
@@ -5423,6 +5624,9 @@
   "html/semantics/forms/the-select-element/customizable-select/select-vertical-writing-mode-navigation.optional.html": {
     "total": 8
   },
+  "html/semantics/forms/the-select-element/customizable-select/selected-option-parser-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-attribute-change.html": {
     "total": 7
   },
@@ -5434,6 +5638,9 @@
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-custom-element-reactions.html": {
     "total": 6
+  },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-in-option-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-insertion-removal.html": {
     "total": 4
@@ -5562,14 +5769,26 @@
   "html/semantics/forms/the-select-element/list-box-important-colors.html": {
     "reftest": "PASS"
   },
+  "html/semantics/forms/the-select-element/multiple-pickers-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/forms/the-select-element/option-fieldset-disabled-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-select-element/option-selectedness-script-mutation.html": {
     "total": 5
   },
   "html/semantics/forms/the-select-element/reset-algorithm-rendering.html": {
     "reftest": "PASS"
   },
+  "html/semantics/forms/the-select-element/select-add-optgroup-before-argument-is-select-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-select-element/select-add-optgroup.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-select-element/select-add-option-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-select-element/select-add.html": {
     "total": 2
@@ -5582,6 +5801,9 @@
   },
   "html/semantics/forms/the-select-element/select-attribute-change-reset.html": {
     "total": 8
+  },
+  "html/semantics/forms/the-select-element/select-attribute-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-select-element/select-clear-reappend.tentative.html": {
     "total": 1
@@ -5600,6 +5822,9 @@
   },
   "html/semantics/forms/the-select-element/select-hr-listbox.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/forms/the-select-element/select-in-table-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-select-element/select-innerHTML-selected.html": {
     "reftest": "PASS"
@@ -5623,6 +5848,9 @@
   },
   "html/semantics/forms/the-select-element/select-listbox-abspos-child-dynamic-insertion.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/forms/the-select-element/select-listbox-fixed-abspos-child-dynamic-insertion-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-select-element/select-listbox-selected-hscroll.html": {
     "reftest": "PASS"
@@ -5686,6 +5914,9 @@
   },
   "html/semantics/forms/the-select-element/select-restore-invalid-option.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-select-element/select-root-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-select-element/select-selectedOptions-and-selected.html": {
     "total": 1
@@ -5777,6 +6008,9 @@
   "html/semantics/forms/the-textarea-element/selection-after-whitespace-change.html": {
     "total": 1
   },
+  "html/semantics/forms/the-textarea-element/text-area-disconnected-firefox-bug-1933919-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-textarea-element/textarea-maxlength.html": {
     "total": 5
   },
@@ -5789,8 +6023,17 @@
   "html/semantics/forms/the-textarea-element/textarea-placeholder-lineheight.html": {
     "total": 2
   },
+  "html/semantics/forms/the-textarea-element/textarea-selection-range-intersects-character-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/forms/the-textarea-element/textarea-setcustomvalidity.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-textarea-element/textarea-splittext-with-range-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/forms/the-textarea-element/textarea-splittext-with-range-simple-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-textarea-element/textarea-text-overflow-ellipsis-scroll.html": {
     "reftest": "PASS"
@@ -5800,6 +6043,9 @@
   },
   "html/semantics/forms/the-textarea-element/textarea-type.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-textarea-element/textarea-update-default-value-in-shadow-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/forms/the-textarea-element/textarea-validity-clone.html": {
     "total": 1
@@ -5966,14 +6212,26 @@
   "html/semantics/interactive-elements/contextmenu-historical.html": {
     "total": 11
   },
+  "html/semantics/interactive-elements/the-details-element/auto-expand-ax-slot-recalc-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/interactive-elements/the-details-element/auto-expand-details-element-fragment.html": {
     "total": 1
+  },
+  "html/semantics/interactive-elements/the-details-element/auto-expand-window-find-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/interactive-elements/the-details-element/closed-details-layout-apis.tentative.html": {
     "total": 1
   },
   "html/semantics/interactive-elements/the-details-element/details-add-summary.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/interactive-elements/the-details-element/details-cq-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/interactive-elements/the-details-element/details-findstring-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/interactive-elements/the-details-element/details-keyboard-activation.html": {
     "total": 1
@@ -5993,8 +6251,23 @@
   "html/semantics/interactive-elements/the-details-element/details.html": {
     "total": 5
   },
+  "html/semantics/interactive-elements/the-details-element/display-table-with-rt-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/interactive-elements/the-details-element/modified-details-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/interactive-elements/the-details-element/name-attribute-dynamic-removal-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/interactive-elements/the-details-element/name-attribute.html": {
     "total": 18
+  },
+  "html/semantics/interactive-elements/the-details-element/nested-details-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/interactive-elements/the-details-element/nested-top-layer-elements-in-details-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/interactive-elements/the-details-element/toggleEvent.html": {
     "total": 11
@@ -6037,6 +6310,9 @@
   },
   "html/semantics/interactive-elements/the-dialog-element/dialog-active-document.html": {
     "total": 1
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-audio-video-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/interactive-elements/the-dialog-element/dialog-autofocus-just-once.html": {
     "total": 1
@@ -6090,6 +6366,9 @@
   "html/semantics/interactive-elements/the-dialog-element/dialog-closedby-corner-cases.html": {
     "total": 30
   },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-closedby-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/interactive-elements/the-dialog-element/dialog-closedby-show-stacked.html": {
     "total": 4
   },
@@ -6098,6 +6377,9 @@
   },
   "html/semantics/interactive-elements/the-dialog-element/dialog-closedby.html": {
     "total": 27
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-closewatcher-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/interactive-elements/the-dialog-element/dialog-enabled.html": {
     "total": 1
@@ -6132,6 +6414,9 @@
   "html/semantics/interactive-elements/the-dialog-element/dialog-inert.html": {
     "total": 1
   },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-insert-disconnected-node-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/interactive-elements/the-dialog-element/dialog-keydown-preventDefault.html": {
     "total": 1
   },
@@ -6147,8 +6432,14 @@
   "html/semantics/interactive-elements/the-dialog-element/dialog-no-throw-requested-state.html": {
     "total": 1
   },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-not-in-tree-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/interactive-elements/the-dialog-element/dialog-open-2.html": {
     "total": 1
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-open-add-closedby-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/interactive-elements/the-dialog-element/dialog-open-movebefore-setup.html": {
     "total": 1
@@ -6174,14 +6465,35 @@
   "html/semantics/interactive-elements/the-dialog-element/dialog-popover-overlay.html": {
     "reftest": "PASS"
   },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-remove-open-attr-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-2-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-2.html": {
     "total": 1
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-3-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-3.html": {
     "total": 1
   },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-4-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-5-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-6-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-closedby.tentative.html": {
     "total": 1
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-recurse.html": {
     "total": 1
@@ -6191,6 +6503,15 @@
   },
   "html/semantics/interactive-elements/the-dialog-element/dialog-return-value.html": {
     "total": 1
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-set-open-twice-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-setup-cleanup-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-showModal-inert-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/interactive-elements/the-dialog-element/dialog-showModal-remove.html": {
     "total": 1
@@ -6333,6 +6654,12 @@
   "html/semantics/interactive-elements/the-dialog-element/show-modal-focusing-steps.html": {
     "total": 1
   },
+  "html/semantics/interactive-elements/the-dialog-element/showmodal-in-shadow-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/interactive-elements/the-dialog-element/showmodal-shadow-sibling-frame-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/interactive-elements/the-dialog-element/simulated-click-inert.html": {
     "total": 1
   },
@@ -6416,6 +6743,9 @@
   },
   "html/semantics/interactive-elements/the-summary-element/click-behavior-optional.tentative.html": {
     "total": 1
+  },
+  "html/semantics/interactive-elements/the-summary-element/display-table-with-rt-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/interactive-elements/the-summary-element/interactive-content.html": {
     "total": 34
@@ -6739,6 +7069,9 @@
   "html/semantics/interestfor/interestfor-pseudo-element-counter-appearance.tentative.html": {
     "reftest": "FAIL"
   },
+  "html/semantics/interestfor/interestfor-pseudo-element-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/interestfor/interestfor-pseudo-element-dynamic.tentative.html": {
     "reftest": "PASS"
   },
@@ -6874,6 +7207,9 @@
   },
   "html/semantics/links/links-created-by-a-and-area-elements/anchor-src-encoding.html": {
     "total": 1
+  },
+  "html/semantics/links/links-created-by-a-and-area-elements/area-without-href-activation-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/links/links-created-by-a-and-area-elements/html-hyperlink-element-utils-href.html": {
     "total": 2
@@ -7236,8 +7572,17 @@
       "Attaching a valid submenu to an invalid root correctly propagates list state": "FAIL"
     }
   },
+  "html/semantics/obsolete/crashtests/marquee-inside-template-tag.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/obsolete/crashtests/marquee-zero-width.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/popovers/button-type-popovertarget.html": {
     "total": 15
+  },
+  "html/semantics/popovers/chrome-392042073-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/popovers/hide-other-popover-side-effects.html": {
     "total": 1
@@ -7247,6 +7592,9 @@
   },
   "html/semantics/popovers/input-type-popovertarget.html": {
     "total": 12
+  },
+  "html/semantics/popovers/invoker-show-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/popovers/label-in-invoker.html": {
     "total": 1
@@ -7302,8 +7650,14 @@
   "html/semantics/popovers/popover-attribute-basic.html": {
     "total": 249
   },
+  "html/semantics/popovers/popover-auto-reentrant-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/popovers/popover-backdrop-appearance.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/popovers/popover-beforetoggle-change-type-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/popovers/popover-beforetoggle-opening-event.html": {
     "total": 1
@@ -7359,6 +7713,9 @@
   "html/semantics/popovers/popover-focus-across-slot.html": {
     "total": 1
   },
+  "html/semantics/popovers/popover-focus-blur-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/popovers/popover-focus-form-control.html": {
     "total": 1
   },
@@ -7385,6 +7742,9 @@
   },
   "html/semantics/popovers/popover-focus-overflow-visible.html": {
     "total": 1
+  },
+  "html/semantics/popovers/popover-focus-previous-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/popovers/popover-focus-slotted.html": {
     "total": 2
@@ -7413,6 +7773,9 @@
       "hidePopover() hides a showing popover=manual once its iframe navigates away": "FAIL"
     }
   },
+  "html/semantics/popovers/popover-hint-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/popovers/popover-hint-hierarchy.html": {
     "total": 5
   },
@@ -7421,6 +7784,9 @@
     "failures": {
       "Showing a child hint popover in loseinterest should function": "FAIL"
     }
+  },
+  "html/semantics/popovers/popover-hint-reentrant-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/popovers/popover-hover-active-ancestors.html": {
     "total": 3
@@ -7485,6 +7851,9 @@
   "html/semantics/popovers/popover-manual-hide-does-not-close-auto.html": {
     "total": 2
   },
+  "html/semantics/popovers/popover-manual-reentrant-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/popovers/popover-minimum-role.html": {
     "total": 2
   },
@@ -7530,6 +7899,12 @@
   "html/semantics/popovers/popover-remove-attribute-during-focusing-steps.html": {
     "total": 1
   },
+  "html/semantics/popovers/popover-remove-reentrant-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/popovers/popover-root-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/popovers/popover-self-invoke.html": {
     "total": 3
   },
@@ -7541,6 +7916,12 @@
   },
   "html/semantics/popovers/popover-shadowhost-focus.html": {
     "total": 4
+  },
+  "html/semantics/popovers/popover-show-after-show-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/popovers/popover-source-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/popovers/popover-stacking-context.html": {
     "reftest": "PASS"
@@ -7580,6 +7961,9 @@
   },
   "html/semantics/popovers/popover-types.html": {
     "total": 1
+  },
+  "html/semantics/popovers/popover-undefined-remove-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/popovers/popovertarget-disabled-fieldset.html": {
     "total": 1
@@ -9201,6 +9585,9 @@
   "html/semantics/scripting-1/the-template-element/serializing-html-templates/outerhtml.html": {
     "total": 3
   },
+  "html/semantics/scripting-1/the-template-element/template-construction-in-inactive-document-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/scripting-1/the-template-element/template-element/content-attribute.html": {
     "total": 7
   },
@@ -9210,8 +9597,17 @@
   "html/semantics/scripting-1/the-template-element/template-element/template-as-a-descendant.html": {
     "total": 12
   },
+  "html/semantics/scripting-1/the-template-element/template-element/template-construction-in-inactive-document-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/scripting-1/the-template-element/template-element/template-content-hierarcy.html": {
     "total": 3
+  },
+  "html/semantics/scripting-1/the-template-element/template-element/template-content-in-inactive-document-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/scripting-1/the-template-element/template-element/template-content-move-to-inactive-document-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/scripting-1/the-template-element/template-element/template-content-node-document.html": {
     "total": 3
@@ -9227,6 +9623,12 @@
   },
   "html/semantics/scripting-1/the-template-element/template-element/template-descendant-head.html": {
     "total": 1
+  },
+  "html/semantics/scripting-1/the-template-element/template-element/template-element-clone-into-inactive-document-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/semantics/scripting-1/the-template-element/template-element/template-set-inner-html-in-inactive-document-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/scripting-1/the-template-element/template-for/chained-streaming-templates-with-custom-element.html": {
     "total": 1
@@ -9425,6 +9827,9 @@
   },
   "html/semantics/scripting-1/the-template-element/template-for/template-for-unclosed-content.html": {
     "total": 10
+  },
+  "html/semantics/scripting-1/the-template-element/template-table-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/sections/headingoffset-and-headingreset.html": {
     "total": 61
@@ -9637,8 +10042,14 @@
   "html/semantics/tabular-data/the-tr-element/sectionRowIndex.html": {
     "total": 19
   },
+  "html/semantics/text-level-semantics/crashtests/q-empty.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/text-level-semantics/historical.html": {
     "total": 3
+  },
+  "html/semantics/text-level-semantics/the-a-element/a-click-handler-with-null-browsing-context-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/text-level-semantics/the-a-element/a-download-click-404.html": {
     "total": 1
@@ -9730,6 +10141,9 @@
   "html/semantics/text-level-semantics/the-br-element/br-bidi.html": {
     "reftest": "PASS"
   },
+  "html/semantics/text-level-semantics/the-ruby-element/rt-without-ruby-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/text-level-semantics/the-ruby-element/ruby-usage.html": {
     "reftest": "PASS"
   },
@@ -9772,6 +10186,9 @@
   "html/semantics/the-button-element/command-and-commandfor/button-type-reflection.html": {
     "total": 27
   },
+  "html/semantics/the-button-element/command-and-commandfor/command-close-target-non-dialog-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/semantics/the-button-element/command-and-commandfor/command-reflection.html": {
     "total": 16
   },
@@ -9796,6 +10213,9 @@
       "invoking fullscreen div with toggle-fullscreen (case-insensitive) action exits fullscreen": "FAIL",
       "invoking fullscreen div with toggle-fullscreen action exits fullscreen": "FAIL"
     }
+  },
+  "html/semantics/the-button-element/command-and-commandfor/generic-eventtarget-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/the-button-element/command-and-commandfor/interface.html": {
     "total": 11

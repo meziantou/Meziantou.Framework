@@ -2412,9 +2412,10 @@ namespace Meziantou.Framework.WebPlatform.Css.Selectors
         Stalled = 69,
         Muted = 70,
         VolumeLocked = 71,
-        TargetCurrent = 72,
-        TargetBefore = 73,
-        TargetAfter = 74,
+        AnimatedImage = 72,
+        TargetCurrent = 73,
+        TargetBefore = 74,
+        TargetAfter = 75,
     }
 
     public sealed class PseudoClassSelector : Meziantou.Framework.WebPlatform.Css.Selectors.SimpleSelector
@@ -3052,6 +3053,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Right = 4,
     }
 
+    public sealed class AllAcceptedCredentialsOptions
+    {
+        public required System.Collections.Generic.IReadOnlyList<string> AllAcceptedCredentialIds { get => throw null; init { } }
+        public required string RpId { get => throw null; init { } }
+        public required string UserId { get => throw null; init { } }
+    }
+
     public sealed class AmbientLightSensor : Meziantou.Framework.WebPlatform.Dom.Sensor
     {
         public double? Illuminance { get => throw null; }
@@ -3138,6 +3146,172 @@ namespace Meziantou.Framework.WebPlatform.Dom
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public Meziantou.Framework.WebPlatform.Dom.AudioTrack? GetTrackById(string id) => throw null;
         Meziantou.Framework.WebPlatform.Dom.AudioTrack System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.AudioTrack>.get_Item(int index) => throw null;
+    }
+
+    public sealed class AuthenticationExtensionsClientInputs
+    {
+        public string? Appid { get => throw null; init { } }
+        public string? AppidExclude { get => throw null; init { } }
+        public bool? CredProps { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsLargeBlobInputs? LargeBlob { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfInputs? Prf { get => throw null; init { } }
+        public string? RemoteClientDataJson { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsClientInputsJson
+    {
+        public string? Appid { get => throw null; init { } }
+        public string? AppidExclude { get => throw null; init { } }
+        public bool? CredProps { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsLargeBlobInputsJson? LargeBlob { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfInputsJson? Prf { get => throw null; init { } }
+        public string? RemoteClientDataJson { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsClientOutputs
+    {
+        public bool? Appid { get => throw null; init { } }
+        public bool? AppidExclude { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.CredentialPropertiesOutput? CredProps { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsLargeBlobOutputs? LargeBlob { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfOutputs? Prf { get => throw null; init { } }
+        public bool? RemoteClientDataJson { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsClientOutputsJson
+    {
+        public bool? Appid { get => throw null; init { } }
+        public bool? AppidExclude { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.CredentialPropertiesOutput? CredProps { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsLargeBlobOutputsJson? LargeBlob { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfOutputsJson? Prf { get => throw null; init { } }
+        public bool? RemoteClientDataJson { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsLargeBlobInputs
+    {
+        public bool? Read { get => throw null; init { } }
+        public string? Support { get => throw null; init { } }
+        public System.ReadOnlyMemory<byte>? Write { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsLargeBlobInputsJson
+    {
+        public bool? Read { get => throw null; init { } }
+        public string? Support { get => throw null; init { } }
+        public string? Write { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsLargeBlobOutputs
+    {
+        public System.ReadOnlyMemory<byte>? Blob { get => throw null; init { } }
+        public bool? Supported { get => throw null; init { } }
+        public bool? Written { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsLargeBlobOutputsJson
+    {
+        public string? Blob { get => throw null; init { } }
+        public bool? Supported { get => throw null; init { } }
+        public bool? Written { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsPrfInputs
+    {
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfValues? Eval { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfValues>>? EvalByCredential { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsPrfInputsJson
+    {
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfValuesJson? Eval { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfValuesJson>>? EvalByCredential { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsPrfOutputs
+    {
+        public bool? Enabled { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfValues? Results { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsPrfOutputsJson
+    {
+        public bool? Enabled { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfValuesJson? Results { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsPrfValues
+    {
+        public required System.ReadOnlyMemory<byte> First { get => throw null; init { } }
+        public System.ReadOnlyMemory<byte>? Second { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsPrfValuesJson
+    {
+        public required string First { get => throw null; init { } }
+        public string? Second { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationResponseJson
+    {
+        public string? AuthenticatorAttachment { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientOutputsJson ClientExtensionResults { get => throw null; init { } }
+        public required string Id { get => throw null; init { } }
+        public required string RawId { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.AuthenticatorAssertionResponseJson Response { get => throw null; init { } }
+        public required string Type { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticatorAssertionResponse : Meziantou.Framework.WebPlatform.Dom.AuthenticatorResponse
+    {
+        public System.ReadOnlyMemory<byte> AuthenticatorData { get => throw null; }
+        public object AuthenticatorDataBuffer { get => throw null; }
+        public System.ReadOnlyMemory<byte> Signature { get => throw null; }
+        public object SignatureBuffer { get => throw null; }
+        public System.ReadOnlyMemory<byte>? UserHandle { get => throw null; }
+        public object? UserHandleBuffer { get => throw null; }
+    }
+
+    public sealed class AuthenticatorAssertionResponseJson
+    {
+        public required string AuthenticatorData { get => throw null; init { } }
+        public required string ClientDataJson { get => throw null; init { } }
+        public required string Signature { get => throw null; init { } }
+        public string? UserHandle { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticatorAttestationResponse : Meziantou.Framework.WebPlatform.Dom.AuthenticatorResponse
+    {
+        public System.ReadOnlyMemory<byte> AttestationObject { get => throw null; }
+        public object AttestationObjectBuffer { get => throw null; }
+        public byte[] GetAuthenticatorData() => throw null;
+        public byte[]? GetPublicKey() => throw null;
+        public int GetPublicKeyAlgorithm() => throw null;
+        public System.Collections.Generic.IReadOnlyList<string> GetTransports() => throw null;
+    }
+
+    public sealed class AuthenticatorAttestationResponseJson
+    {
+        public required string AttestationObject { get => throw null; init { } }
+        public required string AuthenticatorData { get => throw null; init { } }
+        public required string ClientDataJson { get => throw null; init { } }
+        public string? PublicKey { get => throw null; init { } }
+        public required int PublicKeyAlgorithm { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<string> Transports { get => throw null; init { } }
+    }
+
+    public abstract class AuthenticatorResponse
+    {
+        public System.ReadOnlyMemory<byte> ClientDataJson { get => throw null; }
+        public object ClientDataJsonBuffer { get => throw null; }
+    }
+
+    public sealed class AuthenticatorSelectionCriteria
+    {
+        public string? AuthenticatorAttachment { get => throw null; init { } }
+        public bool RequireResidentKey { get => throw null; init { } }
+        public string? ResidentKey { get => throw null; init { } }
+        public string UserVerification { get => throw null; init { } }
     }
 
     public enum AutoKeyword
@@ -3388,6 +3562,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.VisitedLinkStore? VisitedLinks { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.WakeLockOptions? WakeLock { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.WebAuthenticationOptions? WebAuthentication { get => throw null; init { } }
     }
 
     public sealed class BufferedChangeEvent : Meziantou.Framework.WebPlatform.Dom.Event
@@ -4024,6 +4199,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class CookieJar
     {
+        public bool BlockThirdPartyCookies { get => throw null; set { } }
         public bool OriginBound { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookiePersistence? Persistence { get => throw null; }
         public CookieJar(System.TimeProvider? timeProvider) { }
@@ -4033,6 +4209,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.StoredCookie> GetCookies(string url) => throw null;
         public bool Remove(Meziantou.Framework.WebPlatform.Dom.StoredCookie cookie) => throw null;
         public bool SetCookie(string url, string setCookieHeader) => throw null;
+        public void SetThirdPartyCookieAccess(string? topLevelUrl, string? embeddedUrl, bool blocked) { }
     }
 
     public sealed class CookieListItem
@@ -4105,6 +4282,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string? Url { get => throw null; init { } }
     }
 
+    public sealed class CookieStoreManager
+    {
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CookieStoreGetOptions>> GetSubscriptions() => throw null;
+        public System.Threading.Tasks.Task Subscribe(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CookieStoreGetOptions> subscriptions) => throw null;
+        public System.Threading.Tasks.Task Unsubscribe(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CookieStoreGetOptions> subscriptions) => throw null;
+    }
+
     public delegate string? CreateHtmlCallback(string input, params object?[] arguments);
 
     public delegate Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptions? CreateParserOptionsCallback(Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptions options, params object?[] arguments);
@@ -4112,6 +4296,49 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public delegate string? CreateScriptCallback(string input, params object?[] arguments);
 
     public delegate string? CreateScriptUrlCallback(string input, params object?[] arguments);
+
+    public abstract class Credential
+    {
+        public abstract string Id { get; }
+        public abstract string Type { get; }
+        public static System.Threading.Tasks.Task<bool> IsConditionalMediationAvailable() => throw null;
+    }
+
+    public sealed class CredentialCreationOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CredentialMediationRequirement Mediation { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialCreationOptions? PublicKey { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
+    }
+
+    public enum CredentialMediationRequirement
+    {
+        Silent = 0,
+        Optional = 1,
+        Conditional = 2,
+        Required = 3,
+    }
+
+    public sealed class CredentialPropertiesOutput
+    {
+        public bool? Rk { get => throw null; init { } }
+    }
+
+    public sealed class CredentialRequestOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CredentialMediationRequirement Mediation { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialRequestOptions? PublicKey { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
+        public string? UiMode { get => throw null; init { } }
+    }
+
+    public sealed class CredentialsContainer
+    {
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.Credential?> Create(Meziantou.Framework.WebPlatform.Dom.CredentialCreationOptions? options = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.Credential?> Get(Meziantou.Framework.WebPlatform.Dom.CredentialRequestOptions? options = null) => throw null;
+        public System.Threading.Tasks.Task PreventSilentAccess() => throw null;
+        public System.Threading.Tasks.Task Store(Meziantou.Framework.WebPlatform.Dom.Credential credential) => throw null;
+    }
 
     public sealed class CspViolationReportBody : Meziantou.Framework.WebPlatform.Dom.ReportBody
     {
@@ -4134,6 +4361,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Border = 1,
         Padding = 2,
         Content = 3,
+    }
+
+    public sealed class CurrentUserDetailsOptions
+    {
+        public required string DisplayName { get => throw null; init { } }
+        public required string Name { get => throw null; init { } }
+        public required string RpId { get => throw null; init { } }
+        public required string UserId { get => throw null; init { } }
     }
 
     public abstract class CustomElement
@@ -4680,6 +4915,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string GetHtml(Meziantou.Framework.WebPlatform.Dom.GetHtmlOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Selection? GetSelection() => throw null;
         public bool HasFocus() => throw null;
+        public System.Threading.Tasks.Task<bool> HasStorageAccess() => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Node ImportNode(Meziantou.Framework.WebPlatform.Dom.Node node, Meziantou.Framework.WebPlatform.Dom.ImportNodeOptions options) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Node ImportNode(Meziantou.Framework.WebPlatform.Dom.Node node, bool subtree = false) => throw null;
         public void MoveBefore(Meziantou.Framework.WebPlatform.Dom.Node node, Meziantou.Framework.WebPlatform.Dom.Node? child) { }
@@ -4704,6 +4940,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Collections.Generic.IReadOnlyList<T> QuerySelectorAll<T>(string selectors) where T : Meziantou.Framework.WebPlatform.Dom.Element => throw null;
         public void ReleaseEvents() { }
         public void ReplaceChildren(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
+        public System.Threading.Tasks.Task RequestStorageAccess() => throw null;
         public Meziantou.Framework.WebPlatform.Dom.ViewTransition StartViewTransition(Meziantou.Framework.WebPlatform.Dom.StartViewTransitionOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.ViewTransition StartViewTransition(Meziantou.Framework.WebPlatform.Dom.ViewTransitionUpdateCallback callback) => throw null;
         public void Write(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.TrustedHtmlOrString> text) { }
@@ -5655,6 +5892,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static event System.EventHandler<Meziantou.Framework.WebPlatform.Dom.ExceptionReportedEventArgs>? ExceptionReported;
     }
 
+    public sealed class ExtendableCookieChangeEvent : Meziantou.Framework.WebPlatform.Dom.ExtendableEvent
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CookieListItem> Changed { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CookieListItem> Deleted { get => throw null; }
+        public ExtendableCookieChangeEvent(string type, Meziantou.Framework.WebPlatform.Dom.ExtendableCookieChangeEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit)) { }
+    }
+
+    public sealed class ExtendableCookieChangeEventInit : Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CookieListItem>? Changed { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CookieListItem>? Deleted { get => throw null; init { } }
+    }
+
     public class ExtendableEvent : Meziantou.Framework.WebPlatform.Dom.Event
     {
         public ExtendableEvent(string type, Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
@@ -6131,6 +6381,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public bool SerializableShadowRoots { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ShadowRoot> ShadowRoots { get => throw null; init { } }
+    }
+
+    public sealed class GetNotificationOptions
+    {
+        public string Tag { get => throw null; init { } }
     }
 
     public sealed class GetRootNodeOptions
@@ -9126,6 +9381,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Clipboard Clipboard { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NetworkInformation Connection { get => throw null; }
         public bool CookieEnabled { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.CredentialsContainer Credentials { get => throw null; }
         public double DeviceMemory { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.DevicePosture DevicePosture { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Geolocation Geolocation { get => throw null; }
@@ -9363,6 +9619,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.NotificationDirection Dir { get => throw null; }
         public string Icon { get => throw null; }
         public string Image { get => throw null; }
+        public bool IsPersistent { get => throw null; }
         public bool IsShown { get => throw null; }
         public string Lang { get => throw null; }
         public static uint MaxActions { get => throw null; }
@@ -9380,6 +9637,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Title { get => throw null; }
         public Notification(string title, Meziantou.Framework.WebPlatform.Dom.NotificationOptions? options = null) { }
         public void Click() { }
+        public void Click(string action) { }
         public void Close() { }
         public void Dismiss() { }
         public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.NotificationPermission> RequestPermission(Meziantou.Framework.WebPlatform.Dom.NotificationPermissionCallback? deprecatedCallback = null) => throw null;
@@ -9398,6 +9656,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Auto = 0,
         Ltr = 1,
         Rtl = 2,
+    }
+
+    public sealed class NotificationEvent : Meziantou.Framework.WebPlatform.Dom.ExtendableEvent
+    {
+        public string Action { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Notification Notification { get => throw null; }
+        public NotificationEvent(string type, Meziantou.Framework.WebPlatform.Dom.NotificationEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit)) { }
+    }
+
+    public sealed class NotificationEventInit : Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit
+    {
+        public string Action { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.Notification Notification { get => throw null; init { } }
     }
 
     public sealed class NotificationOptions
@@ -10246,6 +10517,121 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public ProximitySensor(Meziantou.Framework.WebPlatform.Dom.SensorOptions? sensorOptions = null) { }
     }
 
+    public sealed class PublicKeyCredential : Meziantou.Framework.WebPlatform.Dom.Credential
+    {
+        public string? AuthenticatorAttachment { get => throw null; }
+        public override string Id { get => throw null; }
+        public System.ReadOnlyMemory<byte> RawId { get => throw null; }
+        public object RawIdBuffer { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticatorResponse Response { get => throw null; }
+        public override string Type { get => throw null; }
+        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, bool>>> GetClientCapabilities() => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientOutputs GetClientExtensionResults() => throw null;
+        public new static System.Threading.Tasks.Task<bool> IsConditionalMediationAvailable() => throw null;
+        public static System.Threading.Tasks.Task<bool> IsUserVerifyingPlatformAuthenticatorAvailable() => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialCreationOptions ParseCreationOptionsFromJson(Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialCreationOptionsJson options) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialRequestOptions ParseRequestOptionsFromJson(Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialRequestOptionsJson options) => throw null;
+        public static System.Threading.Tasks.Task SignalAllAcceptedCredentials(Meziantou.Framework.WebPlatform.Dom.AllAcceptedCredentialsOptions options) => throw null;
+        public static System.Threading.Tasks.Task SignalCurrentUserDetails(Meziantou.Framework.WebPlatform.Dom.CurrentUserDetailsOptions options) => throw null;
+        public static System.Threading.Tasks.Task SignalUnknownCredential(Meziantou.Framework.WebPlatform.Dom.UnknownCredentialOptions options) => throw null;
+        public object ToJson() => throw null;
+    }
+
+    public sealed class PublicKeyCredentialCreationOptions
+    {
+        public string Attestation { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> AttestationFormats { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticatorSelectionCriteria? AuthenticatorSelection { get => throw null; init { } }
+        public required System.ReadOnlyMemory<byte> Challenge { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialDescriptor> ExcludeCredentials { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputs? Extensions { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Hints { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialParameters> PubKeyCredParams { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialRpEntity Rp { get => throw null; init { } }
+        public uint? Timeout { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialUserEntity User { get => throw null; init { } }
+    }
+
+    public sealed class PublicKeyCredentialCreationOptionsJson
+    {
+        public string Attestation { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> AttestationFormats { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticatorSelectionCriteria? AuthenticatorSelection { get => throw null; init { } }
+        public required string Challenge { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialDescriptorJson> ExcludeCredentials { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputsJson? Extensions { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Hints { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialParameters> PubKeyCredParams { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialRpEntity Rp { get => throw null; init { } }
+        public uint? Timeout { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialUserEntityJson User { get => throw null; init { } }
+    }
+
+    public sealed class PublicKeyCredentialDescriptor
+    {
+        public required System.ReadOnlyMemory<byte> Id { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Transports { get => throw null; init { } }
+        public required string Type { get => throw null; init { } }
+    }
+
+    public sealed class PublicKeyCredentialDescriptorJson
+    {
+        public required string Id { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Transports { get => throw null; init { } }
+        public required string Type { get => throw null; init { } }
+    }
+
+    public abstract class PublicKeyCredentialEntity
+    {
+        public required string Name { get => throw null; init { } }
+    }
+
+    public sealed class PublicKeyCredentialParameters
+    {
+        public required int Alg { get => throw null; init { } }
+        public required string Type { get => throw null; init { } }
+    }
+
+    public sealed class PublicKeyCredentialRequestOptions
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialDescriptor> AllowCredentials { get => throw null; init { } }
+        public required System.ReadOnlyMemory<byte> Challenge { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputs? Extensions { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Hints { get => throw null; init { } }
+        public string? RpId { get => throw null; init { } }
+        public uint? Timeout { get => throw null; init { } }
+        public string UserVerification { get => throw null; init { } }
+    }
+
+    public sealed class PublicKeyCredentialRequestOptionsJson
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialDescriptorJson> AllowCredentials { get => throw null; init { } }
+        public required string Challenge { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputsJson? Extensions { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Hints { get => throw null; init { } }
+        public string? RpId { get => throw null; init { } }
+        public uint? Timeout { get => throw null; init { } }
+        public string UserVerification { get => throw null; init { } }
+    }
+
+    public sealed class PublicKeyCredentialRpEntity : Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialEntity
+    {
+        public string? Id { get => throw null; init { } }
+    }
+
+    public sealed class PublicKeyCredentialUserEntity : Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialEntity
+    {
+        public required string DisplayName { get => throw null; init { } }
+        public required System.ReadOnlyMemory<byte> Id { get => throw null; init { } }
+    }
+
+    public sealed class PublicKeyCredentialUserEntityJson
+    {
+        public required string DisplayName { get => throw null; init { } }
+        public required string Id { get => throw null; init { } }
+        public required string Name { get => throw null; init { } }
+    }
+
     public sealed class QuotaExceededError : Meziantou.Framework.WebPlatform.Dom.DomException
     {
         public double? Quota { get => throw null; }
@@ -10330,6 +10716,16 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string? Scope { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.WorkerType Type { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerUpdateViaCache UpdateViaCache { get => throw null; init { } }
+    }
+
+    public sealed class RegistrationResponseJson
+    {
+        public string? AuthenticatorAttachment { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientOutputsJson ClientExtensionResults { get => throw null; init { } }
+        public required string Id { get => throw null; init { } }
+        public required string RawId { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.AuthenticatorAttestationResponseJson Response { get => throw null; init { } }
+        public required string Type { get => throw null; init { } }
     }
 
     public sealed class RelativeOrientationSensor : Meziantou.Framework.WebPlatform.Dom.OrientationSensor
@@ -10928,11 +11324,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class ServiceWorkerGlobalScope : Meziantou.Framework.WebPlatform.Dom.WorkerGlobalScope
     {
         public Meziantou.Framework.WebPlatform.Dom.Clients Clients { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.CookieStore CookieStore { get => throw null; }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnActivate { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCookieChange { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnFetch { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnInstall { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMessage { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMessageError { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnNotificationClick { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnNotificationClose { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration Registration { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorker ServiceWorker { get => throw null; }
         public System.Threading.Tasks.Task SkipWaiting() => throw null;
@@ -10941,12 +11341,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class ServiceWorkerRegistration : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorker? Active { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.CookieStoreManager Cookies { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorker? Installing { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NavigationPreloadManager NavigationPreload { get => throw null; }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnUpdateFound { get => throw null; set { } }
         public string Scope { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerUpdateViaCache UpdateViaCache { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorker? Waiting { get => throw null; }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Notification>> GetNotifications(Meziantou.Framework.WebPlatform.Dom.GetNotificationOptions? filter = null) => throw null;
+        public System.Threading.Tasks.Task ShowNotification(string title, Meziantou.Framework.WebPlatform.Dom.NotificationOptions? options = null) => throw null;
         public System.Threading.Tasks.Task<bool> Unregister() => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration> Update() => throw null;
     }
@@ -11266,6 +11669,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public required string Value { get => throw null; init { } }
     }
 
+    public sealed class StoredCookieChangeSubscription
+    {
+        public string? Name { get => throw null; init { } }
+        public required string Url { get => throw null; init { } }
+    }
+
     public sealed class StoredServiceWorker
     {
         public bool ClassicScriptsImported { get => throw null; init { } }
@@ -11282,6 +11691,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class StoredServiceWorkerRegistration
     {
         public Meziantou.Framework.WebPlatform.Dom.StoredServiceWorker? Active { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.StoredCookieChangeSubscription> CookieChangeSubscriptions { get => throw null; init { } }
         public System.DateTimeOffset? LastUpdateCheckTime { get => throw null; init { } }
         public bool NavigationPreloadEnabled { get => throw null; init { } }
         public string NavigationPreloadHeaderValue { get => throw null; init { } }
@@ -13044,6 +13454,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public UncalibratedMagnetometer(Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions? sensorOptions = null) { }
     }
 
+    public sealed class UnknownCredentialOptions
+    {
+        public required string CredentialId { get => throw null; init { } }
+        public required string RpId { get => throw null; init { } }
+    }
+
     public sealed class Url
     {
         public string Hash { get => throw null; set { } }
@@ -13354,6 +13770,70 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.DisplayFeaturesProvider? Provider { get => throw null; init { } }
     }
 
+    public sealed class VirtualAuthenticator
+    {
+        public bool DefaultBackupEligibility { get => throw null; }
+        public bool DefaultBackupState { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Extensions { get => throw null; }
+        public bool HasResidentKey { get => throw null; }
+        public bool HasUserVerification { get => throw null; }
+        public string Id { get => throw null; }
+        public bool IsUserConsenting { get => throw null; set { } }
+        public bool IsUserVerified { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticatorProtocol Protocol { get => throw null; }
+        public string Transport { get => throw null; }
+        public void AddCredential(Meziantou.Framework.WebPlatform.Dom.VirtualCredential credential) { }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.VirtualCredential> GetCredentials() => throw null;
+        public void RemoveAllCredentials() { }
+        public bool RemoveCredential(System.ReadOnlySpan<byte> credentialId) => throw null;
+        public bool SetCredentialProperties(System.ReadOnlySpan<byte> credentialId, bool? backupEligibility, bool? backupState) => throw null;
+        public bool SetSignCount(System.ReadOnlySpan<byte> credentialId, uint? signCount) => throw null;
+    }
+
+    public sealed class VirtualAuthenticatorEnvironment
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticator> Authenticators { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticator AddAuthenticator(Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticatorOptions options) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticator? GetAuthenticator(string authenticatorId) => throw null;
+        public bool RemoveAuthenticator(string authenticatorId) => throw null;
+    }
+
+    public sealed class VirtualAuthenticatorOptions
+    {
+        public bool DefaultBackupEligibility { get => throw null; init { } }
+        public bool DefaultBackupState { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Extensions { get => throw null; init { } }
+        public bool HasResidentKey { get => throw null; init { } }
+        public bool HasUserVerification { get => throw null; init { } }
+        public bool IsUserConsenting { get => throw null; init { } }
+        public bool IsUserVerified { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticatorProtocol Protocol { get => throw null; init { } }
+        public static System.Collections.Generic.IReadOnlyList<string> SupportedExtensions { get => throw null; }
+        public string Transport { get => throw null; init { } }
+    }
+
+    public enum VirtualAuthenticatorProtocol
+    {
+        Ctap1U2f = 0,
+        Ctap2 = 1,
+        Ctap21 = 2,
+    }
+
+    public sealed class VirtualCredential
+    {
+        public bool? BackupEligibility { get => throw null; init { } }
+        public bool? BackupState { get => throw null; init { } }
+        public required System.ReadOnlyMemory<byte> CredentialId { get => throw null; init { } }
+        public bool IsResidentCredential { get => throw null; init { } }
+        public System.ReadOnlyMemory<byte>? LargeBlob { get => throw null; init { } }
+        public required System.ReadOnlyMemory<byte> PrivateKey { get => throw null; init { } }
+        public required string RpId { get => throw null; init { } }
+        public uint? SignCount { get => throw null; init { } }
+        public string UserDisplayName { get => throw null; init { } }
+        public System.ReadOnlyMemory<byte>? UserHandle { get => throw null; init { } }
+        public string UserName { get => throw null; init { } }
+    }
+
     public sealed class VirtualKeyboard : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
         public Meziantou.Framework.WebPlatform.Dom.DomRect BoundingRect { get => throw null; }
@@ -13500,6 +13980,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Screen = 0,
     }
 
+    public sealed class WebAuthenticationOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticatorEnvironment? Authenticators { get => throw null; init { } }
+    }
+
     public sealed class WebLock
     {
         public Meziantou.Framework.WebPlatform.Dom.LockMode Mode { get => throw null; }
@@ -13587,6 +14072,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool VisibilityStateEntryEnabled { get => throw null; init { } }
         public bool WakeLockEnabled { get => throw null; init { } }
         public bool WebAssemblyEnabled { get => throw null; init { } }
+        public bool WebAuthenticationEnabled { get => throw null; init { } }
         public bool WebCryptoEnabled { get => throw null; init { } }
         public bool WebLocksEnabled { get => throw null; init { } }
         public bool WebMcpEnabled { get => throw null; init { } }
@@ -15698,5 +16184,172 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
     {
         public System.Collections.Generic.IReadOnlyList<float>? Curve { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAudio.OverSampleType Oversample { get => throw null; init { } }
+    }
+}
+namespace Meziantou.Framework.WebPlatform.WebCodecs
+{
+    public sealed class ImageDecodeOptions
+    {
+        public bool CompleteFramesOnly { get => throw null; init { } }
+        public uint FrameIndex { get => throw null; init { } }
+    }
+
+    public sealed class ImageDecodeResult
+    {
+        public required bool Complete { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame Image { get => throw null; init { } }
+    }
+
+    public sealed class ImageDecoder
+    {
+        public bool Complete { get => throw null; }
+        public System.Threading.Tasks.Task Completed { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebCodecs.ImageTrackList Tracks { get => throw null; }
+        public string Type { get => throw null; }
+        public ImageDecoder(Meziantou.Framework.WebPlatform.WebCodecs.ImageDecoderInit init) { }
+        public ImageDecoder(Meziantou.Framework.WebPlatform.Dom.GlobalScope global, Meziantou.Framework.WebPlatform.WebCodecs.ImageDecoderInit init) { }
+        public void Close() { }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.WebCodecs.ImageDecodeResult> Decode(Meziantou.Framework.WebPlatform.WebCodecs.ImageDecodeOptions? options = null) => throw null;
+        public static System.Threading.Tasks.Task<bool> IsTypeSupported(string type) => throw null;
+        public void Reset() { }
+    }
+
+    public sealed class ImageDecoderInit
+    {
+        public Meziantou.Framework.WebPlatform.Dom.ColorSpaceConversion ColorSpaceConversion { get => throw null; init { } }
+        public required object? Data { get => throw null; init { } }
+        public uint? DesiredHeight { get => throw null; init { } }
+        public uint? DesiredWidth { get => throw null; init { } }
+        public bool? PreferAnimation { get => throw null; init { } }
+        public required string Type { get => throw null; init { } }
+    }
+
+    public sealed class ImageTrack
+    {
+        public bool Animated { get => throw null; }
+        public uint FrameCount { get => throw null; }
+        public float RepetitionCount { get => throw null; }
+        public bool Selected { get => throw null; set { } }
+    }
+
+    public sealed class ImageTrackList
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.ImageTrack? this[uint index] { get => throw null; }
+        public uint Length { get => throw null; }
+        public System.Threading.Tasks.Task Ready { get => throw null; }
+        public int SelectedIndex { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebCodecs.ImageTrack? SelectedTrack { get => throw null; }
+    }
+
+    public sealed class PlaneLayout
+    {
+        public required uint Offset { get => throw null; init { } }
+        public required uint Stride { get => throw null; init { } }
+    }
+
+    public enum VideoColorPrimaries
+    {
+        Bt709 = 0,
+        Bt470bg = 1,
+        Smpte170m = 2,
+        Bt2020 = 3,
+        Smpte432 = 4,
+    }
+
+    public sealed class VideoColorSpace
+    {
+        public bool? FullRange { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients? Matrix { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries? Primaries { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics? Transfer { get => throw null; }
+        public VideoColorSpace(Meziantou.Framework.WebPlatform.WebCodecs.VideoColorSpaceInit? init = null) { }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoColorSpaceInit ToJson() => throw null;
+    }
+
+    public sealed class VideoColorSpaceInit
+    {
+        public bool? FullRange { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients? Matrix { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries? Primaries { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics? Transfer { get => throw null; init { } }
+    }
+
+    public sealed class VideoFrame
+    {
+        public uint CodedHeight { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly? CodedRect { get => throw null; }
+        public uint CodedWidth { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoColorSpace ColorSpace { get => throw null; }
+        public uint DisplayHeight { get => throw null; }
+        public uint DisplayWidth { get => throw null; }
+        public ulong? Duration { get => throw null; }
+        public bool Flip { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat? Format { get => throw null; }
+        public double Rotation { get => throw null; }
+        public long Timestamp { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly? VisibleRect { get => throw null; }
+        public uint AllocationSize(Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameCopyToOptions? options = null) => throw null;
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame Clone() => throw null;
+        public void Close() { }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout>> CopyTo(System.Memory<byte> destination, Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameCopyToOptions? options = null) => throw null;
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameMetadata Metadata() => throw null;
+    }
+
+    public sealed class VideoFrameCopyToOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PredefinedColorSpace? ColorSpace { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat? Format { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout>? Layout { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DomRectInit? Rect { get => throw null; init { } }
+    }
+
+    public sealed class VideoFrameMetadata
+    {
+    }
+
+    public enum VideoMatrixCoefficients
+    {
+        Rgb = 0,
+        Bt709 = 1,
+        Bt470bg = 2,
+        Smpte170m = 3,
+        Bt2020Ncl = 4,
+    }
+
+    public enum VideoPixelFormat
+    {
+        I420 = 0,
+        I420P10 = 1,
+        I420P12 = 2,
+        I420A = 3,
+        I420AP10 = 4,
+        I420AP12 = 5,
+        I422 = 6,
+        I422P10 = 7,
+        I422P12 = 8,
+        I422A = 9,
+        I422AP10 = 10,
+        I422AP12 = 11,
+        I444 = 12,
+        I444P10 = 13,
+        I444P12 = 14,
+        I444A = 15,
+        I444AP10 = 16,
+        I444AP12 = 17,
+        NV12 = 18,
+        RGBA = 19,
+        RGBX = 20,
+        BGRA = 21,
+        BGRX = 22,
+    }
+
+    public enum VideoTransferCharacteristics
+    {
+        Bt709 = 0,
+        Smpte170m = 1,
+        Iec6196621 = 2,
+        Linear = 3,
+        Pq = 4,
+        Hlg = 5,
     }
 }

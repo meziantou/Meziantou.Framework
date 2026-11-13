@@ -44,6 +44,19 @@ public sealed class QRCodeSegment
 
     internal EncodingMode EncodingMode { get; }
 
+    /// <summary>
+    /// Gets the characters of a numeric, alphanumeric or Kanji segment, or <see langword="null"/> for a byte segment and
+    /// an ECI designator.
+    /// </summary>
+    public string? Text => _text;
+
+    /// <summary>Gets the bytes of a byte segment, or an empty value for the other modes.</summary>
+    /// <remarks>A segment created from a text by <see cref="CreateByte(string)"/> holds the UTF-8 bytes of the text.</remarks>
+    public ReadOnlyMemory<byte> Bytes => _bytes;
+
+    /// <summary>Gets the assignment number of an ECI designator, or <see langword="null"/> for the other modes.</summary>
+    public int? EciAssignmentNumber => EncodingMode is EncodingMode.Eci ? _eciAssignmentNumber : null;
+
     /// <summary>Gets the number of units of the segment: its characters, its bytes in byte mode, or 0 for an ECI designator.</summary>
     internal int UnitCount => EncodingMode switch
     {
@@ -155,6 +168,12 @@ public sealed class QRCodeSegment
             throw new ArgumentOutOfRangeException(nameof(assignmentNumber), assignmentNumber, "The ECI assignment number must be between 0 and 999999.");
 
         return new QRCodeSegment(EncodingMode.Eci, text: null, bytes: null, assignmentNumber);
+    }
+
+    /// <summary>Creates a segment read from a symbol, whose characters can be outside the sets that the factories accept.</summary>
+    internal static QRCodeSegment FromDecoded(EncodingMode mode, string? text, byte[]? bytes, int eciAssignmentNumber)
+    {
+        return new QRCodeSegment(mode, text, bytes, eciAssignmentNumber);
     }
 
     /// <summary>Creates a segment from characters that the caller has checked.</summary>

@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>CODEOWNERS file parser and matcher</Description>
     <PackageTags>codeowners, github, gitlab, git, parser</PackageTags>
-    <Version>7.0.4</Version>
+    <Version>7.0.5</Version>
   </PropertyGroup>
 
   <ItemGroup>

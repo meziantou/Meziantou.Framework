@@ -122,6 +122,10 @@ internal sealed partial class ServiceWorkerRegistry
                 }
 
                 registrations[registration.Scope] = registration;
+                if (registration.CookieChangeSubscriptions.Count > 0)
+                {
+                    UpdateCookieChangeListener(registration);
+                }
             }
 
             _registrations.Add(storageKey, registrations);
@@ -176,6 +180,7 @@ internal sealed partial class ServiceWorkerRegistry
                 }
 
                 registration.IsUnregistered = true;
+                registration.CookieChangeListener = null;
             }
 
             try
@@ -191,6 +196,9 @@ internal sealed partial class ServiceWorkerRegistry
             {
             }
         }
+
+        // The persistent notifications of the registration are closed with it, as in the browsers
+        Notification.CloseRegistrationNotifications(GroupOwner.Options, registration, EventLoop);
     }
 
     /// <summary>

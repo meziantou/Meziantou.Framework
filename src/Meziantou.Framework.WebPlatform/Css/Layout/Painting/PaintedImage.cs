@@ -164,7 +164,7 @@ internal abstract class PaintedImage
         image = image.WithOrientation(style.Layout.Replaced.ImageOrientation.FromImage);
         if (painter is not null)
         {
-            image = painter.GetDisplayedFrame(image);
+            image = painter.GetDisplayedFrame(image, style);
         }
 
         return new RasterImage(image, style.Layout.EffectiveZoom, GetSampling(style.GetComputedValue("image-rendering")));

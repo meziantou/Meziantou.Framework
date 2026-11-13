@@ -30,6 +30,21 @@ public static class TomlFuzzTargets
 
     private static readonly LanguageToml.TomlParseOptions LanguageTomlOptions = new() { Version = LanguageToml.TomlVersion.V1_1 };
 
+    private static readonly string[] NumericsTokens =
+    [
+        "Real", "Imaginary", "real", "imaginary", "{Real = 1.0, Imaginary = 2.0}", "Magnitude", "Complex", "NullableComplex", "Complexes", "Decimal",
+        "BFloat16", "Decimal32", "Decimal64", "Decimal128", "ComplexDouble", "ComplexHalf", "ComplexDecimal64", "ComplexDecimal128",
+        "1.50", "0.10", "1E+400", "1E-400", "1e97", "1e308", "1.7976931348623157e308", "1234567890123456789012345678901.234", "9.999999e96",
+    ];
+
+    private static readonly TomlSerializerOptions[] NumericsOptions =
+    [
+        new(),
+        new() { PropertyNamingPolicy = TomlNamingPolicy.CamelCase },
+        new() { PropertyNameCaseInsensitive = true },
+        new() { UnmappedMemberHandling = TomlUnmappedMemberHandling.Disallow },
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("toml-syntax", Syntax) { Seeds = () => GetSeeds(prefix: []), Dictionary = Tokens },
@@ -37,7 +52,107 @@ public static class TomlFuzzTargets
         new("toml-deserialize", Deserialize) { Seeds = () => GetSeeds(index => [(byte)(index * 73), (byte)(index * 29)]), Dictionary = Tokens },
         new("toml-reader", Reader) { Seeds = () => GetSeeds(index => [(byte)index]), Dictionary = Tokens },
         new("toml-differential", Differential) { Seeds = () => GetSeeds(prefix: []), Dictionary = Tokens },
+        new("toml-numerics", Numerics) { Seeds = GetNumericsSeeds, Dictionary = [.. Tokens, .. NumericsTokens] },
     ];
+
+    /// <summary>
+    /// Byte 0: the options. Then a document read into members of every floating-point and complex type. A document that
+    /// is read must be written, and the written TOML must read back to values that write the same TOML.
+    /// </summary>
+    private static void Numerics(ReadOnlySpan<byte> data)
+    {
+        var options = FuzzInput.Pick(NumericsOptions, FuzzInput.ReadByte(ref data));
+        var toml = FuzzText.Decode(data);
+
+        NumericsPayload? payload;
+        try
+        {
+            payload = TomlSerializer.Deserialize<NumericsPayload>(toml, options);
+        }
+        catch (TomlException)
+        {
+            return;
+        }
+
+        FuzzAssert.True(payload is not null, "Deserialize returns null");
+        var written = TomlSerializer.Serialize(payload, options);
+        NumericsPayload? roundtrip;
+        try
+        {
+            roundtrip = TomlSerializer.Deserialize<NumericsPayload>(written, options);
+        }
+        catch (TomlException ex)
+        {
+            FuzzAssert.Fail($"The written TOML cannot be read back: {ex.Message}\n{written}");
+            return;
+        }
+
+        FuzzAssert.Equal(written, TomlSerializer.Serialize(roundtrip, options), "The written values do not read back to the same values");
+    }
+
+    private static IEnumerable<FuzzSeed> GetNumericsSeeds()
+    {
+        string[] documents =
+        [
+            "Complex = {Real = 1.5, Imaginary = -2.0}",
+            "complex = {real = 1.0, imaginary = 2.0}",
+            "[Complex]\nImaginary = 4\nReal = 3",
+            "Complex = {Imaginary = 2.0}",
+            "Complex = {Real = nan, Imaginary = -inf}",
+            "Complex = {REAL = 1.0, imaginary = 2.0}",
+            "Complex = {Real = 3.0, Imaginary = 4.0, Magnitude = 5.0, Phase = 0.9}",
+            "Complex = {Real = \"a\"}",
+            "Complexes = [{Real = 1.0, Imaginary = 2.0}, {Real = 3.0, Imaginary = 4.0}]",
+            "NullableComplex = {Real = 1e300, Imaginary = -0.0}",
+            "Decimal = 1.25",
+            "BFloat16 = 1.5\nDecimal32 = 1.234567\nDecimal64 = -0.1\nDecimal128 = 1234567890123456789012345678901.234",
+            "Decimal128 = 1E-400",
+            "Decimal128 = 1.000000000000000000000000000000001",
+            "Decimal64 = 1_000.000_1",
+            "Decimal64 = 0x10",
+            "Decimal64 = 1.50",
+            "Decimal64 = -nan",
+            "Decimal32 = 1e97",
+            "Decimal32 = 9.999999e96",
+            "BFloat16 = 1e300",
+            "ComplexDouble = {Real = 1.5, Imaginary = -2.0}\nComplexHalf = {Real = nan, Imaginary = +inf}",
+            "ComplexDecimal128 = {Real = 0.1, Imaginary = 1E-400}\nComplexDecimal64 = {Real = 1.50, Imaginary = -inf}",
+        ];
+
+        for (var i = 0; i < documents.Length; i++)
+        {
+            yield return FuzzSeed.FromText("numerics-" + i.ToString(CultureInfo.InvariantCulture), [(byte)i], documents[i]);
+        }
+    }
+
+    private sealed class NumericsPayload
+    {
+        public System.Numerics.Complex Complex { get; set; }
+
+        public System.Numerics.Complex? NullableComplex { get; set; }
+
+        public List<System.Numerics.Complex>? Complexes { get; set; }
+
+        public decimal Decimal { get; set; }
+#if NET11_0_OR_GREATER
+
+        public System.Numerics.BFloat16 BFloat16 { get; set; }
+
+        public System.Numerics.Decimal32 Decimal32 { get; set; }
+
+        public System.Numerics.Decimal64? Decimal64 { get; set; }
+
+        public System.Numerics.Decimal128 Decimal128 { get; set; }
+
+        public System.Numerics.Complex<double> ComplexDouble { get; set; }
+
+        public System.Numerics.Complex<Half> ComplexHalf { get; set; }
+
+        public System.Numerics.Complex<System.Numerics.Decimal64> ComplexDecimal64 { get; set; }
+
+        public System.Numerics.Complex<System.Numerics.Decimal128>? ComplexDecimal128 { get; set; }
+#endif
+    }
 
     private static void Syntax(ReadOnlySpan<byte> data)
     {

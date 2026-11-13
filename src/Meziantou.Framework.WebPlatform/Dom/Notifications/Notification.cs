@@ -51,7 +51,7 @@ public enum NotificationDirection
 [IdlInterface("NotificationPermissionCallback", "https://notifications.spec.whatwg.org/#callbackdef-notificationpermissioncallback")]
 public delegate void NotificationPermissionCallback(NotificationPermission permission);
 
-/// <summary>An action of a notification (https://notifications.spec.whatwg.org/#dictdef-notificationaction). The library does not support the actions.</summary>
+/// <summary>An action of a persistent notification (https://notifications.spec.whatwg.org/#dictdef-notificationaction): a button that the user can activate (see <see cref="Notification.Click(string)"/>).</summary>
 /// <seealso href="https://notifications.spec.whatwg.org/#dictdef-notificationaction"/>
 [IdlInterface("NotificationAction", "https://notifications.spec.whatwg.org/#dictdef-notificationaction")]
 public sealed class NotificationAction
@@ -147,34 +147,53 @@ public sealed class NotificationOptions
     [IdlMember("data", "https://notifications.spec.whatwg.org/#dom-notificationoptions-data")]
     public object? Data { get; init; }
 
-    /// <summary>Gets the actions of the notification. The library does not support the actions: the list must be empty.</summary>
+    /// <summary>Gets the actions of the notification: only a persistent notification can have actions (at most <see cref="Notification.MaxActions"/>, the next ones are ignored).</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notificationoptions-actions"/>
     [IdlMember("actions", "https://notifications.spec.whatwg.org/#dom-notificationoptions-actions")]
     public IReadOnlyList<NotificationAction> Actions { get; init; } = [];
 }
 
+/// <summary>The filter of <c>ServiceWorkerRegistration.getNotifications()</c> (https://notifications.spec.whatwg.org/#dictdef-getnotificationoptions).</summary>
+/// <seealso href="https://notifications.spec.whatwg.org/#dictdef-getnotificationoptions"/>
+[IdlInterface("GetNotificationOptions", "https://notifications.spec.whatwg.org/#dictdef-getnotificationoptions")]
+public sealed class GetNotificationOptions
+{
+    /// <summary>Gets the tag of the notifications to return, or the empty string for all the notifications.</summary>
+    /// <seealso href="https://notifications.spec.whatwg.org/#dom-getnotificationoptions-tag"/>
+    [IdlMember("tag", "https://notifications.spec.whatwg.org/#dom-getnotificationoptions-tag")]
+    public string Tag { get; init; } = "";
+}
+
 /// <summary>
 /// A notification shown to the user (https://notifications.spec.whatwg.org/#notification), by
 /// <see cref="BrowsingContextOptions.ShowNotification"/> once the <c>notifications</c> permission is granted. The host
-/// calls <see cref="Click"/> when the user activates the notification and <see cref="Dismiss"/> when the user closes it.
+/// calls <see cref="Click()"/> when the user activates the notification and <see cref="Dismiss"/> when the user closes it.
 /// </summary>
 /// <remarks>
-/// The <c>error</c> event is fired when the permission is not granted. A notification whose tag is not empty replaces the
-/// notification of the same origin with the same tag (its <c>close</c> event is fired). The persistent notifications of
-/// the service workers (<c>showNotification()</c>) and the actions are not supported.
+/// <para>
+/// A non-persistent notification is created by the constructor: the <c>error</c> event is fired when the permission is
+/// not granted, and its <c>show</c>, <c>click</c> and <c>close</c> events are fired at the object. A persistent notification
+/// is created by <see cref="ServiceWorkerRegistration.ShowNotification"/>: it belongs to the service worker registration,
+/// whose active worker receives its <c>notificationclick</c> and <c>notificationclose</c> events
+/// (<see cref="NotificationEvent"/>), and <see cref="ServiceWorkerRegistration.GetNotifications"/> returns new objects that
+/// represent it. Only the persistent notifications have actions (at most <see cref="MaxActions"/>).
+/// </para>
+/// <para>
+/// A notification whose tag is not empty replaces the notification of the same origin with the same tag (the
+/// <c>close</c> event of a replaced non-persistent notification is fired). The resources of the notifications (the icon,
+/// the image, the badge) are not fetched: the host fetches them if it displays them.
+/// </para>
 /// </remarks>
 /// <seealso href="https://notifications.spec.whatwg.org/#notification"/>
 [IdlInterface("Notification", "https://notifications.spec.whatwg.org/#notification")]
 public sealed class Notification : EventTarget
 {
+    /// <summary>The maximum number of actions of a notification (as in Chromium).</summary>
+    internal const int MaxActionsCount = 2;
+
     private const string PermissionName = "notifications";
 
     private readonly GlobalScope _global;
-    private readonly object? _serializedData;
-    private readonly UrlRecord? _navigate;
-    private readonly UrlRecord? _image;
-    private readonly UrlRecord? _icon;
-    private readonly UrlRecord? _badge;
     private object? _data;
     private bool _isDataDeserialized;
     private bool _closeRequested;
@@ -199,27 +218,9 @@ public sealed class Notification : EventTarget
         if (options.Actions.Count > 0)
             throw new TypeErrorException("Only persistent notifications can have actions");
 
-        // https://notifications.spec.whatwg.org/#create-a-notification
-        if (options.Renotify && options.Tag.Length == 0)
-            throw new TypeErrorException("A notification without tag cannot renotify");
-
         _global = global;
-        _serializedData = options.Data is null ? null : global.ScriptEngine is { } engine ? engine.StructuredSerializeForStorage(global, options.Data) : StructuredClone.Serialize(options.Data);
-        Title = title;
-        Dir = options.Dir;
-        Lang = IsValidLanguageTag(options.Lang) ? options.Lang : "";
-        Body = options.Body;
-        Tag = options.Tag;
-        var baseUrl = global.ApiBaseUrl;
-        _navigate = ParseUrl(options.Navigate, baseUrl);
-        _image = ParseUrl(options.Image, baseUrl);
-        _icon = ParseUrl(options.Icon, baseUrl);
-        _badge = ParseUrl(options.Badge, baseUrl);
-        Timestamp = options.Timestamp ?? (ulong)Math.Max(0, (global.EventLoop.TimeProvider.GetUtcNow() - DateTimeOffset.UnixEpoch).TotalMilliseconds);
-        Renotify = options.Renotify;
-        Silent = options.Silent;
-        RequireInteraction = options.RequireInteraction;
-        Origin = global.EnvironmentDocument.Origin.Serialize();
+        Record = NotificationRecord.Create(global, title, options, registration: null);
+        Record.HostObject = this;
 
         // https://wicg.github.io/nav-speculation/prerendering.html#patch-notifications: a prerendering document shows its notifications once activated
         if (global is Window { Document: { Prerendering: true } document })
@@ -232,10 +233,21 @@ public sealed class Notification : EventTarget
         }
     }
 
+    /// <summary>Creates an object that represents a notification in the realm of <paramref name="global"/>.</summary>
+    internal Notification(GlobalScope global, NotificationRecord record)
+    {
+        _global = global;
+        Record = record;
+    }
+
     internal override GlobalScope? RelevantGlobal => _global;
 
-    /// <summary>The serialized origin of the notification: a notification only replaces the notifications of its origin.</summary>
-    private string Origin { get; }
+    /// <summary>The notification that the object represents.</summary>
+    internal NotificationRecord Record { get; }
+
+    /// <summary>Gets whether the notification is a persistent notification: it was shown by <see cref="ServiceWorkerRegistration.ShowNotification"/>.</summary>
+    [NotInIdl]
+    public bool IsPersistent => Record.Registration is not null;
 
     /// <summary>
     /// Gets whether the user allows the origin of the current global object to show notifications
@@ -252,10 +264,10 @@ public sealed class Notification : EventTarget
         _ => NotificationPermission.Denied,
     };
 
-    /// <summary>Gets the maximum number of actions of a notification (https://notifications.spec.whatwg.org/#dom-notification-maxactions): 0, the actions are not supported.</summary>
+    /// <summary>Gets the maximum number of actions of a notification (https://notifications.spec.whatwg.org/#dom-notification-maxactions): 2, as in Chromium. The actions after the first two are ignored.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-maxactions"/>
     [IdlMember("maxActions", "https://notifications.spec.whatwg.org/#dom-notification-maxactions")]
-    public static uint MaxActions => 0;
+    public static uint MaxActions => MaxActionsCount;
 
     /// <summary>
     /// Asks the user to allow the origin to show notifications (https://notifications.spec.whatwg.org/#dom-notification-requestpermission),
@@ -336,69 +348,69 @@ public sealed class Notification : EventTarget
     /// <summary>Gets the title of the notification.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-title"/>
     [IdlMember("title", "https://notifications.spec.whatwg.org/#dom-notification-title")]
-    public string Title { get; }
+    public string Title => Record.Title;
 
     /// <summary>Gets the direction of the text.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-dir"/>
     [IdlMember("dir", "https://notifications.spec.whatwg.org/#dom-notification-dir")]
-    public NotificationDirection Dir { get; }
+    public NotificationDirection Dir => Record.Dir;
 
     /// <summary>Gets the language of the text.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-lang"/>
     [IdlMember("lang", "https://notifications.spec.whatwg.org/#dom-notification-lang")]
-    public string Lang { get; }
+    public string Lang => Record.Lang;
 
     /// <summary>Gets the body of the notification.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-body"/>
     [IdlMember("body", "https://notifications.spec.whatwg.org/#dom-notification-body")]
-    public string Body { get; }
+    public string Body => Record.Body;
 
     /// <summary>Gets the absolute URL to navigate to when the notification is activated, or the empty string.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-navigate"/>
     [IdlMember("navigate", "https://notifications.spec.whatwg.org/#dom-notification-navigate")]
-    public string Navigate => _navigate?.Serialize() ?? "";
+    public string Navigate => Record.NavigationUrl?.Serialize() ?? "";
 
     /// <summary>Gets the tag of the notification.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-tag"/>
     [IdlMember("tag", "https://notifications.spec.whatwg.org/#dom-notification-tag")]
-    public string Tag { get; }
+    public string Tag => Record.Tag;
 
     /// <summary>Gets the absolute URL of the image, or the empty string.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-image"/>
     [IdlMember("image", "https://notifications.spec.whatwg.org/#dom-notification-image")]
-    public string Image => _image?.Serialize() ?? "";
+    public string Image => Record.ImageUrl?.Serialize() ?? "";
 
     /// <summary>Gets the absolute URL of the icon, or the empty string.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-icon"/>
     [IdlMember("icon", "https://notifications.spec.whatwg.org/#dom-notification-icon")]
-    public string Icon => _icon?.Serialize() ?? "";
+    public string Icon => Record.IconUrl?.Serialize() ?? "";
 
     /// <summary>Gets the absolute URL of the badge, or the empty string.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-badge"/>
     [IdlMember("badge", "https://notifications.spec.whatwg.org/#dom-notification-badge")]
-    public string Badge => _badge?.Serialize() ?? "";
+    public string Badge => Record.BadgeUrl?.Serialize() ?? "";
 
     /// <summary>Gets the time of the notification, in milliseconds since the Unix epoch.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-timestamp"/>
     [IdlMember("timestamp", "https://notifications.spec.whatwg.org/#dom-notification-timestamp")]
-    public ulong Timestamp { get; }
+    public ulong Timestamp => Record.Timestamp;
 
     /// <summary>Gets whether the user is alerted again when the notification replaces another one.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-renotify"/>
     [IdlMember("renotify", "https://notifications.spec.whatwg.org/#dom-notification-renotify")]
-    public bool Renotify { get; }
+    public bool Renotify => Record.Renotify;
 
     /// <summary>Gets whether the notification is silent, or null for the default of the device.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-silent"/>
     [IdlMember("silent", "https://notifications.spec.whatwg.org/#dom-notification-silent")]
-    public bool? Silent { get; }
+    public bool? Silent => Record.Silent;
 
     /// <summary>Gets whether the notification stays until the user activates or closes it.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-requireinteraction"/>
     [IdlMember("requireInteraction", "https://notifications.spec.whatwg.org/#dom-notification-requireinteraction")]
-    public bool RequireInteraction { get; }
+    public bool RequireInteraction => Record.RequireInteraction;
 
-    /// <summary>Gets a deserialization of the data of the notification (the same value each time).</summary>
+    /// <summary>Gets a deserialization of the data of the notification (the same value each time for an object).</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-data"/>
     [IdlMember("data", "https://notifications.spec.whatwg.org/#dom-notification-data")]
     public object? Data
@@ -407,7 +419,8 @@ public sealed class Notification : EventTarget
         {
             if (!_isDataDeserialized)
             {
-                _data = _serializedData is null ? null : _global.ScriptEngine is { } engine ? engine.StructuredDeserialize(_global, _serializedData) : StructuredClone.Deserialize(_serializedData);
+                var serializedData = Record.SerializedData;
+                _data = serializedData is null ? null : _global.ScriptEngine is { } engine ? engine.StructuredDeserialize(_global, serializedData) : StructuredClone.Deserialize(serializedData);
                 _isDataDeserialized = true;
             }
 
@@ -415,10 +428,16 @@ public sealed class Notification : EventTarget
         }
     }
 
-    /// <summary>Gets the actions of the notification (https://notifications.spec.whatwg.org/#dom-notification-actions): always empty.</summary>
+    /// <summary>Gets the actions of the notification (https://notifications.spec.whatwg.org/#dom-notification-actions): always empty for a non-persistent notification.</summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-actions"/>
     [IdlMember("actions", "https://notifications.spec.whatwg.org/#dom-notification-actions")]
-    public IReadOnlyList<NotificationAction> Actions => [];
+    public IReadOnlyList<NotificationAction> Actions => [.. Record.Actions.Select(static action => new NotificationAction
+    {
+        Action = action.Name,
+        Title = action.Title,
+        Navigate = action.NavigationUrl?.Serialize(),
+        Icon = action.IconUrl?.Serialize(),
+    })];
 
     /// <summary>Gets whether the notification is shown: it is in the list of notifications of the browsing contexts.</summary>
     [NotInIdl]
@@ -429,32 +448,52 @@ public sealed class Notification : EventTarget
             var list = _global.Options.ShownNotifications;
             lock (list)
             {
-                return list.Contains(this);
+                return list.Contains(Record);
             }
         }
     }
 
-    /// <summary>Closes the notification (https://notifications.spec.whatwg.org/#dom-notification-close), and fires its <c>close</c> event.</summary>
+    /// <summary>
+    /// Closes the notification (https://notifications.spec.whatwg.org/#dom-notification-close): the <c>close</c> event of a
+    /// non-persistent notification is fired. Closing a persistent notification fires no event.
+    /// </summary>
     /// <seealso href="https://notifications.spec.whatwg.org/#dom-notification-close"/>
     [IdlMember("close", "https://notifications.spec.whatwg.org/#dom-notification-close")]
     public void Close()
     {
+        if (IsPersistent)
+        {
+            if (Remove(_global.Options, Record))
+            {
+                InvokeHost(Record, _global.Options.CloseNotification);
+            }
+
+            return;
+        }
+
         // A notification closed before it is shown is never shown (https://notifications.spec.whatwg.org/#show-steps)
         _closeRequested = true;
         if (RunCloseSteps())
         {
-            InvokeHost(_global.Options.CloseNotification);
+            InvokeHost(Record, _global.Options.CloseNotification);
         }
     }
 
     /// <summary>
     /// Activates the notification, as when the user clicks it (https://notifications.spec.whatwg.org/#activating-a-notification):
-    /// fires its <c>click</c> event, and focuses its window unless the event is canceled. It must be called on the thread of
-    /// the event loop of the browsing context.
+    /// fires the <c>click</c> event of a non-persistent notification, and focuses its window unless the event is canceled. It
+    /// must be called on the thread of the event loop of the browsing context. For a persistent notification, fires the
+    /// <c>notificationclick</c> event at the active worker of its registration (from any thread).
     /// </summary>
     [NotInIdl]
     public void Click()
     {
+        if (IsPersistent)
+        {
+            FireServiceWorkerNotificationEvent("notificationclick", Record, action: "");
+            return;
+        }
+
         if (!FireEvent(new Event("click", new EventInit { Cancelable = true })))
             return;
 
@@ -465,14 +504,126 @@ public sealed class Notification : EventTarget
     }
 
     /// <summary>
+    /// Activates an action of a persistent notification, as when the user clicks its button (https://notifications.spec.whatwg.org/#activating-a-notification):
+    /// fires the <c>notificationclick</c> event, whose <c>action</c> is the name of the action, at the active worker of its registration.
+    /// </summary>
+    /// <param name="action">The name of the action (<see cref="NotificationAction.Action"/>).</param>
+    /// <exception cref="InvalidOperationException">The notification is not persistent.</exception>
+    /// <exception cref="ArgumentException">The notification has no action with this name.</exception>
+    [NotInIdl]
+    public void Click(string action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        if (!IsPersistent)
+            throw new InvalidOperationException("Only the persistent notifications have actions");
+
+        if (!Record.Actions.Any(entry => entry.Name == action))
+            throw new ArgumentException($"The notification has no action named '{action}'", nameof(action));
+
+        FireServiceWorkerNotificationEvent("notificationclick", Record, action);
+    }
+
+    /// <summary>
     /// Closes the notification, as when the user dismisses it (https://notifications.spec.whatwg.org/#closing-a-notification):
-    /// fires its <c>close</c> event. <see cref="BrowsingContextOptions.CloseNotification"/> is not called. It must be called
-    /// on the thread of the event loop of the browsing context.
+    /// fires the <c>close</c> event of a non-persistent notification (it must be called on the thread of the event loop of
+    /// the browsing context), or the <c>notificationclose</c> event at the active worker of the registration of a persistent
+    /// notification. <see cref="BrowsingContextOptions.CloseNotification"/> is not called.
     /// </summary>
     [NotInIdl]
-    public void Dismiss() => RunCloseSteps();
+    public void Dismiss()
+    {
+        if (IsPersistent)
+        {
+            if (Remove(_global.Options, Record))
+            {
+                FireServiceWorkerNotificationEvent("notificationclose", Record, action: "");
+            }
 
-    /// <summary>https://notifications.spec.whatwg.org/#show-steps</summary>
+            return;
+        }
+
+        RunCloseSteps();
+    }
+
+    /// <summary>
+    /// The steps of <c>showNotification()</c> after the active worker check (https://notifications.spec.whatwg.org/#dom-serviceworkerregistration-shownotification):
+    /// <paramref name="global"/> is the relevant global object of the registration object.
+    /// </summary>
+    internal static Task ShowPersistentNotification(GlobalScope global, ServiceWorkerRegistrationRecord registration, string title, NotificationOptions options)
+    {
+        NotificationRecord record;
+        try
+        {
+            record = NotificationRecord.Create(global, title, options, registration);
+        }
+        catch (Exception ex) when (ex is TypeErrorException or DomException)
+        {
+            return Task.FromException(ex);
+        }
+
+        // The host receives an object of the realm that showed the notification
+        record.HostObject = new Notification(global, record);
+        var promise = new TaskCompletionSource();
+        global.QueueGlobalTask(() =>
+        {
+            if (GetPermissionState(global) != PermissionState.Granted)
+            {
+                promise.TrySetException(new TypeErrorException("The notifications permission is not granted"));
+                return;
+            }
+
+            ShowCore(record, global.Options);
+            promise.TrySetResult();
+        });
+        return promise.Task;
+    }
+
+    /// <summary>https://notifications.spec.whatwg.org/#dom-serviceworkerregistration-getnotifications</summary>
+    internal static Task<IReadOnlyList<Notification>> GetPersistentNotifications(GlobalScope global, ServiceWorkerRegistrationRecord registration, string tag)
+    {
+        var origin = global.EnvironmentDocument.Origin.Serialize();
+        var promise = new TaskCompletionSource<IReadOnlyList<Notification>>();
+        global.QueueGlobalTask(() =>
+        {
+            NotificationRecord[] records;
+            var list = global.Options.ShownNotifications;
+            lock (list)
+            {
+                records = [.. list.Where(record => record.Registration == registration && record.Origin == origin && (tag.Length == 0 || record.Tag == tag))];
+            }
+
+            promise.TrySetResult([.. records.Select(record => new Notification(global, record))]);
+        });
+        return promise.Task;
+    }
+
+    /// <summary>Closes the persistent notifications of a registration that is unregistered (the host callbacks are invoked by a task of <paramref name="eventLoop"/>).</summary>
+    internal static void CloseRegistrationNotifications(BrowsingContextOptions options, ServiceWorkerRegistrationRecord registration, DomEventLoop eventLoop)
+    {
+        var list = options.ShownNotifications;
+        List<NotificationRecord> removed;
+        lock (list)
+        {
+            removed = [.. list.Where(record => record.Registration == registration)];
+            if (removed.Count == 0)
+                return;
+
+            list.RemoveAll(record => record.Registration == registration);
+        }
+
+        if (options.CloseNotification is { } closeNotification)
+        {
+            eventLoop.QueueTask(() =>
+            {
+                foreach (var record in removed)
+                {
+                    InvokeHost(record, closeNotification);
+                }
+            });
+        }
+    }
+
+    /// <summary>https://notifications.spec.whatwg.org/#show-steps (the steps of a non-persistent notification)</summary>
     private void Show()
     {
         if (GetPermissionState(_global) != PermissionState.Granted)
@@ -487,46 +638,66 @@ public sealed class Notification : EventTarget
             return;
         }
 
-        Notification? oldNotification = null;
-        var list = _global.Options.ShownNotifications;
+        ShowCore(Record, _global.Options);
+
+        // The show event is fired by a task, after the close event of the replaced notification
+        _global.QueueGlobalTask(() => FireEvent(new Event("show")));
+    }
+
+    /// <summary>
+    /// https://notifications.spec.whatwg.org/#show-steps: adds the notification to the list of notifications, where it replaces
+    /// the notification of the same origin with the same tag, and shows it with the host.
+    /// </summary>
+    private static void ShowCore(NotificationRecord record, BrowsingContextOptions options)
+    {
+        NotificationRecord? oldRecord = null;
+        var list = options.ShownNotifications;
         lock (list)
         {
-            if (Tag.Length > 0)
+            if (record.Tag.Length > 0)
             {
-                var index = list.FindIndex(notification => notification.Tag == Tag && notification.Origin == Origin);
+                var index = list.FindIndex(notification => notification.Tag == record.Tag && notification.Origin == record.Origin);
                 if (index >= 0)
                 {
-                    oldNotification = list[index];
-                    list[index] = this;
+                    oldRecord = list[index];
+                    list[index] = record;
                 }
             }
 
-            if (oldNotification is null)
+            if (oldRecord is null)
             {
-                list.Add(this);
+                list.Add(record);
             }
         }
 
-        if (oldNotification is not null)
+        if (oldRecord is not null)
         {
-            oldNotification.InvokeHost(_global.Options.CloseNotification);
-            oldNotification.QueueCloseEvent();
+            // https://notifications.spec.whatwg.org/#handle-close-events: a replaced notification is not closed by the user
+            InvokeHost(oldRecord, options.CloseNotification);
+            if (oldRecord.Registration is null)
+            {
+                oldRecord.HostObject?.QueueCloseEvent();
+            }
         }
 
-        // The show event is fired by a task, after the close event of the replaced notification
-        InvokeHost(_global.Options.ShowNotification);
-        _global.QueueGlobalTask(() => FireEvent(new Event("show")));
+        InvokeHost(record, options.ShowNotification);
+    }
+
+    /// <summary>Removes a notification from the list of notifications: returns false when it was not shown.</summary>
+    private static bool Remove(BrowsingContextOptions options, NotificationRecord record)
+    {
+        var list = options.ShownNotifications;
+        lock (list)
+        {
+            return list.Remove(record);
+        }
     }
 
     /// <summary>https://notifications.spec.whatwg.org/#close-steps: returns false when the notification was not shown.</summary>
     private bool RunCloseSteps()
     {
-        var list = _global.Options.ShownNotifications;
-        lock (list)
-        {
-            if (!list.Remove(this))
-                return false;
-        }
+        if (!Remove(_global.Options, Record))
+            return false;
 
         QueueCloseEvent();
         return true;
@@ -535,16 +706,37 @@ public sealed class Notification : EventTarget
     /// <summary>https://notifications.spec.whatwg.org/#handle-close-events</summary>
     private void QueueCloseEvent() => _global.QueueGlobalTask(() => FireEvent(new Event("close")));
 
-    private void InvokeHost(Action<CallbackContext, Notification>? callback) => callback?.Invoke(CallbackContext.For(_global), this);
+    /// <summary>
+    /// https://notifications.spec.whatwg.org/#fire-a-service-worker-notification-event: fires a functional event at the
+    /// active worker of the registration of a persistent notification, with a new object that represents the notification.
+    /// </summary>
+    private static void FireServiceWorkerNotificationEvent(string name, NotificationRecord record, string action)
+    {
+        var registration = record.Registration!;
+        registration.Registry.FireFunctionalEvent(registration, name, global => new NotificationEvent(name, new NotificationEventInit { Notification = new Notification(global, record), Action = action }));
+    }
+
+    private static void InvokeHost(NotificationRecord record, Action<CallbackContext, Notification>? callback)
+    {
+        if (callback is not null && record.HostObject is { } notification)
+        {
+            callback(CallbackContext.For(notification._global), notification);
+        }
+    }
 
     /// <summary>
     /// https://notifications.spec.whatwg.org/#get-the-notifications-permission-state: as in the browsers, the documents that
-    /// are not same origin with all their ancestors (and their workers) cannot show notifications.
+    /// are not same origin with all their ancestors (and their workers, and the service workers that they registered) cannot
+    /// show notifications.
     /// </summary>
     private static PermissionState GetPermissionState(GlobalScope global) => IsThirdPartyContext(global) ? PermissionState.Denied : Permissions.GetPermissionState(global, PermissionName);
 
     private static bool IsThirdPartyContext(GlobalScope global)
     {
+        // A service worker registered by a third-party context has a partitioned storage key
+        if (global is ServiceWorkerGlobalScope serviceWorker)
+            return !serviceWorker.ServiceWorkerRecord.Registration.StorageKey.IsFirstParty;
+
         // A dedicated worker has the context of the document that created it
         while (global is WorkerGlobalScope { Agent.Owner: { } owner })
         {
@@ -645,12 +837,151 @@ public sealed class Notification : EventTarget
         static bool IsPrivateUse(string subtag) => subtag is "x" or "X";
     }
 
-    private static UrlRecord? ParseUrl(string? url, UrlRecord baseUrl) => url is null ? null : UrlParser.Parse(url, baseUrl);
-
     private static NotificationPermission ToNotificationPermission(PermissionState state) => state switch
     {
         PermissionState.Granted => NotificationPermission.Granted,
         PermissionState.Denied => NotificationPermission.Denied,
         _ => NotificationPermission.Default,
     };
+}
+
+/// <summary>
+/// A notification (https://notifications.spec.whatwg.org/#concept-notification): the data shared by the <see cref="Notification"/>
+/// objects that represent it. A persistent notification has a service worker registration. The members are immutable,
+/// except <see cref="HostObject"/>.
+/// </summary>
+internal sealed class NotificationRecord
+{
+    public required string Title { get; init; }
+
+    public NotificationDirection Dir { get; init; }
+
+    public required string Lang { get; init; }
+
+    public required string Body { get; init; }
+
+    public required string Tag { get; init; }
+
+    public UrlRecord? NavigationUrl { get; init; }
+
+    public UrlRecord? ImageUrl { get; init; }
+
+    public UrlRecord? IconUrl { get; init; }
+
+    public UrlRecord? BadgeUrl { get; init; }
+
+    public ulong Timestamp { get; init; }
+
+    public bool Renotify { get; init; }
+
+    public bool? Silent { get; init; }
+
+    public bool RequireInteraction { get; init; }
+
+    /// <summary>The data, serialized by StructuredSerializeForStorage, or null.</summary>
+    public object? SerializedData { get; init; }
+
+    public required IReadOnlyList<NotificationActionRecord> Actions { get; init; }
+
+    /// <summary>The serialized origin of the notification: a notification only replaces the notifications of its origin.</summary>
+    public required string Origin { get; init; }
+
+    /// <summary>The service worker registration of a persistent notification, or null.</summary>
+    public ServiceWorkerRegistrationRecord? Registration { get; init; }
+
+    /// <summary>The object given to the host callbacks: the object created by the constructor, or for a persistent notification, an object of the realm that showed it.</summary>
+    public Notification? HostObject { get; set; }
+
+    /// <summary>https://notifications.spec.whatwg.org/#create-a-notification-with-a-settings-object</summary>
+    public static NotificationRecord Create(GlobalScope global, string title, NotificationOptions options, ServiceWorkerRegistrationRecord? registration)
+    {
+        if (options.Renotify && options.Tag.Length == 0)
+            throw new TypeErrorException("A notification without tag cannot renotify");
+
+        var serializedData = options.Data is null ? null : global.ScriptEngine is { } engine ? engine.StructuredSerializeForStorage(global, options.Data) : StructuredClone.Serialize(options.Data);
+        var baseUrl = global.ApiBaseUrl;
+        var actions = new List<NotificationActionRecord>();
+        foreach (var entry in options.Actions)
+        {
+            // The actions that the platform does not support are skipped
+            if (actions.Count >= Notification.MaxActionsCount)
+                break;
+
+            actions.Add(new NotificationActionRecord(entry.Action, entry.Title, ParseUrl(entry.Navigate, baseUrl), ParseUrl(entry.Icon, baseUrl)));
+        }
+
+        return new NotificationRecord
+        {
+            Title = title,
+            Dir = options.Dir,
+            Lang = Notification.IsValidLanguageTag(options.Lang) ? options.Lang : "",
+            Body = options.Body,
+            Tag = options.Tag,
+            NavigationUrl = ParseUrl(options.Navigate, baseUrl),
+            ImageUrl = ParseUrl(options.Image, baseUrl),
+            IconUrl = ParseUrl(options.Icon, baseUrl),
+            BadgeUrl = ParseUrl(options.Badge, baseUrl),
+            Timestamp = options.Timestamp ?? (ulong)Math.Max(0, (global.EventLoop.TimeProvider.GetUtcNow() - DateTimeOffset.UnixEpoch).TotalMilliseconds),
+            Renotify = options.Renotify,
+            Silent = options.Silent,
+            RequireInteraction = options.RequireInteraction,
+            SerializedData = serializedData,
+            Actions = actions,
+            Origin = global.EnvironmentDocument.Origin.Serialize(),
+            Registration = registration,
+        };
+    }
+
+    /// <summary>Parses a URL of the options: a URL that cannot be parsed is ignored.</summary>
+    private static UrlRecord? ParseUrl(string? url, UrlRecord baseUrl) => url is null ? null : UrlParser.Parse(url, baseUrl);
+}
+
+/// <summary>A notification action (https://notifications.spec.whatwg.org/#action) of a persistent notification.</summary>
+internal sealed record NotificationActionRecord(string Name, string Title, UrlRecord? NavigationUrl, UrlRecord? IconUrl);
+
+/// <summary>The initialization dictionary of a <see cref="NotificationEvent"/> (https://notifications.spec.whatwg.org/#dictdef-notificationeventinit).</summary>
+/// <seealso href="https://notifications.spec.whatwg.org/#dictdef-notificationeventinit"/>
+[IdlInterface("NotificationEventInit", "https://notifications.spec.whatwg.org/#dictdef-notificationeventinit")]
+public sealed class NotificationEventInit : ExtendableEventInit
+{
+    /// <summary>Gets the notification.</summary>
+    /// <seealso href="https://notifications.spec.whatwg.org/#dom-notificationeventinit-notification"/>
+    [IdlMember("notification", "https://notifications.spec.whatwg.org/#dom-notificationeventinit-notification")]
+    public required Notification Notification { get; init; }
+
+    /// <summary>Gets the name of the activated action, or the empty string.</summary>
+    /// <seealso href="https://notifications.spec.whatwg.org/#dom-notificationeventinit-action"/>
+    [IdlMember("action", "https://notifications.spec.whatwg.org/#dom-notificationeventinit-action")]
+    public string Action { get; init; } = "";
+}
+
+/// <summary>
+/// The <c>notificationclick</c> and <c>notificationclose</c> events of a service worker (https://notifications.spec.whatwg.org/#notificationevent):
+/// the user activated (<see cref="Notification.Click()"/>) or closed (<see cref="Notification.Dismiss"/>) a persistent
+/// notification of its registration.
+/// </summary>
+/// <seealso href="https://notifications.spec.whatwg.org/#notificationevent"/>
+[IdlInterface("NotificationEvent", "https://notifications.spec.whatwg.org/#notificationevent")]
+public sealed class NotificationEvent : ExtendableEvent
+{
+    /// <summary>Creates a notification event.</summary>
+    /// <seealso href="https://notifications.spec.whatwg.org/#dom-notificationevent-notificationevent"/>
+    [IdlMember("constructor", "https://notifications.spec.whatwg.org/#dom-notificationevent-notificationevent")]
+    public NotificationEvent(string type, NotificationEventInit eventInitDict)
+        : base(type, eventInitDict)
+    {
+        ArgumentNullException.ThrowIfNull(eventInitDict);
+        Notification = eventInitDict.Notification;
+        Action = eventInitDict.Action;
+    }
+
+    /// <summary>Gets the notification: a new object that represents the persistent notification.</summary>
+    /// <seealso href="https://notifications.spec.whatwg.org/#dom-notificationevent-notification"/>
+    [IdlMember("notification", "https://notifications.spec.whatwg.org/#dom-notificationevent-notification")]
+    public Notification Notification { get; }
+
+    /// <summary>Gets the name of the activated action, or the empty string when the notification itself was activated (or closed).</summary>
+    /// <seealso href="https://notifications.spec.whatwg.org/#dom-notificationevent-action"/>
+    [IdlMember("action", "https://notifications.spec.whatwg.org/#dom-notificationevent-action")]
+    public string Action { get; }
 }

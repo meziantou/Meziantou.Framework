@@ -811,6 +811,12 @@ internal sealed partial class GridLayoutAlgorithm
     {
         if (item.Subgrid is { } subgrid && subgrid.IsSubgriddedIn(_laneAxis, out var ownAxis, out var reversed))
         {
+            // (the extra margins of the edges of a subgrid with an automatic position are the ones of its position)
+            if (item.IsLanesAuto)
+            {
+                UpdateSubgridEdgeMargins(this, item, subgrid, ownAxis);
+            }
+
             ShareTracksWithSubgrid(item, subgrid, _laneAxis, ownAxis, reversed);
         }
     }

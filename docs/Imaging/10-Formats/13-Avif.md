@@ -120,8 +120,10 @@ faster.
 - An image sequence needs a seekable destination and a known frame count ([ImageWriterOptions.ExpectedFrameCount](cref:Meziantou.Framework.Imaging.ImageWriterOptions.ExpectedFrameCount) for
   a writer), because the index of the images is written last. A still image goes to any stream.
 - An image sequence of one image cannot store animation settings: it is read back as a still image.
-- [ImageDecodeOptions.Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) skips the tiles of a grid that an area does not need; an image
-  that is not a grid is decoded whole before the area is kept. See
+- [ImageDecodeOptions.Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) skips the tiles of a grid that an area does not need. An image
+  that is not a grid is decoded down to the rows of superblocks that the area and a margin of 64 pixels need, and its AV1
+  tiles far from the area are skipped (except those whose loop restoration reaches it); an image of several layers is
+  decoded whole before the area is kept. See
   [Decode an area](../05-LoadingAndSaving/02-LoadingImages.md#decode-an-area).
 - A side is at most 65,536 pixels (65,535 for an image sequence), and a still image at most 4 GiB.
 - The decoder presents the primary image, or the sequence of a file with the `avis` brand. The thumbnails, depth maps

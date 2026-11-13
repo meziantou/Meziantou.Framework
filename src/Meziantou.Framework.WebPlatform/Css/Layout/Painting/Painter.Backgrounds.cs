@@ -95,9 +95,21 @@ internal sealed partial class Painter
         // The positioning area is the one of the root element (its border box when it is the root element of the canvas)
         var offset = rootFragment.GetOffsetInRoot() - _group.Origin;
         var rootBorderBox = GetSnappedBorderBox(rootFragment, offset);
-        for (var i = layers.Length - 1; i >= 0; i--)
+
+        // The images of the background propagated from the body element are animated per the image-animation of the root
+        // element, whose background it is (as in the browsers)
+        var imageAnimationStyle = _imageAnimationStyle;
+        _imageAnimationStyle = rootFragment.Box.Style;
+        try
         {
-            PaintBackgroundLayer(rootFragment, style, layers[i], rootBorderBox, rootFragment.Border, rootFragment.Padding, paintingArea: new RoundedRect(canvas, default), blends);
+            for (var i = layers.Length - 1; i >= 0; i--)
+            {
+                PaintBackgroundLayer(rootFragment, style, layers[i], rootBorderBox, rootFragment.Border, rootFragment.Padding, paintingArea: new RoundedRect(canvas, default), blends);
+            }
+        }
+        finally
+        {
+            _imageAnimationStyle = imageAnimationStyle;
         }
 
         if (blends)

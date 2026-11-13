@@ -20,6 +20,12 @@
   "css/css-overflow/button-with-scrollable-descendant.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/chrome-480554290-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/chrome-body-overflow-propagation-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/clip-001.html": {
     "reftest": "PASS"
   },
@@ -59,6 +65,9 @@
   "css/css-overflow/content-change-then-scroll-into-view.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/crashtests/text-overflow-ellipsis-multiline-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/display-flex-svg-overflow-default.html": {
     "reftest": "PASS"
   },
@@ -70,6 +79,9 @@
   },
   "css/css-overflow/dynamic-visible-to-clip-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/ellipsis-with-image-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/fit-content-textarea-with-scrollbar.html": {
     "reftest": "PASS"
@@ -290,6 +302,9 @@
   "css/css-overflow/line-clamp/continue-001.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/crashtests/line-clamp-form-input-auto-height.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/line-clamp/discard/discard-multicol-001.html": {
     "reftest": "PASS"
   },
@@ -437,17 +452,32 @@
   "css/css-overflow/line-clamp/line-clamp-039.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/line-clamp-040-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/line-clamp/line-clamp-041.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-042.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/line-clamp-043-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/line-clamp/line-clamp-043.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/line-clamp-atomic-inline-after-clamp-point-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/line-clamp/line-clamp-auto-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-002-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-auto-002.tentative.html": {
     "reftest": "PASS"
@@ -1094,6 +1124,9 @@
   "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-009.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-010-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/line-clamp/webkit-line-clamp-001.html": {
     "reftest": "PASS"
   },
@@ -1211,6 +1244,12 @@
   "css/css-overflow/line-clamp/webkit-line-clamp-040.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/webkit-line-clamp-041-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-042-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/line-clamp/webkit-line-clamp-043.html": {
     "reftest": "PASS"
   },
@@ -1238,6 +1277,9 @@
   "css/css-overflow/line-clamp/webkit-line-clamp-053.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/webkit-line-clamp-054-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/line-clamp/webkit-line-clamp-abspos-001.html": {
     "reftest": "PASS"
   },
@@ -1246,6 +1288,12 @@
   },
   "css/css-overflow/line-clamp/webkit-line-clamp-block-in-inline-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-bug-1926732-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-bug-2063759-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/line-clamp/webkit-line-clamp-dynamic-001.html": {
     "reftest": "PASS"
@@ -1283,6 +1331,9 @@
   "css/css-overflow/min-content-textarea-with-scrollbar.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/multicol-in-orthogonal-writing-mode-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/no-scrollable-overflow-vertical-rl-2.html": {
     "reftest": "PASS"
   },
@@ -1294,6 +1345,9 @@
   },
   "css/css-overflow/orthogonal-writing-mode-with-scrollable-descendant.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/outline-with-opacity-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/overflow-abpos-transform.html": {
     "total": 1
@@ -1360,6 +1414,12 @@
   },
   "css/css-overflow/overflow-canvas.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-002-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/overflow-clip-cant-scroll.html": {
     "reftest": "PASS"
@@ -1764,6 +1824,15 @@
   "css/css-overflow/scroll-marker-group-hover.html": {
     "total": 1
   },
+  "css/css-overflow/scroll-markers/chrome-421199213-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/chrome-555280390-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/chrome-570167919-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/column-scroll-marker-001.html": {
     "reftest": "PASS"
   },
@@ -1803,6 +1872,9 @@
   "css/css-overflow/scroll-markers/column-scroll-marker-014.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/scroll-markers/column-scroll-marker-015-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/column-scroll-marker-activation-target-current.html": {
     "reftest": "PASS"
   },
@@ -1827,14 +1899,26 @@
   "css/css-overflow/scroll-markers/column-scroll-marker-group-style-remove.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/scroll-markers/column-scroll-marker-manual-slot-recalc-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-no-content-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/column-scroll-marker-reattach-target-current.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/scroll-markers/html-scroll-marker-target-before-after.html": {
     "total": 6
   },
+  "css/css-overflow/scroll-markers/inline-with-scroll-marker-group-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/nested-scroll-markers-under-content-visibility-auto.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/root-element-layout-parent-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/scroll-markers/root-scroll-button-activation.html": {
     "total": 1
@@ -1920,6 +2004,9 @@
   "css/css-overflow/scroll-markers/scroll-buttons-appearance.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/scroll-markers/scroll-buttons-container-query-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/scroll-buttons-contents-appearance.html": {
     "reftest": "PASS"
   },
@@ -1998,8 +2085,14 @@
   "css/css-overflow/scroll-markers/scroll-marker-013.html": {
     "total": 2
   },
+  "css/css-overflow/scroll-markers/scroll-marker-014-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/scroll-marker-15.html": {
     "total": 2
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-activation-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-marker-activation-default-direction-position.html": {
     "total": 1
@@ -2022,6 +2115,9 @@
   "css/css-overflow/scroll-markers/scroll-marker-active-unreached-target.html": {
     "total": 1
   },
+  "css/css-overflow/scroll-markers/scroll-marker-click-remove-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/scroll-marker-controls-scroll-tracking-001.html": {
     "total": 2
   },
@@ -2040,6 +2136,9 @@
   "css/css-overflow/scroll-markers/scroll-marker-double-activation.html": {
     "total": 1
   },
+  "css/css-overflow/scroll-markers/scroll-marker-dynamic-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/scroll-marker-dynamic.html": {
     "reftest": "PASS"
   },
@@ -2048,6 +2147,9 @@
   },
   "css/css-overflow/scroll-markers/scroll-marker-event-target.html": {
     "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-focus-scroll-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-marker-focus-visible.html": {
     "total": 1
@@ -2124,11 +2226,20 @@
   "css/css-overflow/scroll-markers/scroll-marker-group-add-dynamic-004.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-001.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-002-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-003-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-003.html": {
     "reftest": "PASS"
@@ -2157,6 +2268,9 @@
   "css/css-overflow/scroll-markers/scroll-marker-group-position-change-003.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/scroll-markers/scroll-marker-group-position-change-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/scroll-marker-group-scroll-container-change-001.html": {
     "reftest": "PASS"
   },
@@ -2168,6 +2282,9 @@
   },
   "css/css-overflow/scroll-markers/scroll-marker-group-scroll-container-change-004.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-scroll-container-change-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-marker-group-size-container-query-root.html": {
     "total": 1
@@ -2192,6 +2309,9 @@
   },
   "css/css-overflow/scroll-markers/scroll-marker-hover.html": {
     "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-in-display-none-column-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-marker-inert-001.html": {
     "total": 1
@@ -2229,11 +2349,20 @@
   "css/css-overflow/scroll-markers/scroll-marker-target-before-after.html": {
     "total": 6
   },
+  "css/css-overflow/scroll-markers/scroll-marker-with-content-visibility-hidden-ancestor-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-with-content-visibility-hidden-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/scroll-markers-added-after-content-visibility-auto.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-markers-added-before-content-visibility-auto.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-markers-container-query-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-markers-focus-active-element.html": {
     "total": 1
@@ -2241,8 +2370,17 @@
   "css/css-overflow/scroll-markers/scroll-markers-focus-on-scrolling.html": {
     "total": 3
   },
+  "css/css-overflow/scroll-markers/scroll-markers-inside-canvas-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-markers-inside-select-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/scroll-markers-nested-scrollers.html": {
     "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-markers-resize-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-markers-under-content-visibility-auto.html": {
     "reftest": "PASS"
@@ -2297,6 +2435,9 @@
   },
   "css/css-overflow/scroll-markers/scroll-target-group-iframe.html": {
     "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-inline-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-target-group-inline-targets.html": {
     "reftest": "PASS"
@@ -2564,6 +2705,9 @@
   "css/css-overflow/scrollbar-gutter-with-background-gradient.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/scrollbar-gutter-zero-width-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scrollbar-large-scale-in-iframe.html": {
     "reftest": "PASS"
   },
@@ -2575,6 +2719,9 @@
   },
   "css/css-overflow/select-size-overflow-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/shrink-to-fit-auto-overflow-relayout-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/shrink-to-fit-overflow-auto-scrollbar-width.html": {
     "total": 3
@@ -2596,6 +2743,9 @@
   },
   "css/css-overflow/single-axis-scroll-into-view.html": {
     "total": 1
+  },
+  "css/css-overflow/table-header-group-overflow-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/table-max-content-with-scrollable-descendant.html": {
     "reftest": "PASS"
@@ -2749,6 +2899,9 @@
   },
   "css/css-overflow/text-overflow-in-textarea.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-root-textarea-crash.xhtml": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/text-overflow-ruby.html": {
     "reftest": "PASS"

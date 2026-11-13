@@ -89,6 +89,9 @@
   "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-preferred.html": {
     "reftest": "PASS"
   },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-link-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-root-background.html": {
     "total": 1
   },

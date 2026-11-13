@@ -2,6 +2,12 @@
   "css/css-easing/cubic-bezier-timing-functions-output.html": {
     "total": 4
   },
+  "css/css-easing/linear-timing-functions-chrome-406926307-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-easing/linear-timing-functions-duplicate-points-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-easing/linear-timing-functions-output.html": {
     "total": 5
   },

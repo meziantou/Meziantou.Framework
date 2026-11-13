@@ -21,6 +21,7 @@ internal ref struct Av1LoopFilter
     private readonly ReadOnlySpan<sbyte> _refFrames;
     private readonly ReadOnlySpan<sbyte> _deltaLfs;
     private readonly int _miCols;
+    private readonly int _decodedMiRows;
     private readonly int _bitDepth;
 
     // The filter levels of the blocks when they do not depend on a delta of the block (DeltaLfPresent is 0), indexed by
@@ -49,6 +50,7 @@ internal ref struct Av1LoopFilter
         _refFrames = _header.FrameIsIntra ? default : state.RefFrames;
         _deltaLfs = _header.DeltaLfPresent ? state.DeltaLfs : default;
         _miCols = _header.MiCols;
+        _decodedMiRows = frame.DecodedMiRows;
         _bitDepth = _sequence.BitDepth;
         if (!_header.DeltaLfPresent)
         {
@@ -94,11 +96,11 @@ internal ref struct Av1LoopFilter
             {
                 if (workers is 1)
                 {
-                    FilterRows(frame, state, plane, pass, 0, header.MiRows, cancellationToken);
+                    FilterRows(frame, state, plane, pass, 0, frame.DecodedMiRows, cancellationToken);
                     continue;
                 }
 
-                RowBands.RunParallel(workers, band => FilterRows(frame, state, plane, pass, Av1PostFilter.GetBandRow(header.MiRows, band, workers), Av1PostFilter.GetBandRow(header.MiRows, band + 1, workers), cancellationToken));
+                RowBands.RunParallel(workers, band => FilterRows(frame, state, plane, pass, Av1PostFilter.GetBandRow(frame.DecodedMiRows, band, workers), Av1PostFilter.GetBandRow(frame.DecodedMiRows, band + 1, workers), cancellationToken));
             }
         }
     }
@@ -119,11 +121,12 @@ internal ref struct Av1LoopFilter
         filter._subX = plane is 0 ? 0 : sequence.SubsamplingX;
         filter._subY = plane is 0 ? 0 : sequence.SubsamplingY;
         filter._frameWidth = frame.Header.FrameWidth;
-        filter._frameHeight = frame.Header.FrameHeight;
+        // A frame decoded for a window ends with its decoded rows
+        filter._frameHeight = frame.DecodedHeight;
         var rowStep = plane is 0 ? 1 : 1 << sequence.SubsamplingY;
         var colStep = plane is 0 ? 1 : 1 << sequence.SubsamplingX;
         var miCols = frame.Header.MiCols;
-        var miRows = frame.Header.MiRows;
+        var miRows = frame.DecodedMiRows;
         var subX = plane is 0 ? 0 : sequence.SubsamplingX;
         var subY = plane is 0 ? 0 : sequence.SubsamplingY;
         var txSizes = filter._txSizes;
@@ -200,7 +203,7 @@ internal ref struct Av1LoopFilter
         var (limit, blimit, thresh) = (_limit, _blimit, _thresh);
         var position2 = 0;
         var filterSize2 = 0;
-        var hasSecond = row2 < _header.MiRows && col2 < _miCols && TryGetEdge(plane, pass, row2, col2, out position2, out filterSize2);
+        var hasSecond = row2 < _decodedMiRows && col2 < _miCols && TryGetEdge(plane, pass, row2, col2, out position2, out filterSize2);
         var step = pass is 0 ? 1 : _stride;
         var lineStep = pass is 0 ? _stride : 1;
         if (hasFirst && hasSecond && filterSize == filterSize2)

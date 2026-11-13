@@ -1713,6 +1713,15 @@ public sealed partial class NodeJsHostTests
             JSValue.Number((byte)255),
             JSValue.Number(Int128.MaxValue),
             JSValue.Number(ulong.MaxValue),
+#if NET11_0_OR_GREATER
+            JSValue.Number((BFloat16)1.5f),
+            JSValue.Number(Decimal32.Parse("-0", CultureInfo.InvariantCulture)),
+            JSValue.Number(Decimal64.Parse("1E+20", CultureInfo.InvariantCulture)),
+            JSValue.Number(Decimal128.Parse("0.1000000000000000000000000000000001", CultureInfo.InvariantCulture)),
+            JSValue.Number(Decimal128.Parse("1E+400", CultureInfo.InvariantCulture)),
+            JSValue.Number(Decimal64.NaN),
+            JSValue.Number(Decimal32.NegativeInfinity),
+#endif
             JSValue.Date(offsetDate),
             JSValue.Date(new DateTime(2024, 1, 2, 3, 4, 5, 678, DateTimeKind.Utc)),
             JSValue.Date(localDate),
@@ -1741,6 +1750,15 @@ public sealed partial class NodeJsHostTests
             ["number", "255"],
             ["number", "1.7014118346046923e+38"],
             ["number", "18446744073709552000"],
+#if NET11_0_OR_GREATER
+            ["number", "1.5"],
+            ["number", "-0"],
+            ["number", "100000000000000000000"],
+            ["number", "0.1"],
+            ["number", "Infinity"],
+            ["number", "NaN"],
+            ["number", "-Infinity"],
+#endif
             ["Date", "2024-01-02T01:04:05.678Z"],
             ["Date", "2024-01-02T03:04:05.678Z"],
             ["Date", new DateTimeOffset(localDate).UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture)],

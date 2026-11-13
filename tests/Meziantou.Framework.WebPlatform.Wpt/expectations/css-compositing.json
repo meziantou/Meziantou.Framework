@@ -5,6 +5,9 @@
   "css/compositing/background-blending/background-blend-mode-plus-lighter.html": {
     "reftest": "PASS"
   },
+  "css/compositing/background-blending/crashtests/bgblend-root-change.html": {
+    "crashtest": "PASS"
+  },
   "css/compositing/canvas-composite-modes.html": {
     "total": 15,
     "failures": {
@@ -133,6 +136,9 @@
   "css/compositing/mix-blend-mode/mix-blend-mode-root-element-group.html": {
     "reftest": "PASS"
   },
+  "css/compositing/mix-blend-mode/mix-blend-mode-root-element-transform-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/compositing/mix-blend-mode/mix-blend-mode-rotated-clip.html": {
     "reftest": "FAIL"
   },
@@ -166,6 +172,9 @@
   "css/compositing/mix-blend-mode/mix-blend-mode-with-transform-and-preserve-3D.html": {
     "reftest": "PASS"
   },
+  "css/compositing/opacity-and-transform-animation-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/compositing/parsing/background-blend-mode-computed-multiple.html": {
     "total": 7
   },
@@ -196,6 +205,12 @@
   "css/compositing/parsing/mix-blend-mode-valid.html": {
     "total": 16
   },
+  "css/compositing/root-element-background-contain-hidden-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/compositing/root-element-background-image-opaque-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/compositing/root-element-background-image-transparency-001.html": {
     "reftest": "PASS"
   },
@@ -216,6 +231,9 @@
   },
   "css/compositing/root-element-blend-mode.html": {
     "reftest": "PASS"
+  },
+  "css/compositing/root-element-filter-background-clip-text-crash.html": {
+    "crashtest": "PASS"
   },
   "css/compositing/root-element-filter.html": {
     "reftest": "PASS"

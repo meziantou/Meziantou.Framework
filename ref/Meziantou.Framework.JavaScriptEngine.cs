@@ -180,6 +180,7 @@ namespace Meziantou.Framework.JavaScriptEngine
     public sealed class JsEngine : System.IDisposable
     {
         public Meziantou.Framework.JavaScriptEngine.JsRealm? CurrentRealm { get => throw null; }
+        public int ExecutionContextDepth { get => throw null; }
         public bool IsScriptRunning { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsEngineOptions Options { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsRealm> Realms { get => throw null; }
@@ -223,8 +224,10 @@ namespace Meziantou.Framework.JavaScriptEngine
         public bool AllowStringCompilation { get => throw null; set { } }
         public bool CanBlock { get => throw null; set { } }
         public System.Threading.CancellationToken CancellationToken { get => throw null; set { } }
+        public int CompilationThreshold { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsDebugger? Debugger { get => throw null; set { } }
         public string DefaultLocale { get => throw null; set { } }
+        public bool EnableCompilation { get => throw null; set { } }
         public bool EnableV8StackTraceApi { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsHost? Host { get => throw null; set { } }
         public long? MaxStatements { get => throw null; set { } }

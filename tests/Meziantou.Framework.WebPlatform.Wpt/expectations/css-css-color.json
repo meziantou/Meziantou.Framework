@@ -149,6 +149,15 @@
   "css/css-color/contrast-color-style-query.html": {
     "reftest": "PASS"
   },
+  "css/css-color/crashtests/firefox-bug-2072488.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-color/crashtests/light-dark-animation-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-color/crashtests/stop-color-invalid-rgb.html": {
+    "crashtest": "PASS"
+  },
   "css/css-color/currentcolor-001.html": {
     "reftest": "PASS"
   },

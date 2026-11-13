@@ -348,10 +348,7 @@
     "total": 6
   },
   "html/cross-origin-embedder-policy/require-corp-worker-script-revalidation.html": {
-    "total": 1,
-    "failures": {
-      "COEP: require-corp with revalidated worker script": "FAIL"
-    }
+    "total": 1
   },
   "html/cross-origin-embedder-policy/require-corp.https.html": {
     "total": 16

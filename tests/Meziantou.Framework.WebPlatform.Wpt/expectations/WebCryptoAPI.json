@@ -683,6 +683,12 @@
   "WebCryptoAPI/import_export/ML-KEM_importKey.tentative.https.any.js#dedicatedworker": {
     "total": 324
   },
+  "WebCryptoAPI/import_export/crashtests/importKey-unsettled-promise.https.any.js": {
+    "total": 1
+  },
+  "WebCryptoAPI/import_export/crashtests/importKey-unsettled-promise.https.any.js#dedicatedworker": {
+    "total": 1
+  },
   "WebCryptoAPI/import_export/ec_importKey.https.any.js": {
     "total": 264
   },

@@ -14,6 +14,12 @@
   "css/css-variables/custom-properties-inherit.html": {
     "total": 1
   },
+  "css/css-variables/long-variable-reference-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-variables/missing-closing-nested-fallback-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-variables/missing-closing-nested-fallback.html": {
     "total": 1
   },
@@ -37,6 +43,9 @@
   },
   "css/css-variables/transition-with-attribute-taint.html": {
     "total": 1
+  },
+  "css/css-variables/url-syntax-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-variables/url-token-serialization.html": {
     "total": 6
@@ -756,6 +765,9 @@
   },
   "css/css-variables/vars-font-shorthand-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-variables/whitespace-in-fallback-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-variables/wide-keyword-fallback-001.html": {
     "reftest": "PASS"

@@ -555,6 +555,28 @@ public sealed class ShapefileTests
         Assert.All(read[2].Properties.Values, value => value is null);
     }
 
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void WriteRead_Ieee754Properties()
+    {
+        var features = new GeoFeatureCollection
+        {
+            new(new GeoPoint(new GeoPosition(1, 2)), new Dictionary<string, object?>
+            {
+                ["whole"] = System.Numerics.Decimal64.Parse("12.0", CultureInfo.InvariantCulture),
+                ["real"] = System.Numerics.Decimal128.Parse("2.5", CultureInfo.InvariantCulture),
+                ["bfloat16"] = (System.Numerics.BFloat16)1.5f,
+            }),
+        };
+
+        var read = Assert.Single(RoundTrip(features));
+
+        Assert.Equal(12.0, read.Properties["whole"]);
+        Assert.Equal(2.5, read.Properties["real"]);
+        Assert.Equal(1.5, read.Properties["bfloat16"]);
+    }
+#endif
+
     [Fact]
     public void Write_GdalFieldWidths()
     {

@@ -328,6 +328,17 @@ internal static class FuzzOracle
         if (format == ImageFormat.Jpeg && CheckJpegRegion(input, image, variant) is { Length: > 0 } region)
             return region;
 
+        // An area of an AVIF or HEIC image has the pixels of the full decode: whatever the decoders skip (the tiles of a grid,
+        // the rows below the area, the AV1 tiles far from it) or decode again whole (an item that is not a single intra
+        // picture), it succeeds when the full decode does
+        if (format is ImageFormat.Avif or ImageFormat.Heic && CheckHeifRegion(input, image, variant) is { Length: > 0 } heifRegion)
+            return heifRegion;
+
+        // An interlaced PNG image decoded at a reduced size from its first Adam7 passes reads a prefix of what the full decode
+        // reads: it succeeds too, with the pixels of the full decode at the top left of each block
+        if (format == ImageFormat.Png && CheckPngScale(input, image, variant) is { Length: > 0 } pngScale)
+            return pngScale;
+
         // A JPEG XL image decoded from the LF image of its frame reads a part of what the full decode reads: it succeeds
         // too, at 1/8 of the size or at full size
         if (format == ImageFormat.JpegXl)
@@ -491,6 +502,73 @@ internal static class FuzzOracle
         using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, TargetSize = target });
         if (image.Width < target.Width || image.Height < target.Height || image.Width > decoded.Width || image.Height > decoded.Height || image.PixelFormat != decoded.PixelFormat)
             return $"tiff-target-size: the target {target} gave a {image.Width}x{image.Height} {image.PixelFormat} image for a {decoded} page";
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckHeifRegion(byte[] input, Image image, int variant)
+    {
+        // The area depends on the variant: at the top (the rows below it are not decoded), anywhere, or past the image
+        var x = (variant * 7) % image.Width;
+        var y = (variant & 4) is 0 ? (variant * 13) % image.Height : (variant * 3) % Math.Min(image.Height, 16);
+        var region = new Rectangle(x, y, 1 + ((variant * 5) % 61), 1 + ((variant * 11) % 37));
+        var area = Rectangle.Intersect(region, new Rectangle(0, 0, image.Width, image.Height));
+        using var decoded = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, Region = region });
+        if (decoded.Size != area.Size || decoded.PixelFormat != image.PixelFormat || decoded.Frames.Count != image.Frames.Count)
+            return $"heif-region-geometry: the region {region} decodes as {decoded.Size} {decoded.PixelFormat} with {decoded.Frames.Count} frame(s), the area {area} of the {image.Size} {image.PixelFormat} image of {image.Frames.Count} frame(s) was expected";
+
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(image.PixelFormat);
+        var fullBytes = new byte[image.Width * image.Height * bytesPerPixel];
+        image.Frames[0].CopyPixelBytesTo(fullBytes);
+        var regionBytes = new byte[area.Width * area.Height * bytesPerPixel];
+        decoded.Frames[0].CopyPixelBytesTo(regionBytes);
+        for (var row = 0; row < area.Height; row++)
+        {
+            var expected = fullBytes.AsSpan((((area.Y + row) * image.Width) + area.X) * bytesPerPixel, area.Width * bytesPerPixel);
+            if (!expected.SequenceEqual(regionBytes.AsSpan(row * area.Width * bytesPerPixel, area.Width * bytesPerPixel)))
+                return $"heif-region-pixels: row {row} of the region {region} differs from the full decode";
+        }
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckPngScale(byte[] input, Image image, int variant)
+    {
+        var scale = 2 << ((variant >> 2) % 3);
+        Image reduced;
+        try
+        {
+            reduced = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, ScaleDenominator = scale });
+        }
+        catch (UnsupportedImageFeatureException exception) when (exception.Feature == "Scaled decoding")
+        {
+            // An image that is not interlaced, or an animation
+            return string.Empty;
+        }
+
+        using (reduced)
+        {
+            var size = new Size((image.Width + scale - 1) / scale, (image.Height + scale - 1) / scale);
+            if (image.IsAnimated || image.Frames.Count != 1 || reduced.Size != size || reduced.PixelFormat != image.PixelFormat || reduced.Frames.Count != 1)
+                return $"png-scale-geometry: 1/{scale} decodes as {reduced.Size} {reduced.PixelFormat} with {reduced.Frames.Count} frame(s), {size} {image.PixelFormat} was expected for a {image.Size} image of {image.Frames.Count} frame(s)";
+
+            var bytesPerPixel = PixelFormats.GetBytesPerPixel(image.PixelFormat);
+            var fullBytes = new byte[image.Width * image.Height * bytesPerPixel];
+            image.Frames[0].CopyPixelBytesTo(fullBytes);
+            var reducedBytes = new byte[size.Width * size.Height * bytesPerPixel];
+            reduced.Frames[0].CopyPixelBytesTo(reducedBytes);
+            for (var y = 0; y < size.Height; y++)
+            {
+                for (var x = 0; x < size.Width; x++)
+                {
+                    var expected = fullBytes.AsSpan((((y * scale * image.Width) + (x * scale)) * bytesPerPixel), bytesPerPixel);
+                    if (!expected.SequenceEqual(reducedBytes.AsSpan(((y * size.Width) + x) * bytesPerPixel, bytesPerPixel)))
+                        return $"png-scale-pixels: the pixel ({x}, {y}) at 1/{scale} differs from the pixel ({x * scale}, {y * scale}) of the full decode";
+                }
+            }
+        }
 
         return string.Empty;
     }

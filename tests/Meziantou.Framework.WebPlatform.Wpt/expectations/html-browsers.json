@@ -15,33 +15,16 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-1.html": {
-    "total": 2,
-    "failures": {
-      "Eligibility (in-flight fetch): Header received before BFCache and body received after BFCache": "FAIL",
-      "Eligibility (in-flight fetch): Header received before BFCache and body received when in BFCache": "FAIL"
-    }
+    "total": 2
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-2.html": {
-    "total": 3,
-    "failures": {
-      "Eligibility (in-flight fetch): Header and body received after BFCache": "FAIL",
-      "Eligibility (in-flight fetch): Header and body received when in BFCache": "FAIL",
-      "Eligibility (in-flight fetch): Header received when in BFCache and body received after BFCache": "FAIL"
-    }
+    "total": 3
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-cors.html": {
-    "total": 2,
-    "failures": {
-      "Eligibility (in-flight fetch): CORS succeeded when in BFCache": "FAIL"
-    }
+    "total": 2
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-redirects.html": {
-    "total": 4,
-    "failures": {
-      "Eligibility (in-flight fetch): Cross-origin redirect header received when in BFCache": "FAIL",
-      "Eligibility (in-flight fetch): Redirect header received when in BFCache": "FAIL",
-      "Eligibility (in-flight fetch): Redirect header received when in BFCache w/ CSP passing": "FAIL"
-    }
+    "total": 4
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/shared-worker-active-client.window.js": {
     "total": 1
@@ -452,6 +435,9 @@
   "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/load-pageshow-events-window-open.html": {
     "total": 5
   },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/promise-rejection-after-replacement-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/window-open-204-fragment.html": {
     "total": 2
   },
@@ -745,6 +731,9 @@
       "Navigating a popup using window.open(\"resources/redirect.py?location=data%3Atext%2Fhtml%2C...\", \"\", \"opener\")": "FAIL",
       "Navigating a popup using window.open(\"resources/redirect.py?location=data%3Atext%2Fhtml%2C...\", \"\", \"undefined\")": "FAIL"
     }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/unknown-protocol-reload-crash.html": {
+    "crashtest": "PASS"
   },
   "html/browsers/browsing-the-web/navigating-across-documents/window-stop-in-image-load-handler.html": {
     "total": 1
@@ -1413,6 +1402,9 @@
   "html/browsers/history/the-location-interface/create-script-set-location.html": {
     "total": 1
   },
+  "html/browsers/history/the-location-interface/cross-origin-location-stringify-crash.sub.html": {
+    "crashtest": "PASS"
+  },
   "html/browsers/history/the-location-interface/document_location.html": {
     "total": 4
   },
@@ -1930,6 +1922,9 @@
   "html/browsers/origin/origin-keyed-agent-clusters/no-content-response.sub.https.html": {
     "total": 1
   },
+  "html/browsers/origin/origin-keyed-agent-clusters/popups-crash.https.html": {
+    "crashtest": "PASS"
+  },
   "html/browsers/origin/origin-keyed-agent-clusters/popups/noopener-opener-no-openee-yes-same.https.html": {
     "total": 2
   },
@@ -2016,6 +2011,9 @@
   },
   "html/browsers/sandboxing/sandbox-document-open.html": {
     "total": 2
+  },
+  "html/browsers/sandboxing/sandbox-dynamic-change-on-navigation-crash.sub.html": {
+    "crashtest": "PASS"
   },
   "html/browsers/sandboxing/sandbox-inherited-from-initiator-frame.html": {
     "total": 1

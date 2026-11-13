@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.SnapshotTesting;
 
@@ -888,5 +889,201 @@ public class BarCodeAdditionalTypesTests
         Assert.Equal(
             "101011101000101011100011101110100010100011101000111000101010001010111000111011101",
             BarcodeModulePattern.Render(Barcode.CreateItf("12345678")));
+    }
+
+    public static TheoryData<string, Func<Barcode>> DecodableBarcodes() => new()
+    {
+        { "Code39", () => Barcode.CreateCode39("ABC-123") },
+        { "Code39Checksum", () => Barcode.CreateCode39("ABC-123", includeChecksum: true) },
+        { "Code39Alphabet", () => Barcode.CreateCode39("0123456789 $%+-./ABCXYZ") },
+        { "Code93", () => Barcode.CreateCode93("ABC123") },
+        { "Code93Extended", () => Barcode.CreateCode93("ABC123xyz-.$/+% \u0000\u007f@`{}!:;") },
+        { "Ean8", () => Barcode.CreateEan8("5512345") },
+        { "Ean8AddOn2", () => Barcode.CreateEan8("9638507", "12") },
+        { "Ean13", () => Barcode.CreateEan13("590123412345") },
+        { "Ean13AddOn2", () => Barcode.CreateEan13("400638133393", "12") },
+        { "Ean13AddOn5", () => Barcode.CreateEan13("590123412345", "12345") },
+        { "UpcA", () => Barcode.CreateUpcA("03600029145") },
+        { "UpcAAddOn5", () => Barcode.CreateUpcA("12345678901", "54321") },
+        { "UpcE", () => Barcode.CreateUpcE("0123456") },
+        { "UpcE1", () => Barcode.CreateUpcE("1234567") },
+        { "UpcEAddOn2", () => Barcode.CreateUpcE("0425261", "12") },
+        { "UpcEAddOn5", () => Barcode.CreateUpcE("0180432", "54321") },
+        { "Codabar", () => Barcode.CreateCodabar("40156") },
+        { "CodabarAll", () => Barcode.CreateCodabar("1234-5678$:/.+", 'C', 'D') },
+        { "Itf", () => Barcode.CreateItf("12345678") },
+        { "Itf2", () => Barcode.CreateItf("00") },
+        { "Gs1128", () => Barcode.CreateGs1128(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123"), new Gs1Element("17", "250101")) },
+        { "DataBar", () => Barcode.CreateGs1DataBar("0950110153001") },
+        { "DataBarMax", () => Barcode.CreateGs1DataBar("9999999999999") },
+        { "DataBarStacked", () => Barcode.CreateGs1DataBarStacked("0950110153001") },
+        { "DataBarStackedOmni", () => Barcode.CreateGs1DataBarStackedOmnidirectional("2997220033224") },
+        { "DataBarLimited", () => Barcode.CreateGs1DataBarLimited("1501234567890") },
+        { "DataBarLimitedZero", () => Barcode.CreateGs1DataBarLimited("0000000000000") },
+        { "DataBarExpandedGtin", () => Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "98898765432106"), new Gs1Element("3202", "012345"), new Gs1Element("15", "991231")) },
+        { "DataBarExpanded3103", () => Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "90012345678908"), new Gs1Element("3103", "001750")) },
+        { "DataBarExpanded3203", () => Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "90012345678908"), new Gs1Element("3203", "001750")) },
+        { "DataBarExpandedDate", () => Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "90012345678908"), new Gs1Element("3102", "001750"), new Gs1Element("11", "100503")) },
+        { "DataBarExpanded3922", () => Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "90012345678908"), new Gs1Element("3922", "795")) },
+        { "DataBarExpanded3932", () => Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "90012345678908"), new Gs1Element("3932", "0401234"), new Gs1Element("21", "XY")) },
+        { "DataBarExpandedGeneral", () => Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "09501101530003"), new Gs1Element("17", "250101"), new Gs1Element("10", "ABC123")) },
+        { "DataBarExpandedShort", () => Barcode.CreateGs1DataBarExpanded(new Gs1Element("10", "12")) },
+        { "DataBarExpandedIso646", () => Barcode.CreateGs1DataBarExpanded(new Gs1Element("21", "abc-DEF/12345%xyz")) },
+        { "DataBarExpandedUrl", () => Barcode.CreateGs1DataBarExpanded(new Gs1Element("8200", "http://example.com/abc")) },
+        { "DataBarExpandedStacked4", () => Barcode.CreateGs1DataBarExpandedStacked(4, new Gs1Element("01", "09501101530003"), new Gs1Element("17", "250101"), new Gs1Element("10", "ABC123")) },
+        { "DataBarExpandedStacked2", () => Barcode.CreateGs1DataBarExpandedStacked(2, new Gs1Element("90", "0123456789ABCDEFGHIJ0123456789")) },
+        { "DataBarExpandedStacked6", () => Barcode.CreateGs1DataBarExpandedStacked(6, new Gs1Element("90", "0123456789ABCDEFGHIJ0123456789")) },
+        { "DataBarExpandedStacked8", () => Barcode.CreateGs1DataBarExpandedStacked(8, new Gs1Element("90", "0123456789ABCDEFGHIJ0123456789abc")) },
+    };
+
+    [Theory]
+    [MemberData(nameof(DecodableBarcodes))]
+    public void Decode_RoundTrips(string name, Func<Barcode> create)
+    {
+        var barcode = create();
+        var result = BarcodeDecoder.Decode(barcode);
+
+        // An EAN-13 symbol whose first digit is 0 is a UPC-A symbol
+        var expectedType = barcode.Type switch
+        {
+            BarcodeType.Gs1DataBarExpandedStacked when barcode.Height == 34 => BarcodeType.Gs1DataBarExpanded,
+            _ => barcode.Type,
+        };
+        Assert.Equal((expectedType, barcode.Text), (result.Type, result.Text), name);
+    }
+
+    [Theory]
+    [MemberData(nameof(DecodableBarcodes))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void DecodeScanLines_ScaledJitteredAndReversed(string name, Func<Barcode> create)
+    {
+        var barcode = create();
+        var random = new Random(name.Length);
+        foreach (var scale in (int[])[1, 2, 3, 5, 7])
+        {
+            foreach (var reversed in (bool[])[false, true])
+            {
+                var lines = new List<int[]>();
+                for (var row = 0; row < barcode.Height; row++)
+                {
+                    var runs = new List<int> { 12 * scale };
+                    for (var column = 0; column < barcode.Width; column++)
+                    {
+                        var isDark = barcode[row, reversed ? barcode.Width - 1 - column : column];
+                        if (isDark != (runs.Count % 2 == 0))
+                        {
+                            runs.Add(0);
+                        }
+
+                        runs[^1] += scale;
+                    }
+
+                    if (runs.Count % 2 == 0)
+                    {
+                        runs.Add(12 * scale);
+                    }
+                    else
+                    {
+                        runs[^1] += 12 * scale;
+                    }
+
+                    // Move the edges by up to a seventh of a module
+                    if (scale >= 7)
+                    {
+                        for (var i = 1; i < runs.Count - 1; i++)
+                        {
+                            var shift = random.Next(-(scale / 7), (scale / 7) + 1);
+                            if (runs[i] + shift > 0 && runs[i + 1] - shift > 0)
+                            {
+                                runs[i] += shift;
+                                runs[i + 1] -= shift;
+                            }
+                        }
+                    }
+
+                    lines.Add([.. runs]);
+                }
+
+                var results = BarcodeDecoder.DecodeScanLines(lines);
+                var matching = results.Where(result => result.Text == barcode.Text).ToList();
+                if (matching.Count != 1)
+                {
+                    Assert.Fail($"{name} x{scale} reversed: {reversed}: {string.Join(", ", results.Select(result => result.Type + " " + result.Text))}");
+                }
+
+                var result = matching[0];
+                Assert.True(result.Start >= 12 * scale - scale && result.End <= (12 + barcode.Width + 1) * scale);
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DecodableBarcodes))]
+    public void DecodeScanLines_BarGrowth(string name, Func<Barcode> create)
+    {
+        // Ink spread or a threshold below the middle gray: each bar is a pixel wider, each space a pixel narrower
+        var barcode = create();
+        foreach (var (scale, growth) in new[] { (5, 1), (6, -1), (8, 2) })
+        {
+            var lines = new List<int[]>();
+            for (var row = 0; row < barcode.Height; row++)
+            {
+                var runs = new List<int> { 12 * scale };
+                for (var column = 0; column < barcode.Width; column++)
+                {
+                    if (barcode[row, column] != (runs.Count % 2 == 0))
+                    {
+                        runs.Add(0);
+                    }
+
+                    runs[^1] += scale;
+                }
+
+                if (runs.Count % 2 == 0)
+                {
+                    runs.Add(12 * scale);
+                }
+                else
+                {
+                    runs[^1] += 12 * scale;
+                }
+
+                for (var i = 1; i < runs.Count; i += 2)
+                {
+                    runs[i] += 2 * growth;
+                    runs[i - 1] -= growth;
+                    if (i + 1 < runs.Count)
+                    {
+                        runs[i + 1] -= growth;
+                    }
+                }
+
+                lines.Add([.. runs]);
+            }
+
+            Assert.Contains(barcode.Text, BarcodeDecoder.DecodeScanLines(lines).Select(result => result.Text).ToArray(), $"{name} x{scale} growth {growth}");
+        }
+    }
+
+    [Fact]
+    public void Decode_InvalidModules()
+    {
+        Assert.Throws<ArgumentNullException>("barcode", () => BarcodeDecoder.Decode((Barcode)null!));
+        Assert.Throws<ArgumentNullException>("modules", () => BarcodeDecoder.Decode((bool[,])null!));
+        Assert.Throws<ArgumentNullException>("scanLines", () => BarcodeDecoder.DecodeScanLines(null!));
+        Assert.Throws<FormatException>(() => BarcodeDecoder.Decode(new bool[1, 100]));
+        Assert.False(BarcodeDecoder.TryDecode(new bool[0, 0], out _));
+        Assert.Empty(BarcodeDecoder.DecodeScanLines([[], [5], [1, 2, 3]]));
+
+        // A damaged check digit
+        var modules = new bool[1, Barcode.CreateEan13("590123412345").Width];
+        var ean = Barcode.CreateEan13("590123412345");
+        for (var column = 0; column < ean.Width; column++)
+        {
+            modules[0, column] = ean[0, column];
+        }
+
+        modules[0, 90] = !modules[0, 90];
+        Assert.False(BarcodeDecoder.TryDecode(modules, out _));
     }
 }

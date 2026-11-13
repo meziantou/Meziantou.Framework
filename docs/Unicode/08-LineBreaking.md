@@ -41,7 +41,7 @@ static List<string> Wrap(string text, int maxLength)
 }
 
 Assert.Equal(["The quick brown", "fox jumps over", "the lazy dog."], Wrap("The quick brown fox jumps over the lazy dog.", 16));
-Assert.Equal(["See https://", "www.meziantou.net/", "blog"], Wrap("See https://www.meziantou.net/blog", 16));
+Assert.Equal(["See https://", "www.example.com/", "blog"], Wrap("See https://www.example.com/blog", 16));
 ```
 <!-- endref -->
 

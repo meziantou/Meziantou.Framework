@@ -1,0 +1,71 @@
+{
+  "css/css-image-animation/image-animation-background-paused-late-add.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-background-paused-rounded.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-background-paused.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-background-stopped.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-body-background-no-propagation-paused.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-body-background-root-propagation-paused.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-display-none-reset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-img-paused-normal-mixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-img-paused.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-img-running-to-normal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-img-running.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-img-stopped.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-paused-exact-frame.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-pseudo-animated-image-dynamic.html": {
+    "total": 5
+  },
+  "css/css-image-animation/image-animation-pseudo-animated-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-repeat-background-paused.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-root-background-body-paused-no-propagation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-root-background-paused.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-stopped-reset-frame.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-video-poster-paused-normal-mixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-video-poster-paused.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-video-poster-running.html": {
+    "reftest": "PASS"
+  },
+  "css/css-image-animation/image-animation-video-poster-stopped.html": {
+    "reftest": "PASS"
+  }
+}

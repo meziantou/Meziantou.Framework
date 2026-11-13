@@ -78,12 +78,24 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
 
+    /// <summary>https://w3c.github.io/webauthn/#sctn-permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature PublicKeyCredentialsCreate { get; } = new("publickey-credentials-create", isAllowedForAllByDefault: false);
+
+    /// <summary>https://w3c.github.io/webauthn/#sctn-permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature PublicKeyCredentialsGet { get; } = new("publickey-credentials-get", isAllowedForAllByDefault: false);
+
     /// <summary>https://w3c.github.io/proximity/#permissions-policy-integration: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature ProximitySensor { get; } = new("proximity-sensor", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature ScreenWakeLock { get; } = new("screen-wake-lock", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature SpeakerSelection { get; } = new("speaker-selection", isAllowedForAllByDefault: false);
+
+    /// <summary>
+    /// https://privacycg.github.io/storage-access/#permissions-policy-integration: the feature that lets a document request
+    /// storage access (<c>document.requestStorageAccess()</c>). Its default allowlist is <c>*</c>.
+    /// </summary>
+    public static PolicyControlledFeature StorageAccess { get; } = new("storage-access", isAllowedForAllByDefault: true);
 
     public static PolicyControlledFeature SyncXhr { get; } = new("sync-xhr", isAllowedForAllByDefault: true);
 
@@ -135,9 +147,12 @@ internal sealed partial class PolicyControlledFeature
         new("private-state-token-issuance", isAllowedForAllByDefault: false),
         new("private-state-token-redemption", isAllowedForAllByDefault: false),
         ProximitySensor,
+        PublicKeyCredentialsCreate,
+        PublicKeyCredentialsGet,
         ScreenWakeLock,
         new("serial", isAllowedForAllByDefault: false),
         SpeakerSelection,
+        StorageAccess,
         SyncXhr,
         Tools,
         Unload,

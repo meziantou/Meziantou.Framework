@@ -133,7 +133,7 @@ The metadata used to map objects comes from one of two sources:
 | Category | Types |
 | --- | --- |
 | Boolean | `bool` |
-| Numeric | `sbyte`, `byte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `nint`, `nuint`, `float`, `double`, `decimal`, `Half`, `Int128`, `UInt128` |
+| Numeric | `sbyte`, `byte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `nint`, `nuint`, `float`, `double`, `decimal`, `Half`, `Int128`, `UInt128`, `Complex` (an inline table with `Real` and `Imaginary` keys); on .NET 11, `BFloat16`, `Decimal32`, `Decimal64`, `Decimal128`, `Complex<T>` |
 | Text | `char`, `string` |
 | Date/time | `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, `TomlDateTime` |
 | Other | `Guid`, `TimeSpan`, `Uri`, `Version`, enums (as numbers, or as names with [`TomlStringEnumConverter`](#enums-as-strings)) |
@@ -143,7 +143,8 @@ The metadata used to map objects comes from one of two sources:
 | Objects | Classes, records, and structs, with property setters or constructor parameters |
 
 TOML integers are signed 64-bit values, so a `ulong`, `nuint`, `Int128`, or `UInt128` value must be within the range of
-`long`: a larger value throws a `TomlException` when written. A `TimeSpan` maps to a TOML local time, such as
+`long`: a larger value throws a `TomlException` when written. `Decimal32`, `Decimal64` and `Decimal128` values are written
+with all their digits, but must be within the range of `double`, as TOML readers read floats as `double`. A `TimeSpan` maps to a TOML local time, such as
 `07:30:00`: it is a time of day, not a duration, so a negative value or a value of 24 hours or more throws a
 `TomlException` when written. Store a duration in an integer or string member, or use a converter.
 

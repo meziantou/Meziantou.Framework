@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Geo</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Description>Reads GeoParquet files (.parquet), the columnar format of geospatial data lakes, as the features of Meziantou.Framework.Geo, one row group at a time, skipping the row groups outside of a region.</Description>
     <PackageTags>geo;gis;geoparquet;parquet;features;wkb</PackageTags>
 

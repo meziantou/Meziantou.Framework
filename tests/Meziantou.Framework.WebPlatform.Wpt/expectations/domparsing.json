@@ -67,6 +67,9 @@
   "domparsing/createContextualFragment-external-scripts-async.html": {
     "total": 1
   },
+  "domparsing/createContextualFragment-in-detached-xml-document-crash.html": {
+    "crashtest": "PASS"
+  },
   "domparsing/createContextualFragment-xhtml.xhtml": {
     "total": 4
   },
@@ -127,11 +130,17 @@
   "domparsing/insert-adjacent.html": {
     "total": 4
   },
+  "domparsing/insert_adjacent_html-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "domparsing/insert_adjacent_html-xhtml.xhtml": {
     "total": 30
   },
   "domparsing/insert_adjacent_html.html": {
     "total": 31
+  },
+  "domparsing/move-head-during-prepend-before-close-crash.html": {
+    "crashtest": "PASS"
   },
   "domparsing/outerhtml-01.html": {
     "total": 1

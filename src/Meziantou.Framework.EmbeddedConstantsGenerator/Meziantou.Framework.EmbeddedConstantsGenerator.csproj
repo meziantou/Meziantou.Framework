@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <Description>MSBuild task for embedding text and binary files as C# constants</Description>
     <PackageTags>msbuild, source-generator, constants, embedded-resources, codegen</PackageTags>
 
@@ -28,5 +28,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Framework" Version="17.14.28" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.28" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.TaskAuthoring.Analyzer" Version="18.13.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>

@@ -142,6 +142,47 @@ internal sealed class MicroQRMatrixBuilder
     }
 
     /// <summary>
+    /// Reads the codewords from the data modules, in the order of <see cref="PlaceDataBits"/>. The modules must be unmasked.
+    /// The 4-bit codeword of M1 and M3 is in the high nibble of its byte.
+    /// </summary>
+    public byte[] ReadDataBits(ErrorCorrectionLevel ecLevel)
+    {
+        var codewords = new byte[MicroQRVersion.GetTotalCodewords(_version)];
+        var hasD4mBlock = _version % 2 == 1;
+        var d4mBlockIndex = _version == 1 ? 3 : (ecLevel == ErrorCorrectionLevel.L ? 11 : 9);
+        var codewordIndex = 0;
+        var bitPosition = 7;
+
+        for (var col = _size - 1; col >= 1; col -= 2)
+        {
+            var isUpward = ((_size - 1 - col) / 2) % 2 == 0;
+            for (var row = 0; row < _size; row++)
+            {
+                var actualRow = isUpward ? _size - 1 - row : row;
+                for (var offset = 0; offset < 2 && col - offset >= 1; offset++)
+                {
+                    if (_isReserved[actualRow, col - offset] || codewordIndex >= codewords.Length)
+                        continue;
+
+                    if (_modules[actualRow, col - offset])
+                    {
+                        codewords[codewordIndex] |= (byte)(1 << bitPosition);
+                    }
+
+                    bitPosition--;
+                    if (bitPosition < GetLowestBitOfCodeword(codewordIndex + 1, hasD4mBlock, d4mBlockIndex))
+                    {
+                        codewordIndex++;
+                        bitPosition = 7;
+                    }
+                }
+            }
+        }
+
+        return codewords;
+    }
+
+    /// <summary>
     /// Flips the data modules selected by the mask pattern. Applying the same mask twice restores the unmasked data.
     /// </summary>
     public void ApplyMask(int maskPattern)

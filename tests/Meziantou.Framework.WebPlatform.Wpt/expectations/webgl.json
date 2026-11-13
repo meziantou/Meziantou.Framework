@@ -1,4 +1,7 @@
 {
+  "webgl/basic-unused-context-crash.html": {
+    "crashtest": "PASS"
+  },
   "webgl/blitFramebuffer-presents-drawing-buffer.html": {
     "reftest": "FAIL"
   },

@@ -16,6 +16,14 @@ internal static class ValueMatcher
 {
     private const int MaxDepth = 64;
 
+    /// <summary>
+    /// The most repetitions of a component a value matches: each repetition nests an enumerator, and a value that does not
+    /// match is backtracked through all of them, so the cost grows with the square of the repetitions. A fixed limit makes
+    /// a value with more repetitions (e.g. 100,000 tracks) not match in the same way and in the same time on every
+    /// platform, rather than as deep as the stack of the thread allows (much deeper on Linux than on macOS).
+    /// </summary>
+    internal const int MaxRepetitions = 1000;
+
     /// <summary>The CSS-wide keywords (https://drafts.csswg.org/css-values-4/#css-wide-keywords).</summary>
     public static readonly FrozenSet<string> CssWideKeywords = FrozenSet.Create(StringComparer.Ordinal, "initial", "inherit", "unset", "revert", "revert-layer", "revert-rule");
 
@@ -144,7 +152,7 @@ internal static class ValueMatcher
 
     private static IEnumerable<(int End, CapturePath? Path)> MatchNode(GrammarNode node, MatchContext context, int position, int depth, bool root = false, CapturePath? path = null)
     {
-        if (depth > MaxDepth)
+        if (depth > MaxDepth || !System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
             return [];
 
         // A component without multiplier matches once: its results are the ones of the component (most components of the
@@ -158,8 +166,9 @@ internal static class ValueMatcher
 
     private static IEnumerable<(int End, CapturePath? Path)> MatchRepeated(GrammarNode node, MatchContext context, int position, int depth, int count, CapturePath? path, bool root)
     {
-        // Greedy: try one more repetition first
-        if (count < node.Max)
+        // Greedy: try one more repetition first. Each repetition nests the enumerators: a value with more repetitions than
+        // MaxRepetitions (e.g. 100,000 tracks) does not match, nor one with more than the stack holds
+        if (count < node.Max && count < MaxRepetitions && System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
         {
             var start = position;
             if (count > 0 && node.CommaSeparated)

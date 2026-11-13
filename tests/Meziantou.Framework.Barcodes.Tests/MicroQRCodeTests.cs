@@ -338,4 +338,99 @@ public class MicroQRCodeTests
         Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.MinimumVersion = value);
         Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.MaximumVersion = value);
     }
+
+    // ───── Decoding ─────
+
+    [Theory]
+    [InlineData(1, ErrorCorrectionLevel.L, "12345")]
+    [InlineData(1, ErrorCorrectionLevel.L, "0")]
+    [InlineData(2, ErrorCorrectionLevel.L, "0123456789")]
+    [InlineData(2, ErrorCorrectionLevel.L, "AB-CD")]
+    [InlineData(2, ErrorCorrectionLevel.M, "HELLO")]
+    [InlineData(3, ErrorCorrectionLevel.L, "hello")]
+    [InlineData(3, ErrorCorrectionLevel.M, "日本")]
+    [InlineData(3, ErrorCorrectionLevel.L, "12345678901234567890123")]
+    [InlineData(4, ErrorCorrectionLevel.L, "Hello, World!")]
+    [InlineData(4, ErrorCorrectionLevel.M, "AB12日本ab")]
+    [InlineData(4, ErrorCorrectionLevel.Q, "MICRO QR")]
+    public void Decode_RoundTrips(int version, ErrorCorrectionLevel ecLevel, string text)
+    {
+        var qr = QRCode.CreateMicroQR(text, ecLevel, new MicroQRCodeOptions { MinimumVersion = version, MaximumVersion = version });
+
+        var result = QRCodeDecoder.Decode(qr);
+
+        Assert.Equal((QRCodeType.MicroQR, version, ecLevel, text, 0), (result.Type, result.Version, result.ErrorCorrectionLevel, result.Text, result.CorrectedErrorCount));
+        Assert.True(result.MaskPattern is >= 0 and <= 3);
+    }
+
+    [Theory]
+    [InlineData(1, ErrorCorrectionLevel.L)]
+    [InlineData(2, ErrorCorrectionLevel.L)]
+    [InlineData(2, ErrorCorrectionLevel.M)]
+    [InlineData(3, ErrorCorrectionLevel.L)]
+    [InlineData(3, ErrorCorrectionLevel.M)]
+    [InlineData(4, ErrorCorrectionLevel.L)]
+    [InlineData(4, ErrorCorrectionLevel.M)]
+    [InlineData(4, ErrorCorrectionLevel.Q)]
+    public void Decode_FullCapacity(int version, ErrorCorrectionLevel ecLevel)
+    {
+        var options = new MicroQRCodeOptions { MinimumVersion = version, MaximumVersion = version };
+        var text = "";
+        for (var length = 1; ; length++)
+        {
+            var candidate = string.Concat(Enumerable.Range(0, length).Select(i => (char)('0' + (i % 10))));
+            try
+            {
+                QRCode.CreateMicroQR(candidate, ecLevel, options);
+                text = candidate;
+            }
+            catch (InvalidOperationException)
+            {
+                break;
+            }
+        }
+
+        Assert.Equal(text, QRCodeDecoder.Decode(QRCode.CreateMicroQR(text, ecLevel, options)).Text);
+    }
+
+    [Fact]
+    public void Decode_CorrectsErrors()
+    {
+        var qr = QRCode.CreateMicroQR("HELLO WORLD", ErrorCorrectionLevel.M, new MicroQRCodeOptions { MinimumVersion = 4, MaximumVersion = 4 });
+        var modules = new bool[qr.Height, qr.Width];
+        for (var row = 0; row < qr.Height; row++)
+        {
+            for (var column = 0; column < qr.Width; column++)
+            {
+                modules[row, column] = qr[row, column];
+            }
+        }
+
+        // The bottom-right corner holds the first codeword
+        modules[16, 16] = !modules[16, 16];
+        modules[15, 15] = !modules[15, 15];
+
+        var result = QRCodeDecoder.Decode(modules);
+
+        Assert.Equal("HELLO WORLD", result.Text);
+        Assert.Equal(1, result.CorrectedErrorCount);
+    }
+
+    [Fact]
+    public void Decode_M1_DetectsErrorsOnly()
+    {
+        var qr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
+        var modules = new bool[qr.Height, qr.Width];
+        for (var row = 0; row < qr.Height; row++)
+        {
+            for (var column = 0; column < qr.Width; column++)
+            {
+                modules[row, column] = qr[row, column];
+            }
+        }
+
+        modules[10, 10] = !modules[10, 10];
+
+        Assert.False(QRCodeDecoder.TryDecode(modules, out _));
+    }
 }

@@ -607,6 +607,9 @@
   "input-events/select-event-drag-remove.html": {
     "total": 1
   },
+  "input-events/table-selection-crash.html": {
+    "crashtest": "PASS"
+  },
   "input-events/textarea-insertfrompaste-type-inputevent-data-withnewline-atend.html": {
     "total": 1
   },

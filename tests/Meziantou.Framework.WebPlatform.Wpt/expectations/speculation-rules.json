@@ -221,18 +221,10 @@
     "total": 1
   },
   "speculation-rules/prefetch/no-http-cache-interference-inflight.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Navigation should not use an in-flight prefetch response that returns 503.": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-http-cache-interference-slow-error.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Navigation should not reuse a prefetch with 503 response headers while body is still loading.": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-http-cache-interference.https.html": {
     "total": 1

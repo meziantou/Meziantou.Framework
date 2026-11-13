@@ -60,6 +60,9 @@ public sealed class QRCode
     /// <returns><see langword="true"/> if the module is dark; otherwise, <see langword="false"/>.</returns>
     public bool this[int row, int column] => _modules[row, column];
 
+    /// <summary>Gets the modules, without copying them: the callers must not modify them.</summary>
+    internal bool[,] Modules => _modules;
+
     /// <summary>
     /// Creates a standard QR code from the specified text data.
     /// </summary>

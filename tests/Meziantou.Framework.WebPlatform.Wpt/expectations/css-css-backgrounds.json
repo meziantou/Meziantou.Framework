@@ -1,4 +1,7 @@
 {
+  "css/css-backgrounds/animations/background-color-animation-backdrop-infinite-duration-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-backgrounds/animations/background-color-animation-custom-property.html": {
     "reftest": "PASS"
   },
@@ -23,6 +26,9 @@
   "css/css-backgrounds/animations/background-color-animation-fallback-replace.html": {
     "reftest": "PASS"
   },
+  "css/css-backgrounds/animations/background-color-animation-field-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-backgrounds/animations/background-color-animation-fragmented.html": {
     "reftest": "PASS"
   },
@@ -32,6 +38,9 @@
   "css/css-backgrounds/animations/background-color-animation-in-body.html": {
     "reftest": "PASS"
   },
+  "css/css-backgrounds/animations/background-color-animation-non-empty-no-draw-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-backgrounds/animations/background-color-animation-non-zero-size-element-change-to-zero.html": {
     "reftest": "PASS"
   },
@@ -40,6 +49,9 @@
   },
   "css/css-backgrounds/animations/background-color-animation-pseudo-element.html": {
     "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-removed-element-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-backgrounds/animations/background-color-animation-single-keyframe.html": {
     "reftest": "PASS"
@@ -812,6 +824,9 @@
   "css/css-backgrounds/background-repeat-round-4.html": {
     "reftest": "PASS"
   },
+  "css/css-backgrounds/background-repeat-round-empty-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-backgrounds/background-repeat-space-10.html": {
     "reftest": "PASS"
   },
@@ -847,6 +862,9 @@
   },
   "css/css-backgrounds/background-repeat-space-9.html": {
     "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat/background-repeat-image-larger-than-positioning-area-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-backgrounds/background-repeat/background-repeat-no-repeat.xht": {
     "reftest": "PASS"
@@ -2252,6 +2270,21 @@
   "css/css-backgrounds/color-mix-currentcolor-outline-repaint.html": {
     "reftest": "PASS"
   },
+  "css/css-backgrounds/crashtests/background-norepeat.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-backgrounds/crashtests/background-parser.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-backgrounds/crashtests/border-image-fill.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-backgrounds/crashtests/border-radius-constraint.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-backgrounds/crashtests/parse-border-image-repeat-null.html": {
+    "crashtest": "PASS"
+  },
   "css/css-backgrounds/css-border-radius-001.html": {
     "reftest": "PASS"
   },
@@ -2312,6 +2345,9 @@
   "css/css-backgrounds/first-letter-space-not-selected.html": {
     "reftest": "FAIL"
   },
+  "css/css-backgrounds/gradient-wrong-interpolation-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-backgrounds/hidpi/simple-bg-color.html": {
     "reftest": "PASS"
   },
@@ -2329,6 +2365,9 @@
   },
   "css/css-backgrounds/inset-box-shadow-stacking-context-scroll.html": {
     "reftest": "PASS"
+  },
+  "css/css-backgrounds/linear-gradient-calc-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-backgrounds/linear-gradient-currentcolor-first-line.html": {
     "reftest": "PASS"
@@ -2598,6 +2637,9 @@
   },
   "css/css-backgrounds/table-cell-background-local.html": {
     "reftest": "PASS"
+  },
+  "css/css-backgrounds/tiny-foreignObject-double-border-radius-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-backgrounds/ttwf-reftest-borderRadius.html": {
     "reftest": "PASS"

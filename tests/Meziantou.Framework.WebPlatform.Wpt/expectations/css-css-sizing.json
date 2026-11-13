@@ -266,6 +266,9 @@
   "css/css-sizing/aspect-ratio/block-aspect-ratio-028.html": {
     "reftest": "PASS"
   },
+  "css/css-sizing/aspect-ratio/block-aspect-ratio-029-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-sizing/aspect-ratio/block-aspect-ratio-030.html": {
     "reftest": "PASS"
   },
@@ -328,6 +331,9 @@
   },
   "css/css-sizing/aspect-ratio/block-aspect-ratio-050.html": {
     "reftest": "PASS"
+  },
+  "css/css-sizing/aspect-ratio/block-aspect-ratio-051-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-sizing/aspect-ratio/block-aspect-ratio-052.html": {
     "reftest": "PASS"
@@ -767,6 +773,9 @@
   "css/css-sizing/aspect-ratio/intrinsic-size-025.html": {
     "reftest": "PASS"
   },
+  "css/css-sizing/aspect-ratio/large-aspect-ratio-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-sizing/aspect-ratio/parsing/aspect-ratio-computed.html": {
     "total": 13
   },
@@ -955,6 +964,9 @@
   },
   "css/css-sizing/aspect-ratio/sign-function-aspect-ratio.html": {
     "total": 1
+  },
+  "css/css-sizing/aspect-ratio/small-aspect-ratio-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-sizing/aspect-ratio/table-element-001.html": {
     "reftest": "PASS"
@@ -1463,6 +1475,9 @@
   "css/css-sizing/form-control-in-inline-content-intrinsic-size-001.html": {
     "total": 9
   },
+  "css/css-sizing/frameset-intrinsic-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-sizing/grid-item-image-percentage-min-height-computes-as-0.html": {
     "reftest": "PASS"
   },
@@ -1771,6 +1786,12 @@
   },
   "css/css-sizing/min-content-min-width-000.html": {
     "reftest": "PASS"
+  },
+  "css/css-sizing/min-content-negative-margin-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-sizing/min-content-negative-margin-inline-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-sizing/min-max-content-orthogonal-flow-crash-001.html": {
     "total": 1
@@ -2464,6 +2485,9 @@
   },
   "css/css-sizing/table-percentage-min-width-beside-float.html": {
     "total": 1
+  },
+  "css/css-sizing/textarea-large-padding-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-sizing/thin-element-render.html": {
     "reftest": "PASS"

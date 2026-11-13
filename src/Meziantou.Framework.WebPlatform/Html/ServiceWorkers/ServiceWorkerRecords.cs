@@ -50,6 +50,12 @@ internal sealed class ServiceWorkerRegistrationRecord
     /// <summary>Whether the registration was removed from the registration map (https://w3c.github.io/ServiceWorker/#dfn-service-worker-registration-unregistered).</summary>
     public bool IsUnregistered { get; set; }
 
+    /// <summary>https://cookiestore.spec.whatwg.org/#cookie-change-subscription-list: the subscriptions of <c>registration.cookies</c>, in the order they were added.</summary>
+    public List<CookieChangeSubscription> CookieChangeSubscriptions { get; } = [];
+
+    /// <summary>The listener of the cookie jar that fires the <c>cookiechange</c> events, while the registration has subscriptions.</summary>
+    public ServiceWorkerCookieChangeListener? CookieChangeListener { get; set; }
+
     /// <summary>https://w3c.github.io/ServiceWorker/#get-newest-worker</summary>
     public ServiceWorkerRecord? NewestWorker => Installing ?? Waiting ?? Active;
 
@@ -70,6 +76,7 @@ internal sealed class ServiceWorkerRegistrationRecord
         NavigationPreloadHeaderValue = NavigationPreloadHeaderValue,
         Waiting = Waiting?.ToStored(),
         Active = Active?.ToStored(),
+        CookieChangeSubscriptions = [.. CookieChangeSubscriptions.Select(static subscription => new StoredCookieChangeSubscription { Name = subscription.Name, Url = subscription.Url })],
     };
 
     public static ServiceWorkerRegistrationRecord? FromStored(ServiceWorkerRegistry registry, StorageKey storageKey, StoredServiceWorkerRegistration stored)
@@ -93,6 +100,11 @@ internal sealed class ServiceWorkerRegistrationRecord
         registration.Active = stored.Active is { } active ? ServiceWorkerRecord.FromStored(registration, active) : null;
         if (registration.Waiting is null && registration.Active is null)
             return null;
+
+        foreach (var subscription in stored.CookieChangeSubscriptions)
+        {
+            registration.CookieChangeSubscriptions.Add(new CookieChangeSubscription(subscription.Name, subscription.Url));
+        }
 
         return registration;
     }

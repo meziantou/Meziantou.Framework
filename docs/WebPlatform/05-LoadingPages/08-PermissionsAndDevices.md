@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, network information, device memory, Global Privacy Control and sensor APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, Web Authentication, network information, device memory, Global Privacy Control and sensor APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -16,7 +16,7 @@ the device in a test, or to connect the API to your application.
 | [Share](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Share) | `navigator.share()` | There is no share target: the promise is rejected with an `AbortError` |
 | [Vibrate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Vibrate) | `navigator.vibrate()` | Nothing vibrates |
 | [Geolocation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Geolocation) | `navigator.geolocation` | The position is unavailable |
-| [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification), [CloseNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CloseNotification) | `new Notification()` | The notifications are displayed nowhere |
+| [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification), [CloseNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CloseNotification) | `new Notification()`, `registration.showNotification()` | The notifications are displayed nowhere |
 | [Badging](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Badging) | `navigator.setAppBadge()`, `navigator.clearAppBadge()` | The badge is shown nowhere |
 | [BatteryStatus](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BatteryStatus) | `navigator.getBattery()` | A fully charged battery that is plugged in |
 | [WakeLock](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WakeLock) | `navigator.wakeLock.request()` | Nothing is kept on, but the page gets its locks once the permission is granted |
@@ -30,6 +30,7 @@ the device in a test, or to connect the API to your application.
 | [ComputePressure](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ComputePressure) | `PressureObserver` | The `cpu` source is supported, but reports no state |
 | [IdleDetection](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.IdleDetection) | `IdleDetector` | The user is active and the screen is unlocked |
 | [DevicePosture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DevicePosture) | `navigator.devicePosture`, the `device-posture` media feature | The posture is `continuous` |
+| [WebAuthentication](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WebAuthentication) | `navigator.credentials.create()`, `navigator.credentials.get()` and `PublicKeyCredential` (passkeys and security keys) | There is no authenticator: the ceremonies fail with a `NotAllowedError` |
 | [KeyboardMap](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardMap) | `navigator.keyboard.getLayoutMap()` | A US QWERTY keyboard |
 | [MediaSession](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaSession) | `navigator.mediaSession` | The media session is shown nowhere |
 | [Sensors](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Sensors) | `Accelerometer`, `Gyroscope`, `AmbientLightSensor` and the other sensors, the `deviceorientation` and `devicemotion` events | The device has no sensor: the sensors fail to start, and the events report null values |
@@ -161,8 +162,51 @@ var options = new BrowsingContextOptions
 <!-- endref -->
 
 Without `ShowNotification`, the notifications are displayed nowhere, but the page sees them as shown. The frames that
-are not same origin with the page cannot show notifications, as in the browsers. The persistent notifications of the
-service workers (`showNotification()`) are not supported.
+are not same origin with the page cannot show notifications, as in the browsers.
+
+### Persistent notifications
+
+A service worker registration shows persistent notifications with `registration.showNotification()`, from a page or from
+the service worker, and lists them with `registration.getNotifications()`. They belong to the registration, not to the
+page: they stay when the page is reloaded or closed, and they are closed when the registration is unregistered.
+`ShowNotification` and `CloseNotification` display and remove them as the other notifications;
+[IsPersistent](cref:Meziantou.Framework.WebPlatform.Dom.Notification.IsPersistent) tells them apart. Only a persistent
+notification has [Actions](cref:Meziantou.Framework.WebPlatform.Dom.Notification.Actions), the buttons of the
+notification (at most two, `Notification.maxActions`).
+
+What the user does goes to the active service worker of the registration, which is started if needed:
+[Click()](cref:Meziantou.Framework.WebPlatform.Dom.Notification.Click) fires the `notificationclick` event,
+[Click(action)](cref:Meziantou.Framework.WebPlatform.Dom.Notification.Click(System.String)) fires it with the name of the
+action button, and [Dismiss](cref:Meziantou.Framework.WebPlatform.Dom.Notification.Dismiss) fires the
+`notificationclose` event:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/ServiceWorkerTests.cs;region=WebPlatform_PersistentNotifications;format=md-fenced-code-block;dedent=true -->
+```csharp
+var permissions = new PermissionStore();
+permissions.SetState("notifications", PermissionState.Granted);
+var shown = new List<Notification>();
+var options = new BrowsingContextOptions
+{
+    Permissions = permissions,
+
+    // A persistent notification (registration.showNotification()) has actions: clicking the notification or one
+    // of its actions fires the notificationclick event in the service worker, dismissing it the notificationclose event
+    ShowNotification = (callbackContext, notification) =>
+    {
+        lock (shown)
+        {
+            shown.Add(notification);
+        }
+    },
+};
+```
+<!-- endref -->
+
+The callbacks of a persistent notification run on the thread of the page or of the service worker that shows or closes
+it: synchronize the list of the notifications that you display. As in the browsers, closing a notification from a script
+(`notification.close()`) fires no `notificationclose` event, and a service worker registered by a third-party frame
+cannot show notifications. The library does not fetch the icon, the image and the badge of the notifications: fetch
+them if you display them.
 
 ## Badging
 
@@ -511,6 +555,64 @@ posture.Posture = DevicePostureType.Folded;
 Changing [Posture](cref:Meziantou.Framework.WebPlatform.Dom.DevicePostureProvider.Posture) fires the `change` event of
 `navigator.devicePosture`, and the `change` event of the media query lists such as `matchMedia('(device-posture: folded)')`.
 A hidden page gets the event when it becomes visible. All the frames of a tab have the posture of the tab.
+
+## Web Authentication
+
+`navigator.credentials.create()` and `navigator.credentials.get()` create and use the public key credentials of
+[Web Authentication](https://w3c.github.io/webauthn/) (passkeys and security keys) with the authenticators of a
+[VirtualAuthenticatorEnvironment](cref:Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticatorEnvironment): software
+authenticators, which create real key pairs and sign real assertions, as the virtual authenticators of WebDriver. Add an
+authenticator with the capabilities of the device you want to simulate:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_WebAuthentication;format=md-fenced-code-block;dedent=true -->
+```csharp
+var authenticators = new VirtualAuthenticatorEnvironment();
+var authenticator = authenticators.AddAuthenticator(new VirtualAuthenticatorOptions
+{
+    Protocol = VirtualAuthenticatorProtocol.Ctap21,
+    Transport = "internal",
+    HasResidentKey = true,
+    HasUserVerification = true,
+    IsUserVerified = true,
+});
+
+var options = new BrowsingContextOptions
+{
+    WebAuthentication = new WebAuthenticationOptions { Authenticators = authenticators },
+};
+```
+<!-- endref -->
+
+The options of [VirtualAuthenticatorOptions](cref:Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticatorOptions)
+are the authenticator configuration of WebDriver:
+
+- `Transport` is a value of `AuthenticatorTransport`: an `internal` authenticator is a platform authenticator (its
+  credentials have the `platform` attachment, and `PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()`
+  is true when it can verify the user), the others are roaming authenticators.
+- `HasResidentKey` allows the discoverable credentials (passkeys), and `HasUserVerification` the user verification, whose
+  result is `IsUserVerified`. `IsUserConsenting` is the answer of the user to the tests of user presence: when it is
+  false, the ceremonies fail.
+- A `Ctap1U2f` authenticator has neither discoverable credentials, user verification nor extensions, and only creates
+  ES256 keys. The others create ES256, EdDSA (Ed25519) and RS256 keys, in the order of preference of the page.
+- `Extensions` lists the authenticator extensions: `prf` (the pseudo-random function of the `prf` extension) and
+  `largeBlob` (the blobs of the `largeBlob` extension). The client also implements the `credProps` extension.
+
+The credentials of an authenticator can be listed with
+[GetCredentials](cref:Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticator.GetCredentials), added with
+[AddCredential](cref:Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticator.AddCredential) (for instance a passkey
+whose private key is a PKCS #8 package), and removed with
+[RemoveCredential](cref:Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticator.RemoveCredential). The environment can be
+shared by several browsing contexts, and used from any thread.
+
+The client checks the origin and the RP ID, and the permissions policies: `publickey-credentials-create` and
+`publickey-credentials-get` (allowed in the same-origin frames by default). A cross-origin frame must have a transient
+activation to create a credential. A ceremony is performed by a task of the event loop: the first authenticator that can
+complete it is used, without user interface. When no authenticator can (there is none, none satisfies the options, or
+none has an eligible credential), the ceremony fails with a `NotAllowedError`, as when a user cancels the dialog of a
+browser, without waiting for the end of the timeout. A request with the `conditional` mediation waits for the user to
+select a passkey in an autofill field, which never happens without a user: it is pending until its signal is aborted.
+The attestation is the `none` attestation, or a packed self attestation when the page asks for an attestation. The
+`appid`, `appidExclude` and `remoteClientDataJSON` extensions and the related origins are not supported.
 
 ## Keyboard layout
 

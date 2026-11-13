@@ -894,6 +894,7 @@ internal sealed class FilterProcessor : IDisposable
         var edgeEnd = horizontal ? edges.Right : edges.Bottom;
         var size = before + after + 1;
         Span<double> sum = stackalloc double[4];
+        Span<WindowRun> runBuffer = stackalloc WindowRun[MaxWindowRuns];
         for (var index = 0; index < lines; index++)
         {
             if ((index & 15) == 0)
@@ -919,9 +920,13 @@ internal sealed class FilterProcessor : IDisposable
 
             // The window of the first pixel, then each step adds the pixel that enters it and removes the one that leaves it
             sum.Clear();
-            for (var offset = -before; offset <= after; offset++)
+            var runs = runBuffer[..GetFirstWindow(before, after, start, edgeStart, edgeEnd, mode, runBuffer)];
+            foreach (var run in runs)
             {
-                Add(sum, line, start + offset, 1);
+                for (var offset = run.First; offset <= run.Last; offset++)
+                {
+                    Add(sum, line, start + offset, run.Weight);
+                }
             }
 
             for (var i = 0; i < length; i++)
@@ -936,7 +941,7 @@ internal sealed class FilterProcessor : IDisposable
             }
         }
 
-        void Add(Span<double> sum, ReadOnlySpan<float> line, int position, int sign)
+        void Add(Span<double> sum, ReadOnlySpan<float> line, int position, double sign)
         {
             if (!TryMap(ref position, edgeStart, edgeEnd, mode))
                 return;
@@ -1029,12 +1034,20 @@ internal sealed class FilterProcessor : IDisposable
         ref var source = ref unsafe(MemoryMarshal.GetReference(line));
         ref var target = ref unsafe(MemoryMarshal.GetReference(values));
         var sum = TQuad.Zero;
-        for (var offset = -before; offset <= after; offset++)
+        Span<WindowRun> runs = stackalloc WindowRun[MaxWindowRuns];
+        runs = runs[..GetFirstWindow(before, after, start, edgeStart, edgeEnd, mode, runs)];
+        foreach (var run in runs)
         {
-            var at = MapIndex(start + offset, start, length, edgeStart, edgeEnd, mode);
-            if (at >= 0)
+            var weight = TQuad.Create(run.Weight);
+            for (var offset = run.First; offset <= run.Last; offset++)
             {
-                sum += TQuad.Load(ref unsafe(Unsafe.Add(ref source, 4 * at)));
+                var at = MapIndex(start + offset, start, length, edgeStart, edgeEnd, mode);
+                if (at < 0)
+                    continue;
+
+                // A weight of one adds the value as it is, as the product of the scalar path does
+                var value = TQuad.Load(ref unsafe(Unsafe.Add(ref source, 4 * at)));
+                sum += run.Weight == 1 ? value : weight * value;
             }
         }
 
@@ -1135,12 +1148,28 @@ internal sealed class FilterProcessor : IDisposable
     {
         var lineLength = sums.Length;
         sums.Clear();
-        for (var offset = -before; offset <= after; offset++)
+        Span<WindowRun> runs = stackalloc WindowRun[MaxWindowRuns];
+        runs = runs[..GetFirstWindow(before, after, start, edgeStart, edgeEnd, mode, runs)];
+        foreach (var run in runs)
         {
-            var at = MapIndex(start + offset, start, length, edgeStart, edgeEnd, mode);
-            if (at >= 0)
+            for (var offset = run.First; offset <= run.Last; offset++)
             {
-                StepBox(sums, size: 0, output: default, source.Slice(sourceOffset + (at * sourceStride), lineLength), leaving: default);
+                var at = MapIndex(start + offset, start, length, edgeStart, edgeEnd, mode);
+                if (at < 0)
+                    continue;
+
+                var line = source.Slice(sourceOffset + (at * sourceStride), lineLength);
+                if (run.Weight == 1)
+                {
+                    StepBox(sums, size: 0, output: default, line, leaving: default);
+                }
+                else
+                {
+                    for (var i = 0; i < lineLength; i++)
+                    {
+                        sums[i] += run.Weight * line[i];
+                    }
+                }
             }
         }
 
@@ -1406,6 +1435,93 @@ internal sealed class FilterProcessor : IDisposable
         }
 
         return unsafe(MemoryMarshal.Cast<byte, float>(_strip.Span))[..count];
+    }
+
+    /// <summary>The most runs <see cref="GetFirstWindow"/> gives.</summary>
+    internal const int MaxWindowRuns = 3;
+
+    /// <summary>Offsets from the first position of a line, each summed with a weight.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    internal readonly record struct WindowRun(int First, int Last, double Weight);
+
+    /// <summary>
+    /// Gets the offsets, from the first position of a line, of the positions the window of the first position sums
+    /// (<c>-before</c> to <c>after</c>), as runs of offsets whose values are summed with a weight.
+    /// </summary>
+    /// <returns>The number of runs written to <paramref name="runs"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// A window far wider than the edges (the blur of a large deviation) would otherwise cost its own width for each
+    /// line, while the positions it holds take few distinct values: the sums are the same with fewer steps.
+    /// </para>
+    /// <list type="bullet">
+    /// <item>Out of its edges, a transparent edge mode gives nothing: only the positions within them can change the sums.</item>
+    /// <item>A duplicate edge mode gives the first or the last position for every position before or after the edges: each of them is summed once, weighted by their count.</item>
+    /// <item>A wrap or mirror edge mode gives positions that repeat with a period of the size of the edges, or twice that: whole periods are summed once, weighted by their count, and the rest of the window as it is.</item>
+    /// </list>
+    /// <para>
+    /// A window within twice the period is summed position by position, so that the blurs of a usual deviation add the
+    /// same values in the same order as they always did.
+    /// </para>
+    /// </remarks>
+    internal static int GetFirstWindow(int before, int after, int start, int edgeStart, int edgeEnd, FilterEdgeMode mode, Span<WindowRun> runs)
+    {
+        var first = -before;
+        var last = after;
+        var size = edgeEnd - edgeStart;
+        if (mode is not (FilterEdgeMode.Duplicate or FilterEdgeMode.Wrap or FilterEdgeMode.Mirror) || size <= 0)
+        {
+            // Nothing is read out of the edges (TryMap)
+            first = Math.Max(first, edgeStart - start);
+            last = Math.Min(last, edgeEnd - 1 - start);
+            if (first > last)
+                return 0;
+
+            runs[0] = new(first, last, 1);
+            return 1;
+        }
+
+        var period = mode == FilterEdgeMode.Mirror ? 2L * size : size;
+        var width = (long)last - first + 1;
+        if (width <= 2 * period)
+        {
+            runs[0] = new(first, last, 1);
+            return 1;
+        }
+
+        var count = 0;
+        if (mode == FilterEdgeMode.Duplicate)
+        {
+            var lowEdge = edgeStart - start;
+            var highEdge = edgeEnd - 1 - start;
+            if (first < lowEdge)
+            {
+                runs[count++] = new(lowEdge, lowEdge, Math.Min(last, lowEdge - 1) - first + 1);
+            }
+
+            var middleFirst = Math.Max(first, lowEdge);
+            var middleLast = Math.Min(last, highEdge);
+            if (middleFirst <= middleLast)
+            {
+                runs[count++] = new(middleFirst, middleLast, 1);
+            }
+
+            if (last > highEdge)
+            {
+                runs[count++] = new(highEdge, highEdge, last - Math.Max(first, highEdge + 1) + 1);
+            }
+
+            return count;
+        }
+
+        var remainder = (int)(width % period);
+        if (remainder > 0)
+        {
+            runs[count++] = new(first, first + remainder - 1, 1);
+        }
+
+        runs[count++] = new(first + remainder, first + remainder + (int)period - 1, width / period);
+        return count;
     }
 
     /// <summary>Gets the index in a line of the pixel an edge mode reads at a position, or -1 for a transparent pixel.</summary>

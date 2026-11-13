@@ -525,6 +525,39 @@ public sealed class FocusTests : IDisposable
     }
 
     [Fact]
+    public void Tab_FollowsTheReadingFlowOfGridLanes()
+    {
+        var document = Load("""
+            <style>
+              .lanes { display: grid-lanes; grid-template-columns: 50px 50px 50px; fit-tolerance: 0; gap: 0 }
+              .lanes > button { width: 50px; padding: 0; border: 0 }
+            </style>
+            <div class=lanes style="reading-flow: grid-lanes-order">
+              <button id=o1 style="order: 2"></button><button id=o2 style="order: -1"></button><button id=o3></button>
+            </div>
+            <div class=lanes style="reading-flow: grid-lanes-track; grid-lanes-direction: column track-reverse">
+              <button id=t1 style="height: 60px"></button><button id=t2 style="height: 20px"></button><button id=t3 style="height: 30px"></button><button id=t4 style="height: 10px"></button>
+            </div>
+            <div class=lanes style="reading-flow: grid-lanes-flow">
+              <button id=f1 style="height: 60px"></button><button id=f2 style="height: 20px"></button><button id=f3 style="height: 30px"></button><button id=f4 style="height: 60px"></button><button id=f5 style="height: 20px"></button>
+            </div>
+            """);
+
+        string[] expected =
+        [
+            // grid-lanes-order: the order-modified document order
+            "o2", "o3", "o1",
+            // grid-lanes-track: the tracks from the start edge (the placement fills them from the end), each from its start edge
+            "t3", "t2", "t4", "t1",
+            // grid-lanes-flow: a row is formed by the first item of each track, and the items that are mostly in the extent of
+            // these items (f4: 20px to 80px; f5: 30px to 50px), read by track
+            "f1", "f2", "f4", "f3", "f5",
+            "body",
+        ];
+        Assert.Equal(expected, PressTab(document, expected.Length));
+    }
+
+    [Fact]
     public void Blur_UnfocusesTheFocusedElementThatIsNoLongerFocusable()
     {
         var document = Load("<div id=host></div>");

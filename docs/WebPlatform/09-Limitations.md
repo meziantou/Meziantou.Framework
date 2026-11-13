@@ -13,6 +13,9 @@ fails.
   [BrowsingContext.Input](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Input) (see [User input](05-LoadingPages/06-UserInput.md)). There is no pinch zoom, and the text cannot be
   selected with the pointer. The delegated ink trails (`navigator.ink`) are not drawn, and there is no scroll performance
   timing (`PerformanceScrollTiming`).
+- **CSS values.** A value with more than 1,000 repetitions of a component of its grammar (e.g. more than 1,000 tracks
+  listed in `grid-template-columns`, or 1,000 families in `font-family`) is invalid: the parser backtracks through the
+  repetitions, and a fixed limit keeps the time it takes small and the same on every platform.
 - **Layout.** The layout engine is internal: it runs when a web API reads the geometry, and its results are read through
   the web APIs only (CSSOM View, the computed styles, the observers; see [Layout and geometry](05-LoadingPages/05-LayoutAndGeometry.md)).
   It does not implement:
@@ -54,12 +57,18 @@ fails.
   [script engine](06-Scripting/01-Overview.md): the scripts are not fetched and the event handler attributes have no
   effect. A document parsed with [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser) has no browsing context: no window, no computed style and no
   event loop, so the mutation observer callbacks are not invoked.
-- **No downloads**, and the third-party cookies are not blocked.
+- **No downloads**, and the third-party cookies are not blocked unless you
+  [block them](05-LoadingPages/03-CookiesAndStorage.md#third-party-cookies-and-storage-access). The Storage Access API
+  only gives access to the cookies: `requestStorageAccess(types)` and its `StorageAccessHandle` (the unpartitioned
+  local storage, IndexedDB, caches... of a third-party frame) are not supported.
 - **Reporting API.** Content Security Policy reports its violations, but the Reporting API generates only the CSP, COEP,
   COOP, Permissions Policy, Document Policy, integrity policy and test reports: there are no deprecation or intervention
   reports.
-- **Signature-based Subresource Integrity** (the `ed25519-` integrity metadata, checked with the `Signature` and
-  `Signature-Input` headers) is not supported.
+- **Signature-based Subresource Integrity** does not support the `signature` attribute of the inline scripts of
+  earlier drafts, nor the `'ed25519-…'` sources of Content Security Policy.
+- **Compression dictionaries**: the `dcb` streams whose dictionary and data exceed the window of the stream are not
+  decoded, and the requests of `<link rel="compression-dictionary">` have the empty destination (not
+  `compression-dictionary`).
 
 ## Scripting
 

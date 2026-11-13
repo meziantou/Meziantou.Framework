@@ -3590,6 +3590,80 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingSampleTablesMatchTheFormulas()
+    {
+        // Every operator with the separable blend modes, on the stored samples and in linear light, for gray, color and
+        // color with alpha: the pixels covered entirely of the alpha of the table get its samples, the others the formulas
+        var random = new Random(20261112);
+        byte[] transfers = [0, CicpTransfer.Srgb, CicpTransfer.Linear];
+        int[] lengths = [256, 300, 1031];
+        foreach (var transfer in transfers)
+        {
+            for (var blend = BlendMode.Normal; blend < BlendMode.Hue; blend++)
+            {
+                foreach (var mode in Enum.GetValues<CompositeMode>())
+                {
+                    if (transfer == 0 && blend == BlendMode.Normal && mode is CompositeMode.SourceOver or CompositeMode.Source)
+                        continue;
+
+                    foreach (var (channels, isBlueFirst) in new[] { (1, false), (3, false), (4, false), (4, true) })
+                    {
+                        Check(random, channels, isBlueFirst, new DrawingSource(NextPaint(random), mode, blend, transfer), lengths[random.Next(lengths.Length)]);
+                    }
+                }
+            }
+        }
+
+        static void Check(Random random, int channels, bool isBlueFirst, DrawingSource source, int length)
+        {
+            // Most pixels of one alpha (the one of the first pixel covered entirely), some of others
+            var alpha = (byte)(random.Next(4) switch
+            {
+                0 => byte.MaxValue,
+                1 => 0,
+                _ => random.Next(256),
+            });
+
+            var pixels = new byte[length * channels];
+            var coverage = new uint[length];
+            random.NextBytes(pixels);
+            for (var i = 0; i < length; i++)
+            {
+                if (channels == 4)
+                {
+                    pixels[(i * 4) + 3] = i == 0 || random.Next(8) != 0 ? alpha : (byte)random.Next(256);
+                }
+
+                coverage[i] = i == 0 || random.Next(4) != 0 ? CoverageRasterizer.FullCoverage : random.Next(3) switch
+                {
+                    0 => 0,
+                    1 => (uint)random.Next(1, 256),
+                    _ => (uint)random.Next((int)CoverageRasterizer.FullCoverage + 1),
+                };
+            }
+
+            var expected = (byte[])pixels.Clone();
+            DrawingKernels.CompositeWithFormulas<byte>(expected, channels, coverage, source, isBlueFirst);
+            var actual = (byte[])pixels.Clone();
+            Assert.True(DrawingKernels.TryCompositeWithTable(actual, channels, coverage, source, isBlueFirst));
+            Assert.Equal(expected, actual);
+        }
+
+        static DrawingColor NextPaint(Random random)
+        {
+            var alpha = random.Next(4) switch
+            {
+                0 => byte.MaxValue,
+                1 => 0,
+                _ => random.Next(256),
+            };
+
+            return new DrawingColor((ushort)random.Next(256), (ushort)random.Next(256), (ushort)random.Next(256), (ushort)alpha);
+        }
+    }
+
+    [Fact]
     public void DrawingColorsReadFromAFrameOfTheSameFormatAreItsConvertedColors()
     {
         // Every sample of every channel (the channels are converted on their own), and every 16-bit gray

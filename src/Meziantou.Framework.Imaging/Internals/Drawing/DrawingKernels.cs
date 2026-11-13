@@ -81,6 +81,9 @@ internal static class DrawingKernels
     // The thresholds of the encoding of linear light to 8-bit samples, by code point of the transfer characteristics
     private static readonly QuantizationThresholds?[] LinearThresholds8 = new QuantizationThresholds?[19];
 
+    // The functions those thresholds are created from, by code point of the transfer characteristics
+    private static readonly Func<double, int>?[] LinearEncoders8 = new Func<double, int>?[19];
+
     /// <summary>Gets the largest sample of the paints of a frame: 255 for the 8-bit formats, 65535 for the 16-bit and the floating-point formats.</summary>
     /// <param name="format">The pixel format of the frame.</param>
     public static int GetPaintMax(PixelFormat format) => PixelFormats.GetBitsPerComponent(format) > 8 ? ushort.MaxValue : byte.MaxValue;
@@ -820,6 +823,97 @@ internal static class DrawingKernels
     /// <param name="source">The paint.</param>
     /// <param name="isBlueFirst"><see langword="true"/> when the first color sample is blue and the third one red: only the blend modes that take a color as a whole need to know.</param>
     internal static void Composite<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst = false)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        if (typeof(TSample) == typeof(byte) && source.Colors.IsEmpty && SampleTable.IsSeparable(source) && TryCompositeWithTable(unsafe(MemoryMarshal.Cast<TSample, byte>(samples)), channels, coverage, source, isBlueFirst))
+            return;
+
+        CompositeWithFormulas(samples, channels, coverage, source, isBlueFirst);
+    }
+
+    /// <summary>
+    /// Composites a single paint over 8-bit samples with a <see cref="SampleTable"/>: the pixels covered entirely whose
+    /// alpha is the one of the table get its samples, the others go through <see cref="CompositeWithFormulas"/>.
+    /// </summary>
+    /// <returns><see langword="false"/> when no pixel is covered entirely, or the paint has no table yet.</returns>
+    internal static bool TryCompositeWithTable(Span<byte> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst)
+    {
+        const uint Full = CoverageRasterizer.FullCoverage;
+        var first = coverage.IndexOf(Full);
+        if (first < 0)
+            return false;
+
+        // The table of the alpha of the first pixel covered entirely: the pixels inside a shape usually share it
+        var destinationAlpha = channels == 4 ? samples[(first * 4) + 3] : byte.MaxValue;
+        var table = SampleTable.Get(source, channels, isBlueFirst, destinationAlpha, coverage.Length);
+        if (table is null)
+            return false;
+
+        var lookup = table.Samples;
+        var alpha = table.Alpha;
+        var start = 0;
+        var i = first;
+        while (true)
+        {
+            if (i > start)
+            {
+                CompositeWithFormulas(samples[(start * channels)..(i * channels)], channels, coverage[start..i], source.Slice(start, i - start), isBlueFirst);
+            }
+
+            // The pixels the table gives
+            switch (channels)
+            {
+                case 4:
+                    {
+                        // A pixel read as one little-endian integer: the alpha is its high byte
+                        var pixels = unsafe(MemoryMarshal.Cast<byte, uint>(samples));
+                        var pixelAlpha = (uint)destinationAlpha << 24;
+                        var resultAlpha = (uint)alpha << 24;
+                        for (; i < coverage.Length && coverage[i] == Full; i++)
+                        {
+                            var pixel = pixels[i];
+                            if ((pixel & 0xFF000000) != pixelAlpha)
+                                break;
+
+                            pixels[i] = lookup[(int)(pixel & 0xFF)] | ((uint)lookup[256 + (int)((pixel >> 8) & 0xFF)] << 8) | ((uint)lookup[512 + (int)((pixel >> 16) & 0xFF)] << 16) | resultAlpha;
+                        }
+                    }
+
+                    break;
+
+                case 3:
+                    for (; i < coverage.Length && coverage[i] == Full; i++)
+                    {
+                        var pixel = samples.Slice(i * 3, 3);
+                        pixel[0] = lookup[pixel[0]];
+                        pixel[1] = lookup[256 + pixel[1]];
+                        pixel[2] = lookup[512 + pixel[2]];
+                    }
+
+                    break;
+
+                default:
+                    for (; i < coverage.Length && coverage[i] == Full; i++)
+                    {
+                        samples[i] = lookup[samples[i]];
+                    }
+
+                    break;
+            }
+
+            if (i == coverage.Length)
+                return true;
+
+            // The pixels that go through the formulas, up to the next one the table gives
+            start = i;
+            for (i++; i < coverage.Length && (coverage[i] != Full || (channels == 4 && samples[(i * 4) + 3] != destinationAlpha)); i++)
+            {
+            }
+        }
+    }
+
+    /// <summary>Composites a paint over interleaved samples with the formulas of the contract: the reference of <see cref="TryCompositeWithTable"/>.</summary>
+    internal static void CompositeWithFormulas<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst = false)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
         if (source.IsLinearLight)
@@ -2251,7 +2345,17 @@ internal static class DrawingKernels
 
     /// <summary>Gets the thresholds of <see cref="EncodeLight"/> for 8-bit samples and a function of the transfer characteristics, or <see langword="null"/> when they do not give its samples.</summary>
     internal static QuantizationThresholds? GetLinearThresholds8(byte transfer)
-        => QuantizationThresholds.GetOrCreate(LinearThresholds8, transfer, value => (int)EncodeLight(value, byte.MaxValue, transfer, curves: null, channel: 0), byte.MaxValue);
+    {
+        // The function is created once per transfer characteristics: the thresholds are asked for at every run of pixels
+        var encode = Volatile.Read(ref LinearEncoders8[transfer]);
+        if (encode is null)
+        {
+            encode = value => (int)EncodeLight(value, byte.MaxValue, transfer, curves: null, channel: 0);
+            encode = Interlocked.CompareExchange(ref LinearEncoders8[transfer], encode, null) ?? encode;
+        }
+
+        return QuantizationThresholds.GetOrCreate(LinearThresholds8, transfer, encode, byte.MaxValue);
+    }
 
     /// <summary>Encodes linear light to a sample, from 0 to <paramref name="max"/>: the encoding is clipped to the samples, and a value that is not a number is zero.</summary>
     internal static double EncodeLight(double linear, double max, byte transfer, LinearLightCurves? curves, int channel)
@@ -2259,5 +2363,135 @@ internal static class DrawingKernels
         var encoded = curves is null ? CicpTransfer.Encode(transfer, linear) : curves.Encode(channel, linear);
         var rounded = Math.Floor((encoded * max) + 0.5 + (1.0 / 1048576));
         return rounded >= max ? max : rounded > 0 ? rounded : 0;
+    }
+
+    /// <summary>
+    /// The samples that a single paint gives the 8-bit pixels covered entirely that have one alpha (or no alpha), when
+    /// each color sample of the result only depends on the same sample of the pixel: the 256 values of each color,
+    /// computed once with the formulas (<see cref="CompositeWithFormulas"/>), instead of the formulas for every pixel.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// With a single paint, a full coverage and the alpha of the pixel fixed, every formula of the contract computes a
+    /// color of the result from the paint, the alpha of the pixel and the same color of the pixel only, and the alpha of
+    /// the result without its colors: the operators, the separable blend modes and linear light alike. The table is the
+    /// result of the formulas on a pixel of each value (the three colors of that value), so it holds the samples the
+    /// formulas give, exactly. The blend modes that take a color as a whole (<see cref="BlendMode.Hue"/> and after) mix the
+    /// colors and get no table.
+    /// </para>
+    /// <para>
+    /// The paths that have no table already cost little per pixel: source-over of the stored samples has vector kernels, and
+    /// an operator that replaces the pixel writes the paint. The table of a thread is kept between the calls, for the rows
+    /// of a shape and the next shapes with that paint, and built once its paint has been composited over
+    /// <see cref="MinPixels"/> pixels, so a paint that changes at every short run does not pay for it.
+    /// </para>
+    /// </remarks>
+    private sealed class SampleTable
+    {
+        /// <summary>The number of pixels composited with a paint from which its table is built: the table costs about as many pixels.</summary>
+        private const int MinPixels = 256;
+
+        [ThreadStatic]
+        private static SampleTable? s_current;
+
+        private readonly byte[] _samples = new byte[3 * 256];
+        private DrawingColor _color;
+        private CompositeMode _mode;
+        private BlendMode _blend;
+        private byte _transfer;
+        private LinearLightCurves? _curves;
+        private int _channels;
+        private bool _isBlueFirst;
+        private byte _destinationAlpha;
+        private int _pixels;
+        private bool _isBuilt;
+        private bool _isUsable;
+
+        /// <summary>Gets the samples of the result for each value of the first, second and third color sample of a pixel, 256 each.</summary>
+        public ReadOnlySpan<byte> Samples => _samples;
+
+        /// <summary>Gets the alpha of the result.</summary>
+        public byte Alpha { get; private set; }
+
+        /// <summary>Gets a value indicating whether a paint is composited with formulas that give each color of the result from the same color of the pixel, and costly enough to be worth a table.</summary>
+        public static bool IsSeparable(scoped in DrawingSource source)
+            => source.IsLinearLight || source.Blend != BlendMode.Normal ? source.Blend < BlendMode.Hue : source.Mode is not (CompositeMode.SourceOver or CompositeMode.Source);
+
+        /// <summary>Gets the table of a single paint for the pixels of an alpha, or <see langword="null"/> when it is not built yet or the result has no table.</summary>
+        /// <param name="source">The paint.</param>
+        /// <param name="channels">The number of samples per pixel.</param>
+        /// <param name="isBlueFirst"><see langword="true"/> when the first color sample is blue.</param>
+        /// <param name="destinationAlpha">The alpha of the pixels, 255 without alpha.</param>
+        /// <param name="length">The number of pixels about to be composited with the paint.</param>
+        public static SampleTable? Get(scoped in DrawingSource source, int channels, bool isBlueFirst, byte destinationAlpha, int length)
+        {
+            var table = s_current ??= new SampleTable();
+            if (table._color != source.Color || table._mode != source.Mode || table._blend != source.Blend || table._transfer != source.Transfer || !ReferenceEquals(table._curves, source.Curves) ||
+                table._channels != channels || table._isBlueFirst != isBlueFirst || table._destinationAlpha != destinationAlpha)
+            {
+                table._color = source.Color;
+                table._mode = source.Mode;
+                table._blend = source.Blend;
+                table._transfer = source.Transfer;
+                table._curves = source.Curves;
+                table._channels = channels;
+                table._isBlueFirst = isBlueFirst;
+                table._destinationAlpha = destinationAlpha;
+                table._pixels = 0;
+                table._isBuilt = false;
+            }
+
+            if (!table._isBuilt)
+            {
+                table._pixels += length;
+                if (table._pixels < MinPixels)
+                    return null;
+
+                table.Build(source);
+            }
+
+            return table._isUsable ? table : null;
+        }
+
+        /// <summary>Composites the paint over a pixel of each value with the formulas.</summary>
+        private void Build(scoped in DrawingSource source)
+        {
+            const int Values = 256;
+            var channels = _channels;
+            Span<byte> pixels = stackalloc byte[Values * 4];
+            pixels = pixels[..(Values * channels)];
+            Span<uint> coverage = stackalloc uint[Values];
+            coverage.Fill(CoverageRasterizer.FullCoverage);
+            for (var value = 0; value < Values; value++)
+            {
+                var pixel = pixels.Slice(value * channels, channels);
+                pixel.Fill((byte)value);
+                if (channels == 4)
+                {
+                    pixel[3] = _destinationAlpha;
+                }
+            }
+
+            CompositeWithFormulas(pixels, channels, coverage, source, _isBlueFirst);
+            _isBuilt = true;
+            Alpha = channels == 4 ? pixels[3] : byte.MaxValue;
+
+            // The alpha of the result does not depend on the colors of the pixel: the table is not used otherwise
+            _isUsable = true;
+            for (var value = 0; value < Values; value++)
+            {
+                var pixel = pixels.Slice(value * channels, channels);
+                if (channels == 4 && pixel[3] != Alpha)
+                {
+                    _isUsable = false;
+                    return;
+                }
+
+                for (var c = 0; c < 3; c++)
+                {
+                    _samples[(c * Values) + value] = pixel[Math.Min(c, channels - 1)];
+                }
+            }
+        }
     }
 }

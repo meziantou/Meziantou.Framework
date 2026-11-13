@@ -389,6 +389,11 @@ internal static class FuzzOracle
         if (variant % 12 is 11 && CheckLossyHeic(image, variant) is { Length: > 0 } lossy)
             return lossy;
 
+        // The lossy AV1 encoder (its searches of modes, transform types and filters), on the variants of the lossless AVIF
+        // encoder, writes a part of the first frame that decodes to its geometry
+        if (variant % 12 is 10 && CheckLossyAvif(image, variant) is { Length: > 0 } lossyAvif)
+            return lossyAvif;
+
         // Processing on whatever geometry and orientation the input declared
         image.AutoOrient();
         image.Resize(new ResizeOptions(Math.Max(1, image.Width / 2), Math.Max(1, (image.Height * 2) / 3)) { Mode = ResizeMode.Stretch });
@@ -584,6 +589,30 @@ internal static class FuzzOracle
 
         if (FrameSummary.Capture(expected.Frames[0]).PixelHash != FrameSummary.Capture(reloaded.Frames[0]).PixelHash)
             return $"lossless-round-trip-pixels: the {pixelFormat} image of {expected.Width}x{expected.Height} written as {encoder.Format} ({encoder.GetType().Name}, variant {variant}) does not decode to the same pixels";
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckLossyAvif(Image image, int variant)
+    {
+        using var still = image.CloneFrame(0);
+        still.Crop(new Rectangle(0, 0, Math.Min(still.Width, 40), Math.Min(still.Height, 40)));
+        using var converted = still.CloneAs<Rgba32>(Conversion);
+        var option = variant / 12;
+        var encoder = new AvifEncoder
+        {
+            MetadataHandling = MetadataHandling.Strip,
+            Compression = AvifCompression.Lossy,
+            Quality = (option * 23) % 101,
+            Effort = option % 10,
+            ChromaSubsampling = (AvifChromaSubsampling)(option % 4),
+        };
+        using var output = new MemoryStream();
+        converted.Save(output, encoder);
+        using var reloaded = Image.Load<Rgba32>(output.ToArray(), new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+        if (reloaded.Width != converted.Width || reloaded.Height != converted.Height || reloaded.Frames.Count != 1)
+            return $"lossy-avif-structure: the image of {converted.Width}x{converted.Height} written as a lossy AVIF (variant {variant}) decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s)";
 
         return string.Empty;
     }

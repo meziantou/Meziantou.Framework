@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.WebPlatform</RootNamespace>
-    <Version>1.0.11</Version>
+    <Version>1.0.12</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Every public member is documented (CS1591). The parameters do not have to be documented (CS1573). -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>

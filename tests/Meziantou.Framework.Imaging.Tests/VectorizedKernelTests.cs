@@ -1052,6 +1052,50 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void SixteenBitColorsMatchTheScalarReference()
+    {
+        var random = new Random(4133);
+
+        // Every 16-bit value, then random rows of every width up to 40
+        var every = new byte[65536 * 2];
+        for (var value = 0; value < 65536; value++)
+        {
+            every[2 * value] = (byte)value;
+            every[(2 * value) + 1] = (byte)(value >> 8);
+        }
+
+        var rows = Enumerable.Range(0, 41).Select(width =>
+        {
+            var row = new byte[width * 2];
+            random.NextBytes(row);
+            return row;
+        }).Append(every);
+        foreach (var row in rows)
+        {
+            var width = row.Length / 2;
+            foreach (var (sixBitGreen, alpha) in new[] { (false, false), (false, true), (true, false) })
+            {
+                // The bytes after the row must not be written
+                var bytesPerPixel = alpha ? 4 : 3;
+                var expected = Enumerable.Repeat((byte)0xA5, (width * bytesPerPixel) + 5).ToArray();
+                var actual = (byte[])expected.Clone();
+                SixteenBitColors.ExpandScalar(row, width, sixBitGreen, alpha, expected);
+                SixteenBitColors.Expand(row, width, sixBitGreen, alpha, actual.AsSpan(0, width * bytesPerPixel));
+                Assert.Equal(expected, actual);
+            }
+        }
+
+        // The expansions of the TGA decoder
+        var pixel = new byte[3];
+        for (var value = 0; value < 32; value++)
+        {
+            SixteenBitColors.ExpandScalar([(byte)value, 0], 1, sixBitGreen: false, alpha: false, pixel);
+            Assert.Equal(TgaSamples.Expand5(value), pixel[2]);
+        }
+    }
+
     /// <summary>
     /// Creates elements in runs: short runs of 1 to 3 equal elements, or runs of up to 300 elements, drawn from 4 elements of
     /// which 3 differ by one byte only.

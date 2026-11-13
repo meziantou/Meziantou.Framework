@@ -43,6 +43,15 @@ internal abstract class PaintEvaluator
     /// <exception cref="ImageResourceLimitException">The scratch of the worker exceeds the allocation limit.</exception>
     public virtual PaintEvaluator? CreateWorker() => null;
 
+    /// <summary>
+    /// Rents the scratch that only saves time for an evaluator that <see cref="CreateWorker"/> created, once every worker
+    /// of the paint has the scratch it needs: without room for it, the worker is slower, it does not fail. The workers
+    /// share the allocation scope, so they rent nothing while they paint.
+    /// </summary>
+    public virtual void PrepareOptionalScratch()
+    {
+    }
+
     /// <summary>Releases the scratch of an evaluator that <see cref="CreateWorker"/> created; what it shares stays.</summary>
     public virtual void ReleaseWorker()
     {

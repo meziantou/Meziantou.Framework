@@ -176,6 +176,9 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private int _rowSumWidth;
     private uint _rowSumGeneration;
 
+    // The row sums were rented, or found not to fit, by PrepareOptionalScratch: a run never rents them
+    private bool _rowSumsPrepared;
+
     // The pixels read one by one, converted once per lease by segments of a row of the region: the segment of the key
     // k = row * _segmentsPerRow + column / SegmentLength is in the slot k, or, for a region with more segments than are
     // kept, in the slot its hash gives. A slot holds the key and the generation (one per lease) of its segment.
@@ -330,13 +333,6 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
                 _tapWeights = ResampleWeights.Rent<double>(_scope, taps);
                 _tapColumns = ResampleWeights.Rent<int>(_scope, taps);
                 _tapCapacity = taps;
-            }
-
-            // The sums of the rows only save time: on the calling thread, before any pixel changes, so that a paint shared
-            // by workers never fails halfway for want of room
-            if (UseVectorKernels)
-            {
-                TryRentRowSums();
             }
         }
 
@@ -679,6 +675,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         worker._rowSumSlots = 0;
         worker._rowSumWidth = 0;
         worker._rowSumGeneration = 0;
+        worker._rowSumsPrepared = false;
         try
         {
             worker._colors = RentLike(_scope, _colors);
@@ -689,11 +686,6 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             worker._tapCounts = RentLike(_scope, _tapCounts);
             worker._tapWeights = RentLike(_scope, _tapWeights);
             worker._tapColumns = RentLike(_scope, _tapColumns);
-            if (_rowSums is not null)
-            {
-                // Without room for them, the worker evaluates its runs with the scalar reference
-                worker.TryRentRowSums();
-            }
         }
         catch
         {
@@ -702,6 +694,17 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         }
 
         return worker;
+    }
+
+    /// <summary>Rents the sums of the rows of a reduced image for a worker; without room for them, it evaluates its runs with the scalar reference.</summary>
+    public override void PrepareOptionalScratch()
+    {
+        if (UseVectorKernels && _isReduced && _keepsRows)
+        {
+            TryRentRowSums();
+        }
+
+        _rowSumsPrepared = true;
     }
 
     public override void ReleaseWorker()
@@ -1401,7 +1404,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         where TLanes : struct, IColorLanes<TLanes>
     {
         var count = samples.Length;
-        if (_rowSums is null || !TryGetRunTaps(y, x, count))
+        if (!TryGetRunTaps(y, x, count) || !(_rowSumsPrepared ? _rowSums is not null : TryRentRowSums()))
         {
             InvalidateRunTaps();
             return false;
@@ -1502,8 +1505,9 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
     /// <summary>
     /// Rents the sums of the rows of the image for the pixels of a run: a slot per row a pixel of the canvas reads, fewer
-    /// when they would take too much room. Called on the thread that prepares the paint (<see cref="Prepare(ImageFrame, Rectangle?, AffineTransform, ImageWrapMode, ImageWrapMode, ImageSampling, ImageFrame, int, string)"/>,
-    /// <see cref="CreateWorker"/>), never while workers paint: they share the scope.
+    /// when they would take too much room. The evaluator of a paint on one thread rents them for its first run; the
+    /// workers of a parallel paint share the scope, so theirs are rented by <see cref="PrepareOptionalScratch"/>, once
+    /// every worker has the scratch it needs, and never while they paint.
     /// </summary>
     /// <returns><see langword="false"/> when even one slot would exceed the allocation limit: the sums are not rented.</returns>
     private bool TryRentRowSums()

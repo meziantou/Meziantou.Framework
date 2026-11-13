@@ -311,7 +311,8 @@ internal static class PngFilters
         if (!Vector.IsHardwareAccelerated || filtered.Length < Vector<byte>.Count)
             return GetAdaptiveCostScalar(filtered);
 
-        // |(sbyte)v| fits a byte (|-128| = 128); the partial sums are flushed before they can overflow (AddMagnitudes)
+        // |(sbyte)v| fits a byte (|-128| = 128); pairs of them are summed in 16-bit lanes, flushed before they can overflow.
+        // One chain of sums: the widening adds of AddMagnitudes would wait for each other (it suits the five chains of GetAdaptiveCosts)
         var count = Vector<byte>.Count;
         long total = 0;
         var i = 0;
@@ -320,10 +321,13 @@ internal static class PngFilters
             var sums = Vector<ushort>.Zero;
             for (var block = 0; block < 255 && i + count <= filtered.Length; block++, i += count)
             {
-                sums = AddMagnitudes(sums, new Vector<byte>(filtered[i..]));
+                var magnitudes = Vector.AsVectorByte(Vector.Abs(Vector.AsVectorSByte(new Vector<byte>(filtered[i..]))));
+                Vector.Widen(magnitudes, out var low, out var high);
+                sums += low + high;
             }
 
-            total += TotalMagnitudes(sums);
+            Vector.Widen(sums, out var lowSums, out var highSums);
+            total += (long)Vector.Sum(lowSums + highSums);
         }
 
         return total + GetAdaptiveCostScalar(filtered[i..]);

@@ -1023,4 +1023,33 @@ public sealed class DecodeInteropTests
     private static bool IsGs1(BarcodeType type) => type is BarcodeType.Gs1128 or BarcodeType.Gs1DataBar or BarcodeType.Gs1DataBarStacked or BarcodeType.Gs1DataBarStackedOmnidirectional or BarcodeType.Gs1DataBarLimited or BarcodeType.Gs1DataBarExpanded or BarcodeType.Gs1DataBarExpandedStacked;
 
     private static string Escape(string value) => string.Concat(value.Select(c => c < 0x20 || c > 0x7E ? $"\\u{(int)c:X4}" : c.ToString()));
+
+    // zint renders the symbols with its own drawing code: the reader of this library reads them
+    public static TheoryData<string, string, string> ZintQRCodeImages() => new()
+    {
+        { "58", "--scale=1", "Rendered by zint" },
+        { "58", "--scale=0.5", "HELLO 0123456789" },
+        { "58", "--scale=3 --rotate=90", "https://www.meziantou.net" },
+        { "58", "--scale=2 --rotate=180 --secure=4", "Error correction H" },
+        { "58", "--scale=1 --vers=12", "Version 12 with alignment patterns and version information" },
+        { "97", "--scale=2", "12345" },
+        { "97", "--scale=3 --rotate=270", "MICRO" },
+        { "145", "--scale=2", "HELLO RMQR" },
+        { "145", "--scale=1 --rotate=90", "https://www.meziantou.net" },
+    };
+
+    [Theory]
+    [MemberData(nameof(ZintQRCodeImages))]
+    public async Task ZintQRCodeImage_IsRead(string symbology, string options, string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "zint.png";
+        await tools.RenderWithZintAsync(["-b", symbology, "--quietzones", .. options.Split(' ')], data, path);
+        using var image = Image.Load(path);
+
+        var result = Assert.Single(image.ReadQRCodes());
+
+        Assert.Equal(data, result.Text);
+    }
 }

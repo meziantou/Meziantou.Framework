@@ -59,10 +59,30 @@ namespace Meziantou.Framework.Imaging.Barcodes
         public bool SnapToPixels { get => throw null; set { } }
     }
 
+    public static class QRCodeImageReader
+    {
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Barcodes.QRCodeImageResult> ReadQRCodes(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
     public static class QRCodeImageRenderer
     {
         public static Meziantou.Framework.Imaging.RectangleD DrawQRCode(this Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas, Meziantou.Framework.Barcodes.QRCode qrCode, Meziantou.Framework.Imaging.PointD position, Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.RectangleD MeasureQRCode(Meziantou.Framework.Barcodes.QRCode qrCode, Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Barcodes.QRCode qrCode, Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions? options = null) => throw null;
+    }
+
+    public sealed class QRCodeImageResult
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.PointD> Corners { get => throw null; }
+        public Meziantou.Framework.Barcodes.QRCodeDecodeResult Result { get => throw null; }
+        public string Text { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class QRCodeReadingOptions
+    {
+        public int MaximumResults { get => throw null; set { } }
+        public bool TryInverted { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Barcodes.QRCodeType>? Types { get => throw null; set { } }
     }
 }

@@ -2,7 +2,7 @@
 
 Renders the QR codes, Data Matrix, PDF417 and Aztec symbols, and barcodes of [`Meziantou.Framework.Barcodes`](https://www.nuget.org/packages/Meziantou.Framework.Barcodes) as [`Meziantou.Framework.Imaging`](https://www.nuget.org/packages/Meziantou.Framework.Imaging) images. The resulting `Image<Rgba32>` can be saved in any format the library supports (PNG, WebP, JPEG, GIF, AVIF, ...), resized, or drawn onto another image.
 
-`Meziantou.Framework.Barcodes` already writes PNG files on its own (`ToPng`), with no dependency. Use this package when you need another format or want to process the image further.
+`Meziantou.Framework.Barcodes` already writes PNG files on its own (`ToPng`), with no dependency. Use this package when you need another format or want to process the image further, or to read the codes of an image.
 
 ## Usage
 
@@ -99,6 +99,25 @@ Assert.Equal(226, size.Width); // (95 modules + 2 x 9) x 2 pixels
 using var label = new Image<Rgba32>(300, 140, Colors.White);
 label.Draw(canvas => canvas.DrawBarcode(barcode, new PointD(20, 20), options));
 Assert.Equal(new Rgba32(0x00, 0x33, 0x66), label.Frames[0][20 + 18, 50]); // the first guard bar
+```
+<!-- endref -->
+
+## Reading codes from images
+
+`ReadQRCodes` finds and decodes the QR codes, Micro QR codes and rMQR codes of an image: generated, printed or scanned symbols, which can be rotated, scaled or in mild perspective.
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_ReadQRCodes;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var image = QRCode.Create("https://www.meziantou.net").ToImage(); // or Image.Load("photo.png")
+
+var results = image.ReadQRCodes();
+
+var result = Assert.Single(results);
+Assert.Equal("https://www.meziantou.net", result.Text);
+
+// The corners of the symbol in the image: top-left, top-right, bottom-right, bottom-left
+var topLeft = result.Corners[0];
+Assert.True(topLeft.DistanceTo(new PointD(40, 40)) < 1); // after the quiet zone of 4 modules of 10 pixels
 ```
 <!-- endref -->
 

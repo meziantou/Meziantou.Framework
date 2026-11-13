@@ -1,4 +1,6 @@
 using Meziantou.Framework.Fuzzing;
+using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Imaging.Barcodes;
 
 namespace Meziantou.Framework.Barcodes.Fuzz;
 
@@ -25,6 +27,8 @@ internal static class QRDecodeFuzzTargets
     [
         new("barcodes-decode-qrcode", DecodeTarget) { Seeds = GetSeeds, Dictionary = ModuleTokens },
         new("barcodes-decode-2d", Decode2DTarget) { Seeds = Get2DSeeds, Dictionary = ModuleTokens },
+        new("barcodes-read-qrcode-image", ReadQRCodeImageTarget) { Seeds = GetImageSeeds, Dictionary = ModuleTokens },
+        new("barcodes-read-qrcode-roundtrip", ReadQRCodeRoundTripTarget) { Seeds = () => SeedTexts.Select((text, index) => FuzzSeed.FromText($"roundtrip-{index}", [(byte)index, (byte)(index * 37)], text)), Dictionary = ["HELLO", "0123456789", "https://", "日本"] },
         new("barcodes-decode-linear", DecodeLinearTarget) { Seeds = GetLinearSeeds, Dictionary = ["\x01\x01\x01", "\x02\x02", "\x03", "\x04", "\x0A", "\x00"] },
     ];
 
@@ -320,5 +324,76 @@ internal static class QRDecodeFuzzTargets
         // Reading the lines again gives the same results
         var again = BarcodeDecoder.DecodeScanLines(lines);
         FuzzAssert.Equal(results.Count, again.Count, "The number of results of the same lines");
+    }
+
+    // The first two bytes are the width and the height, the next ones the gray levels, row by row
+    private static IEnumerable<FuzzSeed> GetImageSeeds()
+    {
+        foreach (var (name, qr) in new[] { ("standard", QRCode.Create("HELLO")), ("micro", QRCode.CreateMicroQR("12345")), ("rmqr", QRCode.CreateRMQR("HELLO")) })
+        {
+            using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 2, QuietZoneModules = 2 });
+            var pixels = new Rgba32[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            yield return new FuzzSeed($"image-{name}", (byte[])[(byte)image.Width, (byte)image.Height, .. pixels.Select(pixel => pixel.R)]);
+        }
+    }
+
+    private static void ReadQRCodeImageTarget(ReadOnlySpan<byte> data)
+    {
+        var width = 1 + FuzzInput.ReadByte(ref data);
+        var height = 1 + FuzzInput.ReadByte(ref data);
+        var pixels = new Gray8[width * height];
+        for (var i = 0; i < pixels.Length && i < data.Length; i++)
+        {
+            pixels[i] = new Gray8(data[i]);
+        }
+
+        using var image = Image.ImportPixelData<Gray8>(pixels, width, height);
+        foreach (var result in image.ReadQRCodes())
+        {
+            FuzzAssert.Equal(4, result.Corners.Count, "The number of corners");
+            FuzzAssert.True(result.Corners.All(corner => double.IsFinite(corner.X) && double.IsFinite(corner.Y)), "A corner is not finite");
+            var center = new PointD(result.Corners.Average(corner => corner.X), result.Corners.Average(corner => corner.Y));
+            FuzzAssert.True(center.X >= 0 && center.Y >= 0 && center.X <= width && center.Y <= height, $"The center {center} of a symbol is outside the image");
+        }
+    }
+
+    // A QR code rendered with modules of 3 to 6 pixels, turned by a multiple of 90°, is read back
+    private static void ReadQRCodeRoundTripTarget(ReadOnlySpan<byte> data)
+    {
+        var type = (QRCodeType)(FuzzInput.ReadByte(ref data) % 3);
+        var flags = FuzzInput.ReadByte(ref data);
+        var text = FuzzInput.ReadText(data);
+        QRCode qr;
+        try
+        {
+            qr = type switch
+            {
+                QRCodeType.MicroQR => QRCode.CreateMicroQR(text),
+                QRCodeType.RMQR => QRCode.CreateRMQR(text),
+                _ => QRCode.Create(text),
+            };
+        }
+        catch (ArgumentException)
+        {
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            return;
+        }
+
+        if (qr.Width * qr.Height > 80 * 80)
+            return;
+
+        using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 3 + (flags % 4) });
+        if ((flags & 0x30) is not 0)
+        {
+            image.Rotate((flags >> 4 & 3) switch { 1 => RotateMode.Rotate90, 2 => RotateMode.Rotate180, _ => RotateMode.Rotate270 });
+        }
+
+        var results = image.ReadQRCodes();
+        var expected = System.Text.Encoding.UTF8.GetString(System.Text.Encoding.UTF8.GetBytes(text));
+        FuzzAssert.True(results.Count is 1 && results[0].Text == expected && results[0].Result.Type == type, $"The {type} code of version {qr.Version} is read as [{string.Join(", ", results.Select(result => result.Result.Type + " " + result.Text))}]");
     }
 }

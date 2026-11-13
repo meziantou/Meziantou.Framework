@@ -1,7 +1,47 @@
 ---
 title: Reading
-description: Read the data of QR codes, Data Matrix, PDF417, Aztec symbols and linear barcodes from their modules or scan lines.
+description: Read QR codes from images, and the data of QR codes, Data Matrix, PDF417, Aztec symbols and linear barcodes from their modules or scan lines.
 ---
+
+The packages read the codes back: `Meziantou.Framework.Imaging.Barcodes` finds the QR codes of an image, and
+`Meziantou.Framework.Barcodes` decodes every symbology from its modules, or the linear barcodes from the widths of their
+bars.
+
+## Reading images
+
+`Meziantou.Framework.Imaging.Barcodes` reads the codes of the images of
+[Meziantou.Framework.Imaging](../Imaging/01-Introduction.md): any format it loads. Install it:
+
+<InstallNuGetPackage Id="Meziantou.Framework.Imaging.Barcodes" />
+
+[ReadQRCodes](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageReader.ReadQRCodes) finds the QR codes, Micro QR codes
+and rMQR codes of an image and decodes them. It gives each one once, with its
+[Result](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageResult.Result) and its
+[Corners](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageResult.Corners) in the image.
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_ReadQRCodes;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var image = QRCode.Create("https://www.meziantou.net").ToImage(); // or Image.Load("photo.png")
+
+var results = image.ReadQRCodes();
+
+var result = Assert.Single(results);
+Assert.Equal("https://www.meziantou.net", result.Text);
+
+// The corners of the symbol in the image: top-left, top-right, bottom-right, bottom-left
+var topLeft = result.Corners[0];
+Assert.True(topLeft.DistanceTo(new PointD(40, 40)) < 1); // after the quiet zone of 4 modules of 10 pixels
+```
+<!-- endref -->
+
+The reader is made for clean images: generated symbols, printed and scanned, or photographed straight on. They can be
+rotated, mirrored, scaled, slightly blurred or compressed, or in mild perspective; they need their quiet zone and modules
+of at least 2 pixels. Symbols printed light on a dark background are read too. A transparent background reads as white.
+[QRCodeReadingOptions](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions) limits the
+[Types](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions.Types) to read and the
+[MaximumResults](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions.MaximumResults).
+
+## Reading modules
 
 [QRCodeDecoder](cref:Meziantou.Framework.Barcodes.QRCodeDecoder) reads the data of a QR code from its modules: it reads
 the format information, fixes the errors that the error correction can fix, and decodes the segments. It reads the three
@@ -17,8 +57,6 @@ Assert.Equal("https://www.meziantou.net", result.Text);
 Assert.Equal((QRCodeType.Standard, 2, ErrorCorrectionLevel.M), (result.Type, result.Version, result.ErrorCorrectionLevel));
 ```
 <!-- endref -->
-
-## Reading modules
 
 The decoder works on modules, not on pixels. Pass the modules as a matrix of `bool`, `true` for dark, indexed by row then
 column, without the quiet zone. The size of the matrix gives the kind of symbol: a square of 21 to 177 modules is a

@@ -4735,6 +4735,64 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    public void BridgedPixelConversionsMatchTheScalarReference()
+    {
+        // The copies of the processing bridge, both ways: rows of every length around the vector widths, of random and of
+        // extreme samples, converted to another row and in place when the sizes match
+        CheckBridged<La16, Rgba32>();
+        CheckBridged<Rgba32, La16>();
+        CheckBridged<A8, Rgba32>();
+        CheckBridged<Rgba32, A8>();
+        CheckBridged<Argb32, Rgba32>();
+        CheckBridged<Rgba32, Argb32>();
+        CheckBridged<Abgr32, Rgba32>();
+        CheckBridged<Rgba32, Abgr32>();
+        CheckBridged<La32, Rgba64>();
+        CheckBridged<Rgba64, La32>();
+
+        [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+        static void CheckBridged<TSource, TDestination>()
+            where TSource : unmanaged
+            where TDestination : unmanaged
+        {
+            var random = new Random(typeof(TSource).Name.Length + (31 * typeof(TDestination).Name.Length));
+            for (var length = 0; length <= 70; length++)
+            {
+                for (var round = 0; round < 3; round++)
+                {
+                    var source = new TSource[length];
+                    var bytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(source.AsSpan()));
+                    random.NextBytes(bytes);
+                    if (round == 2)
+                    {
+                        for (var i = 0; i < bytes.Length; i++)
+                        {
+                            bytes[i] = random.Next(2) == 0 ? (byte)0 : (byte)0xFF;
+                        }
+                    }
+
+                    // A longer destination: only the pixels of the source are written
+                    var expected = new TDestination[length + 2];
+                    var actual = new TDestination[length + 2];
+                    var expectedBytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(expected.AsSpan()));
+                    var actualBytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(actual.AsSpan()));
+                    expectedBytes.Fill(0xA5);
+                    actualBytes.Fill(0xA5);
+                    PixelConverter.ConvertRowScalar<TSource, TDestination>(source, expected);
+                    PixelConverter.ConvertRow<TSource, TDestination>(source, actual);
+                    Assert.Equal(expectedBytes.ToArray(), actualBytes.ToArray());
+
+                    if (unsafe(System.Runtime.CompilerServices.Unsafe.SizeOf<TSource>()) == unsafe(System.Runtime.CompilerServices.Unsafe.SizeOf<TDestination>()))
+                    {
+                        PixelConverter.ConvertRow<TSource, TDestination>(source, unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<TSource, TDestination>(source.AsSpan())));
+                        Assert.Equal(expectedBytes[..bytes.Length].ToArray(), bytes.ToArray());
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void PixelConversionArithmeticMatchesTheScalarFormulasExhaustively()
     {
         // Every 16-bit sample reduced to 8 bits

@@ -2577,6 +2577,51 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlQuantizationCostMatchesTheScalarReferenceBitForBit()
+    {
+        var random = new Random(191);
+        float[] specials = [0f, -0f, float.NaN, float.PositiveInfinity, float.NegativeInfinity, float.Epsilon, -float.Epsilon, 1e30f, -1e30f, 3e9f, -3e9f, 2.5e7f, 1.6777215e7f];
+        (int Rows, int Columns)[] shapes = [(8, 8), (8, 16), (16, 16), (16, 32), (32, 32), (8, 64), (32, 64), (64, 64)];
+        foreach (var (rows, columns) in shapes)
+        {
+            var size = rows * columns;
+            for (var round = 0; round < 40; round++)
+            {
+                var coefficients = new float[size];
+                var matrix = new float[size];
+                var ranks = new int[size];
+                var scale = round % 7 == 0 ? 1f : (float)(0.01 + (random.NextDouble() * 4));
+                for (var i = 0; i < size; i++)
+                {
+                    matrix[i] = (float)(0.001 + (random.NextDouble() * 3));
+                    ranks[i] = random.Next(size);
+
+                    // Quotients around the zero threshold, one, the threshold of the quarters and one half, then large ones
+                    var quotient = (round % 4) switch
+                    {
+                        0 => (random.NextDouble() - 0.5) * 4,
+                        1 => (random.Next(2) == 0 ? -1 : 1) * (0.4 + (random.NextDouble() * 1.2)),
+                        2 => (random.NextDouble() - 0.5) * 1e5,
+                        _ => random.Next(6) == 0 ? (random.Next(2) == 0 ? -1 : 1) * (random.Next(4) * 0.5) : random.NextDouble() - 0.5,
+                    };
+                    coefficients[i] = round % 3 == 0 && random.Next(12) == 0 ? specials[random.Next(specials.Length)] : (float)(quotient * matrix[i] * scale);
+                }
+
+                float[] thresholds = [(float)(0.4 + (random.NextDouble() * 0.4)), (float)(0.4 + (random.NextDouble() * 0.4)), (float)(0.4 + (random.NextDouble() * 0.4)), (float)(0.4 + (random.NextDouble() * 0.4))];
+                var lowestRows = rows / 8;
+                var lowestColumns = columns / 8;
+                var expected = JpegXlVarDctEncoder.GetQuantizationCostScalar(coefficients, matrix, scale, ranks, rows, columns, lowestRows, lowestColumns, thresholds);
+                var actual = JpegXlVarDctEncoder.GetQuantizationCost(coefficients, matrix, scale, ranks, rows, columns, lowestRows, lowestColumns, thresholds);
+                Assert.Equal(BitConverter.SingleToInt32Bits(expected.Error), BitConverter.SingleToInt32Bits(actual.Error));
+                Assert.Equal(BitConverter.SingleToInt32Bits(expected.Bits), BitConverter.SingleToInt32Bits(actual.Bits));
+                Assert.Equal(expected.NonZeroCount, actual.NonZeroCount);
+                Assert.Equal(expected.LastRank, actual.LastRank);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlDequantizationMatchesTheScalarReferenceBitForBit()
     {
         var random = new Random(182);

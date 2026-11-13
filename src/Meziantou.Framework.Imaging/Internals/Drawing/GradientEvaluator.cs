@@ -385,7 +385,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
 
         var parameters = unsafe(MemoryMarshal.Cast<byte, double>(_parameters!.Span))[..count];
         GetParameters(y, x, parameters);
-        if (Resampler.TestForceScalar || !Vector128.IsHardwareAccelerated)
+        if (count < Vector128<double>.Count || !Vector128.IsHardwareAccelerated || Resampler.TestForceScalar)
         {
             EvaluateStopsScalar(y, x, parameters, colors);
         }
@@ -634,7 +634,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     /// <remarks>The lanes of a vector compute the parameters of consecutive pixels with the operations of <see cref="GetParametersScalar"/>.</remarks>
     internal void GetParameters(int y, int x, Span<double> parameters)
     {
-        if (Resampler.TestForceScalar || !Vector128.IsHardwareAccelerated)
+        if (parameters.Length < Vector128<double>.Count || !Vector128.IsHardwareAccelerated || Resampler.TestForceScalar)
         {
             GetParametersScalar(y, x, parameters);
         }

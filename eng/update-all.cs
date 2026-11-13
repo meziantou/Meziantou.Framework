@@ -68,7 +68,7 @@ var rootPath = GetRepositoryRoot();
 bool ShouldRunStep(string stepName) => selectedSteps.Count is 0 ? defaultSteps.Contains(stepName, StringComparer.OrdinalIgnoreCase) : selectedSteps.Contains(stepName);
 
 var latestTargetFramework = GetLatestTargetFramework(rootPath);
-var documentationUrls = new Lazy<SortedDictionary<string, string>>(() => GetDocumentationUrls(rootPath), LazyThreadSafetyMode.ExecutionAndPublication);
+var documentationUrls = new Lazy<SortedDictionary<string, string>?>(() => GetDocumentationUrls(rootPath), LazyThreadSafetyMode.ExecutionAndPublication);
 var templatingToolProject = rootPath / "src" / "Meziantou.Framework.Templating.Tool" / "Meziantou.Framework.Templating.Tool.csproj";
 var publicSuffixGeneratorProject = rootPath / "tools" / "Meziantou.Framework.Uri.PublicSuffix.Generator" / "Meziantou.Framework.Uri.PublicSuffix.Generator.csproj";
 
@@ -1062,7 +1062,10 @@ void RunValidateTestProjectsConfigurationStep(FullPath rootPath)
 
 void RunValidateDocumentationPackageIdsStep(FullPath rootPath)
 {
-    var urls = documentationUrls.Value;
+    // The error is already reported: keep the generated file as is
+    if (documentationUrls.Value is not { } urls)
+        return;
+
     var propsPath = rootPath / "eng" / "PackageProjectUrls.props";
 
     // The projects that are not listed, such as the map packages of src/Meziantou.Framework.Geo.Maps.Data, use the URL
@@ -1103,8 +1106,9 @@ void RunValidateDocumentationPackageIdsStep(FullPath rootPath)
 // Each section of the documentation lists the NuGet packages it documents in the 'packageIds' of its _folder.yml file.
 // A group can narrow the list of its parent. Every package of src/ must be documented by exactly one section.
 // Returns the URL of the documentation of each package, used as its project URL (PackageProjectUrl) and in README.md.
-// The docs and readme steps share the result, so the errors are reported once.
-SortedDictionary<string, string> GetDocumentationUrls(FullPath rootPath)
+// The docs and readme steps share the result, so the errors are reported once. Returns null when the URLs cannot be
+// computed, so the steps keep the links they generated before instead of removing them.
+SortedDictionary<string, string>? GetDocumentationUrls(FullPath rootPath)
 {
     const string FolderFileName = "_folder.yml";
     const string PackageIdsKey = "packageIds:";
@@ -1202,21 +1206,22 @@ SortedDictionary<string, string> GetDocumentationUrls(FullPath rootPath)
 
     // The URL of the documentation of a package is the folder of docs/ that lists it, the deepest one when groups narrow
     // the list of their section. The documentation generator redirects a folder URL to the first page of the folder.
-    SortedDictionary<string, string> ComputeUrls()
+    SortedDictionary<string, string>? ComputeUrls()
     {
         const string DocgenFileName = "docgen.json";
 
-        var urls = new SortedDictionary<string, string>(StringComparer.Ordinal);
         var site = JsonNode.Parse(File.ReadAllText(rootPath / DocgenFileName))?["site"];
         var siteUrl = site?["url"]?.GetValue<string>();
         if (string.IsNullOrEmpty(siteUrl))
         {
             ReportError(DocgenFileName, "set 'site.url': the documentation URLs of the packages are computed from it");
-            return urls;
+            return null;
         }
 
         var basePath = site?["basePath"]?.GetValue<string>()?.Trim('/');
         var siteRootUrl = siteUrl.TrimEnd('/') + "/" + (string.IsNullOrEmpty(basePath) ? "" : basePath + "/");
+
+        var urls = new SortedDictionary<string, string>(StringComparer.Ordinal);
 
         foreach (var id in packageIds.Keys)
         {
@@ -1356,6 +1361,10 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
 
     void UpdateNuGetReadme()
     {
+        // The error is already reported: keep the documentation links of README.md as is
+        if (documentationUrls.Value is not { } packageDocumentationUrls)
+            return;
+
         var readmePath = rootPath / "README.md";
         Console.WriteLine("[update-nuget-readme] Starting NuGet README update");
         var nugetUpdateStopwatch = Stopwatch.StartNew();
@@ -1364,7 +1373,6 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
         csprojFiles.Sort((a, b) => string.Compare(Path.GetFileNameWithoutExtension(a), Path.GetFileNameWithoutExtension(b), StringComparison.OrdinalIgnoreCase));
         WriteIfNotLlm($"[update-nuget-readme] NuGet discovery: found {csprojFiles.Count} project files");
 
-        var packageDocumentationUrls = documentationUrls.Value;
         var sb = new StringBuilder();
         sb.Append("| Name | Version | Documentation | Readme |\n");
         sb.Append("| :--- | :---: | :---: | :---: |\n");

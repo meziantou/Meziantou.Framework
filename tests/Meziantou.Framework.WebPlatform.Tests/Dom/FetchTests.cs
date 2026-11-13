@@ -971,6 +971,17 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void CompressionDictionary_ParseUseAsDictionary_ProtocolWithAdjacentWildcards()
+    {
+        // Found by fuzzing: matching the protocol against the special schemes backtracked through every way to split them
+        // between the wildcards
+        var url = global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/app/dictionary.txt", baseUrl: null)!;
+        Assert.Null(CompressionDictionaries.ParseUseAsDictionary("match=\":tt" + new string('*', 70) + "wpp" + new string('*', 9) + "ps://[e//*\"", url));
+        Assert.Null(CompressionDictionaries.ParseUseAsDictionary("match=\"" + string.Concat(Enumerable.Range(0, 1000).Select(i => ":a" + i + "*")) + "x://example.com/*\"", url));
+        Assert.NotNull(CompressionDictionaries.ParseUseAsDictionary("match=\"https://example.com/app/" + new string('*', 100) + "\"", url));
+    }
+
+    [Fact]
     public void CompressionDictionary_BestMatch()
     {
         var url = global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/app/dictionary.txt", baseUrl: null)!;

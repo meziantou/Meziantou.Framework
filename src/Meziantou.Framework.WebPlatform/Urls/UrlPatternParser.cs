@@ -600,6 +600,14 @@ internal static class UrlPatternParser
                 _ => part.Value,
             };
 
+            if (part.Type is UrlPatternPartType.SegmentWildcard or UrlPatternPartType.FullWildcard
+                && part.Modifier is UrlPatternPartModifier.ZeroOrMore or UrlPatternPartModifier.OneOrMore
+                && GenerateRepeatedWildcardRegexp(part, regexpValue) is { } repeatedRegexpValue)
+            {
+                result.Append(repeatedRegexpValue);
+                continue;
+            }
+
             if (part.Prefix.Length == 0 && part.Suffix.Length == 0)
             {
                 if (part.Modifier is UrlPatternPartModifier.None or UrlPatternPartModifier.Optional)
@@ -634,6 +642,36 @@ internal static class UrlPatternParser
 
         result.Append('$');
         return (result.ToString(), nameList);
+    }
+
+    /// <summary>
+    /// The regular expression of a repeated wildcard (the modifier is <c>*</c> or <c>+</c>) without nested quantifiers, or null
+    /// when it cannot be simplified. The regular expression of the specification nests the quantifier of the wildcard in the one
+    /// of the modifier (e.g. "((?:.*)*)" for "**"), so a match that fails tries every way to split the input between the
+    /// iterations: a few wildcards backtrack exponentially. The simplified expression matches the same strings, and the group
+    /// captures the same value: a greedy loop of a wildcard tries the end positions in the same order (from the longest to the
+    /// shortest) as the wildcard alone, the other ways to reach an end position come after the first one.
+    /// </summary>
+    private static string? GenerateRepeatedWildcardRegexp(UrlPatternPart part, string regexpValue)
+    {
+        if (part.Prefix.Length == 0 && part.Suffix.Length == 0)
+        {
+            // "(?:[^/]+?)*" is "[^/]*", "(?:[^/]+?)+" is "[^/]+", and "(?:.*)*" and "(?:.*)+" are ".*"
+            if (part.Type == UrlPatternPartType.FullWildcard)
+                return "(" + FullWildcardRegexpValue + ")";
+
+            var characterClass = regexpValue[..^2];
+            return "(" + characterClass + (part.Modifier == UrlPatternPartModifier.ZeroOrMore ? "*" : "+") + ")";
+        }
+
+        // "(?:/((?:.*)(?:\/(?:.*))*))?" is "(?:/(.*))?": ".*" matches the separator (the suffix and the prefix) unless it
+        // contains a line terminator. A segment wildcard is lazy: with a separator, its first segment ends at the first position
+        // where the next iterations can stop, so a greedy expression would not capture the same value.
+        if (part.Type != UrlPatternPartType.FullWildcard || (part.Suffix + part.Prefix).AsSpan().IndexOfAny("\n\r\u2028\u2029") >= 0)
+            return null;
+
+        var result = "(?:" + EscapeRegexpString(part.Prefix) + "(" + FullWildcardRegexpValue + ")" + EscapeRegexpString(part.Suffix) + ")";
+        return part.Modifier == UrlPatternPartModifier.ZeroOrMore ? result + "?" : result;
     }
 
     /// <summary>https://urlpattern.spec.whatwg.org/#escape-a-regexp-string</summary>

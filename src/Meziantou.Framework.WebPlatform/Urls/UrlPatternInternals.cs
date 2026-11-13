@@ -114,6 +114,8 @@ internal sealed class UrlPatternComponent
 
     public required bool HasRegExpGroups { get; init; }
 
+    public required UrlPatternCompileOptions Options { get; init; }
+
     /// <summary>https://urlpattern.spec.whatwg.org/#compile-a-component</summary>
     public static UrlPatternComponent Compile(string input, Func<string, string> encodingCallback, UrlPatternCompileOptions options)
     {
@@ -130,6 +132,7 @@ internal sealed class UrlPatternComponent
             Parts = partList,
             EncodingCallback = encodingCallback,
             HasRegExpGroups = partList.Exists(part => part.Type == UrlPatternPartType.Regexp),
+            Options = options,
         };
     }
 
@@ -177,11 +180,72 @@ internal sealed class UrlPatternComponent
     }
 
     /// <summary>https://urlpattern.spec.whatwg.org/#protocol-component-matches-a-special-scheme</summary>
+    /// <remarks>
+    /// Without regexp groups, the parts are matched one at a time: the regular expression of the component backtracks through
+    /// every way to split the scheme between its groups before it fails, which is polynomial in the number of adjacent groups
+    /// that can be empty (e.g. "*:a*:b*:c*x"), while the code units of the scheme that the parts can reach are a few bits. The
+    /// regular expression of a part has no lookaround that crosses its bounds on the schemes (which are ASCII), so the parts
+    /// match the scheme when the regular expression of the component matches it. The regexp groups are regular expressions
+    /// that can refer to the other groups (backreferences), so they are matched with the regular expression of the component.
+    /// </remarks>
     public bool MatchesSpecialScheme()
     {
-        foreach (var scheme in (ReadOnlySpan<string>)["ftp", "file", "http", "https", "ws", "wss"])
+        ReadOnlySpan<string> schemes = ["ftp", "file", "http", "https", "ws", "wss"];
+        if (HasRegExpGroups)
         {
-            if (RegularExpression.IsMatch(scheme))
+            foreach (var scheme in schemes)
+            {
+                if (RegularExpression.IsMatch(scheme))
+                    return true;
+            }
+
+            return false;
+        }
+
+        // Bit i of reachable[s] is set when the parts matched so far match the first i code units of schemes[s]
+        Span<int> reachable = stackalloc int[schemes.Length];
+        reachable.Fill(1);
+        var partRegularExpressions = new Dictionary<string, Regex>(StringComparer.Ordinal);
+        foreach (var part in Parts)
+        {
+            var (partRegularExpressionString, _) = UrlPatternParser.GenerateRegularExpressionAndNameList([part], Options);
+            if (!partRegularExpressions.TryGetValue(partRegularExpressionString, out var partRegularExpression))
+            {
+                partRegularExpression = EcmaScriptRegex.Create(partRegularExpressionString, Options.IgnoreCase)
+                    ?? throw new InvalidOperationException($"The regular expression '{partRegularExpressionString}' of a part is not valid");
+                partRegularExpressions.Add(partRegularExpressionString, partRegularExpression);
+            }
+
+            var anyReachable = false;
+            for (var index = 0; index < schemes.Length; index++)
+            {
+                var scheme = schemes[index];
+                var next = 0;
+                for (var start = 0; start <= scheme.Length; start++)
+                {
+                    if ((reachable[index] & (1 << start)) == 0)
+                        continue;
+
+                    for (var end = start; end <= scheme.Length; end++)
+                    {
+                        if ((next & (1 << end)) == 0 && partRegularExpression.IsMatch(scheme.AsSpan(start, end - start)))
+                        {
+                            next |= 1 << end;
+                        }
+                    }
+                }
+
+                reachable[index] = next;
+                anyReachable |= next != 0;
+            }
+
+            if (!anyReachable)
+                return false;
+        }
+
+        for (var index = 0; index < schemes.Length; index++)
+        {
+            if ((reachable[index] & (1 << schemes[index].Length)) != 0)
                 return true;
         }
 

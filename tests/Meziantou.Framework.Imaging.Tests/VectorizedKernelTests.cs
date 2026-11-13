@@ -5947,16 +5947,19 @@ public sealed class VectorizedKernelTests
                     var extent = random.Next(2) == 0 ? edges : Rectangle.FromLTRB(edges.Left - 2, edges.Top - 3, edges.Right + 1, edges.Bottom + 2);
                     var values = Enumerable.Range(0, 4 * width * height).Select(_ => random.Next(5) == 0 ? 0f : (float)random.NextDouble()).ToArray();
                     var sigmaX = random.Next(3) == 0 ? 0 : sigma * random.NextDouble();
-                    var expected = Blur(useColumnStrips: false);
-                    var actual = Blur(useColumnStrips: true);
-                    for (var i = 0; i < expected.Length; i++)
+                    // The strips and the lines summed a pixel at a time, together and the lines alone (they blur the columns then)
+                    var expected = Blur(useColumnStrips: false, useVectorPixels: false);
+                    foreach (var actual in new[] { Blur(useColumnStrips: true, useVectorPixels: true), Blur(useColumnStrips: false, useVectorPixels: true) })
                     {
-                        Assert.Equal(BitConverter.SingleToInt32Bits(expected[i]), BitConverter.SingleToInt32Bits(actual[i]));
+                        for (var i = 0; i < expected.Length; i++)
+                        {
+                            Assert.Equal(BitConverter.SingleToInt32Bits(expected[i]), BitConverter.SingleToInt32Bits(actual[i]));
+                        }
                     }
 
-                    float[] Blur(bool useColumnStrips)
+                    float[] Blur(bool useColumnStrips, bool useVectorPixels)
                     {
-                        using var processor = new FilterProcessor(scope, ImageConfiguration.Default) { UseColumnStrips = useColumnStrips };
+                        using var processor = new FilterProcessor(scope, ImageConfiguration.Default) { UseColumnStrips = useColumnStrips, UseVectorPixels = useVectorPixels };
                         processor.Configure(edges, edgeOverride: null, 1, 1, 1, 0, 0, 1, 0, 0, CancellationToken.None);
                         processor.Extent = extent;
                         using var surface = new FilterSurface(scope, bounds);
@@ -6100,6 +6103,114 @@ public sealed class VectorizedKernelTests
                 canvas.FillRectangle(brush, new RectangleD(3.25, 2, 41, 9));
                 canvas.FillEllipse(brush, new PointD(40, 15), 23.5, 6.25);
             }, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingFilterPixelConversionsMatchTheScalarReferences()
+    {
+        // Every length up to a few pixels, extreme samples, and values that are not colors: negative, beyond one, tiny
+        // alphas, infinities and values that are not numbers
+        var random = new Random(20261113);
+        float[] specials = [0, -0f, 1, -1, 2, 1e-30f, 1e-45f, float.Epsilon, 0.5f, 1 - 1e-7f, float.PositiveInfinity, float.NegativeInfinity, float.NaN, 1 / 65535f, 0.5f / 255];
+        double[][] matrices =
+        [
+            ColorMatrix.CreateSepia(0.7).Values.ToArray(),
+            ColorMatrix.CreateHueRotation(77).Values.ToArray(),
+            [3, -2, 0.5, 1, -0.25, -1, 0, 0, 0, 1.5, 1e300, 1e300, 0, 0, 0, 1e308, -1e308, 1e308, -1e308, 0],
+            [.. Enumerable.Range(0, 20).Select(_ => (random.NextDouble() * 4) - 2)],
+        ];
+        for (var round = 0; round < 2000; round++)
+        {
+            var count = random.Next(0, 12);
+            var colors = new Rgba64[count];
+            for (var i = 0; i < count; i++)
+            {
+                colors[i] = new Rgba64(NextSample(), NextSample(), NextSample(), NextSample());
+            }
+
+            var expected = new float[4 * count];
+            var actual = new float[4 * count];
+            FilterProcessor.ConvertRowScalar(colors, expected);
+            FilterProcessor.ConvertRow(colors, actual);
+            AssertSameBits(expected, actual);
+
+            var values = new float[4 * count];
+            for (var i = 0; i < values.Length; i++)
+            {
+                values[i] = random.Next(4) switch
+                {
+                    0 => specials[random.Next(specials.Length)],
+                    1 => (float)(random.NextDouble() * 1.2) - 0.1f,
+                    _ => (float)random.NextDouble(),
+                };
+            }
+
+            var expectedWide = new Rgba64[count];
+            var actualWide = new Rgba64[count];
+            FilterProcessor.WriteRowScalar(values, expectedWide, default, isWide: true);
+            FilterProcessor.WriteRow(values, actualWide);
+            Assert.Equal(expectedWide, actualWide);
+
+            var expectedNarrow = new Rgba32[count];
+            var actualNarrow = new Rgba32[count];
+            FilterProcessor.WriteRowScalar(values, default, expectedNarrow, isWide: false);
+            FilterProcessor.WriteRow(values, actualNarrow);
+            Assert.Equal(expectedNarrow, actualNarrow);
+
+            var matrix = matrices[random.Next(matrices.Length)];
+            var expectedMatrix = values.ToArray();
+            var actualMatrix = values.ToArray();
+            FilterProcessor.ApplyColorMatrixScalar(expectedMatrix, matrix);
+            FilterProcessor.ApplyColorMatrix(actualMatrix, matrix);
+            AssertSameBits(expectedMatrix, actualMatrix);
+        }
+
+        ushort NextSample() => random.Next(4) switch
+        {
+            0 => 0,
+            1 => ushort.MaxValue,
+            _ => (ushort)random.Next(65536),
+        };
+
+        static void AssertSameBits(float[] expected, float[] actual)
+        {
+            for (var i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(BitConverter.SingleToInt32Bits(expected[i]), BitConverter.SingleToInt32Bits(actual[i]));
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingFilterShadowCompositingMatchesTheScalarReference()
+    {
+        // Shadows inside, around and beyond the surface, translucent and opaque pixels, the shadow alone or under them
+        var random = new Random(20261114);
+        var scope = AllocationScope.Create(configuration: null);
+        for (var round = 0; round < 300; round++)
+        {
+            var bounds = new Rectangle(random.Next(-4, 5), random.Next(-4, 5), random.Next(1, 12), random.Next(1, 9));
+            var shadowBounds = new Rectangle(bounds.Left + random.Next(-3, 4), bounds.Top + random.Next(-3, 4), random.Next(1, 14), random.Next(1, 11));
+            var values = Enumerable.Range(0, 4 * bounds.Width * bounds.Height).Select(_ => random.Next(5) == 0 ? 0f : (float)random.NextDouble()).ToArray();
+            var alphas = Enumerable.Range(0, 4 * shadowBounds.Width * shadowBounds.Height).Select(_ => random.Next(6) == 0 ? (float)(random.NextDouble() * 3) - 1 : (float)random.NextDouble()).ToArray();
+            var (shiftX, shiftY) = (random.Next(-3, 4), random.Next(-3, 4));
+            var (red, green, blue, opacity) = (random.NextDouble(), random.NextDouble(), random.NextDouble(), random.Next(4) == 0 ? 1 : random.NextDouble() * 1.5);
+            var shadowOnly = random.Next(3) == 0;
+            using var shadow = new FilterSurface(scope, shadowBounds);
+            alphas.CopyTo(shadow.Values);
+            using var expected = new FilterSurface(scope, bounds);
+            using var actual = new FilterSurface(scope, bounds);
+            values.CopyTo(expected.Values);
+            values.CopyTo(actual.Values);
+            FilterProcessor.CompositeShadowScalar(expected, shadow, shiftX, shiftY, red, green, blue, opacity, shadowOnly);
+            FilterProcessor.CompositeShadow(actual, shadow, shiftX, shiftY, red, green, blue, opacity, shadowOnly);
+            for (var i = 0; i < values.Length; i++)
+            {
+                Assert.Equal(BitConverter.SingleToInt32Bits(expected.Values[i]), BitConverter.SingleToInt32Bits(actual.Values[i]));
+            }
+        }
     }
 
     [Fact]

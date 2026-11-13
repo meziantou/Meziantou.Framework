@@ -1,5 +1,7 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -87,6 +89,13 @@ internal sealed class FilterProcessor : IDisposable
     /// same bits.
     /// </summary>
     internal bool UseColumnStrips { get; set; } = Vector128.IsHardwareAccelerated;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the passes of the blurs that read lines of pixels sum each pixel with
+    /// vectors, its four channels as the lanes (the default when vectors are accelerated), rather than channel by channel
+    /// (the scalar reference). Both give the same bits.
+    /// </summary>
+    internal bool UseVectorPixels { get; set; } = Vector128.IsHardwareAccelerated;
 
     /// <summary>Gets or sets the rectangle the edge modes apply to; setting it sets <see cref="Extent"/> too.</summary>
     public Rectangle Edges
@@ -196,16 +205,53 @@ internal sealed class FilterProcessor : IDisposable
         for (var y = bounds.Top; y < bounds.Bottom; y++)
         {
             frame.ReadRgba64(storage, y, bounds.Left, row);
-            var values = surface.GetRow(y);
-            for (var x = 0; x < row.Length; x++)
-            {
-                var pixel = row[x];
-                var alpha = pixel.A / 65535.0;
-                values[4 * x] = (float)(pixel.R / 65535.0 * alpha);
-                values[(4 * x) + 1] = (float)(pixel.G / 65535.0 * alpha);
-                values[(4 * x) + 2] = (float)(pixel.B / 65535.0 * alpha);
-                values[(4 * x) + 3] = (float)alpha;
-            }
+            ConvertRow(row, surface.GetRow(y));
+        }
+    }
+
+    /// <summary>Converts 16-bit colors to colors multiplied by their alpha, as fractions of one, with vectors when they are accelerated.</summary>
+    internal static void ConvertRow(ReadOnlySpan<Rgba64> row, Span<float> values)
+    {
+        if (Vector256.IsHardwareAccelerated && Avx.IsSupported)
+        {
+            ConvertRow<Quad256>(row, values);
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            ConvertRow<Quad128>(row, values);
+        }
+        else
+        {
+            ConvertRowScalar(row, values);
+        }
+    }
+
+    /// <summary>Converts 16-bit colors as <see cref="ConvertRowScalar"/> does, a pixel at a time as the lanes of <typeparamref name="TQuad"/>: <c>(R, G, B, A) / 65535 * (a, a, a, 1)</c>.</summary>
+    private static void ConvertRow<TQuad>(ReadOnlySpan<Rgba64> row, Span<float> values)
+        where TQuad : struct, IQuad<TQuad>
+    {
+        values = values[..(4 * row.Length)];
+        ref var target = ref unsafe(MemoryMarshal.GetReference(values));
+        var scale = TQuad.Create(65535.0);
+        for (var x = 0; x < row.Length; x++)
+        {
+            var pixel = row[x];
+            var alpha = pixel.A / 65535.0;
+            TQuad.Store(TQuad.FromSamples(unsafe(Unsafe.BitCast<Rgba64, ulong>(pixel))) / scale * TQuad.Create(alpha, alpha, alpha, 1), ref unsafe(Unsafe.Add(ref target, 4 * x)));
+        }
+    }
+
+    /// <summary>Converts 16-bit colors to colors multiplied by their alpha, as fractions of one (the scalar reference of <see cref="ConvertRow"/>).</summary>
+    internal static void ConvertRowScalar(ReadOnlySpan<Rgba64> row, Span<float> values)
+    {
+        for (var x = 0; x < row.Length; x++)
+        {
+            var pixel = row[x];
+            var alpha = pixel.A / 65535.0;
+            values[4 * x] = (float)(pixel.R / 65535.0 * alpha);
+            values[(4 * x) + 1] = (float)(pixel.G / 65535.0 * alpha);
+            values[(4 * x) + 2] = (float)(pixel.B / 65535.0 * alpha);
+            values[(4 * x) + 3] = (float)alpha;
         }
     }
 
@@ -217,34 +263,111 @@ internal sealed class FilterProcessor : IDisposable
             return;
 
         var isWide = storage.BytesPerPixel == 8;
-        var max = isWide ? 65535.0 : 255.0;
         for (var y = area.Top; y < area.Bottom; y++)
         {
-            var values = surface.GetRow(y);
+            var values = surface.GetRow(y).Slice(4 * (area.Left - surface.Bounds.Left), 4 * area.Width);
             var row = storage.GetRowSpanCore(y);
-            var wide = isWide ? unsafe(MemoryMarshal.Cast<byte, Rgba64>(row)) : default;
-            var narrow = isWide ? default : unsafe(MemoryMarshal.Cast<byte, Rgba32>(row));
-            for (var x = area.Left; x < area.Right; x++)
+            if (isWide)
             {
-                var offset = 4 * (x - surface.Bounds.Left);
-                double alpha = values[offset + 3];
-                var a = Round(alpha * max, max);
-                double r = 0, g = 0, b = 0;
-                if (a != 0)
-                {
-                    r = Round(values[offset] / alpha * max, max);
-                    g = Round(values[offset + 1] / alpha * max, max);
-                    b = Round(values[offset + 2] / alpha * max, max);
-                }
+                WriteRow(values, unsafe(MemoryMarshal.Cast<byte, Rgba64>(row)).Slice(area.Left, area.Width));
+            }
+            else
+            {
+                WriteRow(values, unsafe(MemoryMarshal.Cast<byte, Rgba32>(row)).Slice(area.Left, area.Width));
+            }
+        }
+    }
 
-                if (isWide)
-                {
-                    wide[x] = a == 0 ? default : new Rgba64((ushort)r, (ushort)g, (ushort)b, (ushort)a);
-                }
-                else
-                {
-                    narrow[x] = a == 0 ? default : new Rgba32((byte)r, (byte)g, (byte)b, (byte)a);
-                }
+    /// <summary>Converts colors multiplied by their alpha to straight 16-bit colors, rounded, with vectors when they are accelerated.</summary>
+    internal static void WriteRow(ReadOnlySpan<float> values, Span<Rgba64> pixels)
+    {
+        if (Vector256.IsHardwareAccelerated && Avx.IsSupported)
+        {
+            WriteRow<Quad256>(values, pixels, unsafe(MemoryMarshal.Cast<Rgba64, byte>(pixels)), isWide: true);
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            WriteRow<Quad128>(values, pixels, unsafe(MemoryMarshal.Cast<Rgba64, byte>(pixels)), isWide: true);
+        }
+        else
+        {
+            WriteRowScalar(values, pixels, default, isWide: true);
+        }
+    }
+
+    /// <summary>Converts colors multiplied by their alpha to straight 8-bit colors, rounded, with vectors when they are accelerated.</summary>
+    internal static void WriteRow(ReadOnlySpan<float> values, Span<Rgba32> pixels)
+    {
+        if (Vector256.IsHardwareAccelerated && Avx.IsSupported)
+        {
+            WriteRow<Quad256>(values, default, unsafe(MemoryMarshal.Cast<Rgba32, byte>(pixels)), isWide: false);
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            WriteRow<Quad128>(values, default, unsafe(MemoryMarshal.Cast<Rgba32, byte>(pixels)), isWide: false);
+        }
+        else
+        {
+            WriteRowScalar(values, default, pixels, isWide: false);
+        }
+    }
+
+    /// <summary>
+    /// Converts colors multiplied by their alpha to straight colors as <see cref="WriteRowScalar"/> does, a pixel at a time
+    /// as the lanes of <typeparamref name="TQuad"/>: <c>(r, g, b, a) / (a, a, a, 1) * max</c>, rounded.
+    /// </summary>
+    private static void WriteRow<TQuad>(ReadOnlySpan<float> values, Span<Rgba64> wide, Span<byte> bytes, bool isWide)
+        where TQuad : struct, IQuad<TQuad>
+    {
+        var count = values.Length / 4;
+        if (bytes.Length < count * (isWide ? 8 : 4))
+            throw new ArgumentException("The pixels must hold the values.", nameof(bytes));
+
+        var max = isWide ? 65535.0 : 255.0;
+        var scale = TQuad.Create(max);
+        ref var source = ref unsafe(MemoryMarshal.GetReference(values));
+        for (var x = 0; x < count; x++)
+        {
+            ref var entry = ref unsafe(Unsafe.Add(ref source, 4 * x));
+            double alpha = unsafe(Unsafe.Add(ref entry, 3));
+            var rounded = TQuad.RoundSamples(TQuad.Load(ref entry) / TQuad.Create(alpha, alpha, alpha, 1) * scale, max);
+            var samples = TQuad.GetAlpha(rounded) == 0 ? 0 : TQuad.ToSamples(rounded);
+            if (isWide)
+            {
+                wide[x] = unsafe(Unsafe.BitCast<ulong, Rgba64>(samples));
+            }
+            else
+            {
+                // The samples are below 256: the low byte of each
+                unsafe { Unsafe.WriteUnaligned(ref bytes[4 * x], (uint)((samples & 0xFF) | ((samples >> 8) & 0xFF00) | ((samples >> 16) & 0xFF_0000) | ((samples >> 24) & 0xFF00_0000))); }
+            }
+        }
+    }
+
+    /// <summary>Converts colors multiplied by their alpha to straight colors, rounded (the scalar reference of <see cref="WriteRow(ReadOnlySpan{float}, Span{Rgba64})"/>).</summary>
+    internal static void WriteRowScalar(ReadOnlySpan<float> values, Span<Rgba64> wide, Span<Rgba32> narrow, bool isWide)
+    {
+        var max = isWide ? 65535.0 : 255.0;
+        for (var x = 0; x < values.Length / 4; x++)
+        {
+            var offset = 4 * x;
+            double alpha = values[offset + 3];
+            var a = Round(alpha * max, max);
+            double r = 0, g = 0, b = 0;
+            if (a != 0)
+            {
+                r = Round(values[offset] / alpha * max, max);
+                g = Round(values[offset + 1] / alpha * max, max);
+                b = Round(values[offset + 2] / alpha * max, max);
+            }
+
+            if (isWide)
+            {
+                wide[x] = a == 0 ? default : new Rgba64((ushort)r, (ushort)g, (ushort)b, (ushort)a);
+            }
+            else
+            {
+                narrow[x] = a == 0 ? default : new Rgba32((byte)r, (byte)g, (byte)b, (byte)a);
             }
         }
 
@@ -306,7 +429,60 @@ internal sealed class FilterProcessor : IDisposable
         }
     }
 
-    private static void ApplyColorMatrix(Span<float> values, ReadOnlySpan<double> m)
+    /// <summary>Applies a color matrix to the straight colors of pixels, with vectors when they are accelerated.</summary>
+    internal static void ApplyColorMatrix(Span<float> values, ReadOnlySpan<double> m)
+    {
+        if (Vector256.IsHardwareAccelerated && Avx.IsSupported)
+        {
+            ApplyColorMatrix<Quad256>(values, m);
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            ApplyColorMatrix<Quad128>(values, m);
+        }
+        else
+        {
+            ApplyColorMatrixScalar(values, m);
+        }
+    }
+
+    /// <summary>
+    /// Applies a color matrix as <see cref="ApplyColorMatrixScalar"/> does, a pixel at a time: the four results are the
+    /// lanes of <typeparamref name="TQuad"/>, each the sum of the same five products in the same order, the columns of the
+    /// matrix being the vectors.
+    /// </summary>
+    private static void ApplyColorMatrix<TQuad>(Span<float> values, ReadOnlySpan<double> m)
+        where TQuad : struct, IQuad<TQuad>
+    {
+        if (m.Length < 20)
+            throw new ArgumentException("The matrix must have 20 values.", nameof(m));
+
+        var red = TQuad.Create(m[0], m[5], m[10], m[15]);
+        var green = TQuad.Create(m[1], m[6], m[11], m[16]);
+        var blue = TQuad.Create(m[2], m[7], m[12], m[17]);
+        var alpha = TQuad.Create(m[3], m[8], m[13], m[18]);
+        var offset = TQuad.Create(m[4], m[9], m[14], m[19]);
+        ref var source = ref unsafe(MemoryMarshal.GetReference(values));
+        for (var i = 0; i + 4 <= values.Length; i += 4)
+        {
+            ref var entry = ref unsafe(Unsafe.Add(ref source, i));
+            double a = unsafe(Unsafe.Add(ref entry, 3));
+            double r = 0, g = 0, b = 0;
+            if (a > 0)
+            {
+                r = entry / a;
+                g = unsafe(Unsafe.Add(ref entry, 1)) / a;
+                b = unsafe(Unsafe.Add(ref entry, 2)) / a;
+            }
+
+            var result = TQuad.Clamp((red * TQuad.Create(r)) + (green * TQuad.Create(g)) + (blue * TQuad.Create(b)) + (alpha * TQuad.Create(a)) + offset);
+            var resultAlpha = TQuad.GetAlpha(result);
+            TQuad.Store(result * TQuad.Create(resultAlpha, resultAlpha, resultAlpha, 1), ref entry);
+        }
+    }
+
+    /// <summary>Applies a color matrix to the straight colors of pixels (the scalar reference of <see cref="ApplyColorMatrix(Span{float}, ReadOnlySpan{double})"/>).</summary>
+    internal static void ApplyColorMatrixScalar(Span<float> values, ReadOnlySpan<double> m)
     {
         for (var i = 0; i < values.Length; i += 4)
         {
@@ -445,6 +621,54 @@ internal sealed class FilterProcessor : IDisposable
     /// <param name="shadowOnly"><see langword="true"/> to replace the surface by its shadow.</param>
     public static void CompositeShadow(FilterSurface surface, FilterSurface shadow, int shiftX, int shiftY, double red, double green, double blue, double opacity, bool shadowOnly)
     {
+        if (Vector256.IsHardwareAccelerated && Avx.IsSupported)
+        {
+            CompositeShadow<Quad256>(surface, shadow, shiftX, shiftY, red, green, blue, opacity, shadowOnly);
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            CompositeShadow<Quad128>(surface, shadow, shiftX, shiftY, red, green, blue, opacity, shadowOnly);
+        }
+        else
+        {
+            CompositeShadowScalar(surface, shadow, shiftX, shiftY, red, green, blue, opacity, shadowOnly);
+        }
+    }
+
+    /// <summary>
+    /// Paints the color of a shadow as <see cref="CompositeShadowScalar"/> does, a pixel at a time as the lanes of
+    /// <typeparamref name="TQuad"/>: <c>keep * pixel + (under * (red, green, blue, 1)) * alpha</c>.
+    /// </summary>
+    private static void CompositeShadow<TQuad>(FilterSurface surface, FilterSurface shadow, int shiftX, int shiftY, double red, double green, double blue, double opacity, bool shadowOnly)
+        where TQuad : struct, IQuad<TQuad>
+    {
+        var target = shadow.Values;
+        var bounds = surface.Bounds;
+        var shadowBounds = shadow.Bounds;
+        var color = TQuad.Create(red, green, blue, 1);
+        var keep = shadowOnly ? 0 : 1d;
+        var keepFactor = TQuad.Create(keep);
+        for (var y = bounds.Top; y < bounds.Bottom; y++)
+        {
+            var shadowY = y + shiftY;
+            var hasRow = shadowY >= shadowBounds.Top && shadowY < shadowBounds.Bottom;
+            var row = surface.GetRow(y);
+            ref var pixels = ref unsafe(MemoryMarshal.GetReference(row));
+            for (var x = bounds.Left; x < bounds.Right; x++)
+            {
+                ref var pixel = ref unsafe(Unsafe.Add(ref pixels, 4 * (x - bounds.Left)));
+                var shadowX = x + shiftX;
+                var shadowAlpha = hasRow && shadowX >= shadowBounds.Left && shadowX < shadowBounds.Right ? target[shadow.IndexOf(shadowX, shadowY) + 3] : 0f;
+                var alpha = Math.Clamp(shadowAlpha * opacity, 0, 1);
+                var under = 1 - (keep * unsafe(Unsafe.Add(ref pixel, 3)));
+                TQuad.Store((keepFactor * TQuad.Load(ref pixel)) + (TQuad.Create(under) * color * TQuad.Create(alpha)), ref pixel);
+            }
+        }
+    }
+
+    /// <summary>Paints the color of a shadow under the pixels of a surface, or replaces them by it (the scalar reference of <see cref="CompositeShadow"/>).</summary>
+    internal static void CompositeShadowScalar(FilterSurface surface, FilterSurface shadow, int shiftX, int shiftY, double red, double green, double blue, double opacity, bool shadowOnly)
+    {
         var source = surface.Values;
         var target = shadow.Values;
         var bounds = surface.Bounds;
@@ -581,9 +805,19 @@ internal sealed class FilterProcessor : IDisposable
 
             // The line, copied: the blur reads it while it is written
             var first = horizontal ? 4 * index * bounds.Width : 4 * index;
-            for (var i = 0; i < length; i++)
+            CopyLine(values, first, stride, line);
+            if (UseVectorPixels)
             {
-                values.Slice(first + (i * stride), 4).CopyTo(line.Slice(4 * i, 4));
+                if (Vector256.IsHardwareAccelerated && Avx.IsSupported)
+                {
+                    WeightLine<Quad256>(line, values, first, stride, weights, radius, start, edgeStart, edgeEnd, mode);
+                }
+                else
+                {
+                    WeightLine<Quad128>(line, values, first, stride, weights, radius, start, edgeStart, edgeEnd, mode);
+                }
+
+                continue;
             }
 
             for (var i = 0; i < length; i++)
@@ -646,9 +880,19 @@ internal sealed class FilterProcessor : IDisposable
             }
 
             var first = horizontal ? 4 * index * bounds.Width : 4 * index;
-            for (var i = 0; i < length; i++)
+            CopyLine(values, first, stride, line);
+            if (UseVectorPixels)
             {
-                values.Slice(first + (i * stride), 4).CopyTo(line.Slice(4 * i, 4));
+                if (Vector256.IsHardwareAccelerated && Avx.IsSupported)
+                {
+                    BoxLine<Quad256>(line, values, first, stride, before, after, start, edgeStart, edgeEnd, mode);
+                }
+                else
+                {
+                    BoxLine<Quad128>(line, values, first, stride, before, after, start, edgeStart, edgeEnd, mode);
+                }
+
+                continue;
             }
 
             // The window of the first pixel, then each step adds the pixel that enters it and removes the one that leaves it
@@ -684,6 +928,109 @@ internal sealed class FilterProcessor : IDisposable
             sum[1] += sign * entry[1];
             sum[2] += sign * entry[2];
             sum[3] += sign * entry[3];
+        }
+    }
+
+    /// <summary>Copies the pixels of a line of a surface, one after the other.</summary>
+    private static void CopyLine(ReadOnlySpan<float> values, int first, int stride, Span<float> line)
+    {
+        if (stride == 4)
+        {
+            values.Slice(first, line.Length).CopyTo(line);
+            return;
+        }
+
+        for (var i = 0; i < line.Length / 4; i++)
+        {
+            values.Slice(first + (i * stride), 4).CopyTo(line.Slice(4 * i, 4));
+        }
+    }
+
+    /// <summary>
+    /// Blurs a copied line with weights into a surface, as <see cref="BlurAxis"/> does, a pixel at a time as the lanes of
+    /// <typeparamref name="TQuad"/>: the sum of the weight of each tap times its pixel, in the order of the taps.
+    /// </summary>
+    private static void WeightLine<TQuad>(ReadOnlySpan<float> line, Span<float> values, int first, int stride, ReadOnlySpan<double> weights, int radius, int start, int edgeStart, int edgeEnd, FilterEdgeMode mode)
+        where TQuad : struct, IQuad<TQuad>
+    {
+        var length = line.Length / 4;
+        if ((long)first + ((long)(length - 1) * stride) + 4 > values.Length)
+            throw new ArgumentOutOfRangeException(nameof(first));
+
+        ref var source = ref unsafe(MemoryMarshal.GetReference(line));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(values));
+        // The pixels whose taps are all in the edges and in the line read them where they are
+        var interiorStart = Math.Max(edgeStart, start) - start + radius;
+        var interiorEnd = Math.Min(edgeEnd, start + length) - start - radius;
+        for (var i = 0; i < length; i++)
+        {
+            var sum = TQuad.Zero;
+            if (i >= interiorStart && i < interiorEnd)
+            {
+                ref var window = ref unsafe(Unsafe.Add(ref source, 4 * (i - radius)));
+                for (var tap = 0; tap < weights.Length; tap++)
+                {
+                    sum += TQuad.Create(weights[tap]) * TQuad.Load(ref unsafe(Unsafe.Add(ref window, 4 * tap)));
+                }
+
+                TQuad.Store(sum, ref unsafe(Unsafe.Add(ref target, first + (i * stride))));
+                continue;
+            }
+
+            for (var tap = 0; tap < weights.Length; tap++)
+            {
+                // The index is in the line, or negative
+                var at = MapIndex(start + i - radius + tap, start, length, edgeStart, edgeEnd, mode);
+                if (at >= 0)
+                {
+                    sum += TQuad.Create(weights[tap]) * TQuad.Load(ref unsafe(Unsafe.Add(ref source, 4 * at)));
+                }
+            }
+
+            TQuad.Store(sum, ref unsafe(Unsafe.Add(ref target, first + (i * stride))));
+        }
+    }
+
+    /// <summary>
+    /// Averages the windows of a copied line into a surface, as <see cref="BoxAxis"/> does, a pixel at a time as the lanes
+    /// of <typeparamref name="TQuad"/>: the sums of the first window, then each step adds the pixel that enters the window
+    /// and subtracts the one that leaves it.
+    /// </summary>
+    private static void BoxLine<TQuad>(ReadOnlySpan<float> line, Span<float> values, int first, int stride, int before, int after, int start, int edgeStart, int edgeEnd, FilterEdgeMode mode)
+        where TQuad : struct, IQuad<TQuad>
+    {
+        var length = line.Length / 4;
+        if ((long)first + ((long)(length - 1) * stride) + 4 > values.Length)
+            throw new ArgumentOutOfRangeException(nameof(first));
+
+        // The indexes are in the line, or negative
+        ref var source = ref unsafe(MemoryMarshal.GetReference(line));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(values));
+        var sum = TQuad.Zero;
+        for (var offset = -before; offset <= after; offset++)
+        {
+            var at = MapIndex(start + offset, start, length, edgeStart, edgeEnd, mode);
+            if (at >= 0)
+            {
+                sum += TQuad.Load(ref unsafe(Unsafe.Add(ref source, 4 * at)));
+            }
+        }
+
+        var size = TQuad.Create(before + after + 1);
+        for (var i = 0; i < length; i++)
+        {
+            TQuad.Store(sum / size, ref unsafe(Unsafe.Add(ref target, first + (i * stride))));
+            var entering = MapIndex(start + i + after + 1, start, length, edgeStart, edgeEnd, mode);
+            if (entering >= 0)
+            {
+                sum += TQuad.Load(ref unsafe(Unsafe.Add(ref source, 4 * entering)));
+            }
+
+            var leaving = MapIndex(start + i - before, start, length, edgeStart, edgeEnd, mode);
+            if (leaving >= 0)
+            {
+                sum -= TQuad.Load(ref unsafe(Unsafe.Add(ref source, 4 * leaving)));
+            }
         }
     }
 
@@ -960,7 +1307,21 @@ internal sealed class FilterProcessor : IDisposable
     }
 
     /// <summary>Gets the index in a line of the pixel an edge mode reads at a position, or -1 for a transparent pixel.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int MapIndex(int position, int start, int length, int edgeStart, int edgeEnd, FilterEdgeMode mode)
+    {
+        // A position within the edges is not moved
+        if (position >= edgeStart && position < edgeEnd)
+        {
+            var inside = position - start;
+            return (uint)inside < (uint)length ? inside : -1;
+        }
+
+        return MapIndexOutside(position, start, length, edgeStart, edgeEnd, mode);
+    }
+
+    /// <summary>Gets the index in a line of the pixel an edge mode reads at a position outside the edges, or -1 for a transparent pixel.</summary>
+    private static int MapIndexOutside(int position, int start, int length, int edgeStart, int edgeEnd, FilterEdgeMode mode)
     {
         if (!TryMap(ref position, edgeStart, edgeEnd, mode))
             return -1;
@@ -982,6 +1343,202 @@ internal sealed class FilterProcessor : IDisposable
             return 0;
 
         return surface.Values[(4 * (((y - bounds.Top) * bounds.Width) + (x - bounds.Left))) + 3];
+    }
+
+    /// <summary>
+    /// The four channels of a pixel as doubles, as the lanes of vectors, (red, green, blue, alpha): each lane has the
+    /// operations of the scalar code on its channel, in the same order, without a fused multiply-add.
+    /// </summary>
+    internal interface IQuad<TSelf>
+        where TSelf : struct, IQuad<TSelf>
+    {
+        static abstract TSelf Zero { get; }
+
+        static abstract TSelf Create(double value);
+
+        static abstract TSelf Create(double red, double green, double blue, double alpha);
+
+        /// <summary>Converts the four 16-bit samples of a color (the bits of an <see cref="Rgba64"/>) to doubles.</summary>
+        static abstract TSelf FromSamples(ulong color);
+
+        /// <summary>Loads four floats, as doubles.</summary>
+        static abstract TSelf Load(ref float source);
+
+        /// <summary>Stores the lanes as four floats, each rounded as a conversion of a double to a float is.</summary>
+        static abstract void Store(TSelf value, ref float target);
+
+        static abstract double GetAlpha(TSelf value);
+
+        /// <summary>Brings each lane between 0 and 1: <c>v &gt; 0 ? (v &lt; 1 ? v : 1) : 0</c>, so a value that is not a number is zero.</summary>
+        static abstract TSelf Clamp(TSelf value);
+
+        /// <summary>Rounds each lane as <see cref="Write"/> does: <c>floor(v + 1/2 + 2^-20)</c>, then <c>max</c> from <c>max</c> up, 0 when it is not positive.</summary>
+        static abstract TSelf RoundSamples(TSelf value, double max);
+
+        /// <summary>Converts lanes that are whole numbers from 0 to 65535 to the bits of an <see cref="Rgba64"/>.</summary>
+        static abstract ulong ToSamples(TSelf value);
+
+        static abstract TSelf operator +(TSelf left, TSelf right);
+
+        static abstract TSelf operator -(TSelf left, TSelf right);
+
+        static abstract TSelf operator *(TSelf left, TSelf right);
+
+        static abstract TSelf operator /(TSelf left, TSelf right);
+    }
+
+    /// <summary>The four channels of a pixel in one vector of 256 bits, with AVX.</summary>
+    internal readonly struct Quad256 : IQuad<Quad256>
+    {
+        private readonly Vector256<double> _value;
+
+        private Quad256(Vector256<double> value) => _value = value;
+
+        public static Quad256 Zero => default;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad256 Create(double value) => new(Vector256.Create(value));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad256 Create(double red, double green, double blue, double alpha) => new(Vector256.Create(red, green, blue, alpha));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad256 FromSamples(ulong color) => new(Avx.ConvertToVector256Double(Sse41.ConvertToVector128Int32(Vector128.CreateScalar(color).AsUInt16())));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad256 Load(ref float source) => new(Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref source))));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Store(Quad256 value, ref float target)
+        {
+            unsafe { Avx.ConvertToVector128Single(value._value).StoreUnsafe(ref target); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetAlpha(Quad256 value) => value._value.GetElement(3);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad256 Clamp(Quad256 value)
+        {
+            var one = Vector256.Create(1.0);
+            return new(Vector256.ConditionalSelect(Vector256.GreaterThan(value._value, Vector256<double>.Zero), Vector256.ConditionalSelect(Vector256.LessThan(value._value, one), value._value, one), Vector256<double>.Zero));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad256 RoundSamples(Quad256 value, double max)
+        {
+            var rounded = Vector256.Floor(value._value + Vector256.Create(0.5) + Vector256.Create(1.0 / 1048576));
+            var limit = Vector256.Create(max);
+            return new(Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(rounded, limit), limit, Vector256.ConditionalSelect(Vector256.GreaterThan(rounded, Vector256<double>.Zero), rounded, Vector256<double>.Zero)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong ToSamples(Quad256 value)
+        {
+            var integers = Avx.ConvertToVector128Int32WithTruncation(value._value);
+            return Sse41.PackUnsignedSaturate(integers, integers).AsUInt64().ToScalar();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad256 operator +(Quad256 left, Quad256 right) => new(left._value + right._value);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad256 operator -(Quad256 left, Quad256 right) => new(left._value - right._value);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad256 operator *(Quad256 left, Quad256 right) => new(left._value * right._value);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad256 operator /(Quad256 left, Quad256 right) => new(left._value / right._value);
+    }
+
+    /// <summary>The four channels of a pixel in two vectors of 128 bits.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    internal readonly struct Quad128 : IQuad<Quad128>
+    {
+        private readonly Vector128<double> _low;
+        private readonly Vector128<double> _high;
+
+        private Quad128(Vector128<double> low, Vector128<double> high)
+        {
+            _low = low;
+            _high = high;
+        }
+
+        public static Quad128 Zero => default;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad128 Create(double value)
+        {
+            var broadcast = Vector128.Create(value);
+            return new(broadcast, broadcast);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad128 Create(double red, double green, double blue, double alpha) => new(Vector128.Create(red, green), Vector128.Create(blue, alpha));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad128 FromSamples(ulong color)
+        {
+            var samples = Vector128.WidenLower(Vector128.CreateScalar(color).AsUInt16());
+            return new(ImageEvaluator.Lanes128.ToDouble(Vector128.WidenLower(samples)), ImageEvaluator.Lanes128.ToDouble(Vector128.WidenUpper(samples)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad128 Load(ref float source)
+        {
+            var value = unsafe(Vector128.LoadUnsafe(ref source));
+            return new(Vector128.WidenLower(value), Vector128.WidenUpper(value));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Store(Quad128 value, ref float target)
+        {
+            unsafe { Vector128.Narrow(value._low, value._high).StoreUnsafe(ref target); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetAlpha(Quad128 value) => value._high.GetElement(1);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad128 Clamp(Quad128 value) => new(Clamp(value._low), Clamp(value._high));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad128 RoundSamples(Quad128 value, double max) => new(RoundSamples(value._low, max), RoundSamples(value._high, max));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong ToSamples(Quad128 value)
+        {
+            var integers = Vector128.Narrow(Vector128.ConvertToUInt64(value._low), Vector128.ConvertToUInt64(value._high));
+            return Vector128.Narrow(integers, integers).AsUInt64().ToScalar();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad128 operator +(Quad128 left, Quad128 right) => new(left._low + right._low, left._high + right._high);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad128 operator -(Quad128 left, Quad128 right) => new(left._low - right._low, left._high - right._high);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad128 operator *(Quad128 left, Quad128 right) => new(left._low * right._low, left._high * right._high);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quad128 operator /(Quad128 left, Quad128 right) => new(left._low / right._low, left._high / right._high);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<double> Clamp(Vector128<double> value)
+        {
+            var one = Vector128.Create(1.0);
+            return Vector128.ConditionalSelect(Vector128.GreaterThan(value, Vector128<double>.Zero), Vector128.ConditionalSelect(Vector128.LessThan(value, one), value, one), Vector128<double>.Zero);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<double> RoundSamples(Vector128<double> value, double max)
+        {
+            var rounded = Vector128.Floor(value + Vector128.Create(0.5) + Vector128.Create(1.0 / 1048576));
+            var limit = Vector128.Create(max);
+            return Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(rounded, limit), limit, Vector128.ConditionalSelect(Vector128.GreaterThan(rounded, Vector128<double>.Zero), rounded, Vector128<double>.Zero));
+        }
     }
 
     /// <summary>Brings a position into the range of the edges by an edge mode.</summary>

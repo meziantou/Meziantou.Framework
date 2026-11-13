@@ -157,13 +157,18 @@ internal static class HevcQuantizer
         var scan = HevcScanOrder.Get(2, scanIdx);
         Span<int> positions = stackalloc int[16];
         Span<long> magnitudes = stackalloc long[16];
+        var significant = 0u;
+        var sumOfMagnitudes = 0L;
         for (var n = 0; n < 16; n++)
         {
             positions[n] = (((yS << 2) + HevcScanOrder.Y(scan[n])) * nTbS) + (xS << 2) + HevcScanOrder.X(scan[n]);
-            magnitudes[n] = Math.Abs((long)levels[positions[n]]);
+            var magnitude = Math.Abs((long)levels[positions[n]]);
+            magnitudes[n] = magnitude;
+            sumOfMagnitudes += magnitude;
+            significant |= (magnitude is 0 ? 0u : 1u) << n;
         }
 
-        var summary = new SubBlockSummary(magnitudes);
+        var summary = new SubBlockSummary(significant, sumOfMagnitudes);
         if (!summary.TryGetHiddenSign(magnitudes, changed: -1, changedMagnitude: 0, out var firstSigScanPos, out var sumAbsLevel))
             return false;
 
@@ -177,12 +182,14 @@ internal static class HevcQuantizer
         var bestMagnitude = 0;
         var bestNegative = false;
         Int128 bestCost = 0;
+        var bestKey = 0L;
+        var flat = scalingFactors.IsEmpty;
         for (var n = 0; n < 16; n++)
         {
             var position = positions[n];
             var coefficient = coefficients[position];
             var magnitude = Math.Abs(levels[position]);
-            long factor = (scalingFactors.IsEmpty ? FlatScalingFactor : scalingFactors[position]) * levelScale;
+            long factor = (flat ? FlatScalingFactor : scalingFactors[position]) * levelScale;
 
             // The error of the level, in units of 2^-bdShift of a coefficient
             var error = (Math.Abs((long)coefficient) << bdShift) - (magnitude * factor);
@@ -191,6 +198,27 @@ internal static class HevcQuantizer
                 var candidate = magnitude + delta;
                 if (candidate is < 0 or > MaxLevel)
                     continue;
+
+                // The squared error of the candidate minus the one of the level:
+                // ( error - delta * factor )^2 - error^2 = factor * ( factor - 2 * delta * error ), since delta^2 is 1.
+                // Without scaling list, every candidate has the same positive factor: the second term orders the
+                // candidates as their costs do, and it fits 64 bits (the error has less than 49 bits). Equal costs keep
+                // the first candidate, which is the smaller magnitude of the lowest scan position: a candidate that does
+                // not cost less than the best one is not checked
+                var key = 0L;
+                Int128 cost = 0;
+                if (flat)
+                {
+                    key = factor - (2 * delta * error);
+                    if (bestPosition >= 0 && key >= bestKey)
+                        continue;
+                }
+                else
+                {
+                    cost = (Int128)factor * ((Int128)factor - (2 * (Int128)(delta * error)));
+                    if (bestPosition >= 0 && cost >= bestCost)
+                        continue;
+                }
 
                 // A level that becomes significant has the sign of its coefficient; any sign when the coefficient is zero
                 var negative = magnitude is 0 ? coefficient < 0 : levels[position] < 0;
@@ -210,18 +238,11 @@ internal static class HevcQuantizer
                     }
                 }
 
-                // The squared error of the candidate minus the one of the level:
-                // ( error - delta * factor )^2 - error^2 = factor * ( factor - 2 * delta * error ), since delta^2 is 1
-                var cost = (Int128)factor * ((Int128)factor - (2 * (Int128)(delta * error)));
-
-                // Equal costs: the first candidate, which is the smaller magnitude of the lowest scan position
-                if (bestPosition < 0 || cost < bestCost)
-                {
-                    bestPosition = position;
-                    bestMagnitude = candidate;
-                    bestNegative = negative;
-                    bestCost = cost;
-                }
+                bestPosition = position;
+                bestMagnitude = candidate;
+                bestNegative = negative;
+                bestKey = key;
+                bestCost = cost;
             }
         }
 
@@ -249,31 +270,15 @@ internal static class HevcQuantizer
         private readonly int _secondToLast;
         private readonly long _sum;
 
-        public SubBlockSummary(ReadOnlySpan<long> magnitudes)
+        // significant has the bit n set when the level of the scan position n is not zero, and sum is the sum of the magnitudes
+        public SubBlockSummary(uint significant, long sum)
         {
-            _first = 16;
-            _second = 16;
-            _last = -1;
-            _secondToLast = -1;
-            for (var n = 15; n >= 0; n--)
-            {
-                var magnitude = magnitudes[n];
-                if (magnitude is 0)
-                    continue;
-
-                if (_last < 0)
-                {
-                    _last = n;
-                }
-                else if (_secondToLast < 0)
-                {
-                    _secondToLast = n;
-                }
-
-                _second = _first;
-                _first = n;
-                _sum += magnitude;
-            }
+            // 16 and -1 when there is no such position
+            _first = BitOperations.TrailingZeroCount(significant | 0x10000);
+            _second = BitOperations.TrailingZeroCount((significant & (significant - 1)) | 0x10000);
+            _last = 31 - BitOperations.LeadingZeroCount(significant);
+            _secondToLast = 31 - BitOperations.LeadingZeroCount(_last < 0 ? 0 : significant & ~(1u << _last));
+            _sum = sum;
         }
 
         // firstSigScanPos and sumAbsLevel of the levels, the level of the scan position "changed" having the magnitude

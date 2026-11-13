@@ -1264,6 +1264,10 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     /// <summary>Whether the offset changed during a gesture of the user that has not ended (its <c>scrollend</c> event is fired when it ends).</summary>
     private bool _scrollEndPending;
 
+    /// <summary>The smooth scroll of the visual viewport in progress (see <see cref="ScrollBy"/>), and the task completed when it ends, or null.</summary>
+    private SmoothScroll? _smoothScroll;
+    private TaskCompletionSource? _smoothScrollCompletion;
+
     internal VisualViewport(Document document)
     {
         _document = document;
@@ -1397,6 +1401,7 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
         if (!double.IsFinite(factor) || factor <= 0)
             return false;
 
+        AbortSmoothScroll();
         var scale = _pinchScale;
         var offset = PinchOffset;
         var newScale = Math.Clamp(scale * factor, 1, Math.Max(1, GetMaximumPinchScale()));
@@ -1419,6 +1424,7 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
         if (_pinchScale == 1 || !_document.IsFullyActive)
             return false;
 
+        AbortSmoothScroll();
         var offset = PinchOffset;
         var newOffset = ClampOffset(new PhysicalOffset(offset.X + deltaX, offset.Y + deltaY), _pinchScale);
         deltaX -= newOffset.X - offset.X;
@@ -1436,8 +1442,64 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
         return ClampOffset(offset + delta, _pinchScale) - offset;
     }
 
-    /// <summary>Scrolls the visual viewport in the layout viewport (a programmatic scroll, e.g. <c>scrollIntoView()</c>): see <see cref="SetPinchZoom"/>.</summary>
-    internal bool ScrollBy(PhysicalOffset delta) => SetPinchZoom(_pinchScale, PinchOffset + delta, endsGesture: true);
+    /// <summary>
+    /// Scrolls the visual viewport in the layout viewport (a programmatic scroll, e.g. <c>scrollIntoView()</c>, see
+    /// <see cref="SetPinchZoom"/>): at once, or animated by the scroll steps of the next frames when it is smooth (as the smooth
+    /// scrolls of the scrolling boxes). Returns a task completed when the scroll ends.
+    /// </summary>
+    internal Task ScrollBy(PhysicalOffset delta, bool smooth)
+    {
+        AbortSmoothScroll();
+        var offset = PinchOffset;
+        var target = ClampOffset(offset + delta, _pinchScale);
+        if (target == offset)
+            return Task.CompletedTask;
+
+        if (!smooth || _document.EventLoop is not { } eventLoop)
+        {
+            SetPinchZoom(_pinchScale, target, endsGesture: true);
+            return Task.CompletedTask;
+        }
+
+        _smoothScroll = new SmoothScroll(offset, target, eventLoop.TimeProvider.GetTimestamp());
+        _smoothScrollCompletion = new TaskCompletionSource();
+        eventLoop.RequestScrollSteps(_document);
+        return _smoothScrollCompletion.Task;
+    }
+
+    /// <summary>
+    /// Advances the smooth scroll of the visual viewport to the time of a frame, from the scroll steps of the document: the last
+    /// frame ends the scroll (its <c>scrollend</c> event) and completes its task. Returns whether the scroll is still in progress.
+    /// </summary>
+    internal bool RunSmoothScroll(long frameTimestamp, long timestampFrequency)
+    {
+        if (_smoothScroll is not { } smooth)
+            return false;
+
+        if (!_document.IsFullyActive)
+        {
+            AbortSmoothScroll();
+            return false;
+        }
+
+        var progress = (double)(frameTimestamp - smooth.StartTimestamp) / timestampFrequency / SmoothScroll.Duration.TotalSeconds;
+        var done = progress >= 1;
+        SetPinchZoom(_pinchScale, smooth.GetPosition(progress), endsGesture: done);
+        if (!done)
+            return true;
+
+        AbortSmoothScroll();
+        return false;
+    }
+
+    /// <summary>Stops the smooth scroll in progress (a new scroll or zoom replaces it), and completes its task.</summary>
+    private void AbortSmoothScroll()
+    {
+        _smoothScroll = null;
+        var completion = _smoothScrollCompletion;
+        _smoothScrollCompletion = null;
+        completion?.TrySetResult();
+    }
 
     /// <summary>
     /// Sets the pinch zoom and the offset of the visual viewport (the offset is clamped to the layout viewport): a change of

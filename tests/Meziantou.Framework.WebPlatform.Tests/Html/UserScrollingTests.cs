@@ -306,6 +306,19 @@ public sealed class UserScrollingTests : IDisposable
     }
 
     [Fact]
+    public void MapFromVisualViewport_IncludesTheScaleOfAMobilePage()
+    {
+        // The page without viewport meta element is laid out in 980px and scaled to the 98px wide device (scale 0.1)
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock, Viewport = new ViewportOptions { Width = 98, Height = 100, IsMobile = true } });
+        var document = context.Navigate("https://example.com/", _ => "<!DOCTYPE html><p>text</p>");
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(0.1, document.DefaultView!.VisualViewport!.Scale, 6);
+        var (x, y) = context.Input.MapFromVisualViewport(5, 2);
+        Assert.Equal(50, x, 6);
+        Assert.Equal(20, y, 6);
+    }
+
+    [Fact]
     public void Wheel_ScrollsTheZoomedVisualViewportBeforeTheLayoutViewport()
     {
         var document = Load("<div style='height: 2000px'></div>");
@@ -358,6 +371,83 @@ public sealed class UserScrollingTests : IDisposable
 
         RunFrames();
         Assert.Equal(["scroll", "scrollend"], events);
+    }
+
+    [Fact]
+    public void Keys_ScrollTheZoomedVisualViewport()
+    {
+        var document = Load("<div style='height: 2000px'></div>");
+        var window = document.DefaultView!;
+        var visualViewport = window.VisualViewport!;
+        var input = document.BrowsingContext!.Input;
+        Assert.True(input.Pinch(400, 300, 2));
+        Assert.Equal(150, visualViewport.OffsetTop);
+
+        // Home: the visual viewport goes to the top of the layout viewport, which is at the top of the document
+        input.Keyboard.Press("Home");
+        Assert.Equal(0, visualViewport.OffsetTop);
+        Assert.Equal(0, window.ScrollY);
+
+        // PageDown: a page of the visual viewport (87.5% of 300px)
+        input.Keyboard.Press("PageDown");
+        Assert.Equal(262.5, visualViewport.OffsetTop);
+        Assert.Equal(0, window.ScrollY);
+
+        // End: the visual viewport goes to the bottom of the layout viewport, which scrolls to the end of the document
+        input.Keyboard.Press("End");
+        Assert.Equal(300, visualViewport.OffsetTop);
+        Assert.Equal(document.DocumentElement!.ScrollHeight - 600, window.ScrollY);
+    }
+
+    [Fact]
+    public void ScrollIntoView_SmoothScrollOfTheZoomedVisualViewport()
+    {
+        var document = Load("<div id=top style='height: 10px'></div><div style='height: 2000px'></div>");
+        var visualViewport = document.DefaultView!.VisualViewport!;
+        Assert.True(document.BrowsingContext!.Input.Pinch(400, 300, 2));
+        RunFrames();
+        var events = Log(visualViewport, "scroll", "scrollend");
+
+        var task = document.GetElementById("top")!.ScrollIntoView(new ScrollIntoViewOptions { Behavior = ScrollBehavior.Smooth });
+        Assert.Equal(150, visualViewport.OffsetTop);
+        Assert.False(task.IsCompleted);
+        RunFrames(3);
+        Assert.InRange(visualViewport.OffsetTop, 0.001, 149.999);
+        Assert.False(task.IsCompleted);
+        RunFrames(30);
+        Assert.Equal(0, visualViewport.OffsetTop);
+        Assert.True(task.IsCompletedSuccessfully);
+        Assert.Equal("scrollend", events[^1]);
+        Assert.Equal(1, events.Count(e => e == "scrollend"));
+    }
+
+    [Fact]
+    public void Touch_ScrollEndWhenTheOtherFingerIsReleasedLast()
+    {
+        var document = Load("<div style='height: 2000px'></div>");
+        var visualViewport = document.DefaultView!.VisualViewport!;
+        var input = document.BrowsingContext!.Input;
+        Assert.True(input.Pinch(400, 300, 2));
+        RunFrames();
+        var events = Log(visualViewport, "scrollend");
+
+        // A finger pans the visual viewport, a second finger touches the screen without moving, then the panning finger is
+        // released first
+        var finger1 = input.CreatePointer("touch");
+        var finger2 = input.CreatePointer("touch");
+        finger1.Move(400, 300);
+        finger1.Down();
+        finger1.Move(400, 250);
+        Assert.Equal(200, visualViewport.OffsetTop);
+        finger2.Move(100, 100);
+        finger2.Down();
+        finger1.Up();
+        RunFrames();
+        Assert.Empty(events);
+
+        finger2.Up();
+        RunFrames();
+        Assert.Equal(["scrollend"], events);
     }
 
     [Fact]

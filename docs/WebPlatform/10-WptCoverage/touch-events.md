@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of touch-events, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 9 | 12 | 0 | 75% |
+| [Stable](#stable-tests) | 10 | 12 | 0 | 83% |
 | [Tentative](#tentative-tests) | 1 | 2 | 0 | 50% |
 | Reftests | 0 | 0 | 0 | – |
 | [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
-| **All** | **11** | **15** | **0** | **73%** |
+| **All** | **12** | **15** | **0** | **80%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 4
+- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
@@ -31,7 +31,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`multi-touch-interactions.html`](https://wpt.fyi/results/touch-events/multi-touch-interactions.html) | Pass | 73 / 73 |  |  |
 | [`multi-touch-interfaces.html`](https://wpt.fyi/results/touch-events/multi-touch-interfaces.html) | Pass | 511 / 511 |  |  |
 | [`multi-touch-touchmove.html`](https://wpt.fyi/results/touch-events/multi-touch-touchmove.html) | Pass | 1 / 1 |  |  |
-| [`pinch-zoom-change.html`](https://wpt.fyi/results/touch-events/pinch-zoom-change.html) | Fail | 0 / 1 | NOT IMPLEMENTED | pinch zoom: the move of two touches cancels their pointer event streams when `touch-action` allows it, but the visual viewport is never scaled (`visualViewport.scale` stays 1) |
+| [`pinch-zoom-change.html`](https://wpt.fyi/results/touch-events/pinch-zoom-change.html) | Pass | 1 / 1 |  |  |
 | [`single-tap-when-touchend-listener-use-sync-xhr.html`](https://wpt.fyi/results/touch-events/single-tap-when-touchend-listener-use-sync-xhr.html) | Pass | 1 / 1 |  |  |
 | [`single-touch-vertical-rl.html`](https://wpt.fyi/results/touch-events/single-touch-vertical-rl.html) | Pass | 1 / 1 |  |  |
 | [`single-touch.html`](https://wpt.fyi/results/touch-events/single-touch.html) | Pass | 227 / 227 |  |  |

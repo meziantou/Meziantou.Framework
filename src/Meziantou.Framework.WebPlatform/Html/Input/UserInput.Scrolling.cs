@@ -74,14 +74,17 @@ public sealed partial class UserInput
     /// <summary>
     /// Maps a point of the visual viewport of the top-level document (a position of a screenshot, in CSS pixels: the pixels of
     /// the image divided by the device pixel ratio) to the viewport of the top-level browsing context, the coordinates of the
-    /// input of the user (see <see cref="PointerInput.Move"/>). They differ when the user zoomed in (see <see cref="Pinch"/>):
-    /// the point is <c>visualViewport.offsetLeft + x / zoom</c>.
+    /// input of the user (see <see cref="PointerInput.Move"/>). They differ when the user zoomed in (see <see cref="Pinch"/>) and
+    /// on a mobile device whose page is scaled (see <see cref="ViewportOptions.IsMobile"/>): the point is
+    /// <c>visualViewport.offsetLeft + x / visualViewport.scale</c>.
     /// </summary>
     /// <param name="x">The horizontal position, in CSS pixels, relative to the visual viewport.</param>
     /// <param name="y">The vertical position, in CSS pixels, relative to the visual viewport.</param>
     public (double X, double Y) MapFromVisualViewport(double x, double y)
     {
-        var (scale, offset) = _browsingContext.Document.GetPinchZoom();
+        var document = _browsingContext.Document;
+        var (pinchScale, offset) = document.GetPinchZoom();
+        var scale = document.GetPageScale() * pinchScale;
         return (offset.X + (x / scale), offset.Y + (y / scale));
     }
 
@@ -357,18 +360,44 @@ public sealed partial class UserInput
     /// <summary>
     /// Scrolls a scrolling box by the deltas (see <see cref="ScrollBox"/>); the scroll of the viewport of the top-level document
     /// first scrolls its visual viewport in the layout viewport when the user zoomed in (see <see cref="VisualViewport.ScrollByUser"/>),
-    /// then the layout viewport by the rest of the deltas. Returns whether the box or the visual viewport scrolled.
+    /// then the layout viewport by the rest of the deltas. A page of the visual viewport is 87.5% of its size, and the keys that
+    /// scroll to the start or the end (<c>Home</c>, <c>End</c>) move it to the edge of the layout viewport, then scroll the layout
+    /// viewport to its edge. Returns whether the box or the visual viewport scrolled.
     /// </summary>
     private static bool ScrollBoxOrVisualViewport(Document document, ScrollState state, ref double deltaX, ref double deltaY, UserScrollUnit unit, UserScrollKind kind)
     {
-        var scrolledVisualViewport = false;
-        if (unit == UserScrollUnit.Pixel && document is { BrowsingContext: { Parent: null, Container: null }, VisualViewportOrNull: { PinchScale: > 1 } visualViewport }
-            && ReferenceEquals(state, document.GetLayoutEngine().ViewportScrollState))
+        if (document is not { BrowsingContext: { Parent: null, Container: null }, VisualViewportOrNull: { PinchScale: > 1 } visualViewport }
+            || !ReferenceEquals(state, document.GetLayoutEngine().ViewportScrollState))
         {
-            scrolledVisualViewport = visualViewport.ScrollByUser(ref deltaX, ref deltaY, endsGesture: kind != UserScrollKind.DirectManipulation);
-            if (deltaX == 0 && deltaY == 0)
-                return scrolledVisualViewport;
+            return ScrollBox(document, state, ref deltaX, ref deltaY, unit, kind);
         }
+
+        var endsGesture = kind != UserScrollKind.DirectManipulation;
+        bool scrolledVisualViewport;
+        switch (unit)
+        {
+            case UserScrollUnit.Document:
+                {
+                    // The visual viewport goes to its edge; the layout viewport then scrolls to its own edge
+                    var (edgeX, edgeY) = (Math.Sign(deltaX) * visualViewport.Width * visualViewport.PinchScale, Math.Sign(deltaY) * visualViewport.Height * visualViewport.PinchScale);
+                    scrolledVisualViewport = visualViewport.ScrollByUser(ref edgeX, ref edgeY, endsGesture);
+                    break;
+                }
+
+            case UserScrollUnit.Page:
+                deltaX *= visualViewport.Width * 0.875;
+                deltaY *= visualViewport.Height * 0.875;
+                unit = UserScrollUnit.Pixel;
+                scrolledVisualViewport = visualViewport.ScrollByUser(ref deltaX, ref deltaY, endsGesture);
+                break;
+
+            default:
+                scrolledVisualViewport = visualViewport.ScrollByUser(ref deltaX, ref deltaY, endsGesture);
+                break;
+        }
+
+        if (deltaX == 0 && deltaY == 0)
+            return scrolledVisualViewport;
 
         return ScrollBox(document, state, ref deltaX, ref deltaY, unit, kind) || scrolledVisualViewport;
     }

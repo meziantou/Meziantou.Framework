@@ -9,27 +9,25 @@ description: "The results of the web-platform-tests of visual-viewport, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 16 | 19 | 0 | 84% |
+| [Stable](#stable-tests) | 18 | 19 | 0 | 95% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **16** | **19** | **0** | **84%** |
+| **All** | **18** | **19** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **NOT IMPLEMENTED**: 1
-- **REQUIRES**: 2
-  - `user-input`: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`page-and-offset-in-iframe.html`](https://wpt.fyi/results/visual-viewport/page-and-offset-in-iframe.html) | Fail | 0 / 1 | REQUIRES(user-input) | pinch zoom: the move of two touches does not zoom, and the visual viewport is never scaled nor scrolled relative to the layout viewport (its `scale` is 1, its offsets 0) |
+| [`page-and-offset-in-iframe.html`](https://wpt.fyi/results/visual-viewport/page-and-offset-in-iframe.html) | Pass | 1 / 1 |  |  |
 | [`resize-event-order.html`](https://wpt.fyi/results/visual-viewport/resize-event-order.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | `resizeTo()`/`resizeBy()` of a popup window (there is no client window: the viewport of a top-level browsing context has the size of its `ViewportOptions`) |
-| [`scroll-event-order.html`](https://wpt.fyi/results/visual-viewport/scroll-event-order.html) | Fail | 0 / 1 | REQUIRES(user-input) | pinch zoom: the move of two touches does not zoom, and the visual viewport is never scaled nor scrolled relative to the layout viewport (its `scale` is 1, its offsets 0) |
+| [`scroll-event-order.html`](https://wpt.fyi/results/visual-viewport/scroll-event-order.html) | Pass | 1 / 1 |  |  |
 | [`viewport-no-resize-event-on-overflow-recalc.html`](https://wpt.fyi/results/visual-viewport/viewport-no-resize-event-on-overflow-recalc.html) | Pass | 1 / 1 |  |  |
 | [`viewport-read-size-causes-layout.html`](https://wpt.fyi/results/visual-viewport/viewport-read-size-causes-layout.html) | Pass | 1 / 1 |  |  |
 | [`viewport-read-size-in-iframe-causes-layout.html`](https://wpt.fyi/results/visual-viewport/viewport-read-size-in-iframe-causes-layout.html) | Pass | 1 / 1 |  |  |

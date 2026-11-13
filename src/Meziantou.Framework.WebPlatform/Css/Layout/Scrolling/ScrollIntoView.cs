@@ -189,7 +189,7 @@ internal static class ScrollIntoView
 
                 if (visualDelta != PhysicalOffset.Zero)
                 {
-                    visualViewport!.ScrollBy(visualDelta);
+                    (promises ??= []).Add(visualViewport!.ScrollBy(visualDelta, engine.IsSmoothScroll(state, behavior, associatedElement)));
                 }
 
                 // The target moves with the contents of the scrolling box. For the scrolling boxes of the ancestors, the target is

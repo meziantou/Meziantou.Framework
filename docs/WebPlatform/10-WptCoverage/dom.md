@@ -20,10 +20,8 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 7
+- **TEST BUG**: 8
 - **NOT IMPLEMENTED**: 25
-- **REQUIRES**: 1
-  - `user-input`: 1
 - **OUT OF SCOPE**: 1
 - **PERFORMANCE**: 6
 
@@ -206,7 +204,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`events/scrolling/scrollend-event-fired-to-element-with-overscroll-behavior.html`](https://wpt.fyi/results/dom/events/scrolling/scrollend-event-fired-to-element-with-overscroll-behavior.html) | Pass | 1 / 1 |  |  |
 | [`events/scrolling/scrollend-event-fired-to-window.html`](https://wpt.fyi/results/dom/events/scrolling/scrollend-event-fired-to-window.html) | Pass | 1 / 1 |  |  |
 | [`events/scrolling/scrollend-event-fires-for-repeat-key-ending-after-scroll-container-end-is-reached.html`](https://wpt.fyi/results/dom/events/scrolling/scrollend-event-fires-for-repeat-key-ending-after-scroll-container-end-is-reached.html) | Pass | 1 / 1 |  |  |
-| [`events/scrolling/scrollend-event-fires-on-visual-viewport.html`](https://wpt.fyi/results/dom/events/scrolling/scrollend-event-fires-on-visual-viewport.html) | Error | 0 / 0 | REQUIRES(user-input) | pinch zoom: the move of two touches does not zoom, and the visual viewport is never scaled nor scrolled relative to the layout viewport (its `scale` is 1, its offsets 0) |
+| [`events/scrolling/scrollend-event-fires-on-visual-viewport.html`](https://wpt.fyi/results/dom/events/scrolling/scrollend-event-fires-on-visual-viewport.html) | Timeout | 2 / 3 | TEST BUG | the last subtest relies on the zoom of `pinchZoomIn()`, which its helper says the tests should not do: the library zooms by the ratio of the distances of the fingers (2x, without touch slop), so the visual viewport has room for the 200px pan and the window does not scroll (no `scrollend` event at the window); the smaller zoom of Chromium leaves less room |
 | [`events/scrolling/scrollend-event-fires-to-iframe-window.html`](https://wpt.fyi/results/dom/events/scrolling/scrollend-event-fires-to-iframe-window.html) | Pass | 6 / 6 |  |  |
 | [`events/scrolling/scrollend-event-for-user-scroll.html`](https://wpt.fyi/results/dom/events/scrolling/scrollend-event-for-user-scroll.html) | Pass | 5 / 5 |  |  |
 | [`events/scrolling/scrollend-event-handler-content-attributes.html`](https://wpt.fyi/results/dom/events/scrolling/scrollend-event-handler-content-attributes.html) | Pass | 4 / 4 |  |  |

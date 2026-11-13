@@ -194,6 +194,9 @@ public sealed partial class UserInput
         var preventMouseEvent = pointer.PreventMouseEvent;
         var isPrimary = pointer.IsPrimary;
         EndTouch(pointer);
+
+        // The other touch of a pinch or of a pan may be released last, without having moved
+        EndVisualViewportGesture();
         if (!isTap || target is null)
             return;
 

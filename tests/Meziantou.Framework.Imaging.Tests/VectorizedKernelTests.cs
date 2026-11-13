@@ -228,6 +228,38 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PngQuietPixelCountMatchesTheScalarReference()
+    {
+        var random = new Random(67);
+        foreach (var width in new[] { 4, 5, 7, 8, 15, 16, 17, 31, 32, 33, 63, 64, 65, 100 })
+        {
+            for (var round = 0; round < 40; round++)
+            {
+                // Opaque gray pixels, with a pixel that is not quiet (or none) at a random column
+                var pixels = new byte[width * 4];
+                for (var x = 0; x < width; x++)
+                {
+                    var value = (byte)random.Next(256);
+                    pixels.AsSpan(x * 4, 4).Fill(value);
+                    pixels[(x * 4) + 3] = byte.MaxValue;
+                }
+
+                var column = random.Next(width + 1);
+                if (column < width)
+                {
+                    pixels[(column * 4) + random.Next(4)] ^= (byte)(1 << random.Next(8));
+                }
+
+                foreach (var gray in new[] { false, true })
+                {
+                    Assert.Equal(PngLayoutAnalysis.CountQuietPixelsScalar(pixels, gray), PngLayoutAnalysis.CountQuietPixels(pixels, gray));
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData(2)]
     [InlineData(7)]

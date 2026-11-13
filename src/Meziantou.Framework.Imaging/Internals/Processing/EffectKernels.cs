@@ -764,6 +764,26 @@ internal static class EffectKernels
         var samples = unsafe(MemoryMarshal.Cast<Rgba64, ushort>(pixels));
         var backgroundColor = Vector128.Create(background.R, background.G, background.B, 0u);
         var i = 0;
+        if (Vector512.IsHardwareAccelerated)
+        {
+            var wideBackground = Vector512.Create(Vector256.Create(backgroundColor, backgroundColor), Vector256.Create(backgroundColor, backgroundColor));
+            for (; i + 8 <= pixels.Length; i += 8)
+            {
+                var (first, second) = Vector512.Widen(Vector512.Create(samples.Slice(4 * i, 32)));
+                Vector512.Narrow(Flatten64(first, wideBackground), Flatten64(second, wideBackground)).CopyTo(samples.Slice(4 * i, 32));
+            }
+        }
+
+        if (Vector256.IsHardwareAccelerated)
+        {
+            var wideBackground = Vector256.Create(backgroundColor, backgroundColor);
+            for (; i + 4 <= pixels.Length; i += 4)
+            {
+                var (first, second) = Vector256.Widen(Vector256.Create(samples.Slice(4 * i, 16)));
+                Vector256.Narrow(Flatten64(first, wideBackground), Flatten64(second, wideBackground)).CopyTo(samples.Slice(4 * i, 16));
+            }
+        }
+
         for (; i + 2 <= pixels.Length; i += 2)
         {
             var (first, second) = Vector128.Widen(Vector128.Create(samples.Slice(4 * i, 8)));
@@ -784,6 +804,28 @@ internal static class EffectKernels
 
         // The alpha becomes opaque
         return quotient | Vector128.Create(0, 0, 0, (uint)ushort.MaxValue);
+    }
+
+    /// <summary>Flattens two pixels of 16-bit samples in 32-bit lanes (see <see cref="Flatten64Vector"/>).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<uint> Flatten64(Vector256<uint> pixels, Vector256<uint> background)
+    {
+        var max = Vector256.Create((uint)ushort.MaxValue);
+        var alpha = Vector256.Shuffle(pixels, Vector256.Create(3u, 3, 3, 3, 7, 7, 7, 7));
+        var x = (pixels * alpha) + (background * (max - alpha)) + Vector256.Create((uint)(ushort.MaxValue / 2));
+        var quotient = Vector256.ShiftRightLogical(x + Vector256.ShiftRightLogical(x, 16) + Vector256<uint>.One, 16);
+        return quotient | Vector256.Create(0, 0, 0, (uint)ushort.MaxValue, 0, 0, 0, ushort.MaxValue);
+    }
+
+    /// <summary>Flattens four pixels of 16-bit samples in 32-bit lanes (see <see cref="Flatten64Vector"/>).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector512<uint> Flatten64(Vector512<uint> pixels, Vector512<uint> background)
+    {
+        var max = Vector512.Create((uint)ushort.MaxValue);
+        var alpha = Vector512.Shuffle(pixels, Vector512.Create(3u, 3, 3, 3, 7, 7, 7, 7, 11, 11, 11, 11, 15, 15, 15, 15));
+        var x = (pixels * alpha) + (background * (max - alpha)) + Vector512.Create((uint)(ushort.MaxValue / 2));
+        var quotient = Vector512.ShiftRightLogical(x + Vector512.ShiftRightLogical(x, 16) + Vector512<uint>.One, 16);
+        return quotient | Vector512.Create(0, 0, 0, (uint)ushort.MaxValue, 0, 0, 0, ushort.MaxValue, 0, 0, 0, ushort.MaxValue, 0, 0, 0, ushort.MaxValue);
     }
 
     private static Span<TSample> GetSamples<TSample>(PixelStorage storage, int y)

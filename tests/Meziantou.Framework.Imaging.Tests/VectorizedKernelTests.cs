@@ -3379,6 +3379,13 @@ public sealed class VectorizedKernelTests
                     Assert.Equal(expected, actual);
                 }
 
+                if (Avx512BW.IsSupported)
+                {
+                    actual = (byte[])pixels.Clone();
+                    DrawingKernels.CompositeOver8Avx512(actual, coverage, new DrawingSource(color));
+                    Assert.Equal(expected, actual);
+                }
+
                 expected = (byte[])pixels.Clone();
                 actual = (byte[])pixels.Clone();
                 DrawingKernels.CompositeOverScalar<byte>(expected, 4, coverage, new DrawingSource(colors));
@@ -3388,6 +3395,13 @@ public sealed class VectorizedKernelTests
                 {
                     actual = (byte[])pixels.Clone();
                     DrawingKernels.CompositeOver8Avx2(actual, coverage, new DrawingSource(colors));
+                    Assert.Equal(expected, actual);
+                }
+
+                if (Avx512BW.IsSupported)
+                {
+                    actual = (byte[])pixels.Clone();
+                    DrawingKernels.CompositeOver8Avx512(actual, coverage, new DrawingSource(colors));
                     Assert.Equal(expected, actual);
                 }
             }
@@ -3617,6 +3631,48 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingConvertedColorsMatchTheConversionOfEachColor()
+    {
+        var random = new Random(20261112);
+        CheckColors<Rgba32>(random);
+        CheckColors<Bgra32>(random);
+        CheckColors<Rgb24>(random);
+        CheckColors<Rgba64>(random);
+        CheckColors<Gray8>(random);
+        CheckColors<Gray16>(random);
+
+        static void CheckColors<TPixel>(Random random)
+            where TPixel : unmanaged
+        {
+            foreach (var length in new[] { 1, 2, 3, 4, 5, 7, 8, 9, 63, 64, 65, 130 })
+            {
+                var colors = new Rgba64[length];
+                for (var i = 0; i < length; i++)
+                {
+                    var alpha = random.Next(4) switch
+                    {
+                        0 => 0,
+                        1 => ushort.MaxValue,
+                        _ => random.Next(65536),
+                    };
+
+                    colors[i] = new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)alpha);
+                }
+
+                var actual = new ushort[length * 4];
+                DrawingKernels.ConvertColors<TPixel>(colors, actual);
+                for (var i = 0; i < length; i++)
+                {
+                    var expected = DrawingKernels.ConvertColor<TPixel>(colors[i]);
+                    ushort[] expectedSamples = [expected.C0, expected.C1, expected.C2, expected.Alpha];
+                    Assert.Equal(expectedSamples, actual.AsSpan(i * 4, 4).ToArray());
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingBlurSumsMatchTheScalarReference()
     {
         var random = new Random(20261015);
@@ -3823,6 +3879,12 @@ public sealed class VectorizedKernelTests
 
         Assert.Equal(Vector128.Create((1L << 52) - 1, 1L << 52), ColorMatrixKernel.ToInt64WithBias(Vector128.Create((double)((1L << 52) - 1), 1L << 52)));
         Assert.Equal(Vector128.Create((long)ushort.MaxValue, 0), ColorMatrixKernel.ToInt64(Vector128.Create((double)ushort.MaxValue, 0)));
+        for (var i = 0; i <= ushort.MaxValue; i += 4)
+        {
+            Assert.Equal(Vector256.Create((long)i, i + 1, i + 2, i + 3), ColorMatrixKernel.ToInt64(Vector256.Create((double)i, i + 1, i + 2, i + 3)));
+        }
+
+        Assert.Equal(Vector256.Create((1L << 52) - 1, 1L << 52, 0, ushort.MaxValue), ColorMatrixKernel.ToInt64(Vector256.Create((double)((1L << 52) - 1), 1L << 52, 0, ushort.MaxValue)));
     }
 
     [Fact]

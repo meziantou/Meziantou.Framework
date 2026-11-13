@@ -61,6 +61,9 @@ internal static class FuzzOracle
     // the inks and the embedded CMYK profile instead of stopping at the frame header
     private static readonly CmykConversionOptions CmykConversion = CmykConversionOptions.Default;
 
+    // A 3D table of 3 points per axis whose colors are a nonlinear function of the lattice point
+    private static readonly CubeLut Lut = CreateLut();
+
     /// <summary>Checks one input.</summary>
     /// <param name="input">The input.</param>
     /// <param name="variant">Selects the reader input (stream kind, read sizes) and the reader methods (whole frames, or every refinement of a frame); part of the case identity.</param>
@@ -406,6 +409,28 @@ internal static class FuzzOracle
             return $"auto-crop-contain: the {size} canvas became {image.Size} (success: {analysis.Success}, changed: {cropped})";
 
         image.Convolve(new ConvolutionOptions(new ConvolutionKernel(3, 3, [0, -1, 0, -1, 5, -1, 0, -1, 0])) { EdgeMode = ConvolutionEdgeMode.Mirror });
+
+        // The selection filters (networks of minimums and maximums for windows of 3x3 and 5x5 pixels) and a 3D table keep the
+        // size and the pixel format
+        size = image.Size;
+        var pixelFormat = image.PixelFormat;
+        switch (variant % 3)
+        {
+            case 0:
+                image.MedianBlur(1, ConvolutionEdgeMode.Mirror);
+                break;
+            case 1:
+                image.MedianBlur(2, ConvolutionEdgeMode.Wrap);
+                break;
+            default:
+                image.PercentileFilter(1, 25);
+                break;
+        }
+
+        image.ApplyLut(Lut, (variant & 32) != 0 ? LutInterpolation.Trilinear : LutInterpolation.Tetrahedral);
+        if (image.Size != size || image.PixelFormat != pixelFormat)
+            return $"selection-filters: the {size} {pixelFormat} image became {image.Size} {image.PixelFormat}";
+
         image.Grayscale();
 
         // Last, since enlarging the canvas may legitimately exceed the limits of the configuration
@@ -418,6 +443,18 @@ internal static class FuzzOracle
             return $"auto-crop-expand: the {size} canvas is reported as changed but the content box {box} and its padding are the canvas";
 
         return string.Empty;
+    }
+
+    private static CubeLut CreateLut()
+    {
+        var text = new StringBuilder("LUT_3D_SIZE 3\n");
+        for (var i = 0; i < 27; i++)
+        {
+            var (r, g, b) = (i % 3 / 2.0, i / 3 % 3 / 2.0, i / 9 / 2.0);
+            text.Append(System.Globalization.CultureInfo.InvariantCulture, $"{g * b:F3} {1 - r:F3} {(r + b) / 2:F3}\n");
+        }
+
+        return CubeLut.Parse(text.ToString());
     }
 
     /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>

@@ -22,8 +22,8 @@ or as text for a terminal. It is written entirely in C# and has no native depend
   [SVG and PNG](06-SvgAndPng.md) and [Terminal output](07-TerminalOutput.md).
 - **Draw on images** with any brush, and print the human-readable text under a barcode with the bundled OCR-A and
   OCR-B fonts. See [Images](08-Images.md).
-- **Read QR codes, Data Matrix, PDF417 and Aztec symbols from images**, and every symbology from its modules or from
-  scan lines, with error correction. See [Reading](11-Reading.md).
+- **Read the codes of images**: QR codes, Data Matrix, PDF417, Aztec symbols and linear barcodes, or decode them from
+  their modules or from scan lines, with error correction. See [Reading](11-Reading.md).
 
 See [Limitations](09-Limitations.md) for what the packages do not do.
 

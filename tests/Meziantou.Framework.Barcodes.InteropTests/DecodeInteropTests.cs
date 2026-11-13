@@ -1080,4 +1080,40 @@ public sealed class DecodeInteropTests
 
         Assert.Equal(data, result.Text);
     }
+
+    // zint renders the bars and the human-readable text with its own drawing code
+    public static TheoryData<string, string, string, string> ZintBarcodeImages() => new()
+    {
+        { "20", "--scale=1", "SKU-123456", "SKU-123456" },
+        { "20", "--scale=2 --rotate=90", "Hello zint 0123", "Hello zint 0123" },
+        { "8", "--scale=1", "ABC-123", "ABC-123" },
+        { "25", "--scale=1", "Code 93", "Code 93" },
+        { "15", "--scale=1", "590123412345", "5901234123457" },
+        { "15", "--scale=2 --rotate=180", "590123412345+12345", "5901234123457 12345" },
+        { "34", "--scale=1", "03600029145", "036000291452" },
+        { "37", "--scale=2", "0425261", "04252614" },
+        { "18", "--scale=2", "A40156B", "A40156B" },
+        { "3", "--scale=2", "12345678", "12345678" },
+        { "16", "--scale=1 --gs1nocheck", "[01]09521234543213[10]ABC123", "(01)09521234543213(10)ABC123" },
+        { "29", "--scale=2", "0950110153001", "(01)09501101530010" },
+        { "30", "--scale=2", "1501234567890", "(01)15012345678907" },
+        { "79", "--scale=2", "0950110153001", "(01)09501101530010" },
+        { "31", "--scale=1 --gs1nocheck", "[01]98898765432106[3202]012345[15]991231", "(01)98898765432106(3202)012345(15)991231" },
+        { "81", "--scale=1 --gs1nocheck --cols=2", "[01]09501101530003[17]250101[10]ABC123", "(01)09501101530003(17)250101(10)ABC123" },
+    };
+
+    [Theory]
+    [MemberData(nameof(ZintBarcodeImages))]
+    public async Task ZintBarcodeImage_IsRead(string symbology, string options, string data, string expected)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "zint.png";
+        await tools.RenderWithZintAsync(["-b", symbology, "--quietzones", .. options.Split(' ')], data, path);
+        using var image = Image.Load(path);
+
+        var result = Assert.Single(image.ReadBarcodes());
+
+        Assert.Equal(expected, result.Text);
+    }
 }

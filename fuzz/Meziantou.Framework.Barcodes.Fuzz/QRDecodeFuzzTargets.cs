@@ -31,6 +31,8 @@ internal static class QRDecodeFuzzTargets
         new("barcodes-read-qrcode-roundtrip", ReadQRCodeRoundTripTarget) { Seeds = () => SeedTexts.Select((text, index) => FuzzSeed.FromText($"roundtrip-{index}", [(byte)index, (byte)(index * 37)], text)), Dictionary = ["HELLO", "0123456789", "https://", "日本"] },
         new("barcodes-read-2d-image", Read2DImageTarget) { Seeds = Get2DImageSeeds, Dictionary = ModuleTokens },
         new("barcodes-read-2d-roundtrip", Read2DRoundTripTarget) { Seeds = () => Barcode2DSeedTexts.Select((text, index) => FuzzSeed.FromText($"roundtrip-2d-{index}", [(byte)index, (byte)(index * 37)], text)), Dictionary = ["HELLO", "0123456789", "abc", "*>\r", "@^_"] },
+        new("barcodes-read-linear-image", ReadLinearImageTarget) { Seeds = GetLinearImageSeeds, Dictionary = ModuleTokens },
+        new("barcodes-read-linear-roundtrip", ReadLinearRoundTripTarget) { Seeds = () => Enumerable.Range(0, 8).Select(index => FuzzSeed.FromText($"roundtrip-linear-{index}", [(byte)index, (byte)(index * 37)], index % 2 == 0 ? "590123412345" : "SKU-123")), Dictionary = ["0123456789", "ABC", "abc", "-. $/+%"] },
         new("barcodes-decode-linear", DecodeLinearTarget) { Seeds = GetLinearSeeds, Dictionary = ["\x01\x01\x01", "\x02\x02", "\x03", "\x04", "\x0A", "\x00"] },
     ];
 
@@ -467,5 +469,70 @@ internal static class QRDecodeFuzzTargets
         var results = image.ReadBarcodes2D();
         var expected = Barcode2DDecoder.Decode(barcode).Text;
         FuzzAssert.True(results.Count is 1 && results[0].Text == expected && results[0].Result.Type == type, $"The {type} symbol of {barcode.Width}x{barcode.Height} modules is read as [{string.Join(", ", results.Select(result => result.Result.Type + " " + result.Text))}]");
+    }
+
+    private static IEnumerable<FuzzSeed> GetLinearImageSeeds()
+    {
+        foreach (var (name, barcode) in new[] { ("ean13", Barcode.CreateEan13("590123412345")), ("code128", Barcode.CreateCode128("AB12")), ("databar", Barcode.CreateGs1DataBarLimited("1501234567890")) })
+        {
+            using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 1, ModuleHeight = 8, QuietZoneModules = 4 });
+            var pixels = new Rgba32[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            yield return new FuzzSeed($"image-linear-{name}", (byte[])[(byte)image.Width, (byte)image.Height, .. pixels.Select(pixel => pixel.R)]);
+        }
+    }
+
+    private static void ReadLinearImageTarget(ReadOnlySpan<byte> data)
+    {
+        var width = 1 + FuzzInput.ReadByte(ref data);
+        var height = 1 + FuzzInput.ReadByte(ref data);
+        var pixels = new Gray8[width * height];
+        for (var i = 0; i < pixels.Length && i < data.Length; i++)
+        {
+            pixels[i] = new Gray8(data[i]);
+        }
+
+        using var image = Image.ImportPixelData<Gray8>(pixels, width, height);
+        foreach (var result in image.ReadBarcodes())
+        {
+            FuzzAssert.Equal(4, result.Corners.Count, "The number of corners");
+            FuzzAssert.True(result.Corners.All(corner => corner.X >= -1 && corner.Y >= -1 && corner.X <= width + 1 && corner.Y <= height + 1), "A corner is outside the image");
+        }
+    }
+
+    // A linear barcode rendered with modules of 2 to 4 pixels, turned by a multiple of 90°, is read back
+    private static void ReadLinearRoundTripTarget(ReadOnlySpan<byte> data)
+    {
+        var kind = FuzzInput.ReadByte(ref data) % 4;
+        var flags = FuzzInput.ReadByte(ref data);
+        var text = FuzzInput.ReadText(data);
+        Barcode barcode;
+        try
+        {
+            barcode = kind switch
+            {
+                0 => Barcode.CreateEan13(text),
+                1 => Barcode.CreateCode128(text),
+                2 => Barcode.CreateCode39(text, includeChecksum: true),
+                _ => Barcode.CreateItf(text),
+            };
+        }
+        catch (ArgumentException)
+        {
+            return;
+        }
+
+        if (barcode.Width > 400)
+            return;
+
+        using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 2 + (flags % 3), ModuleHeight = 40 });
+        if ((flags & 0x30) is not 0)
+        {
+            image.Rotate((flags >> 4 & 3) switch { 1 => RotateMode.Rotate90, 2 => RotateMode.Rotate180, _ => RotateMode.Rotate270 });
+        }
+
+        var results = image.ReadBarcodes();
+        var expected = barcode.Type is BarcodeType.Ean13 && barcode.Text[0] == '0' ? barcode.Text[1..] : barcode.Text;
+        FuzzAssert.True(results.Count is 1 && results[0].Text == expected, $"The {barcode.Type} barcode '{barcode.Text}' is read as [{string.Join(", ", results.Select(result => result.Result.Type + " " + result.Text))}]");
     }
 }

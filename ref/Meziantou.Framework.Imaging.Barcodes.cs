@@ -63,11 +63,31 @@ namespace Meziantou.Framework.Imaging.Barcodes
         public static Meziantou.Framework.Imaging.Typography.Font OcrB { get => throw null; }
     }
 
+    public static class BarcodeImageReader
+    {
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Barcodes.BarcodeImageResult> ReadBarcodes(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Barcodes.BarcodeReadingOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
     public static class BarcodeImageRenderer
     {
         public static Meziantou.Framework.Imaging.RectangleD DrawBarcode(this Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas, Meziantou.Framework.Barcodes.Barcode barcode, Meziantou.Framework.Imaging.PointD position, Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.RectangleD MeasureBarcode(Meziantou.Framework.Barcodes.Barcode barcode, Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Barcodes.Barcode barcode, Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions? options = null) => throw null;
+    }
+
+    public sealed class BarcodeImageResult
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.PointD> Corners { get => throw null; }
+        public Meziantou.Framework.Barcodes.BarcodeDecodeResult Result { get => throw null; }
+        public string Text { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class BarcodeReadingOptions
+    {
+        public int MaximumResults { get => throw null; set { } }
+        public bool TryInverted { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Barcodes.BarcodeType>? Types { get => throw null; set { } }
     }
 
     public sealed class QRCodeDrawingOptions

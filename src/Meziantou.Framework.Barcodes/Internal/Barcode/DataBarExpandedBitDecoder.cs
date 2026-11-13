@@ -12,13 +12,20 @@ internal static class DataBarExpandedBitDecoder
     // The ISO/IEC 646 characters of the 8-bit codes 232 to 252
     private const string Iso646Punctuation = "!\"%&'()*+,-./:;<=>?_ ";
 
-    public static string? Decode(List<bool> bits)
+    public static string? Decode(List<bool> bits, int symbolCharacters)
     {
+        // The variable length field of the methods that have one: the parity of the number of symbol characters, and
+        // whether there are more than 14 (ISO/IEC 24724, 7.2.5.4.1)
+        bool HasValidLengthField(int position) => Peek(bits, position, 2) == (((symbolCharacters % 2) << 1) | (symbolCharacters > 14 ? 1 : 0));
+
         var position = 1; // the linkage flag
         var data = new StringBuilder();
         if (Read(bits, ref position, 1) is 1)
         {
             // Method 1: (01), the variable length field, the indicator digit, then the 12 next digits in groups of 3
+            if (!HasValidLengthField(position))
+                return null;
+
             position += 2;
             var indicator = Read(bits, ref position, 4);
             if (indicator is < 0 or > 9 || !TryAppendGtin(bits, ref position, (char)('0' + indicator), data))
@@ -27,6 +34,9 @@ internal static class DataBarExpandedBitDecoder
         else if (Peek(bits, position, 1) is 0)
         {
             // Method 00: general-purpose data only, after the variable length field
+            if (!HasValidLengthField(position + 1))
+                return null;
+
             position += 3;
         }
         else
@@ -36,7 +46,11 @@ internal static class DataBarExpandedBitDecoder
             var method5 = Peek(bits, position, 5);
             if (method4 is 0b0100 or 0b0101)
             {
-                // (01) of a variable measure trade item and its weight in kilograms (3103) or pounds (3202, 3203)
+                // (01) of a variable measure trade item and its weight in kilograms (3103) or pounds (3202, 3203): 60 bits,
+                // 5 data characters
+                if (symbolCharacters != 6)
+                    return null;
+
                 position += 4;
                 if (!TryAppendGtin(bits, ref position, '9', data))
                     return null;
@@ -57,6 +71,9 @@ internal static class DataBarExpandedBitDecoder
             else if (method5 is 0b01100 or 0b01101)
             {
                 // (01) and a price (392n), or a price with its ISO 4217 currency code (393n): the price is general-purpose data
+                if (!HasValidLengthField(position + 5))
+                    return null;
+
                 position += 5 + 2;
                 if (!TryAppendGtin(bits, ref position, '9', data))
                     return null;
@@ -77,7 +94,10 @@ internal static class DataBarExpandedBitDecoder
             }
             else if (Peek(bits, position, 4) is 0b0111)
             {
-                // (01), a weight (310n or 320n) and a date (11, 13, 15, 17): methods 0111000 to 0111111
+                // (01), a weight (310n or 320n) and a date (11, 13, 15, 17): methods 0111000 to 0111111, 84 bits, 7 data characters
+                if (symbolCharacters != 8)
+                    return null;
+
                 position += 4;
                 var dateCode = Read(bits, ref position, 2);
                 var isPounds = Read(bits, ref position, 1) is 1;

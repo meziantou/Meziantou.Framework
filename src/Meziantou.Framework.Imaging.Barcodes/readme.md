@@ -104,7 +104,7 @@ Assert.Equal(new Rgba32(0x00, 0x33, 0x66), label.Frames[0][20 + 18, 50]); // the
 
 ## Reading codes from images
 
-`ReadQRCodes` finds and decodes the QR codes, Micro QR codes and rMQR codes of an image, and `ReadBarcodes2D` its Data Matrix, PDF417 and Aztec symbols: generated, printed or scanned symbols, which can be rotated, scaled or in mild perspective.
+`ReadQRCodes` finds and decodes the QR codes, Micro QR codes and rMQR codes of an image, `ReadBarcodes2D` its Data Matrix, PDF417 and Aztec symbols, and `ReadBarcodes` its linear barcodes: generated, printed or scanned codes, which can be rotated, scaled or in mild perspective.
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_ReadQRCodes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -129,6 +129,17 @@ var results = image.ReadBarcodes2D();
 
 var result = Assert.Single(results);
 Assert.Equal((Barcode2DType.DataMatrix, "https://www.meziantou.net"), (result.Result.Type, result.Text));
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_ReadBarcodes;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var image = Barcode.CreateEan13("590123412345").ToImage(); // or Image.Load("product.jpg")
+
+var results = image.ReadBarcodes();
+
+var result = Assert.Single(results);
+Assert.Equal((BarcodeType.Ean13, "5901234123457"), (result.Result.Type, result.Text));
 ```
 <!-- endref -->
 

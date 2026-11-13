@@ -9,8 +9,8 @@ public sealed class QRCodeReadingOptions
     public IReadOnlyCollection<QRCodeType>? Types { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the symbols printed light on a dark background are read too. Default is
-    /// <see langword="true"/>.
+    /// Gets or sets a value indicating whether the symbols printed light on a dark background are read, when the image has
+    /// no symbols printed dark on light. Default is <see langword="true"/>.
     /// </summary>
     public bool TryInverted { get; set; } = true;
 

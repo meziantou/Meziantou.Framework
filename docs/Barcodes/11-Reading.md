@@ -1,9 +1,9 @@
 ---
 title: Reading
-description: Read QR codes, Data Matrix, PDF417 and Aztec symbols from images, and every symbology from its modules or scan lines.
+description: Read QR codes, Data Matrix, PDF417, Aztec symbols and linear barcodes from images, modules or scan lines.
 ---
 
-The packages read the codes back: `Meziantou.Framework.Imaging.Barcodes` finds the two-dimensional symbols of an image, and
+The packages read the codes back: `Meziantou.Framework.Imaging.Barcodes` finds the codes of an image, and
 `Meziantou.Framework.Barcodes` decodes every symbology from its modules, or the linear barcodes from the widths of their
 bars.
 
@@ -36,7 +36,8 @@ Assert.True(topLeft.DistanceTo(new PointD(40, 40)) < 1); // after the quiet zone
 
 The reader is made for clean images: generated symbols, printed and scanned, or photographed straight on. They can be
 rotated, mirrored, scaled, slightly blurred or compressed, or in mild perspective; they need their quiet zone and modules
-of at least 2 pixels. Symbols printed light on a dark background are read too. A transparent background reads as white.
+of at least 2 pixels. Symbols printed light on a dark background are read when the image has none printed dark on light.
+A transparent background reads as white.
 [QRCodeReadingOptions](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions) limits the
 [Types](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions.Types) to read and the
 [MaximumResults](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions.MaximumResults).
@@ -54,6 +55,23 @@ var results = image.ReadBarcodes2D();
 
 var result = Assert.Single(results);
 Assert.Equal((Barcode2DType.DataMatrix, "https://www.meziantou.net"), (result.Result.Type, result.Text));
+```
+<!-- endref -->
+
+[ReadBarcodes](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeImageReader.ReadBarcodes) reads the linear barcodes, with
+[BarcodeReadingOptions](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeReadingOptions). Parallel scan lines cross the
+image horizontally, vertically and at 30°, 60°, 120° and 150°: a barcode turned by another angle is read when a line
+crosses all its bars. Code 39, Codabar and ITF, which have no check character, must be crossed by two lines that agree.
+The text printed under the bars is not read: it is not needed.
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_ReadBarcodes;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var image = Barcode.CreateEan13("590123412345").ToImage(); // or Image.Load("product.jpg")
+
+var results = image.ReadBarcodes();
+
+var result = Assert.Single(results);
+Assert.Equal((BarcodeType.Ean13, "5901234123457"), (result.Result.Type, result.Text));
 ```
 <!-- endref -->
 

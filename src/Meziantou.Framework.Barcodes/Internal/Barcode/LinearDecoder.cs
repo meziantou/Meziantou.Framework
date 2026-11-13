@@ -7,12 +7,13 @@ namespace Meziantou.Framework.Barcodes.Internal.Linear;
 internal static class LinearDecoder
 {
     // The quiet zone before and after a symbol, in modules (narrow elements for Code 39, Codabar and ITF). The symbologies
-    // require 10 modules or more (GS1 DataBar only 1); less is accepted to read symbols drawn with a smaller quiet zone,
-    // but the symbologies without check character need more, so that they are not read inside other symbols.
+    // require 10 modules or more (GS1 DataBar none: its guards delimit it); less is accepted to read symbols drawn with a
+    // smaller quiet zone, but the symbologies without check character need more, so that they are not read inside other
+    // symbols.
     private static double GetQuietZoneModules(BarcodeType type) => type switch
     {
         BarcodeType.Code39 or BarcodeType.Codabar or BarcodeType.Itf => 7,
-        BarcodeType.Gs1DataBar or BarcodeType.Gs1DataBarLimited => 1,
+        BarcodeType.Gs1DataBar or BarcodeType.Gs1DataBarLimited => 0,
         _ => 4,
     };
 
@@ -69,27 +70,58 @@ internal static class LinearDecoder
             return line.Runs[start - 1] >= minimum && (end >= line.Count || line.Runs[end] >= minimum);
         }
 
-        for (var start = 1; start < line.Count; start += 2)
+        // The lines with the growth of the bars removed, by growth: the growth is estimated at each start, and is the same
+        // along a symbol
+        var compensatedLines = new Dictionary<double, ScanLine>();
+        ScanLine? GetCompensated(int start)
         {
-            var matched = false;
-            var compensated = GetCompensatedLine(line, start);
+            var growth = EstimateGrowth(line, start);
+            if (growth is not { } value)
+                return null;
+
+            if (!compensatedLines.TryGetValue(value, out var compensated))
+            {
+                compensated = line.Compensate(value);
+                compensatedLines[value] = compensated;
+            }
+
+            return compensated;
+        }
+
+        LinearMatch? Decode(ScanLine candidate, int start)
+        {
             foreach (var decoder in Decoders)
             {
-                var match = decoder(line, start) ?? (compensated is null ? null : decoder(compensated, start));
-                if (match is null || !HasQuietZones(match.Start, match.End, match.ModuleWidth, GetQuietZoneModules(match.Type)))
-                    continue;
+                var match = decoder(candidate, start);
+                if (match is not null && HasQuietZones(match.Start, match.End, match.ModuleWidth, GetQuietZoneModules(match.Type)))
+                    return match;
+            }
 
+            return null;
+        }
+
+        for (var start = 1; start < line.Count; start += 2)
+        {
+            var compensated = default(ScanLine);
+            var match = Decode(line, start);
+            if (match is null)
+            {
+                compensated = GetCompensated(start);
+                if (compensated is not null)
+                {
+                    match = Decode(compensated, start);
+                }
+            }
+
+            if (match is not null)
+            {
                 var (from, to) = GetRange(match.Start, match.End);
                 AddResult(results, match.Type, match.Text, lineIndex, lineIndex, from, to);
 
                 // Continue after the symbol: the next dark run
                 start = match.End - (ScanLine.IsDark(match.End) ? 2 : 1);
-                matched = true;
-                break;
-            }
-
-            if (matched)
                 continue;
+            }
 
             // A row whose bars grew can read as valid characters with other values: both readings are candidates, and the
             // checksum of the whole symbol chooses
@@ -98,13 +130,13 @@ internal static class LinearDecoder
                 if (candidate is null)
                     continue;
 
-                if (DataBarDecoder.TryReadHalf(candidate, start) is { } half && HasQuietZones(half.Start, half.End, half.ModuleWidth, 1))
+                if (DataBarDecoder.TryReadHalf(candidate, start) is { } half)
                 {
                     var (from, to) = GetRange(half.Start, half.End);
                     halves.Add((half, lineIndex, from, to));
                 }
 
-                if (DataBarExpandedDecoder.TryReadRow(candidate, start) is { } row && HasQuietZones(row.Start, row.End, row.ModuleWidth, 1))
+                if (DataBarExpandedDecoder.TryReadRow(candidate, start) is { } row)
                 {
                     var (from, to) = GetRange(row.Start, row.End);
                     expandedRows.Add((row, lineIndex, from, to));
@@ -114,9 +146,9 @@ internal static class LinearDecoder
     }
 
     // The bars of a printed symbol spread, and a threshold that is not in the middle of the gray levels moves all the edges
-    // the same way: the narrowest bar and the narrowest space of the start of a symbol are as wide, the difference is twice
-    // the growth of each edge. Returns the line with the growth removed, or null when there is none to remove.
-    private static ScanLine? GetCompensatedLine(ScanLine line, int start)
+    // the same way: the narrowest bar and the narrowest space of the start of a symbol are as wide, the difference is four
+    // times the growth of each edge. Returns the growth, rounded to a quarter of a unit, or null when there is none to remove.
+    private static double? EstimateGrowth(ScanLine line, int start)
     {
         var narrowestBar = double.MaxValue;
         var narrowestSpace = double.MaxValue;
@@ -135,7 +167,7 @@ internal static class LinearDecoder
         if (narrowestBar == double.MaxValue || narrowestSpace == double.MaxValue || Math.Abs(narrowestBar - narrowestSpace) < (narrowestBar + narrowestSpace) / 8)
             return null;
 
-        return line.Compensate((narrowestBar - narrowestSpace) / 4);
+        return Math.Round((narrowestBar - narrowestSpace) / 4 * 4, MidpointRounding.AwayFromZero) / 4;
     }
 
     // The same symbol on several lines, or read in both directions, is one result: it has the same text where it overlaps
@@ -164,7 +196,8 @@ internal static class LinearDecoder
             var topLast = top.Max(item => item.Line);
             var topStart = top.Min(item => item.Start);
             var topEnd = top.Max(item => item.End);
-            foreach (var bottom in halves.Where(item => !item.Half.IsTop && item.Line > topLast && item.Start < topEnd && topStart < item.End).GroupBy(item => string.Join(",", item.Half.Values)))
+            // The bottom row is after the top row, or before it when the lines cross an upside-down symbol from the bottom
+            foreach (var bottom in halves.Where(item => !item.Half.IsTop && (item.Line > topLast || item.Line < topFirst) && item.Start < topEnd && topStart < item.End).GroupBy(item => string.Join(",", item.Half.Values)))
             {
                 var text = DataBarDecoder.TryCombine(top.First().Half, bottom.First().Half);
                 if (text is null)
@@ -175,13 +208,15 @@ internal static class LinearDecoder
                 var topHeight = topLast - topFirst + 1;
                 var bottomHeight = bottomLast - bottomFirst + 1;
                 var type = topHeight * 6 < bottomHeight * 5 ? BarcodeType.Gs1DataBarStacked : BarcodeType.Gs1DataBarStackedOmnidirectional;
-                AddResult(results, type, text, topFirst, bottomLast, Math.Min(topStart, bottom.Min(item => item.Start)), Math.Max(topEnd, bottom.Max(item => item.End)));
+                AddResult(results, type, text, Math.Min(topFirst, bottomFirst), Math.Max(topLast, bottomLast), Math.Min(topStart, bottom.Min(item => item.Start)), Math.Max(topEnd, bottom.Max(item => item.End)));
                 break;
             }
         }
     }
 
-    // GS1 DataBar Expanded and Expanded Stacked: the rows that make a symbol, in the order of their finder patterns
+    // GS1 DataBar Expanded and Expanded Stacked: the rows that make a symbol, in the order of their finder patterns. The rows
+    // of a stacked symbol are below each other: the lines that read them are in the same order (or the reverse order, for
+    // an upside-down symbol), which keeps the combinations of rows of other symbols out.
     private static void AssembleExpanded(List<(DataBarExpandedDecoder.Row Row, int Line, long Start, long End)> rows, List<BarcodeDecodeResult> results)
     {
         if (rows.Count is 0)
@@ -194,8 +229,11 @@ internal static class LinearDecoder
             if (used.Contains(group.Key))
                 continue;
 
-            // The rows of a symbol overlap horizontally and are within a few lines of each other
-            var candidates = distinct.Where(other => !used.Contains(other.Key) && other.Any(item => group.Any(first => item.Start < first.End && first.Start < item.End))).Select(other => other.First().Row).ToList();
+            // The rows of a symbol overlap horizontally
+            var candidates = distinct
+                .Where(other => !used.Contains(other.Key) && other.Any(item => group.Any(first => item.Start < first.End && first.Start < item.End)))
+                .Select(other => other.First().Row with { FirstLine = other.Min(item => item.Line), LastLine = other.Max(item => item.Line) })
+                .ToList();
             var assembled = DataBarExpandedDecoder.TryAssemble(candidates);
             if (assembled is null)
                 continue;

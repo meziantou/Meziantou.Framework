@@ -51,7 +51,7 @@ public static class Barcode2DImageReader
         {
             var binary = BinaryImage.Create(luminance, QRCodeImageReader.GetThresholdOptions(method, luminance), cancellationToken);
             Barcode2DLocator.Locate(binary, IsIncluded, results, options.MaximumResults, cancellationToken);
-            if (options.TryInverted && results.Count < options.MaximumResults)
+            if (options.TryInverted && results.Count is 0)
             {
                 Barcode2DLocator.Locate(binary.Invert(), IsIncluded, results, options.MaximumResults, cancellationToken);
             }

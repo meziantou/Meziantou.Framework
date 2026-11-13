@@ -1133,6 +1133,124 @@ public sealed class ImageRendererTests
         _ => Barcode2D.CreateAztec(text, new AztecOptions { Compact = text.Length > 200 ? false : null }),
     };
 
+    [Fact]
+    public void ReadmeExample_ReadBarcodes()
+    {
+        #region ImagingBarcodes_ReadBarcodes
+        using var image = Barcode.CreateEan13("590123412345").ToImage(); // or Image.Load("product.jpg")
+
+        var results = image.ReadBarcodes();
+
+        var result = Assert.Single(results);
+        Assert.Equal((BarcodeType.Ean13, "5901234123457"), (result.Result.Type, result.Text));
+        #endregion
+    }
+
+    public static TheoryData<BarcodeType, int> ReadableBarcodes()
+    {
+        var data = new TheoryData<BarcodeType, int>();
+        foreach (var type in Enum.GetValues<BarcodeType>())
+        {
+            foreach (var moduleWidth in (int[])[2, 3])
+            {
+                data.Add(type, moduleWidth);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ReadableBarcodes))]
+    public void ReadBarcodes_RendersReadBack(BarcodeType type, int moduleWidth)
+    {
+        var barcode = CreateSample(type);
+        using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = moduleWidth });
+
+        var result = Assert.Single(image.ReadBarcodes());
+
+        // An EAN-13 symbol whose first digit is 0 is a UPC-A symbol; a single-row Expanded Stacked symbol is Expanded
+        Assert.Equal(barcode.Text, result.Text);
+        Assert.Equal(type, result.Result.Type);
+    }
+
+    [Theory]
+    [InlineData(BarcodeType.Code128, 90)]
+    [InlineData(BarcodeType.Code128, 180)]
+    [InlineData(BarcodeType.Code128, 270)]
+    [InlineData(BarcodeType.Code128, 30)]
+    [InlineData(BarcodeType.Ean13, 180)]
+    [InlineData(BarcodeType.Ean13, 120)]
+    [InlineData(BarcodeType.Code39, 90)]
+    [InlineData(BarcodeType.Gs1DataBar, 90)]
+    [InlineData(BarcodeType.Gs1DataBarStacked, 180)]
+    [InlineData(BarcodeType.Gs1DataBarExpandedStacked, 90)]
+    public void ReadBarcodes_Rotated(BarcodeType type, double degrees)
+    {
+        var barcode = CreateSample(type);
+        using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 3, ModuleHeight = 120 });
+        image.Rotate(degrees, new TransformOptions { BackgroundColor = Rgba64.FromRgba32(Colors.White) });
+
+        var result = Assert.Single(image.ReadBarcodes());
+
+        Assert.Equal((type, barcode.Text), (result.Result.Type, result.Text));
+    }
+
+    [Fact]
+    public void ReadBarcodes_MirroredBlurredCompressedAndInverted()
+    {
+        var barcode = Barcode.CreateCode128("Mirrored barcode");
+        using var mirrored = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 3 });
+        mirrored.Flip(FlipMode.Horizontal);
+        Assert.Equal("Mirrored barcode", Assert.Single(mirrored.ReadBarcodes()).Text);
+
+        using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 4 });
+        image.GaussianBlur(1);
+        using var jpeg = new MemoryStream();
+        image.Save(jpeg, new JpegEncoder { Quality = 60 });
+        using var decoded = Image.Load(jpeg.ToArray());
+        Assert.Equal("Mirrored barcode", Assert.Single(decoded.ReadBarcodes()).Text);
+
+        using var inverted = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 3, DarkBrush = new SolidBrush(Colors.White), LightBrush = new SolidBrush(Colors.Black) });
+        Assert.Equal("Mirrored barcode", Assert.Single(inverted.ReadBarcodes()).Text);
+        Assert.Empty(inverted.ReadBarcodes(new BarcodeReadingOptions { TryInverted = false }));
+    }
+
+    [Fact]
+    public void ReadBarcodes_SeveralBarcodesWithText()
+    {
+        using var image = new Image<Rgba32>(700, 420, Colors.White);
+        var options = new BarcodeDrawingOptions { ModuleWidth = 2, ModuleHeight = 60, Font = BarcodeFonts.OcrB };
+        image.Draw(canvas =>
+        {
+            canvas.DrawBarcode(Barcode.CreateEan13("590123412345"), new PointD(20, 20), options);
+            canvas.DrawBarcode(Barcode.CreateCode128("SKU-123456"), new PointD(350, 20), options);
+            canvas.DrawBarcode(Barcode.CreateCodabar("40156"), new PointD(20, 220), options);
+            canvas.DrawBarcode(Barcode.CreateGs1DataBarLimited("1501234567890"), new PointD(380, 220), options);
+        });
+
+        var results = image.ReadBarcodes();
+
+        Assert.Equal(["(01)15012345678907", "5901234123457", "A40156B", "SKU-123456"], results.Select(result => result.Text).Order(StringComparer.Ordinal).ToArray());
+        var ean = results.Single(result => result.Result.Type is BarcodeType.Ean13);
+        Assert.True(ean.Corners[0].X is > 15 and < 50 && ean.Corners[0].Y is > 15 and < 90, $"{ean.Corners[0]}");
+        Assert.Equal("SKU-123456", Assert.Single(image.ReadBarcodes(new BarcodeReadingOptions { Types = [BarcodeType.Code128] })).Text);
+        Assert.Single(image.ReadBarcodes(new BarcodeReadingOptions { MaximumResults = 1 }));
+    }
+
+    [Fact]
+    public void ReadBarcodes_NoBarcode()
+    {
+        using var blank = new Image<Rgba32>(200, 100, Colors.White);
+        Assert.Empty(blank.ReadBarcodes());
+
+        using var qrCode = QRCode.Create("Not a linear barcode").ToImage();
+        Assert.Empty(qrCode.ReadBarcodes());
+
+        Assert.Throws<ArgumentNullException>("image", () => BarcodeImageReader.ReadBarcodes(null!));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new BarcodeReadingOptions { MaximumResults = 0 });
+    }
+
     private static QRCode CreateQRCode(string text, QRCodeType type) => type switch
     {
         QRCodeType.MicroQR => QRCode.CreateMicroQR(text),

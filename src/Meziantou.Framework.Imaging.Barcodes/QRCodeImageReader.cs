@@ -53,7 +53,7 @@ public static class QRCodeImageReader
         {
             var binary = BinaryImage.Create(luminance, GetThresholdOptions(method, luminance), cancellationToken);
             QRCodeLocator.Locate(binary, IsIncluded, results, options.MaximumResults, cancellationToken);
-            if (options.TryInverted && results.Count < options.MaximumResults)
+            if (options.TryInverted && results.Count is 0)
             {
                 QRCodeLocator.Locate(binary.Invert(), IsIncluded, results, options.MaximumResults, cancellationToken);
             }

@@ -18,6 +18,12 @@ internal static class DataBarExpandedDecoder
     /// <summary>The pairs of a row, in reading order.</summary>
     public sealed record Row(Pair[] Pairs, int Start, int End, double ModuleWidth)
     {
+        /// <summary>Gets the first scan line that reads the row, when the caller knows it.</summary>
+        public int FirstLine { get; init; }
+
+        /// <summary>Gets the last scan line that reads the row, when the caller knows it.</summary>
+        public int LastLine { get; init; }
+
         public string Signature => string.Join(";", Pairs.Select(pair => FormattableString.Invariant($"{pair.Finder},{pair.IsOddPair},{pair.LeftValue},{pair.RightValue}")));
     }
 
@@ -91,7 +97,8 @@ internal static class DataBarExpandedDecoder
     private static int? TryGetEnd(ScanLine line, int position, double moduleWidth)
     {
         bool IsGuard(int run) => run < line.Count && line.Runs[run] < moduleWidth * 2;
-        bool IsQuiet(int run) => run >= line.Count || line.Runs[run] > moduleWidth * 4;
+        // A light run that goes to the end of the line is the edge of the image: GS1 DataBar needs no quiet zone
+        bool IsQuiet(int run) => run >= line.Count - 1 || line.Runs[run] > moduleWidth * 4;
 
         if (ScanLine.IsDark(position) && IsGuard(position) && IsQuiet(position + 1))
             return position + 1;
@@ -181,6 +188,19 @@ internal static class DataBarExpandedDecoder
                 return null;
         }
 
+        // The rows of a stacked symbol are read by lines in their order, or in the reverse order for an upside-down symbol
+        if (ordered.Count > 0)
+        {
+            var previous = ordered[^1];
+            var isAfter = row.FirstLine > previous.LastLine;
+            var isBefore = row.LastLine < previous.FirstLine;
+            if (!isAfter && !isBefore)
+                return null;
+
+            if (ordered.Count > 1 && isAfter != (previous.FirstLine > ordered[^2].LastLine))
+                return null;
+        }
+
         ordered.Add(row);
         var next = offset + row.Pairs.Length;
         if (next == sequence.Length)
@@ -242,6 +262,6 @@ internal static class DataBarExpandedDecoder
             }
         }
 
-        return DataBarExpandedBitDecoder.Decode(bits);
+        return DataBarExpandedBitDecoder.Decode(bits, symbolCharacters);
     }
 }

@@ -1843,6 +1843,9 @@ becomes `https://a:8080/`):
 - The navigations of the child navigables (`iframe`, `frame`, `embed`, `object`) and the form submissions are upgraded.
   The other navigations of a top-level navigable are upgraded when the host and port of their URL are the ones of a
   document whose policy has the directive (its upgrade insecure navigations set), e.g. the same-origin links.
+- As in Chromium, the potentially trustworthy URLs are not upgraded: `http://localhost`, `http://*.localhost`, and the
+  loopback addresses (`http://127.0.0.1`, `http://[::1]`). The same-origin requests of a document served over
+  `http://localhost` (e.g. the external resources of the `use` elements) stay same-origin.
 - Every navigation request has the `Upgrade-Insecure-Requests: 1` header.
 - The documents of the child navigables inherit the policy and the upgrade insecure navigations set of their parent
   document, and the workers the ones of their creator. As in the browsers, a document inherits the policy of its parent

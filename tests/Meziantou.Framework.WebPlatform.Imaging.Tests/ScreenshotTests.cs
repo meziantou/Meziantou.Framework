@@ -441,6 +441,36 @@ public sealed class ScreenshotTests : IDisposable
         Assert.Equal(Colors.Lime, screenshot.GetPixel(183, 63));
     }
 
+    [Theory]
+    [InlineData("xlink:href", "/icons/sprite.svg#copy", "https://example.com/")]
+    [InlineData("href", "/icons/sprite.svg#copy", "https://example.com/")]
+    [InlineData("xlink:href", "#copy", "https://example.com/")]
+    [InlineData("href", "#copy", "https://example.com/")]
+    [InlineData("xlink:href", "/icons/sprite.svg#copy", "http://localhost:5000/")]
+    public void Svg_UseOfASymbolOfASprite(string attribute, string href, string url)
+    {
+        // An icon (an inline svg element sized by CSS) whose only content is a use element that references a symbol of a sprite,
+        // in an external resource document or in the document. The page served over http://localhost upgrades the insecure
+        // requests, which does not apply to localhost: the sprite is a same-origin resource
+        const string Sprite = "<svg xmlns='http://www.w3.org/2000/svg'><symbol id='a' viewBox='0 0 512 512'><path d='M0 0H512V512Z'/></symbol><symbol id='copy' viewBox='0 0 448 512'><path d='M0 0H448V512H0Z'/></symbol></svg>";
+        _pages.Resources["/icons/sprite.svg"] = (System.Text.Encoding.UTF8.GetBytes(Sprite), "image/svg+xml");
+        var inlineSprite = href[0] == '#' ? Sprite.Replace("<svg xmlns='http://www.w3.org/2000/svg'>", "<svg style='display: none'>", StringComparison.Ordinal) : "";
+        var context = _pages.Load($$"""
+            <meta http-equiv=Content-Security-Policy content=upgrade-insecure-requests>
+            <style>body { color: lime } .icon { height: 1em; fill: currentColor } button { all: unset; font: 20px/1 Ahem }</style>
+            {{inlineSprite}}
+            <button class=action type=button><svg class=icon role=img style="width:1em"><use {{attribute}}="{{href}}"></use></svg>copy</button>
+            """, url: url);
+
+        using var screenshot = context.TakeScreenshot(new ScreenshotOptions { FullPage = true });
+
+        // The symbol (448x512) is scaled to the 20x20 viewport of the icon and centered: 17.5px wide, from x=1.25
+        Assert.Equal(Colors.Lime, screenshot.GetPixel(10, 10));
+        Assert.Equal(Colors.Lime, screenshot.GetPixel(2, 19));
+        Assert.Equal(Colors.White, screenshot.GetPixel(0, 10));
+        Assert.Equal(Colors.White, screenshot.GetPixel(19, 10));
+    }
+
     [Fact]
     public void FragmentedBox_DecorationsAreSlicedFromTheStitchedBox()
     {

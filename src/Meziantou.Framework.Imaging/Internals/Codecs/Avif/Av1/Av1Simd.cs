@@ -303,6 +303,17 @@ internal static class Av1Simd
         return Sse2.UnpackHigh(Sse2.MultiplyLow(left, right), Sse2.MultiplyHigh(left, right)).AsInt32();
     }
 
+    /// <summary>The sum of the products of the lanes, for products whose sums do not overflow 32 bits.</summary>
+    // pmaddwd adds the products of the pairs of lanes
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int DotProduct(Vector128<short> left, Vector128<short> right)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.Arm64.AddAcross(AdvSimd.MultiplyWideningUpperAndAdd(AdvSimd.MultiplyWideningLower(left.GetLower(), right.GetLower()), left, right)).ToScalar();
+
+        return Vector128.Sum(Sse2.MultiplyAddAdjacent(left, right));
+    }
+
     /// <summary>The sum of the lanes, wrapped to 16 bits.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static short AddAcross(Vector128<short> value)

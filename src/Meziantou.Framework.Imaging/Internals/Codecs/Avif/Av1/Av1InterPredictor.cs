@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -261,6 +262,101 @@ internal static class Av1InterPredictor
         static Vector128<int> Load(ReadOnlySpan<ushort> samples, int index) => Vector128.WidenLower(Vector64.Create(samples.Slice(index, 4)).ToVector128()).AsInt32();
     }
 
+    // WarpBlockScalar with the 8 products of an output in the lanes of a vector, added across them (exact integer sums):
+    // the samples that the 8 horizontal filters of a row read (the 15 samples around ix4, or the nearest ones inside the
+    // reference) are 16-bit lanes, and the horizontal outputs are stored by column, so that the 8 rows that a vertical
+    // filter reads are consecutive
+    [SkipLocalsInit]
+    private static void WarpBlockVector(
+        ReadOnlySpan<ushort> reference,
+        int referenceStride,
+        int lastX,
+        int lastY,
+        ReadOnlySpan<int> warpParams,
+        ReadOnlySpan<int> shear,
+        int x,
+        int y,
+        int i8,
+        int j8,
+        int w,
+        int h,
+        int subX,
+        int subY,
+        int interRound0,
+        int interRound1,
+        Span<int> pred,
+        int predStride)
+    {
+        const int PrecisionMask = (1 << Av1Constants.WarpedmodelPrecBits) - 1;
+        long srcX = (x + (j8 * 8) + 4) << subX;
+        long srcY = (y + (i8 * 8) + 4) << subY;
+        var dstX = (warpParams[2] * srcX) + (warpParams[3] * srcY) + warpParams[0];
+        var dstY = (warpParams[4] * srcX) + (warpParams[5] * srcY) + warpParams[1];
+        var x4 = dstX >> subX;
+        var y4 = dstY >> subY;
+        var ix4 = (int)(x4 >> Av1Constants.WarpedmodelPrecBits);
+        var sx4 = (int)(x4 & PrecisionMask);
+        var iy4 = (int)(y4 >> Av1Constants.WarpedmodelPrecBits);
+        var sy4 = (int)(y4 & PrecisionMask);
+        var alpha = shear[0];
+        var beta = shear[1];
+        var gamma = shear[2];
+        var delta = shear[3];
+        var filters = Av1Tables.WarpedFilters;
+        var round0 = (1 << interRound0) >> 1;
+        var round1 = (1 << interRound1) >> 1;
+
+        // 8 columns of 15 values
+        Span<int> intermediate = unsafe(stackalloc int[8 * 15]);
+        Span<ushort> edge = unsafe(stackalloc ushort[15]);
+        var first = ix4 - 7;
+        var inside = first >= 0 && first + 14 <= lastX;
+        var leftCount = Math.Clamp(-first, 0, 15);
+        var rightStart = Math.Clamp(lastX + 1 - first, 0, 15);
+        for (var i1 = -7; i1 < 8; i1++)
+        {
+            var rowStart = Math.Clamp(iy4 + i1, 0, lastY) * referenceStride;
+            scoped ReadOnlySpan<ushort> window;
+            if (inside)
+            {
+                window = reference.Slice(rowStart + first, 15);
+            }
+            else
+            {
+                var row = reference.Slice(rowStart, lastX + 1);
+                edge[..leftCount].Fill(row[0]);
+                if (rightStart > leftCount)
+                    row.Slice(first + leftCount, rightStart - leftCount).CopyTo(edge[leftCount..]);
+
+                edge[rightStart..].Fill(row[lastX]);
+                window = edge;
+            }
+
+            for (var i2 = -4; i2 < 4; i2++)
+            {
+                var sx = sx4 + (alpha * i2) + (beta * i1);
+                var offs = ((sx + (1 << (Av1Constants.WarpeddiffPrecBits - 1))) >> Av1Constants.WarpeddiffPrecBits) + Av1Constants.WarpedpixelPrecShifts;
+                var taps = Vector128.WidenLower(Vector64.Create(filters.Slice(offs * Av1Tables.WarpedFiltersLength1, 8)).ToVector128());
+                var s = Av1Simd.DotProduct(taps, Vector128.Create(window.Slice(i2 + 4, 8)).AsInt16());
+                intermediate[((i2 + 4) * 15) + i1 + 7] = (s + round0) >> interRound0;
+            }
+        }
+
+        for (var i1 = -4; i1 < Math.Min(4, h - (i8 * 8) - 4); i1++)
+        {
+            var destination = pred[((((i8 * 8) + i1 + 4) * predStride) + (j8 * 8))..];
+            for (var i2 = -4; i2 < Math.Min(4, w - (j8 * 8) - 4); i2++)
+            {
+                var sy = sy4 + (gamma * i2) + (delta * i1);
+                var offs = ((sy + (1 << (Av1Constants.WarpeddiffPrecBits - 1))) >> Av1Constants.WarpeddiffPrecBits) + Av1Constants.WarpedpixelPrecShifts;
+                var (low, high) = Vector128.Widen(Vector128.WidenLower(Vector64.Create(filters.Slice(offs * Av1Tables.WarpedFiltersLength1, 8)).ToVector128()));
+                var column = intermediate.Slice(((i2 + 4) * 15) + i1 + 4, 8);
+                var s = Vector128.Sum((low * Vector128.Create(column)) + (high * Vector128.Create(column[4..])));
+                destination[i2 + 4] = (s + round1) >> interRound1;
+            }
+        }
+    }
+
     // PredictBlockUnscaled at a whole-sample position in both directions: each output is the sample of the reference through
     // the center taps of the two filters
     private static void PredictBlockWholeSample(ReadOnlySpan<ushort> reference, int referenceStride, int lastX, int lastY, int column, int row, int w, int h, int interRound0, int interRound1, Span<int> pred, int predStride)
@@ -355,6 +451,37 @@ internal static class Av1InterPredictor
     /// <param name="pred">The prediction of the block: <paramref name="h"/> rows of <paramref name="predStride"/> values.</param>
     /// <param name="predStride">The number of values of a row of <paramref name="pred"/>.</param>
     public static void WarpBlock(
+        ReadOnlySpan<ushort> reference,
+        int referenceStride,
+        int lastX,
+        int lastY,
+        ReadOnlySpan<int> warpParams,
+        ReadOnlySpan<int> shear,
+        int x,
+        int y,
+        int i8,
+        int j8,
+        int w,
+        int h,
+        int subX,
+        int subY,
+        int interRound0,
+        int interRound1,
+        Span<int> pred,
+        int predStride)
+    {
+        if (Av1Simd.IsSupported)
+        {
+            WarpBlockVector(reference, referenceStride, lastX, lastY, warpParams, shear, x, y, i8, j8, w, h, subX, subY, interRound0, interRound1, pred, predStride);
+        }
+        else
+        {
+            WarpBlockScalar(reference, referenceStride, lastX, lastY, warpParams, shear, x, y, i8, j8, w, h, subX, subY, interRound0, interRound1, pred, predStride);
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="WarpBlock"/>.</summary>
+    internal static void WarpBlockScalar(
         ReadOnlySpan<ushort> reference,
         int referenceStride,
         int lastX,

@@ -6372,6 +6372,72 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1WarpPredictionMatchesTheScalarReference(int bitDepth)
+    {
+        // The sections of blocks of every size warped by valid models of every shear, inside the reference, across each of
+        // its edges and outside it, with the rounding of the bit depth, of compound prediction and of test values
+        var random = new Random(bitDepth * 29);
+        var maxSample = (1 << bitDepth) - 1;
+        const int Stride = 96;
+        const int Height = 80;
+        const int PredStride = 70;
+        var reference = new ushort[Stride * Height];
+        for (var i = 0; i < reference.Length; i++)
+        {
+            reference[i] = (ushort)(random.Next(4) == 0 ? random.Next(2) * maxSample : random.Next(maxSample + 1));
+        }
+
+        var warpParams = new int[6];
+        var shear = new int[4];
+        for (var round = 0; round < 3000; round++)
+        {
+            do
+            {
+                var range = random.Next(4) switch
+                {
+                    0 => 0,
+                    1 => 1 << 10,
+                    _ => 1 << 13,
+                };
+                warpParams[0] = random.Next(-40 << 16, 40 << 16);
+                warpParams[1] = random.Next(-40 << 16, 40 << 16);
+                warpParams[2] = (1 << 16) + random.Next(-range, range + 1);
+                warpParams[3] = random.Next(-range, range + 1);
+                warpParams[4] = random.Next(-range, range + 1);
+                warpParams[5] = (1 << 16) + random.Next(-range, range + 1);
+            }
+            while (!Av1WarpModel.SetupShear(warpParams, shear));
+
+            var w = 8 << random.Next(4);
+            var h = 8 << random.Next(4);
+            var subX = random.Next(2);
+            var subY = random.Next(2);
+            var lastX = random.Next(8, Stride);
+            var lastY = random.Next(8, Height);
+            var x = random.Next(-16, lastX + 16);
+            var y = random.Next(-16, lastY + 16);
+            var i8 = random.Next(h >> 3);
+            var j8 = random.Next(w >> 3);
+            var interRound0 = 3 + (bitDepth is 12 ? 2 : 0);
+            var interRound1 = random.Next(3) switch
+            {
+                0 => 7,
+                1 => 11 - interRound0,
+                _ => 14 - interRound0,
+            };
+            var expected = new int[h * PredStride];
+            var actual = new int[h * PredStride];
+            Av1InterPredictor.WarpBlockScalar(reference, Stride, lastX, lastY, warpParams, shear, x, y, i8, j8, w, h, subX, subY, interRound0, interRound1, expected, PredStride);
+            Av1InterPredictor.WarpBlock(reference, Stride, lastX, lastY, warpParams, shear, x, y, i8, j8, w, h, subX, subY, interRound0, interRound1, actual, PredStride);
+            Assert.True(expected.AsSpan().SequenceEqual(actual), $"Round {round}: section ({i8}, {j8}) of {w}x{h} at ({x}, {y}), limits ({lastX}, {lastY}).");
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1QuantizationMatchesTheScalarReference(int bitDepth)
     {
         // The vector path zeroes groups of 4 coefficients below the dead zone: every quantizer, denominator and rounding
@@ -7019,6 +7085,15 @@ public sealed class VectorizedKernelTests
             Assert.Equal(Vector128.Create(x[0] * y[0], x[1] * y[1], x[2] * y[2], x[3] * y[3]), Av1Simd.MultiplyWideningLower(vx, vy));
             Assert.Equal(Vector128.Create(x[4] * y[4], x[5] * y[5], x[6] * y[6], x[7] * y[7]), Av1Simd.MultiplyWideningUpper(vx, vy));
             Assert.Equal(unchecked((short)(x[0] + x[1] + x[2] + x[3] + x[4] + x[5] + x[6] + x[7])), Av1Simd.AddAcross(vx));
+            var twelveBits = vx.AsUInt16() & Vector128.Create((ushort)0xFFF);
+            var taps = vy >> 8;
+            var dotProduct = 0;
+            for (var i = 0; i < 8; i++)
+            {
+                dotProduct += twelveBits.GetElement(i) * taps.GetElement(i);
+            }
+
+            Assert.Equal(dotProduct, Av1Simd.DotProduct(taps, twelveBits.AsInt16()));
             Assert.Equal(Vector128.Create(unchecked((short)(x[0] + x[1])), (short)(x[2] + x[3]), (short)(x[4] + x[5]), (short)(x[6] + x[7]), 0, 0, 0, 0), Av1Simd.AddPairwise(vx));
             CheckExtract(x, y, 0, Av1Simd.ExtractVector128(vx, vy, 0));
             CheckExtract(x, y, 1, Av1Simd.ExtractVector128(vx, vy, 1));

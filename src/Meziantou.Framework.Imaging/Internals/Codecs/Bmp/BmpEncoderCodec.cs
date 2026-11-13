@@ -442,11 +442,7 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
         {
             var band = _band!.Span[..(_width * 3)];
             PixelConverter.ConvertRow(_sourceFormat, lease.GetRowBytes(y)[..(_width * PixelFormats.GetBytesPerPixel(_sourceFormat))], PixelFormat.Rgb24, band, _background, ImageFormat.Bmp);
-            for (var x = 0; x < keys.Length; x++)
-            {
-                var pixel = band.Slice(3 * x, 3);
-                keys[x] = (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
-            }
+            PixelConverter.Rgb24ToColorKeys(band, keys);
         }
 
         private void WriteHeaders(ImageOutputBuffer output)

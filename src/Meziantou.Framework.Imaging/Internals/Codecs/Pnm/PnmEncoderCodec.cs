@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Imaging.Formats;
@@ -329,13 +328,8 @@ internal sealed class PnmEncoderCodec : ImageEncoderCodec
                 return;
             }
 
-            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(band));
-            var destination = output.GetSpan(sampleCount * 2);
-            for (var i = 0; i < sampleCount; i++)
-            {
-                BinaryPrimitives.WriteUInt16BigEndian(destination[(i * 2)..], samples[i]);
-            }
-
+            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(band))[..sampleCount];
+            SampleEndianness.WriteBigEndian(samples, output.GetSpan(sampleCount * 2));
             output.Advance(sampleCount * 2);
         }
 

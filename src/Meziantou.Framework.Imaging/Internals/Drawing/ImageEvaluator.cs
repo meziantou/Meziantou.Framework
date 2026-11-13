@@ -202,7 +202,8 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// <summary>
     /// Gets or sets a value indicating whether the colors are summed with vectors (the default when vectors are
     /// accelerated): a reduced image read row by row, the sums of each row of the image kept for the next rows of the
-    /// canvas and the cubic filter of the pixels read one by one, rather than by the scalar references.
+    /// canvas, the cubic filter of the pixels read one by one, and their interpolation on x64, rather than by the scalar
+    /// references.
     /// Both give the same bits.
     /// </summary>
     internal bool UseVectorKernels { get; set; } = Vector128.IsHardwareAccelerated;
@@ -1265,7 +1266,64 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     }
 
     /// <summary>Gets the color of the image at a position: the pixel that contains it, or the four pixels around it, interpolated.</summary>
+    /// <remarks>
+    /// The vector sums are used on x64 only: with Arm64, two vectors of 128 bits retire more instructions than the scalar
+    /// sums, in as many cycles.
+    /// </remarks>
     private Rgba64 Interpolate(double u, double v)
+    {
+        if (UseVectorKernels && Vector256.IsHardwareAccelerated && Avx.IsSupported)
+            return InterpolateVector(u, v);
+
+        return InterpolateScalar(u, v);
+    }
+
+    /// <summary>
+    /// Gets the color of the image at a position as <see cref="InterpolateScalar"/> does: the four pixels read first, then
+    /// summed as the lanes of <see cref="Lanes256"/>, with the products and the additions of <see cref="Accumulator"/>, and
+    /// no call between them. A pixel that is not read adds zeros, which change no sum: a sum that starts at a positive zero
+    /// is never a negative zero.
+    /// </summary>
+    private Rgba64 InterpolateVector(double u, double v)
+    {
+        Split(u, out var column, out var fx);
+        Split(v, out var row, out var fy);
+        if (fx == 0 && fy == 0)
+            return TryRead(column, row, out var pixel) ? pixel : default;
+
+        ulong topLeft = 0, topRight = 0, bottomLeft = 0, bottomRight = 0;
+        if (TryRead(column, row, out var color))
+        {
+            topLeft = unsafe(Unsafe.BitCast<Rgba64, ulong>(color));
+        }
+
+        if (fx != 0 && TryRead(column + 1, row, out color))
+        {
+            topRight = unsafe(Unsafe.BitCast<Rgba64, ulong>(color));
+        }
+
+        if (fy != 0)
+        {
+            if (TryRead(column, row + 1, out color))
+            {
+                bottomLeft = unsafe(Unsafe.BitCast<Rgba64, ulong>(color));
+            }
+
+            if (fx != 0 && TryRead(column + 1, row + 1, out color))
+            {
+                bottomRight = unsafe(Unsafe.BitCast<Rgba64, ulong>(color));
+            }
+        }
+
+        var sum = Lanes256.AddProduct(Lanes256.Zero, (1 - fx) * (1 - fy) * (long)(topLeft >> 48), Lanes256.Channels((topLeft & 0x0000_FFFF_FFFF_FFFFUL) | 0x0001_0000_0000_0000UL));
+        sum = Lanes256.AddProduct(sum, fx * (1 - fy) * (long)(topRight >> 48), Lanes256.Channels((topRight & 0x0000_FFFF_FFFF_FFFFUL) | 0x0001_0000_0000_0000UL));
+        sum = Lanes256.AddProduct(sum, (1 - fx) * fy * (long)(bottomLeft >> 48), Lanes256.Channels((bottomLeft & 0x0000_FFFF_FFFF_FFFFUL) | 0x0001_0000_0000_0000UL));
+        sum = Lanes256.AddProduct(sum, fx * fy * (long)(bottomRight >> 48), Lanes256.Channels((bottomRight & 0x0000_FFFF_FFFF_FFFFUL) | 0x0001_0000_0000_0000UL));
+        return Lanes256.ToColor(sum);
+    }
+
+    /// <summary>Gets the color of the image at a position, one pixel at a time (the scalar reference of <see cref="InterpolateVector"/>).</summary>
+    private Rgba64 InterpolateScalar(double u, double v)
     {
         Split(u, out var column, out var fx);
         Split(v, out var row, out var fy);
@@ -2112,6 +2170,24 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         {
             var distances = Vector256.Create(1.0, 0, 1, 2) + (Vector256.Create(1.0, 1, -1, -1) * Vector256.Create(fraction));
             unsafe { CubicKernel(distances).StoreUnsafe(ref target); }
+        }
+
+        /// <summary>Makes the color of the sums as <see cref="Accumulator.ToColor"/> does: the alpha rounded, each color over the alpha.</summary>
+        /// <remarks>The sums are finite and not negative: clamping is the comparisons of <see cref="Round"/> (<see cref="VectorAccumulator.ToColor"/>).</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rgba64 ToColor(Lanes256 sums)
+        {
+            var total = sums._value.GetElement(3);
+            var alpha = Round(total);
+            if (alpha == 0)
+                return default;
+
+            var rounded = Vector256.Floor((sums._value / Vector256.Create(total)) + Vector256.Create(RoundingOffset));
+            rounded = Vector256.Min(Vector256.Max(rounded, Vector256<double>.Zero), Vector256.Create((double)ushort.MaxValue));
+            var values = Avx.ConvertToVector128Int32WithTruncation(rounded);
+            var color = unsafe(Unsafe.BitCast<ulong, Rgba64>(Sse41.PackUnsignedSaturate(values, values).AsUInt64().ToScalar()));
+            color.A = alpha;
+            return color;
         }
 
     }

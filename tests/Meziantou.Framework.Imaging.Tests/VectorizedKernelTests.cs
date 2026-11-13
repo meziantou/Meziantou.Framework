@@ -5117,6 +5117,119 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ImageReductionByRowsMatchesTheScalarReference()
+    {
+        // Reductions along x, y or both, with columns that depend on the row or not, every wrap mode, smooth and box
+        // sampling, regions of the frame; runs repeated over rows (the taps and the sums of the rows are kept), moved,
+        // rows read in any order, and leases renewed
+        var random = new Random(20261112);
+        var scope = AllocationScope.Create(configuration: null);
+        using var narrow = new Image<Rgba32>(37, 29);
+        using var wide = new Image<Rgba64>(23, 41);
+        for (var y = 0; y < narrow.Height; y++)
+        {
+            for (var x = 0; x < narrow.Width; x++)
+            {
+                narrow.Frames[0][x, y] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), random.Next(4) switch
+                {
+                    0 => 0,
+                    1 => 255,
+                    _ => (byte)random.Next(256),
+                });
+            }
+        }
+
+        for (var y = 0; y < wide.Height; y++)
+        {
+            for (var x = 0; x < wide.Width; x++)
+            {
+                wide.Frames[0][x, y] = new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), random.Next(4) switch
+                {
+                    0 => 0,
+                    1 => ushort.MaxValue,
+                    _ => (ushort)random.Next(1, 65536),
+                });
+            }
+        }
+
+        const int CanvasWidth = 64;
+        using var canvas = new Image<Rgba64>(CanvasWidth, 4);
+        var modes = Enum.GetValues<ImageWrapMode>();
+        for (var round = 0; round < 400; round++)
+        {
+            ImageFrame frame = (round & 1) == 0 ? narrow.Frames[0] : wide.Frames[0];
+            Rectangle? region = null;
+            if (random.Next(3) == 0)
+            {
+                var left = random.Next(frame.Width);
+                var top = random.Next(frame.Height);
+                region = new Rectangle(left, top, random.Next(1, frame.Width - left + 1), random.Next(1, frame.Height - top + 1));
+            }
+
+            // The second number is zero: the rows of the canvas stay rows of the image
+            var scaleX = random.Next(4) == 0 ? 1 + random.NextDouble() : 0.03 + random.NextDouble();
+            var scaleY = random.Next(4) == 0 ? 1 + random.NextDouble() : 0.03 + random.NextDouble();
+            var skew = random.Next(2) == 0 ? 0 : (random.NextDouble() - 0.5) * 2;
+            var transform = new AffineTransform(scaleX, 0, skew, scaleY, (random.NextDouble() - 0.5) * 40, (random.NextDouble() - 0.5) * 40);
+            var modeX = modes[random.Next(modes.Length)];
+            var modeY = modes[random.Next(modes.Length)];
+            var sampling = random.Next(3) == 0 ? ImageSampling.Box : ImageSampling.Smooth;
+
+            // Two leases of runs: the same run over consecutive rows, sometimes moved, sometimes on any row
+            var calls = new List<(int Lease, int Y, int X, int Count)>();
+            for (var lease = 0; lease < 2; lease++)
+            {
+                var start = random.Next(-8, CanvasWidth);
+                var count = random.Next(1, CanvasWidth + 1);
+                var row = random.Next(-20, 40);
+                for (var i = 0; i < 16; i++)
+                {
+                    if (random.Next(6) == 0)
+                    {
+                        start = random.Next(-8, CanvasWidth);
+                        count = random.Next(1, CanvasWidth + 1);
+                    }
+
+                    row = random.Next(6) == 0 ? random.Next(-20, 60) : row + 1;
+                    calls.Add((lease, row, start, count));
+                }
+            }
+
+            var expected = Evaluate(useVectorKernels: false);
+            var actual = Evaluate(useVectorKernels: true);
+            Assert.Equal(expected, actual);
+
+            ushort[] Evaluate(bool useVectorKernels)
+            {
+                using var evaluator = new ImageEvaluator(scope) { UseVectorKernels = useVectorKernels };
+                evaluator.Prepare(frame, region, transform, modeX, modeY, sampling, canvas.Frames[0], CanvasWidth, "region");
+                var colors = new List<ushort>();
+                for (var lease = 0; lease < 2; lease++)
+                {
+                    evaluator.Begin();
+                    try
+                    {
+                        foreach (var call in calls)
+                        {
+                            if (call.Lease == lease)
+                            {
+                                colors.AddRange(evaluator.Evaluate(call.Y, call.X, call.Count));
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        evaluator.End();
+                    }
+                }
+
+                return [.. colors];
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingSourceOverOf8BitPixelsMatchesTheScalarReference()
     {
         // The division of the vectorized path: by 2^16, then by 255 as a product and a shift, below 2^32

@@ -224,8 +224,10 @@ namespace Meziantou.Framework.JavaScriptEngine
         public bool AllowStringCompilation { get => throw null; set { } }
         public bool CanBlock { get => throw null; set { } }
         public System.Threading.CancellationToken CancellationToken { get => throw null; set { } }
+        public int CompilationThreshold { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsDebugger? Debugger { get => throw null; set { } }
         public string DefaultLocale { get => throw null; set { } }
+        public bool EnableCompilation { get => throw null; set { } }
         public bool EnableV8StackTraceApi { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsHost? Host { get => throw null; set { } }
         public long? MaxStatements { get => throw null; set { } }

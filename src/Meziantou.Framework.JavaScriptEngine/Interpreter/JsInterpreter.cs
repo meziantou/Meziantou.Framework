@@ -150,6 +150,12 @@ internal static partial class JsInterpreter
         var pc = frame.Pc;
         var sp = frame.Sp;
         JsValue error;
+        if (EnterJitCode(frame.Code, engine))
+        {
+            RunJitCode(frame, engine);
+            pc = frame.Pc;
+            sp = frame.Sp;
+        }
 
         while (true)
         {
@@ -565,38 +571,19 @@ internal static partial class JsInterpreter
 
                 // ---- Control flow ---------------------------------------------------------------------------------
                 case OpCode.Jump:
-                    {
-                        var target = code[pc];
-                        if (target < pc)
-                        {
-                            engine.CountInterruptPoint();
-                        }
-
-                        pc = target;
-                        break;
-                    }
+                    goto TakeJump;
 
                 case OpCode.JumpIfTrue:
                     if (ToBoolean(values[--sp]))
-                    {
-                        pc = JumpTarget(code, pc, engine);
-                    }
-                    else
-                    {
-                        pc++;
-                    }
+                        goto TakeJump;
 
+                    pc++;
                     break;
                 case OpCode.JumpIfFalse:
-                    if (ToBoolean(values[--sp]))
-                    {
-                        pc++;
-                    }
-                    else
-                    {
-                        pc = JumpTarget(code, pc, engine);
-                    }
+                    if (!ToBoolean(values[--sp]))
+                        goto TakeJump;
 
+                    pc++;
                     break;
 
                 // The comparisons followed by a conditional jump: the numbers inline, the other values in a call
@@ -605,7 +592,10 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp -= 2;
-                        pc = (left.IsNumber && right.IsNumber ? left.NumberValue < right.NumberValue : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        if (left.IsNumber && right.IsNumber ? left.NumberValue < right.NumberValue : CompareForJump(op, left, right))
+                            goto TakeJump;
+
+                        pc++;
                         break;
                     }
 
@@ -614,7 +604,10 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp -= 2;
-                        pc = (left.IsNumber && right.IsNumber ? !(left.NumberValue < right.NumberValue) : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        if (left.IsNumber && right.IsNumber ? !(left.NumberValue < right.NumberValue) : CompareForJump(op, left, right))
+                            goto TakeJump;
+
+                        pc++;
                         break;
                     }
 
@@ -623,7 +616,10 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp -= 2;
-                        pc = (left.IsNumber && right.IsNumber ? left.NumberValue <= right.NumberValue : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        if (left.IsNumber && right.IsNumber ? left.NumberValue <= right.NumberValue : CompareForJump(op, left, right))
+                            goto TakeJump;
+
+                        pc++;
                         break;
                     }
 
@@ -632,7 +628,10 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp -= 2;
-                        pc = (left.IsNumber && right.IsNumber ? !(left.NumberValue <= right.NumberValue) : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        if (left.IsNumber && right.IsNumber ? !(left.NumberValue <= right.NumberValue) : CompareForJump(op, left, right))
+                            goto TakeJump;
+
+                        pc++;
                         break;
                     }
 
@@ -641,7 +640,10 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp -= 2;
-                        pc = (left.IsNumber && right.IsNumber ? left.NumberValue > right.NumberValue : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        if (left.IsNumber && right.IsNumber ? left.NumberValue > right.NumberValue : CompareForJump(op, left, right))
+                            goto TakeJump;
+
+                        pc++;
                         break;
                     }
 
@@ -650,7 +652,10 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp -= 2;
-                        pc = (left.IsNumber && right.IsNumber ? !(left.NumberValue > right.NumberValue) : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        if (left.IsNumber && right.IsNumber ? !(left.NumberValue > right.NumberValue) : CompareForJump(op, left, right))
+                            goto TakeJump;
+
+                        pc++;
                         break;
                     }
 
@@ -659,7 +664,10 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp -= 2;
-                        pc = (left.IsNumber && right.IsNumber ? left.NumberValue >= right.NumberValue : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        if (left.IsNumber && right.IsNumber ? left.NumberValue >= right.NumberValue : CompareForJump(op, left, right))
+                            goto TakeJump;
+
+                        pc++;
                         break;
                     }
 
@@ -668,7 +676,10 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp -= 2;
-                        pc = (left.IsNumber && right.IsNumber ? !(left.NumberValue >= right.NumberValue) : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        if (left.IsNumber && right.IsNumber ? !(left.NumberValue >= right.NumberValue) : CompareForJump(op, left, right))
+                            goto TakeJump;
+
+                        pc++;
                         break;
                     }
 
@@ -677,7 +688,10 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp -= 2;
-                        pc = (left.IsNumber ? right.IsNumber && left.NumberValue == right.NumberValue : JsOperations.IsStrictlyEqual(left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        if (left.IsNumber ? right.IsNumber && left.NumberValue == right.NumberValue : JsOperations.IsStrictlyEqual(left, right))
+                            goto TakeJump;
+
+                        pc++;
                         break;
                     }
 
@@ -686,7 +700,10 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp -= 2;
-                        pc = (left.IsNumber ? right.IsNumber && left.NumberValue == right.NumberValue : JsOperations.IsStrictlyEqual(left, right)) ? pc + 1 : JumpTarget(code, pc, engine);
+                        if (!(left.IsNumber ? right.IsNumber && left.NumberValue == right.NumberValue : JsOperations.IsStrictlyEqual(left, right)))
+                            goto TakeJump;
+
+                        pc++;
                         break;
                     }
 
@@ -725,6 +742,9 @@ internal static partial class JsInterpreter
                         values = frame.Values;
                         pc = frame.Pc;
                         sp = frame.Sp;
+                        if (HasJitCode(frame.Code, engine))
+                            goto RunJit;
+
                         break;
                     }
 
@@ -752,6 +772,9 @@ internal static partial class JsInterpreter
                         pc = frame.Pc;
                         sp = frame.Sp;
                         values[sp++] = result;
+                        if (HasJitCode(frame.Code, engine))
+                            goto RunJit;
+
                         break;
                     }
 
@@ -847,6 +870,9 @@ internal static partial class JsInterpreter
                             values = frame.Values;
                             pc = frame.Pc;
                             sp = frame.Sp;
+                            if (EnterJitCode(frame.Code, engine))
+                                goto RunJit;
+
                             break;
                         }
 
@@ -887,6 +913,9 @@ internal static partial class JsInterpreter
                             values = frame.Values;
                             pc = frame.Pc;
                             sp = frame.Sp;
+                            if (EnterJitCode(frame.Code, engine))
+                                goto RunJit;
+
                             break;
                         }
 
@@ -927,6 +956,9 @@ internal static partial class JsInterpreter
                             values = frame.Values;
                             pc = frame.Pc;
                             sp = frame.Sp;
+                            if (EnterJitCode(frame.Code, engine))
+                                goto RunJit;
+
                             break;
                         }
 
@@ -973,6 +1005,32 @@ internal static partial class JsInterpreter
 
             continue;
 
+        // A jump whose operand is at pc: a backward jump checks the limits of the script (a loop), and enters the compiled
+        // code of the function when it is hot (on-stack replacement: the compiled code starts at the target)
+        TakeJump:
+            {
+                var target = code[pc];
+                if (target >= pc)
+                {
+                    pc = target;
+                    continue;
+                }
+
+                engine.CountInterruptPoint();
+                pc = target;
+                if (!EnterJitCode(frame.Code, engine))
+                    continue;
+            }
+
+        // Runs the compiled code of the frame from pc, then the interpreter runs the instruction the compiled code left to it
+        RunJit:
+            frame.Pc = pc;
+            frame.Sp = sp;
+            RunJitCode(frame, engine);
+            pc = frame.Pc;
+            sp = frame.Sp;
+            continue;
+
         // The frequent TypeErrors of the instructions (a property of null, a call of a value that is not callable) are
         // handled as a throw statement: a handler of the run does not need a .NET exception
         ThrowError:
@@ -987,21 +1045,10 @@ internal static partial class JsInterpreter
                 values = frame.Values;
                 pc = frame.Pc;
                 sp = frame.Sp;
+                if (HasJitCode(frame.Code, engine))
+                    goto RunJit;
             }
         }
-    }
-
-    /// <summary>Gets the target of the jump whose operand is at <paramref name="pc"/>: a backward jump checks the limits of the script (a loop).</summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int JumpTarget(int[] code, int pc, JsEngine engine)
-    {
-        var target = code[pc];
-        if (target < pc)
-        {
-            engine.CountInterruptPoint();
-        }
-
-        return target;
     }
 
     /// <summary>The condition of a comparison followed by a conditional jump, when the operands are not both numbers.</summary>

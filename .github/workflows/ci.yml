@@ -232,6 +232,8 @@ jobs:
           # one job per target framework. The Imaging groups below are always split this way.
           $SplitByTargetFrameworkProjects = @(
             "tests/Meziantou.Framework.WebPlatform.Wpt/Meziantou.Framework.WebPlatform.Wpt.csproj"
+            # Runs each test twice: interpreted, and with every function compiled to .NET code
+            "tests/Meziantou.Framework.JavaScriptEngine.Test262/Meziantou.Framework.JavaScriptEngine.Test262.csproj"
           )
 
           # The target frameworks of the split jobs, read from LatestTargetFrameworks in Directory.Build.props.

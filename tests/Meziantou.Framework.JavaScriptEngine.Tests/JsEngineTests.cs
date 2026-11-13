@@ -2513,6 +2513,30 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void Documentation_DisableCompilation()
+    {
+        #region JavaScriptEngine_DisableCompilation
+        // The code of this engine is only interpreted: the hot functions are not compiled to .NET code
+        using var engine = new JsEngine(new JsEngineOptions { EnableCompilation = false });
+        var realm = engine.CreateRealm();
+        var result = realm.Execute("let sum = 0; for (let i = 0; i < 100_000; i++) { sum += i; } sum");
+        Assert.Equal(4_999_950_000, result.AsNumber());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CompilationThreshold()
+    {
+        #region JavaScriptEngine_CompilationThreshold
+        // The functions of this engine are compiled after 100 calls or loop iterations, instead of 1000
+        using var engine = new JsEngine(new JsEngineOptions { CompilationThreshold = 100 });
+        var realm = engine.CreateRealm();
+        var result = realm.Execute("function square(x) { return x * x; } let sum = 0; for (let i = 0; i < 1_000; i++) { sum += square(i); } sum");
+        Assert.Equal(332_833_500, result.AsNumber());
+        #endregion
+    }
+
+    [Fact]
     public void Documentation_Modules()
     {
         #region JavaScriptEngine_LoadModules

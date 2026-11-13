@@ -1,13 +1,24 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using Meziantou.Framework.JavaScriptEngine.Compiler;
+using Meziantou.Framework.JavaScriptEngine.Interpreter;
 
 namespace Meziantou.Framework.JavaScriptEngine.Tests.Interpreter;
 
 public sealed class InterpreterTests
 {
+    // The code runs interpreted, then with every function compiled on its first call: the results must be the same
     private static string Run(string code)
     {
-        using var engine = new JsEngine();
+        var interpreted = RunCore(code, new JsEngineOptions { EnableCompilation = false });
+        var compiled = RunCore(code, new JsEngineOptions { CompilationThreshold = 1 });
+        Assert.Equal(interpreted, compiled);
+        return interpreted;
+    }
+
+    private static string RunCore(string code, JsEngineOptions options)
+    {
+        using var engine = new JsEngine(options);
         var realm = engine.CreateRealm();
         var result = realm.Execute(code);
         engine.RunJobs();
@@ -370,11 +381,10 @@ public sealed class InterpreterTests
 
     private static string RunWithRecursionLimit(string code)
     {
-        using var engine = new JsEngine(new JsEngineOptions { RecursionLimit = 1_000 });
-        var realm = engine.CreateRealm();
-        var result = realm.Execute(code);
-        using var scope = engine.Enter();
-        return result.IsString ? result.AsString() : result.ToString();
+        var interpreted = RunCore(code, new JsEngineOptions { RecursionLimit = 1_000, EnableCompilation = false });
+        var compiled = RunCore(code, new JsEngineOptions { RecursionLimit = 1_000, CompilationThreshold = 1 });
+        Assert.Equal(interpreted, compiled);
+        return interpreted;
     }
 
     // An assignment to an undeclared identifier in strict code: the reference is resolved before the value is evaluated
@@ -391,6 +401,134 @@ public sealed class InterpreterTests
     public void Evaluate_StrictAssignmentToUndeclaredGlobal(string code, string expected)
     {
         Assert.Equal(expected, Run(code));
+    }
+
+    // The compiled code of the functions (Run compares the results with the interpreter): the instructions it runs, the
+    // ones it leaves to the interpreter, and the entries from the interpreter (calls, returns, handlers, loops, resumptions)
+    [Theory]
+    [InlineData("function f() { let s = 0; for (let i = 0; i < 1000; i++) { s += i % 7; } return s; } f()", "2997")]
+    [InlineData("function f(a, b) { return [a << b, a >> b, a >>> b, a & b, a | b, a ^ b, ~a, +a].join(); } function g(a, b) { try { return [a << b, a & b, ~a].join(); } catch (e) { return e.constructor.name; } } [f(-5, 33), f(2 ** 32 + 3, 1), f(NaN, Infinity), f('12', '2'), f(1.9, -1.9), f({ valueOf() { return 6; } }, true), g(3n, 1n), g(3n, 1)].join(';')", "-10,-3,2147483645,33,-5,-38,4,-5;6,1,1,1,3,2,-4,4294967299;0,0,0,0,0,0,-1,NaN;48,3,3,0,14,14,-13,12;-2147483648,0,0,1,-1,-2,-2,1.9;12,3,3,0,7,7,-7,6;6,1,-4;TypeError")]
+    [InlineData("function f() { var s = ''; for (var i = 0; i < 5; i++) s += i; return s + (1 - 2) * 3 / 4; } f()", "01234-0.75")]
+    [InlineData("function f(a, b) { return [a + b, a - b, a * b, a / b, a % b, a == b, a != b, a === b, a !== b, a < b, a > b, a <= b, a >= b, -a, !a, typeof a].join(); } f(7, 2) + ';' + f('7', 2) + ';' + f(1n, 2n)", "9,5,14,3.5,1,false,true,false,true,false,true,false,true,-7,false,number;72,5,14,3.5,1,false,true,false,true,false,true,false,true,-7,false,string;3,-1,2,0,1,false,true,false,true,true,false,true,false,-1,false,bigint")]
+    [InlineData("function f() { var log = []; var o = { valueOf() { log.push('v'); return 3; } }; var r = [o + 1, o - 1, o * 2, o < 4, +o, -o, o++]; return r.join() + ';' + log.length; } f()", "4,2,6,true,3,-3,3;7")]
+    [InlineData("function f(x) { let a = x; a++; a--; ++a; --a; return a; } [f(1), f('1'), f(1n), f(undefined)].join()", "1,1,1,NaN")]
+    [InlineData("function f() { var o = { a: 1, b: 2 }; for (var i = 0; i < 10; i++) { o.a = o.b + i; o['c' + (i % 2)] = i; } return [o.a, o.c0, o.c1, Object.keys(o).join()].join(); } f()", "11,8,9,a,b,c0,c1")]
+    [InlineData("function f() { var a = [1, 2, 3]; a[5] = 6; var r = []; for (var i = 0; i < a.length; i++) r.push(a[i] ?? 'h'); return r.join() + [, 1, , 2].length; } f()", "1,2,3,h,h,64")]
+    [InlineData("function f() { var r = []; for (var x of [1, 2, 3]) { if (x === 2) continue; r.push(x); } for (var k in { a: 1, b: 2 }) r.push(k); var [p, ...q] = 'xyz'; var { m, ...n } = { m: 1, o: 2 }; return r.join() + p + q.join('') + m + JSON.stringify(n); } f()", "1,3,a,bxyz1{\"o\":2}")]
+    [InlineData("function f() { var r = []; outer: for (var i = 0; i < 3; i++) { for (var j = 0; j < 3; j++) { if (j === 1) continue outer; if (i === 2) break outer; r.push(i + '' + j); } } switch (r.length) { case 2: r.push('two'); break; default: r.push('other'); } return r.join(); } f()", "00,10,two")]
+    [InlineData("function f() { var n = 0; for (var i = 0; i < 20; i++) { try { if (i % 3 === 0) throw new Error('e' + i); n += 1; } catch (e) { n += 100; } finally { n += 1000; } } return n; } f()", "20713")]
+    [InlineData("function g(i) { if (i % 2) throw new RangeError('r' + i); return i; } function f() { var r = []; for (var i = 0; i < 6; i++) { try { r.push(g(i)); } catch (e) { r.push(e.message); } } return r.join(); } f()", "0,r1,2,r3,4,r5")]
+    [InlineData("function f() { var r = []; for (var v of [null, undefined, {}]) { try { r.push(v.x); } catch (e) { r.push(e.constructor.name); } try { v.m(); } catch (e) { r.push(e.message); } } return r.join('|'); } f()", "TypeError|Cannot read properties of null (reading 'm')|TypeError|Cannot read properties of undefined (reading 'm')||v.m is not a function")]
+    [InlineData("function f() { try { x; let x = 1; } catch (e) { return e.constructor.name + ':' + e.message; } } f()", "ReferenceError:Cannot access 'x' before initialization")]
+    [InlineData("function f() { const c = 1; try { c = 2; } catch (e) { return e.constructor.name; } } f()", "TypeError")]
+    [InlineData("function f() { var fs = []; for (let i = 0; i < 3; i++) fs.push(() => i); var c = 0; var inc = () => ++c; inc(); inc(); return fs.map(g => g()).join() + c; } f()", "0,1,22")]
+    [InlineData("function add(a, b, c) { return a + b + c; } function f() { var v = [1, 2, 3]; var s = 0; for (var i = 0; i < 10; i++) s += add(...v) + Math.max(...v) + add(i, 1, 2); return s; } f()", "165")]
+    [InlineData("class P { constructor(x) { this.x = x; } get double() { return this.x * 2; } add(o) { return new P(this.x + o.x); } } function f() { var p = new P(1); for (var i = 0; i < 5; i++) p = p.add(new P(i)); return [p.x, p.double, new Date(0).getTime(), new Array(3).length, new (class extends P {})(4).double].join(); } f()", "11,22,0,3,8")]
+    [InlineData("function F(a, b) { this.s = a + b; } function f() { var args = [1, 2]; return new F(...args).s + new F(3, 4).s; } f()", "10")]
+    [InlineData("function f() { return arguments.length + ':' + arguments[1] + ':' + [].slice.call(arguments).join(); } function g(a) { arguments[0] = 9; return a; } f(1, 2, 3) + ';' + g(1)", "3:2:1,2,3;9")]
+    [InlineData("function f(a = 1, { b } = { b: 2 }, ...rest) { return a + b + rest.length; } f() + f(5, { b: 5 }, 1, 2)", "15")]
+    [InlineData("function f(o) { return [o?.a?.b, o?.m?.(), o ?? 'd', typeof o?.a, 'a' in (o ?? {}), o instanceof Object, delete o?.a].join(); } f(null) + ';' + f({ a: { b: 1 }, m() { return 2; } })", ",,d,undefined,false,false,true;1,2,[object Object],object,true,true,true")]
+    [InlineData("function f() { var o = { x: 1 }; with (o) { x = 2; var y = x; } return eval('y + o.x'); } f()", "4")]
+    [InlineData("var g = 0; function f() { for (var i = 0; i < 10; i++) { g += i; } return g; } f() + f()", "135")]
+    [InlineData("function* gen(n) { for (let i = 0; i < n; i++) { try { yield i; } finally { } } return 'done'; } function f() { var r = []; for (var v of gen(4)) r.push(v); var it = gen(2); r.push(it.next().value, it.return(7).value, it.next().done); return r.join(); } f()", "0,1,2,3,0,7,true")]
+    [InlineData("function* gen() { var x = 0; while (true) { var v = yield x; if (v === undefined) return x; x += v; } } function f() { var it = gen(); it.next(); it.next(2); it.next(3); return it.next().value; } f()", "5")]
+    [InlineData("async function f() { var s = 0; for (var i = 0; i < 5; i++) { s += await i; try { await Promise.reject(new Error('x' + i)); } catch (e) { s += e.message.length; } } return s; } var out; f().then(v => out = v); out", "undefined")]
+    [InlineData("var out; async function f() { var s = 0; for (var i = 0; i < 5; i++) { s += await i; try { await Promise.reject(new Error('x' + i)); } catch (e) { s += e.message.length; } } out = s; } f(); 'started'", "started")]
+    [InlineData("'use strict'; function loop(n, acc) { return n === 0 ? acc : loop(n - 1, acc + n); } loop(5000, 0)", "12502500")]
+    [InlineData("function f() { var s = 0; var o = { get v() { return s; }, set v(x) { s = x * 2; } }; for (var i = 0; i < 5; i++) o.v = o.v + 1; return s; } f()", "62")]
+    [InlineData("function f() { var r = []; var i = 0; do { r.push(i); i += 3; } while (i < 10); while (i > 0) { i -= 4; } return r.join() + ':' + i; } f()", "0,3,6,9:0")]
+    [InlineData("function f(x) { var t = `a${x}b${x + 1}`; return t + /a+/.test('caab'); } f(1)", "a1b2true")]
+    [InlineData("function f() { try { null.x; } catch (e) { return e.stack.split('\\n')[1].trim().split(' ')[1]; } } f()", "f")]
+    [InlineData("function f(o) { 'use strict'; o.x = 1; return o.x; } var r = []; for (var v of [{}, Object.freeze({})]) { try { r.push(f(v)); } catch (e) { r.push(e.constructor.name); } } r.join()", "1,TypeError")]
+    public void Jit_Evaluate(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    [Fact]
+    public void Jit_HotFunctionIsCompiled()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { CompilationThreshold = 100 });
+        var realm = engine.CreateRealm();
+        realm.Execute("function add(a, b) { return a + b; } function cold() { return 1; } var s = 0; for (var i = 0; i < 200; i++) s = add(s, i); cold();");
+        Assert.Equal(19900, realm.Execute("s").AsNumber());
+        Assert.NotNull(GetTemplate(realm, "add").JitCode);
+        Assert.Null(GetTemplate(realm, "cold").JitCode);
+    }
+
+    [Fact]
+    public void Jit_LoopOfASingleCallIsCompiled()
+    {
+        // On-stack replacement: the interpreter enters the compiled code at the start of the loop
+        using var engine = new JsEngine(new JsEngineOptions { CompilationThreshold = 100 });
+        var realm = engine.CreateRealm();
+        Assert.Equal(49995000, realm.Execute("function f() { let s = 0; for (let i = 0; i < 10000; i++) s += i; return s; } f()").AsNumber());
+        Assert.NotNull(GetTemplate(realm, "f").JitCode);
+    }
+
+    [Fact]
+    public void Jit_Disabled()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { EnableCompilation = false, CompilationThreshold = 1 });
+        var realm = engine.CreateRealm();
+        Assert.Equal(49995000, realm.Execute("function f() { let s = 0; for (let i = 0; i < 10000; i++) s += i; return s; } f()").AsNumber());
+        Assert.Null(GetTemplate(realm, "f").JitCode);
+    }
+
+    [Fact]
+    public void Jit_CompilationThresholdIsValidated()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new JsEngineOptions { CompilationThreshold = 0 });
+        using var engine = new JsEngine(new JsEngineOptions { CompilationThreshold = 5 });
+        Assert.Equal(5, engine.Options.CompilationThreshold);
+        Assert.Throws<InvalidOperationException>(() => engine.Options.CompilationThreshold = 10);
+    }
+
+    [Fact]
+    public void Jit_FunctionBelowTheThresholdIsInterpreted()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { CompilationThreshold = 50 });
+        var realm = engine.CreateRealm();
+        realm.Execute("function f(x) { return x + 1; } for (var i = 0; i < 40; i++) f(i);");
+        Assert.Null(GetTemplate(realm, "f").JitCode);
+        realm.Execute("for (var i = 0; i < 20; i++) f(i);");
+        Assert.NotNull(GetTemplate(realm, "f").JitCode);
+    }
+
+    [Fact]
+    public void Jit_LimitsAreCheckedInLoops()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { CompilationThreshold = 1, MaxStatements = 100_000 });
+        var realm = engine.CreateRealm();
+        var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("function f() { for (;;) { } } f()"));
+        Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+        exception = Assert.Throws<JsTerminationException>(() => realm.Execute("function g() { var i = 0; while (i >= 0) i++; } g()"));
+        Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+    }
+
+    [Fact]
+    public void Jit_CodeCompiledForADebuggerIsInterpreted()
+    {
+        var lines = new List<int>();
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            CompilationThreshold = 1,
+            Debugger = new JsBreakpointDebugger(pause =>
+            {
+                lines.Add(pause.Location.Line);
+                return JsStepAction.Continue;
+            }),
+        });
+        var realm = engine.CreateRealm();
+        Assert.Equal(3, realm.Execute("function f() {\n  let s = 0;\n  for (let i = 0; i < 3; i++) {\n    debugger;\n    s++;\n  }\n  return s;\n}\nf()").AsNumber());
+        Assert.Equal([4, 4, 4], lines);
+        Assert.Null(GetTemplate(realm, "f").JitCode);
+    }
+
+    private static FunctionTemplate GetTemplate(JsRealm realm, string name)
+    {
+        using var scope = realm.Engine.Enter();
+        return ((JsClosure)realm.GlobalObject.GetProperty(name).Cell!).Template;
     }
 
     [Fact]

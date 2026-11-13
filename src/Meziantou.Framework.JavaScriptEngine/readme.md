@@ -1,6 +1,7 @@
 # Meziantou.Framework.JavaScriptEngine
 
-An ECMAScript engine written in .NET: a hand-written parser, a bytecode compiler and an interpreter. It is validated by
+An ECMAScript engine written in .NET: a hand-written parser, a bytecode compiler, an interpreter, and a compiler of the
+hot functions to .NET code. It is validated by
 [test262](https://github.com/tc39/test262), the conformance suite of ECMAScript: see
 [the test262 results](../../docs/JavaScriptEngine/10-Conformance.md), and by the
 [Web Tooling Benchmark](../../tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/readme.md) (babel,
@@ -16,7 +17,8 @@ imports (the module sources are given by the host),
 `sliceToImmutable`), Await Dictionary (`Promise.allKeyed` and `Promise.allSettledKeyed`) and Non-extensible Applies to
 Private (a private field or method cannot be added to a non-extensible object), and the `ShadowRealm`,
 [Import Text](https://github.com/tc39/proposal-import-text), [Import Bytes](https://github.com/tc39/proposal-import-bytes)
-and [deferred re-exports](https://github.com/tc39/proposal-deferred-reexports) (`export defer`) proposals. It uses no reflection: it is trimming- and Native AOT-compatible, and its results do not depend
+and [deferred re-exports](https://github.com/tc39/proposal-deferred-reexports) (`export defer`) proposals. It binds .NET code without reflection: it is trimming- and Native AOT-compatible (with Native AOT, the code is only
+interpreted), and its results do not depend
 on the globalization settings of the process (the Unicode, time zone and CLDR data are part of the library, and the word
 lists of ICU that `Intl.Segmenter` uses for Chinese, Japanese, Thai, Lao, Khmer and Burmese come from
 [Meziantou.Framework.Unicode.Dictionaries](../Meziantou.Framework.Unicode.Dictionaries/readme.md)).

@@ -6,6 +6,7 @@ using Meziantou.Framework.JavaScriptEngine.Benchmarks;
 // Usage:
 //   dotnet run -c Release -f net10.0 -- [BenchmarkDotNet arguments]   runs the benchmarks
 //   dotnet run -c Release -f net10.0 -- quick [workload] [iterations]  times the workloads (a quick, noisy measurement)
+//   dotnet run -c Release -f net10.0 -- quick-interpreted [workload] [iterations]  the same, without the compilation of the hot functions
 //   dotnet run -c Release -f net10.0 -- profile <workload or file> <seconds>   runs a workload (a script that defines run()) in a loop (to attach a profiler)
 //   dotnet run -c Release -f net10.0 -- dump <workload or file>         prints the bytecode of a workload
 //   dotnet run -c Release -f net10.0 -- cold <script or file>           runs a script once in a new process: the cold start (data loading) and the retained memory
@@ -144,8 +145,9 @@ if (args is ["harness", var harnessPath, ..])
     return 0;
 }
 
-if (args is ["quick", ..])
+if (args is ["quick" or "quick-interpreted", ..])
 {
+    var options = new JsEngineOptions { EnableCompilation = args[0] == "quick" };
     var filter = args.Length > 1 ? args[1] : null;
     var iterations = args.Length > 2 ? int.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 20;
     // A file name instead of a workload name: the script of the file (it defines run())
@@ -160,7 +162,7 @@ if (args is ["quick", ..])
         if (filter is not null && !name.Contains(filter, StringComparison.OrdinalIgnoreCase))
             continue;
 
-        using var engine = new JsEngine();
+        using var engine = new JsEngine(options);
         var realm = engine.CreateRealm();
         realm.Execute(code);
         JsValue run;
@@ -176,7 +178,7 @@ if (args is ["quick", ..])
     // The fixed costs: an engine and a realm that runs a tiny script, and the parsing of a large script
     if (ReferenceEquals(workloads, Workloads.All) && filter is null or "CreateRealm")
     {
-        var mine = Measure(() => { using var engine = new JsEngine(); engine.CreateRealm().Execute("1 + 1"); }, iterations);
+        var mine = Measure(() => { using var engine = new JsEngine(options); engine.CreateRealm().Execute("1 + 1"); }, iterations);
         Console.WriteLine($"{"CreateRealm",-14} {mine,10:F3} ms");
     }
 

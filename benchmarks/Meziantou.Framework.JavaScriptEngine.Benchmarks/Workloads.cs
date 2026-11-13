@@ -6,6 +6,7 @@ internal static class Workloads
     public static IReadOnlyDictionary<string, string> All { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["Loop"] = "function run() { let s = 0; for (let i = 0; i < 100000; i++) { s += i % 7; } return s; }",
+        ["Bitwise"] = "function run() { let h = 0; for (let i = 0; i < 100000; i++) { h = (h * 31 + i) | 0; h ^= h >>> 7; h = (h << 3) & 0x7fffffff; } return h; }",
         ["Calls"] = "function fib(n) { return n < 2 ? n : fib(n - 1) + fib(n - 2); } function run() { return fib(20); }",
         ["Properties"] = """
             function run() {

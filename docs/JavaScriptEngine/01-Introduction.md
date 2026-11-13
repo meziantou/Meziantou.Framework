@@ -4,8 +4,9 @@ description: An ECMAScript engine written in .NET, to run JavaScript and ES modu
 ---
 
 `Meziantou.Framework.JavaScriptEngine` runs JavaScript inside a .NET application. It is written entirely in C#: a
-parser, a bytecode compiler and an interpreter, with no native dependency. It is trimming- and Native AOT-compatible,
-because it uses no reflection.
+parser, a bytecode compiler, an interpreter, and a compiler of the hot functions to .NET code, with no native
+dependency. It is trimming- and Native AOT-compatible, because it binds .NET code without reflection; with Native AOT,
+where no code can be generated at run time, the code is only interpreted.
 
 ## What you can do with it
 

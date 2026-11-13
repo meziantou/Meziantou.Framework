@@ -157,6 +157,26 @@ public sealed class VectorizedKernelTests
             var scanline = new byte[width * 6];
             random.NextBytes(scanline);
             Check(PngSampleFormat.ExpandGrayAlpha8Scalar, PngSampleFormat.ExpandGrayAlpha8, scanline.AsSpan(0, width * 2).ToArray(), width, width * 4);
+
+            // The transparent color of a tRNS chunk: one pixel in 3 has it, or a color that differs in one sample, or a
+            // color beyond 8 bits
+            var rgb = scanline.AsSpan(0, width * 3).ToArray();
+            int[] key = [random.Next(256), random.Next(256), random.Next(256)];
+            for (var x = 0; x < width; x++)
+            {
+                if (random.Next(3) == 0)
+                {
+                    rgb[3 * x] = (byte)key[0];
+                    rgb[(3 * x) + 1] = (byte)key[1];
+                    rgb[(3 * x) + 2] = (byte)(key[2] ^ (random.Next(4) == 0 ? 1 << random.Next(8) : 0));
+                }
+            }
+
+            foreach (var (red, green, blue) in new[] { (key[0], key[1], key[2]), (key[0], key[1], key[2] + 256), (0, 0, 0) })
+            {
+                Check((s, w, d) => PngSampleFormat.ExpandRgb8WithKeyScalar(s, w, d, red, green, blue), (s, w, d) => PngSampleFormat.ExpandRgb8WithKey(s, w, d, red, green, blue), rgb, width, width * 4);
+            }
+
             foreach (var bigEndian in new[] { false, true })
             {
                 Check((s, w, d) => SixteenBitSamples.ExpandGrayAlphaScalar(s, w, d, bigEndian), (s, w, d) => SixteenBitSamples.ExpandGrayAlpha(s, w, d, bigEndian), scanline.AsSpan(0, width * 4).ToArray(), width, width * 8);
@@ -193,6 +213,35 @@ public sealed class VectorizedKernelTests
     }
 
     private delegate void Expansion(ReadOnlySpan<byte> scanline, int width, Span<byte> destination);
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PngIndexPackingMatchesTheScalarReference()
+    {
+        var random = new Random(61);
+        foreach (var bitDepth in new[] { 1, 2, 4 })
+        {
+            foreach (var count in Enumerable.Range(0, 80).Append(1000).Append(4099))
+            {
+                // Random samples, often the largest one
+                var indexes = new byte[count];
+                for (var i = 0; i < count; i++)
+                {
+                    indexes[i] = random.Next(3) == 0 ? (byte)((1 << bitDepth) - 1) : (byte)random.Next(1 << bitDepth);
+                }
+
+                // The bytes after the scanline must not be written
+                var length = ((count * bitDepth) + 7) / 8;
+                var expected = new byte[length + 5];
+                var actual = new byte[length + 5];
+                Array.Fill(expected, (byte)0xA5);
+                Array.Fill(actual, (byte)0xA5);
+                PngEncodedLayout.PackScalar(indexes, bitDepth, expected);
+                PngEncodedLayout.Pack(indexes, bitDepth, actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]

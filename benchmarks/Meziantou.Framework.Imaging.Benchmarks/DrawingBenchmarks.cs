@@ -370,4 +370,12 @@ public class DrawingBenchmarks : IDisposable
         _image.Draw(static canvas => canvas.FillEllipse(new SolidBrush(new Rgba64(60000, 40000, 20000, 65535)) { BlendMode = BlendMode.Multiply }, new PointD(512, 384), 400, 300));
         return _image.Width;
     }
+
+    [Benchmark]
+    [Workload("Translucent ellipse combined with the exclusive-or operator: the pixels it covers keep about half their opacity")]
+    public int FillXor()
+    {
+        _image.Draw(static canvas => canvas.FillEllipse(new SolidBrush(new Rgba32(30, 120, 200, 100)) { CompositeMode = CompositeMode.Xor }, new PointD(512, 384), 400, 300));
+        return _image.Width;
+    }
 }

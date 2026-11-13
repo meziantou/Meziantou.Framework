@@ -104,7 +104,8 @@ internal static class TdsLoginParser
             return [];
         }
 
-        if (offset + length > payload.Length)
+        // cbSSPILong can be close to int.MaxValue, so compare without adding to the offset to avoid an overflow
+        if (offset > payload.Length || length > payload.Length - offset)
         {
             return [];
         }

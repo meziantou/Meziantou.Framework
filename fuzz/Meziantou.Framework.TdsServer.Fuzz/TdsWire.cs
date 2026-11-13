@@ -15,6 +15,7 @@ internal static class TdsWire
     public const byte Rpc = 0x03;
     public const byte TabularResult = 0x04;
     public const byte Attention = 0x06;
+    public const byte TransactionManager = 0x0E;
     public const byte Login7 = 0x10;
     public const byte PreLogin = 0x12;
 

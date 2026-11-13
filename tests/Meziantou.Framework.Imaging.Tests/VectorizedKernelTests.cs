@@ -4922,6 +4922,80 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PsnrRowErrorsMatchTheScalarReference()
+    {
+        var random = new Random(20261113);
+        foreach (var width in Enumerable.Range(0, 40).Append(1000).Append(70_001))
+        {
+            // Random pixels, with samples often 0 or 255, and rows that are identical or the most different everywhere
+            var expected = new Rgba32[width];
+            var actual = new Rgba32[width];
+            for (var x = 0; x < width; x++)
+            {
+                expected[x] = NextPixel(random);
+                actual[x] = random.Next(4) == 0 ? expected[x] : NextPixel(random);
+            }
+
+            Check(expected, actual);
+            Check(expected, expected);
+            Check(Enumerable.Repeat(new Rgba32(255, 255, 255, 255), width).ToArray(), new Rgba32[width]);
+        }
+
+        static void Check(Rgba32[] expected, Rgba32[] actual)
+        {
+            ulong expectedColor = 7;
+            ulong expectedAlpha = 3;
+            ulong actualColor = 7;
+            ulong actualAlpha = 3;
+            PsnrCalculator.SumRowErrorsScalar(expected, actual, ref expectedColor, ref expectedAlpha);
+            PsnrCalculator.SumRowErrors(expected, actual, ref actualColor, ref actualAlpha);
+            Assert.Equal(expectedColor, actualColor);
+            Assert.Equal(expectedAlpha, actualAlpha);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PerceptualHashRowReductionMatchesTheScalarReference()
+    {
+        var random = new Random(20261114);
+        foreach (var cells in new[] { 9, 32 })
+        {
+            foreach (var width in Enumerable.Range(1, 80).Append(1000).Append(1920).Append(70_001))
+            {
+                var pixels = new Rgba32[width];
+                for (var x = 0; x < width; x++)
+                {
+                    pixels[x] = random.Next(8) == 0 ? new Rgba32(255, 255, 255, 255) : NextPixel(random);
+                }
+
+                foreach (var whiteBackground in new[] { false, true })
+                {
+                    var expected = Enumerable.Range(0, cells).Select(_ => (long)random.Next()).ToArray();
+                    var actual = (long[])expected.Clone();
+                    PerceptualHasher.ReduceRowScalar(pixels, whiteBackground, expected);
+                    PerceptualHasher.ReduceRow(pixels, whiteBackground, actual);
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+    }
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static Rgba32 NextPixel(Random random)
+    {
+        byte Next() => random.Next(4) switch
+        {
+            0 => 0,
+            1 => 255,
+            _ => (byte)random.Next(256),
+        };
+
+        return new Rgba32(Next(), Next(), Next(), Next());
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ButteraugliMaltaLinesMatchTheScalarReference()
     {
         const int Rows = 3;

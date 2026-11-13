@@ -661,7 +661,12 @@ internal sealed class TiffDocumentWriter : IDisposable
     /// <summary>Checks that every pixel of a row is exactly black or exactly white: gray levels and colors are never thresholded silently.</summary>
     private static void ValidateBilevelRow(PixelFormat format, ReadOnlySpan<byte> row, int width, int y)
     {
-        for (var x = 0; x < width; x++)
+        // Gray8: the colors of 0 and 255 are black and white, and no other gray is
+        var start = format == PixelFormat.Gray8 ? row[..width].IndexOfAnyExcept((byte)0, byte.MaxValue) : 0;
+        if (start < 0)
+            return;
+
+        for (var x = start; x < width; x++)
         {
             if (ReadColor(format, row, x) is not (0 or WhiteColor))
                 throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"A bilevel TIFF page stores black and white pixels only and the pixel ({x}, {y}) is neither. Keep TiffPixelLayout.Auto, or reduce the image to black and white explicitly."), "Bilevel reduction");
@@ -904,6 +909,13 @@ internal sealed class TiffDocumentWriter : IDisposable
         if (layout.IsBilevel)
         {
             // WhiteIsZero: a set bit is a black pixel, which is also what the CCITT compressions code as a black run
+            if (_page.PixelFormat == PixelFormat.Gray8)
+            {
+                IndexPacking.PackBits(source[..width], setWhenZero: true, destination);
+                destination[((width + 7) / 8)..].Clear();
+                return;
+            }
+
             destination.Clear();
             for (var x = 0; x < width; x++)
             {

@@ -624,25 +624,14 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
 
                     case 4:
                         // The high-order half of a byte is the left pixel
-                        destination.Clear();
-                        for (var x = 0; x < _width; x++)
-                        {
-                            destination[x >> 1] |= (byte)((x & 1) == 0 ? indexes[x] << 4 : indexes[x]);
-                        }
-
+                        IndexPacking.PackNibbles(indexes, destination);
+                        destination[((_width + 1) / 2)..].Clear();
                         break;
 
                     default:
                         // The most significant bit of a byte is the left pixel
-                        destination.Clear();
-                        for (var x = 0; x < _width; x++)
-                        {
-                            if (indexes[x] != 0)
-                            {
-                                destination[x >> 3] |= (byte)(0x80 >> (x & 7));
-                            }
-                        }
-
+                        IndexPacking.PackBits(indexes, setWhenZero: false, destination);
+                        destination[((_width + 7) / 8)..].Clear();
                         break;
                 }
 

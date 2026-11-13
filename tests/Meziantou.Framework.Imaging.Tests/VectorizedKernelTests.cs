@@ -1010,6 +1010,48 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void IndexPackingMatchesTheScalarReferences()
+    {
+        var random = new Random(4132);
+        for (var width = 0; width <= 100; width++)
+        {
+            for (var round = 0; round < 6; round++)
+            {
+                // Zeros and other bytes, indexes of 4 bits and any byte (the scalar loop keeps the low half of an even one)
+                var values = new byte[width];
+                random.NextBytes(values);
+                for (var i = 0; i < width; i++)
+                {
+                    values[i] = round switch
+                    {
+                        0 => random.Next(2) == 0 ? (byte)0 : byte.MaxValue,
+                        1 => (byte)(values[i] & 15),
+                        2 => random.Next(4) == 0 ? (byte)0 : values[i],
+                        _ => values[i],
+                    };
+                }
+
+                // The bytes after the packed row must not be written
+                foreach (var setWhenZero in new[] { false, true })
+                {
+                    var expected = Enumerable.Repeat((byte)0xA5, ((width + 7) / 8) + 3).ToArray();
+                    var actual = (byte[])expected.Clone();
+                    IndexPacking.PackBitsScalar(values, setWhenZero, expected);
+                    IndexPacking.PackBits(values, setWhenZero, actual);
+                    Assert.Equal(expected, actual);
+                }
+
+                var expectedNibbles = Enumerable.Repeat((byte)0xA5, ((width + 1) / 2) + 3).ToArray();
+                var actualNibbles = (byte[])expectedNibbles.Clone();
+                IndexPacking.PackNibblesScalar(values, expectedNibbles);
+                IndexPacking.PackNibbles(values, actualNibbles);
+                Assert.Equal(expectedNibbles, actualNibbles);
+            }
+        }
+    }
+
     /// <summary>
     /// Creates elements in runs: short runs of 1 to 3 equal elements, or runs of up to 300 elements, drawn from 4 elements of
     /// which 3 differ by one byte only.

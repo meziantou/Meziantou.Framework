@@ -570,12 +570,19 @@ internal static class FuzzOracle
         // (IcoEntryDecoder: an all-transparent icon is never what the file means): such a corner is written as a PNG payload.
         // The DIB stores 8-bit alpha: a 16-bit alpha of 128 or less is 0 there (fuzz regression)
         var dibPayload = alternative && !IsFullyTransparentIn8Bits(still);
+
+        // The layouts of black and white pixels (palettes of 1, 4 and 8 bits, run-length or not, PBM, TIFF bilevel) write
+        // the corner reduced to black and white
+        var bilevel = option == 3 && ((variant % 12) is 1 or 3 || ((variant % 12) == 4 && (variant & 128) != 0));
         var (encoder, pixelFormat) = (variant % 12) switch
         {
             0 => ((ImageEncoder)new QoiEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),
+            1 when bilevel => (new BmpEncoder { MetadataHandling = MetadataHandling.Strip, PixelLayout = ((variant >> 6) & 3) switch { 0 => BmpPixelLayout.Indexed1, 1 or 2 => BmpPixelLayout.Indexed4, _ => BmpPixelLayout.Indexed8 }, Compression = ((variant >> 6) & 1) != 0 ? BmpCompression.RunLength : BmpCompression.None }, PixelFormat.Gray8),
             1 => (new BmpEncoder { MetadataHandling = MetadataHandling.Strip, RowOrder = alternative ? BmpRowOrder.TopDown : BmpRowOrder.BottomUp }, eightBit),
             2 => (new TgaEncoder { MetadataHandling = MetadataHandling.Strip, Compression = alternative ? TgaCompression.RunLength : TgaCompression.None }, eightBit),
+            3 when bilevel => (new PnmEncoder { MetadataHandling = MetadataHandling.Strip, PixelLayout = PnmPixelLayout.Bitmap }, PixelFormat.Gray8),
             3 => (new PnmEncoder { MetadataHandling = MetadataHandling.Strip }, source),
+            4 when bilevel => (new TiffEncoder { MetadataHandling = MetadataHandling.Strip, Compression = TiffCompression.PackBits, PixelLayout = TiffPixelLayout.Bilevel, BigEndian = (variant & 64) != 0, RowsPerStrip = 1 + (variant % 7) }, PixelFormat.Gray8),
             4 => (new TiffEncoder { MetadataHandling = MetadataHandling.Strip, Compression = option switch { 0 => TiffCompression.None, 1 => TiffCompression.Deflate, 2 => TiffCompression.Lzw, _ => TiffCompression.PackBits }, BigEndian = (variant & 64) != 0, BigTiff = (variant & 128) != 0, RowsPerStrip = 1 + (variant % 7) }, source),
             5 => (new WebPEncoder { MetadataHandling = MetadataHandling.Strip, Effort = option * 3 }, eightBit),
             6 => (new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip }, source),
@@ -586,7 +593,7 @@ internal static class FuzzOracle
             _ => (new HeicEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),
         };
 
-        using var converted = pixelFormat switch
+        using var converted = bilevel ? ToBlackAndWhite(still) : pixelFormat switch
         {
             PixelFormat.Rgba32 => (Image)still.CloneAs<Rgba32>(Conversion),
             PixelFormat.Bgra32 => still.CloneAs<Bgra32>(Conversion),
@@ -630,6 +637,16 @@ internal static class FuzzOracle
             return $"lossy-avif-structure: the image of {converted.Width}x{converted.Height} written as a lossy AVIF (variant {variant}) decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s)";
 
         return string.Empty;
+    }
+
+    /// <summary>Reduces an image to black and white <see cref="Gray8"/> pixels: white where the sum of the colors (alpha ignored) is 384 or more.</summary>
+    private static Image<Gray8> ToBlackAndWhite(Image image)
+    {
+        using var rgba = image.CloneAs<Rgba32>(Conversion);
+        var colors = new Rgba32[rgba.Width * rgba.Height];
+        rgba.Frames[0].CopyPixelDataTo(colors);
+        var values = Array.ConvertAll(colors, color => new Gray8(color.R + color.G + color.B >= 384 ? byte.MaxValue : (byte)0));
+        return Image.ImportPixelData<Gray8>(values, rgba.Width, rgba.Height, configuration: Configuration);
     }
 
     private static bool IsFullyTransparentIn8Bits(Image image)

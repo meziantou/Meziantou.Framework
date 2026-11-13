@@ -7501,6 +7501,62 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [InlineData(16)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HevcSampleAdaptiveOffsetStatisticsMatchTheScalarReference(int bitDepth)
+    {
+        // Blocks of every size of a coding tree block of the luma and chroma planes, at the corners, on the edges and inside
+        // pictures of every size, with random, flat (equal neighbours) and extreme samples
+        var random = new Random(bitDepth);
+        var maxValue = (1 << bitDepth) - 1;
+        for (var round = 0; round < 600; round++)
+        {
+            var size = (round % 3) switch
+            {
+                0 => 64,
+                1 => 32,
+                _ => 16,
+            };
+            var pictureWidth = random.Next(1, (3 * size) + 1);
+            var pictureHeight = random.Next(1, (3 * size) + 1);
+            var stride = pictureWidth + random.Next(0, 9);
+            var originalStride = pictureWidth + random.Next(0, 9);
+            var samples = new ushort[stride * pictureHeight];
+            var original = new ushort[originalStride * pictureHeight];
+            var level = random.Next(maxValue + 1);
+            foreach (var values in new[] { samples, original })
+            {
+                for (var i = 0; i < values.Length; i++)
+                {
+                    values[i] = (round % 4) switch
+                    {
+                        0 => (ushort)random.Next(maxValue + 1),
+                        1 => (ushort)Math.Clamp(level + random.Next(-1, 2), 0, maxValue),
+                        2 => (ushort)(random.Next(2) * maxValue),
+                        _ => (ushort)Math.Clamp(level + random.Next(-40, 41), 0, maxValue),
+                    };
+                }
+            }
+
+            var xCtb = random.Next((pictureWidth + size - 1) / size) * size;
+            var yCtb = random.Next((pictureHeight + size - 1) / size) * size;
+            var width = Math.Min(size, pictureWidth - xCtb);
+            var height = Math.Min(size, pictureHeight - yCtb);
+            var expectedCounts = new long[48];
+            var expectedSums = new long[48];
+            var actualCounts = new long[48];
+            var actualSums = new long[48];
+            HevcSliceCoder.CollectSaoStatisticsScalar(samples, stride, original, originalStride, xCtb, yCtb, width, height, pictureWidth, pictureHeight, bitDepth, expectedCounts, expectedSums);
+            HevcSliceCoder.CollectSaoStatistics(samples, stride, original, originalStride, xCtb, yCtb, width, height, pictureWidth, pictureHeight, bitDepth, actualCounts, actualSums);
+            Assert.Equal(expectedCounts, actualCounts);
+            Assert.Equal(expectedSums, actualSums);
+        }
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPLoopFilterMatchesTheScalarReference()

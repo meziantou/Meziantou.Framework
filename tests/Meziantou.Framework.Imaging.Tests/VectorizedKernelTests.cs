@@ -3359,6 +3359,49 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void SsimMapStatisticsAndScoresMatchTheScalarReference()
+    {
+        var random = new Random(20261114);
+        foreach (var width in new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 20 })
+        {
+            foreach (var windowHeight in new[] { 1, 3, 5, 7 })
+            {
+                for (var round = 0; round < 4; round++)
+                {
+                    var windowWidth = width >= 7 ? 7 : width % 2 == 0 ? width - 1 : width;
+                    var rowLength = width * 4;
+                    var expectedRows = Enumerable.Range(0, windowHeight * rowLength).Select(_ => NextFraction(random)).ToArray();
+                    var actualRows = expectedRows.Select(value => random.Next(3) == 0 ? value : NextFraction(random)).ToArray();
+
+                    // The rows of a window near a border repeat some rows
+                    var slots = Enumerable.Range(0, windowHeight).Select(k => round == 0 ? k : random.Next(windowHeight)).ToArray();
+                    var expectedColumns = Enumerable.Repeat(double.NaN, rowLength * 5).ToArray();
+                    var actualColumns = (double[])expectedColumns.Clone();
+                    DifferenceMapper.SumColumnsScalar(expectedRows, actualRows, slots, rowLength, expectedColumns);
+                    DifferenceMapper.SumColumns(expectedRows, actualRows, slots, rowLength, actualColumns);
+                    Assert.Equal(Array.ConvertAll(expectedColumns, BitConverter.DoubleToInt64Bits), Array.ConvertAll(actualColumns, BitConverter.DoubleToInt64Bits));
+
+                    var expectedSsim = new double[width];
+                    var actualSsim = new double[width];
+                    DifferenceMapper.ComputeScoresScalar(expectedColumns, windowWidth, windowHeight, expectedSsim);
+                    DifferenceMapper.ComputeScores(expectedColumns, windowWidth, windowHeight, actualSsim);
+                    Assert.Equal(Array.ConvertAll(expectedSsim, BitConverter.DoubleToInt64Bits), Array.ConvertAll(actualSsim, BitConverter.DoubleToInt64Bits));
+                }
+            }
+        }
+
+        static double NextFraction(Random random) => random.Next(6) switch
+        {
+            0 => 0,
+            1 => 1,
+            2 => random.Next(65536) / 65535.0,
+            3 => random.Next(65536) / 65535.0 * (random.Next(65536) / 65535.0),
+            _ => random.NextDouble(),
+        };
+    }
+
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     private static float NextSimilarityValue(Random random) => random.Next(12) switch
     {

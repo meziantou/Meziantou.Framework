@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -89,6 +90,65 @@ internal static class Av1Quantizer
             dq2 = -dq2;
 
         return (int)Math.Clamp(dq2, -(1 << (7 + bitDepth)), (1 << (7 + bitDepth)) - 1);
+    }
+
+    /// <summary>
+    /// Returns the sum of the squared differences between <paramref name="coefficients"/> and the values that
+    /// <see cref="Dequantize"/> gives for their <paramref name="levels"/>: the error of the quantization, in the scale of
+    /// the coefficients.
+    /// </summary>
+    /// <param name="coefficients">The coefficients, the DC coefficient first.</param>
+    /// <param name="levels">The levels of <see cref="Quantize(ReadOnlySpan{int}, Span{int}, int, int, int, int, int)"/>: as many as coefficients.</param>
+    /// <param name="dcQuantizer"><c>get_dc_quant( plane )</c>.</param>
+    /// <param name="acQuantizer"><c>get_ac_quant( plane )</c>.</param>
+    /// <param name="denominator"><c>dqDenom</c> of the transform size: 1, 2 or 4.</param>
+    /// <param name="bitDepth">The bit depth of the samples.</param>
+    // The levels of Quantize are at most the largest level, whose product with the quantizer has 24 bits: the products of
+    // the vectors are 32-bit. The division by the denominator, a power of two, of a magnitude is a shift, and a level of
+    // zero dequantizes to zero. The squares and their sums are 64-bit integers, whose sum is exact in any order
+    public static long GetQuantizationError(ReadOnlySpan<int> coefficients, ReadOnlySpan<int> levels, int dcQuantizer, int acQuantizer, int denominator, int bitDepth)
+    {
+        levels = levels[..coefficients.Length];
+        if (!Av1Simd.IsSupported || coefficients.Length < Vector128<int>.Count)
+            return GetQuantizationErrorScalar(coefficients, levels, dcQuantizer, acQuantizer, denominator, bitDepth);
+
+        var shift = BitOperations.Log2((uint)denominator);
+        var max = Vector128.Create((1 << (7 + bitDepth)) - 1);
+        var min = Vector128.Create(-(1 << (7 + bitDepth)));
+        var mask = Vector128.Create(0xFFFFFF);
+        var quantizers = Vector128.Create(dcQuantizer, acQuantizer, acQuantizer, acQuantizer);
+        var sum = Vector128<long>.Zero;
+        var i = 0;
+        for (; i <= coefficients.Length - Vector128<int>.Count; i += Vector128<int>.Count)
+        {
+            var difference = Vector128.Create(coefficients[i..]);
+            var level = Vector128.Create(levels[i..]);
+            if (level != Vector128<int>.Zero)
+            {
+                var product = level * quantizers;
+                var magnitude = (Vector128.Abs(product) & mask) >> shift;
+                var sign = product >> 31;
+                difference -= Vector128.Min(Vector128.Max((magnitude ^ sign) - sign, min), max);
+            }
+
+            sum = Av1Simd.AddSquaresWidening(sum, difference);
+            quantizers = Vector128.Create(acQuantizer);
+        }
+
+        return sum.GetElement(0) + sum.GetElement(1) + GetQuantizationErrorScalar(coefficients[i..], levels[i..], i is 0 ? dcQuantizer : acQuantizer, acQuantizer, denominator, bitDepth);
+    }
+
+    /// <summary>The scalar reference of <see cref="GetQuantizationError"/>.</summary>
+    public static long GetQuantizationErrorScalar(ReadOnlySpan<int> coefficients, ReadOnlySpan<int> levels, int dcQuantizer, int acQuantizer, int denominator, int bitDepth)
+    {
+        long error = 0;
+        for (var i = 0; i < coefficients.Length; i++)
+        {
+            long difference = coefficients[i] - Dequantize(levels[i], i is 0 ? dcQuantizer : acQuantizer, denominator, bitDepth);
+            error += difference * difference;
+        }
+
+        return error;
     }
 
     // The largest level whose product with the quantizer fits in the 24 bits that the dequantization keeps, and whose

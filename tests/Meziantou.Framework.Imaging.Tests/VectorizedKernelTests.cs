@@ -6424,6 +6424,58 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1QuantizationErrorMatchesTheScalarReference(int bitDepth)
+    {
+        // The levels of the quantization of coefficients around the quantizers and of the whole 32-bit range, and levels up
+        // to the largest one, of either sign, with every quantizer and denominator, for lengths that leave every tail
+        var random = new Random(bitDepth * 17);
+        foreach (var denominator in new[] { 1, 2, 4 })
+        {
+            for (var round = 0; round < 400; round++)
+            {
+                var dcQuantizer = Av1Reconstruction.GetDcQuantizer(round < 4 ? 255 * (round & 1) : random.Next(256), bitDepth);
+                var acQuantizer = Av1Reconstruction.GetAcQuantizer(round < 4 ? 255 * (round >> 1) : random.Next(256), bitDepth);
+                var length = round % 8 is 0 ? 1024 : random.Next(1, 40);
+                var coefficients = new int[length];
+                var levels = new int[length];
+                for (var i = 0; i < length; i++)
+                {
+                    var quantizer = i is 0 ? dcQuantizer : acQuantizer;
+                    coefficients[i] = (round % 3) switch
+                    {
+                        0 => random.Next(-4 * quantizer, (4 * quantizer) + 1) / denominator,
+                        1 => random.Next(4) is 0 ? random.Next(int.MinValue, int.MaxValue) : random.Next(-1 << (8 + bitDepth), 1 << (8 + bitDepth)),
+                        _ => random.Next(8) is 0 ? random.Next(-100 * quantizer, (100 * quantizer) + 1) : 0,
+                    };
+                }
+
+                Av1Quantizer.Quantize(coefficients, levels, dcQuantizer, acQuantizer, denominator, bitDepth, random.Next(Av1Quantizer.RoundingScale + 1));
+                if (round % 5 is 4)
+                {
+                    // Any level up to the largest one
+                    for (var i = 0; i < length; i++)
+                    {
+                        var maxLevel = (int)(Math.Min(0xFFFFFF, (((1L << (7 + bitDepth)) - 1) * denominator) + denominator - 1) / (i is 0 ? dcQuantizer : acQuantizer));
+                        levels[i] = random.Next(3) switch
+                        {
+                            0 => maxLevel,
+                            1 => -maxLevel,
+                            _ => random.Next(-maxLevel, maxLevel + 1),
+                        };
+                    }
+                }
+
+                var expected = Av1Quantizer.GetQuantizationErrorScalar(coefficients, levels, dcQuantizer, acQuantizer, denominator, bitDepth);
+                Assert.Equal(expected, Av1Quantizer.GetQuantizationError(coefficients, levels, dcQuantizer, acQuantizer, denominator, bitDepth));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1ResidualAdditionMatchesTheScalarReference(int bitDepth)
     {
         // Rows of every transform width, residuals that clamp at both ends and any 32-bit value

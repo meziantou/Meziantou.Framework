@@ -269,6 +269,37 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    [InlineData(4)]
+    [InlineData(6)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PngOptimizedSamplesMatchTheScalarReference(byte colorType)
+    {
+        var random = new Random(colorType);
+        var layout = PngOptimizedLayout.Truecolor(colorType, bitDepth: 8, isWide16: false);
+        foreach (var width in new[] { 1, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 21, 31, 32, 33, 100 })
+        {
+            var row = new byte[width * 4];
+            random.NextBytes(row);
+            foreach (var (start, step) in new[] { (0, 1), (1, 1), (width / 3, 1), (0, 2) })
+            {
+                var count = start >= width ? 0 : ((width - start - 1) / step) + 1;
+                var length = layout.GetScanlineLength(count);
+                // The bytes after the scanline must not be written
+                var expected = new byte[length + 16];
+                var actual = new byte[length + 16];
+                Array.Fill(expected, (byte)0xCD);
+                Array.Fill(actual, (byte)0xCD);
+                var unpacked = new byte[count];
+                layout.WriteSamplesScalar(row, start, step, count, mask: default, unpacked, expected.AsSpan(0, length));
+                layout.WriteSamples(row, start, step, count, mask: default, unpacked, actual.AsSpan(0, length));
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void PngQuietPixelCountMatchesTheScalarReference()

@@ -40,6 +40,22 @@ internal static class TomlBuiltInTypeInfoResolver
 
         if (type == typeof(Half)) return new BuiltInTomlTypeInfo<Half>(options, TomlHalfConverter.Instance);
 
+        if (type == typeof(System.Numerics.Complex)) return new BuiltInTomlTypeInfo<System.Numerics.Complex>(options, TomlComplexConverter.Instance);
+
+#if NET11_0_OR_GREATER
+        if (type == typeof(System.Numerics.BFloat16)) return new BuiltInTomlTypeInfo<System.Numerics.BFloat16>(options, TomlBFloat16Converter.Instance);
+        if (type == typeof(System.Numerics.Decimal32)) return new BuiltInTomlTypeInfo<System.Numerics.Decimal32>(options, TomlDecimalFloatingPointConverter.Decimal32);
+        if (type == typeof(System.Numerics.Decimal64)) return new BuiltInTomlTypeInfo<System.Numerics.Decimal64>(options, TomlDecimalFloatingPointConverter.Decimal64);
+        if (type == typeof(System.Numerics.Decimal128)) return new BuiltInTomlTypeInfo<System.Numerics.Decimal128>(options, TomlDecimalFloatingPointConverter.Decimal128);
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(System.Numerics.Complex<>))
+        {
+            return (TomlTypeInfo?)typeof(TomlBuiltInTypeInfoResolver)
+                .GetMethod(nameof(CreateComplexTypeInfo), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+                .MakeGenericMethod(type.GetGenericArguments()[0])
+                .Invoke(obj: null, [options]);
+        }
+#endif
+
         if (type == typeof(Int128)) return new BuiltInTomlTypeInfo<Int128>(options, TomlInt128Converter.Instance);
         if (type == typeof(UInt128)) return new BuiltInTomlTypeInfo<UInt128>(options, TomlUInt128Converter.Instance);
 
@@ -72,6 +88,16 @@ internal static class TomlBuiltInTypeInfoResolver
         return null;
     }
 
+#if NET11_0_OR_GREATER
+    // Null when the parts are not a floating-point type TOML supports, so the type is handled like any other struct
+    private static BuiltInTomlTypeInfo<System.Numerics.Complex<T>>? CreateComplexTypeInfo<T>(TomlSerializerOptions options)
+        where T : struct, System.Numerics.IFloatingPointIeee754<T>, System.Numerics.IMinMaxValue<T>
+    {
+        var partConverter = TomlComplexConverter.GetPartConverter<T>();
+        return partConverter is null ? null : new BuiltInTomlTypeInfo<System.Numerics.Complex<T>>(options, new TomlComplexConverter<T>(partConverter));
+    }
+
+#endif
     [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     private static TomlTypeInfo? TryCreateCollectionTypeInfo(Type type, TomlSerializerOptions options)

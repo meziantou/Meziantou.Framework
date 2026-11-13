@@ -23,6 +23,26 @@ internal static class GeoPropertyValue
         _ => value.ToString(),
     };
 
+    /// <summary>Gets whether the value is a decimal floating-point number, whose text keeps more digits than a double.</summary>
+    public static bool IsDecimalNumber(object? value)
+    {
+#if NET11_0_OR_GREATER
+        return value is decimal or System.Numerics.Decimal32 or System.Numerics.Decimal64 or System.Numerics.Decimal128;
+#else
+        return value is decimal;
+#endif
+    }
+
+    /// <summary>Gets whether the value is a binary floating-point number.</summary>
+    public static bool IsBinaryFloatingPointNumber(object? value)
+    {
+#if NET11_0_OR_GREATER
+        return value is double or float or Half or System.Numerics.BFloat16;
+#else
+        return value is double or float or Half;
+#endif
+    }
+
     /// <summary>Gets the value of a number of any numeric type.</summary>
     public static bool TryGetNumber(object? value, out double number)
     {
@@ -40,6 +60,12 @@ internal static class GeoPropertyValue
             case ulong ul: number = ul; return true;
             case ushort us: number = us; return true;
             case Half h: number = (double)h; return true;
+#if NET11_0_OR_GREATER
+            case System.Numerics.BFloat16 bf: number = (double)bf; return true;
+            case System.Numerics.Decimal32 d32: number = (double)d32; return true;
+            case System.Numerics.Decimal64 d64: number = (double)d64; return true;
+            case System.Numerics.Decimal128 d128: number = (double)d128; return true;
+#endif
             case JsonElement { ValueKind: JsonValueKind.Number } element: number = element.GetDouble(); return true;
             default: number = 0; return false;
         }

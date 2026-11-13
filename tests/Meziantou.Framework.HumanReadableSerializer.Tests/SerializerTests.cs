@@ -1021,6 +1021,21 @@ public sealed partial class SerializerTests : SerializerTestsBase
 
     [Fact]
     public void Decimal128_NegativeInfinity() => AssertSerialization(System.Numerics.Decimal128.NegativeInfinity, "-Infinity");
+
+    [Fact]
+    public void ComplexOfDouble() => AssertSerialization(new Complex<double>(12, -0.5), "<12; -0.5>");
+
+    [Fact]
+    public void ComplexOfHalf() => AssertSerialization(new Complex<Half>((Half)0.5, System.Half.NaN), "<0.5; NaN>");
+
+    [Fact]
+    public void ComplexOfDecimal64() => AssertSerialization(new Complex<Decimal64>(System.Numerics.Decimal64.Parse("1.50", CultureInfo.InvariantCulture), System.Numerics.Decimal64.NegativeInfinity), "<1.50; -Infinity>");
+
+    [Fact]
+    public void ComplexOfDouble_Nullable() => AssertSerialization(new Complex<double>(1, 2), options: null, typeof(Complex<double>?), "<1; 2>");
+
+    [Fact]
+    public void ComplexOfSingle_Member() => AssertSerialization(new { Value = new Complex<float>(1.5f, 2) }, "Value: <1.5; 2>");
 #endif
 
     [Fact]

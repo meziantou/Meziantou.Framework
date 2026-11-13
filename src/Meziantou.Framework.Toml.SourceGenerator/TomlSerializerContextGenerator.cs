@@ -1013,6 +1013,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 .Append(GetConverterCreationExpression(staticOptionsConverterType!))
                 .AppendLine(");");
         }
+        else if (TryGetComplexPartType(type, out var complexPartType))
+        {
+            builder.Append("        return CreateSourceGeneratedComplexTypeInfo<")
+                .Append(complexPartType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+                .AppendLine(">(options);");
+        }
         else if (IsBuiltInType(type))
         {
             if (usesStringEnumConverter)
@@ -4409,7 +4415,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         // v1 generator milestone: built-in scalars/containers and POCOs.
-        if (IsBuiltInType(type))
+        if (IsBuiltInType(type) || TryGetComplexPartType(type, out _))
         {
             return true;
         }
@@ -4853,7 +4859,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return false;
         }
 
-        if (IsBuiltInType(type))
+        if (IsBuiltInType(type) || TryGetComplexPartType(type, out _))
         {
             return false;
         }
@@ -7089,6 +7095,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             "global::System.Uri" or
             "global::System.Version" or
             "global::System.Half" or
+            "global::System.Numerics.BFloat16" or
+            "global::System.Numerics.Decimal32" or
+            "global::System.Numerics.Decimal64" or
+            "global::System.Numerics.Decimal128" or
+            "global::System.Numerics.Complex" or
             "global::System.Int128" or
             "global::System.UInt128" or
             "global::Meziantou.Framework.Toml.TomlDateTime" or
@@ -7098,6 +7109,33 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             "global::Meziantou.Framework.Toml.Model.TomlTable" or
             "global::Meziantou.Framework.Toml.Model.TomlArray" or
             "global::Meziantou.Framework.Toml.Model.TomlTableArray";
+    }
+
+    // A System.Numerics.Complex<T> whose parts are a floating-point type with a built-in converter. Other parts, such as
+    // NFloat, have no TOML representation, so the type is handled like any other struct.
+    private static bool TryGetComplexPartType(ITypeSymbol type, out ITypeSymbol partType)
+    {
+        partType = null!;
+        if (type is not INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: 1 } named ||
+            named.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) != "global::System.Numerics.Complex<T>")
+        {
+            return false;
+        }
+
+        var argument = named.TypeArguments[0];
+        if (argument.SpecialType is SpecialType.System_Single or SpecialType.System_Double ||
+            argument.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) is
+                "global::System.Half" or
+                "global::System.Numerics.BFloat16" or
+                "global::System.Numerics.Decimal32" or
+                "global::System.Numerics.Decimal64" or
+                "global::System.Numerics.Decimal128")
+        {
+            partType = argument;
+            return true;
+        }
+
+        return false;
     }
 
     // The unique name of the type info property of each type of the context being emitted. The generated members of a

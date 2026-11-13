@@ -151,6 +151,14 @@ internal sealed class ChannelValues
             null => null,
             double d when double.IsNaN(d) => null,
             float f when float.IsNaN(f) => null,
+            Half h when Half.IsNaN(h) => null,
+#if NET11_0_OR_GREATER
+            BFloat16 b when BFloat16.IsNaN(b) => null,
+            Decimal32 d32 when Decimal32.IsNaN(d32) => null,
+            Decimal64 d64 when Decimal64.IsNaN(d64) => null,
+            Decimal128 d128 when Decimal128.IsNaN(d128) => null,
+            BFloat16 or Decimal32 or Decimal64 or Decimal128 => ChannelKind.Number,
+#endif
             double or float or decimal or int or long or short or byte or sbyte or uint or ulong or ushort or Half or Int128 or UInt128 or BigInteger => ChannelKind.Number,
             DateTime or DateTimeOffset or DateOnly => ChannelKind.Time,
             _ => ChannelKind.Category,
@@ -177,6 +185,12 @@ internal sealed class ChannelValues
             Int128 i128 => (double)i128,
             UInt128 u128 => (double)u128,
             BigInteger big => (double)big,
+#if NET11_0_OR_GREATER
+            BFloat16 b => (double)b,
+            Decimal32 d32 => (double)d32,
+            Decimal64 d64 => (double)d64,
+            Decimal128 d128 => (double)d128,
+#endif
             _ => double.NaN,
         };
     }
@@ -200,6 +214,14 @@ internal sealed class ChannelValues
             string s => s,
             double d when double.IsNaN(d) => null,
             float f when float.IsNaN(f) => null,
+            Half h when Half.IsNaN(h) => null,
+#if NET11_0_OR_GREATER
+            BFloat16 b when BFloat16.IsNaN(b) => null,
+            Decimal32 d32 when Decimal32.IsNaN(d32) => null,
+            Decimal64 d64 when Decimal64.IsNaN(d64) => null,
+            Decimal128 d128 when Decimal128.IsNaN(d128) => null,
+            BFloat16 or Decimal32 or Decimal64 or Decimal128 => FormatNumberCategory(ToNumber(value)),
+#endif
             double or float or decimal or int or long or short or byte or sbyte or uint or ulong or ushort or Half or Int128 or UInt128 or BigInteger => FormatNumberCategory(ToNumber(value)),
             DateTime or DateTimeOffset or DateOnly => TimeFormats.FormatCategory(ToTime(value)),
             bool b => b ? "true" : "false",

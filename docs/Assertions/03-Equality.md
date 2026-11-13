@@ -121,7 +121,7 @@ Assert.Equal(expected, actual, TimeSpan.FromSeconds(1));
 | Overload | Passes when |
 | --- | --- |
 | `Equal(expected, actual, tolerance)` | The values are equal, or differ by at most `tolerance`. For `double`, `float`, `decimal`, `Half` and other `IFloatingPoint<T>` types |
-| `Equal(expected, actual, precision)` | Both values are equal once rounded to `precision` decimal places. For `double`, `float` and `decimal` |
+| `Equal(expected, actual, precision)` | Both values are equal once rounded to `precision` decimal places. For `double`, `float`, `decimal`, and on .NET 11 `Decimal32`, `Decimal64` and `Decimal128` |
 | `Equal(expected, actual, precision, rounding)` | The same, with a `MidpointRounding` mode |
 | `Equal(expected, actual, TimeSpan precision)` | The two `DateTime` or `DateTimeOffset` values are at most `precision` apart |
 

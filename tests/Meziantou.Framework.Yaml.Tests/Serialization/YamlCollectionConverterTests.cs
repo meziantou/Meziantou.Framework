@@ -374,6 +374,80 @@ public sealed class YamlCollectionConverterTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void Complex_RoundTripsAsRealAndImaginaryMapping(bool useSourceGeneration)
+    {
+        var model = new ComplexModel
+        {
+            Value = new System.Numerics.Complex(1.5, -2),
+            Optional = new System.Numerics.Complex(double.NaN, double.PositiveInfinity),
+            Values = [new(1, 2), new(3, 4)],
+#if NET11_0_OR_GREATER
+            Double = new System.Numerics.Complex<double>(0.5, 0.25),
+            Half = new System.Numerics.Complex<Half>((Half)1, Half.NegativeInfinity),
+            Decimal = new System.Numerics.Complex<System.Numerics.Decimal64>(System.Numerics.Decimal64.Parse("1.50", CultureInfo.InvariantCulture), System.Numerics.Decimal64.NaN),
+            OptionalDecimal = null,
+#endif
+        };
+
+        var yaml = Serialize(model, useSourceGeneration);
+        var roundTrip = Deserialize<ComplexModel>(yaml, useSourceGeneration)!;
+
+        Assert.Equal("""
+            Value:
+              Real: 1.5
+              Imaginary: -2.0
+            Optional:
+              Real: .nan
+              Imaginary: .inf
+            Values:
+              - Real: 1.0
+                Imaginary: 2.0
+              - Real: 3.0
+                Imaginary: 4.0
+
+            """
+#if NET11_0_OR_GREATER
+            .TrimEnd('\n') + """
+
+            Double:
+              Real: 0.5
+              Imaginary: 0.25
+            Half:
+              Real: 1.0
+              Imaginary: -.inf
+            Decimal:
+              Real: 1.50
+              Imaginary: .nan
+            OptionalDecimal: null
+
+            """
+#endif
+            , yaml, ignoreLineEndingDifferences: true);
+        Assert.Equal(model.Value, roundTrip.Value);
+        Assert.True(double.IsNaN(roundTrip.Optional!.Value.Real));
+        Assert.Equal(double.PositiveInfinity, roundTrip.Optional.Value.Imaginary);
+        Assert.Equal(model.Values, roundTrip.Values!);
+#if NET11_0_OR_GREATER
+        Assert.Equal(model.Double, roundTrip.Double);
+        Assert.Equal(model.Half, roundTrip.Half);
+        Assert.Equal("1.50", roundTrip.Decimal.Real.ToString(CultureInfo.InvariantCulture));
+        Assert.True(System.Numerics.Decimal64.IsNaN(roundTrip.Decimal.Imaginary));
+        Assert.Null(roundTrip.OptionalDecimal);
+#endif
+
+        // The names follow the naming policy; a missing part is zero, and an unknown entry (such as the Magnitude and the
+        // Phase that the object converter wrote) is skipped
+        var camelCase = Serialize(new System.Numerics.Complex(3, 4), useSourceGeneration, static options => options with { PropertyNamingPolicy = YamlNamingPolicy.CamelCase });
+        Assert.Equal("real: 3.0\nimaginary: 4.0\n", camelCase, ignoreLineEndingDifferences: true);
+        Assert.Equal(new System.Numerics.Complex(3, 4), Deserialize<System.Numerics.Complex>("Real: 3\nImaginary: 4\nMagnitude: 5\nPhase: 0.93\n", useSourceGeneration));
+        Assert.Equal(new System.Numerics.Complex(0, 2), Deserialize<System.Numerics.Complex>("IMAGINARY: 2\n", useSourceGeneration, static options => options with { PropertyNameCaseInsensitive = true }));
+        Assert.Throws<YamlException>(() => Deserialize<System.Numerics.Complex>("1.5\n", useSourceGeneration));
+        Assert.Throws<YamlException>(() => Deserialize<System.Numerics.Complex>("Real: abc\n", useSourceGeneration));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ObjectKeyedDictionary_KeepsTheTypeOfItsKeys(bool useSourceGeneration)
     {
         var value = new Dictionary<object, object>
@@ -754,6 +828,25 @@ internal sealed class DerivedStringDictionary : Dictionary<string, int>
 {
 }
 
+internal sealed class ComplexModel
+{
+    public System.Numerics.Complex Value { get; set; }
+
+    public System.Numerics.Complex? Optional { get; set; }
+
+    public List<System.Numerics.Complex>? Values { get; set; }
+#if NET11_0_OR_GREATER
+
+    public System.Numerics.Complex<double> Double { get; set; }
+
+    public System.Numerics.Complex<Half> Half { get; set; }
+
+    public System.Numerics.Complex<System.Numerics.Decimal64> Decimal { get; set; }
+
+    public System.Numerics.Complex<System.Numerics.Decimal128>? OptionalDecimal { get; set; }
+#endif
+}
+
 internal sealed class CollectionConverterModel
 {
     public LinkedList<int>? Linked { get; set; }
@@ -888,6 +981,8 @@ internal sealed class UnsupportedCollectionModel
 [YamlSerializable(typeof(ArraySegment<int>))]
 [YamlSerializable(typeof(FrozenDictionary<string, int>))]
 [YamlSerializable(typeof(KeyValuePair<string, int>))]
+[YamlSerializable(typeof(ComplexModel))]
+[YamlSerializable(typeof(System.Numerics.Complex))]
 [YamlSerializable(typeof(CollectionConstructorRecord))]
 [YamlSerializable(typeof(List<IEnumerable<int>>))]
 [YamlSerializable(typeof(NullableElementCollectionModel))]

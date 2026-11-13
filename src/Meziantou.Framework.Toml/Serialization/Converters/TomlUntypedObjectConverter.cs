@@ -141,6 +141,23 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
             case Int128 i128:
                 TomlInt128Converter.Instance.Write(writer, i128);
                 return;
+            case System.Numerics.Complex complex:
+                TomlComplexConverter.Instance.Write(writer, complex);
+                return;
+#if NET11_0_OR_GREATER
+            case System.Numerics.BFloat16 bfloat16:
+                TomlBFloat16Converter.Instance.Write(writer, bfloat16);
+                return;
+            case System.Numerics.Decimal32 decimal32:
+                TomlDecimalFloatingPointConverter.Decimal32.Write(writer, decimal32);
+                return;
+            case System.Numerics.Decimal64 decimal64:
+                TomlDecimalFloatingPointConverter.Decimal64.Write(writer, decimal64);
+                return;
+            case System.Numerics.Decimal128 decimal128:
+                TomlDecimalFloatingPointConverter.Decimal128.Write(writer, decimal128);
+                return;
+#endif
             case UInt128 u128:
                 TomlUInt128Converter.Instance.Write(writer, u128);
                 return;

@@ -14,7 +14,7 @@ public sealed partial class JsRealm
     /// Converts a .NET value to a JavaScript value, creating the objects in this realm:
     /// <list type="bullet">
     /// <item><description>null is <c>null</c>; a <see cref="JsValue"/> and a <see cref="JsObject"/> are not converted;</description></item>
-    /// <item><description>a boolean, a string and a char are a boolean and a string; the numeric types are a number (a <see cref="long"/> or a <see cref="decimal"/> may lose precision), a <see cref="BigInteger"/> is a BigInt;</description></item>
+    /// <item><description>a boolean, a string and a char are a boolean and a string; the numeric types are a number (a <see cref="long"/>, a <see cref="decimal"/> or a decimal floating-point number such as <c>Decimal128</c> may lose precision), a <see cref="BigInteger"/> is a BigInt;</description></item>
     /// <item><description>a <see cref="DateTimeOffset"/> and a <see cref="DateTime"/> are a Date (a <see cref="DateTime"/> whose kind is unspecified is a UTC date);</description></item>
     /// <item><description>a <see cref="JsonElement"/> and a <see cref="JsonNode"/> are the value that <c>JSON.parse</c> would create;</description></item>
     /// <item><description>an instance of a class marked with <see cref="JsExportAttribute"/> is an object of its JavaScript class (always the same object for the same instance, see <see cref="GetClass(JsClass)"/>);</description></item>
@@ -182,6 +182,16 @@ public sealed partial class JsRealm
                     return (double)number;
                 case Half number:
                     return (double)number;
+#if NET11_0_OR_GREATER
+                case BFloat16 number:
+                    return (double)number;
+                case Decimal32 number:
+                    return (double)number;
+                case Decimal64 number:
+                    return (double)number;
+                case Decimal128 number:
+                    return (double)number;
+#endif
                 case BigInteger bigInteger:
                     return JsValue.FromBigInt(bigInteger);
                 case DateTimeOffset date:
@@ -432,6 +442,10 @@ internal static class DotNetConversions
         return type == typeof(JsValue) || type == typeof(JsObject) || type == typeof(object) || type == typeof(string) || type == typeof(bool)
             || type == typeof(double) || type == typeof(float) || type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(byte)
             || type == typeof(sbyte) || type == typeof(ushort) || type == typeof(uint) || type == typeof(ulong) || type == typeof(decimal)
+            || type == typeof(Half)
+#if NET11_0_OR_GREATER
+            || type == typeof(BFloat16) || type == typeof(Decimal32) || type == typeof(Decimal64) || type == typeof(Decimal128)
+#endif
             || type == typeof(BigInteger) || type == typeof(DateTimeOffset) || type == typeof(DateTime) || typeof(IJsExportable).IsAssignableFrom(type);
     }
 
@@ -497,6 +511,20 @@ internal static class DotNetConversions
             // (double)decimal.MaxValue rounds up to 2^96, which is out of range
             return double.IsFinite(number) && Math.Abs(number) < (double)decimal.MaxValue ? (decimal)number : ThrowHelper.ThrowRangeError<decimal>("The number cannot be converted to a decimal");
         }
+
+        // Like float, the floating-point types keep NaN and the infinities, and round the number to their precision
+        if (type == typeof(Half))
+            return (Half)ToNumber(value);
+#if NET11_0_OR_GREATER
+        if (type == typeof(BFloat16))
+            return (BFloat16)ToNumber(value);
+        if (type == typeof(Decimal32))
+            return (Decimal32)ToNumber(value);
+        if (type == typeof(Decimal64))
+            return (Decimal64)ToNumber(value);
+        if (type == typeof(Decimal128))
+            return (Decimal128)ToNumber(value);
+#endif
 
         if (type == typeof(BigInteger))
             return RequireValue(value) ? BigIntOperations.ToBigInt(value) : default;

@@ -118,6 +118,26 @@ public sealed class GeoJsonTests
         Assert.Equal("""{"type":"FeatureCollection","features":[{"type":"Feature","geometry":null,"properties":{"int":3,"long":9223372036854775807,"decimal":1.10,"float":0.5,"nan":null,"date":"2024-02-29","time":"2024-02-29T13:45:00.0000000+01:00","list":[1,2],"object":{"a":"b"},"guid":"00000000-0000-0000-0000-000000000000","text":"Côte d'Ivoire <&>"}}]}""", json);
     }
 
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void Format_Ieee754Values()
+    {
+        var properties = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["bfloat16"] = (System.Numerics.BFloat16)0.5f,
+            ["decimal32"] = System.Numerics.Decimal32.Parse("1.10", CultureInfo.InvariantCulture),
+            ["decimal64"] = System.Numerics.Decimal64.Parse("1E+20", CultureInfo.InvariantCulture),
+            ["decimal128"] = System.Numerics.Decimal128.Parse("0.1000000000000000000000000000000001", CultureInfo.InvariantCulture),
+            ["nan"] = System.Numerics.Decimal64.NaN,
+        };
+
+        var json = GeoJson.Format([new GeoFeature(geometry: null, properties)]);
+
+        Assert.Equal("""{"type":"FeatureCollection","features":[{"type":"Feature","geometry":null,"properties":{"bfloat16":0.5,"decimal32":1.10,"decimal64":1E+20,"decimal128":0.1000000000000000000000000000000001,"nan":null}}]}""", json);
+        Assert.Equal(1e20, GeoJson.Parse(json)[0].Properties["decimal64"]);
+    }
+#endif
+
     [Fact]
     public void Format_Options()
     {

@@ -602,14 +602,14 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
-        if (TryGetKeyValuePairTypes(typeSymbol, out var pairKeyType, out var pairValueType))
+        if (TryGetPairShape(typeSymbol, out var pairKeyType, out var pairValueType, out var pairKeyName, out var pairValueName))
         {
             // Like the reflection-based converter: a mapping whose entry names follow the property naming policy.
             builder.AppendLine("        writer.WriteStartMapping();");
-            builder.AppendLine("        writer.WritePropertyName(writer.ConvertName(\"Key\"));");
-            EmitWriteKnownType(builder, sourceGenerationOptions, pairKeyType, indexByType, "value.Key", indent: "        ");
-            builder.AppendLine("        writer.WritePropertyName(writer.ConvertName(\"Value\"));");
-            EmitWriteKnownType(builder, sourceGenerationOptions, pairValueType, indexByType, "value.Value", indent: "        ");
+            builder.Append("        writer.WritePropertyName(writer.ConvertName(\"").Append(pairKeyName).AppendLine("\"));");
+            EmitWriteKnownType(builder, sourceGenerationOptions, pairKeyType, indexByType, "value." + pairKeyName, indent: "        ");
+            builder.Append("        writer.WritePropertyName(writer.ConvertName(\"").Append(pairValueName).AppendLine("\"));");
+            EmitWriteKnownType(builder, sourceGenerationOptions, pairValueType, indexByType, "value." + pairValueName, indent: "        ");
             builder.AppendLine("        writer.WriteEndMapping();");
             builder.AppendLine("        return;");
             builder.AppendLine("    }");
@@ -3866,7 +3866,7 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
-        if (TryGetKeyValuePairTypes(typeSymbol, out var pairKeyType, out var pairValueType))
+        if (TryGetPairShape(typeSymbol, out var pairKeyType, out var pairValueType, out var pairKeyName, out var pairValueName))
         {
             builder.AppendLine("        if (reader.TryReadAlias(out var rootAliasValue))");
             builder.AppendLine("        {");
@@ -3883,8 +3883,8 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("        }");
             builder.AppendLine("        var rootAnchor = reader.Anchor;");
             builder.AppendLine("        var nameComparison = reader.Options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal;");
-            builder.AppendLine("        var keyName = reader.ConvertName(\"Key\");");
-            builder.AppendLine("        var valueName = reader.ConvertName(\"Value\");");
+            builder.Append("        var keyName = reader.ConvertName(\"").Append(pairKeyName).AppendLine("\");");
+            builder.Append("        var valueName = reader.ConvertName(\"").Append(pairValueName).AppendLine("\");");
             builder.Append("        var pairKey = default(").Append(pairKeyType.ToDisplayString(FullyQualifiedTypeFormat)).AppendLine(");");
             builder.Append("        var pairValue = default(").Append(pairValueType.ToDisplayString(FullyQualifiedTypeFormat)).AppendLine(");");
             builder.AppendLine("        reader.Read();");

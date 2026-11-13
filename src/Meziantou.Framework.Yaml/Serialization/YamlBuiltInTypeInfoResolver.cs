@@ -156,6 +156,11 @@ internal static class YamlBuiltInTypeInfoResolver
             return YamlBigIntegerConverter.Instance;
         }
 
+        if (type == typeof(System.Numerics.Complex))
+        {
+            return YamlComplexConverter.Instance;
+        }
+
         if (type == typeof(System.Version))
         {
             return YamlVersionConverter.Instance;
@@ -238,6 +243,7 @@ internal static class YamlBuiltInTypeInfoResolver
         if (type == typeof(Int128?)) return YamlNullableConverter<Int128>.Instance;
         if (type == typeof(UInt128?)) return YamlNullableConverter<UInt128>.Instance;
         if (type == typeof(System.Numerics.BigInteger?)) return YamlNullableConverter<System.Numerics.BigInteger>.Instance;
+        if (type == typeof(System.Numerics.Complex?)) return YamlNullableConverter<System.Numerics.Complex>.Instance;
         if (type == typeof(System.Text.Rune?)) return YamlNullableConverter<System.Text.Rune>.Instance;
 #if NET11_0_OR_GREATER
         if (type == typeof(BFloat16?)) return YamlNullableConverter<BFloat16>.Instance;

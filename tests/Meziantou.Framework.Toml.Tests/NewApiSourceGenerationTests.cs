@@ -708,6 +708,37 @@ public sealed class ThrowingGeneratedConverterFactory : TomlConverterFactory
     public override TomlConverter CreateConverter(Type typeToConvert, TomlSerializerOptions options) => throw new InvalidOperationException("Source-generated converter resolution should be static.");
 }
 
+public sealed class GeneratedNumericsPayload
+{
+    public System.Numerics.Complex Complex { get; set; }
+
+    public System.Numerics.Complex? NullableComplex { get; set; }
+
+    public List<System.Numerics.Complex> Complexes { get; set; } = [];
+#if NET11_0_OR_GREATER
+
+    public System.Numerics.BFloat16 BFloat16 { get; set; }
+
+    public System.Numerics.Decimal32 Decimal32 { get; set; }
+
+    public System.Numerics.Decimal64? Decimal64 { get; set; }
+
+    public System.Numerics.Decimal128 Decimal128 { get; set; }
+
+    public System.Numerics.Complex<double> ComplexDouble { get; set; }
+
+    public System.Numerics.Complex<System.Numerics.Decimal64>? ComplexDecimal64 { get; set; }
+
+    public Dictionary<string, System.Numerics.Complex<Half>> ComplexHalves { get; set; } = [];
+#endif
+}
+
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
+[TomlSerializable(typeof(GeneratedNumericsPayload))]
+internal sealed partial class TestTomlSerializerContextNumerics : TomlSerializerContext
+{
+}
+
 [TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedPerson))]
 [TomlSerializable(typeof(GeneratedRuntimeConverterHolder))]
@@ -3373,6 +3404,46 @@ public class NewApiSourceGenerationTests
         Assert.True(ageIndex >= 0);
         Assert.True(nameIndex >= 0);
         Assert.True(ageIndex < nameIndex);
+    }
+
+    [Fact]
+    public void GeneratedContext_NumericsTypes_MatchReflection()
+    {
+        var payload = new GeneratedNumericsPayload
+        {
+            Complex = new System.Numerics.Complex(1.5, -2),
+            NullableComplex = new System.Numerics.Complex(double.NaN, double.PositiveInfinity),
+            Complexes = [new(1, 2), new(3, 4)],
+#if NET11_0_OR_GREATER
+            BFloat16 = (System.Numerics.BFloat16)0.5f,
+            Decimal32 = System.Numerics.Decimal32.Parse("1.25", System.Globalization.CultureInfo.InvariantCulture),
+            Decimal64 = System.Numerics.Decimal64.Parse("1.50", System.Globalization.CultureInfo.InvariantCulture),
+            Decimal128 = System.Numerics.Decimal128.Parse("1234567890123456789012345678901.234", System.Globalization.CultureInfo.InvariantCulture),
+            ComplexDouble = new System.Numerics.Complex<double>(-0.5, 0.25),
+            ComplexDecimal64 = new System.Numerics.Complex<System.Numerics.Decimal64>(System.Numerics.Decimal64.One, System.Numerics.Decimal64.NegativeInfinity),
+            ComplexHalves = new() { ["a"] = new System.Numerics.Complex<Half>((Half)1, (Half)2) },
+#endif
+        };
+
+        var generated = TomlSerializer.Serialize(payload, TestTomlSerializerContextNumerics.Default.GeneratedNumericsPayload);
+        var reflection = TomlSerializer.Serialize(payload, new TomlSerializerOptions { PropertyNamingPolicy = TomlNamingPolicy.CamelCase });
+
+        Assert.Equal(reflection, generated);
+        Assert.Contains("complex = {real = 1.5, imaginary = -2.0}", generated, StringComparison.Ordinal);
+
+        var roundtrip = TomlSerializer.Deserialize(generated, TestTomlSerializerContextNumerics.Default.GeneratedNumericsPayload)!;
+        Assert.Equal(payload.Complex, roundtrip.Complex);
+        Assert.True(double.IsNaN(roundtrip.NullableComplex!.Value.Real));
+        Assert.Equal(payload.Complexes, roundtrip.Complexes);
+#if NET11_0_OR_GREATER
+        Assert.Equal(payload.BFloat16, roundtrip.BFloat16);
+        Assert.Equal(payload.Decimal32, roundtrip.Decimal32);
+        Assert.Equal("1.50", roundtrip.Decimal64!.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.Equal(payload.Decimal128, roundtrip.Decimal128);
+        Assert.Equal(payload.ComplexDouble, roundtrip.ComplexDouble);
+        Assert.Equal(payload.ComplexDecimal64, roundtrip.ComplexDecimal64);
+        Assert.Equal(payload.ComplexHalves["a"], roundtrip.ComplexHalves["a"]);
+#endif
     }
 
     [Fact]

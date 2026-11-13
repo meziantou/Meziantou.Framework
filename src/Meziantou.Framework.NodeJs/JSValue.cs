@@ -75,6 +75,33 @@ public sealed class JSValue
     /// <summary>Creates a JavaScript number, which is the nearest double-precision value. Use <see cref="BigInt(BigInteger)"/> to preserve large integers exactly.</summary>
     public static JSValue Number(decimal value) => NumberLiteral(value.ToString(CultureInfo.InvariantCulture));
 
+#if NET11_0_OR_GREATER
+    /// <inheritdoc cref="Number(double)"/>
+    public static JSValue Number(BFloat16 value) => Number((double)value);
+
+    /// <summary>Creates a JavaScript number, which is the nearest double-precision value. <see cref="Decimal32.NaN"/> and infinities are preserved.</summary>
+    public static JSValue Number(Decimal32 value) => DecimalFloatingPointNumber(value);
+
+    /// <summary>Creates a JavaScript number, which is the nearest double-precision value. <see cref="Decimal64.NaN"/> and infinities are preserved.</summary>
+    public static JSValue Number(Decimal64 value) => DecimalFloatingPointNumber(value);
+
+    /// <summary>Creates a JavaScript number, which is the nearest double-precision value. <see cref="Decimal128.NaN"/> and infinities are preserved.</summary>
+    public static JSValue Number(Decimal128 value) => DecimalFloatingPointNumber(value);
+
+    // The exact digits are passed to JavaScript, which rounds them once; NaN and the infinities have no JSON literal
+    private static JSValue DecimalFloatingPointNumber<T>(T value)
+        where T : IDecimalFloatingPointIeee754<T>
+    {
+        if (T.IsNaN(value))
+            return Number(double.NaN);
+
+        if (T.IsInfinity(value))
+            return Number(T.IsNegative(value) ? double.NegativeInfinity : double.PositiveInfinity);
+
+        return NumberLiteral(value.ToString(format: null, CultureInfo.InvariantCulture));
+    }
+
+#endif
     /// <inheritdoc cref="Number(decimal)"/>
     public static JSValue Number(Int128 value) => NumberLiteral(value.ToString(CultureInfo.InvariantCulture));
 

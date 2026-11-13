@@ -1791,20 +1791,68 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         };
     }
 
-    /// <summary>Matches <c>KeyValuePair&lt;TKey, TValue&gt;</c>, which is serialized as a mapping with a <c>Key</c> and a <c>Value</c> entry.</summary>
+    /// <summary>
+    /// Matches the types serialized as a mapping with two entries, whose names follow the property naming policy, and
+    /// created from their two values: <c>KeyValuePair&lt;TKey, TValue&gt;</c> (<c>Key</c> and <c>Value</c>), and
+    /// <c>Complex</c> and <c>Complex&lt;T&gt;</c> (<c>Real</c> and <c>Imaginary</c>).
+    /// </summary>
     private static bool TryGetKeyValuePairTypes(ITypeSymbol type, out ITypeSymbol keyType, out ITypeSymbol valueType)
+        => TryGetPairShape(type, out keyType, out valueType, out _, out _);
+
+    private static bool TryGetPairShape(ITypeSymbol type, out ITypeSymbol firstType, out ITypeSymbol secondType, out string firstName, out string secondName)
     {
-        if (type is INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: 2 } named &&
-            string.Equals(named.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::System.Collections.Generic.KeyValuePair<TKey, TValue>", StringComparison.Ordinal))
+        if (type is INamedTypeSymbol named)
         {
-            keyType = named.TypeArguments[0];
-            valueType = named.TypeArguments[1];
-            return true;
+            if (named is { IsGenericType: true, TypeArguments.Length: 2 } &&
+                string.Equals(named.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::System.Collections.Generic.KeyValuePair<TKey, TValue>", StringComparison.Ordinal))
+            {
+                firstType = named.TypeArguments[0];
+                secondType = named.TypeArguments[1];
+                firstName = "Key";
+                secondName = "Value";
+                return true;
+            }
+
+            ITypeSymbol? partType = null;
+            if (string.Equals(named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::System.Numerics.Complex", StringComparison.Ordinal))
+            {
+                partType = named.GetMembers("Real").OfType<IPropertySymbol>().FirstOrDefault()?.Type;
+            }
+            else if (named is { IsGenericType: true, TypeArguments.Length: 1 } &&
+                string.Equals(named.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::System.Numerics.Complex<T>", StringComparison.Ordinal) &&
+                IsComplexPartType(named.TypeArguments[0]))
+            {
+                partType = named.TypeArguments[0];
+            }
+
+            if (partType is not null)
+            {
+                firstType = partType;
+                secondType = partType;
+                firstName = "Real";
+                secondName = "Imaginary";
+                return true;
+            }
         }
 
-        keyType = null!;
-        valueType = null!;
+        firstType = null!;
+        secondType = null!;
+        firstName = null!;
+        secondName = null!;
         return false;
+    }
+
+    // The parts of a Complex<T> that have a built-in converter, like the reflection-based serializer. Other parts, such as
+    // NFloat, have no YAML representation, so the type is handled like any other struct.
+    private static bool IsComplexPartType(ITypeSymbol type)
+    {
+        return type.SpecialType is SpecialType.System_Single or SpecialType.System_Double ||
+            type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) is
+                "global::System.Half" or
+                "global::System.Numerics.BFloat16" or
+                "global::System.Numerics.Decimal32" or
+                "global::System.Numerics.Decimal64" or
+                "global::System.Numerics.Decimal128";
     }
 
     private static bool IsSupportedDictionaryKeyType(ITypeSymbol type)

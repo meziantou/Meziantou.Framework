@@ -519,6 +519,11 @@ public static class GeoJson
                     {
                         writer.WriteNumberValue(decimalValue);
                     }
+                    else if (GeoPropertyValue.IsDecimalNumber(value))
+                    {
+                        // All the digits of a Decimal32, Decimal64 or Decimal128, which a double would round
+                        writer.WriteRawValue(GeoPropertyValue.ToText(value)!);
+                    }
                     else if (value is long or int or short or sbyte or byte or ulong or uint or ushort)
                     {
                         writer.WriteRawValue(GeoPropertyValue.ToText(value)!);

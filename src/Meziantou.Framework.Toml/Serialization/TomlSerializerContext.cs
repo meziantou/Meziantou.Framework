@@ -101,6 +101,15 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
 
         if (type == typeof(Half)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<Half>(options, TomlHalfConverter.Instance);
 
+        if (type == typeof(System.Numerics.Complex)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<System.Numerics.Complex>(options, TomlComplexConverter.Instance);
+
+#if NET11_0_OR_GREATER
+        if (type == typeof(System.Numerics.BFloat16)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<System.Numerics.BFloat16>(options, TomlBFloat16Converter.Instance);
+        if (type == typeof(System.Numerics.Decimal32)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<System.Numerics.Decimal32>(options, TomlDecimalFloatingPointConverter.Decimal32);
+        if (type == typeof(System.Numerics.Decimal64)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<System.Numerics.Decimal64>(options, TomlDecimalFloatingPointConverter.Decimal64);
+        if (type == typeof(System.Numerics.Decimal128)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<System.Numerics.Decimal128>(options, TomlDecimalFloatingPointConverter.Decimal128);
+#endif
+
         if (type == typeof(Int128)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<Int128>(options, TomlInt128Converter.Instance);
         if (type == typeof(UInt128)) return (TomlTypeInfo<T>)(object)new TomlConverterTypeInfo<UInt128>(options, TomlUInt128Converter.Instance);
 
@@ -507,6 +516,25 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
         return new TomlSourceGeneratedArrayTypeInfo<TElement>(context, options);
     }
 
+#if NET11_0_OR_GREATER
+    /// <summary>
+    /// Creates metadata for a <see cref="System.Numerics.Complex{T}"/>, written as an inline table with the keys <c>Real</c> and <c>Imaginary</c>.
+    /// </summary>
+    /// <remarks>
+    /// This method avoids reflection-based metadata resolution, making it compatible with trimming and NativeAOT.
+    /// </remarks>
+    /// <exception cref="TomlException"><typeparamref name="T"/> is not <see cref="double"/>, <see cref="float"/>, <see cref="Half"/>, <see cref="System.Numerics.BFloat16"/>, <see cref="System.Numerics.Decimal32"/>, <see cref="System.Numerics.Decimal64"/>, or <see cref="System.Numerics.Decimal128"/>.</exception>
+    protected static TomlTypeInfo<System.Numerics.Complex<T>> CreateSourceGeneratedComplexTypeInfo<T>(TomlSerializerOptions options)
+        where T : struct, System.Numerics.IFloatingPointIeee754<T>, System.Numerics.IMinMaxValue<T>
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var partConverter = TomlComplexConverter.GetPartConverter<T>()
+            ?? throw TomlException.CreateConfigurationError($"The type '{typeof(System.Numerics.Complex<T>).FullName}' is not supported: the parts of a complex number must be a floating-point type supported by TOML.");
+        return new TomlConverterTypeInfo<System.Numerics.Complex<T>>(options, new TomlComplexConverter<T>(partConverter));
+    }
+
+#endif
     /// <summary>
     /// Creates metadata for a <see cref="List{T}"/> using source-generated resolution for nested elements.
     /// </summary>

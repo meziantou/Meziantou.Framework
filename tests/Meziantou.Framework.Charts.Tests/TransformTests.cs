@@ -397,7 +397,31 @@ public sealed class TransformTests
         Assert.Equal(ChannelKind.Number, ChannelValues.FromObjects([null, null]).Kind);
         Assert.Equal("2,024", NumberFormats.Default(2024));
         Assert.Equal("2024", ChannelValues.FromObjects([2024]).GetCategory(0));
+        Assert.Equal([null, "a"], ChannelValues.FromObjects([Half.NaN, "a"]).Categories);
     }
+
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void ChannelValues_ConvertIeee754Objects()
+    {
+        var numbers = ChannelValues.FromObjects([
+            (System.Numerics.BFloat16)1.5f,
+            System.Numerics.Decimal32.Parse("2.25", System.Globalization.CultureInfo.InvariantCulture),
+            System.Numerics.Decimal64.Parse("-3.5", System.Globalization.CultureInfo.InvariantCulture),
+            System.Numerics.Decimal128.Parse("4.125", System.Globalization.CultureInfo.InvariantCulture),
+            System.Numerics.Decimal64.NaN,
+            System.Numerics.BFloat16.NaN,
+        ]);
+
+        Assert.Equal(ChannelKind.Number, numbers.Kind);
+        Assert.Equal([1.5, 2.25, -3.5, 4.125], numbers.Numbers[..4]);
+        Assert.True(numbers.IsMissing(4));
+        Assert.True(numbers.IsMissing(5));
+
+        var mixed = ChannelValues.FromObjects([System.Numerics.Decimal128.Parse("0.5", System.Globalization.CultureInfo.InvariantCulture), System.Numerics.Decimal32.NaN, "a"]);
+        Assert.Equal(["0.5", null, "a"], mixed.Categories);
+    }
+#endif
 
     [Fact]
     public void MarkData_SelectAndGroupBy()

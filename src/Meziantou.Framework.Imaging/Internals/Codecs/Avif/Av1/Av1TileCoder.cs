@@ -209,7 +209,11 @@ internal ref partial struct Av1TileCoder
     /// </summary>
     /// <param name="tileRow">The row of the tile.</param>
     /// <param name="tileCol">The column of the tile.</param>
-    public void DecodeTile(int tileRow, int tileCol)
+    /// <param name="miRowLimit">
+    /// The row of 4x4 blocks where the decoding stops, a multiple of the superblock size (<see cref="Av1FrameBuffer.DecodedMiRows"/>):
+    /// the superblocks below it are not decoded nor validated.
+    /// </param>
+    public void DecodeTile(int tileRow, int tileCol, int miRowLimit = int.MaxValue)
     {
         _miRowStart = _header.MiRowStarts[tileRow];
         _miRowEnd = _header.MiRowStarts[tileRow + 1];
@@ -224,7 +228,8 @@ internal ref partial struct Av1TileCoder
 
         var sbSize = _sequence.Use128x128Superblock ? Av1Constants.Block128x128 : Av1Constants.Block64x64;
         var sbSize4 = Av1Tables.Num4x4BlocksWide[sbSize];
-        for (var r = _miRowStart; r < _miRowEnd; r += sbSize4)
+        var rowEnd = Math.Min(_miRowEnd, miRowLimit);
+        for (var r = _miRowStart; r < rowEnd; r += sbSize4)
         {
             _cancellationToken.ThrowIfCancellationRequested();
             ClearLeftContext();

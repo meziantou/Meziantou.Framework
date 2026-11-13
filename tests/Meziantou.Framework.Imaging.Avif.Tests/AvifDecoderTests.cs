@@ -995,8 +995,8 @@ public sealed class AvifDecoderTests
         }
     }
 
-    /// <summary>The files of <see cref="ARegionHasThePixelsOfTheFullDecodeInThatArea"/>: grids with and without an alpha grid, a grid with a clean aperture, an image that is not a grid, an overlay, and a sequence.</summary>
-    public static TheoryData<string> RegionFiles => ["grid", "transparent-grid", "cropped-grid", "still", "overlay", "sequence"];
+    /// <summary>The files of <see cref="ARegionHasThePixelsOfTheFullDecodeInThatArea"/>: grids with and without an alpha grid, a grid with a clean aperture, images that are not grids (small, large enough that a region does not decode their last rows, and with two columns of AV1 tiles), an overlay, and a sequence.</summary>
+    public static TheoryData<string> RegionFiles => ["grid", "transparent-grid", "cropped-grid", "still", "large-still", "large-transparent-still", "wide-still", "overlay", "sequence"];
 
     private static byte[] GetRegionFile(string name)
     {
@@ -1016,6 +1016,16 @@ public sealed class AvifDecoderTests
 
             case "still":
                 return EncodeRegionImage(frames: 1);
+
+            case "large-still":
+                return CreateLargeStill(transparent: false, width: 200, height: 448);
+
+            case "large-transparent-still":
+                return CreateLargeStill(transparent: true, width: 200, height: 448);
+
+            case "wide-still":
+                // Wider than 4096 samples: two columns of AV1 tiles
+                return CreateLargeStill(transparent: false, width: 4160, height: 192);
 
             case "overlay":
                 {
@@ -1096,6 +1106,50 @@ public sealed class AvifDecoderTests
         // The region needs one tile of the 20: the planes of the color image and of the alpha plane hold it alone. The state
         // of the AV1 decoder of a tile does not depend on the region
         Assert.True(regionPeak * 2 < fullPeak, string.Create(CultureInfo.InvariantCulture, $"Peak {regionPeak} bytes for the region, {fullPeak} bytes for the image."));
+    }
+
+    [Fact]
+    public void ARegionOfAnImageThatIsNotAGridHoldsItsRowsOnly()
+    {
+        var data = CreateLargeStill(transparent: true, width: 512, height: 1024);
+        using var full = Image.Load(data);
+        using var region = Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(100, 20, 64, 40) });
+        var fullPeak = full.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        var regionPeak = region.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+
+        // The planes of the color image and of the alpha plane hold the rows of superblocks down to the region and its
+        // margin: 128 of the 1024 rows. The state of the AV1 decoder is the one of the whole frame
+        Assert.True(regionPeak * 2 < fullPeak, string.Create(CultureInfo.InvariantCulture, $"Peak {regionPeak} bytes for the region, {fullPeak} bytes for the image."));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(16)]
+    public void TheRowsOfAnImageThatIsNotAGridBelowARegionAreNotDecoded(int workers)
+    {
+        // The end of the tile data is damaged: the whole image fails, an area at the top is decoded without reading it
+        var data = CreateLargeStill(transparent: false, width: 256, height: 512);
+        var region = new Rectangle(30, 10, 100, 50);
+        using var full = Image.Load(data);
+        var expected = Crop(GetFrameBytes(full.Frames[0]), full.Width, PixelFormats.GetBytesPerPixel(full.PixelFormat), region);
+        var damaged = HeifFileBuilder.From(data);
+        var item = damaged.GetItem(damaged.PrimaryItemId!.Value);
+        var bytes = item.Data.ToArray();
+        bytes.AsSpan(bytes.Length - (bytes.Length / 4)).Fill(0xFF);
+        item.Data = bytes;
+        var damagedData = damaged.Build();
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(damagedData, WithWorkers(workers)));
+        using var actual = Image.Load(damagedData, new ImageDecodeOptions { Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+        Assert.Equal(expected, GetFrameBytes(actual.Frames[0]));
+    }
+
+    // An image that is not a grid, of several rows of superblocks
+    private static byte[] CreateLargeStill(bool transparent, int width, int height)
+    {
+        using var source = HeifEncoderTestImages.CreateSmoothImage(width, height, transparent);
+        using var stream = new MemoryStream();
+        source.Save(stream, new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0 });
+        return stream.ToArray();
     }
 
     [Fact]

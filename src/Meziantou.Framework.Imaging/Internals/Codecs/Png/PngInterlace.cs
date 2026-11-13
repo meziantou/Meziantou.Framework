@@ -74,6 +74,22 @@ internal static class PngInterlace
     }
 
     /// <summary>
+    /// Gets the number of first passes that hold the pixel at the top left of every block of <paramref name="scaleDenominator"/>
+    /// pixels a side, and no other one: the image reduced by that factor (pass 1 for 1/8, passes 1 to 3 for 1/4, passes 1
+    /// to 5 for 1/2). The origin and the steps of these passes are multiples of the factor.
+    /// </summary>
+    /// <param name="scaleDenominator">1, 2, 4 or 8.</param>
+    /// <returns>The number of passes, 1 to 7.</returns>
+    public static int GetPassCountForScale(int scaleDenominator) => scaleDenominator switch
+    {
+        1 => PassCount,
+        2 => 5,
+        4 => 3,
+        8 => 1,
+        _ => throw new ArgumentOutOfRangeException(nameof(scaleDenominator), scaleDenominator, "An Adam7 image is reduced to 1/2, 1/4 or 1/8 of its size."),
+    };
+
+    /// <summary>
     /// Copies pixels between two strided sequences: pixel <c>i</c> of the source, <c>i * sourceStep</c> pixels from its
     /// start, goes to pixel <c>i * destinationStep</c> of the destination (the scattering of a pass row into an image row,
     /// or the gathering of the pixels of a pass). The usual pixel sizes are one typed load and store per pixel.

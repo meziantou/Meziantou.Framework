@@ -42,6 +42,11 @@ internal sealed class Av1Decoder : IDisposable
     private int _position;
     private int _end;
 
+    // The decode window: the tiles of the frame being decoded that are decoded (null for every tile), and whether a frame was
+    // decoded for the window
+    private bool[]? _windowTiles;
+    private bool _isWindowUsed;
+
     /// <summary>Creates a decoder whose buffers are rented from <paramref name="scope"/>.</summary>
     /// <param name="scope">The allocation scope of the operation.</param>
     /// <param name="tracker">The per-input limit accounting, which the pixels of the frames that are not shown are charged to; or <see langword="null"/>.</param>
@@ -54,6 +59,36 @@ internal sealed class Av1Decoder : IDisposable
         _tracker = tracker;
         _operatingPoint = operatingPoint;
     }
+
+    /// <summary>
+    /// The luma samples around a window that its samples depend on through the post-processing filters (deblocking, CDEF,
+    /// loop restoration, super-resolution), with the chroma subsampling.
+    /// </summary>
+    public const int DecodeWindowMargin = 64;
+
+    /// <summary>
+    /// Gets or sets the area of the frame, in luma samples of the upscaled frame, whose samples must be those of a whole
+    /// decoding; <see langword="null"/>, the default, decodes the frames whole.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The first frame, when it is an intra frame that is shown, is then decoded down to the row of superblocks that holds the
+    /// bottom of the area plus <see cref="DecodeWindowMargin"/> samples: its planes hold these rows only
+    /// (<see cref="Av1FrameBuffer.DecodedMiRows"/>), and the post-processing filters stop there. A tile depends on no other
+    /// tile, so the tiles that are farther than the margin from the area are not decoded either, except the tiles above or on
+    /// the left of it whose loop restoration units reach it, and the columns of tiles of a frame upscaled by
+    /// super-resolution. The superblocks and the tiles that are not decoded are not validated. The samples near them differ
+    /// from a whole decoding, but not those of the area.
+    /// </para>
+    /// <para>
+    /// Another frame, or a first frame that is not a shown intra frame, would read the rows that are not decoded:
+    /// <see cref="DecodeWindowNotApplicableException"/> is thrown, and the caller decodes the input whole.
+    /// </para>
+    /// </remarks>
+    public Rectangle? DecodeWindow { get; set; }
+
+    /// <summary>Gets the number of tiles of the last frame that its decode window left out: a diagnostic.</summary>
+    public int SkippedTileCount { get; private set; }
 
     /// <summary>Gets or sets the post-processing filters applied to the frames: a diagnostic, <see cref="Av1InLoopFilters.All"/> otherwise.</summary>
     public Av1InLoopFilters InLoopFilters { get; set; } = Av1InLoopFilters.All;
@@ -246,6 +281,12 @@ internal sealed class Av1Decoder : IDisposable
         var payload = _data.AsSpan(payloadOffset, obu.PayloadLength);
         var reader = new Av1BitReader(payload);
         var header = Av1FrameHeaderParser.Parse(ref reader, sequence, obu, _coding.Slots, _coding.RefValid);
+
+        // A decode window applies to a single shown intra frame: a frame that follows it would read its rows that are not
+        // decoded
+        if (DecodeWindow is not null && (_isWindowUsed || header.ShowExistingFrame || !header.FrameIsIntra || !header.ShowFrame))
+            throw new DecodeWindowNotApplicableException();
+
         if (header.ShowExistingFrame)
         {
             if (isFrameObu)
@@ -255,7 +296,7 @@ internal sealed class Av1Decoder : IDisposable
             return ShowExistingFrame(header);
         }
 
-        BeginFrame(sequence, header);
+        BeginFrame(sequence, header, GetDecodedMiRows(sequence, header));
         _seenFrameHeader = true;
         _tileNum = 0;
         if (!isFrameObu)
@@ -288,7 +329,49 @@ internal sealed class Av1Decoder : IDisposable
         return frame;
     }
 
-    private void BeginFrame(Av1SequenceHeader sequence, Av1FrameHeader header)
+    // The rows of 4x4 blocks that the decode window needs, a multiple of the superblock size, and the tiles that it needs
+    // (_windowTiles); null when the frame is decoded whole
+    private int? GetDecodedMiRows(Av1SequenceHeader sequence, Av1FrameHeader header)
+    {
+        _windowTiles = null;
+        SkippedTileCount = 0;
+        if (DecodeWindow is not { } window)
+            return null;
+
+        var sbSize4 = sequence.Use128x128Superblock ? 32 : 16;
+        var bottom4 = (((long)Math.Max(window.Bottom, 1) - 1 + DecodeWindowMargin) / Av1Constants.MiSize) + 1;
+        var miRows = (int)Math.Min(header.MiRows, (bottom4 + sbSize4 - 1) / sbSize4 * sbSize4);
+
+        // The tiles that are farther than the margin from the area. The loop restoration units are read by the superblock of
+        // their top left corner and reach the right and the bottom: a tile above or on the left of the area may hold the units
+        // of its samples. The columns of tiles of a frame upscaled by super-resolution are in the downscaled frame
+        var top4 = ((long)window.Top - DecodeWindowMargin) / Av1Constants.MiSize;
+        var left4 = ((long)window.Left - DecodeWindowMargin) / Av1Constants.MiSize;
+        var right4 = (((long)Math.Max(window.Right, 1) - 1 + DecodeWindowMargin) / Av1Constants.MiSize) + 1;
+        var tiles = new bool[header.TileCount];
+        for (var tileRow = 0; tileRow < header.TileRows; tileRow++)
+        {
+            for (var tileCol = 0; tileCol < header.TileCols; tileCol++)
+            {
+                var isBelow = header.MiRowStarts[tileRow] >= miRows;
+                var isAbove = !header.UsesLr && header.MiRowStarts[tileRow + 1] <= top4;
+                var isRight = !header.UseSuperres && header.MiColStarts[tileCol] >= right4;
+                var isLeft = !header.UseSuperres && !header.UsesLr && header.MiColStarts[tileCol + 1] <= left4;
+                var isDecoded = !(isBelow || isAbove || isRight || isLeft);
+                tiles[(tileRow * header.TileCols) + tileCol] = isDecoded;
+                SkippedTileCount += isDecoded ? 0 : 1;
+            }
+        }
+
+        if (miRows == header.MiRows && SkippedTileCount is 0)
+            return null;
+
+        _windowTiles = tiles;
+        _isWindowUsed = true;
+        return miRows;
+    }
+
+    private void BeginFrame(Av1SequenceHeader sequence, Av1FrameHeader header, int? decodedMiRows)
     {
         _scope.Limits.EnsureCanvasWithinLimits(header.UpscaledWidth, header.FrameHeight);
 
@@ -296,7 +379,7 @@ internal sealed class Av1Decoder : IDisposable
         if (!header.ShowFrame)
             _tracker?.ChargeHiddenPixels((long)header.UpscaledWidth * header.FrameHeight);
 
-        _coding.BeginFrame(sequence, header);
+        _coding.BeginFrame(sequence, header, decodedMiRows);
     }
 
     // Section 5.11.1 "General tile group OBU syntax"
@@ -342,7 +425,11 @@ internal sealed class Av1Decoder : IDisposable
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var tileSize = ReadTileSize(header, ref position, end, isLast: _tileNum == tgEnd);
-                DecodeTile(frame, _tileNum, position, tileSize, _symbols, _coding.Scratch!, _coding.InterScratch, _coding.TileContext, cancellationToken);
+                if (IsTileDecoded(_tileNum))
+                {
+                    DecodeTile(frame, _tileNum, position, tileSize, _symbols, _coding.Scratch!, _coding.InterScratch, _coding.TileContext, cancellationToken);
+                }
+
                 position += tileSize;
             }
         }
@@ -354,6 +441,9 @@ internal sealed class Av1Decoder : IDisposable
         _seenFrameHeader = false;
         return DecodeFrameWrapup(frame, cancellationToken);
     }
+
+    // Whether a tile is decoded: every tile but the ones that a decode window leaves out
+    private bool IsTileDecoded(int tileNum) => _windowTiles is null || _windowTiles[tileNum];
 
     // Reads tile_size_minus_1 (section 5.11.1), which the last tile of a tile group does not have: it takes the rest of
     // the tile group. Advances position to the data of the tile
@@ -395,7 +485,7 @@ internal sealed class Av1Decoder : IDisposable
         symbols.Initialize(_data, position, tileSize, header.DisableCdfUpdate);
 
         var decoder = new Av1TileCoder(frame, _coding.State, symbols, scratch, _coding.References, interScratch, tileContext, cancellationToken);
-        decoder.DecodeTile(tileRow, tileCol);
+        decoder.DecodeTile(tileRow, tileCol, frame.DecodedMiRows);
 
         symbols.Exit();
         _coding.EndTile(header, tileNum, tileContext);
@@ -446,6 +536,9 @@ internal sealed class Av1Decoder : IDisposable
                 Av1TileWorkers.Run(workers, located, (worker, tile) =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+                    if (!IsTileDecoded(first + tile))
+                        return;
+
                     if (worker is 0)
                     {
                         DecodeTile(frame, first + tile, positions[tile], sizes[tile], _symbols, _coding.Scratch!, _coding.InterScratch, _coding.TileContext, cancellationToken);

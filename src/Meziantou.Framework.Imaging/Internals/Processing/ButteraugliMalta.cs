@@ -189,6 +189,35 @@ internal static class ButteraugliMalta
             ref var offset0 = ref unsafe(MemoryMarshal.GetReference(offsets));
             if (Vector512.IsHardwareAccelerated)
             {
+                // Two vectors at a time share the loads of the offsets
+                for (; x + (2 * Vector512<float>.Count) <= width; x += 2 * Vector512<float>.Count)
+                {
+                    ref var column = ref unsafe(Unsafe.Add(ref source, x));
+                    var retval0 = Vector512<float>.Zero;
+                    var retval1 = Vector512<float>.Zero;
+                    var t = 0;
+                    foreach (var lineEnd in lineEnds)
+                    {
+                        var sum0 = Vector512<float>.Zero;
+                        var sum1 = Vector512<float>.Zero;
+                        for (; t < lineEnd; t++)
+                        {
+                            ref var tap = ref unsafe(Unsafe.Add(ref column, Unsafe.Add(ref offset0, t)));
+                            sum0 += unsafe(Vector512.LoadUnsafe(ref tap));
+                            sum1 += unsafe(Vector512.LoadUnsafe(ref tap, (nuint)Vector512<float>.Count));
+                        }
+
+                        retval0 += sum0 * sum0;
+                        retval1 += sum1 * sum1;
+                    }
+
+                    unsafe
+                    {
+                        (Vector512.LoadUnsafe(ref target, (nuint)x) + retval0).StoreUnsafe(ref target, (nuint)x);
+                        (Vector512.LoadUnsafe(ref target, (nuint)(x + Vector512<float>.Count)) + retval1).StoreUnsafe(ref target, (nuint)(x + Vector512<float>.Count));
+                    }
+                }
+
                 for (; x + Vector512<float>.Count <= width; x += Vector512<float>.Count)
                 {
                     ref var column = ref unsafe(Unsafe.Add(ref source, x));
@@ -211,6 +240,35 @@ internal static class ButteraugliMalta
 
             if (Vector256.IsHardwareAccelerated)
             {
+                // Two vectors at a time share the loads of the offsets
+                for (; x + (2 * Vector256<float>.Count) <= width; x += 2 * Vector256<float>.Count)
+                {
+                    ref var column = ref unsafe(Unsafe.Add(ref source, x));
+                    var retval0 = Vector256<float>.Zero;
+                    var retval1 = Vector256<float>.Zero;
+                    var t = 0;
+                    foreach (var lineEnd in lineEnds)
+                    {
+                        var sum0 = Vector256<float>.Zero;
+                        var sum1 = Vector256<float>.Zero;
+                        for (; t < lineEnd; t++)
+                        {
+                            ref var tap = ref unsafe(Unsafe.Add(ref column, Unsafe.Add(ref offset0, t)));
+                            sum0 += unsafe(Vector256.LoadUnsafe(ref tap));
+                            sum1 += unsafe(Vector256.LoadUnsafe(ref tap, (nuint)Vector256<float>.Count));
+                        }
+
+                        retval0 += sum0 * sum0;
+                        retval1 += sum1 * sum1;
+                    }
+
+                    unsafe
+                    {
+                        (Vector256.LoadUnsafe(ref target, (nuint)x) + retval0).StoreUnsafe(ref target, (nuint)x);
+                        (Vector256.LoadUnsafe(ref target, (nuint)(x + Vector256<float>.Count)) + retval1).StoreUnsafe(ref target, (nuint)(x + Vector256<float>.Count));
+                    }
+                }
+
                 for (; x + Vector256<float>.Count <= width; x += Vector256<float>.Count)
                 {
                     ref var column = ref unsafe(Unsafe.Add(ref source, x));
@@ -228,6 +286,35 @@ internal static class ButteraugliMalta
                     }
 
                     unsafe { (Vector256.LoadUnsafe(ref target, (nuint)x) + retval).StoreUnsafe(ref target, (nuint)x); }
+                }
+            }
+
+            // Two vectors at a time share the loads of the offsets
+            for (; x + (2 * Vector128<float>.Count) <= width; x += 2 * Vector128<float>.Count)
+            {
+                ref var column = ref unsafe(Unsafe.Add(ref source, x));
+                var retval0 = Vector128<float>.Zero;
+                var retval1 = Vector128<float>.Zero;
+                var t = 0;
+                foreach (var lineEnd in lineEnds)
+                {
+                    var sum0 = Vector128<float>.Zero;
+                    var sum1 = Vector128<float>.Zero;
+                    for (; t < lineEnd; t++)
+                    {
+                        ref var tap = ref unsafe(Unsafe.Add(ref column, Unsafe.Add(ref offset0, t)));
+                        sum0 += unsafe(Vector128.LoadUnsafe(ref tap));
+                        sum1 += unsafe(Vector128.LoadUnsafe(ref tap, (nuint)Vector128<float>.Count));
+                    }
+
+                    retval0 += sum0 * sum0;
+                    retval1 += sum1 * sum1;
+                }
+
+                unsafe
+                {
+                    (Vector128.LoadUnsafe(ref target, (nuint)x) + retval0).StoreUnsafe(ref target, (nuint)x);
+                    (Vector128.LoadUnsafe(ref target, (nuint)(x + Vector128<float>.Count)) + retval1).StoreUnsafe(ref target, (nuint)(x + Vector128<float>.Count));
                 }
             }
 

@@ -230,6 +230,17 @@ internal static class ButteraugliBlur
         var x = start;
         if (Vector512.IsHardwareAccelerated)
         {
+            // Two vectors at a time share the addresses and the weights of the taps
+            for (; x + (2 * Vector512<float>.Count) <= end; x += 2 * Vector512<float>.Count)
+            {
+                var (first, second) = Convolve512x2(ref unsafe(Unsafe.Add(ref source, x)), step, ref weights, offset);
+                unsafe
+                {
+                    first.StoreUnsafe(ref target, (nuint)x);
+                    second.StoreUnsafe(ref target, (nuint)(x + Vector512<float>.Count));
+                }
+            }
+
             for (; x + Vector512<float>.Count <= end; x += Vector512<float>.Count)
             {
                 unsafe { Convolve512(ref Unsafe.Add(ref source, x), step, ref weights, offset).StoreUnsafe(ref target, (nuint)x); }
@@ -238,6 +249,17 @@ internal static class ButteraugliBlur
 
         if (Vector256.IsHardwareAccelerated)
         {
+            // Two vectors at a time share the addresses and the weights of the taps
+            for (; x + (2 * Vector256<float>.Count) <= end; x += 2 * Vector256<float>.Count)
+            {
+                var (first, second) = Convolve256x2(ref unsafe(Unsafe.Add(ref source, x)), step, ref weights, offset);
+                unsafe
+                {
+                    first.StoreUnsafe(ref target, (nuint)x);
+                    second.StoreUnsafe(ref target, (nuint)(x + Vector256<float>.Count));
+                }
+            }
+
             for (; x + Vector256<float>.Count <= end; x += Vector256<float>.Count)
             {
                 unsafe { Convolve256(ref Unsafe.Add(ref source, x), step, ref weights, offset).StoreUnsafe(ref target, (nuint)x); }
@@ -246,6 +268,17 @@ internal static class ButteraugliBlur
 
         if (Vector128.IsHardwareAccelerated)
         {
+            // Two vectors at a time share the addresses and the weights of the taps
+            for (; x + (2 * Vector128<float>.Count) <= end; x += 2 * Vector128<float>.Count)
+            {
+                var (first, second) = Convolve128x2(ref unsafe(Unsafe.Add(ref source, x)), step, ref weights, offset);
+                unsafe
+                {
+                    first.StoreUnsafe(ref target, (nuint)x);
+                    second.StoreUnsafe(ref target, (nuint)(x + Vector128<float>.Count));
+                }
+            }
+
             for (; x + Vector128<float>.Count <= end; x += Vector128<float>.Count)
             {
                 unsafe { Convolve128(ref Unsafe.Add(ref source, x), step, ref weights, offset).StoreUnsafe(ref target, (nuint)x); }
@@ -253,6 +286,60 @@ internal static class ButteraugliBlur
         }
 
         return x;
+    }
+
+    /// <summary>
+    /// <see cref="Convolve512"/> for two consecutive vectors: the second one starts <see cref="Vector512{T}.Count"/>
+    /// samples after <paramref name="center"/>.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector512<float> First, Vector512<float> Second) Convolve512x2(ref float center, nint step, ref float weights, int offset)
+    {
+        var first0 = Vector512<float>.Zero;
+        var first1 = Vector512<float>.Zero;
+        var first2 = Vector512<float>.Zero;
+        var first3 = Vector512<float>.Zero;
+        var second0 = Vector512<float>.Zero;
+        var second1 = Vector512<float>.Zero;
+        var second2 = Vector512<float>.Zero;
+        var second3 = Vector512<float>.Zero;
+        var j = 0;
+        for (; j + 4 <= offset; j += 4)
+        {
+            first0 += Tap(ref center, step, ref weights, offset, j, 0);
+            second0 += Tap(ref center, step, ref weights, offset, j, (nuint)Vector512<float>.Count);
+            first1 += Tap(ref center, step, ref weights, offset, j + 1, 0);
+            second1 += Tap(ref center, step, ref weights, offset, j + 1, (nuint)Vector512<float>.Count);
+            first2 += Tap(ref center, step, ref weights, offset, j + 2, 0);
+            second2 += Tap(ref center, step, ref weights, offset, j + 2, (nuint)Vector512<float>.Count);
+            first3 += Tap(ref center, step, ref weights, offset, j + 3, 0);
+            second3 += Tap(ref center, step, ref weights, offset, j + 3, (nuint)Vector512<float>.Count);
+        }
+
+        if (j < offset)
+        {
+            first0 += Tap(ref center, step, ref weights, offset, j, 0);
+            second0 += Tap(ref center, step, ref weights, offset, j, (nuint)Vector512<float>.Count);
+            if (j + 1 < offset)
+            {
+                first1 += Tap(ref center, step, ref weights, offset, j + 1, 0);
+                second1 += Tap(ref center, step, ref weights, offset, j + 1, (nuint)Vector512<float>.Count);
+                if (j + 2 < offset)
+                {
+                    first2 += Tap(ref center, step, ref weights, offset, j + 2, 0);
+                    second2 += Tap(ref center, step, ref weights, offset, j + 2, (nuint)Vector512<float>.Count);
+                }
+            }
+        }
+
+        var centerWeight = Vector512.Create(unsafe(Unsafe.Add(ref weights, offset)));
+        return (
+            unsafe(Vector512.LoadUnsafe(ref center)) * centerWeight + first0 + first1 + first2 + first3,
+            unsafe(Vector512.LoadUnsafe(ref center, (nuint)Vector512<float>.Count)) * centerWeight + second0 + second1 + second2 + second3);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector512<float> Tap(ref float center, nint step, ref float weights, int offset, int j, nuint lane)
+            => unsafe((Vector512.LoadUnsafe(ref Unsafe.Add(ref center, (j - offset) * step), lane) + Vector512.LoadUnsafe(ref Unsafe.Add(ref center, (offset - j) * step), lane)) * Vector512.Create(Unsafe.Add(ref weights, j)));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -291,6 +378,60 @@ internal static class ButteraugliBlur
             => unsafe((Vector512.LoadUnsafe(ref Unsafe.Add(ref center, (j - offset) * step)) + Vector512.LoadUnsafe(ref Unsafe.Add(ref center, (offset - j) * step))) * Vector512.Create(Unsafe.Add(ref weights, j)));
     }
 
+    /// <summary>
+    /// <see cref="Convolve256"/> for two consecutive vectors: the second one starts <see cref="Vector256{T}.Count"/>
+    /// samples after <paramref name="center"/>.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector256<float> First, Vector256<float> Second) Convolve256x2(ref float center, nint step, ref float weights, int offset)
+    {
+        var first0 = Vector256<float>.Zero;
+        var first1 = Vector256<float>.Zero;
+        var first2 = Vector256<float>.Zero;
+        var first3 = Vector256<float>.Zero;
+        var second0 = Vector256<float>.Zero;
+        var second1 = Vector256<float>.Zero;
+        var second2 = Vector256<float>.Zero;
+        var second3 = Vector256<float>.Zero;
+        var j = 0;
+        for (; j + 4 <= offset; j += 4)
+        {
+            first0 += Tap(ref center, step, ref weights, offset, j, 0);
+            second0 += Tap(ref center, step, ref weights, offset, j, (nuint)Vector256<float>.Count);
+            first1 += Tap(ref center, step, ref weights, offset, j + 1, 0);
+            second1 += Tap(ref center, step, ref weights, offset, j + 1, (nuint)Vector256<float>.Count);
+            first2 += Tap(ref center, step, ref weights, offset, j + 2, 0);
+            second2 += Tap(ref center, step, ref weights, offset, j + 2, (nuint)Vector256<float>.Count);
+            first3 += Tap(ref center, step, ref weights, offset, j + 3, 0);
+            second3 += Tap(ref center, step, ref weights, offset, j + 3, (nuint)Vector256<float>.Count);
+        }
+
+        if (j < offset)
+        {
+            first0 += Tap(ref center, step, ref weights, offset, j, 0);
+            second0 += Tap(ref center, step, ref weights, offset, j, (nuint)Vector256<float>.Count);
+            if (j + 1 < offset)
+            {
+                first1 += Tap(ref center, step, ref weights, offset, j + 1, 0);
+                second1 += Tap(ref center, step, ref weights, offset, j + 1, (nuint)Vector256<float>.Count);
+                if (j + 2 < offset)
+                {
+                    first2 += Tap(ref center, step, ref weights, offset, j + 2, 0);
+                    second2 += Tap(ref center, step, ref weights, offset, j + 2, (nuint)Vector256<float>.Count);
+                }
+            }
+        }
+
+        var centerWeight = Vector256.Create(unsafe(Unsafe.Add(ref weights, offset)));
+        return (
+            unsafe(Vector256.LoadUnsafe(ref center)) * centerWeight + first0 + first1 + first2 + first3,
+            unsafe(Vector256.LoadUnsafe(ref center, (nuint)Vector256<float>.Count)) * centerWeight + second0 + second1 + second2 + second3);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector256<float> Tap(ref float center, nint step, ref float weights, int offset, int j, nuint lane)
+            => unsafe((Vector256.LoadUnsafe(ref Unsafe.Add(ref center, (j - offset) * step), lane) + Vector256.LoadUnsafe(ref Unsafe.Add(ref center, (offset - j) * step), lane)) * Vector256.Create(Unsafe.Add(ref weights, j)));
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Vector256<float> Convolve256(ref float center, nint step, ref float weights, int offset)
     {
@@ -325,6 +466,60 @@ internal static class ButteraugliBlur
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Vector256<float> Tap(ref float center, nint step, ref float weights, int offset, int j)
             => unsafe((Vector256.LoadUnsafe(ref Unsafe.Add(ref center, (j - offset) * step)) + Vector256.LoadUnsafe(ref Unsafe.Add(ref center, (offset - j) * step))) * Vector256.Create(Unsafe.Add(ref weights, j)));
+    }
+
+    /// <summary>
+    /// <see cref="Convolve128"/> for two consecutive vectors: the second one starts <see cref="Vector128{T}.Count"/>
+    /// samples after <paramref name="center"/>.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<float> First, Vector128<float> Second) Convolve128x2(ref float center, nint step, ref float weights, int offset)
+    {
+        var first0 = Vector128<float>.Zero;
+        var first1 = Vector128<float>.Zero;
+        var first2 = Vector128<float>.Zero;
+        var first3 = Vector128<float>.Zero;
+        var second0 = Vector128<float>.Zero;
+        var second1 = Vector128<float>.Zero;
+        var second2 = Vector128<float>.Zero;
+        var second3 = Vector128<float>.Zero;
+        var j = 0;
+        for (; j + 4 <= offset; j += 4)
+        {
+            first0 += Tap(ref center, step, ref weights, offset, j, 0);
+            second0 += Tap(ref center, step, ref weights, offset, j, (nuint)Vector128<float>.Count);
+            first1 += Tap(ref center, step, ref weights, offset, j + 1, 0);
+            second1 += Tap(ref center, step, ref weights, offset, j + 1, (nuint)Vector128<float>.Count);
+            first2 += Tap(ref center, step, ref weights, offset, j + 2, 0);
+            second2 += Tap(ref center, step, ref weights, offset, j + 2, (nuint)Vector128<float>.Count);
+            first3 += Tap(ref center, step, ref weights, offset, j + 3, 0);
+            second3 += Tap(ref center, step, ref weights, offset, j + 3, (nuint)Vector128<float>.Count);
+        }
+
+        if (j < offset)
+        {
+            first0 += Tap(ref center, step, ref weights, offset, j, 0);
+            second0 += Tap(ref center, step, ref weights, offset, j, (nuint)Vector128<float>.Count);
+            if (j + 1 < offset)
+            {
+                first1 += Tap(ref center, step, ref weights, offset, j + 1, 0);
+                second1 += Tap(ref center, step, ref weights, offset, j + 1, (nuint)Vector128<float>.Count);
+                if (j + 2 < offset)
+                {
+                    first2 += Tap(ref center, step, ref weights, offset, j + 2, 0);
+                    second2 += Tap(ref center, step, ref weights, offset, j + 2, (nuint)Vector128<float>.Count);
+                }
+            }
+        }
+
+        var centerWeight = Vector128.Create(unsafe(Unsafe.Add(ref weights, offset)));
+        return (
+            unsafe(Vector128.LoadUnsafe(ref center)) * centerWeight + first0 + first1 + first2 + first3,
+            unsafe(Vector128.LoadUnsafe(ref center, (nuint)Vector128<float>.Count)) * centerWeight + second0 + second1 + second2 + second3);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<float> Tap(ref float center, nint step, ref float weights, int offset, int j, nuint lane)
+            => unsafe((Vector128.LoadUnsafe(ref Unsafe.Add(ref center, (j - offset) * step), lane) + Vector128.LoadUnsafe(ref Unsafe.Add(ref center, (offset - j) * step), lane)) * Vector128.Create(Unsafe.Add(ref weights, j)));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -13,7 +13,7 @@ internal static class SqlLikePattern
     private const int MaxPatternLength = 4000;
 
     [ThreadStatic]
-    private static CompiledPattern? t_lastPattern;
+    private static CompiledPattern? s_lastPattern;
 
     /// <summary>Returns whether <paramref name="value"/> matches <paramref name="pattern"/>, or <see langword="null"/> when either is NULL.</summary>
     public static bool? Like(string? value, string? pattern, string? escape)
@@ -113,12 +113,12 @@ internal static class SqlLikePattern
     /// </remarks>
     public static bool IsMatch(string value, string pattern, char? escape)
     {
-        var compiled = t_lastPattern;
+        var compiled = s_lastPattern;
         if (compiled is null || compiled.Escape != escape || !string.Equals(compiled.Pattern, pattern, StringComparison.Ordinal))
         {
             // Like is called once per row with the same pattern, so keep the last one instead of compiling it again
             compiled = new CompiledPattern(pattern, escape);
-            t_lastPattern = compiled;
+            s_lastPattern = compiled;
         }
 
         return compiled.IsMatch(value);

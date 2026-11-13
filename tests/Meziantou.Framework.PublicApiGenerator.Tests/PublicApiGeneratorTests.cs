@@ -2814,7 +2814,7 @@ public sealed class PublicApiGeneratorTests
     {
         var files = PublicApiEmitter.MakeFileNamesUnique([new PublicApiFile(first, "1"), new PublicApiFile(second, "2")]);
 
-        Assert.Equal([first, expected], files.Select(static file => file.RelativePath));
+        Assert.Equal([first, expected], files.Select(file => file.RelativePath));
     }
 
     [Fact]

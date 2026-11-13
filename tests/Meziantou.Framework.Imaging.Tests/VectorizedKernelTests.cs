@@ -3976,7 +3976,7 @@ public sealed class VectorizedKernelTests
             _ => (uint)random.Next((int)Full + 1),
         };
 
-        foreach (var length in new[] { 0, 1, 3, 4, 5, 8, 13, 64, 101 })
+        foreach (var length in new[] { 0, 1, 3, 4, 5, 7, 8, 9, 12, 13, 15, 16, 17, 64, 101 })
         {
             for (var round = 0; round < 20; round++)
             {

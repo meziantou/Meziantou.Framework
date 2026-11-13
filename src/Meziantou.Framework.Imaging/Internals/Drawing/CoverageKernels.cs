@@ -3,7 +3,7 @@ using System.Runtime.Intrinsics;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Products of coverages (clip masks, opacities), four at a time with the scalar loops as their references.
+/// Products of coverages (clip masks, opacities), eight (AVX2) or four at a time with the scalar loops as their references.
 /// </summary>
 /// <remarks>
 /// A coverage is at most <see cref="CoverageRasterizer.FullCoverage"/> (2^16): the product of a coverage by a factor
@@ -20,6 +20,23 @@ internal static class CoverageKernels
     {
         var i = 0;
         var any = Vector128<uint>.Zero;
+        if (Vector256.IsHardwareAccelerated && coverage.Length >= 8)
+        {
+            var full = Vector256.Create(Full);
+            var half = Vector256.Create(Full / 2);
+            var any256 = Vector256<uint>.Zero;
+            for (; i + 8 <= coverage.Length; i += 8)
+            {
+                var value = Vector256.Create(coverage.Slice(i, 8));
+                var factor = Vector256.Create(mask.Slice(i, 8));
+                var result = Vector256.ConditionalSelect(Vector256.Equals(factor, full), value, Vector256.ShiftRightLogical((value * factor) + half, 16));
+                result.CopyTo(product.Slice(i, 8));
+                any256 |= result;
+            }
+
+            any = any256.GetLower() | any256.GetUpper();
+        }
+
         if (Vector128.IsHardwareAccelerated)
         {
             var full = Vector128.Create(Full);
@@ -56,6 +73,16 @@ internal static class CoverageKernels
     public static void Scale(ReadOnlySpan<uint> coverage, uint opacity, Span<uint> product)
     {
         var i = 0;
+        if (Vector256.IsHardwareAccelerated)
+        {
+            var factor = Vector256.Create(opacity);
+            var half = Vector256.Create(Full / 2);
+            for (; i + 8 <= coverage.Length; i += 8)
+            {
+                Vector256.ShiftRightLogical((Vector256.Create(coverage.Slice(i, 8)) * factor) + half, 16).CopyTo(product.Slice(i, 8));
+            }
+        }
+
         if (Vector128.IsHardwareAccelerated)
         {
             var factor = Vector128.Create(opacity);

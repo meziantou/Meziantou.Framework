@@ -36,14 +36,14 @@ public class BmpBenchmarks : IDisposable
         WorkloadChecks.RequireLossless(BenchmarkInputs.BmpRunLength8, BenchmarkInputs.IndexedRgb24Source);
 
         // 16 colors: the red channel reduced to 4 levels, green and blue to 2
-        var sixteenColors = BenchmarkInputs.LargeRgb24Source.Select(static p => new Rgb24((byte)((p.R >> 6) * 85), (byte)((p.G >> 7) * 255), (byte)((p.B >> 7) * 255))).ToArray();
+        var sixteenColors = BenchmarkInputs.LargeRgb24Source.Select(p => new Rgb24((byte)((p.R >> 6) * 85), (byte)((p.G >> 7) * 255), (byte)((p.B >> 7) * 255))).ToArray();
         _sixteenColors = Image.ImportPixelData<Rgb24>(sixteenColors, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
         _bilevel = Image.ImportPixelData<Gray8>(BenchmarkInputs.LargeBilevelSource, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
         _bmp565 = Encode(_photo, new BmpEncoder { PixelLayout = BmpPixelLayout.Bgr565, AllowBitDepthReduction = true });
         _bmpIndexed4 = Encode(_sixteenColors, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4 });
         WorkloadChecks.RequireLossless(_bmpIndexed4, sixteenColors);
         WorkloadChecks.RequireLossless(Encode(_sixteenColors, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4, Compression = BmpCompression.RunLength }), sixteenColors);
-        WorkloadChecks.RequireLossless(Encode(_bilevel, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed1 }), BenchmarkInputs.LargeBilevelSource.Select(static p => new Rgb24(p.Value, p.Value, p.Value)).ToArray());
+        WorkloadChecks.RequireLossless(Encode(_bilevel, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed1 }), BenchmarkInputs.LargeBilevelSource.Select(p => new Rgb24(p.Value, p.Value, p.Value)).ToArray());
     }
 
     [GlobalCleanup]

@@ -47,7 +47,7 @@ public class TiffBenchmarks : IDisposable
         WorkloadChecks.RequireLossless(BenchmarkInputs.TiffRgb16, BenchmarkInputs.Rgb16Pixels);
         _rgba16 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.LargeRgba64Source, BenchmarkInputs.Large16Width, BenchmarkInputs.Large16Height, configuration: configuration);
         _bilevel = Image.ImportPixelData<Gray8>(BenchmarkInputs.LargeBilevelSource, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight, configuration: configuration);
-        var floats = BenchmarkInputs.LargeRgba64Source.Select(static p => new RgbaFloat(p.R / 65535f, p.G / 65535f, p.B / 65535f, p.A / 65535f)).ToArray();
+        var floats = BenchmarkInputs.LargeRgba64Source.Select(p => new RgbaFloat(p.R / 65535f, p.G / 65535f, p.B / 65535f, p.A / 65535f)).ToArray();
         _float = Image.ImportPixelData<RgbaFloat>(floats, BenchmarkInputs.Large16Width, BenchmarkInputs.Large16Height, configuration: configuration);
         _float.Metadata.TransferFunction = ColorTransferFunction.Linear;
         ImageWorkloads.Encode(_float, new TiffEncoder { Compression = TiffCompression.None }, _output);

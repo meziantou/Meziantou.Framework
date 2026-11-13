@@ -36,7 +36,7 @@ public class PnmBenchmarks : IDisposable
         _rgb16 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.Rgb16Pixels, BenchmarkInputs.Large16Width, BenchmarkInputs.Large16Height);
         // The encoder writes images with alpha as RGB_ALPHA tuples: the GRAYSCALE_ALPHA file is written here
         var grayAlpha = BenchmarkInputs.GrayAlpha8Pixels;
-        _pnmGrayAlpha = [.. System.Text.Encoding.ASCII.GetBytes(string.Create(CultureInfo.InvariantCulture, $"P7\nWIDTH {BenchmarkInputs.ServiceWidth}\nHEIGHT {BenchmarkInputs.ServiceHeight}\nDEPTH 2\nMAXVAL 255\nTUPLTYPE GRAYSCALE_ALPHA\nENDHDR\n")), .. grayAlpha.SelectMany(static p => new[] { p.R, p.A })];
+        _pnmGrayAlpha = [.. System.Text.Encoding.ASCII.GetBytes(string.Create(CultureInfo.InvariantCulture, $"P7\nWIDTH {BenchmarkInputs.ServiceWidth}\nHEIGHT {BenchmarkInputs.ServiceHeight}\nDEPTH 2\nMAXVAL 255\nTUPLTYPE GRAYSCALE_ALPHA\nENDHDR\n")), .. grayAlpha.SelectMany(p => new[] { p.R, p.A })];
         WorkloadChecks.RequireLossless(_pnmGrayAlpha, grayAlpha);
     }
 

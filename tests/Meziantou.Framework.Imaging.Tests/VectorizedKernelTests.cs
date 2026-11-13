@@ -6534,7 +6534,7 @@ public sealed class VectorizedKernelTests
             Assert.True(DrawingTestSupport.ReadSamples(expected.Frames[0]).SequenceEqual(DrawingTestSupport.ReadSamples(actual.Frames[0])), name);
         }
 
-        static void Draw(Image image, FilterGraph graph) => image.Draw(canvas => canvas.Filter(graph, static _ => { }), TestContext.Current.CancellationToken);
+        static void Draw(Image image, FilterGraph graph) => image.Draw(canvas => canvas.Filter(graph, _ => { }), TestContext.Current.CancellationToken);
     }
 
     [Fact]

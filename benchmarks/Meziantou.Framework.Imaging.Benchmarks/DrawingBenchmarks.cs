@@ -209,7 +209,7 @@ public class DrawingBenchmarks : IDisposable
     [Workload("Radial gradient with four stops, repeated, multiply blend: fill of the canvas")]
     public int FillRadialGradientMultiply()
     {
-        _image.Draw(_radialMultiply, static (canvas, brush) => canvas.Fill(brush));
+        _image.Draw(_radialMultiply, (canvas, brush) => canvas.Fill(brush));
         return _image.Width;
     }
 
@@ -217,7 +217,7 @@ public class DrawingBenchmarks : IDisposable
     [Workload("Linear gradient with four translucent stops, reflected, exclusive-or operator: fill of an ellipse covering most of the canvas")]
     public int FillGradientXor()
     {
-        _image.Draw(_linearXor, static (canvas, brush) => canvas.FillEllipse(brush, new PointD(512, 384), 500, 370));
+        _image.Draw(_linearXor, (canvas, brush) => canvas.FillEllipse(brush, new PointD(512, 384), 500, 370));
         return _image.Width;
     }
 
@@ -398,7 +398,7 @@ public class DrawingBenchmarks : IDisposable
     [Workload("Translucent ellipse combined with the exclusive-or operator: the pixels it covers keep about half their opacity")]
     public int FillXor()
     {
-        _image.Draw(static canvas => canvas.FillEllipse(new SolidBrush(new Rgba32(30, 120, 200, 100)) { CompositeMode = CompositeMode.Xor }, new PointD(512, 384), 400, 300));
+        _image.Draw(canvas => canvas.FillEllipse(new SolidBrush(new Rgba32(30, 120, 200, 100)) { CompositeMode = CompositeMode.Xor }, new PointD(512, 384), 400, 300));
         return _image.Width;
     }
 }

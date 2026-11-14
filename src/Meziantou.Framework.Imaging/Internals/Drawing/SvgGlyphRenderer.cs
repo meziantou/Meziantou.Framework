@@ -11,7 +11,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// transformation of the <c>viewBox</c> of the root element, fitted into its viewport: the em square, or the
 /// <c>width</c> and <c>height</c> of the root in font units, never clipped. Without <c>viewBox</c>, a unit of the
 /// document is a font unit. The y axis goes down from the baseline. The elements nested deeper than 64 levels (through
-/// <c>use</c> elements too) and the paints with more than 16 fallbacks are not drawn.
+/// <c>use</c> elements too) and the paints with more than 16 fallbacks are not drawn; a clipping path is made of its
+/// first 256 shapes, each union charged for the segments of the shapes before it.
 /// </para>
 /// <para>
 /// The subset is what the glyphs of the fonts use, and what the specification requires: the shapes (<c>path</c>,
@@ -39,6 +40,9 @@ internal static class SvgGlyphRenderer
     // How deep the elements, the use elements and the references of gradients can nest, and how many fallbacks a paint can have
     private const int MaxDepth = 64;
     private const int MaxPaintFallbacks = 16;
+
+    // The shapes of a clipping path that are united: each union goes over the shapes before it
+    private const int MaxClipShapes = 256;
 
     /// <summary>Draws the SVG glyph of a font at a size, and makes the display list that draws its image.</summary>
     /// <param name="face">The font.</param>
@@ -749,9 +753,14 @@ internal static class SvgGlyphRenderer
                 return true;
 
             var clipTransform = SvgValues.ParseTransform(clipPath.GetAttribute("transform")).Then(transform);
+            var shapes = 0;
+            long segments = 0;
             foreach (var child in clipPath.Children)
             {
                 _budget.Charge(1);
+                if (shapes == MaxClipShapes)
+                    break;
+
                 var element = child;
                 var childTransform = clipTransform;
                 if (child.IsForeign || child.GetAttribute("display") is "none")
@@ -772,6 +781,11 @@ internal static class SvgGlyphRenderer
                     continue;
 
                 path = path.Transform(SvgValues.ParseTransform(element.GetAttribute("transform")).Then(childTransform));
+                shapes++;
+
+                // A union rebuilds the shapes before it: it is charged for all of their segments.
+                segments += CountSegments(path);
+                _budget.Charge(segments);
                 var rule = element.GetAttribute("clip-rule") ?? child.GetAttribute("clip-rule") ?? clipPath.GetAttribute("clip-rule");
                 if (result is null)
                 {
@@ -786,6 +800,17 @@ internal static class SvgGlyphRenderer
             }
 
             return result is not null;
+        }
+
+        private static long CountSegments(VectorPath path)
+        {
+            long count = 0;
+            foreach (var _ in path.EnumerateSegments())
+            {
+                count++;
+            }
+
+            return count;
         }
 
         /// <summary>
@@ -882,8 +907,16 @@ internal static class SvgGlyphRenderer
             var dashArray = DashPatternArray;
             if (element.GetAttribute("stroke-dasharray") is { } dashes)
             {
-                var values = SvgValues.ParseNumberList(dashes);
-                dashArray = dashes.Trim() is "none" || values.Count == 0 || values.Exists(value => value < 0) || values.TrueForAll(value => value == 0) ? [] : [.. values];
+                // A list of lengths; a list with a value that is not a length, or a negative one, is not valid.
+                var values = SvgValues.ParseLengthList(dashes, builder.Viewport);
+                if (dashes.Trim() is "none")
+                {
+                    dashArray = [];
+                }
+                else if (values is not null)
+                {
+                    dashArray = values.Count == 0 || values.Exists(value => value < 0) || values.TrueForAll(value => value == 0) ? [] : [.. values];
+                }
             }
 
             return this with

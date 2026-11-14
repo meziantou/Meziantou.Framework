@@ -150,6 +150,22 @@ internal static class SvgValues
         return values;
     }
 
+    /// <summary>Reads a list of lengths separated by white space or commas (<see cref="TryParseLength"/>).</summary>
+    /// <returns><see langword="null"/> when an item is not a length.</returns>
+    public static List<double>? ParseLengthList(string text, double reference)
+    {
+        var values = new List<double>();
+        foreach (var item in text.Split([' ', ',', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!TryParseLength(item, reference, out var value))
+                return null;
+
+            values.Add(value);
+        }
+
+        return values;
+    }
+
     /// <summary>Reads the value of a <c>transform</c> attribute: the transformations of the list apply from the last one.</summary>
     /// <returns>The identity for a list that is not valid, as SVG 1.1 says.</returns>
     public static AffineTransform ParseTransform(string? text)

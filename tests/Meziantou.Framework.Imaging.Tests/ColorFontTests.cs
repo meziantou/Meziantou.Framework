@@ -916,6 +916,15 @@ public sealed class ColorFontTests
         Check(string.Concat(Enumerable.Repeat("<g>", 20_000)) + "<rect x='128' y='64' width='256' height='512' fill='red'/>" + string.Concat(Enumerable.Repeat("</g>", 20_000)), _ => { });
         Check("<g><g><rect x='128' y='64' width='256' height='512' fill='red'/></g></g>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 8)));
 
+        // A clipping path of many shapes is made of its first ones, and stays within the budget.
+        Check("<clipPath id='c'>" + string.Concat(Enumerable.Repeat("<rect x='128' y='64' width='256' height='512'/>", 3000)) + "</clipPath><rect width='1024' height='1024' fill='red' clip-path='url(#c)'/>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 8)), tolerance: 1);
+
+        // The lengths of the dashes take units; a list with a value that is not a length is ignored.
+        var dashed = DrawSvg("<line x1='0' y1='320' x2='1024' y2='320' stroke='red' stroke-width='128' stroke-dasharray='128 64'/>");
+        Assert.Equal(dashed, DrawSvg("<line x1='0' y1='320' x2='1024' y2='320' stroke='red' stroke-width='128' stroke-dasharray='128px, 64px'/>"));
+        Assert.NotEqual(dashed, DrawSvg("<line x1='0' y1='320' x2='1024' y2='320' stroke='red' stroke-width='128' stroke-dasharray='128'/>"));
+        Assert.Equal(DrawSvg("<line x1='0' y1='320' x2='1024' y2='320' stroke='red' stroke-width='128'/>"), DrawSvg("<line x1='0' y1='320' x2='1024' y2='320' stroke='red' stroke-width='128' stroke-dasharray='128 a'/>"));
+
         // The coordinates of a gradient in user space take units.
         AssertClose(
             DrawSvg("<linearGradient id='g' gradientUnits='userSpaceOnUse' x1='128' x2='640'><stop stop-color='red'/><stop offset='1' stop-color='blue'/></linearGradient><rect x='128' y='64' width='512' height='512' fill='url(#g)'/>"),

@@ -466,6 +466,25 @@ public sealed class UserScrollingTests : IDisposable
     }
 
     [Fact]
+    public void ScrollIntoView_AbortedSmoothScrollKeepsTheScrollEndOfThePinch()
+    {
+        var document = Load("<div id=top style='height: 10px'></div><div id=visible style='position: absolute; left: 300px; top: 200px; width: 10px; height: 10px'></div><div style='height: 2000px'></div>");
+        var visualViewport = document.DefaultView!.VisualViewport!;
+        var events = Log(visualViewport, "scrollend");
+        var top = document.GetElementById("top")!;
+
+        // The pinch moves the visual viewport ((200, 150) to (600, 450)); its scrollend event is deferred by the smooth scroll, which a
+        // scroll to an element already in the visual viewport aborts at once
+        Assert.True(document.BrowsingContext!.Input.Pinch(400, 300, 2));
+        _ = top.ScrollIntoView(new ScrollIntoViewOptions { Behavior = ScrollBehavior.Smooth });
+        _ = document.GetElementById("visible")!.ScrollIntoView(new ScrollIntoViewOptions { Block = ScrollLogicalPosition.Nearest, Behavior = ScrollBehavior.Instant });
+        Assert.Equal((200, 150), (visualViewport.OffsetLeft, visualViewport.OffsetTop));
+        RunFrames(30);
+        Assert.Equal((200, 150), (visualViewport.OffsetLeft, visualViewport.OffsetTop));
+        Assert.Equal(["scrollend"], events);
+    }
+
+    [Fact]
     public void Touch_ScrollEndWhenTheOtherFingerIsReleasedLast()
     {
         var document = Load("<div style='height: 2000px'></div>");

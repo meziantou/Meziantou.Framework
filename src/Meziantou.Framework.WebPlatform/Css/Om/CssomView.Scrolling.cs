@@ -1459,7 +1459,11 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
 
         AbortSmoothScroll();
         if (target == offset)
+        {
+            // The scroll ends here: the scrollend event deferred by the aborted smooth scroll is fired
+            EndUserGesture();
             return Task.CompletedTask;
+        }
 
         if (!smooth || eventLoop is null)
         {

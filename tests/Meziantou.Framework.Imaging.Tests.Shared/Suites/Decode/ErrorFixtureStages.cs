@@ -94,7 +94,6 @@ internal static class ErrorFixtureStages
 
         // BMP: the file header, the Windows or OS/2 DIB header (its compression must agree with its bit count and row
         // order) and the masks that follow a 40-byte BI_BITFIELDS header, all read before the palette and the pixel data
-        "invalid/bmp/bit-count-2",
         "invalid/bmp/bit-count-7",
         "invalid/bmp/embedded-png",
         "invalid/bmp/mask-10-bits",

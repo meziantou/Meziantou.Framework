@@ -87,6 +87,17 @@ public sealed class BmpCodecTests
             [new(10, 20, 30), new(200, 150, 100), new(200, 150, 100), new(10, 20, 30), new(200, 150, 100)],
             Decode(Bmp(5, 1, 1, [[0b0110_1000, 0, 0, 0]], palette[..2])));
 
+        // 2-bit (Windows CE): the two most significant bits are the left pixel, the last bits of a partial byte are unused
+        Assert.Equal(
+            [new(0, 0, 0), new(255, 255, 255), new(10, 20, 30), new(200, 150, 100), new(255, 255, 255)],
+            Decode(Bmp(5, 1, 2, [[0b10_11_00_01, 0b11_01_01_01, 0, 0]], palette)));
+        var identified = Image.Identify(Bmp(5, 1, 2, [[0, 0, 0, 0]], palette));
+        Assert.Equal(2, identified.BitsPerComponent);
+        Assert.Equal(ImageColorModel.Indexed, identified.ColorModel);
+
+        // A 2-bit palette has at most four entries, and an index outside a shorter one is malformed
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Bmp(1, 1, 2, [[0b11_000000, 0, 0, 0]], palette[..3])));
+
         // 4-bit: the high nibble is the left pixel, the last nibble of an odd width is unused
         Assert.Equal(
             [new(0, 0, 0), new(255, 255, 255), new(10, 20, 30)],
@@ -508,7 +519,6 @@ public sealed class BmpCodecTests
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(valid, 28, [7, 0]))); // bit count 7
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(valid, 30, [12, 0, 0, 0]))); // undefined compression
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(valid, 10, [40, 0, 0, 0]))); // pixel data inside the header
-        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Edit(valid, 28, [2, 0]))); // Windows CE 2 bits per pixel
 
         // Masks: non-contiguous, overlapping, zero and wider than eight bits
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Bmp(1, 1, 16, [[0, 0, 0, 0]], compression: BiBitFields, masks: [0xF810, 0x07E0, 0x001F])));

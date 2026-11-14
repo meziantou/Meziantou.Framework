@@ -28929,7 +28929,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 3,
@@ -29028,7 +29028,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 2,
@@ -29138,7 +29138,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 3,
@@ -29237,7 +29237,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 3,
@@ -29324,7 +29324,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 3,
@@ -29424,7 +29424,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 5,
@@ -29513,7 +29513,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 5,
@@ -29614,7 +29614,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp PatternSmoothColor)",
         "tools": [
           "ffmpeg 9.0.2",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 17,
@@ -29715,7 +29715,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp PatternSmoothColor)",
         "tools": [
           "ffmpeg 9.0.2",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 14,
@@ -29815,7 +29815,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 3,
@@ -29914,7 +29914,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 9,
@@ -30015,7 +30015,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 5,
@@ -30117,7 +30117,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 7,
@@ -30221,7 +30221,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 5,
@@ -30321,7 +30321,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 2,
@@ -30432,7 +30432,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 5,
@@ -30534,7 +30534,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 9,
@@ -30634,7 +30634,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 5,
@@ -30734,7 +30734,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 7,
@@ -30836,7 +30836,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildBmp)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 5,
@@ -30937,7 +30937,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildRunLength)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 7,
@@ -31040,7 +31040,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildRunLength)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 5,
@@ -31141,7 +31141,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildRunLength)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 6,
@@ -31242,7 +31242,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildRunLength)",
         "tools": [
           "ffmpeg 9.0.2 (cross-check only)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 7,
@@ -58267,34 +58267,6 @@
       "notes": "The file has two meta boxes at its top level (ISO/IEC 14496-12 allows at most one)."
     },
     {
-      "id": "invalid/bmp/bit-count-2",
-      "kind": "unsupported",
-      "format": "bmp",
-      "input": {
-        "path": "invalid/bmp/bit-count-2.bmp",
-        "sha256": "c989d2cd157b7b57abf01b43baf57582ccd0381b314352440f189e9afda96aec",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
-        "tools": [
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Bmp",
-        "feature": "Bit depth: 2"
-      },
-      "features": [
-        "bmp.unsupported=bit-count-2"
-      ],
-      "notes": "biBitCount 2 is a Windows CE extension, recognized and rejected."
-    },
-    {
       "id": "invalid/bmp/bit-count-7",
       "kind": "invalid",
       "format": "bmp",
@@ -58309,7 +58281,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58333,7 +58305,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58361,7 +58333,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58389,7 +58361,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58413,7 +58385,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58437,7 +58409,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58461,7 +58433,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58489,7 +58461,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58513,7 +58485,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58537,7 +58509,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58561,7 +58533,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58585,7 +58557,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58609,7 +58581,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58633,7 +58605,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58657,7 +58629,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58681,7 +58653,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58705,7 +58677,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58729,7 +58701,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58753,7 +58725,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58777,7 +58749,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58801,7 +58773,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58825,7 +58797,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58849,7 +58821,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -58873,7 +58845,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -95025,7 +94997,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -95062,7 +95034,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {

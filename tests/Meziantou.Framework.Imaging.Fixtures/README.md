@@ -1026,7 +1026,6 @@ follows it, so keep both headings unique in this file.
 | BMP odd width | `bmp.width=odd` | 20 | 0 | 0 | 2 |
 | BMP OS/2 Huffman 1D (rejected) | `bmp.unsupported=huffman1d` | 0 | 0 | 1 | 0 |
 | BMP embedded JPEG/PNG payload (rejected) | `bmp.unsupported=embedded-codec` | 0 | 0 | 1 | 0 |
-| BMP 2 bits per pixel (rejected) | `bmp.unsupported=bit-count-2` | 0 | 0 | 1 | 0 |
 | BMP channel mask wider than 8 bits (rejected) | `bmp.unsupported=wide-mask` | 0 | 0 | 1 | 0 |
 | TGA color-mapped (type 1) | `tga.imageType=1` | 3 | 0 | 0 | 0 |
 | TGA uncompressed true color (type 2) | `tga.imageType=2` | 10 | 0 | 0 | 1 |

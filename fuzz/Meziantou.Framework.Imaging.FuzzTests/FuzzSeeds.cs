@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Hevc = Meziantou.Framework.Imaging.TestHarness.Hevc;
 
@@ -67,6 +68,10 @@ internal static class FuzzSeeds
         {
             seeds.AddRange(FuzzGeneratedSeeds.GetSmoothedRecompressedJpegSeeds());
         }
+        else if (group is "bmp")
+        {
+            seeds.Add(new FuzzSeed("bmp/generated-2-bit", CreateTwoBitBmp()));
+        }
         else if (group is "heic-sequence")
         {
             seeds.AddRange(
@@ -80,6 +85,28 @@ internal static class FuzzSeeds
             throw new InvalidOperationException($"The fuzz seed group '{group}' has no corpus input.");
 
         return seeds;
+    }
+
+    /// <summary>A 5x2 BMP of 2 bits per pixel (Windows CE) with a palette of four entries.</summary>
+    private static byte[] CreateTwoBitBmp()
+    {
+        byte[] palette = [30, 20, 10, 0, 100, 150, 200, 0, 0, 0, 0, 0, 255, 255, 255, 0];
+        byte[] rows = [0b10_11_00_01, 0b11_000000, 0, 0, 0b00_01_10_11, 0b01_000000, 0, 0];
+        var offset = 14 + 40 + palette.Length;
+        var data = new byte[offset + rows.Length];
+        "BM"u8.CopyTo(data);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(2), data.Length);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(10), offset);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(14), 40);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(18), 5);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(22), 2);
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(26), 1);
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(28), 2);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(34), rows.Length);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(46), 4);
+        palette.CopyTo(data, 54);
+        rows.CopyTo(data, offset);
+        return data;
     }
 
     // The HEVC vectors of the corpus are raw byte streams: each one is wrapped into a HEIC file, a still image or an image

@@ -135,6 +135,7 @@ internal sealed class BmpDibLayout
         switch (Header.BitsPerPixel)
         {
             case 1:
+            case 2:
             case 4:
             case 8:
                 ExpandIndexedRow(source, destination, width, Header.BitsPerPixel);

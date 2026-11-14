@@ -12,7 +12,7 @@ precision needs an explicit setting.
 | | Reading | Writing |
 | --- | --- | --- |
 | Headers | Windows headers up to V5, OS/2 1.x and 2.x headers | Windows headers |
-| Layouts | 1, 4 and 8-bit indexed, 16, 24 and 32 bits, bit fields | 24-bit, 32-bit with alpha, 1, 4 and 8-bit indexed, 16-bit 5-6-5 and 5-5-5 |
+| Layouts | 1, 2 (Windows CE), 4 and 8-bit indexed, 16, 24 and 32 bits, bit fields | 24-bit, 32-bit with alpha, 1, 4 and 8-bit indexed, 16-bit 5-6-5 and 5-5-5 |
 | Compression | RLE4, RLE8 and the OS/2 RLE24 | RLE4 and RLE8 |
 | Rows | Bottom-up and top-down | Bottom-up (default) or top-down |
 | Metadata | Resolution, embedded ICC profile (V5 header) | The same |
@@ -104,7 +104,7 @@ lossless, but can be larger than uncompressed output.
   file and follows [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling). Linked profiles (a file name) are not read.
 - [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) reads the header only, which is before the embedded profile: a full scan
   ([ImageIdentifyMode.FullScan](cref:Meziantou.Framework.Imaging.ImageIdentifyMode.FullScan)) or a load reports it.
-- The decoder rejects embedded JPEG or PNG payloads, OS/2 Huffman compression, 2-bit files and channels wider than 8 bits
+- The decoder rejects embedded JPEG or PNG payloads, OS/2 Huffman compression and channels wider than 8 bits
   with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Run-length data is read strictly: a run past its row or a missing
   end-of-bitmap marker is an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException).
 - The indexed layouts keep one byte per pixel of working memory while they encode.

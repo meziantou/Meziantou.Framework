@@ -1457,11 +1457,16 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
         if (smooth && eventLoop is not null && _smoothScroll is { } ongoing && ongoing.Target == target && _smoothScrollCompletion is { } ongoingCompletion)
             return ongoingCompletion.Task;
 
-        AbortSmoothScroll();
+        var aborted = AbortSmoothScroll();
         if (target == offset)
         {
-            // The scroll ends here: the scrollend event deferred by the aborted smooth scroll is fired
-            EndUserGesture();
+            // The scroll ends here: the scrollend event deferred by an aborted smooth scroll is fired (not the one of a gesture
+            // of the user in progress, e.g. a touch pan, which is fired when the gesture ends)
+            if (aborted)
+            {
+                EndUserGesture();
+            }
+
             return Task.CompletedTask;
         }
 
@@ -1509,13 +1514,15 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
         return false;
     }
 
-    /// <summary>Stops the smooth scroll in progress (a new scroll or zoom replaces it), and completes its task.</summary>
-    private void AbortSmoothScroll()
+    /// <summary>Stops the smooth scroll in progress (a new scroll or zoom replaces it), and completes its task. Returns whether a smooth scroll was in progress.</summary>
+    private bool AbortSmoothScroll()
     {
+        var aborted = _smoothScroll is not null;
         _smoothScroll = null;
         var completion = _smoothScrollCompletion;
         _smoothScrollCompletion = null;
         completion?.TrySetResult();
+        return aborted;
     }
 
     /// <summary>

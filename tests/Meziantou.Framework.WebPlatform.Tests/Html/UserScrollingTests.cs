@@ -485,6 +485,32 @@ public sealed class UserScrollingTests : IDisposable
     }
 
     [Fact]
+    public void Touch_ScrollIntoViewWithoutMoveDuringAPanDoesNotEndIt()
+    {
+        var document = Load("<div id=visible style='position: absolute; left: 300px; top: 300px; width: 10px; height: 10px'></div><div style='height: 2000px'></div>");
+        var visualViewport = document.DefaultView!.VisualViewport!;
+        var input = document.BrowsingContext!.Input;
+        Assert.True(input.Pinch(400, 300, 2));
+        RunFrames();
+        var events = Log(visualViewport, "scrollend");
+
+        // A finger pans the visual viewport; a scroll to an element in the visual viewport does not move it, nor end the pan
+        var finger = input.CreatePointer("touch");
+        finger.Move(400, 300);
+        finger.Down();
+        finger.Move(400, 250);
+        Assert.Equal(200, visualViewport.OffsetTop);
+        _ = document.GetElementById("visible")!.ScrollIntoView(new ScrollIntoViewOptions { Block = ScrollLogicalPosition.Nearest, Inline = ScrollLogicalPosition.Nearest });
+        Assert.Equal(200, visualViewport.OffsetTop);
+        RunFrames();
+        Assert.Empty(events);
+
+        finger.Up();
+        RunFrames();
+        Assert.Equal(["scrollend"], events);
+    }
+
+    [Fact]
     public void Touch_ScrollEndWhenTheOtherFingerIsReleasedLast()
     {
         var document = Load("<div style='height: 2000px'></div>");

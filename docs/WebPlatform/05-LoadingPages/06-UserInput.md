@@ -46,7 +46,7 @@ the hit testing of the layout) gets the events, also in the document of an `ifra
 | `Input.Mouse` | The mouse: `Move(x, y)`, `Down(button)`, `Up(button)`. A press and a release make a `click` (`dblclick` for a second click, `contextmenu` for the secondary button) |
 | `Input.CreatePointer("touch")`, `CreatePointer("pen")` | A finger or a pen, with the same methods; a moving touch pans the page, and two touches that move pinch it |
 | `Input.Wheel(x, y, deltaX, deltaY)` | A turn of the wheel at a position: the `wheel` event, then the scroll |
-| `Input.Pinch(x, y, scale)` | A pinch of the touchpad at a position: a `wheel` event with `ctrlKey`, then the zoom |
+| [Input.Pinch(x, y, scale)](cref:Meziantou.Framework.WebPlatform.Dom.UserInput.Pinch) | A pinch of the touchpad at a position: a `wheel` event with `ctrlKey`, then the zoom |
 | `Input.Modifiers` | The modifier keys ([InputModifiers.Shift](cref:Meziantou.Framework.WebPlatform.Dom.InputModifiers.Shift), [Control](cref:Meziantou.Framework.WebPlatform.Dom.InputModifiers.Control)...) of the next events |
 | `Input.HitTest(x, y)` | The element at a position, without firing anything |
 
@@ -65,7 +65,7 @@ position of the viewport of an `iframe` to the top-level viewport.
 
 ## Pinch zoom
 
-`Input.Pinch(x, y, scale)` zooms the page as a touchpad pinch does. Two touch pointers that move apart or closer do the same,
+[Input.Pinch(x, y, scale)](cref:Meziantou.Framework.WebPlatform.Dom.UserInput.Pinch) zooms the page as a touchpad pinch does. Two touch pointers that move apart or closer do the same,
 unless `touch-action` prevents it (for instance, `pan-x pan-y`). As in a browser, the pinch zoom does not change the
 layout. It magnifies the visual viewport of the top-level document: `visualViewport.scale` grows, its size shrinks, and
 its `offsetLeft` and `offsetTop` move it in the layout viewport. Its `resize`, `scroll` and `scrollend` events are fired,
@@ -109,7 +109,7 @@ only scroll the layout viewport.
 
 The positions of the input stay in the layout viewport, so the coordinates of `GetBoundingClientRect()` can still be
 clicked. To click a position of a screenshot taken while the page is zoomed in, convert it with
-`Input.MapFromVisualViewport(x, y)`.
+[Input.MapFromVisualViewport(x, y)](cref:Meziantou.Framework.WebPlatform.Dom.UserInput.MapFromVisualViewport).
 
 ## Keyboard
 

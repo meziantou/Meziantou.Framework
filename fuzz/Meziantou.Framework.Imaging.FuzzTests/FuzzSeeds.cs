@@ -76,6 +76,12 @@ internal static class FuzzSeeds
         {
             seeds.Add(new FuzzSeed("bmp/generated-2-bit", CreateTwoBitBmp()));
         }
+        else if (group is "pnm")
+        {
+            // A concatenation of images of several variants, the pages of a collection, with white space between two of them
+            var images = seeds.Where(seed => seed.Id.StartsWith("pnm/", StringComparison.Ordinal)).Take(3).Select(seed => seed.Data).ToArray();
+            seeds.Add(new FuzzSeed("pnm/generated-concatenation", [.. images[0], .. images[1], .. "\n\n"u8, .. images[2]]));
+        }
         else if (group is "heic-sequence")
         {
             seeds.AddRange(

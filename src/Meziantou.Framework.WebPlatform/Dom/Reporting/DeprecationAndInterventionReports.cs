@@ -131,13 +131,19 @@ public sealed class InterventionReportBody : ReportBody
     }
 }
 
+public partial class Document
+{
+    /// <summary>
+    /// The identifiers of the deprecated features already reported by the document (see <see cref="Window.ReportDeprecation"/>):
+    /// as in Chromium, a feature is reported once per document.
+    /// </summary>
+    internal HashSet<string>? ReportedDeprecations { get; set; }
+}
+
 // The deprecation reports (https://wicg.github.io/deprecation-reporting/) and the intervention reports
 // (https://wicg.github.io/intervention-reporting/) of a window
 public sealed partial class Window
 {
-    /// <summary>The identifiers of the deprecated features already reported by the window: as in Chromium, a feature is reported once per document.</summary>
-    private HashSet<string>? _reportedDeprecations;
-
     /// <summary>
     /// Generates a <c>deprecation</c> report (https://wicg.github.io/deprecation-reporting/#reporting), sent to the
     /// <c>default</c> endpoint, the first time the window uses the feature <paramref name="id"/>. Runs on the thread of the
@@ -145,8 +151,10 @@ public sealed partial class Window
     /// </summary>
     internal void ReportDeprecation(string id, string message, DateTime? anticipatedRemoval = null)
     {
-        _reportedDeprecations ??= new HashSet<string>(StringComparer.Ordinal);
-        if (!_reportedDeprecations.Add(id))
+        // A window is reused by the document that replaces its initial about:blank document: the set is the document's
+        var document = Document;
+        document.ReportedDeprecations ??= new HashSet<string>(StringComparer.Ordinal);
+        if (!document.ReportedDeprecations.Add(id))
             return;
 
         var (sourceFile, lineNumber, columnNumber) = GetReportSourceLocation();

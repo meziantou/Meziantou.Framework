@@ -258,6 +258,24 @@ public sealed class ReportingTests : IDisposable
     }
 
     [Fact]
+    public void Deprecation_IsReportedOncePerDocumentOfAReusedWindow()
+    {
+        var document = Load("""
+            <iframe id="frame"></iframe>
+            <script>
+            // The initial about:blank document of the frame sends a synchronous request, then the frame navigates to a
+            // same-origin page, which reuses its window
+            const xhr = new frame.contentWindow.XMLHttpRequest();
+            xhr.open("GET", "/data", false);
+            globalThis.initialWindow = frame.contentWindow;
+            frame.src = "/frame.html";
+            </script>
+            """, []);
+
+        Assert.Equal("reused:true;deprecation;", document.Title);
+    }
+
+    [Fact]
     public void Intervention_PreventDefaultInADefaultPassiveListener_IsReported()
     {
         var document = Load("""
@@ -344,6 +362,19 @@ public sealed class ReportingTests : IDisposable
         Assert.Equal("enforce", Assert.Single(json.RootElement.EnumerateArray()).GetProperty("body").GetProperty("disposition").GetString());
     }
 
+    /// <summary>The page of a frame that reports to the title of its parent whether its window is reused and the reports of its synchronous request.</summary>
+    private const string FrameHtml = """
+        <script>
+        parent.document.title += "reused:" + (window === parent.initialWindow) + ";";
+        new ReportingObserver(reports => {
+          for (const report of reports)
+            parent.document.title += report.type + ";";
+        }).observe();
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", "/data", false);
+        </script>
+        """;
+
     private static UrlRecord Url(string url) => UrlParser.Parse(url, baseUrl: null)!;
 
     private static void RunScript(Document document, string code)
@@ -371,6 +402,7 @@ public sealed class ReportingTests : IDisposable
             var name = path[(path.LastIndexOf('/', StringComparison.Ordinal) + 1)..];
             DocumentResource resource = request.Destination switch
             {
+                _ when path.EndsWith("/frame.html", StringComparison.Ordinal) => new DocumentResource(FrameHtml) { Headers = [new("Content-Type", "text/html")] },
                 RequestDestination.Document => new DocumentResource(html) { Headers = [new("Content-Type", "text/html"), .. headers] },
                 _ when path.EndsWith(".png", StringComparison.Ordinal) => DocumentResource.Create(Png, "image/png"),
                 _ when path.EndsWith(".js", StringComparison.Ordinal) => DocumentResource.Create($"document.title += ' {name[..^3]}'", "text/javascript"),

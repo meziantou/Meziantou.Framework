@@ -319,6 +319,84 @@ public sealed class PnmCodecTests
         Assert.Equal([new(10, 10, 10), new(20, 20, 20)], Decode(data));
     }
 
+    [Fact]
+    public void TheImagesOfAConcatenationArePagesOfACollection()
+    {
+        // Five images of four variants, with white space between two of them: pnmsplit and pamfile -allimages of Netpbm
+        // 11 (Alpine 3.20) find these five images and these samples (pamtopam)
+        var data = (byte[])[
+            .. Bytes("P6\n2 1\n255\n", [1, 2, 3, 250, 251, 252]),
+            .. Bytes("P2\n3 1\n65535\n0 1000\n65535\n", []),
+            .. Bytes("P1\n3 2\n1 0 1\n0 1 0\n\n\n", []),
+            .. Bytes("P7\nWIDTH 1\nHEIGHT 2\nDEPTH 2\nMAXVAL 255\nTUPLTYPE GRAYSCALE_ALPHA\nENDHDR\n", [9, 128, 200, 255]),
+            .. Bytes("P5\n1 1\n65535\n", [0x12, 0x34]),
+        ];
+        using var collection = ImageCollection.Load(data);
+        Assert.Equal(ImageCollectionKind.Pages, collection.Kind);
+        Assert.Equal(ImageFormat.Pnm, collection.Format);
+        Assert.Equal([new Size(2, 1), new Size(3, 1), new Size(3, 2), new Size(1, 2), new Size(1, 1)], collection.Entries.Select(entry => entry.Size));
+        Assert.Equal([PixelFormat.Rgb24, PixelFormat.Gray16, PixelFormat.Gray8, PixelFormat.La16, PixelFormat.Gray16], collection.Entries.Select(entry => entry.PixelFormat));
+        using (var image = collection[0].Decode<Rgb24>())
+        {
+            Assert.Equal([new Rgb24(1, 2, 3), new Rgb24(250, 251, 252)], GetPixels(image.Frames[0]));
+        }
+
+        using (var image = collection[1].Decode<Gray16>())
+        {
+            Assert.Equal([new Gray16(0), new Gray16(1000), new Gray16(65535)], GetPixels(image.Frames[0]));
+        }
+
+        using (var image = collection[2].Decode<Gray8>())
+        {
+            Assert.Equal([new Gray8(0), new Gray8(255), new Gray8(0), new Gray8(255), new Gray8(0), new Gray8(255)], GetPixels(image.Frames[0]));
+        }
+
+        using (var image = collection[3].Decode<La16>())
+        {
+            Assert.Equal([new La16(9, 128), new La16(200, 255)], GetPixels(image.Frames[0]));
+        }
+
+        using (var image = collection[4].Decode<Gray16>())
+        {
+            Assert.Equal([new Gray16(0x1234)], GetPixels(image.Frames[0]));
+        }
+
+        // A file of one image is a collection of one page; a byte that does not start an image, a truncated raster and
+        // more images than MaxFrames are rejected
+        using (var single = ImageCollection.Load(Bytes("P5\n2 1\n255\n", [10, 20])))
+        {
+            Assert.Single(single.Entries);
+        }
+
+        Assert.Throws<InvalidImageContentException>(() => ImageCollection.Load((byte[])[.. Bytes("P5\n2 1\n255\n", [10, 20]), (byte)'x']));
+        Assert.Throws<InvalidImageContentException>(() => ImageCollection.Load((byte[])[.. Bytes("P5\n2 1\n255\n", [10, 20]), .. Bytes("P5\n2 1\n255\n", [30])]));
+        var limited = new ImageConfiguration { Limits = new ImageResourceLimits { MaxFrames = 4 } };
+        Assert.Throws<ImageResourceLimitException>(() => ImageCollection.Load(data, limited));
+        using (var exact = ImageCollection.Load(data, new ImageConfiguration { Limits = new ImageResourceLimits { MaxFrames = 5 } }))
+        {
+            Assert.Equal(5, exact.Entries.Count);
+        }
+
+        // Every byte is read once when the collection is located: a limit of encoded bytes equal to the length of the input
+        // is enough, one less is not (a plain raster is scanned, so the limit covers it)
+        var plain = Bytes("P1\n1 1\n0\n", []);
+        using (var exactBytes = ImageCollection.Load(plain, new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = plain.Length } }))
+        {
+            Assert.Single(exactBytes.Entries);
+        }
+
+        Assert.Throws<ImageResourceLimitException>(() => ImageCollection.Load(plain, new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = plain.Length - 1 } }));
+
+        // A long run of white space between two images
+        var spaced = (byte[])[.. Bytes("P5\n2 1\n255\n", [10, 20]), .. Enumerable.Repeat((byte)' ', 200_000), .. Bytes("P5\n1 1\n255\n", [30])];
+        using (var collection2 = ImageCollection.Load(spaced, new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = spaced.Length } }))
+        {
+            Assert.Equal([new Size(2, 1), new Size(1, 1)], collection2.Entries.Select(entry => entry.Size));
+            using var second = collection2[1].Decode<Gray8>();
+            Assert.Equal([new Gray8(30)], GetPixels(second.Frames[0]));
+        }
+    }
+
     public static TheoryData<InputVariant> Variants => [.. InputVariants.All];
 
     [Theory]

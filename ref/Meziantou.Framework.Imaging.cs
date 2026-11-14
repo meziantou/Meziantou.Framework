@@ -3890,6 +3890,17 @@ namespace Meziantou.Framework.Imaging.Metadata
 }
 namespace Meziantou.Framework.Imaging.Typography
 {
+    public sealed class BitmapGlyphImage : System.IDisposable
+    {
+        public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> Image { get => throw null; }
+        public bool IsMask { get => throw null; }
+        public int Left { get => throw null; }
+        public int PixelsPerEmX { get => throw null; }
+        public int PixelsPerEmY { get => throw null; }
+        public int Top { get => throw null; }
+        public void Dispose() { }
+    }
+
     public sealed class Font
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontColorPalette> ColorPalettes { get => throw null; }
@@ -3907,6 +3918,8 @@ namespace Meziantou.Framework.Imaging.Typography
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontVariationSetting> Variations { get => throw null; }
         public int Weight { get => throw null; }
         public bool ContainsGlyph(System.Text.Rune codePoint) => throw null;
+        public Meziantou.Framework.Imaging.Typography.BitmapGlyphImage? DecodeBitmapGlyph(System.Text.Rune codePoint, double size) => throw null;
+        public Meziantou.Framework.Imaging.Typography.BitmapGlyphImage? DecodeBitmapGlyph(int glyph, double size) => throw null;
         public Meziantou.Framework.Imaging.Typography.FontMetrics GetMetrics(double size) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font Load(Meziantou.Framework.Fonts.SystemFontDescriptor face, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font Load(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;

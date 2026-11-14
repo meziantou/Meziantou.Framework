@@ -553,8 +553,9 @@ public sealed class DrawingTextTests
         var options = new FontLoadOptions { UseEmbeddedBitmaps = true };
         var outline = Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillRectangle(White, new RectangleD(2, 1, 12, 12)));
 
-        // Strikes of several bits per pixel, a location table of a version that is not known, and a font without data table.
-        var font = FontTestSupport.Load(FontSamples.MonochromeBoxes(bitDepth: 8), options);
+        // Strikes of a number of bits per pixel the format does not have, a location table of a version that is not
+        // known, and a font without data table.
+        var font = FontTestSupport.Load(FontSamples.MonochromeBoxes(bitDepth: 3), options);
         Assert.Equal(outline, Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "A", font, 16, new PointD(0, 0))));
         var tables = FontSamples.MonochromeBoxes().BuildTables();
         var locations = (byte[])tables["EBLC"].Clone();
@@ -574,6 +575,158 @@ public sealed class DrawingTextTests
         // The work of a glyph is bounded: a checkerboard is a rectangle per pixel.
         var limited = FontTestSupport.Load(FontSamples.MonochromeBoxes(), new FontLoadOptions { UseEmbeddedBitmaps = true, Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxGlyphComplexity = 20 } } });
         Assert.Throws<ImageResourceLimitException>(() => TextLayout.Create("B", limited, 16));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AFontWithoutOutlinesIsDrawnWithItsBitmapsAtEverySize(bool useAppleTags)
+    {
+        // The boxes font without its glyf and loca tables: its strikes of 12 and 16 pixels per em are its glyphs. The
+        // fonts of Apple name the tables bhed, bloc and bdat.
+        var builder = FontSamples.MonochromeBoxes();
+        builder.OmittedTables.Add("glyf");
+        builder.OmittedTables.Add("loca");
+        var tables = builder.BuildTables();
+        if (useAppleTags)
+        {
+            foreach (var (tag, appleTag) in (ReadOnlySpan<(string, string)>)[("head", "bhed"), ("EBLC", "bloc"), ("EBDT", "bdat")])
+            {
+                tables[appleTag] = tables[tag];
+                tables.Remove(tag);
+            }
+        }
+
+        var font = Font.Load(FontBuilder.WriteSfnt(tables));
+        Assert.Equal(FontOutlineKind.None, font.Face.Outlines);
+        Assert.True(font.Face.IsBitmapOnly);
+        Assert.True(font.Face.HasBitmapGlyphs);
+        Assert.False(font.HasColorGlyphs);
+
+        // At 16 and 12 pixels per em, the bitmaps of the strikes, as when a font with outlines uses them; the metrics
+        // and the advances are those of the font.
+        RectangleD[] border = [new(2, 1, 12, 1), new(2, 12, 12, 1), new(2, 2, 1, 10), new(13, 2, 1, 10)];
+        Assert.Equal(Fill(40, 24, border), Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "A", font, 16, new PointD(0, 0))));
+        Assert.Equal(TextLayout.Create("AB", Boxes, 16).Width, TextLayout.Create("AB", font, 16).Width);
+        Assert.Equal(new RectangleD(2, 1, 12, 12), TextLayout.Create("A", font, 16).InkBounds);
+        var diagonals = new List<RectangleD>();
+        for (var i = 0; i < 9; i++)
+        {
+            diagonals.Add(new RectangleD(1 + i, 1 + i, 1, 1));
+            diagonals.Add(new RectangleD(1 + i, 9 - i, 1, 1));
+        }
+
+        Assert.Equal(Fill(40, 24, [.. diagonals]), Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "A", font, 12, new PointD(0, 0.25))));
+
+        // At 32 pixels per em, larger than every strike: the largest one, scaled. Each pixel of the bitmap is a square
+        // of 2 pixels, and the baseline is at 26.
+        RectangleD[] scaled = [new(4, 2, 24, 2), new(4, 24, 24, 2), new(4, 4, 2, 20), new(26, 4, 2, 20)];
+        Assert.Equal(Fill(40, 32, scaled), Render(PixelFormat.Gray8, 40, 32, canvas => canvas.FillText(White, "A", font, 32, new PointD(0, 0))));
+
+        // At 14 pixels per em, between the strikes: the smallest one that is larger, scaled down.
+        Assert.Equal(new RectangleD(1.75, 0.875, 10.5, 10.5), TextLayout.Create("A", font, 14).InkBounds);
+
+        // C has no bitmap: nothing.
+        Assert.All(Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "C", font, 16, new PointD(0, 0))), sample => Assert.Equal(0, sample));
+
+        // The system font index keeps such a font.
+        using var directory = new TemporaryFontDirectory();
+        directory.Write("bitmaps.ttf", FontBuilder.WriteSfnt(tables));
+        Assert.Equal("Meziantou Monochrome Boxes", Assert.Single(SystemFontCollection.Create([directory.Path]).Fonts).FamilyName);
+    }
+
+    [Theory]
+    [InlineData(2, 1)]
+    [InlineData(2, 2)]
+    [InlineData(4, 6)]
+    [InlineData(4, 7)]
+    [InlineData(8, 1)]
+    [InlineData(8, 2)]
+    public void ABitmapOfSeveralBitsPerPixelIsAMaskOfTheColorOfTheText(int bitDepth, int imageFormat)
+    {
+        // A strike of 16 pixels per em whose A is 8 by 2 pixels, 2 pixels from the origin and on the baseline: the
+        // values of the pixels go from 0 to the largest value of the number of bits, then back.
+        var maximum = (1 << bitDepth) - 1;
+        int GetValue(int x, int y) => Math.Min(maximum, (x + (8 * y)) * maximum / 7) * (y == 0 ? 1 : 0) + (y == 1 ? maximum - Math.Min(maximum, x * maximum / 7) : 0);
+        var builder = FontSamples.Boxes();
+        var strike = new FontBitmapStrike { PixelsPerEm = 16, ImageFormat = imageFormat, BitDepth = bitDepth };
+        strike.Glyphs.Add(new FontBitmapGlyph(FontSamples.BoxA, 2, 0, 8, 2, FontBitmapWriter.PackPixels(8, 2, bitDepth, imageFormat is 1 or 6, GetValue)));
+        builder.MonochromeBitmapStrikes.Add(strike);
+        var font = FontTestSupport.Load(builder, new FontLoadOptions { UseEmbeddedBitmaps = true });
+        Assert.False(font.HasColorGlyphs);
+        Assert.True(font.Face.HasBitmapGlyphs);
+
+        // White text on black: each pixel is its coverage, on the baseline at 13.
+        var pixels = Render(PixelFormat.Gray8, 16, 16, canvas => canvas.FillText(White, "A", font, 16, new PointD(0, 0)));
+        for (var y = 0; y < 16; y++)
+        {
+            for (var x = 0; x < 16; x++)
+            {
+                var expected = x is >= 2 and < 10 && y is 11 or 12 ? GetValue(x - 2, y - 11) * 255.0 / maximum : 0;
+                Assert.True(Math.Abs(pixels[(y * 16) + x] - expected) <= 1, $"The pixel ({x}, {y}) is {pixels[(y * 16) + x]}, expected {expected}");
+            }
+        }
+
+        // The color of the text, with its opacity.
+        var red = Render(PixelFormat.Rgba32, 16, 16, canvas => canvas.FillText(new SolidBrush(new Rgba32(255, 0, 0, 128)), "A", font, 16, new PointD(0, 0)));
+        var covered = (((12 * 16) + 2) * 4) + 0;
+        Assert.Equal((255, 0, 0), (red[covered], red[covered + 1], red[covered + 2]));
+        Assert.True(Math.Abs(red[covered + 3] - 128) <= 1);
+
+        // The mask is decoded as a black image whose opacity is the coverage.
+        using var glyph = font.DecodeBitmapGlyph(new Rune('A'), 16);
+        Assert.NotNull(glyph);
+        Assert.True(glyph.IsMask);
+        Assert.Equal((8, 2, 2, 2), (glyph.Image.Width, glyph.Image.Height, glyph.Left, glyph.Top));
+        Assert.Equal(new Rgba32(0, 0, 0, (byte)Math.Round(GetValue(7, 0) * 255.0 / maximum, MidpointRounding.AwayFromZero)), glyph.Image.Frames[0][7, 0]);
+
+        // At another size, the outline.
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 24, 24, canvas => canvas.FillText(White, "A", Boxes, 17, new PointD(0, 0))),
+            Render(PixelFormat.Gray8, 24, 24, canvas => canvas.FillText(White, "A", font, 17, new PointD(0, 0))));
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(9)]
+    public void ABitmapMadeOfOtherBitmapsDrawsThemAtTheirOffsets(int imageFormat)
+    {
+        // E is the border of A, and the checkerboard of B 3 pixels to the right and 2 down from the top left corner of
+        // the box of E, a square of 12 pixels 2 pixels from the origin. A component a strike does not have draws nothing.
+        var builder = FontSamples.MonochromeBoxes();
+        var strike = builder.MonochromeBitmapStrikes[1];
+        strike.Glyphs.Add(new FontBitmapGlyph(FontSamples.FrameE, 2, 0, 12, 12, []) { ImageFormat = imageFormat, Components = [(FontSamples.BoxA, 0, 0), (FontSamples.BoxB, 3, 2), (FontSamples.BoxC, 0, 0)] });
+        var font = FontTestSupport.Load(builder, new FontLoadOptions { UseEmbeddedBitmaps = true });
+
+        var rectangles = new List<RectangleD> { new(2, 1, 12, 1), new(2, 12, 12, 1), new(2, 2, 1, 10), new(13, 2, 1, 10) };
+        for (var y = 0; y < 8; y++)
+        {
+            for (var x = 0; x < 6; x++)
+            {
+                if (((x + y) & 1) == 0)
+                {
+                    rectangles.Add(new RectangleD(2 + 3 + x, 1 + 2 + y, 1, 1));
+                }
+            }
+        }
+
+        Assert.Equal(Fill(40, 24, [.. rectangles]), Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "E", font, 16, new PointD(0, 0))));
+
+        // A glyph that is its own component is an error, not an endless loop.
+        strike.Glyphs[^1] = strike.Glyphs[^1] with { Components = [(FontSamples.FrameE, 1, 1)] };
+        var recursive = FontTestSupport.Load(builder, new FontLoadOptions { UseEmbeddedBitmaps = true });
+        Assert.Throws<InvalidImageContentException>(() => TextLayout.Create("E", recursive, 16));
+    }
+
+    private static int[] Fill(int width, int height, params RectangleD[] rectangles)
+    {
+        return Render(PixelFormat.Gray8, width, height, canvas =>
+        {
+            foreach (var rectangle in rectangles)
+            {
+                canvas.FillRectangle(White, rectangle);
+            }
+        });
     }
 
     [Fact]

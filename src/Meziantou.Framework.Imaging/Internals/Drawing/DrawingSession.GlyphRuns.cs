@@ -104,7 +104,7 @@ internal sealed partial class DrawingSession
         {
             var glyph = positioned.Glyph;
             var placement = Affine2D.ForGlyph(scale, positioned.Origin.X, positioned.Origin.Y, shear);
-            if (face.HasColorGlyphs && GetColorGlyph(face, glyph, options.Palette, size, options.Cache, scratch) is { } colorGlyph)
+            if ((face.HasColorGlyphs || face.HasBitmapGlyphs) && GetColorGlyph(face, glyph, options.Palette, size, options.Cache, scratch) is { } colorGlyph)
             {
                 DrawRunColorGlyph(brush, colorGlyph, face, placement, ref isForegroundSet);
                 continue;

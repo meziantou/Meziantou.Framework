@@ -105,13 +105,18 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   variation index varies with the instance (the store of `GDEF`, as `GPOS`); the device tables of one size and
   `MathKernInfo` are not read. The header and the constants are validated when the face is created, the subtables of
   a glyph when it is looked up.
-- **Bitmap strikes.** The images of `sbix` (PNG, JPEG, TIFF) and of `CBDT` (PNG) are color glyphs: `BitmapGlyph` says
-  which format the font gives for the data, and `BitmapGlyphDecoder` rejects data of another one. The bitmaps without colors
-  of `EBLC` and `EBDT` are outlines: with `FontLoadOptions.UseEmbeddedBitmaps`, `FontFace.DecodeOutline(glyph, size,
-  ...)` emits a rectangle per run of pixels of a strike of one bit per pixel made for exactly that size, so nothing of
-  the drawing pipeline knows about them. Every caller that decodes an outline for a text passes the size; a cache of
-  what depends on the outline of a glyph has the size in its key. The option is off by default: the pixels of a text
-  do not change with the tables a font happens to have.
+- **Bitmap strikes.** `CblcTable` reads `CBLC`/`CBDT` and `EBLC`/`EBDT` (`bloc`/`bdat` in Apple fonts, which can
+  have `bhed` instead of `head`), `SbixTable` reads `sbix`. The encoded images (PNG, JPEG, TIFF of `sbix`, PNG of
+  `CBDT`) are color glyphs: `BitmapGlyph` says which format the font gives for the data, and Imaging's
+  `BitmapGlyphDecoder` decodes them and rejects data of another one. The pixels that are not encoded (image formats 1,
+  2, 5, 6, 7, and the glyphs made of other glyphs, 8 and 9) are decoded here (`FontFace.DecodeBitmap`): 32 bits per
+  pixel are colors (`Bgra`), 2, 4 and 8 bits a coverage drawn with the text color (`Mask`, `ColorGlyph.FromMask`).
+  The bitmaps of one bit per pixel are outlines: `FontFace.DecodeOutline(glyph, size, ...)` emits a rectangle per run
+  of pixels, so nothing of the drawing pipeline knows about them. Every caller that decodes an outline for a text
+  passes the size; a cache of what depends on the outline of a glyph has the size in its key. A font with outlines
+  uses `EBDT` only with `FontLoadOptions.UseEmbeddedBitmaps`, at exactly the size of a strike: the pixels of a text do
+  not change with the tables a font happens to have. A font without outlines (`FontFace.IsBitmapOnly`) uses its
+  bitmaps at every size, from the strike that suits the size (the smallest one at least as large, else the largest).
 - Tests have three sources: literals computed by hand on fonts built in memory (`FontTests`, with `Common/FontBuilder.cs`,
   `FontCffWriter.cs`, `FontCharstring.cs` and `FontWoff2Writer.cs` of the corpus generator, linked into the tests), the
   values HarfBuzz and FreeType both give for the fonts of the corpus (`Conformance/FontConformanceTests`: names,

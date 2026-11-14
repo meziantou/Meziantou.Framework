@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Meziantou.Framework.Fuzzing;
+using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 
 namespace Meziantou.Framework.Fonts.Fuzz;
 
@@ -9,7 +10,8 @@ namespace Meziantou.Framework.Fonts.Fuzz;
 /// pixels. It must not depend on the glyphs hinted before it nor on the storage the hinter rents. A subset must load,
 /// and keep the advances and the bounds of the glyphs of its closure. Shaping a text must only throw
 /// <see cref="FontException"/>, give glyph identifiers and clusters that are characters of the text in the order of the
-/// run, and give the same glyphs with the plan a <see cref="ShapingCache"/> keeps.
+/// run, and give the same glyphs with the plan a <see cref="ShapingCache"/> keeps. A bitmap glyph must be inside the
+/// font, decode to the pixels of the box it declares, and draw an outline of rectangles of whole pixels.
 /// </summary>
 public static class FontsFuzzTargets
 {
@@ -90,6 +92,13 @@ public static class FontsFuzzTargets
         "a", "\u05D0", "\u0627", "\u0661", "\u0915", "\u4E00", "\u0410", "1", " ", "(", ")", ".", "\u0301", "\U0001F600", "\n",
     ];
 
+    // The tags of the bitmap tables, of the image types of sbix, and the signature of a PNG image
+    private static readonly string[] BitmapTokens =
+    [
+        "EBLC", "EBDT", "CBLC", "CBDT", "bloc", "bdat", "bhed", "head", "sbix", "glyf", "loca", "CFF ",
+        "png ", "jpg ", "tiff", "dupe", "\x89PNG\r\n\x1A\n", "IHDR", "\0\x02\0\0", "\0\x03\0\0",
+    ];
+
     private static readonly string[] ShapingTokens =
     [
         "cmap", "GSUB", "GPOS", "GDEF", "morx", "mort", "kerx", "kern", "feat", "trak", "ankr", "hmtx", "vmtx", "VORG", "maxp",
@@ -104,7 +113,159 @@ public static class FontsFuzzTargets
         new("fonts-subset", Subset) { Seeds = () => GetFontSeeds().Select((seed, index) => seed with { Data = (byte[])[(byte)index, (byte)(index * 13), .. seed.Data.Span] }) },
         new("fonts-shaping", Shaping) { Seeds = GetShapingSeeds, Dictionary = ShapingTokens },
         new("fonts-split-runs", SplitRuns) { Seeds = GetSplitRunsSeeds, Dictionary = SplitRunsTokens },
+        new("fonts-bitmaps", Bitmaps) { Seeds = GetBitmapSeeds, Dictionary = BitmapTokens },
     ];
+
+    /// <summary>
+    /// Reads the bitmap glyphs of a font file: option bytes give the size and whether the font uses its bitmaps
+    /// without colors, then comes the font. Each glyph found is checked: the image of an encoded glyph is in the font,
+    /// the pixels of the others are those of the box they declare, and the outline at the size is made of rectangles
+    /// of whole pixels of a strike.
+    /// </summary>
+    private static void Bitmaps(ReadOnlySpan<byte> data)
+    {
+        var flags = FuzzInput.ReadByte(ref data);
+        var size = ReadSize(FuzzInput.ReadByte(ref data));
+        FontFace[] faces;
+        try
+        {
+            faces = FontLoader.Load(data, SharedEnvironment, useEmbeddedBitmaps: (flags & 1) != 0);
+        }
+        catch (FontException)
+        {
+            return;
+        }
+
+        var allocator = SharedEnvironment.CreateAllocator("fuzz");
+        using var scratch = new GlyphScratch(allocator);
+        foreach (var face in faces.Take(2))
+        {
+            for (var glyph = 0; glyph < Math.Min(face.GlyphCount, MaxComparedGlyphs / 8); glyph++)
+            {
+                try
+                {
+                    CheckBitmapGlyph(face, glyph, size, scratch);
+                }
+                catch (FontException)
+                {
+                }
+            }
+        }
+    }
+
+    private static void CheckBitmapGlyph(FontFace face, int glyph, double size, GlyphScratch scratch)
+    {
+        if (face.TryGetBitmapGlyph(glyph, size, out var drawn))
+        {
+            FuzzAssert.True(face.HasBitmapGlyphs, "A font without bitmap glyphs gives one");
+            FuzzAssert.False(drawn.Format == BitmapGlyphFormat.Mask && drawn.BitDepth == 1 && drawn.IsMonochromeTable, "A bitmap of one bit per pixel is drawn as an image, not as an outline");
+            CheckBitmap(face, drawn);
+        }
+
+        if (face.TryGetAnyBitmapGlyph(glyph, size, out var any))
+        {
+            CheckBitmap(face, any);
+        }
+
+        // The outline at the size: the rectangles of the pixels of a strike (in a font without outlines, or one that
+        // uses its bitmaps), or the outline of the glyph.
+        var sink = new RecordingSink();
+        var budget = new GlyphBudget(Limits);
+        face.DecodeOutline(glyph, size, sink, scratch, ref budget);
+        if (face.IsBitmapOnly)
+        {
+            FuzzAssert.True(sink.Values.Count == sink.Contours * 16, "The outline of a font without outlines is not made of rectangles");
+        }
+
+        if (face.TryGetGlyphBounds(glyph, scratch, out var bounds))
+        {
+            FuzzAssert.True(bounds.XMin <= bounds.XMax && bounds.YMin <= bounds.YMax, $"The glyph has the box {bounds}");
+        }
+    }
+
+    private static void CheckBitmap(FontFace face, in BitmapGlyph bitmap)
+    {
+        FuzzAssert.True(bitmap.PixelsPerEmX > 0 && bitmap.PixelsPerEmY > 0, $"The strike of the glyph has {bitmap.PixelsPerEmX} by {bitmap.PixelsPerEmY} pixels per em");
+        FuzzAssert.True(bitmap.Offset >= 0 && bitmap.Length >= 0 && (long)bitmap.Offset + bitmap.Length <= face.Data.Bytes.Length, $"The image of the glyph, {bitmap.Length} bytes at {bitmap.Offset}, is not in the font");
+        if (bitmap.Format is not (BitmapGlyphFormat.Mask or BitmapGlyphFormat.Bgra))
+            return;
+
+        FuzzAssert.True(bitmap.Width is >= 0 and <= 255 && bitmap.Height is >= 0 and <= 255, $"The bitmap is {bitmap.Width} by {bitmap.Height} pixels");
+        FuzzAssert.True(bitmap.BitDepth is 1 or 2 or 4 or 8 or 32 && (bitmap.BitDepth == 32) == (bitmap.Format == BitmapGlyphFormat.Bgra), $"The bitmap of the format {bitmap.Format} has {bitmap.BitDepth} bits per pixel");
+        var budget = new GlyphBudget(Limits);
+        var image = face.DecodeBitmap(bitmap, ref budget);
+        FuzzAssert.Equal((bitmap.Width, bitmap.Height, bitmap.Width * bitmap.Height * 4), (image.Width, image.Height, image.Pixels.Length), "The decoded bitmap does not have the size of its box");
+        if (bitmap.Format == BitmapGlyphFormat.Mask)
+        {
+            for (var i = 0; i < image.Pixels.Length; i += 4)
+            {
+                FuzzAssert.True(image.Pixels[i] == 0 && image.Pixels[i + 1] == 0 && image.Pixels[i + 2] == 0, "A mask is not black");
+            }
+        }
+
+        // The same glyph decodes to the same pixels.
+        budget = new GlyphBudget(Limits);
+        FuzzAssert.True(image.Pixels.SequenceEqual(face.DecodeBitmap(bitmap, ref budget).Pixels), "A bitmap decodes to other pixels the second time");
+    }
+
+    /// <summary>
+    /// Gets the seeds of the bitmap target: the bitmap fonts of the fixtures, and the monochrome boxes font with the
+    /// other formats of the tables (masks of several bits per pixel, colors of 32 bits per pixel, glyphs made of other
+    /// glyphs), without outlines, and with the tags of Apple.
+    /// </summary>
+    private static IEnumerable<FuzzSeed> GetBitmapSeeds()
+    {
+        var fonts = GetFontSeeds("Seeds/bitmaps/").Concat(GetFontSeeds().Where(font => font.Name == "monochrome-boxes.ttf")).ToList();
+        foreach (var font in fonts)
+        {
+            yield return new FuzzSeed(font.Name, (byte[])[1, 10, .. font.Data.Span]);
+            yield return new FuzzSeed("bitmap-only-" + font.Name, (byte[])[0, 26, .. WithoutOutlines(GetTables(font.Data.Span), useAppleTags: false)]);
+        }
+
+        var tables = GetTables(fonts.Single(font => font.Name == "monochrome-boxes.ttf").Data.Span);
+        yield return new FuzzSeed("monochrome-boxes-apple", (byte[])[0, 0x80 | 2, .. WithoutOutlines(tables, useAppleTags: true)]);
+
+        // Masks of 2, 4 and 8 bits per pixel, a glyph made of the others, and colors of 32 bits per pixel, at 16 pixels per em.
+        foreach (var (bitDepth, imageFormat) in ((int, int)[])[(2, 1), (4, 7), (8, 2), (1, 6)])
+        {
+            var strike = new FontBitmapStrike { PixelsPerEm = 16, ImageFormat = imageFormat, BitDepth = bitDepth };
+            strike.Glyphs.Add(new FontBitmapGlyph(2, 2, 0, 8, 4, FontBitmapWriter.PackPixels(8, 4, bitDepth, imageFormat is 1 or 6, (x, y) => (x + y) % (1 << bitDepth))));
+            strike.Glyphs.Add(new FontBitmapGlyph(3, 1, 0, 5, 3, FontBitmapWriter.PackPixels(5, 3, bitDepth, imageFormat is 1 or 6, (x, y) => (x * y) % (1 << bitDepth))));
+            strike.Glyphs.Add(new FontBitmapGlyph(6, 0, -2, 10, 8, []) { ImageFormat = 9, Components = [(2, 0, 0), (3, 4, 3), (5, 1, 1)] });
+            var withMasks = new SortedDictionary<uint, byte[]>(tables);
+            (withMasks[FontTags.Eblc], withMasks[FontTags.Ebdt]) = FontBitmapWriter.WriteMonochromeBitmaps([strike]);
+            yield return new FuzzSeed($"masks-{bitDepth}-{imageFormat}", (byte[])[1, 10, .. FontSubsetter.WriteSfnt(FontTags.TrueType, withMasks)]);
+        }
+
+        var colors = new FontBitmapStrike { PixelsPerEm = 16, IndexFormat = 3, ImageFormat = 1, BitDepth = 32 };
+        colors.Glyphs.Add(new FontBitmapGlyph(2, 2, 0, 4, 4, FontBitmapWriter.PackBgra(4, 4, (x, y) => (x * 60, y * 60, 255, (x + y) * 30))));
+        colors.Glyphs.Add(new FontBitmapGlyph(6, 0, 0, 6, 6, []) { ImageFormat = 8, Components = [(2, 0, 0), (2, 2, 2)] });
+        var withColors = new SortedDictionary<uint, byte[]>(tables);
+        (withColors[FontTags.Cblc], withColors[FontTags.Cbdt]) = FontBitmapWriter.WriteColorBitmaps([colors]);
+        yield return new FuzzSeed("colors", (byte[])[0, 10, .. FontSubsetter.WriteSfnt(FontTags.TrueType, withColors)]);
+        yield return new FuzzSeed("colors-bitmap-only", (byte[])[0, 0x80 | 10, .. WithoutOutlines(withColors, useAppleTags: false)]);
+
+        static SortedDictionary<uint, byte[]> GetTables(ReadOnlySpan<byte> font) => CopyTables(FontLoader.Load(font, SharedEnvironment)[0]);
+
+        static byte[] WithoutOutlines(SortedDictionary<uint, byte[]> tables, bool useAppleTags)
+        {
+            var result = new SortedDictionary<uint, byte[]>(tables);
+            result.Remove(FontTags.Glyf);
+            result.Remove(FontTags.Loca);
+            if (useAppleTags)
+            {
+                foreach (var (tag, appleTag) in ((uint, uint)[])[(FontTags.Head, FontTags.Bhed), (FontTags.Eblc, FontTags.Bloc), (FontTags.Ebdt, FontTags.Bdat)])
+                {
+                    if (result.Remove(tag, out var table))
+                    {
+                        result[appleTag] = table;
+                    }
+                }
+            }
+
+            return FontSubsetter.WriteSfnt(FontTags.TrueType, result);
+        }
+    }
 
     /// <summary>Hints the glyphs of a font file: option bytes give the hinting mode and the size.</summary>
     private static void Hinting(ReadOnlySpan<byte> data)

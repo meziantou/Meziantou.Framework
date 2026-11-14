@@ -536,6 +536,121 @@ public sealed class ColorFontTests
             Draw(48, 20, canvas => canvas.FillText(Black, "D", font, 16, new PointD(0, 0))));
     }
 
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(1, 2)]
+    [InlineData(3, 6)]
+    [InlineData(4, 7)]
+    public void AColorBitmapOfPixelsThatAreNotEncodedIsDrawnLikeTheSameImageInPng(int indexFormat, int imageFormat)
+    {
+        // The color bitmaps font with the pixels of its PNG images in the image formats of EBDT, at 32 bits per pixel:
+        // blue, green, red and opacity, the colors multiplied by the opacity.
+        var png = FontSamples.BitmapBoxes(useColorBitmapTables: true);
+        var builder = FontSamples.BitmapBoxes(useColorBitmapTables: true);
+        builder.BitmapStrikes.Clear();
+        foreach (var strike in png.BitmapStrikes)
+        {
+            var raw = new FontBitmapStrike { PixelsPerEm = strike.PixelsPerEm, IndexFormat = indexFormat, ImageFormat = imageFormat, BitDepth = 32 };
+            foreach (var glyph in strike.Glyphs)
+            {
+                using var image = Image.Load<Rgba32>(glyph.Data);
+                raw.Glyphs.Add(glyph with { Data = FontBitmapWriter.PackBgra(image.Width, image.Height, (x, y) => (image.Frames[0][x, y].R, image.Frames[0][x, y].G, image.Frames[0][x, y].B, image.Frames[0][x, y].A)) });
+            }
+
+            builder.BitmapStrikes.Add(raw);
+        }
+
+        var expected = FontTestSupport.Load(png);
+        var font = FontTestSupport.Load(builder);
+        Assert.True(font.HasColorGlyphs);
+        foreach (var size in (double[])[16, 32, 12, 20.5])
+        {
+            Assert.Equal(
+                Draw(64, 40, canvas => canvas.FillText(Black, "ABCD", expected, size, new PointD(0.25, 0))),
+                Draw(64, 40, canvas => canvas.FillText(Black, "ABCD", font, size, new PointD(0.25, 0))));
+        }
+
+        // A font without outlines draws them as well.
+        builder.OmittedTables.Add("glyf");
+        builder.OmittedTables.Add("loca");
+        var bitmapOnly = FontTestSupport.Load(builder);
+        Assert.True(bitmapOnly.Face.IsBitmapOnly);
+        Assert.Equal(
+            Draw(64, 40, canvas => canvas.FillText(Black, "ABD", expected, 16, new PointD(0, 0))),
+            Draw(64, 40, canvas => canvas.FillText(Black, "ABD", bitmapOnly, 16, new PointD(0, 0))));
+        Assert.Equal(new RectangleD(2, 1, 12, 12), TextLayout.Create("A", bitmapOnly, 16).InkBounds);
+    }
+
+    [Fact]
+    public void AColorBitmapMadeOfOtherBitmapsDrawsThemOverEachOther()
+    {
+        // E, a glyph added after the others, is A, with B 6 pixels to the right and 4 down from the top left corner
+        // of its box: B is cyan and its first pixel is transparent, so the green of A shows through it.
+        var builder = FontSamples.BitmapBoxes(useColorBitmapTables: true);
+        var e = builder.AddGlyph(FontGlyph.Rectangle(1024, 128, 0, 896, 768), 'E');
+        builder.BitmapStrikes.Clear();
+        var strike = new FontBitmapStrike { PixelsPerEm = 16, ImageFormat = 1, BitDepth = 32 };
+        strike.Glyphs.Add(new FontBitmapGlyph(FontSamples.BitmapA, 2, 0, 12, 12, FontBitmapWriter.PackBgra(12, 12, (x, y) => x is >= 4 and < 8 && y is >= 4 and < 8 ? (0, 255, 0, 255) : (255, 0, 0, 255))));
+        strike.Glyphs.Add(new FontBitmapGlyph(FontSamples.BitmapB, 1, 0, 6, 8, FontBitmapWriter.PackBgra(6, 8, (x, y) => x == 0 && y == 0 ? (0, 0, 0, 0) : (0, 255, 255, 255))));
+        strike.Glyphs.Add(new FontBitmapGlyph(e, 2, 0, 12, 12, []) { ImageFormat = 9, Components = [(FontSamples.BitmapA, 0, 0), (FontSamples.BitmapB, 6, 4)] });
+        builder.BitmapStrikes.Add(strike);
+        var font = FontTestSupport.Load(builder);
+
+        using var glyph = font.DecodeBitmapGlyph(new Rune('E'), 16);
+        Assert.NotNull(glyph);
+        Assert.False(glyph.IsMask);
+        Assert.Equal((12, 12, 2, 12), (glyph.Image.Width, glyph.Image.Height, glyph.Left, glyph.Top));
+        Assert.Equal((Red, Green, Green, new Rgba32(0, 255, 255), new Rgba32(0, 255, 255)), (glyph.Image.Frames[0][0, 0], glyph.Image.Frames[0][5, 5], glyph.Image.Frames[0][6, 4], glyph.Image.Frames[0][7, 4], glyph.Image.Frames[0][11, 11]));
+
+        var pixels = Draw(20, 20, canvas => canvas.FillText(Black, "E", font, 16, new PointD(0, 0)));
+        Assert.Equal((Red, Green, new Rgba32(0, 255, 255)), (GetPixel(pixels, 20, 2, 1), GetPixel(pixels, 20, 8, 5), GetPixel(pixels, 20, 9, 5)));
+    }
+
+    [Fact]
+    public void TheImageOfABitmapGlyphCanBeDecoded()
+    {
+        var font = Font.Load(FontSamples.BitmapBoxes().Build());
+
+        // The image of the strike that suits the size, at the size of the strike: 16 pixels per em here.
+        using var glyph = font.DecodeBitmapGlyph(new Rune('A'), size: 16);
+        Assert.NotNull(glyph);
+        Assert.Equal(16, glyph.PixelsPerEmX);
+        Assert.Equal((12, 12), (glyph.Image.Width, glyph.Image.Height));
+
+        // Where the font places it: pixels from the origin of the glyph to the left, and from the baseline up to the top
+        Assert.Equal((2, 12), (glyph.Left, glyph.Top));
+
+        // A mask has no colors of its own: a text draws it with its color
+        Assert.False(glyph.IsMask);
+
+        Assert.Equal((Red, Green, new Rgba32(0, 0, 255, 128)), (glyph.Image.Frames[0][0, 0], glyph.Image.Frames[0][5, 5], glyph.Image.Frames[0][0, 11]));
+
+        // A larger size: the strike of 32 pixels per em. A larger one than every strike: the largest one.
+        foreach (var size in (double[])[20, 100])
+        {
+            using var large = font.DecodeBitmapGlyph(new Rune('A'), size);
+            Assert.NotNull(large);
+            Assert.Equal((32, 24, 24, 4, 24), (large.PixelsPerEmY, large.Image.Width, large.Image.Height, large.Left, large.Top));
+        }
+
+        // A glyph without image, a glyph the font does not have, and a size that is not one.
+        Assert.Null(font.DecodeBitmapGlyph(new Rune('C'), 16));
+        Assert.Null(font.DecodeBitmapGlyph(font.GlyphCount, 16));
+        Assert.Throws<ArgumentOutOfRangeException>("size", () => font.DecodeBitmapGlyph(new Rune('A'), 0));
+        Assert.Null(FontTestSupport.Load(FontSamples.Boxes()).DecodeBitmapGlyph(new Rune('A'), 16));
+
+        // The bitmaps without colors of a font that was not loaded to use them: a black mask.
+        using var mask = FontTestSupport.Load(FontSamples.MonochromeBoxes()).DecodeBitmapGlyph(new Rune('A'), 16);
+        Assert.NotNull(mask);
+        Assert.True(mask.IsMask);
+        Assert.Equal((new Rgba32(0, 0, 0, 255), new Rgba32(0, 0, 0, 0)), (mask.Image.Frames[0][0, 0], mask.Image.Frames[0][1, 1]));
+
+        // A malformed image is an error.
+        var builder = FontSamples.BitmapBoxes();
+        builder.BitmapStrikes[0].Glyphs[0] = builder.BitmapStrikes[0].Glyphs[0] with { Data = builder.BitmapStrikes[0].Glyphs[0].Data[..40] };
+        Assert.Throws<InvalidImageContentException>(() => FontTestSupport.Load(builder).DecodeBitmapGlyph(new Rune('A'), 16));
+    }
+
     // The image of A of the bitmap boxes font, without its blue row: 12 by 12 red pixels with a green square of 4
     // pixels in the middle, encoded by cjpeg of libjpeg-turbo (-quality 100 -sample 1x1 -optimize). Its djpeg decodes
     // the red as (254, 0, 0) and the green as (0, 255, 1), and one pixel of the square as (1, 255, 2).

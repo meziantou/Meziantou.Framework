@@ -3539,6 +3539,115 @@ public sealed class ProcessingTests
         Assert.All(parallelCalls, count => Assert.Equal(1, count));
     }
 
+    #region ApplyProcessor_Mirror
+    [Fact]
+    public void ApplyProcessor_Mirror()
+    {
+        // A 3x2 image: 1 2 3 / 4 5 6
+        using var image = new Image<Gray8>(3, 2);
+        for (var i = 0; i < 6; i++)
+        {
+            image.Frames[0][i % 3, i / 3] = new Gray8((byte)(i + 1));
+        }
+
+        // The processor transposes every frame: the 3x2 canvas becomes 2x3, and the result replaces the frames at once
+        image.ApplyProcessor<Gray8, TransposeProcessor<Gray8>>(default);
+
+        Assert.Equal(new Size(2, 3), image.Size);
+        Assert.Equal(new Gray8(4), image.Frames[0][1, 0]);
+        Assert.Equal(new Gray8(3), image.Frames[0][0, 2]);
+    }
+
+    /// <summary>Swaps the rows and the columns of every frame.</summary>
+    public readonly struct TransposeProcessor<TPixel> : IImageProcessor<TPixel>
+        where TPixel : unmanaged
+    {
+        public Size GetOutputSize(Size size) => new(size.Height, size.Width);
+
+        public void Process(int frameIndex, PixelRowSource<TPixel> source, PixelAccessor<TPixel> destination, CancellationToken cancellationToken)
+        {
+            for (var y = 0; y < destination.Height; y++)
+            {
+                var row = destination.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = source.GetRow(x)[y];
+                }
+            }
+        }
+
+        // The hotspot of a cursor follows its pixel
+        public bool TryMapPoint(Point source, Size sourceSize, Size destinationSize, out Point destination)
+        {
+            destination = new Point(source.Y, source.X);
+            return true;
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void ProcessorsProcessEveryFrameAndThePosterThroughAWorkingFormat()
+    {
+        using var image = new Image<Rgb24>(3, 2, new Rgb24(10, 20, 30));
+        image.InsertFrame(1, image.Frames[0]).ProcessPixelRows(static pixels => pixels.GetRowSpan(1)[2] = new Rgb24(1, 2, 3));
+        image.SetPosterFrame(image.Frames[0]);
+        image.Frames[0].Metadata.Hotspot = new Point(2, 1);
+        var frames = ((IEnumerable<ImageFrame<Rgb24>>)image.Frames).ToArray();
+
+        var indexes = new List<int>();
+        image.ApplyProcessor<Rgba64, RecordingProcessor>(new RecordingProcessor(indexes));
+
+        Assert.Equal([0, 1, 2], indexes);
+        Assert.Equal(new Size(2, 3), image.Size);
+        Assert.Equal(frames, ((IEnumerable<ImageFrame<Rgb24>>)image.Frames).ToArray());
+        Assert.Equal(new Size(2, 3), image.PosterFrame!.Size);
+        Assert.Equal(new Rgb24(1, 2, 3), image.Frames[1][1, 2]);
+        Assert.Equal(new Rgb24(10, 20, 30), image.Frames[0][1, 2]);
+
+        // The pixels the processor did not write are the cleared pixels of the format: opaque black without alpha
+        Assert.Equal(new Rgb24(0, 0, 0), image.Frames[0][0, 0]);
+        Assert.Equal(new Point(1, 2), image.Frames[0].Metadata.Hotspot);
+
+        // The working copies and the original storages are released
+        Assert.Equal(image.Owner.Scope.GetDiagnostics().LiveAllocations, image.Owner.LiveStorageCount);
+    }
+
+    [Fact]
+    public void FailedProcessorsLeaveTheImageUnchanged()
+    {
+        using var image = new Image<Rgba32>(4, 3, new Rgba32(1, 2, 3, 4));
+        image.InsertFrame(1, image.Frames[0]);
+        var liveStorages = image.Owner.LiveStorageCount;
+
+        Assert.Throws<InvalidOperationException>(() => image.ApplyProcessor<Rgba32, ThrowingProcessor>(new ThrowingProcessor(ThrowAtFrame: 1)));
+        Assert.Throws<OperationCanceledException>(() => image.ApplyProcessor<Rgba32, TransposeProcessor<Rgba32>>(default, new CancellationToken(canceled: true)));
+        Assert.Throws<InvalidOperationException>(() => image.ApplyProcessor<Rgba32, ThrowingProcessor>(new ThrowingProcessor(ThrowAtFrame: -1)));
+        Assert.Throws<NotSupportedException>(() => image.ApplyProcessor<Rgba1010102, TransposeProcessor<Rgba1010102>>(default));
+        Assert.Throws<NotSupportedException>(() => image.ApplyProcessor<int, TransposeProcessor<int>>(default));
+
+        // A hotspot whose pixel the processor does not keep fails before anything is allocated
+        image.Frames[1].Metadata.Hotspot = new Point(3, 0);
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.ApplyProcessor<Rgba32, ThrowingProcessor>(new ThrowingProcessor(ThrowAtFrame: 5)));
+        Assert.Equal("Cursor hotspot outside the kept region", exception.Feature);
+        image.Frames[1].Metadata.Hotspot = null;
+
+        // A transparent pixel cannot be stored without alpha
+        using var opaque = new Image<Rgb24>(2, 2);
+        Assert.Throws<UnsupportedImageFeatureException>(() => opaque.ApplyProcessor<Rgba64, ClearingProcessor>(default));
+        Assert.Equal(new Size(2, 2), opaque.Size);
+
+        Assert.Equal(new Size(4, 3), image.Size);
+        Assert.Equal(2, image.Frames.Count);
+        Assert.All(image.Frames, frame => Assert.Equal(new Rgba32(1, 2, 3, 4), ((ImageFrame<Rgba32>)frame)[3, 2]));
+        Assert.Equal(liveStorages, image.Owner.LiveStorageCount);
+
+        // The new frames and the working copies are charged with the old ones
+        using var limited = new Image<Rgba32>(64, 64, new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 40_000 } });
+        Assert.Throws<ImageResourceLimitException>(() => limited.ApplyProcessor<RgbaFloat, TransposeProcessor<RgbaFloat>>(default));
+        Assert.Equal(new Size(64, 64), limited.Size);
+        limited.ApplyProcessor<Rgba32, TransposeProcessor<Rgba32>>(default);
+    }
+
     private static int[] ReadGray(ImageFrame frame)
     {
         var bytes = new byte[frame.Width * frame.Height];
@@ -3649,5 +3758,50 @@ public sealed class ProcessingTests
                 destination[x] = new Rgba64((ushort)((above[x].R + below[x].R) / 2), above[x].G, below[x].B, source.GetRow(y)[x].A);
             }
         }
+    }
+
+    private sealed class RecordingProcessor(List<int> indexes) : IImageProcessor<Rgba64>
+    {
+        public Size GetOutputSize(Size size) => new(size.Height, size.Width);
+
+        public void Process(int frameIndex, PixelRowSource<Rgba64> source, PixelAccessor<Rgba64> destination, CancellationToken cancellationToken)
+        {
+            indexes.Add(frameIndex);
+            Assert.Equal(new Rgba64(0, 0, 0, ushort.MaxValue), destination.GetRowSpan(0)[0]);
+            for (var y = 1; y < destination.Height; y++)
+            {
+                var row = destination.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = source.GetRow(x)[y];
+                }
+            }
+        }
+
+        public bool TryMapPoint(Point source, Size sourceSize, Size destinationSize, out Point destination)
+        {
+            destination = new Point(source.Y, source.X);
+            return true;
+        }
+    }
+
+    private readonly record struct ThrowingProcessor(int ThrowAtFrame) : IImageProcessor<Rgba32>
+    {
+        public Size GetOutputSize(Size size) => ThrowAtFrame < 0 ? Size.Empty : new Size(size.Width - 1, size.Height);
+
+        public void Process(int frameIndex, PixelRowSource<Rgba32> source, PixelAccessor<Rgba32> destination, CancellationToken cancellationToken)
+        {
+            destination.GetRowSpan(0).Fill(new Rgba32(9, 9, 9, 9));
+            if (frameIndex == ThrowAtFrame)
+                throw new InvalidOperationException("The processor failed.");
+        }
+    }
+
+    private readonly struct ClearingProcessor : IImageProcessor<Rgba64>
+    {
+        public Size GetOutputSize(Size size) => size;
+
+        public void Process(int frameIndex, PixelRowSource<Rgba64> source, PixelAccessor<Rgba64> destination, CancellationToken cancellationToken)
+            => destination.GetRowSpan(0)[0] = default;
     }
 }

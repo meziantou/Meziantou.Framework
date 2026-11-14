@@ -4826,6 +4826,21 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ProcessorExampleUpscalesEveryFrame()
+    {
+        using var image = new Image<Rgb24>(2, 1, new Rgb24(10, 20, 30));
+        image.Frames[0][1, 0] = new Rgb24(200, 100, 0);
+        image.InsertFrame(1, image.Frames[0]);
+        image.Frames[1].Metadata.Hotspot = new Point(1, 0);
+        ExtensibilityExamples.UpscalePixelArt(image, 3);
+
+        Assert.Equal(new Size(6, 3), image.Size);
+        Assert.All(image.Frames, frame => Assert.Equal(new Rgb24(200, 100, 0), ((ImageFrame<Rgb24>)frame)[3, 2]));
+        Assert.Equal(new Rgb24(10, 20, 30), image.Frames[1][2, 2]);
+        Assert.Equal(new Point(3, 0), image.Frames[1].Metadata.Hotspot);
+    }
+
+    [Fact]
     public void WrapMemoryExamplesWorkInPlace()
     {
         // One white pixel in the middle of a black frame, with 4 bytes of padding per row: the blur spreads it in the array

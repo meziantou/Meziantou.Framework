@@ -906,6 +906,13 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.Hwb left, Meziantou.Framework.Imaging.Hwb right) => throw null;
     }
 
+    public interface IImageProcessor<TPixel> where TPixel : unmanaged
+    {
+        Meziantou.Framework.Imaging.Size GetOutputSize(Meziantou.Framework.Imaging.Size size);
+        void Process(int frameIndex, Meziantou.Framework.Imaging.PixelRowSource<TPixel> source, Meziantou.Framework.Imaging.PixelAccessor<TPixel> destination, System.Threading.CancellationToken cancellationToken);
+        public bool TryMapPoint(Meziantou.Framework.Imaging.Point source, Meziantou.Framework.Imaging.Size sourceSize, Meziantou.Framework.Imaging.Size destinationSize, out Meziantou.Framework.Imaging.Point destination) => throw null;
+    }
+
     public interface IPixelNeighborhoodOperation<TPixel> where TPixel : unmanaged
     {
         void Invoke(int y, Meziantou.Framework.Imaging.PixelRowSource<TPixel> source, System.Span<TPixel> destination);
@@ -1267,6 +1274,7 @@ namespace Meziantou.Framework.Imaging
         public static void ApplyLut(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.CubeLut lut, Meziantou.Framework.Imaging.LutInterpolation interpolation = Meziantou.Framework.Imaging.LutInterpolation.Tetrahedral, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ApplyLut(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.CubeLut lut, Meziantou.Framework.Imaging.LutInterpolation interpolation = Meziantou.Framework.Imaging.LutInterpolation.Tetrahedral, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ApplyNeighborhoodOperation<TPixel, TOperation>(this Meziantou.Framework.Imaging.Image image, TOperation operation, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged where TOperation : Meziantou.Framework.Imaging.IPixelNeighborhoodOperation<TPixel> { }
+        public static void ApplyProcessor<TPixel, TProcessor>(this Meziantou.Framework.Imaging.Image image, TProcessor processor, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged where TProcessor : Meziantou.Framework.Imaging.IImageProcessor<TPixel> { }
         public static void ApplyRowOperation<TPixel, TOperation>(this Meziantou.Framework.Imaging.Image image, TOperation operation, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged where TOperation : Meziantou.Framework.Imaging.IPixelRowOperation<TPixel> { }
         public static void ApplyToneCurve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ToneCurve curve, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ApplyToneCurve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ToneCurve curve, System.Threading.CancellationToken cancellationToken = default) { }

@@ -1,5 +1,5 @@
 title: ASP.NET Core
-description: Service defaults, middleware, HTTP Basic authentication, MVC tag helpers and Blazor components for ASP.NET Core applications.
+description: Service defaults, middleware, HTTP Basic authentication, MVC tag helpers, Blazor components, and tests of Blazor components and of whole applications in a managed browser.
 packageIds:
 - Meziantou.AspNetCore
 - Meziantou.AspNetCore.Authentication.HttpBasic
@@ -9,3 +9,4 @@ packageIds:
 - Meziantou.AspNetCore.Mvc
 - Meziantou.AspNetCore.ServiceDefaults
 - Meziantou.AspNetCore.ServiceDefaults.AutoRegister
+- Meziantou.AspNetCore.Testing

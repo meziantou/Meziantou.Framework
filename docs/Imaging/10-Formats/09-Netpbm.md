@@ -101,8 +101,10 @@ back as [Gray8](cref:Meziantou.Framework.Imaging.Gray8), with one bit per compon
 - An encoder never looks at the file extension: `Save("page.pbm")` without an encoder writes a portable bitmap, but
   `Save("page.pbm", new PnmEncoder())` writes the variant of the pixel format. Set `PixelLayout = PnmPixelLayout.Bitmap`
   explicitly.
-- Netpbm stores one frame: save one frame of an animation with `image.Frames[i].Save`. A file that holds several images is read
-  as its first image.
+- Netpbm stores one frame: save one frame of an animation with `image.Frames[i].Save`. [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) reads the first
+  image of a file that holds several; [ImageCollection.Load](cref:Meziantou.Framework.Imaging.ImageCollection.Load) gives each of them as a page (see
+  [Pages and representations](../04-Concepts/03-PagesAndRepresentations.md)). White space between the images is skipped;
+  any other byte after an image must start the next one.
 - Netpbm stores no metadata: an ICC profile, EXIF, XMP, an orientation, a resolution or text entries follow
   [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by default.
 - PAM tuple types other than the standard black and white, gray and RGB forms are rejected.

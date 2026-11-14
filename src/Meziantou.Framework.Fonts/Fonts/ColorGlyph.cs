@@ -56,6 +56,12 @@ public sealed class ColorGlyph
     /// <summary>Gets the image of a glyph the font gives as a bitmap, which the display list draws; <see langword="null"/> for a glyph made of paints.</summary>
     public ColorImage? Image { get; private init; }
 
+    /// <summary>
+    /// Gets a value indicating whether the glyph is a mask (<see cref="FromMask"/>): the opacity of its <see cref="Image"/>
+    /// is the coverage of the text, which a renderer can paint with any brush instead of running the display list.
+    /// </summary>
+    public bool IsMask { get; private init; }
+
     /// <summary>Gets a value indicating whether the glyph draws nothing.</summary>
     public bool IsEmpty => _ops.Length == 0 || !(XMax > XMin) || !(YMax > YMin);
 
@@ -84,6 +90,48 @@ public sealed class ColorGlyph
             LayerDepth = 1,
             ClipDepth = 0,
             Image = image,
+        };
+    }
+
+    /// <summary>
+    /// Creates the display list of a glyph the font gives as a mask: the color of the text, where the image covers
+    /// it, drawn in a rectangle.
+    /// </summary>
+    /// <param name="mask">The decoded image of the glyph: its opacity is the coverage, its colors are not used.</param>
+    /// <param name="left">The left of the rectangle, in font units.</param>
+    /// <param name="top">The top of the rectangle, in font units.</param>
+    /// <param name="width">The width of the rectangle, in font units.</param>
+    /// <param name="height">The height of the rectangle, in font units.</param>
+    /// <exception cref="InvalidFontException">The rectangle is outside the coordinates an outline can have.</exception>
+    public static ColorGlyph FromMask(ColorImage mask, double left, double top, double width, double height)
+    {
+        ArgumentNullException.ThrowIfNull(mask);
+        FontErrors.EnsureCoordinates(left, top);
+        FontErrors.EnsureCoordinates(left + width, top - height);
+
+        // The image on a layer, then the color of the text on a layer composed with it so that it keeps only the
+        // pixels the image covers.
+        ColorOp[] ops =
+        [
+            new ColorOp(ColorOpKind.PushLayer, 0, -1, 0),
+            new ColorOp(ColorOpKind.FillImage, 0, -1, 0),
+            new ColorOp(ColorOpKind.PushLayer, 0, -1, 0),
+            new ColorOp(ColorOpKind.FillClip, 0, -1, 1),
+            new ColorOp(ColorOpKind.PopLayer, 0, -1, (int)ColorCompositeMode.SourceIn),
+            new ColorOp(ColorOpKind.PopLayer, 0, -1, (int)ColorCompositeMode.SourceOver),
+        ];
+        ColorPaint[] paints = [new ColorPaint(ColorPaintKind.Image, -1, 0, 0, 0, 0), new ColorPaint(ColorPaintKind.Solid, -1, 0, 0, 1, 0)];
+        ColorStop[] stops = [new ColorStop(0, 0, 0, 0, 1, IsForeground: true)];
+        return new ColorGlyph(ops, paints, stops, [left, top, width / mask.Width, height / mask.Height])
+        {
+            XMin = left,
+            YMin = top - height,
+            XMax = left + width,
+            YMax = top,
+            LayerDepth = 3,
+            ClipDepth = 0,
+            Image = mask,
+            IsMask = true,
         };
     }
 }

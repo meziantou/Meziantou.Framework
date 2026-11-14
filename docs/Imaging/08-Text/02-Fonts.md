@@ -36,10 +36,10 @@ public static string DescribeFont(string path)
 | | Supported |
 | --- | --- |
 | Containers | TrueType and OpenType (`.ttf`, `.otf`), collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0, collections included |
-| Outlines | TrueType (`glyf`), CFF and CFF2 |
+| Outlines | TrueType (`glyf`), CFF and CFF2; fonts without outlines whose glyphs are bitmaps |
 | Variable fonts | Axes, named instances and everything an instance varies: outlines, advances, metrics and the positions of the layout tables |
-| Color glyphs | `COLR` versions 0 and 1 with the palettes of `CPAL`, and glyphs that are images (`sbix`, `CBDT`) |
-| Bitmaps without colors | The one-bit strikes of `EBDT`, on request (see below) |
+| Color glyphs | `COLR` versions 0 and 1 with the palettes of `CPAL`, and glyphs that are images (`sbix` with PNG, JPEG and TIFF images, `CBDT` with PNG images and pixels of 32 bits) |
+| Bitmaps without colors | The strikes of 1, 2, 4 and 8 bits per pixel of `EBDT` (`bdat` in Apple fonts), on request or in a font without outlines (see below) |
 
 A font collection holds several faces in one file. [Font.Load](cref:Meziantou.Framework.Imaging.Typography.Font.Load) gives its first face; [FontCollection.Load](cref:Meziantou.Framework.Imaging.Typography.FontCollection.Load) gives them
 all (a file that holds one font is a collection of one). The faces of a collection share the bytes of the file.
@@ -131,11 +131,46 @@ gives the palettes of the font. [FillText](cref:Meziantou.Framework.Imaging.Draw
 - A color glyph is drawn after the other glyphs of the text. [StrokeText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeText) and [TextLayout.ToPath](cref:Meziantou.Framework.Imaging.Typography.TextLayout.ToPath) use the outline the
   font gives to the glyph itself, which can be empty.
 - A glyph stored as an image (`sbix`, `CBDT`) is taken from the smallest strike that is at least as large as the
-  text, and scaled to the size of the text.
+  text, and scaled to the size of the text. The encoded images (PNG, JPEG, TIFF) are decoded with the codecs of the
+  library; a glyph made of the images of other glyphs is drawn with them.
 
-Some fonts made for screens of low resolution, mostly Chinese, Japanese and Korean ones, also have a one-bit bitmap of
-each glyph for a few sizes. They are not used by default. A font loaded with [FontLoadOptions.UseEmbeddedBitmaps](cref:Meziantou.Framework.Imaging.Typography.FontLoadOptions.UseEmbeddedBitmaps) uses
-them for a text whose size in pixels per em is exactly the size of a strike; at other sizes, the outline is drawn.
+## Bitmap glyphs
+
+Some fonts made for screens of low resolution, mostly Chinese, Japanese and Korean ones, also have a bitmap without
+colors of each glyph for a few sizes (`EBDT`, or `bdat` in the fonts of Apple). They are not used by default. A font
+loaded with [FontLoadOptions.UseEmbeddedBitmaps](cref:Meziantou.Framework.Imaging.Typography.FontLoadOptions.UseEmbeddedBitmaps) uses them for a text whose size in pixels per em is exactly the size of a
+strike; at other sizes, the outline is drawn.
+
+- A bitmap of one bit per pixel is drawn as the squares of its pixels: it is an outline, that [StrokeText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeText),
+  [TextLayout.ToPath](cref:Meziantou.Framework.Imaging.Typography.TextLayout.ToPath) and the bounds of a layout use.
+- A bitmap of 2, 4 or 8 bits per pixel gives the coverage of its pixels: it is painted with the brush of the text,
+  any brush, like a shape whose edges are that coverage. It is drawn with the color glyphs, after the outlines.
+
+A font without outlines, whose glyphs are only bitmaps (`EBDT`, `bdat`, `CBDT` or `sbix`), is loaded like any other
+font and draws its bitmaps at every size, without the option: each glyph is taken from the smallest strike that is at
+least as large as the text, else the largest one, and scaled to the size of the text.
+
+[Font.DecodeBitmapGlyph](cref:Meziantou.Framework.Imaging.Typography.Font.DecodeBitmapGlyph) decodes the image a font gives for a glyph, at the size of its strike, with the place of the image:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DecodeBitmapGlyph;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveGlyphImage(string fontPath, string outputPath)
+{
+    // A font whose glyphs are images (sbix, CBDT, EBDT or bdat tables)
+    var font = Font.Load(fontPath);
+
+    // The image of the strike that suits the size, at the size of the strike; null when the glyph has no image
+    using var glyph = font.DecodeBitmapGlyph(new Rune(0x1F600), size: 64);
+    if (glyph is null)
+        return;
+
+    // Where the font places it: pixels from the origin of the glyph to the left, and from the baseline up to the
+    // top. A mask (IsMask) has no colors of its own: a text draws it with its color.
+    Console.WriteLine($"{glyph.Image.Width}x{glyph.Image.Height} at ({glyph.Left}, {glyph.Top}), {glyph.PixelsPerEmX} pixels per em");
+    glyph.Image.Save(outputPath);
+}
+```
+<!-- endref -->
 
 ## Fonts are immutable and thread-safe
 
@@ -168,5 +203,5 @@ library does not support, and [ImageResourceLimitException](cref:Meziantou.Frame
 ## What is not supported
 
 - Glyphs in SVG (`SVG ` table): their outlines are drawn instead.
-- Fonts without outlines (bitmap-only fonts), PostScript Type 1 fonts and Type 1 charstrings.
+- PostScript Type 1 fonts and Type 1 charstrings.
 - The metadata and private blocks of WOFF and WOFF2 files. Table checksums are not verified.

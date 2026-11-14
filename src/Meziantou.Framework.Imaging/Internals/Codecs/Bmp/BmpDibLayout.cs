@@ -40,23 +40,29 @@ internal sealed class BmpDibLayout
     /// <summary>Gets a value indicating whether the layout defines a real (non-padding) alpha channel.</summary>
     public bool HasAlpha => _alpha.IsPresent;
 
+    /// <summary>Gets a value indicating whether a channel is wider than 8 bits: the samples are then expanded to 16 bits.</summary>
+    public bool IsWide => _red.Bits > 8 || _green.Bits > 8 || _blue.Bits > 8 || _alpha.Bits > 8;
+
+    /// <summary>Gets the decoded representation: 8-bit samples, or 16-bit samples when a channel is wider than 8 bits.</summary>
+    public PixelFormat DefaultPixelFormat => IsWide ? (HasAlpha ? PixelFormat.Rgba64 : PixelFormat.Rgb48) : DefaultPixelFormats.ForBmp(HasAlpha);
+
     /// <summary>Gets the layout of the rows produced by <see cref="ExpandRow"/>.</summary>
-    public PixelFormat SourcePixelFormat => DefaultPixelFormats.ForBmp(HasAlpha);
+    public PixelFormat SourcePixelFormat => PixelFormatWidening.GetWidenedFormat(DefaultPixelFormat);
 
     /// <summary>Gets the color model of the encoded samples.</summary>
     public ImageColorModel ColorModel => Header.IsIndexed ? ImageColorModel.Indexed : (HasAlpha ? ImageColorModel.Rgba : ImageColorModel.Rgb);
 
     /// <summary>
-    /// Gets the reported precision of the encoded samples: the index width for indexed layouts, otherwise 8 (the channels of
-    /// a 16-bit layout are 5 or 6 bits wide and are expanded to 8).
+    /// Gets the reported precision of the encoded samples: the index width for indexed layouts, the widest channel for a
+    /// layout with a channel wider than 8 bits, otherwise 8 (the channels of a 16-bit layout are 5 or 6 bits wide and are
+    /// expanded to 8).
     /// </summary>
-    public int BitsPerComponent => Header.IsIndexed ? Header.BitsPerPixel : 8;
+    public int BitsPerComponent => Header.IsIndexed ? Header.BitsPerPixel : IsWide ? Math.Max(Math.Max(_red.Bits, _green.Bits), Math.Max(_blue.Bits, _alpha.Bits)) : 8;
 
     /// <summary>Resolves and validates the channel masks of a DIB header.</summary>
     /// <param name="header">The parsed header, including any mask bytes that followed it.</param>
     /// <returns>The layout; <see cref="SetPalette"/> must be called for indexed layouts.</returns>
     /// <exception cref="InvalidImageContentException">A mask is not contiguous, overlaps another, or a required mask is missing.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">A channel is wider than 8 bits.</exception>
     public static BmpDibLayout Create(BmpInfoHeader header)
     {
         if (header.IsIndexed)
@@ -132,9 +138,16 @@ internal sealed class BmpDibLayout
     public void ExpandRow(ReadOnlySpan<byte> source, Span<byte> destination)
     {
         var width = Header.Width;
+        if (IsWide)
+        {
+            ExpandWideRow(source, destination, width);
+            return;
+        }
+
         switch (Header.BitsPerPixel)
         {
             case 1:
+            case 2:
             case 4:
             case 8:
                 ExpandIndexedRow(source, destination, width, Header.BitsPerPixel);
@@ -211,6 +224,21 @@ internal sealed class BmpDibLayout
 
                 break;
             }
+        }
+    }
+
+    /// <summary>Expands a row of 16 or 32-bit pixels to <see cref="PixelFormat.Rgba64"/>, opaque when the layout has no alpha.</summary>
+    private void ExpandWideRow(ReadOnlySpan<byte> source, Span<byte> destination, int width)
+    {
+        var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(destination[..(width * 8)]));
+        var hasAlpha = HasAlpha;
+        for (var x = 0; x < width; x++)
+        {
+            var pixel = Header.BitsPerPixel == 16 ? BinaryPrimitives.ReadUInt16LittleEndian(source[(x * 2)..]) : BinaryPrimitives.ReadUInt32LittleEndian(source[(x * 4)..]);
+            samples[x * 4] = _red.ReadWide(pixel);
+            samples[(x * 4) + 1] = _green.ReadWide(pixel);
+            samples[(x * 4) + 2] = _blue.ReadWide(pixel);
+            samples[(x * 4) + 3] = hasAlpha ? _alpha.ReadWide(pixel) : ushort.MaxValue;
         }
     }
 

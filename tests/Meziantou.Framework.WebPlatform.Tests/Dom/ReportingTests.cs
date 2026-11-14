@@ -227,6 +227,99 @@ public sealed class ReportingTests : IDisposable
     }
 
     [Fact]
+    public void Deprecation_SynchronousXhr_IsReportedOncePerDocument()
+    {
+        var document = Load("""
+            <script>
+            new ReportingObserver(reports => {
+              for (const report of reports)
+                document.title += [report.type, report.body.id, report.body.anticipatedRemoval, report.body.message.startsWith("Synchronous XMLHttpRequest"), report.body.sourceFile, typeof report.body.lineNumber].join("|") + ";";
+            }).observe();
+            for (let i = 0; i < 2; i++) {
+              const xhr = new XMLHttpRequest();
+              xhr.open("GET", "/data", false);
+              xhr.send();
+            }
+            new XMLHttpRequest().open("GET", "/data");
+            </script>
+            """, [new("Reporting-Endpoints", "default=\"/reports\"")]);
+
+        Assert.Equal("deprecation|XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload||true|https://example.com/|number;", document.Title);
+
+        // The report is sent to the default endpoint
+        var request = Assert.Single(_requests, r => r.Destination == RequestDestination.Report);
+        Assert.Equal("https://example.com/reports", request.Url);
+        using var json = JsonDocument.Parse(request.Body!.Value);
+        var report = Assert.Single(json.RootElement.EnumerateArray());
+        Assert.Equal("deprecation", report.GetProperty("type").GetString());
+        Assert.Equal("XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload", report.GetProperty("body").GetProperty("id").GetString());
+        Assert.Equal(JsonValueKind.Null, report.GetProperty("body").GetProperty("anticipatedRemoval").ValueKind);
+        Assert.Equal(JsonValueKind.Number, report.GetProperty("body").GetProperty("lineNumber").ValueKind);
+    }
+
+    [Fact]
+    public void Deprecation_IsReportedOncePerDocumentOfAReusedWindow()
+    {
+        var document = Load("""
+            <iframe id="frame"></iframe>
+            <script>
+            // The initial about:blank document of the frame sends a synchronous request, then the frame navigates to a
+            // same-origin page, which reuses its window
+            const xhr = new frame.contentWindow.XMLHttpRequest();
+            xhr.open("GET", "/data", false);
+            globalThis.initialWindow = frame.contentWindow;
+            frame.src = "/frame.html";
+            </script>
+            """, []);
+
+        Assert.Equal("reused:true;deprecation;", document.Title);
+    }
+
+    [Fact]
+    public void Intervention_PreventDefaultInADefaultPassiveListener_IsReported()
+    {
+        var document = Load("""
+            <div id="target"></div>
+            <script>
+            new ReportingObserver(reports => {
+              for (const report of reports)
+                document.title += report.type + "|" + report.body.id + "|" + (report.body.sourceFile !== null) + ";";
+            }).observe();
+            const results = [];
+            // Passive because the window treats the wheel listeners as passive: an intervention
+            addEventListener("wheel", e => { e.preventDefault(); results.push("window:" + e.defaultPrevented); }, { once: true });
+            dispatchEvent(new WheelEvent("wheel", { cancelable: true }));
+            // Passive because of the option of the listener, or not passive: no intervention
+            target.addEventListener("wheel", e => { e.preventDefault(); results.push("passive:" + e.defaultPrevented); }, { passive: true, once: true });
+            target.dispatchEvent(new WheelEvent("wheel", { cancelable: true }));
+            document.body.addEventListener("touchstart", e => { e.preventDefault(); results.push("active:" + e.defaultPrevented); }, { passive: false });
+            document.body.dispatchEvent(new Event("touchstart", { cancelable: true }));
+            // An event that is not cancelable: no intervention
+            addEventListener("touchmove", e => e.preventDefault());
+            dispatchEvent(new Event("touchmove"));
+            document.body.dataset.results = results.join(",");
+            </script>
+            """, []);
+
+        Assert.Equal("window:false,passive:false,active:true", document.Body!.GetAttribute("data-results"));
+        Assert.Equal("intervention|PreventDefaultPassive|true;", document.Title);
+        Assert.DoesNotContain(_requests, r => r.Destination == RequestDestination.Report);
+    }
+
+    [Fact]
+    public void Intervention_ReportBody_Json()
+    {
+        var document = Load("<p>", []);
+        document.RelevantWindow!.ReportIntervention("Id", "Message");
+        _contexts.EventLoop.RunUntilIdle();
+
+        var report = Assert.Single(document.RelevantWindow!.GetReportBuffer());
+        Assert.Equal("intervention", report.Type);
+        Assert.Equal("""{"id":"Id","message":"Message","sourceFile":null,"lineNumber":null,"columnNumber":null}""", report.Body!.ToJson());
+        Assert.Equal("""{"id":"Id","anticipatedRemoval":"2027-01-02T03:04:05.000Z","message":"Message","sourceFile":null,"lineNumber":null,"columnNumber":null}""", new DeprecationReportBody { Id = "Id", Message = "Message", AnticipatedRemoval = new DateTime(2027, 1, 2, 3, 4, 5, DateTimeKind.Utc) }.ToJson());
+    }
+
+    [Fact]
     public void CspHash_ReportsTheHashOfTheScripts()
     {
         var document = Load("""
@@ -269,6 +362,19 @@ public sealed class ReportingTests : IDisposable
         Assert.Equal("enforce", Assert.Single(json.RootElement.EnumerateArray()).GetProperty("body").GetProperty("disposition").GetString());
     }
 
+    /// <summary>The page of a frame that reports to the title of its parent whether its window is reused and the reports of its synchronous request.</summary>
+    private const string FrameHtml = """
+        <script>
+        parent.document.title += "reused:" + (window === parent.initialWindow) + ";";
+        new ReportingObserver(reports => {
+          for (const report of reports)
+            parent.document.title += report.type + ";";
+        }).observe();
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", "/data", false);
+        </script>
+        """;
+
     private static UrlRecord Url(string url) => UrlParser.Parse(url, baseUrl: null)!;
 
     private static void RunScript(Document document, string code)
@@ -296,6 +402,7 @@ public sealed class ReportingTests : IDisposable
             var name = path[(path.LastIndexOf('/', StringComparison.Ordinal) + 1)..];
             DocumentResource resource = request.Destination switch
             {
+                _ when path.EndsWith("/frame.html", StringComparison.Ordinal) => new DocumentResource(FrameHtml) { Headers = [new("Content-Type", "text/html")] },
                 RequestDestination.Document => new DocumentResource(html) { Headers = [new("Content-Type", "text/html"), .. headers] },
                 _ when path.EndsWith(".png", StringComparison.Ordinal) => DocumentResource.Create(Png, "image/png"),
                 _ when path.EndsWith(".js", StringComparison.Ordinal) => DocumentResource.Create($"document.title += ' {name[..^3]}'", "text/javascript"),

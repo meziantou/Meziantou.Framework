@@ -98,7 +98,7 @@ Animation timing is never affected by this setting. What each format stores:
 | PNG | Yes | Yes | Yes | Yes |
 | JPEG | Yes | Yes (up to 65,527 bytes) | Standard XMP (up to 65,504 bytes) | Comments |
 | WebP | RGB profiles | Yes | Yes | No |
-| GIF | No | No | No | Comments |
+| GIF | RGB profiles | No | Yes | Comments |
 | TIFF | Yes | Orientation only | Yes | No |
 | AVIF, HEIC | Yes | Yes | Yes | No |
 | JPEG XL | Yes | Yes | Yes | No |

@@ -1,6 +1,6 @@
 ---
 title: Resizing
-description: Resize an image or an animation, keep the aspect ratio, fill a box, letterbox, and choose the resampling filter.
+description: Resize an image or an animation, keep the aspect ratio, fill a box, letterbox, choose the resampling filter, and resize while keeping the content.
 ---
 
 [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize) resizes every frame of an image and its poster frame, in one operation: an animation keeps its frames, their
@@ -125,6 +125,44 @@ images are filtered with 16-bit precision, and the colors of floating-point samp
   physically correct averages, for example for thin bright lines. An untagged image and an ICC profile recognized as
   sRGB or sGray use the sRGB transfer function; any other ICC profile is rejected rather than misinterpreted: convert
   such an image first with [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile) (see [Color management](../09-Color/03-ColorManagement.md)).
+
+## Keep the content: seam carving
+
+A resize scales everything, the subject included. [SeamCarve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.SeamCarve)
+changes the size by removing, or duplicating, the paths of pixels across the image that hold the least detail (the
+seams): a flat sky or a wall shrinks, while the people and the objects keep their proportions. Use it to change the
+aspect ratio of a photo, for a banner or a thumbnail, without cropping or squashing it:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_SeamCarve;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ResizeToBanner(string inputPath, string outputPath, Rectangle face)
+{
+    using var image = Image.Load(inputPath);
+
+    // Half as wide: the seams of least detail are removed, and never through the face while another seam remains
+    var protectedRegion = new PixelMask(image.Size);
+    protectedRegion.Fill(face);
+    image.SeamCarve(image.Width / 2, image.Height, new SeamCarvingOptions { ProtectedRegion = protectedRegion });
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+- **Masks.** [SeamCarvingOptions.ProtectedRegion](cref:Meziantou.Framework.Imaging.SeamCarvingOptions.ProtectedRegion)
+  is a [PixelMask](cref:Meziantou.Framework.Imaging.PixelMask) the seams avoid, such as a face that has little detail.
+  [RemovedRegion](cref:Meziantou.Framework.Imaging.SeamCarvingOptions.RemovedRegion) is one they go through first: a
+  reduction by the width of an object removes it from the photo. [PixelMask.FromFrame](cref:Meziantou.Framework.Imaging.PixelMask.FromFrame)
+  reads a mask painted in white on black.
+- **Both directions.** The width changes first, then the height. An enlargement duplicates the seams a reduction would
+  remove, at most half of the current size at a time: beyond about twice the size, the duplicated pixels show.
+- **Animations.** The seams are computed from every frame at once and removed from all of them, so the frames stay
+  aligned. A cursor hotspot follows its pixel, and the operation fails when a seam removes that pixel.
+- **What a seam costs.** The seam removed is the one whose removal brings together the least different pixels (the
+  forward energy), measured on the luma and the alpha. Thin lines and regular textures can be removed at no cost, since
+  removing them makes no new edge: protect them when they matter.
+- **Cost.** The time grows with the number of seams times the number of pixels, so it suits images of a few
+  megapixels; resize a large photo first. The working memory is charged to the image, and the operation leaves the image
+  unchanged when it fails.
 
 ## Cursors and metadata
 

@@ -80,6 +80,9 @@ internal static class IcoEntryDecoder
         var header = representation.DibHeader!.Value;
         var size = representation.Size;
         var layout = BmpDibLayout.Create(header);
+        if (layout.IsWide)
+            throw IcoFormat.Unsupported(format, string.Create(CultureInfo.InvariantCulture, $"The DIB payload of the representation {representation.Index} has a color channel wider than 8 bits; an icon representation decodes to 8-bit samples."), "Bit fields: channel wider than 8 bits");
+
         var scope = context.Scope;
         var colorRowLength = (int)BmpFormat.GetRowLength(size.Width, header.BitsPerPixel);
         var maskRowLength = (int)BmpFormat.GetRowLength(size.Width, 1);

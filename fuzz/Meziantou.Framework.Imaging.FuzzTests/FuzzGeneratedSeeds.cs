@@ -100,6 +100,7 @@ internal static class FuzzGeneratedSeeds
         seeds.Add(new FuzzSeed("tiff/builder-signed16-rgb-predictor-deflate", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 3, BitsPerSample = 16, SamplesPerPixel = 3, Photometric = 2, SampleFormat = 2, Compression = 8, Predictor = 2, Samples = Samples(5 * 3 * 3 * 2, 256) }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-half-gray-tiles-lzw-predictor-bigendian", new TiffFileBuilder { BigEndian = true }.AddPage(new TiffPageSpec { Width = 18, Height = 5, BitsPerSample = 16, SampleFormat = 3, TileWidth = 16, TileLength = 16, Compression = 5, Predictor = 3, Samples = Samples(18 * 5 * 2, 61) }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-float24-graya-packbits", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 4, Height = 3, BitsPerSample = 24, SamplesPerPixel = 2, ExtraSamples = [2], SampleFormat = 3, Compression = 32773, Samples = Samples(4 * 3 * 2 * 3, 64) }).Build()));
+        seeds.Add(new FuzzSeed("tiff/builder-rgb8-lzw-fillorder2", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 3, SamplesPerPixel = 3, Photometric = 2, Compression = 5, FillOrder = 2, EncodedBlocks = [TiffReferenceCodecs.ReverseBits(TiffReferenceCodecs.EncodeLzw(Samples(5 * 3 * 3, 199)))], Samples = [] }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-gray4-whiteiszero-packbits", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 7, Height = 5, BitsPerSample = 4, Photometric = 0, Compression = 32773, Orientation = 6, Samples = Samples(4 * 5, 256) }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-bilevel-strips-bigendian-gap", new TiffFileBuilder { BigEndian = true, Gap = 6 }
             .AddPage(new TiffPageSpec { Width = 10, Height = 4, BitsPerSample = 1, Photometric = 1, RowsPerStrip = 1, Samples = [0b1010_0000, 0b1100_0000, 0b0000_1111, 0b0100_0000, 0b1111_1111, 0b1100_0000, 0b0101_0101, 0b0000_0000] })
@@ -184,6 +185,14 @@ internal static class FuzzGeneratedSeeds
             .Add(new IcoEntrySpec { Width = 6, Height = 5, ColorCount = 4, BitCountOrHotspotY = 4, Payload = IcoFileBuilder.Dib(6, 5, 4, PaletteTable(palette), PackedRows(6, 5, 4), mask, includeMask: true) })
             .Add(new IcoEntrySpec { Width = 9, Height = 4, ColorCount = 2, BitCountOrHotspotY = 1, Payload = IcoFileBuilder.Dib(9, 4, 1, PaletteTable(palette[..2]), PackedRows(9, 4, 1), mask: null, includeMask: true) })
             .Build()));
+        // A PNG payload larger than the 256 pixels a directory byte can declare (stored as 0)
+        using (var wide = CreateRgba32(260, 3, salt: 20))
+        {
+            using var png = new MemoryStream();
+            wide.Save(png, new PngEncoder());
+            seeds.Add(new FuzzSeed("ico/builder-png-wider-than-256", new IcoFileBuilder().Add(new IcoEntrySpec { Width = 256, Height = 3, DeclaredWidth = 0, Payload = png.ToArray() }).Build()));
+        }
+
         seeds.Add(new FuzzSeed("cur/builder-dib32-mask-and-unmasked", new IcoFileBuilder { Type = 2 }
             .Add(new IcoEntrySpec { Width = 4, Height = 4, PlanesOrHotspotX = 1, BitCountOrHotspotY = 2, Payload = IcoFileBuilder.Dib32(4, 4, [.. Enumerable.Range(0, 16).Select(i => new Rgba32((byte)(i * 16), 7, 9, (byte)(i * 17)))], [.. Enumerable.Range(0, 16).Select(i => i % 3 == 0)]) })
             .Add(new IcoEntrySpec { Width = 3, Height = 2, PlanesOrHotspotX = 2, BitCountOrHotspotY = 1, Payload = IcoFileBuilder.Dib32(3, 2, [.. Enumerable.Range(0, 6).Select(i => new Rgba32(1, (byte)(i * 40), 3))], includeMask: false) })

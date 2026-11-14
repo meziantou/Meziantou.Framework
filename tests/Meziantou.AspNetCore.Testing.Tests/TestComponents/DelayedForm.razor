@@ -1,0 +1,33 @@
+@* The controls are disabled, or not rendered yet, until the component is ready *@
+<button disabled="@(!_ready)" @onclick="() => _saveCount++">Save</button>
+<p role="status">Saved @_saveCount times</p>
+@if (_ready)
+{
+    <input aria-label="Name" @bind="_name" />
+}
+<p id="name">@_name</p>
+<select aria-label="Color" @bind="_color">
+    <option value="">(none)</option>
+    @if (_ready)
+    {
+        <option value="r">Red</option>
+    }
+</select>
+<p id="color">@_color</p>
+
+@code {
+    private bool _ready;
+    private int _saveCount;
+    private string? _name;
+    private string _color = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Delay(50);
+            _ready = true;
+            StateHasChanged();
+        }
+    }
+}

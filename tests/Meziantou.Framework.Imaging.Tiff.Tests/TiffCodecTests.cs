@@ -747,6 +747,24 @@ public sealed class TiffCodecTests
     }
 
     [Fact]
+    public void TheReversedFillOrderOfDataWiderThanOneBitDecodesLikeLibTiff()
+    {
+        // tiffcp -f lsb2msb of libtiff 4.6.0 (Alpine 3.20 tiff-tools) on uncompressed pages written by ImageMagick: libtiff
+        // reverses the bits of every stored byte, whatever the width of the samples, before LZW or Deflate decompression.
+        // "tiffcp -f msb2lsb -c none" gives back the samples of the source, which are the expected values
+        Assert.Equal([new Rgb24(0, 255, 5), new Rgb24(80, 195, 5), new Rgb24(160, 135, 5), new Rgb24(7, 255, 125), new Rgb24(87, 195, 125), new Rgb24(167, 135, 125)], Decode<Rgb24>(Convert.FromHexString("49492A00200000000100F8074AC1305005C28102F7CF97BA61BECA85F30D08000F000001030001000000030000000101030001000000020000000201030003000000DA0000000301030001000000050000000601030001000000020000000A01030001000000020000001101040001000000080000001201030001000000010000001501030001000000030000001601030001000000020000001701040001000000170000001C01030001000000010000002901030002000000000001003E01050002000000E00000003F01050006000000F000000000000000080008000800371AA000000000022B870A000000200085EB510000008000C3F5A80000000002CDCC4C0000000001CDCC4C0000008000CDCC4C00000000028FC2F50000000010")));
+
+        Assert.Equal([new Rgb24(0, 255, 5), new Rgb24(80, 195, 5), new Rgb24(160, 135, 5), new Rgb24(7, 255, 125), new Rgb24(87, 195, 125), new Rgb24(167, 135, 125)], Decode<Rgb24>(Convert.FromHexString("49492A002A0000001E39C61FF3580E19AE82DCD400085BC0921E39C6FFFAD87E1D6E9EDEB400681F20630F000001030001000000030000000101030001000000020000000201030003000000E40000000301030001000000080000000601030001000000020000000A01030001000000020000001101040002000000EA0000001201030001000000010000001501030001000000030000001601030001000000010000001701030002000000110011001C01030001000000010000002901030002000000000001003E01050002000000F20000003F0105000600000002010000000000000800080008000800000019000000371AA000000000022B870A000000200085EB510000008000C3F5A80000000002CDCC4C0000000001CDCC4C0000008000CDCC4C00000000028FC2F50000000010")));
+
+        // 16-bit samples: the two bytes of each sample are reversed one by one, then read in the byte order of the file
+        Assert.Equal([new Gray16(1), new Gray16(20001), new Gray16(40001), new Gray16(3001), new Gray16(23001), new Gray16(43001)], Decode<Gray16>(Convert.FromHexString("49492A00140000008000847282399DD09B9A9FE50D000001030001000000030000000101030001000000020000000201030001000000100000000301030001000000010000000601030001000000010000000A010300010000000200000011010400010000000800000012010300010000000100000015010300010000000100000016010300010000000200000017010400010000000C0000001C010300010000000100000029010300020000000000010000000000")));
+
+        // A JPEG datastream has its own bit order, which libtiff never reverses
+        var jpeg = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 2, Height = 1, Compression = 7, FillOrder = 2, EncodedBlocks = [[0xFF, 0xD8, 0xFF, 0xD9]], Samples = [] }).Build();
+        Assert.Equal("FillOrder: 2 with JPEG", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(jpeg)).Feature);
+    }
+
+    [Fact]
     public void JpegCompressedPlanesDecodeLikeLibTiff()
     {
         // tiffcp -p separate -c jpeg:r:90 -t -w 16 -l 16 of libtiff 4.7.2: each 16x16 tile of each plane is a grayscale JPEG
@@ -2727,11 +2745,11 @@ public sealed class TiffCodecTests
         var four = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 3, Height = 1, BitsPerSample = 4, Photometric = 0, Samples = [0x0F, 0x70] }).Build();
         Assert.Equal(Grays(255, 0, 136), Decode<Gray8>(four));
 
-        // The bits of each byte in the other order (FillOrder 2), only defined for bilevel data
+        // The bits of each byte in the other order (FillOrder 2), the order of fax devices
         var reversed = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 10, Height = 1, BitsPerSample = 1, Photometric = 1, FillOrder = 2, Samples = [0b0000_0101, 0b0000_0011] }).Build();
         Assert.Equal(Grays(255, 0, 255, 0, 0, 0, 0, 0, 255, 255), Decode<Gray8>(reversed));
-        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 2, Height = 1, FillOrder = 2, Samples = [1, 2] }).Build()));
-        Assert.Equal("FillOrder: 2", exception.Feature);
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 2, Height = 1, FillOrder = 3, Samples = [1, 2] }).Build()));
+        Assert.Equal("FillOrder: 3", exception.Feature);
 
         // Bilevel tiles: a tile starts on a byte of the row whatever the sample width
         var samples = new byte[3 * 20];

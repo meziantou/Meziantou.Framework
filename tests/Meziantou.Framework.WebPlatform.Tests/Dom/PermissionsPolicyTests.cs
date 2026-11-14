@@ -295,7 +295,7 @@ public sealed class PermissionsPolicyTests : IDisposable
             new ReportingObserver(reports => {
               const report = reports[0];
               document.title += "|" + [reports.length, report.type, report.url, JSON.stringify(report.body)].join("|");
-            }).observe();
+            }, { types: ["permissions-policy-violation"] }).observe();
             const xhr = new XMLHttpRequest();
             xhr.open("GET", "/data.txt", false);
             try { xhr.send(); document.title = "sent"; } catch (e) { document.title = e.name; }
@@ -325,7 +325,7 @@ public sealed class PermissionsPolicyTests : IDisposable
         _resources["https://example.com/data.txt"] = DocumentResource.Create("data", "text/plain");
         var document = Load("""
             <script>
-            new ReportingObserver(reports => document.title += "|" + reports.map(report => report.type + " " + report.body.featureId + " " + report.body.disposition).join()).observe();
+            new ReportingObserver(reports => document.title += "|" + reports.map(report => report.type + " " + report.body.featureId + " " + report.body.disposition).join(), { types: ["permissions-policy-violation"] }).observe();
             const xhr = new XMLHttpRequest();
             xhr.open("GET", "/data.txt", false);
             xhr.send();

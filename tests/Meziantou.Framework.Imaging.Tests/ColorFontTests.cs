@@ -795,6 +795,111 @@ public sealed class ColorFontTests
         }
     }
 
+    [Fact]
+    public void AnSvgGlyphIsDrawnFromItsDocument()
+    {
+        var font = FontTestSupport.Load(FontSamples.SvgBoxes());
+        Assert.True(font.HasColorGlyphs);
+        var magenta = new Rgba32(255, 0, 255);
+        var blue = new Rgba32(0, 0, 255);
+
+        // At 16 pixels per em the baseline is at 13 and a unit is 1/64 pixel: A at 0, B at 16, C at 24, D at 36, E at 52.
+        var pixels = Draw(64, 20, canvas => canvas.FillText(Black, "ABCDE", font, 16, new PointD(0, 0)));
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 16; x++)
+            {
+                // A: red, the first color of the palette in its middle, and a last row of blue at half opacity.
+                var actual = GetPixel(pixels, 64, x, y);
+                if (x is >= 2 and < 14 && y == 12)
+                {
+                    AssertColor(127.5, 0, 127.5, actual);
+                    continue;
+                }
+
+                var expected = x is < 2 or >= 14 || y is < 1 or >= 13 ? White
+                    : x is >= 6 and < 10 && y is >= 5 and < 9 ? Green
+                    : Red;
+                Assert.Equal(expected, actual);
+            }
+        }
+
+        // B: the second color of the palette, then the fallback of a gradient that does not exist.
+        Assert.Equal((White, magenta, magenta, new Rgba32(0, 255, 255), new Rgba32(0, 255, 255), White, White), (GetPixel(pixels, 64, 16, 6), GetPixel(pixels, 64, 17, 5), GetPixel(pixels, 64, 22, 8), GetPixel(pixels, 64, 17, 9), GetPixel(pixels, 64, 22, 12), GetPixel(pixels, 64, 23, 6), GetPixel(pixels, 64, 17, 4)));
+
+        // C: the root of a compressed document, placed by its viewBox and clipped to its left half.
+        Assert.Equal((blue, blue, White, White), (GetPixel(pixels, 64, 24, 0), GetPixel(pixels, 64, 29, 15), GetPixel(pixels, 64, 30, 0), GetPixel(pixels, 64, 24, 16)));
+
+        // D: a document that is not well-formed draws the outline of the glyph, with the brush of the text.
+        Assert.Equal((White, Black, Black, White), (GetPixel(pixels, 64, 37, 6), GetPixel(pixels, 64, 38, 1), GetPixel(pixels, 64, 49, 12), GetPixel(pixels, 64, 50, 12)));
+
+        // E: a gradient from black to blue across its box.
+        Assert.Equal((White, White), (GetPixel(pixels, 64, 51, 8), GetPixel(pixels, 64, 60, 8)));
+        for (var x = 52; x < 59; x++)
+        {
+            var left = GetPixel(pixels, 64, x, 8);
+            var right = GetPixel(pixels, 64, x + 1, 8);
+            Assert.Equal((0, 0), (left.R, left.G));
+            Assert.True(left.B < right.B);
+        }
+
+        Assert.InRange(GetPixel(pixels, 64, 52, 8).B, 0, 32);
+        Assert.InRange(GetPixel(pixels, 64, 59, 8).B, 223, 255);
+    }
+
+    [Fact]
+    public void AnSvgGlyphIsDrawnAtTheSizeOfTheText()
+    {
+        // At 32 pixels per em, the rectangles of A are twice as large, and still on whole pixels.
+        var font = FontTestSupport.Load(FontSamples.SvgBoxes());
+        var pixels = Draw(40, 40, canvas => canvas.FillText(Black, "A", font, 32, new PointD(0, 0)));
+        Assert.Equal((White, Red, Red, Green, Green, White), (GetPixel(pixels, 40, 3, 10), GetPixel(pixels, 40, 4, 2), GetPixel(pixels, 40, 27, 23), GetPixel(pixels, 40, 12, 10), GetPixel(pixels, 40, 19, 17), GetPixel(pixels, 40, 28, 10)));
+        Assert.Equal(new RectangleD(2, 1, 12, 12), TextLayout.Create("A", font, 16).InkBounds);
+
+        // The glyphs placed by the caller are drawn the same way, with the palette of the options.
+        var expected = Draw(64, 20, canvas => canvas.FillText(Black, "AB", font, 16, new PointD(0, 0)));
+        var glyphs = Draw(64, 20, canvas => canvas.FillGlyphs(Black, font, 16, [new PositionedGlyph(FontSamples.SvgA, new PointD(0, 13)), new PositionedGlyph(FontSamples.SvgB, new PointD(16, 13))]));
+        Assert.Equal(expected, glyphs);
+    }
+
+    [Fact]
+    public void TheElementsOfAnSvgGlyph()
+    {
+        // The shapes, the transformations, the strokes and the groups of a document, each compared with the drawing of the
+        // same shape on the canvas at 16 pixels per em (a unit is 1/64 pixel, the baseline of the glyph at 13). The glyph
+        // is an image composited onto the canvas: a pixel an edge crosses can differ by one step of rounding.
+        static byte[] DrawSvg(string content)
+        {
+            var font = FontSamples.Boxes();
+            font.RawTables["SVG "] = FontSamples.WriteSvgTable([(FontSamples.BoxA, FontSamples.BoxA, System.Text.Encoding.UTF8.GetBytes(
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><g id=\"glyph" + FontSamples.BoxA.ToString(CultureInfo.InvariantCulture) + "\" transform=\"translate(0,-832)\">" + content + "</g></svg>"))]);
+            return Draw(20, 20, canvas => canvas.FillText(Black, "A", FontTestSupport.Load(font), 16, new PointD(0, 0)));
+        }
+
+        void Check(string content, DrawingAction expected, int tolerance = 0) => AssertClose(Draw(20, 20, expected), DrawSvg(content), tolerance);
+
+        Check("<rect x='128' y='64' width='256' height='512' fill='#ff0000'/>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 8)));
+        Check("<circle cx='512' cy='512' r='256' fill='lime'/>", canvas => canvas.FillCircle(Green, new PointD(8, 8), 4), tolerance: 1);
+        Check("<ellipse cx='512' cy='512' rx='256' ry='128' fill='lime'/>", canvas => canvas.FillEllipse(Green, new PointD(8, 8), 4, 2), tolerance: 1);
+        Check("<polygon points='128,64 640,64 128,576' fill='rgb(255, 0, 0)'/>", canvas => canvas.FillPolygon(Red, [new PointD(2, 1), new PointD(10, 1), new PointD(2, 9)]), tolerance: 1);
+        Check("<path d='M128 64h512v512h-512z' transform='translate(64 64) scale(0.5)' fill='red'/>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1.5, 4, 4)), tolerance: 1);
+        Check("<rect x='128' y='64' width='512' height='512' fill='none' stroke='red' stroke-width='128'/>", canvas => canvas.StrokeRectangle(new Pen(new SolidBrush(Red), 2), new RectangleD(2, 1, 8, 8)));
+        Check("<line x1='128' y1='320' x2='640' y2='320' stroke='red' stroke-width='128' fill='blue'/>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 4, 8, 2)));
+        Check("<g opacity='0.5'><rect x='128' y='64' width='512' height='512' fill='red'/><rect x='384' y='64' width='512' height='512' fill='red'/></g>", canvas => canvas.FillRectangle(new Rgba32(255, 0, 0, 128), new RectangleD(2, 1, 12, 8)), tolerance: 1);
+        Check("<rect x='128' y='64' width='512' height='512' style='fill: red; display: none'/>", _ => { });
+        Check("<rect x='128' y='64' width='512' height='512' fill='red' visibility='hidden'/>", _ => { });
+        Check("<rect x='128' y='64' width='512' height='512' fill='red' opacity='0'/>", _ => { });
+        Check("<text x='0' y='512'>A</text><foreignObject width='512' height='512'/>", _ => { });
+
+        // An image in a data URL, stretched to its box when preserveAspectRatio is none.
+        var png = Convert.ToBase64String(FontSamples.CreateBitmap(2, 1, static (_, _) => (255, 0, 0, 255)));
+        Check("<image x='128' y='64' width='256' height='256' preserveAspectRatio='none' xlink:href='data:image/png;base64," + png + "'/>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 4)), tolerance: 1);
+        Check("<image x='128' y='64' width='256' height='256' xlink:href='data:image/gif;base64,AAAA'/>", _ => { });
+
+        // A use element that refers to itself, or to its ancestor, draws nothing more.
+        Check("<g id='loop'><rect x='128' y='64' width='256' height='256' fill='red'/><use xlink:href='#loop' x='256'/></g>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 4)));
+    }
+
     private static void AssertColor(double red, double green, double blue, Rgba32 actual)
     {
         if (Math.Abs(actual.R - red) > 1.01 || Math.Abs(actual.G - green) > 1.01 || Math.Abs(actual.B - blue) > 1.01)

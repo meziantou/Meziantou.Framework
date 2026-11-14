@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// mask, and every glyph under a transformation that turns, skews or is projective, is filled as a shape where it is.
 /// </para>
 /// <para>
-/// A glyph the font draws with its own colors (<c>COLR</c>, <c>sbix</c>, <c>CBDT</c>) is drawn as a text draws it, from
+/// A glyph the font draws with its own colors (<c>COLR</c>, <c>SVG </c>, <c>sbix</c>, <c>CBDT</c>) is drawn as a text draws it, from
 /// its display list, kept in the cache too. A synthetic bold fills the glyphs with the stroke of their outline; a
 /// synthetic oblique shears them.
 /// </para>
@@ -294,7 +294,9 @@ internal sealed partial class DrawingSession
     private static ColorGlyph? GetColorGlyph(FontFace face, int glyph, int palette, double size, GlyphCache? cache, GlyphScratch scratch)
     {
         var isPainted = face.IsColorGlyph(glyph);
-        var key = new GlyphCacheKey(face, glyph, IsColor: true, isPainted ? 0 : size, isPainted ? palette : 0, 0, 0, 0, 0, 0, 0, IsAliased: false, 0);
+        var svg = default(SvgGlyph);
+        var isSvg = !isPainted && face.TryGetSvgGlyph(glyph, out svg);
+        var key = new GlyphCacheKey(face, glyph, IsColor: true, isPainted ? 0 : size, isPainted || isSvg ? palette : 0, 0, 0, 0, 0, 0, 0, IsAliased: false, 0);
         if (cache is not null && cache.TryGet(key, out var value))
             return (ColorGlyph?)value;
 
@@ -304,9 +306,17 @@ internal sealed partial class DrawingSession
         {
             colorGlyph = face.BuildColorGlyph(glyph, palette, scratch, ref budget);
         }
-        else if (face.TryGetBitmapGlyph(glyph, size, out var bitmap))
+        else
         {
-            colorGlyph = BitmapGlyphDecoder.CreateGlyph(face, bitmap, size);
+            if (isSvg)
+            {
+                colorGlyph = SvgGlyphRenderer.CreateGlyph(face, svg, palette, size, ref budget);
+            }
+
+            if (colorGlyph is null && face.TryGetBitmapGlyph(glyph, size, out var bitmap))
+            {
+                colorGlyph = BitmapGlyphDecoder.CreateGlyph(face, bitmap, size);
+            }
         }
 
         cache?.Add(key, colorGlyph, GetBytes(colorGlyph));

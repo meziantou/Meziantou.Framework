@@ -97,6 +97,9 @@ public sealed class FontFace
     private readonly int _cblcLength;
     private readonly int _cbdtOffset;
     private readonly int _cbdtLength;
+    private readonly SvgTable? _svg;
+    private readonly int _svgOffset;
+    private readonly int _svgLength;
 
     // The face of the default instance, which the other instances are made from: itself for the face that was loaded.
     private readonly FontFace _default;
@@ -333,6 +336,19 @@ public sealed class FontFace
         if (_directory.TryFind(FontTags.Cblc, out _cblcOffset, out _cblcLength) && _directory.TryFind(FontTags.Cbdt, out _cbdtOffset, out _cbdtLength))
         {
             _cblc = CblcTable.Read(file.Slice(_cblcOffset, _cblcLength));
+        }
+
+        // The glyphs described by SVG documents. A malformed list of documents leaves the table out.
+        if (_directory.TryFind(FontTags.Svg, out _svgOffset, out _svgLength))
+        {
+            try
+            {
+                _svg = SvgTable.Read(file.Slice(_svgOffset, _svgLength));
+            }
+            catch (InvalidFontException)
+            {
+                _svg = null;
+            }
         }
 
         // The bitmaps without colors, for the font that was loaded to use them.
@@ -947,7 +963,40 @@ public sealed class FontFace
     }
 
     /// <summary>Gets a value indicating whether the font has glyphs that are drawn with their own colors.</summary>
-    public bool HasColorGlyphs => _colr is not null || _sbix is not null || _cblc is not null;
+    public bool HasColorGlyphs => _colr is not null || _sbix is not null || _cblc is not null || _svg is not null;
+
+    /// <summary>Gets a value indicating whether the font has glyphs described by SVG documents (the <c>SVG </c> table).</summary>
+    public bool HasSvgGlyphs => _svg is not null;
+
+    /// <summary>Finds the SVG document that describes a glyph.</summary>
+    /// <param name="glyphId">The glyph.</param>
+    /// <param name="glyph">Where the document is; <see cref="GetSvgDocument"/> gives its text.</param>
+    /// <returns><see langword="false"/> when the font has no SVG document for the glyph.</returns>
+    public bool TryGetSvgGlyph(int glyphId, out SvgGlyph glyph)
+    {
+        if (_svg is null || (uint)glyphId >= (uint)GlyphCount)
+        {
+            glyph = default;
+            return false;
+        }
+
+        return _svg.TryGetGlyph(Data.RawBytes.AsSpan(_svgOffset, _svgLength), _svgOffset, glyphId, out glyph);
+    }
+
+    /// <summary>Gets the text of the SVG document of a glyph, in UTF-8, expanded when the font compresses it.</summary>
+    /// <param name="glyph">The glyph, from <see cref="TryGetSvgGlyph"/>.</param>
+    /// <returns>The bytes of the document: those of the font when it is not compressed.</returns>
+    /// <exception cref="ArgumentException">The document is not in the bytes of the font.</exception>
+    /// <exception cref="InvalidFontException">The compressed document is malformed.</exception>
+    /// <exception cref="FontResourceLimitException">The expanded document is larger than <see cref="FontResourceLimits.MaxFontBytes"/>.</exception>
+    public ReadOnlyMemory<byte> GetSvgDocument(in SvgGlyph glyph)
+    {
+        var bytes = Data.RawBytes;
+        if (glyph.Offset < _svgOffset || glyph.Length <= 0 || (long)glyph.Offset + glyph.Length > (long)_svgOffset + _svgLength)
+            throw new ArgumentException("The document is not a document of the SVG table of the font.", nameof(glyph));
+
+        return SvgTable.Decode(bytes.AsSpan(glyph.Offset, glyph.Length), bytes.AsMemory(glyph.Offset, glyph.Length), Data.Limits);
+    }
 
     /// <summary>Finds the image of a glyph the font gives as a bitmap, in the strike that suits a size.</summary>
     /// <returns><see langword="false"/> when the font has no image for the glyph.</returns>

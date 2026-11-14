@@ -477,6 +477,7 @@ namespace Meziantou.Framework.Fonts
         public bool HasMathTable { get => throw null; }
         public bool HasOs2 { get => throw null; }
         public bool HasPost { get => throw null; }
+        public bool HasSvgGlyphs { get => throw null; }
         public bool HasVerticalMetrics { get => throw null; }
         public int HeadFlags { get => throw null; }
         public int HorizontalAscender { get => throw null; }
@@ -537,6 +538,7 @@ namespace Meziantou.Framework.Fonts
         public string? GetName(int nameId) => throw null;
         public System.Collections.Generic.IReadOnlyList<string> GetNames(int nameId) => throw null;
         public void GetPaletteType(int palette, out bool isForLightBackground, out bool isForDarkBackground) => throw null;
+        public System.ReadOnlyMemory<byte> GetSvgDocument(in Meziantou.Framework.Fonts.SvgGlyph glyph) => throw null;
         public int GetTopSideBearing(int glyphId) => throw null;
         public void GetVerticalOrigin(int glyphId, Meziantou.Framework.Fonts.GlyphScratch? scratch, out int x, out int y) => throw null;
         public bool IsColorGlyph(int glyphId) => throw null;
@@ -551,6 +553,7 @@ namespace Meziantou.Framework.Fonts
         public bool TryGetMathItalicsCorrection(int glyphId, out int value) => throw null;
         public bool TryGetMathTopAccentAttachment(int glyphId, out int value) => throw null;
         public bool TryGetPaletteColor(int palette, int entry, out int red, out int green, out int blue, out int alpha) => throw null;
+        public bool TryGetSvgGlyph(int glyphId, out Meziantou.Framework.Fonts.SvgGlyph glyph) => throw null;
         public bool TryGetTable(uint tag, out System.ReadOnlyMemory<byte> table) => throw null;
         public Meziantou.Framework.Fonts.FontFace WithCoordinates(System.ReadOnlySpan<int> userCoordinates) => throw null;
     }
@@ -1008,6 +1011,28 @@ namespace Meziantou.Framework.Fonts
         #nullable restore
         public static bool operator ==(Meziantou.Framework.Fonts.ShapingRun left, Meziantou.Framework.Fonts.ShapingRun right) => throw null;
         public static bool operator !=(Meziantou.Framework.Fonts.ShapingRun left, Meziantou.Framework.Fonts.ShapingRun right) => throw null;
+    }
+
+    public readonly struct SvgGlyph : System.IEquatable<Meziantou.Framework.Fonts.SvgGlyph>
+    {
+        public int FirstGlyphId { get => throw null; init { } }
+        public int GlyphId { get => throw null; init { } }
+        public bool IsCompressed { get => throw null; init { } }
+        public int LastGlyphId { get => throw null; init { } }
+        public int Length { get => throw null; init { } }
+        public int Offset { get => throw null; init { } }
+        public SvgGlyph(int GlyphId, int FirstGlyphId, int LastGlyphId, int Offset, int Length, bool IsCompressed) { }
+        public void Deconstruct(out int GlyphId, out int FirstGlyphId, out int LastGlyphId, out int Offset, out int Length, out bool IsCompressed) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.SvgGlyph other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.SvgGlyph left, Meziantou.Framework.Fonts.SvgGlyph right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.SvgGlyph left, Meziantou.Framework.Fonts.SvgGlyph right) => throw null;
     }
 
     public sealed class SystemFontCollection

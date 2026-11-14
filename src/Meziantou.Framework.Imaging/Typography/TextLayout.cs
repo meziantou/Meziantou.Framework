@@ -1292,14 +1292,14 @@ public sealed class TextLayout
                 var glyphBounds = recorded.Bounds;
 
                 // A glyph the font draws with its own colors: its display list is built once, which validates what it
-                // refers to, and its box replaces the box of its outline.
-                // A glyph the font draws with its own colors: its display list is built once, which validates what it
                 // refers to, and its box replaces the box of its outline. A glyph that is an image depends on the size
                 // it is drawn at.
                 if (face.HasColorGlyphs)
                 {
                     var isPainted = face.IsColorGlyph(_glyphs[i]);
-                    var key = (run.Font, _glyphs[i], isPainted ? run.Palette : 0, isPainted ? 0 : run.Size);
+                    var svg = default(SvgGlyph);
+                    var isSvg = !isPainted && face.TryGetSvgGlyph(_glyphs[i], out svg);
+                    var key = (run.Font, _glyphs[i], isPainted || isSvg ? run.Palette : 0, isPainted ? 0 : run.Size);
                     if (!colorKeys.TryGetValue(key, out var colorIndex))
                     {
                         var budget = new GlyphBudget(face.Data.Limits);
@@ -1308,9 +1308,19 @@ public sealed class TextLayout
                         {
                             colorGlyph = face.BuildColorGlyph(_glyphs[i], run.Palette, scratch, ref budget);
                         }
-                        else if (face.TryGetBitmapGlyph(_glyphs[i], run.Size, out var bitmap))
+                        else
                         {
-                            colorGlyph = BitmapGlyphDecoder.CreateGlyph(face, bitmap, run.Size);
+                            // An SVG glyph is drawn into an image at the size of the run; one the renderer cannot read
+                            // falls back to the bitmap of the glyph, then to its outline.
+                            if (isSvg)
+                            {
+                                colorGlyph = SvgGlyphRenderer.CreateGlyph(face, svg, run.Palette, run.Size, ref budget);
+                            }
+
+                            if (colorGlyph is null && face.TryGetBitmapGlyph(_glyphs[i], run.Size, out var bitmap))
+                            {
+                                colorGlyph = BitmapGlyphDecoder.CreateGlyph(face, bitmap, run.Size);
+                            }
                         }
 
                         colorIndex = -1;

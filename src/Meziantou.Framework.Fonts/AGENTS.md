@@ -2,7 +2,7 @@
 
 The OpenType font reader and the text shaper shared by `Meziantou.Framework.Imaging` (which draws text),
 `Meziantou.Framework.WebPlatform` (which lays out HTML, SVG and MathML text) and `Meziantou.Framework.Pdf` (which embeds
-fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT), BASE
+fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT, SVG), BASE
 baselines, the shaping of complex scripts and of the fonts of Apple Advanced Typography, and the subsetting of TrueType
 and CFF outlines (`FontSubsetter`).
 
@@ -112,6 +112,11 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   the drawing pipeline knows about them. Every caller that decodes an outline for a text passes the size; a cache of
   what depends on the outline of a glyph has the size in its key. The option is off by default: the pixels of a text
   do not change with the tables a font happens to have.
+- **SVG glyphs** (`SvgTable`). The document records are validated when the face is created (sorted, not overlapping,
+  inside the table): a malformed list leaves the table out. `GetSvgDocument` returns the bytes of the font for a
+  document that is not compressed, and expands a gzip one into an array sized from its trailer, bounded by
+  `MaxFontBytes` before it is allocated, then checks its CRC-32. Reading and drawing the XML is the caller's:
+  Imaging draws it with `SvgGlyphRenderer`.
 - Tests have three sources: literals computed by hand on fonts built in memory (`FontTests`, with `Common/FontBuilder.cs`,
   `FontCffWriter.cs`, `FontCharstring.cs` and `FontWoff2Writer.cs` of the corpus generator, linked into the tests), the
   values HarfBuzz and FreeType both give for the fonts of the corpus (`Conformance/FontConformanceTests`: names,

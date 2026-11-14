@@ -38,7 +38,7 @@ public static string DescribeFont(string path)
 | Containers | TrueType and OpenType (`.ttf`, `.otf`), collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0, collections included |
 | Outlines | TrueType (`glyf`), CFF and CFF2 |
 | Variable fonts | Axes, named instances and everything an instance varies: outlines, advances, metrics and the positions of the layout tables |
-| Color glyphs | `COLR` versions 0 and 1 with the palettes of `CPAL`, and glyphs that are images (`sbix`, `CBDT`) |
+| Color glyphs | `COLR` versions 0 and 1 with the palettes of `CPAL`, glyphs described by SVG documents (`SVG `), and glyphs that are images (`sbix`, `CBDT`) |
 | Bitmaps without colors | The one-bit strikes of `EBDT`, on request (see below) |
 
 A font collection holds several faces in one file. [Font.Load](cref:Meziantou.Framework.Imaging.Typography.Font.Load) gives its first face; [FontCollection.Load](cref:Meziantou.Framework.Imaging.Typography.FontCollection.Load) gives them
@@ -132,6 +132,12 @@ gives the palettes of the font. [FillText](cref:Meziantou.Framework.Imaging.Draw
   font gives to the glyph itself, which can be empty.
 - A glyph stored as an image (`sbix`, `CBDT`) is taken from the smallest strike that is at least as large as the
   text, and scaled to the size of the text.
+- A glyph described by an SVG document (`SVG `) is drawn at the size of the text. A font that has both `COLR` and `SVG `
+  glyphs is drawn with `COLR`; a document that cannot be read is drawn with the image of the glyph, or its outline.
+  The documents are drawn with the subset of SVG that emoji and color fonts use: the shapes, groups and `use`
+  elements, transformations, fills and strokes, the colors of the palette of the style (`var(--color0, ...)`),
+  linear and radial gradients, clipping paths, opacity, and PNG and JPEG images. `currentColor` is black, whatever
+  the brush of the text. Masks, patterns, filters, markers and `style` elements are not drawn.
 
 Some fonts made for screens of low resolution, mostly Chinese, Japanese and Korean ones, also have a one-bit bitmap of
 each glyph for a few sizes. They are not used by default. A font loaded with [FontLoadOptions.UseEmbeddedBitmaps](cref:Meziantou.Framework.Imaging.Typography.FontLoadOptions.UseEmbeddedBitmaps) uses
@@ -167,7 +173,6 @@ library does not support, and [ImageResourceLimitException](cref:Meziantou.Frame
 
 ## What is not supported
 
-- Glyphs in SVG (`SVG ` table): their outlines are drawn instead.
 - Fonts without outlines (bitmap-only fonts), PostScript Type 1 fonts and Type 1 charstrings.
 - The hints of CFF outlines, and the variation of the hinting values of TrueType (`cvar`).
 - The metadata and private blocks of WOFF and WOFF2 files. Table checksums are not verified.

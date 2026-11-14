@@ -128,5 +128,29 @@ Some fonts have glyphs with their own colors, such as emoji. [HasColorGlyphs](cr
 - [TryGetBitmapGlyph](cref:Meziantou.Framework.Fonts.FontFace.TryGetBitmapGlyph) finds the image of a glyph of an `sbix` or `CBDT` table in the strike that suits a size: where its
   data is in the font, its placement and its image format ([BitmapGlyph.Format](cref:Meziantou.Framework.Fonts.BitmapGlyph.Format)). Decoding the image is up to you; a
   renderer can also draw the outline of the glyph instead.
+- [TryGetSvgGlyph](cref:Meziantou.Framework.Fonts.FontFace.TryGetSvgGlyph) finds the SVG document that describes a glyph of an `SVG ` table, and [GetSvgDocument](cref:Meziantou.Framework.Fonts.FontFace.GetSvgDocument)
+  gives its text, expanded when the font compresses it with gzip. [HasSvgGlyphs](cref:Meziantou.Framework.Fonts.FontFace.HasSvgGlyphs) tells whether a font has such glyphs.
+
+A document can describe several glyphs: the element of a glyph has the identifier `glyph` followed by the glyph
+identifier, and the glyph is drawn as a `use` element that refers to it would draw it, in font units with the y axis
+going down from the baseline. Drawing the document is up to you:
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=Fonts_SvgDocument;format=md-fenced-code-block;dedent=true -->
+```csharp
+static string? GetSvgDocument(FontFace face, char character)
+{
+    var glyph = face.MapCodePoint(character);
+    if (!face.TryGetSvgGlyph(glyph, out var svgGlyph))
+        return null; // no SVG description: the glyph is drawn from its outline, or from another color table
+
+    // The text of the document, expanded when the font compresses it. The document can describe several glyphs
+    // (FirstGlyphId to LastGlyphId): the element of this one has the identifier "glyph" + GlyphId.
+    return Encoding.UTF8.GetString(face.GetSvgDocument(svgGlyph).Span);
+}
+```
+<!-- endref -->
+
+A font that has a malformed list of documents is read without its `SVG ` table: its glyphs are then outlines. A
+compressed document that is malformed throws an [InvalidFontException](cref:Meziantou.Framework.Fonts.InvalidFontException) when it is read.
 
 To draw color glyphs without writing a renderer, use [the text API of Meziantou.Framework.Imaging](../Imaging/08-Text/02-Fonts.md#color-glyphs).

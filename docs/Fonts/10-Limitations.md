@@ -8,7 +8,7 @@ description: What the font reader and the shaper do not do.
   [Meziantou.Framework.Unicode](../Unicode/01-Introduction.md) has the algorithms to write your own.
 - **No rasterization.** Outlines are given as lines and curves; filling them with pixels is up to the renderer.
 - **No decoding of bitmap glyphs.** The images of `sbix` and `CBDT` glyphs are given as encoded data.
-- **Not supported**: glyphs in SVG (`SVG ` table), fonts without outlines (bitmap-only fonts), PostScript Type 1 fonts,
+- **Not supported**: fonts without outlines (bitmap-only fonts), PostScript Type 1 fonts,
   the hints of CFF outlines, the variation of the TrueType hinting values (`cvar`), and the metadata and private blocks
   of WOFF and WOFF2 files.
 - **Apple Advanced Typography**: the `mort` table (the version before `morx`), the state tables of the legacy `kern`

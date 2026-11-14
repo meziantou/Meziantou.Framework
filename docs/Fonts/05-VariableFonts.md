@@ -37,6 +37,9 @@ weight 900.
   its outlines, read its metrics and shape text with it. [Instance](cref:Meziantou.Framework.Fonts.FontFace.Instance) gives its coordinates; it is `null` for the default
   instance.
 - A font that does not vary has no axis.
+- [GlyphHinter](cref:Meziantou.Framework.Fonts.GlyphHinter) hints an instance with its own outlines: the TrueType instructions run with the control values the
+  `cvar` table varies, and the hints of CFF2 outlines and the alignment zones of their private DICT are blended for the
+  instance.
 
 ## Axes and named instances
 

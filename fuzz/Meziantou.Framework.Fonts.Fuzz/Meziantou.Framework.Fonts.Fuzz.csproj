@@ -1,5 +1,5 @@
 <Project Sdk="Meziantou.NET.Sdk">
-  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter, the subsetter and the shaper). See fuzz/README.md. -->
+  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter, the cvar table, the hints of CFF outlines, the subsetter and the shaper). See fuzz/README.md. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
@@ -16,6 +16,8 @@
     <SeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\boxes.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\boxes.woff2;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\curves.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\deltas.woff;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\marks.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\variable.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\variable.phantom.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\monochrome-boxes.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\collection.ttc;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\charstrings.otf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\cid.otf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\variable-charstrings.otf" />
     <SeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans\NotoSans-Regular.subset.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans-cff\NotoSans-Regular.subset.otf" />
     <SeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\font-suites\aots\fonts\cmap4_font1.otf" />
+    <!-- CFF hints: a CID-keyed font with stem hints, hint masks and blue zones, and a CFF2 font whose private DICT blends its blue zones -->
+    <SeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans-cjk-kr\NotoSansCJKkr-Regular.letters.otf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\text-rendering-tests\AdobeVFPrototype-Subset.otf" />
     <EmbeddedResource Include="@(SeedFont)" LogicalName="Seeds/fonts/%(Filename)%(Extension)" Link="Seeds\fonts\%(Filename)%(Extension)" />
 
     <!-- The seeds of the shaping target only: fonts of Apple Advanced Typography (morx, kerx, feat, trak) and the GSUB and GPOS fonts of the AOTS suite -->

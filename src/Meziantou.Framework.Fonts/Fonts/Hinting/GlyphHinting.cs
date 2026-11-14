@@ -14,10 +14,11 @@ public enum GlyphHinting
     Light,
 
     /// <summary>
-    /// The TrueType instructions of the font fit the outlines along both axes, and the advances are whole numbers of
-    /// pixels; an instance of a variable font is hinted with its own points and control values (<c>gvar</c> and
-    /// <c>cvar</c>). A font without instructions (CFF outlines, TrueType outlines without a font program nor a control
-    /// value program) is hinted as with <see cref="Light"/>.
+    /// The hints of the font fit the outlines, and the advances are whole numbers of pixels. The TrueType instructions
+    /// fit TrueType outlines along both axes; an instance of a variable font is hinted with its own points and control
+    /// values (<c>gvar</c> and <c>cvar</c>). The stem hints and the alignment zones of CFF and CFF2 outlines fit them
+    /// along the vertical axis. TrueType outlines without instructions (no font program nor control value program) are
+    /// hinted as with <see cref="Light"/>.
     /// </summary>
     Full,
 }

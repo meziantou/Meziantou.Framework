@@ -120,6 +120,7 @@ public static class FontsFuzzTargets
     [
         new("fonts-hinting", Hinting) { Seeds = GetHintingSeeds },
         new("fonts-hinting-bytecode", HintingBytecode) { Seeds = GetBytecodeSeeds },
+        new("fonts-cff-hints", CffHints) { Seeds = GetCffHintSeeds },
         new("fonts-cvar", ControlValueVariations) { Seeds = GetControlValueVariationSeeds, Dictionary = TupleVariationTokens },
         new("fonts-subset", Subset) { Seeds = () => GetFontSeeds().Select((seed, index) => seed with { Data = (byte[])[(byte)index, (byte)(index * 13), .. seed.Data.Span] }) },
         new("fonts-shaping", Shaping) { Seeds = GetShapingSeeds, Dictionary = ShapingTokens },
@@ -153,6 +154,98 @@ public static class FontsFuzzTargets
             if (instance != 0 && face.Axes.Length > 0)
             {
                 CheckHinting(face.WithCoordinates(GetInstanceCoordinates(face, instance)), size, mode, GetHintedGlyphs(face));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads the hints of the glyphs of a font with CFF or CFF2 outlines: an option byte gives an instance (see
+    /// <see cref="Hinting"/>). The outline decoded with a sink of hints is the one decoded without, and the hinting
+    /// values of the private DICTs are finite, with zones in pairs.
+    /// </summary>
+    private static void CffHints(ReadOnlySpan<byte> data)
+    {
+        var instance = FuzzInput.ReadByte(ref data);
+        FontFace[] faces;
+        try
+        {
+            faces = FontLoader.Load(data, SharedEnvironment);
+        }
+        catch (FontException)
+        {
+            return;
+        }
+
+        foreach (var defaultFace in faces.Take(2))
+        {
+            if (defaultFace.Outlines is not (FontOutlineKind.Cff or FontOutlineKind.Cff2))
+                continue;
+
+            var face = instance != 0 && defaultFace.Axes.Length > 0 ? defaultFace.WithCoordinates(GetInstanceCoordinates(defaultFace, instance)) : defaultFace;
+            using var scratch = new GlyphScratch(SharedEnvironment.CreateAllocator("fuzz"));
+            foreach (var glyph in GetHintedGlyphs(face))
+            {
+                var hinted = new HintCheckingSink();
+                var plain = new RecordingSink();
+                var hintedError = Decode(face, glyph, hinted, scratch);
+                var plainError = Decode(face, glyph, plain, scratch);
+                FuzzAssert.Equal(plainError, hintedError, $"The glyph {glyph} decodes differently with a sink of hints");
+                if (plainError is null)
+                {
+                    FuzzAssert.True(plain.Values.SequenceEqual(hinted.Outline.Values), $"The outline of the glyph {glyph} changes with a sink of hints");
+                }
+
+                CheckHintValues(face, glyph);
+            }
+        }
+
+        static string? Decode(FontFace face, int glyph, OutlineSink sink, GlyphScratch scratch)
+        {
+            try
+            {
+                var budget = new GlyphBudget(Limits);
+                face.DecodeOutline(glyph, sink, scratch, ref budget);
+                return null;
+            }
+            catch (FontException ex)
+            {
+                return ex.GetType().Name;
+            }
+        }
+
+        static void CheckHintValues(FontFace face, int glyph)
+        {
+            CffHintValues? values;
+            try
+            {
+                values = face.GetCffHintValues(glyph);
+            }
+            catch (InvalidFontException)
+            {
+                return;
+            }
+
+            FuzzAssert.True(values is not null, "A font with CFF outlines has no hinting values");
+            foreach (var zones in (double[][])[values.BlueValues, values.OtherBlues, values.FamilyBlues, values.FamilyOtherBlues])
+            {
+                FuzzAssert.True(zones.Length % 2 == 0, "A list of zones is not made of pairs");
+            }
+
+            foreach (var value in values.BlueValues.Concat(values.OtherBlues).Concat(values.FamilyBlues).Concat(values.FamilyOtherBlues).Concat(values.StemSnapH).Concat(values.StemSnapV).Concat([values.BlueScale, values.BlueShift, values.BlueFuzz, values.StdHW, values.StdVW]))
+            {
+                FuzzAssert.True(double.IsFinite(value), $"A hinting value is {value}");
+            }
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetCffHintSeeds()
+    {
+        foreach (var seed in GetFontSeeds())
+        {
+            if (seed.Name.EndsWith(".otf", StringComparison.Ordinal))
+            {
+                yield return new FuzzSeed(seed.Name, (byte[])[0, .. seed.Data.Span]);
+                yield return new FuzzSeed("instance-" + seed.Name, (byte[])[6, .. seed.Data.Span]);
             }
         }
     }
@@ -1198,6 +1291,42 @@ public static class FontsFuzzTargets
     private sealed record ShapingOutcome(string? Error, (int Glyph, int Cluster)[]? Glyphs, (int, int, int, int, int, byte)[] Positions);
 
     /// <summary>Records the commands of an outline, and checks that its coordinates are finite.</summary>
+    /// <summary>
+    /// Records an outline and checks the hints of its charstring: finite stems, and masks of one bit per stem given
+    /// before them.
+    /// </summary>
+    private sealed class HintCheckingSink : OutlineSink, ICffHintSink
+    {
+        private int _stemCount;
+
+        public RecordingSink Outline { get; } = new();
+
+        public int HintCount { get; private set; }
+
+        public void AddStem(bool isHorizontal, double edge, double width)
+        {
+            FuzzAssert.True(double.IsFinite(edge) && double.IsFinite(width), $"The glyph has the stem {edge} {width}");
+            _stemCount++;
+            HintCount++;
+        }
+
+        public void SetMask(ReadOnlySpan<byte> mask, bool isCounterMask)
+        {
+            FuzzAssert.Equal((_stemCount + 7) / 8, mask.Length, "A mask does not have one bit per stem");
+            HintCount++;
+        }
+
+        public override void MoveTo(double x, double y) => Outline.MoveTo(x, y);
+
+        public override void LineTo(double x, double y) => Outline.LineTo(x, y);
+
+        public override void QuadraticTo(double controlX, double controlY, double x, double y) => Outline.QuadraticTo(controlX, controlY, x, y);
+
+        public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) => Outline.CubicTo(control1X, control1Y, control2X, control2Y, x, y);
+
+        public override void Close() => Outline.Close();
+    }
+
     private sealed class RecordingSink : OutlineSink
     {
         public List<double> Values { get; } = [];

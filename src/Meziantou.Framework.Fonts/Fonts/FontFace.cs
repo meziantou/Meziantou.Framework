@@ -1381,6 +1381,13 @@ public sealed class FontFace
     }
 
     /// <summary>
+    /// Gets the hinting values of the private DICT a glyph of a font with CFF or CFF2 outlines uses (for an instance,
+    /// blended), or <see langword="null"/> for a font with other outlines.
+    /// </summary>
+    /// <exception cref="InvalidFontException">The private DICT is malformed.</exception>
+    internal CffHintValues? GetCffHintValues(int glyphId) => _cff?.GetHintValues(Data.RawBytes.AsSpan(_cffOffset, _cffLength), glyphId, _instance is null ? default : _instance.OutlineScalars);
+
+    /// <summary>
     /// Decodes the outline of a glyph as it is drawn at a size: the outline of the glyph, or, when the font was loaded
     /// to use its bitmaps without colors and has one for the glyph at exactly this size, the squares of its pixels.
     /// </summary>

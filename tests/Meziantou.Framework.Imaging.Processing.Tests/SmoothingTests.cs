@@ -587,4 +587,169 @@ public sealed class SmoothingTests
 
         return pixels;
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Inpainting (Telea 2004): every filled pixel is a weighted mean of first-order extrapolations I(q) + ∇I(q) · (p - q),
+    // so a uniform region is filled with its color and a linear ramp is continued exactly; the expected values below are
+    // those functions, not results of the code under test
+    // -----------------------------------------------------------------------------------------------------------------
+
+    #region Inpaint_RemoveAScratch
+    [Fact]
+    public void Inpaint_RemoveAScratch()
+    {
+        // A smooth gradient with a red scratch across it
+        using var photo = new Image<Rgb24>(40, 30);
+        for (var y = 0; y < 30; y++)
+        {
+            for (var x = 0; x < 40; x++)
+            {
+                photo.Frames[0][x, y] = new Rgb24((byte)(50 + (4 * x)), (byte)(40 + (5 * y)), 120);
+            }
+        }
+
+        var scratch = new PixelMask(photo.Size);
+        for (var x = 5; x < 35; x++)
+        {
+            photo.Frames[0][x, 14] = new Rgb24(255, 0, 0);
+            photo.Frames[0][x, 15] = new Rgb24(255, 0, 0);
+            scratch[x, 14] = true;
+            scratch[x, 15] = true;
+        }
+
+        // The scratch is filled from the pixels around it: the gradient continues through it
+        photo.Inpaint(scratch);
+
+        for (var x = 5; x < 35; x++)
+        {
+            Assert.InRange(photo.Frames[0][x, 14].R, 50 + (4 * x) - 1, 50 + (4 * x) + 1);
+            Assert.InRange(photo.Frames[0][x, 15].G, 40 + (5 * 15) - 1, 40 + (5 * 15) + 1);
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void InpaintingFillsAUniformRegionWithItsColor()
+    {
+        // The pixels outside the mask keep their stored values, the transparent ones their colors too
+        using var image = new Image<Rgba32>(9, 7, new Rgba32(30, 60, 90, 200));
+        image.Frames[0][0, 0] = new Rgba32(5, 6, 7, 0);
+        var mask = new PixelMask(image.Size);
+        mask.Fill(new Rectangle(2, 2, 5, 3));
+        image.Inpaint(mask, cancellationToken: Ct);
+
+        Assert.Equal(new Rgba32(5, 6, 7, 0), image.Frames[0][0, 0]);
+        for (var y = 0; y < 7; y++)
+        {
+            for (var x = 0; x < 9; x++)
+            {
+                if (x != 0 || y != 0)
+                {
+                    Assert.Equal(new Rgba32(30, 60, 90, 200), image.Frames[0][x, y]);
+                }
+            }
+        }
+
+        // A mask in a corner is filled from one side only
+        using var corner = new Image<Gray16>(6, 6, new Gray16(40000));
+        var cornerMask = new PixelMask(6, 6);
+        cornerMask.Fill(new Rectangle(0, 0, 3, 3));
+        corner.Inpaint(cornerMask, new InpaintingOptions { Radius = 1 }, Ct);
+        Assert.Equal(new Gray16(40000), corner.Frames[0][0, 0]);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(8)]
+    public void InpaintingContinuesALinearRamp(int radius)
+    {
+        // The value is 100 + 10 x: the gradient of every known pixel is exactly 10, and so is every extrapolation
+        using var image = new Image<Gray16>(30, 12);
+        for (var y = 0; y < 12; y++)
+        {
+            for (var x = 0; x < 30; x++)
+            {
+                image.Frames[0][x, y] = new Gray16((ushort)(100 + (10 * x)));
+            }
+        }
+
+        var mask = new PixelMask(image.Size);
+        mask.Fill(new Rectangle(10, 3, 9, 6));
+        image.Inpaint(mask, new InpaintingOptions { Radius = radius }, Ct);
+        for (var y = 3; y < 9; y++)
+        {
+            for (var x = 10; x < 19; x++)
+            {
+                Assert.InRange(image.Frames[0][x, y].Value, 100 + (10 * x) - 1, 100 + (10 * x) + 1);
+            }
+        }
+    }
+
+    [Fact]
+    public void InpaintingFillsEveryFrameTransactionally()
+    {
+        using var image = new Image<Rgb24>(5, 5, new Rgb24(10, 20, 30));
+        image.InsertFrame(1, image.Frames[0]).ProcessPixelRows(static pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                pixels.GetRowSpan(y).Fill(new Rgb24(200, 100, 50));
+            }
+        });
+        image.SetPosterFrame(image.Frames[0]);
+        image.Frames[0].Metadata.Hotspot = new Point(2, 2);
+        var mask = new PixelMask(5, 5);
+        mask[2, 2] = true;
+        image.Frames[0][2, 2] = new Rgb24(255, 255, 255);
+        image.Frames[1][2, 2] = new Rgb24(0, 0, 0);
+        image.PosterFrame![2, 2] = new Rgb24(255, 255, 255);
+
+        image.Inpaint(mask, cancellationToken: Ct);
+        Assert.Equal(new Rgb24(10, 20, 30), image.Frames[0][2, 2]);
+        Assert.Equal(new Rgb24(200, 100, 50), image.Frames[1][2, 2]);
+        Assert.Equal(new Rgb24(10, 20, 30), image.PosterFrame[2, 2]);
+        Assert.Equal(new Point(2, 2), image.Frames[0].Metadata.Hotspot);
+
+        // Failures leave the image unchanged
+        image.Frames[1][2, 2] = new Rgb24(0, 0, 0);
+        var full = new PixelMask(5, 5);
+        full.Fill(new Rectangle(0, 0, 5, 5));
+        Assert.Throws<ArgumentException>(() => image.Inpaint(full, cancellationToken: Ct));
+        Assert.Throws<ArgumentException>(() => image.Inpaint(new PixelMask(4, 5), cancellationToken: Ct));
+        Assert.Throws<ArgumentNullException>(() => image.Inpaint(null!, cancellationToken: Ct));
+        Assert.Throws<OperationCanceledException>(() => image.Inpaint(mask, cancellationToken: new CancellationToken(canceled: true)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new InpaintingOptions { Radius = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new InpaintingOptions { Radius = InpaintingOptions.MaxRadius + 1 });
+        Assert.Equal(new Rgb24(0, 0, 0), image.Frames[1][2, 2]);
+
+        // An empty mask changes nothing
+        image.Inpaint(new PixelMask(5, 5), cancellationToken: Ct);
+        Assert.Equal(new Rgb24(0, 0, 0), image.Frames[1][2, 2]);
+
+        using var limited = new Image<Rgba32>(32, 32, new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 16_384 } });
+        var limitedMask = new PixelMask(32, 32);
+        limitedMask[3, 3] = true;
+        Assert.Throws<ImageResourceLimitException>(() => limited.Inpaint(limitedMask, cancellationToken: Ct));
+
+        using var cmyk = new Image<Cmyk32>(2, 2);
+        Assert.Throws<UnsupportedImageFeatureException>(() => cmyk.Inpaint(new PixelMask(2, 2), cancellationToken: Ct));
+    }
+
+    [Fact]
+    public void InpaintingIsPremultipliedByAlpha()
+    {
+        // An opaque red pixel and transparent pixels around a hole: the color of the transparent pixels does not count, so
+        // the filled pixel is pure red, with the coverage of the mean
+        using var image = new Image<Rgba32>(3, 1);
+        image.Frames[0][0, 0] = new Rgba32(255, 0, 0, 255);
+        image.Frames[0][2, 0] = new Rgba32(0, 255, 0, 0);
+        var mask = new PixelMask(3, 1);
+        mask[1, 0] = true;
+        image.Inpaint(mask, new InpaintingOptions { Radius = 1 }, Ct);
+        var filled = image.Frames[0][1, 0];
+        Assert.Equal(255, filled.R);
+        Assert.Equal(0, filled.G);
+        Assert.InRange(filled.A, 1, 254);
+    }
 }

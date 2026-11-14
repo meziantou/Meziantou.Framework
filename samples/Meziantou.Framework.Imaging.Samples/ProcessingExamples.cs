@@ -60,6 +60,25 @@ internal static class ProcessingExamples
     }
     #endregion
 
+    /// <summary>Removes what a mask covers: scratches, a caption, a small object.</summary>
+    #region Imaging_Inpaint
+    public static void RemoveScratches(string photoPath, string maskPath, string outputPath)
+    {
+        using var photo = Image.Load(photoPath);
+
+        // The mask is painted in white on black, at the size of the photo
+        PixelMask mask;
+        using (var maskImage = Image.Load(maskPath))
+        {
+            mask = PixelMask.FromFrame(maskImage.Frames[0]);
+        }
+
+        // The pixels of the mask are filled from the pixels around them; a larger radius gives smoother fills
+        photo.Inpaint(mask, new InpaintingOptions { Radius = 4 });
+        photo.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>Quarter turns and mirrors: exact pixel permutations.</summary>
     #region Imaging_RotateAndFlip
     public static void RotateAndFlip(string inputPath, string outputPath)

@@ -39,7 +39,7 @@ color conversion, and bounded-memory streaming.
   `RgbaHalf`) for scene-referred and high dynamic range data, and two CMYK ones (`Cmyk32`, `Cmyk64`) that keep the inks
   of print images
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
-  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions and resizing (seam carving), morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions and resizing (seam carving), inpainting, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -529,7 +529,8 @@ scratch, charged to `MaxLiveAllocationBytes`, so a limit that fits one worker ma
 
 
 
-- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `Pad`, `ExtendCanvas`, `Rotate`, `Skew`, `Transform` and `AutoOrient` apply to every
+- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `SeamCarve`, `Pad`, `ExtendCanvas`, `Rotate`, `Skew`, `Transform`,
+  `AutoOrient`, `Inpaint` and `ApplyProcessor` apply to every
   frame and the poster in one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
   (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, cursor hotspots and
   metadata unchanged.
@@ -777,7 +778,8 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
 `Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `SeamCarve` (a
-content-aware resize, see [Content-aware resize](#content-aware-resize)), `Pad` (a border of a given
+content-aware resize, see [Content-aware resize](#content-aware-resize)), `Inpaint` (a mask filled from the pixels
+around it, see [Inpainting](#inpainting)), `Pad` (a border of a given
 width on each side), `ExtendCanvas` (a larger canvas, with the image at one of nine anchors), `Rotate` (exact 90/180/270
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
@@ -1313,6 +1315,41 @@ public static void ResizeToBanner(string inputPath, string outputPath, Rectangle
     protectedRegion.Fill(face);
     image.SeamCarve(image.Width / 2, image.Height, new SeamCarvingOptions { ProtectedRegion = protectedRegion });
     image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Inpainting
+
+`Inpaint(mask, options)` fills the pixels of a `PixelMask` (the size of the image, at least one pixel left out) of every
+frame and the poster from the pixels around them, with the fast marching method of Telea (2004): the pixels of the mask
+are filled in the order of their distance to its boundary (the eikonal equation on the pixel grid, with a heap ordered
+by distance then pixel index), each one the weighted mean of the first-order extrapolations `I(q) + ∇I(q) · (p - q)` of
+the known or filled pixels within `InpaintingOptions.Radius` (1 to 64, default 5), weighted by their alignment with
+the direction of the front, the inverse square of their distance and their difference of distance to the boundary.
+Colors are filled premultiplied by alpha, in double precision, each channel clamped to the range of the pixels it comes
+from; the pixels outside the mask keep their stored values. The result is the same on every platform. It suits thin
+and small regions (scratches, text, small objects) and blurs the texture of large ones, which it does not reconstruct.
+The working memory (17 bytes per pixel, a working copy of a frame and the new frames) is charged to the image, and the
+operation is transactional. `PixelMask.FromFrame` reads a mask from the light pixels of a frame (luma times alpha at
+least half, alpha for `A8`).
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_Inpaint;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void RemoveScratches(string photoPath, string maskPath, string outputPath)
+{
+    using var photo = Image.Load(photoPath);
+
+    // The mask is painted in white on black, at the size of the photo
+    PixelMask mask;
+    using (var maskImage = Image.Load(maskPath))
+    {
+        mask = PixelMask.FromFrame(maskImage.Frames[0]);
+    }
+
+    // The pixels of the mask are filled from the pixels around them; a larger radius gives smoother fills
+    photo.Inpaint(mask, new InpaintingOptions { Radius = 4 });
+    photo.Save(outputPath);
 }
 ```
 <!-- endref -->

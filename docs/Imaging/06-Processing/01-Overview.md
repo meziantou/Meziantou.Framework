@@ -21,6 +21,7 @@ original.
 | Make black and white | [Threshold](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Threshold) | [Binarization](09-Binarization.md) |
 | Measure how similar two images look, draw their differences | [ImageSimilarity](cref:Meziantou.Framework.Imaging.ImageSimilarity) | [Comparing images](10-ComparingImages.md) |
 | Erode, dilate, open, close, extract small bright or dark details | [Erode](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Erode), [Dilate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Dilate), [MorphologicalOpen](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.MorphologicalOpen), [MorphologicalClose](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.MorphologicalClose), [TopHat](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.TopHat), [BlackHat](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BlackHat) | [Morphology](11-Morphology.md) |
+| Remove scratches, captions and small objects | [Inpaint](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Inpaint), [PixelMask](cref:Meziantou.Framework.Imaging.PixelMask) | [Inpainting](13-Inpainting.md) |
 | Run a filter or a processor of your own on every frame | [ApplyRowOperation](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyRowOperation), [ApplyNeighborhoodOperation](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyNeighborhoodOperation), [ApplyProcessor](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyProcessor) | [Custom operations](12-CustomOperations.md) |
 
 Color profile conversions ([ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)) are described in [Color management](../09-Color/03-ColorManagement.md).
@@ -54,7 +55,7 @@ whole image, since every frame of an image has the size of its canvas.
 
 ## Geometry is all or nothing
 
-[Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop), [AutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoCrop), [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize), [Pad](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Pad), [ExtendCanvas](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ExtendCanvas), [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate), [Skew](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Skew), [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform), [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient), [SeamCarve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.SeamCarve) and [ApplyProcessor](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyProcessor) build the new frames
+[Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop), [AutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoCrop), [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize), [Pad](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Pad), [ExtendCanvas](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ExtendCanvas), [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate), [Skew](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Skew), [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform), [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient), [SeamCarve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.SeamCarve), [Inpaint](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Inpaint) and [ApplyProcessor](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyProcessor) build the new frames
 before they replace the old ones. When they fail (a resource limit, a cursor hotspot that would be cut, a cancellation),
 the image is left exactly as it was: its size, its pixels, its frames and its metadata.
 
@@ -102,3 +103,5 @@ processed concurrently, with the same result. See [Performance](../11-Performanc
 - [Comparing images](10-ComparingImages.md): similarity scores at 8 or 16 bits or on high dynamic range samples,
   difference maps and perceptual hashes.
 - [Morphology](11-Morphology.md): erosion, dilation, opening, closing and top-hat transforms.
+- [Custom operations](12-CustomOperations.md): your own filters and processors, on every frame.
+- [Inpainting](13-Inpainting.md): fill scratches, captions and small objects from the pixels around them.

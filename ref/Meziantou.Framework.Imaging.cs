@@ -1321,6 +1321,7 @@ namespace Meziantou.Framework.Imaging
         public static void Grayscale(this Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) { }
         public static void GuidedFilter(this Meziantou.Framework.Imaging.Image image, int radius, double epsilon, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void GuidedFilter(this Meziantou.Framework.Imaging.ImageFrame frame, int radius, double epsilon, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Inpaint(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.PixelMask mask, Meziantou.Framework.Imaging.InpaintingOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void MedianBlur(this Meziantou.Framework.Imaging.Image image, int radius, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void MedianBlur(this Meziantou.Framework.Imaging.ImageFrame frame, int radius, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void MorphologicalClose(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.StructuringElement element, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
@@ -1513,6 +1514,13 @@ namespace Meziantou.Framework.Imaging
         public override Meziantou.Framework.Imaging.Image<TPixel> ClonePosterFrame() => throw null;
         public override Meziantou.Framework.Imaging.ImageFrame<TPixel> InsertFrame(int index, Meziantou.Framework.Imaging.ImageFrame source) => throw null;
         public override Meziantou.Framework.Imaging.ImageFrame<TPixel> SetPosterFrame(Meziantou.Framework.Imaging.ImageFrame source) => throw null;
+    }
+
+    public sealed class InpaintingOptions
+    {
+        public const int MaxRadius = 64;
+        public static Meziantou.Framework.Imaging.InpaintingOptions Default { get => throw null; }
+        public int Radius { get => throw null; init { } }
     }
 
     public class InvalidImageContentException : Meziantou.Framework.Imaging.ImageException

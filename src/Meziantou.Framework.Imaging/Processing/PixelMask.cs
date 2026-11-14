@@ -4,7 +4,9 @@ using Meziantou.Framework.Imaging.Internals;
 namespace Meziantou.Framework.Imaging;
 
 /// <summary>
-/// A set of pixels of an image: the regions to keep and to remove of
+/// A set of pixels of an image: the region to fill of
+/// <see cref="ImageProcessingExtensions.Inpaint(Image, PixelMask, InpaintingOptions?, CancellationToken)"/>, or the
+/// regions to keep and to remove of
 /// <see cref="ImageProcessingExtensions.SeamCarve(Image, int, int, SeamCarvingOptions?, CancellationToken)"/>.
 /// </summary>
 /// <remarks>

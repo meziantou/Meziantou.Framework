@@ -3712,6 +3712,35 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void InpaintRemovesTheMaskedScratch()
+    {
+        // A uniform blue photo with a white scratch, and its mask
+        var photoPath = GetPath("scratched.png");
+        var maskPath = GetPath("scratch-mask.png");
+        using (var photo = new Image<Rgb24>(20, 12, new Rgb24(30, 60, 160)))
+        using (var mask = new Image<Gray8>(20, 12))
+        {
+            for (var x = 2; x < 18; x++)
+            {
+                photo.Frames[0][x, 6] = new Rgb24(255, 255, 255);
+                mask.Frames[0][x, 6] = new Gray8(255);
+            }
+
+            photo.Save(photoPath);
+            mask.Save(maskPath);
+        }
+
+        var output = GetPath("repaired.png");
+        ProcessingExamples.RemoveScratches(photoPath, maskPath, output);
+
+        using var result = Image.Load<Rgb24>(output);
+        for (var x = 0; x < 20; x++)
+        {
+            Assert.Equal(new Rgb24(30, 60, 160), result.Frames[0][x, 6]);
+        }
+    }
+
+    [Fact]
     public void RotateAndFlipTransposesThePixels()
     {
         // A quarter turn clockwise then a horizontal mirror moves the pixel (x, y) to (y, x)

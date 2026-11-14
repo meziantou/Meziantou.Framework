@@ -130,11 +130,24 @@ internal sealed class SelectorParser
     private PseudoElementSelector? _afterPseudoElement;
 
     // The lists the selectors are built in, shared by the nested selectors (e.g. the arguments of :is()): each one uses the end
-    // of the lists, and removes its items before returning
-    private readonly List<ComplexSelector> _complexBuffer = [];
-    private readonly List<CompoundSelector> _compoundBuffer = [];
-    private readonly List<Combinator> _combinatorBuffer = [];
-    private readonly List<SimpleSelector> _simpleBuffer = [];
+    // of the lists, and removes its items before returning. As the lists are used as stacks, the parsers of the same thread
+    // share them, so that a parser (there is one per style rule) does not allocate and grow its own lists.
+    [ThreadStatic]
+    private static List<ComplexSelector>? s_complexBuffer;
+
+    [ThreadStatic]
+    private static List<CompoundSelector>? s_compoundBuffer;
+
+    [ThreadStatic]
+    private static List<Combinator>? s_combinatorBuffer;
+
+    [ThreadStatic]
+    private static List<SimpleSelector>? s_simpleBuffer;
+
+    private readonly List<ComplexSelector> _complexBuffer = s_complexBuffer ??= [];
+    private readonly List<CompoundSelector> _compoundBuffer = s_compoundBuffer ??= [];
+    private readonly List<Combinator> _combinatorBuffer = s_combinatorBuffer ??= [];
+    private readonly List<SimpleSelector> _simpleBuffer = s_simpleBuffer ??= [];
 
     private SelectorParser(SelectorNamespaceContext namespaces, string? source = null)
     {

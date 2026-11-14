@@ -59,6 +59,15 @@ public abstract class MarkdownSyntaxVisitor
     /// <summary>Visits a <see cref="MarkdownEmphasisExtraSyntax"/>.</summary>
     public virtual void VisitMarkdownEmphasisExtra(MarkdownEmphasisExtraSyntax node) => DefaultVisit(node);
 
+    /// <summary>Visits a <see cref="MarkdownFrontMatterSyntax"/>.</summary>
+    public virtual void VisitMarkdownFrontMatter(MarkdownFrontMatterSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownMathBlockSyntax"/>.</summary>
+    public virtual void VisitMarkdownMathBlock(MarkdownMathBlockSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownMathInlineSyntax"/>.</summary>
+    public virtual void VisitMarkdownMathInline(MarkdownMathInlineSyntax node) => DefaultVisit(node);
+
     /// <summary>Visits a <see cref="MarkdownCodeSpanSyntax"/>.</summary>
     public virtual void VisitMarkdownCodeSpan(MarkdownCodeSpanSyntax node) => DefaultVisit(node);
 
@@ -128,6 +137,15 @@ public abstract class MarkdownSyntaxVisitor<TResult>
 
     /// <summary>Visits a <see cref="MarkdownEmphasisExtraSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownEmphasisExtra(MarkdownEmphasisExtraSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownFrontMatterSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownFrontMatter(MarkdownFrontMatterSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownMathBlockSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownMathBlock(MarkdownMathBlockSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownMathInlineSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownMathInline(MarkdownMathInlineSyntax node) => DefaultVisit(node);
 
     /// <summary>Visits a <see cref="MarkdownCodeSpanSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownCodeSpan(MarkdownCodeSpanSyntax node) => DefaultVisit(node);

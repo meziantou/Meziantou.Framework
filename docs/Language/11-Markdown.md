@@ -233,6 +233,14 @@ extensions of `Meziantou.Framework.Markdown`, which this parser is meant to repl
   subscript is enabled, a single `~` is a subscript rather than a strikethrough.
 - [HardLineBreaks](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.HardLineBreaks): the line breaks of a
   paragraph are rendered as `<br />`.
+- [YamlFrontMatter](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.YamlFrontMatter): a front matter at
+  the start of the document, between `---` and `---` or `...`, is a
+  [MarkdownFrontMatterSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownFrontMatterSyntax), which the renderer
+  does not write. Its `Yaml` property gives the YAML.
+- [Mathematics](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Mathematics): inline math between `$` or
+  `$$`, and math blocks between `$$` lines, rendered for MathJax or KaTeX as `\(...\)` and `\[...\]`.
+- [Diagrams](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Diagrams): a code block of `mermaid` is
+  rendered as `<pre class="mermaid">`, and one of `nomnoml` as `<div class="nomnoml">`, for their scripts to draw.
 
 [DisableHtml](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.DisableHtml) reads HTML as text: the
 renderer escapes it, and autolinks such as `<https://example.com>` are still links.

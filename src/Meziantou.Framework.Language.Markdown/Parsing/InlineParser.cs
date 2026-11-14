@@ -17,6 +17,7 @@ internal sealed class InlineParser
     private readonly bool _superscript;
     private readonly bool _inserted;
     private readonly bool _marked;
+    private readonly bool _mathematics;
     private readonly bool _autolinks;
     private readonly bool _disableHtml;
     private Subject _subject = null!;
@@ -41,6 +42,7 @@ internal sealed class InlineParser
         _superscript = extensions.HasFlag(MarkdownExtensions.Superscript);
         _inserted = extensions.HasFlag(MarkdownExtensions.Inserted);
         _marked = extensions.HasFlag(MarkdownExtensions.Marked);
+        _mathematics = extensions.HasFlag(MarkdownExtensions.Mathematics);
         _autolinks = extensions.HasFlag(MarkdownExtensions.Autolinks);
     }
 
@@ -224,6 +226,14 @@ internal sealed class InlineParser
             case '=' when _marked:
                 HandleDelimiter(c);
                 break;
+            case '$' when _mathematics:
+                if (!ParseMath())
+                {
+                    AppendText(_pos, _pos + 1);
+                    _pos++;
+                }
+
+                break;
             case 'w' when _autolinks:
                 if (!ParseWwwAutolink())
                 {
@@ -298,6 +308,7 @@ internal sealed class InlineParser
         '^' => _superscript,
         '+' => _inserted,
         '=' => _marked,
+        '$' => _mathematics,
         ':' => _autolinks,
         'w' => _autolinks && _pos + 3 < _end && _text[_pos + 1] == 'w' && _text[_pos + 2] == 'w' && _text[_pos + 3] == '.',
         _ => false,
@@ -508,6 +519,138 @@ internal sealed class InlineParser
             _delimiters = delimiter;
         }
     }
+
+    // Inline math between $ or $$, as Markdig reads it: the opening is after whitespace or punctuation, the closing has at
+    // least as many $ and is before whitespace or punctuation, and spaces after the opening need spaces before the closing.
+    // A $ after a backslash is text of the math. The math does not span lines.
+    private bool ParseMath()
+    {
+        var open = _pos;
+        var previous = open == 0 ? '\0' : _text[open - 1];
+        if (previous == '$' || !(IsMathWhitespace(previous) || IsMathPunctuation(previous)))
+        {
+            return false;
+        }
+
+        var i = open + 1;
+        var openDollars = 1;
+        if (MathAt(i) == '$')
+        {
+            openDollars++;
+            i++;
+        }
+
+        var c = MathAt(i);
+        var openNextIsWhitespace = IsMathWhitespace(c);
+        while (c is ' ' or '\t')
+        {
+            c = MathAt(++i);
+        }
+
+        var contentStart = i;
+        var lastWhitespace = -1;
+        var closeDollars = 0;
+        var pc = '$';
+        while (c != '\0')
+        {
+            if (c is '\r' or '\n')
+            {
+                return false;
+            }
+
+            if (pc != '\\')
+            {
+                if (c is ' ' or '\t')
+                {
+                    if (lastWhitespace < 0)
+                    {
+                        lastWhitespace = i;
+                    }
+                }
+                else
+                {
+                    var closing = c == '$';
+                    if (closing)
+                    {
+                        while (MathAt(i) == '$')
+                        {
+                            closeDollars++;
+                            i++;
+                        }
+
+                        c = MathAt(i);
+                    }
+
+                    if (closeDollars >= openDollars)
+                    {
+                        break;
+                    }
+
+                    lastWhitespace = -1;
+                    if (closing)
+                    {
+                        pc = '$';
+                        continue;
+                    }
+                }
+            }
+
+            if (closeDollars > 0)
+            {
+                closeDollars = 0;
+            }
+            else
+            {
+                pc = c;
+                c = MathAt(++i);
+            }
+        }
+
+        if (closeDollars < openDollars)
+        {
+            return false;
+        }
+
+        var closePreviousIsWhitespace = IsMathWhitespace(pc);
+        if ((!IsMathPunctuation(c) && !IsMathWhitespace(c)) || openNextIsWhitespace != closePreviousIsWhitespace)
+        {
+            return false;
+        }
+
+        // The content is the text between the dollars, without the whitespace around it; the $ that close beyond the
+        // number that opened are text of the math when no whitespace is before them
+        int contentEnd;
+        int closeStart;
+        if (closePreviousIsWhitespace && lastWhitespace > 0)
+        {
+            contentEnd = lastWhitespace;
+            closeStart = i - closeDollars;
+        }
+        else
+        {
+            contentEnd = i - openDollars;
+            closeStart = contentEnd;
+        }
+
+        var math = NewNode(SyntaxKind.MathInline, open, i);
+        math.Append(NewNode(SyntaxKind.MathDelimiterToken, open, open + openDollars));
+        if (contentEnd > contentStart)
+        {
+            math.Append(NewNode(SyntaxKind.MathTextToken, contentStart, contentEnd));
+        }
+
+        math.Append(NewNode(SyntaxKind.MathDelimiterToken, closeStart, i));
+        _root.Append(math);
+        _pos = i;
+        return true;
+    }
+
+    private char MathAt(int index) => index < _end ? _text[index] : '\0';
+
+    // As Markdig: the end of the text is whitespace, and an ASCII punctuation character or a Unicode one is punctuation
+    private static bool IsMathWhitespace(char c) => c is '\0' or ' ' or '\t' or '\n' or '\r' or '\v' or '\f' || (c > 127 && char.IsWhiteSpace(c));
+
+    private static bool IsMathPunctuation(char c) => c == '\0' || (c <= 127 ? char.IsAsciiLetterOrDigit(c) is false && c > ' ' && c != '\x7f' : char.IsPunctuation(c) || char.IsSymbol(c));
 
     // The extra emphasis of Markdig: ~ when subscript is on, ^, ++ and ==
     private bool IsExtraEmphasis(char c) => c switch

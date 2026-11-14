@@ -247,6 +247,45 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void FrontMatterHasItsYaml()
+    {
+        var root = MarkdownSyntaxTree.ParseText("---  \r\ntitle: a\r\n\r\ntags: [b]\r\n...\r\n# Heading\r\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.YamlFrontMatter }).GetRoot();
+        var frontMatter = Assert.IsType<MarkdownFrontMatterSyntax>(root.Blocks[0]);
+
+        Assert.Equal("title: a\n\ntags: [b]\n", frontMatter.Yaml);
+        Assert.Equal("...", frontMatter.ClosingFenceToken.Text);
+        Assert.IsType<MarkdownHeadingSyntax>(root.Blocks[1]);
+        Assert.Equal("Heading", root.GetPlainText());
+    }
+
+    [Theory]
+    [InlineData("---\na: b\n", "<hr />\n<p>a: b</p>\n")]
+    [InlineData(" ---\na\n---\n", "<hr />\n<h2>a</h2>\n")]
+    [InlineData("---\n---\nb\n", "<p>b</p>\n")]
+    [InlineData("```mermaid\na --> b & <c>\n```\n```nomnoml\n[a]\n```\n```c\n<x>\n```\n", "<pre class=\"mermaid\">a --> b &amp; &lt;c>\n</pre>\n<div class=\"nomnoml\">[a]\n</div>\n<pre><code class=\"language-c\">&lt;x&gt;\n</code></pre>\n")]
+    public void RendersFrontMatterAndDiagrams(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.YamlFrontMatter | MarkdownExtensions.Diagrams });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
+    public void MathHasItsContent()
+    {
+        var root = MarkdownSyntaxTree.ParseText("- $$  a \\$ b  $$\n\n  $$\n  x < y\n  $$\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Mathematics }).GetRoot();
+        var inline = root.DescendantNodes().OfType<MarkdownMathInlineSyntax>().Single();
+        var block = root.DescendantNodes().OfType<MarkdownMathBlockSyntax>().Single();
+
+        Assert.Equal("a \\$ b", inline.Math);
+        Assert.Equal("$$", inline.ClosingDelimiterToken.Text);
+        Assert.Equal("x < y\n", block.Math);
+        Assert.Equal("$$", block.ClosingFenceToken.Text);
+        Assert.Equal("<ul>\n<li>\n<p><span class=\"math\">\\(a \\$ b\\)</span></p>\n<div class=\"math\">\n\\[\nx &lt; y\n\\]</div>\n</li>\n</ul>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(root.ToFullString(), new MarkdownParseOptions { Extensions = MarkdownExtensions.Mathematics })));
+    }
+
+    [Fact]
     public void EmphasisExtraHasItsStyle()
     {
         var styles = MarkdownSyntaxTree.ParseText("~a~ ^b^ ++c++ ==d==\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.EmphasisExtras })

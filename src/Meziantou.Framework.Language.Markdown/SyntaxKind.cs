@@ -54,6 +54,12 @@ public enum SyntaxKind
     PipeToken,
     TableDelimiterToken,
     TaskListItemMarkerToken,
+    FrontMatterFenceToken,
+    FrontMatterLineToken,
+    MathFenceToken,
+    MathLineToken,
+    MathDelimiterToken,
+    MathTextToken,
     ExtendedAutolinkToken,
 
     // Blocks
@@ -74,6 +80,8 @@ public enum SyntaxKind
     TableDelimiterRow,
     TableRow,
     TableCell,
+    FrontMatter,
+    MathBlock,
 
     // Inlines
     Emphasis,
@@ -89,4 +97,5 @@ public enum SyntaxKind
     Superscript,
     Inserted,
     Marked,
+    MathInline,
 }

@@ -58,7 +58,7 @@ internal sealed class BlockParser
     public static (BuildNode Document, List<TriviaSpan> TriviaSpans) Parse(string text, MarkdownParseOptions options)
     {
         var parser = new BlockParser(text, options);
-        var position = 0;
+        var position = parser.HasExtension(MarkdownExtensions.YamlFrontMatter) ? parser.ParseFrontMatter() : 0;
         while (position < text.Length)
         {
             var lineEnd = position;
@@ -89,6 +89,61 @@ internal sealed class BlockParser
     }
 
     private char Peek(int index) => index < _lineEnd ? _text[index] : '\0';
+
+    // A YAML front matter: the first line of the text is ---, and a later line is --- or ..., each followed by whitespace
+    // only. Returns where the lines of the document start.
+    private int ParseFrontMatter()
+    {
+        var (lineEnd, eolEnd) = GetLine(0);
+        if (!IsFrontMatterFence(0, lineEnd, '-') || eolEnd == lineEnd)
+        {
+            return 0;
+        }
+
+        var lines = new List<Line>();
+        var position = eolEnd;
+        while (position < _text.Length)
+        {
+            var (end, nextLine) = GetLine(position);
+            if (IsFrontMatterFence(position, end, '-') || IsFrontMatterFence(position, end, '.'))
+            {
+                var block = new Block(SyntaxKind.FrontMatter, _document) { Open = false };
+                block.Leading.Add(BuildElement.Token(SyntaxKind.FrontMatterFenceToken, 0, 3));
+                foreach (var line in lines)
+                {
+                    AddLine(block, line);
+                }
+
+                block.Trailing.Add(BuildElement.Token(SyntaxKind.FrontMatterFenceToken, position, position + 3));
+                _document.Children.Add(block);
+                return nextLine;
+            }
+
+            lines.Add(new Line(position, end, nextLine, 0));
+            position = nextLine;
+        }
+
+        return 0;
+    }
+
+    private bool IsFrontMatterFence(int start, int end, char c) => end - start >= 3 && _text[start] == c && _text[start + 1] == c && _text[start + 2] == c && _text.AsSpan(start + 3, end - start - 3).Trim(" \t\v\f").IsEmpty;
+
+    private (int LineEnd, int EolEnd) GetLine(int start)
+    {
+        var lineEnd = start;
+        while (lineEnd < _text.Length && _text[lineEnd] is not ('\r' or '\n'))
+        {
+            lineEnd++;
+        }
+
+        var eolEnd = lineEnd;
+        if (eolEnd < _text.Length)
+        {
+            eolEnd += _text[eolEnd] == '\r' && eolEnd + 1 < _text.Length && _text[eolEnd + 1] == '\n' ? 2 : 1;
+        }
+
+        return (lineEnd, eolEnd);
+    }
 
     private void IncorporateLine(int lineStart, int lineEnd, int eolEnd)
     {
@@ -183,7 +238,7 @@ internal sealed class BlockParser
         _skipAddLine = false;
     }
 
-    private static bool AcceptsLines(SyntaxKind kind) => kind is SyntaxKind.Paragraph or SyntaxKind.IndentedCodeBlock or SyntaxKind.FencedCodeBlock or SyntaxKind.HtmlBlock;
+    private static bool AcceptsLines(SyntaxKind kind) => kind is SyntaxKind.Paragraph or SyntaxKind.IndentedCodeBlock or SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock or SyntaxKind.HtmlBlock;
 
     private static bool CanContain(SyntaxKind parent, SyntaxKind child) => parent switch
     {
@@ -196,7 +251,7 @@ internal sealed class BlockParser
 
     // Whether the line can start a block of an extension: a delimiter row under a paragraph, a row of a table, or the task
     // list item marker after the marker of a list item
-    private bool IsMaybeExtension(Block container, char c) => container.Kind switch
+    private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || container.Kind switch
     {
         SyntaxKind.Paragraph => HasExtension(MarkdownExtensions.Tables) && c is '|' or ':',
         SyntaxKind.Table => true,
@@ -258,7 +313,7 @@ internal sealed class BlockParser
 
                 return 0;
 
-            case SyntaxKind.FencedCodeBlock:
+            case SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock:
                 if (_indent <= 3 && Peek(_nextNonspace) == block.FenceChar)
                 {
                     var end = _nextNonspace;
@@ -276,7 +331,7 @@ internal sealed class BlockParser
 
                     if (length >= block.FenceLength && rest == _lineEnd)
                     {
-                        block.Trailing.Add(BuildElement.Token(SyntaxKind.CodeFenceToken, _nextNonspace, end));
+                        block.Trailing.Add(BuildElement.Token(block.Kind == SyntaxKind.MathBlock ? SyntaxKind.MathFenceToken : SyntaxKind.CodeFenceToken, _nextNonspace, end));
                         Finalize(block);
                         return 2;
                     }
@@ -349,7 +404,7 @@ internal sealed class BlockParser
         }
 
         // Fenced code block
-        if (!_indented && c is '`' or '~' && TryStartFencedCodeBlock(c))
+        if (!_indented && (c is '`' or '~' || (c == '$' && HasExtension(MarkdownExtensions.Mathematics))) && TryStartFencedCodeBlock(c))
         {
             return 2;
         }
@@ -575,19 +630,22 @@ internal sealed class BlockParser
             position++;
         }
 
+        // A math block opens with exactly $$, and nothing else on the line
         var length = position - _nextNonspace;
-        if (length < 3 || (c == '`' && _text.AsSpan(position, _lineEnd - position).Contains('`')))
+        var math = c == '$';
+        if (math ? length != 2 || !_text.AsSpan(position, _lineEnd - position).Trim(" \t").IsEmpty : length < 3 || (c == '`' && _text.AsSpan(position, _lineEnd - position).Contains('`')))
         {
             return false;
         }
 
         CloseUnmatchedBlocks();
-        var block = AddChild(SyntaxKind.FencedCodeBlock);
+        var block = AddChild(math ? SyntaxKind.MathBlock : SyntaxKind.FencedCodeBlock);
         block.FenceChar = c;
         block.FenceLength = length;
-        block.FenceOffset = _indent;
+        // Markdig keeps the indentation of the opening fence in the lines of a math block, which a code block removes
+        block.FenceOffset = math ? 0 : _indent;
         AdvanceNextNonspace();
-        block.Leading.Add(BuildElement.Token(SyntaxKind.CodeFenceToken, _offset, position));
+        block.Leading.Add(BuildElement.Token(math ? SyntaxKind.MathFenceToken : SyntaxKind.CodeFenceToken, _offset, position));
         AdvanceOffset(length, columns: false);
 
         // The info string is the rest of the line, without the whitespace around it
@@ -894,11 +952,17 @@ internal sealed class BlockParser
                 output.Add(ConvertTable(block));
                 return;
 
-            case SyntaxKind.FencedCodeBlock or SyntaxKind.IndentedCodeBlock or SyntaxKind.HtmlBlock:
+            case SyntaxKind.FencedCodeBlock or SyntaxKind.IndentedCodeBlock or SyntaxKind.HtmlBlock or SyntaxKind.FrontMatter or SyntaxKind.MathBlock:
             {
                 var node = new BuildNode(block.Kind, block.TokenCount + block.LineCount);
                 AddTokens(node, block.LeadingOrNull);
-                var kind = block.Kind == SyntaxKind.HtmlBlock ? SyntaxKind.HtmlLineToken : SyntaxKind.CodeLineToken;
+                var kind = block.Kind switch
+                {
+                    SyntaxKind.HtmlBlock => SyntaxKind.HtmlLineToken,
+                    SyntaxKind.FrontMatter => SyntaxKind.FrontMatterLineToken,
+                    SyntaxKind.MathBlock => SyntaxKind.MathLineToken,
+                    _ => SyntaxKind.CodeLineToken,
+                };
                 foreach (var line in GetLines(block))
                 {
                     node.AddLineToken(kind, line.Start, line.EolEnd, line.VirtualSpaces);

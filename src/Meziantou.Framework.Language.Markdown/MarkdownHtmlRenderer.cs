@@ -30,6 +30,7 @@ public static class MarkdownHtmlRenderer
         private readonly StringBuilder _output = new(sourceLength + 16);
         private readonly bool _tagFilter = options.Extensions.HasFlag(MarkdownExtensions.TagFilter);
         private readonly bool _hardLineBreaks = options.Extensions.HasFlag(MarkdownExtensions.HardLineBreaks);
+        private readonly bool _diagrams = options.Extensions.HasFlag(MarkdownExtensions.Diagrams);
 
         // In a cell of a table, a pipe escaped by a backslash is a pipe, even in a code span or a link destination
         private bool _inTableCell;
@@ -131,6 +132,18 @@ public static class MarkdownHtmlRenderer
                     Cr();
                     break;
 
+                case MarkdownCodeBlockSyntax { IsFenced: true, Language: "mermaid" or "nomnoml" } diagram when _diagrams:
+                {
+                    // A diagram is its code, where only < and & are escaped, in the element that its script reads
+                    var tag = diagram.Language == "mermaid" ? "pre" : "div";
+                    Cr();
+                    _output.Append('<').Append(tag).Append(" class=\"").Append(diagram.Language).Append("\">");
+                    AppendSoftEscaped(diagram.Code);
+                    _output.Append("</").Append(tag).Append('>');
+                    Cr();
+                    break;
+                }
+
                 case MarkdownCodeBlockSyntax code:
                     Cr();
                     _output.Append("<pre><code");
@@ -144,6 +157,14 @@ public static class MarkdownHtmlRenderer
                     _output.Append('>');
                     AppendEscaped(code.Code);
                     _output.Append("</code></pre>");
+                    Cr();
+                    break;
+
+                case MarkdownMathBlockSyntax math:
+                    Cr();
+                    _output.Append("<div class=\"math\">\n\\[\n");
+                    AppendEscaped(math.Math);
+                    _output.Append("\\]</div>");
                     Cr();
                     break;
 
@@ -323,6 +344,12 @@ public static class MarkdownHtmlRenderer
                     AppendHtml(html.Html);
                     break;
 
+                case MarkdownMathInlineSyntax math:
+                    _output.Append("<span class=\"math\">\\(");
+                    AppendEscaped(math.Math);
+                    _output.Append("\\)</span>");
+                    break;
+
                 case MarkdownLinkSyntax { IsImage: true } image:
                     _output.Append("<img src=\"");
                     AppendEscaped(NormalizeUri(image.Destination));
@@ -445,6 +472,20 @@ public static class MarkdownHtmlRenderer
             }
 
             return false;
+        }
+
+        private void AppendSoftEscaped(string text)
+        {
+            foreach (var c in text)
+            {
+                _ = c switch
+                {
+                    '<' => _output.Append("&lt;"),
+                    '&' => _output.Append("&amp;"),
+                    '\0' => _output.Append('\uFFFD'),
+                    _ => _output.Append(c),
+                };
+            }
         }
 
         private void AppendEscaped(ReadOnlySpan<char> text)

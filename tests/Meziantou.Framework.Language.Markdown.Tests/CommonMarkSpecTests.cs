@@ -60,7 +60,7 @@ public sealed class CommonMarkSpecTests
     public void ExtensionsThatKeepCommonMarkKeepTheHtmlOfTheSpecification(int number)
     {
         var example = CommonMarkSpec.Get(number);
-        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.EmphasisExtras };
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.EmphasisExtras | MarkdownExtensions.Mathematics | MarkdownExtensions.Diagrams };
 
         var tree = MarkdownSyntaxTree.ParseText(example.Markdown, options);
 

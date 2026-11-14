@@ -47,6 +47,9 @@ public sealed class ExtensionSpecTests
         ["hardlinebreak"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.HardLineBreaks },
         ["nohtml"] = options => options with { DisableHtml = true },
         ["emphasisextras"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.EmphasisExtras },
+        ["yaml"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.YamlFrontMatter },
+        ["diagrams"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Diagrams },
+        ["mathematics"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Mathematics },
     };
 
     public static TheoryData<string, int, string> SupportedExamples()

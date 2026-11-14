@@ -27,7 +27,7 @@ internal static class MarkdownFuzzTargets
 
     private static readonly string[] ExtensionTokens =
     [
-        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020",
+        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020", "$", "$$", "$$\n", "\\$", "---\n", "...\n", "```mermaid\n", "```nomnoml\n",
     ];
 
     // Every extension: a text of odd length has HTML disabled

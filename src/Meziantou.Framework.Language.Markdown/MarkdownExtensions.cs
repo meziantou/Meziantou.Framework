@@ -37,6 +37,15 @@ public enum MarkdownExtensions
     /// <summary>Marked text, between <c>==</c>, rendered as <c>&lt;mark&gt;</c>.</summary>
     Marked = 1 << 9,
 
+    /// <summary>A YAML front matter at the start of the document, between <c>---</c> and <c>---</c> or <c>...</c>, which the renderer does not write.</summary>
+    YamlFrontMatter = 1 << 10,
+
+    /// <summary>Diagrams: a fenced code block of <c>mermaid</c> is rendered as <c>&lt;pre class="mermaid"&gt;</c>, and one of <c>nomnoml</c> as <c>&lt;div class="nomnoml"&gt;</c>.</summary>
+    Diagrams = 1 << 11,
+
+    /// <summary>Mathematics: inline math between <c>$</c> or <c>$$</c>, and math blocks between <c>$$</c> lines.</summary>
+    Mathematics = 1 << 12,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

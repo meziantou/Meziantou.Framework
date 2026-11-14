@@ -32,15 +32,12 @@ internal sealed class RadianceDecoder : IImageDecodeObserver
 
     public RadianceDecoder(ImageDecodeRequest request, ImageCodecContext context)
     {
-        ArgumentNullException.ThrowIfNull(request);
-        ArgumentNullException.ThrowIfNull(context);
         _request = request;
         _context = context;
     }
 
     public void OnHeaderComplete(RadianceStructureParser structure)
     {
-        ArgumentNullException.ThrowIfNull(structure);
         if (structure.IsXyz)
             throw RadianceFormat.Unsupported("The Radiance HDR file stores CIE XYZ samples (32-bit_rle_xyze), which no pixel format holds: converting them to RGB is a color conversion the library does not make implicitly. Convert the file to RGBE first, for example with 'ra_xyze -r'.", "XYZE samples");
 
@@ -54,7 +51,6 @@ internal sealed class RadianceDecoder : IImageDecodeObserver
     /// <param name="rgbe">The RGBE pixels of the scanline, four bytes each.</param>
     public void OnScanline(RadianceStructureParser structure, int index, ReadOnlySpan<byte> rgbe)
     {
-        ArgumentNullException.ThrowIfNull(structure);
         using var lease = AcquireTarget();
         var count = structure.ScanlineLength;
         if (!structure.IsColumnMajor)
@@ -88,7 +84,6 @@ internal sealed class RadianceDecoder : IImageDecodeObserver
 
     public void OnEnd(RadianceStructureParser structure)
     {
-        ArgumentNullException.ThrowIfNull(structure);
         var sink = _sink ?? throw new InvalidOperationException("The Radiance HDR header was not parsed.");
         if (_staging is { } staging)
         {

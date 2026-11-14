@@ -70,7 +70,6 @@ internal sealed class RadianceStructureParser : ImageParser<ImageInfo>
     public RadianceStructureParser(ImageCodecContext context, StructureWalk walk, RadianceDecoder? decoder = null)
         : base(ImageFormat.Radiance)
     {
-        ArgumentNullException.ThrowIfNull(context);
         if (walk == StructureWalk.Decode)
         {
             ArgumentNullException.ThrowIfNull(decoder);

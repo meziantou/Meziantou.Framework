@@ -11,11 +11,7 @@ internal sealed class RadianceEncoderCodec : ImageEncoderCodec
 
     public override ImageFormat Format => ImageFormat.Radiance;
 
-    public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        return new Session(options);
-    }
+    public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options) => new Session(options);
 
     /// <summary>
     /// The encoding state of one Radiance HDR output: the information header and the resolution string, then one scanline
@@ -84,7 +80,6 @@ internal sealed class RadianceEncoderCodec : ImageEncoderCodec
 
         public override void ValidateFrame(ImageFrame frame, bool isPoster)
         {
-            ArgumentNullException.ThrowIfNull(frame);
             using var lease = frame.GetStorage().AcquireLease();
             for (var y = 0; y < lease.Height; y++)
             {
@@ -96,7 +91,6 @@ internal sealed class RadianceEncoderCodec : ImageEncoderCodec
 
         public override void BeginFrame(ImageFrame frame, int index)
         {
-            ArgumentNullException.ThrowIfNull(frame);
             if (index != 0)
                 throw new InvalidOperationException("A Radiance HDR picture stores a single frame.");
 
@@ -108,7 +102,6 @@ internal sealed class RadianceEncoderCodec : ImageEncoderCodec
 
         public override bool Encode(ImageOutputBuffer output)
         {
-            ArgumentNullException.ThrowIfNull(output);
             switch (_step)
             {
                 case Step.Header:

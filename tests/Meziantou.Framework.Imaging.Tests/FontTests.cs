@@ -3465,6 +3465,22 @@ public sealed class FontTests
         {
             Assert.Equal(names[code % names.Length], cff.GetGlyphName(cff.GetGlyphByCode(code)));
         }
+
+        // Every code assigned to a glyph of its own, the glyphs 1 to 256: one code in the format 0 part
+        var distinct = FontType1Writer.Sample();
+        distinct.Encoding = new();
+        for (var code = 0; code < 256; code++)
+        {
+            var name = string.Create(CultureInfo.InvariantCulture, $"g{code}");
+            distinct.CharStrings.Insert(1 + code, (name, FontType1Writer.Charstring(0, 250, "hsbw", "endchar")));
+            distinct.Encoding[code] = name;
+        }
+
+        cff = GetCff(FontLoader.Load(distinct.WritePfa(), environment)[0]);
+        for (var code = 0; code < 256; code++)
+        {
+            Assert.Equal((code + 1, string.Create(CultureInfo.InvariantCulture, $"g{code}")), (cff.GetGlyphByCode(code), cff.GetGlyphName(code + 1)));
+        }
     }
 
     [Fact]

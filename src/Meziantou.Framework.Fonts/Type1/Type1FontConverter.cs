@@ -389,14 +389,12 @@ internal static class Type1FontConverter
                 }
             }
 
+            // Only as many codes move to the format 0 part as there are supplements beyond 255
             var mainCodes = new List<byte>();
-            if (assignments.Count > 255)
+            for (var glyph = 1; assignments.Count > 255 && glyph < glyphNames.Count && assignments.FindIndex(a => a.Name == glyphNames[glyph]) is var assignment and >= 0; glyph++)
             {
-                for (var glyph = 1; glyph < glyphNames.Count && assignments.FindIndex(a => a.Name == glyphNames[glyph]) is var assignment and >= 0; glyph++)
-                {
-                    mainCodes.Add((byte)assignments[assignment].Code);
-                    assignments.RemoveAt(assignment);
-                }
+                mainCodes.Add((byte)assignments[assignment].Code);
+                assignments.RemoveAt(assignment);
             }
 
             var supplements = assignments.Take(255).ToList();

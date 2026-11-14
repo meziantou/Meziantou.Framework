@@ -1201,7 +1201,7 @@ internal sealed partial class DrawingSession : IDisposable
 
         while (rasterizer.MoveNext())
         {
-            PaintSpan(color, evaluator, mode, blend, opacity, rasterizer.Y, rasterizer.X, rasterizer.Coverage, alphaFactor);
+            PaintSpan(worker: null, color, evaluator, mode, blend, opacity, rasterizer.Y, rasterizer.X, rasterizer.Coverage, alphaFactor, rasterizer.IsFullyCovered);
         }
     }
 
@@ -1219,21 +1219,29 @@ internal sealed partial class DrawingSession : IDisposable
     private void PaintSpan(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage, double alphaFactor = 1)
         => PaintSpan(worker: null, color, evaluator, mode, blend, opacity, y, x, coverage, alphaFactor);
 
-    /// <summary>Paints the coverages of a run of pixels of a row, with the scratch of a worker or, without one, the scratch of the session.</summary>
-    private void PaintSpan(PaintWorker? worker, DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage, double alphaFactor)
+    /// <summary>
+    /// Paints the coverages of a run of pixels of a row, with the scratch of a worker or, without one, the scratch of the
+    /// session. <c>isFullyCovered</c> says that every coverage of the run is <see cref="CoverageRasterizer.FullCoverage"/>.
+    /// </summary>
+    private void PaintSpan(PaintWorker? worker, DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage, double alphaFactor, bool isFullyCovered = false)
     {
-        if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _, worker?.CoverageRow ?? _clipRow))
-            return;
+        if (_clipDepth != 0)
+        {
+            isFullyCovered = false;
+            if (!ApplyClip(y, ref x, ref coverage, out _, worker?.CoverageRow ?? _clipRow))
+                return;
+        }
 
         if (opacity != CoverageRasterizer.FullCoverage)
         {
+            isFullyCovered = false;
             coverage = ApplyOpacity(coverage, opacity, worker?.CoverageRow ?? _clipRow);
         }
 
         // A paint that gives the whole row one color is composited as a single color: the same formulas
         if (evaluator is null)
         {
-            CompositeRun(worker, y, x, coverage, new DrawingSource(color, mode, blend, _transfer, _curves));
+            CompositeRun(worker, y, x, coverage, new DrawingSource(color, mode, blend, _transfer, _curves) { IsFullyCovered = isFullyCovered });
             return;
         }
 
@@ -1245,7 +1253,7 @@ internal sealed partial class DrawingSession : IDisposable
                 rowColor = rowColor with { Alpha = ScaleAlpha(rowColor.Alpha, alphaFactor) };
             }
 
-            CompositeRun(worker, y, x, coverage, new DrawingSource(rowColor, mode, blend, _transfer, _curves));
+            CompositeRun(worker, y, x, coverage, new DrawingSource(rowColor, mode, blend, _transfer, _curves) { IsFullyCovered = isFullyCovered });
             return;
         }
 

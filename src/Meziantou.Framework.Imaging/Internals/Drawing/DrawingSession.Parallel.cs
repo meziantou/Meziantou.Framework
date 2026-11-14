@@ -67,7 +67,7 @@ internal sealed partial class DrawingSession
         if (!PreparePaintWorkers(workerCount, evaluator, needsCoverageRow, needsAlphaRow))
             return false;
 
-        PaintRowsInParallel(new PaintParameters(color, mode, blend, opacity, alphaFactor, workerCount, TestBatchObserver));
+        PaintRowsInParallel(new PaintParameters(color, mode, blend, opacity, alphaFactor, workerCount, rasterizer.IsFullyCovered, TestBatchObserver));
         return true;
     }
 
@@ -251,7 +251,7 @@ internal sealed partial class DrawingSession
                 var x = runs[(3 * i) + 1];
                 var offset = runs[(3 * i) + 2];
                 var end = i + 1 < worker.RunCount ? runs[(3 * (i + 1)) + 2] : worker.PixelCount;
-                PaintSpan(worker, paint.Color, worker.Evaluator, paint.Mode, paint.Blend, paint.Opacity, y, x, coverage[offset..end], paint.AlphaFactor);
+                PaintSpan(worker, paint.Color, worker.Evaluator, paint.Mode, paint.Blend, paint.Opacity, y, x, coverage[offset..end], paint.AlphaFactor, paint.IsFullyCovered);
             }
         }
         catch (Exception exception)
@@ -329,7 +329,7 @@ internal sealed partial class DrawingSession
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct PaintParameters(DrawingColor Color, CompositeMode Mode, BlendMode Blend, uint Opacity, double AlphaFactor, int WorkerCount, Action<int, bool>? Observer);
+    private readonly record struct PaintParameters(DrawingColor Color, CompositeMode Mode, BlendMode Blend, uint Opacity, double AlphaFactor, int WorkerCount, bool IsFullyCovered, Action<int, bool>? Observer);
 
     /// <summary>The scratch of a worker, and the batch of runs it composites.</summary>
     private sealed class PaintWorker : IDisposable

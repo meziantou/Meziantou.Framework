@@ -344,6 +344,52 @@ public sealed class DrawingReferenceTests
         Assert.Equal([(0, 0), (30, 15), (50, 15)], straight.Contours[0].Points);
     }
 
+    [Fact]
+    public void TheEventsOfARowAreSortedByHeightThenBySlot()
+    {
+        // Short runs (insertion sort), long ones (partitions), many equal heights, and orders that partition badly
+        var random = new Random(Seed);
+        foreach (var count in new[] { 0, 1, 2, 3, 15, 16, 17, 31, 64, 200, 1000, 5000 })
+        {
+            for (var pattern = 0; pattern < 5; pattern++)
+            {
+                var keys = new double[count];
+                var slots = Enumerable.Range(0, count).OrderBy(_ => random.Next()).ToArray();
+                for (var i = 0; i < count; i++)
+                {
+                    keys[i] = pattern switch
+                    {
+                        0 => random.NextDouble(),
+                        1 => random.Next(4) / 4.0,
+                        2 => i / (double)Math.Max(count, 1),
+                        3 => (count - i) / (double)Math.Max(count, 1),
+                        _ => i % 2 == 0 ? i / (double)Math.Max(count, 1) : 1 - (i / (double)Math.Max(count, 1)),
+                    };
+                }
+
+                var expected = keys.Zip(slots).OrderBy(item => item.First).ThenBy(item => item.Second).ToArray();
+
+                // The default depth, then depths that hand the partitions over to the heap sort at once or after a few levels
+                foreach (var depthLimit in new int?[] { null, 0, 1, 3 })
+                {
+                    var sortedKeys = keys.ToArray();
+                    var sortedSlots = slots.ToArray();
+                    if (depthLimit is { } depth)
+                    {
+                        CoverageRasterizer.IntroSortEvents(sortedKeys, sortedSlots, depth);
+                    }
+                    else
+                    {
+                        CoverageRasterizer.SortEvents(sortedKeys, sortedSlots);
+                    }
+
+                    Assert.Equal(expected.Select(item => item.First), sortedKeys);
+                    Assert.Equal(expected.Select(item => item.Second), sortedSlots);
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData(0.1, 0.1, 4)]
     [InlineData(1, 1, 16)]

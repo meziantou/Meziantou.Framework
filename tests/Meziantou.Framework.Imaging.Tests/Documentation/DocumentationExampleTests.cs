@@ -1501,6 +1501,35 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ConvertRadianceKeepsTheHighlightsAndReportsTheExposure()
+    {
+        var hdr = GetPath("environment.hdr");
+        using (var source = new Image<RgbaFloat>(8, 4, new RgbaFloat(0.25f, 0.5f, 1f, 1f)))
+        {
+            source.Frames[0][3, 2] = new RgbaFloat(12f, 6f, 3f, 1f);
+            source.Save(hdr);
+        }
+
+        var flat = GetPath("environment-flat.hdr");
+        var (preview, exposure) = Examples.ConvertRadiance(hdr, flat);
+        using (preview)
+        {
+            Assert.Equal(1d, exposure);
+            using (var copy = Image.Load<RgbaFloat>(flat))
+            {
+                // 12, 6 and 3 share the exponent of 12 exactly: the decoder reads the middle of the intervals of their mantissas
+                Assert.Equal(new RgbaFloat(12.03125f, 6.03125f, 3.03125f, 1f), copy.Frames[0][3, 2]);
+            }
+
+            // The highlight is the white of the tone mapping, and its hue is kept
+            var pixel = preview.Frames[0][3, 2];
+            Assert.Equal(255, pixel.R);
+            Assert.InRange(pixel.G, 120, 135);
+            Assert.True(preview.Frames[0][0, 0].B < 255);
+        }
+    }
+
+    [Fact]
     public void SaveJpeg2000WritesALosslessFileAndALossyCodestream()
     {
         var photo = GetPath("photo16-resolution.png");

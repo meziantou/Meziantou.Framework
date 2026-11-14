@@ -598,6 +598,7 @@
     <Project Path="tests/Meziantou.Framework.Imaging.Pnm.Tests/Meziantou.Framework.Imaging.Pnm.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Imaging.Processing.Tests/Meziantou.Framework.Imaging.Processing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Imaging.Qoi.Tests/Meziantou.Framework.Imaging.Qoi.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Radiance.Tests/Meziantou.Framework.Imaging.Radiance.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Imaging.TestHarness/Meziantou.Framework.Imaging.TestHarness.csproj" />
     <Project Path="tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Imaging.Tga.Tests/Meziantou.Framework.Imaging.Tga.Tests.csproj" />
@@ -762,6 +763,7 @@
     <Project Path="fuzz/Meziantou.Framework.Http.Caching.Fuzz/Meziantou.Framework.Http.Caching.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Fuzz/Meziantou.Framework.Http.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Imaging.Fuzz/Meziantou.Framework.Imaging.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" />
     <Project Path="fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.JsonPath.Fuzz/Meziantou.Framework.JsonPath.Fuzz.csproj" />

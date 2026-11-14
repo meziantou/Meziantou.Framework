@@ -134,6 +134,12 @@ public sealed class DefaultsTests
         Assert.Null(exr.PixelType);
         Assert.False(exr.AllowBitDepthReduction);
         Assert.Equal(MetadataHandling.Strict, exr.MetadataHandling);
+
+        var radiance = new RadianceEncoder();
+        Assert.Equal(ImageFormat.Radiance, radiance.Format);
+        Assert.Equal(RadianceCompression.RunLength, radiance.Compression);
+        Assert.Null(radiance.BackgroundColor);
+        Assert.Equal(MetadataHandling.Strict, radiance.MetadataHandling);
     }
 
     [Fact]
@@ -176,6 +182,8 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { BlockCoder = (Jpeg2000BlockCoder)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { Compression = (OpenExrCompression)5 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { PixelType = (OpenExrPixelType)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RadianceEncoder { Compression = (RadianceCompression)2 });
+        Assert.Throws<ArgumentException>(() => new RadianceEncoder { BackgroundColor = new Rgba64(0, 0, 0, 0) });
     }
 
     [Fact]
@@ -207,6 +215,8 @@ public sealed class DefaultsTests
         Assert.Equal(JpegXlCompression.Lossless, Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("a.jxl")).Compression);
         Assert.Equal(OpenExrCompression.Zip, Assert.IsType<OpenExrEncoder>(ImageEncoder.FromPath("a.exr")).Compression);
         Assert.IsType<OpenExrEncoder>(ImageEncoder.FromPath("dir/a.EXR"));
+        Assert.Equal(RadianceCompression.RunLength, Assert.IsType<RadianceEncoder>(ImageEncoder.FromPath("a.hdr")).Compression);
+        Assert.IsType<RadianceEncoder>(ImageEncoder.FromPath("dir/a.PIC"));
         Assert.Equal(Jpeg2000Container.Jp2, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("a.jp2")).Container);
         Assert.Equal(Jpeg2000Container.Jp2, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("dir/a.JP2")).Container);
         foreach (var extension in new[] { ".j2k", ".j2c", ".jpc", ".J2K" })

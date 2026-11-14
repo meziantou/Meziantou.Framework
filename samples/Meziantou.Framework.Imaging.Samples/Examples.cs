@@ -1630,6 +1630,28 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Radiance HDR: an environment map in and out, its header variables, and its integer version.</summary>
+    #region Imaging_Radiance
+    public static (Image<Rgba32> Preview, double Exposure) ConvertRadiance(string hdrPath, string flatPath)
+    {
+        // Radiance HDR files load as RgbaFloat, in linear light: the pixels are the values the file stores
+        using var hdr = Image.Load<RgbaFloat>(hdrPath);
+
+        // The header is reported, never applied: divide by the exposure to get the radiances before it was adjusted
+        var exposure = hdr.Metadata.RadianceHeader?.Exposure ?? 1;
+
+        // Run-length encoded scanlines by default; flat ones on request. Each color is stored with 8 bits of mantissa
+        hdr.Save(flatPath, new RadianceEncoder { Compression = RadianceCompression.None });
+
+        // Integer pixels cannot hold the highlights: a typed load compresses them with a tone mapping
+        var preview = Image.Load<Rgba32>(hdrPath, new ImageDecodeOptions
+        {
+            Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
+        });
+        return (preview, exposure);
+    }
+    #endregion
+
     /// <summary>OpenEXR renderer outputs: one layer of a file with other channels, cropped to its display window.</summary>
     #region Imaging_OpenExrLayers
     public static (Image Image, Point Origin) LoadRenderLayer(string exrPath, string layer)

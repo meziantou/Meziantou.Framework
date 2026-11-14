@@ -2,7 +2,7 @@
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
-progressive), JPEG 2000 and OpenEXR decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
+progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
 vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
@@ -939,6 +939,18 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   2000 decoder has no signed components, no 32-bit components and no NLT marker.
   `MetadataWritePlan` treats OpenEXR as linear light only (`FormatCapabilities.LinearOnly`): an sRGB label is metadata
   the format cannot store.
+- **Radiance HDR** (`Internals/Codecs/Radiance`). Written from the Radiance file format documentation ("Picture File
+  Format") and "Real Pixels" (Graphics Gems II). The structure parser reads the header lines (every byte charged to
+  `MaxMetadataBytes` as it arrives, so a line without line feed reaches the limit), the resolution string and the
+  scanlines, each flat, old or new run-length encoded, into one scanline buffer; the decoder places a scanline where
+  its orientation puts it (a row or a column, from either end), in the frame or in a staging image when a conversion is
+  requested. A mantissa is read as the middle of its interval, `(m + 0.5) × 2^(e - 136)` (the reference routines of
+  Radiance; FFmpeg and Apple ImageIO read `m × 2^(e - 136)`, and the corpus and interop tests require exactly that
+  difference), exact in single precision. The encoder truncates each color into its interval exactly
+  (`RadianceFormat.FromColor`, a scaling by a power of two), so a decoded image encodes back to the same bytes (the
+  SharpFuzz target checks it). Header variables are metadata: one that cannot be read is skipped, never an error.
+  XYZE is identified and rejected by a load, since converting XYZ to RGB would be an implicit color conversion.
+  `MetadataWritePlan` treats it as linear light only, like OpenEXR.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -1666,7 +1678,7 @@ thin public types over its `FontFace`.
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
 | `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
 | `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
 | `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |
@@ -1827,6 +1839,14 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   which is linked into the generator and has no dependency on the library; it does not read what is entropy coded (the
   ICC profile of a codestream, a permuted table of contents), so the ICC fixtures use profiles of the corpus and the
   conformance tests look them up by their hash.
+
+- **Radiance HDR fixtures** (`hdr` generator, `RadianceCorpus.cs`). Files assembled by `TestHarness/Radiance/RadianceFileBuilder`
+  from RGBE patterns expect the pattern, read by the middle-of-interval rule, and `ReferenceRadiance` must give the
+  pattern back from the file; the files of FFmpeg's encoder expect what `ReferenceRadiance` reads. FFmpeg ignores the
+  orientation of the resolution string and misreads columns, and Apple ImageIO rejects the other orientations, the old
+  run-length encoding and a header without `FORMAT`: the generator and `RadianceInteropTests` record these limits. The
+  cross-checks of the generator are a list (`RadianceCorpus.CrossChecks`): the tools of the Radiance distribution
+  (`pvalue`, `getinfo`) go there once the pinned `Meziantou.Prebuilt` release provides them.
 
 - **JPEG 2000 fixtures** (`jp2` generator, `Jp2Corpus.cs` and its partial files). A fixture of the reversible
   transformations expects the pattern given to `opj_compress` or `ojph_compress`; a fixture of the irreversible ones

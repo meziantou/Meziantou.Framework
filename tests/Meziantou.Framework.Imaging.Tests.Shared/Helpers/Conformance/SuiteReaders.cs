@@ -8,5 +8,5 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 internal static class SuiteReaders
 {
     /// <summary>Determines whether an input is read as <see cref="RgbaFloat"/>.</summary>
-    public static bool ReadsFloats(ReadOnlySpan<byte> data) => Image.DetectFormat(data) == ImageFormat.OpenExr;
+    public static bool ReadsFloats(ReadOnlySpan<byte> data) => Image.DetectFormat(data) is ImageFormat.OpenExr or ImageFormat.Radiance;
 }

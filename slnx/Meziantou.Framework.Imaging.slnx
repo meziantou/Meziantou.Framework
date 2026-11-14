@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Imaging.Fuzz/Meziantou.Framework.Imaging.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -32,6 +34,7 @@
     <Project Path="../tests/Meziantou.Framework.Imaging.Pnm.Tests/Meziantou.Framework.Imaging.Pnm.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Processing.Tests/Meziantou.Framework.Imaging.Processing.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Qoi.Tests/Meziantou.Framework.Imaging.Qoi.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Radiance.Tests/Meziantou.Framework.Imaging.Radiance.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.TestHarness/Meziantou.Framework.Imaging.TestHarness.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Tga.Tests/Meziantou.Framework.Imaging.Tga.Tests.csproj" />

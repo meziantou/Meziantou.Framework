@@ -26,6 +26,7 @@ is read, what is written, how to save with its encoder and its options, and the 
 | [JPEG XL](15-JpegXl.md) | Lossless and lossy, up to 16 bits, recompressed JPEG files, progressive renderings | Lossless (default) or lossy, up to 16 bits; JPEG files recompressed without loss | Read and written |
 | [JPEG 2000](16-Jpeg2000.md) | JP2 files and codestreams, up to 16 bits, HTJ2K | Lossless (default) or lossy, up to 16 bits | No |
 | [OpenEXR](17-OpenExr.md) | Half, float and integer samples, most compressions | Lossless half or float samples | No |
+| [Radiance HDR](18-Radiance.md) | RGBE pictures, flat and run-length encoded, every orientation | RGBE pictures, run-length encoded (default) or flat | No |
 
 What a format cannot store is never dropped silently: saving an animation as JPEG, transparency to a format without
 it, 16-bit samples to an 8-bit format or metadata the format has no place for throws an
@@ -70,6 +71,7 @@ recognized from its whole header, and checked last. Data that no format recogniz
 | `.jph` | `Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput }` | Lossless JPH (HTJ2K) file |
 | `.jhc` | `Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Container = Jpeg2000Container.Codestream }` | Lossless HTJ2K codestream |
 | `.exr` | [OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) | ZIP-compressed OpenEXR |
+| `.hdr`, `.pic` | [RadianceEncoder](cref:Meziantou.Framework.Imaging.Formats.RadianceEncoder) | Run-length encoded Radiance HDR |
 
 Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf`: those JPEG 2000 files are read, not
 written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
@@ -87,7 +89,8 @@ files from photos: pass an encoder with lossy compression for them.
 - **Animations**: GIF is read everywhere but has 256 colors per frame and no partial transparency. APNG and lossless
   WebP keep every color and alpha value; lossy WebP and AVIF image sequences are smaller. See
   [Processing animated images](../03-Guides/04-ProcessAnimatedImages.md).
-- **High dynamic range**: OpenEXR stores floating-point samples, and so does TIFF; AVIF, HEIC, JPEG XL and 16-bit PNG
+- **High dynamic range**: OpenEXR stores floating-point samples, and so does TIFF; Radiance HDR stores RGBE pixels (8
+  bits of mantissa shared by the three colors), the format of most environment maps; AVIF, HEIC, JPEG XL and 16-bit PNG
   store HDR samples as integers with their color description. See [Pixel formats](../04-Concepts/05-PixelFormats.md).
 - **Archival and lossless masters**: PNG, TIFF (also for multi-page documents), and JPEG XL or JPEG 2000 in lossless
   mode, which keep 16-bit samples. A JPEG file can be recompressed to JPEG XL without loss and rebuilt byte for byte
@@ -116,3 +119,4 @@ To convert files from one format to another, see [Converting between formats](..
 - [JPEG XL](15-JpegXl.md): lossless and lossy images, progressive files, lossless JPEG recompression.
 - [JPEG 2000](16-Jpeg2000.md): lossless and lossy images for archives and imaging pipelines.
 - [OpenEXR](17-OpenExr.md): linear-light, floating-point images for rendering and visual effects.
+- [Radiance HDR](18-Radiance.md): RGBE pictures of lighting simulations and HDRI environment maps.

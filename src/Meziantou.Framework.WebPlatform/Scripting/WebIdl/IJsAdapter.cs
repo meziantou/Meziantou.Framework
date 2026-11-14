@@ -544,27 +544,13 @@ public interface IJsAdapter<TValue>
 
     /// <summary>
     /// Creates a growable shared data block of <paramref name="byteLength"/> zeroed bytes, which can grow to
-    /// <paramref name="maxByteLength"/> bytes without moving (the bytes of a shared <c>WebAssembly.Memory</c>, see
-    /// <see cref="GetSharedDataBlockAddress"/>), as the data block of a <c>SharedArrayBuffer</c> (see
-    /// <see cref="GetSharedDataBlock"/>). Returns null when it is not supported or when the memory cannot be allocated. The
-    /// default implementation returns null.
+    /// <paramref name="maxByteLength"/> bytes without moving (the bytes of a shared <c>WebAssembly.Memory</c>). Its
+    /// <see cref="IGrowableSharedDataBlock.DataBlock"/> is the data block of <c>SharedArrayBuffer</c> objects (see
+    /// <see cref="GetSharedDataBlock"/>). The block must not reference the engine instance that creates it: the agents of
+    /// other engine instances use it, and it lives as long as the memory. Returns null when it is not supported or when the
+    /// memory cannot be allocated. The default implementation returns null.
     /// </summary>
-    object? CreateGrowableSharedDataBlock(int byteLength, int maxByteLength) => null;
-
-    /// <summary>
-    /// The address of the first byte of a data block created by <see cref="CreateGrowableSharedDataBlock"/>, which never
-    /// changes while the block is alive (the native code of a WebAssembly runtime reads and writes it), or 0 when it is not
-    /// supported. The default implementation returns 0.
-    /// </summary>
-    nint GetSharedDataBlockAddress(object dataBlock) => 0;
-
-    /// <summary>
-    /// Makes <c>Atomics.wait</c>, <c>Atomics.waitAsync</c> and <c>Atomics.notify</c> use <paramref name="waiters"/> for the
-    /// <c>SharedArrayBuffer</c> objects of a data block created by <see cref="CreateGrowableSharedDataBlock"/> (the waiters of
-    /// the WebAssembly runtime for the bytes of a shared memory). It is called before the scripts get a buffer of the block.
-    /// Returns false when it is not supported. The default implementation returns false.
-    /// </summary>
-    bool SetSharedDataBlockWaiters(object dataBlock, ISharedDataBlockWaiters waiters) => false;
+    IGrowableSharedDataBlock? CreateGrowableSharedDataBlock(int byteLength, int maxByteLength) => null;
 
     /// <summary>
     /// Creates a typed array or a <c>DataView</c> (<paramref name="kind"/>) of <paramref name="length"/> elements viewing

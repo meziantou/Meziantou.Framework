@@ -591,7 +591,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         {
             if (sharedBytes.TryBeginInstallWaiters())
             {
-                Adapter.SetSharedDataBlockWaiters(sharedBytes.DataBlock, new WasmSharedMemoryWaiters(memory));
+                sharedBytes.Block.SetWaiters(new WasmSharedMemoryWaiters(memory));
             }
 
             memoryObject.BufferObject = CreateWasmSharedMemoryBuffer(memoryObject, resizable: false);
@@ -608,20 +608,14 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// </summary>
     private WasmSharedMemoryBytes CreateWasmSharedMemoryBytes(ulong byteLength, ulong capacity)
     {
-        var adapter = Adapter;
-        if (capacity > int.MaxValue || byteLength > capacity || adapter.CreateGrowableSharedDataBlock((int)byteLength, (int)capacity) is not { } dataBlock)
+        // The bytes do not reference the adapter: the native memory keeps them alive, and its store is the store of the agent
+        if (capacity > int.MaxValue || byteLength > capacity || Adapter.CreateGrowableSharedDataBlock((int)byteLength, (int)capacity) is not { } block)
             throw new WasmAllocationException("The shared memory cannot be allocated");
 
-        var address = adapter.GetSharedDataBlockAddress(dataBlock);
-        if (address == 0)
+        if (block.Address == 0)
             throw new WasmAllocationException("The script engine cannot share the bytes of a shared memory");
 
-        return new WasmSharedMemoryBytes(
-            dataBlock,
-            address,
-            capacity,
-            () => (ulong)adapter.GetSharedDataBlockByteLength(dataBlock),
-            newByteLength => newByteLength <= capacity && adapter.GrowSharedDataBlockTo(dataBlock, (int)newByteLength));
+        return new WasmSharedMemoryBytes(block, capacity);
     }
 
     /// <summary>https://webassembly.github.io/spec/js-api/#create-a-fixed-length-memory-buffer</summary>
@@ -759,28 +753,21 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (memoryObject.Memory.SharedBytes is { } sharedBytes)
         {
             // https://webassembly.github.io/threads/js-api/#sec-hostgrowsharedarraybuffer: the agents that share the memory can
-            // grow it concurrently, so the memory grows to the new length (a delta computed from a length read before would
-            // grow it twice): the growths of the buffers are serialized by the bytes of the memory. As for
-            // SharedArrayBuffer.prototype.grow, a racing grow to the same length succeeds, and a grow to a smaller length
-            // throws (https://tc39.es/ecma262/#sec-hostgrowsharedarraybuffer).
-            lock (sharedBytes)
+            // grow it concurrently (Memory.grow, memory.grow), so the memory grows to the new length (a delta computed from a
+            // length read before would grow it twice). As for SharedArrayBuffer.prototype.grow, a racing grow to the same
+            // length succeeds, and a grow to a smaller length throws (https://tc39.es/ecma262/#sec-hostgrowsharedarraybuffer).
+            ulong previousSize;
+            try
             {
-                var currentByteLength = sharedBytes.ByteLength;
-                if ((ulong)newByteLength < currentByteLength)
-                    throw CreateRangeError("The memory cannot grow");
-
-                if ((ulong)newByteLength > currentByteLength)
-                {
-                    try
-                    {
-                        memoryObject.Memory.Grow(((ulong)newByteLength - currentByteLength) / WasmPageSize);
-                    }
-                    catch (WasmAllocationException)
-                    {
-                        throw CreateRangeError("The memory cannot grow");
-                    }
-                }
+                previousSize = memoryObject.Memory.GrowTo((ulong)newByteLength / WasmPageSize);
             }
+            catch (WasmAllocationException)
+            {
+                throw CreateRangeError("The memory cannot grow");
+            }
+
+            if (previousSize * WasmPageSize > (ulong)newByteLength)
+                throw CreateRangeError("The memory cannot grow");
 
             RefreshWasmMemoryBuffer(memoryObject);
             return;

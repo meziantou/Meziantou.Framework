@@ -35,12 +35,20 @@ public abstract class JsSharedDataBlockWaiters
     /// Adds an asynchronous waiter of a location of the block (<c>Atomics.waitAsync</c>), when the location contains
     /// <paramref name="expectedValue"/>: it is added when the method returns, so that a notification that follows notifies
     /// it. <paramref name="completed"/> is called once, on any thread: with <see langword="true"/> when the waiter was
-    /// notified, and with <see langword="false"/> when the wait timed out.
+    /// notified, and with <see langword="false"/> when the wait timed out or was canceled.
     /// </summary>
     /// <param name="byteIndex">The index of the location in the block: a multiple of <paramref name="size"/> within the block.</param>
     /// <param name="expectedValue">The expected value of the location (sign-extended for a 32-bit location).</param>
     /// <param name="size">The size of the location in bytes: 4 or 8.</param>
     /// <param name="timeout">The maximum duration of the wait, or <see langword="null"/> to wait until notified.</param>
     /// <param name="completed">The callback called when the wait completes.</param>
-    public abstract void WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed);
+    /// <param name="cancellationToken">
+    /// A token that stops the wait: it is canceled when the engine is disposed or when the cancellation token of its options
+    /// is canceled.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> when the waiter is added; <see langword="false"/> when the other runtime cannot add more
+    /// waiters (<paramref name="completed"/> is then not called, and <c>Atomics.waitAsync</c> throws a <c>RangeError</c>).
+    /// </returns>
+    public abstract bool WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed, CancellationToken cancellationToken);
 }

@@ -32,7 +32,7 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
     private readonly Timer _epochTimer;
     private WasmModule? _conversionsModule;
     private readonly System.Collections.Concurrent.ConcurrentDictionary<(ulong Minimum, ulong? Maximum, bool Is64, bool Shared), WasmModule> _memoryModules = new();
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<(ulong? Maximum, bool Is64), WasmModule> _atomicsModules = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<(ulong? Maximum, bool Is64, bool Wait), WasmModule> _atomicsModules = new();
     private int _disposed;
 
     /// <summary>Creates a runtime.</summary>
@@ -268,33 +268,47 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
 
     /// <summary>
     /// <c>memory.atomic.notify</c> on a shared memory, from any thread: the instructions run in a store of their own (see
-    /// <see cref="WasmtimeModules.CreateAtomicsModule"/>), so that they use the waiters of Wasmtime.
+    /// <see cref="WasmtimeModules.CreateAtomicNotifyModule"/> and <see cref="WasmtimeModules.CreateAtomicWaitModule"/>), so that they use the waiters of Wasmtime.
     /// </summary>
     internal uint AtomicNotify(WasmtimeSharedMemory memory, ulong address, uint count)
     {
         using var store = new WasmtimeStore(this, AtomicsHost.Instance);
-        var notify = (WasmFunction)store.Instantiate(GetAtomicsModule(memory.Type), [memory]).Exports[0].Value;
+        var notify = (WasmFunction)GetExport(store.Instantiate(GetAtomicsModule(memory.Type, wait: false), [memory]), "notify");
         Span<WasmValue> results = [default];
         notify.Invoke([ToAddress(memory, address), WasmValue.FromI32(unchecked((int)count))], results);
         return unchecked((uint)results[0].I32);
     }
 
     /// <summary><c>memory.atomic.wait32</c> and <c>memory.atomic.wait64</c> on a shared memory, from any thread (see <see cref="AtomicNotify"/>): it blocks the calling thread.</summary>
-    internal WasmWaitResult AtomicWait(WasmtimeSharedMemory memory, ulong address, long expected, int size, TimeSpan? timeout, Action? waiting)
+    internal WasmWaitResult AtomicWait(WasmtimeSharedMemory memory, ulong address, long expected, int size, TimeSpan? timeout, WasmWaitSignal? signal)
     {
         // A negative timeout waits until notified
         var nanoseconds = timeout is { } duration ? (duration.Ticks >= long.MaxValue / 100 ? long.MaxValue : Math.Max(duration.Ticks, 0) * 100) : -1;
         using var store = new WasmtimeStore(this, AtomicsHost.Instance);
-        var wait = (WasmFunction)store.Instantiate(GetAtomicsModule(memory.Type), [memory]).Exports[size == 8 ? 2 : 1].Value;
+        var instance = store.Instantiate(GetAtomicsModule(memory.Type, wait: true), [memory]);
+        var wait = (WasmFunction)GetExport(instance, size == 8 ? "wait64" : "wait32");
+
+        // The bytes of the memory of the helper are a pinned .NET array: the signal keeps them alive after the store is disposed
+        signal?.Attach(((WasmMemory)GetExport(instance, "signal")).Data);
         Span<WasmValue> results = [default];
-        waiting?.Invoke();
         wait.Invoke([ToAddress(memory, address), size == 8 ? WasmValue.FromI64(expected) : WasmValue.FromI32(unchecked((int)expected)), WasmValue.FromI64(nanoseconds)], results);
         return (WasmWaitResult)results[0].I32;
     }
 
+    private static WasmExtern GetExport(WasmInstance instance, string name)
+    {
+        foreach (var (exportName, value) in instance.Exports)
+        {
+            if (exportName == name)
+                return value;
+        }
+
+        throw new InvalidOperationException($"The export '{name}' does not exist");
+    }
+
     private static WasmValue ToAddress(WasmtimeSharedMemory memory, ulong address) => memory.Type.Is64 ? WasmValue.FromI64(unchecked((long)address)) : WasmValue.FromI32(unchecked((int)(uint)address));
 
-    private WasmModule GetAtomicsModule(WasmMemoryType type) => _atomicsModules.GetOrAdd((type.Maximum, type.Is64), static (key, runtime) => runtime.Compile(WasmtimeModules.CreateAtomicsModule(key.Maximum, key.Is64)), this);
+    private WasmModule GetAtomicsModule(WasmMemoryType type, bool wait) => _atomicsModules.GetOrAdd((type.Maximum, type.Is64, wait), static (key, runtime) => runtime.Compile(key.Wait ? WasmtimeModules.CreateAtomicWaitModule(key.Maximum, key.Is64) : WasmtimeModules.CreateAtomicNotifyModule(key.Maximum, key.Is64)), this);
 
     /// <summary>The host of the stores of the atomic operations: they are not interrupted, and they create no memory.</summary>
     private sealed class AtomicsHost : IWasmHost

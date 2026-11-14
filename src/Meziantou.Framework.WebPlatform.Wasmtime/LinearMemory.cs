@@ -179,6 +179,32 @@ internal sealed unsafe class SharedLinearMemory
     /// <summary>The wrapper of the memory (see <see cref="WasmtimeRuntime.GetSharedMemory"/>): weak, so that it does not keep the native memory alive.</summary>
     public WeakReference<WasmtimeSharedMemory>? Wrapper { get; set; }
 
+    // The size a growth of the current thread must reach (see BeginExactGrowth), and whether another growth came first
+    [ThreadStatic]
+    private static ulong t_exactGrowthByteSize;
+
+    [ThreadStatic]
+    private static bool t_exactGrowthRaced;
+
+    /// <summary>
+    /// Makes the growths of the shared memories by the current thread fail when they would not reach exactly
+    /// <paramref name="byteSize"/> bytes (another agent grew the memory since its size was read), until
+    /// <see cref="EndExactGrowth"/>. Wasmtime computes the new size and calls <see cref="GrowMemory"/> under the lock of the
+    /// memory, on the thread that grows it.
+    /// </summary>
+    public static void BeginExactGrowth(ulong byteSize)
+    {
+        t_exactGrowthByteSize = byteSize;
+        t_exactGrowthRaced = false;
+    }
+
+    /// <summary>Ends <see cref="BeginExactGrowth"/>, and returns whether a growth failed because another growth came first.</summary>
+    public static bool EndExactGrowth()
+    {
+        t_exactGrowthByteSize = 0;
+        return t_exactGrowthRaced;
+    }
+
     /// <summary>Returns the shared memory whose bytes start at <paramref name="address"/>, or null.</summary>
     public static SharedLinearMemory? Find(nint address) => Memories.TryGetValue(address, out var memory) ? memory : null;
 
@@ -240,6 +266,12 @@ internal sealed unsafe class SharedLinearMemory
     {
         try
         {
+            if (t_exactGrowthByteSize != 0 && (ulong)newSize != t_exactGrowthByteSize)
+            {
+                t_exactGrowthRaced = true;
+                return NativeErrors.CreateError("The shared memory grew concurrently");
+            }
+
             var bytes = ((SharedLinearMemory)GCHandle.FromIntPtr(env).Target!).Bytes;
             return bytes.TryGrow((ulong)newSize) ? 0 : NativeErrors.CreateError("The shared memory cannot grow");
         }

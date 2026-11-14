@@ -275,6 +275,12 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
             var exportName = System.Text.Encoding.UTF8.GetString(name, checked((int)nameLength));
             if (sections.GetReexportedImport(exportName) is { } importIndex && importIndex < imports.Count)
             {
+                // The extern of a shared memory owns a reference to it, which the import does not need
+                if (item.Kind == WasmtimeExternKind.SharedMemory)
+                {
+                    NativeMethods.wasmtime_sharedmemory_delete(item.SharedMemory);
+                }
+
                 exports.Add((exportName, imports[importIndex]));
                 continue;
             }

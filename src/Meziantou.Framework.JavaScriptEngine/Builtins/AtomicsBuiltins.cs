@@ -653,15 +653,22 @@ internal static class AtomicsBuiltins
         if (capability is not null)
         {
             engine.IncrementPendingAtomicsWaitAsync();
+            bool added;
             try
             {
                 // The promise is resolved on the thread of the agent (EnqueueResolveInAgentJob)
-                waiters.WaitAsync(byteIndexInBuffer, value, size, duration, notified => engine.EnqueueAtomicsWaitAsyncResolution(ResolveWaitAsync, capability, notified ? "ok" : "timed-out", realm));
+                added = waiters.WaitAsync(byteIndexInBuffer, value, size, duration, notified => engine.EnqueueAtomicsWaitAsyncResolution(ResolveWaitAsync, capability, notified ? "ok" : "timed-out", realm), engine.AtomicsLifetimeToken);
             }
             catch
             {
                 engine.DecrementPendingAtomicsWaitAsync();
                 throw;
+            }
+
+            if (!added)
+            {
+                engine.DecrementPendingAtomicsWaitAsync();
+                ThrowHelper.ThrowRangeError("Too many asynchronous waiters");
             }
 
             return CreateWaitAsyncResult(realm, isAsync: true, capability.Promise);

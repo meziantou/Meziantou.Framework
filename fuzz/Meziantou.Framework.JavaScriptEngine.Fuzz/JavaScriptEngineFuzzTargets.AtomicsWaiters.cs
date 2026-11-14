@@ -70,10 +70,17 @@ public static partial class JavaScriptEngineFuzzTargets
             return (_waits++ & 1) == 0;
         }
 
-        public override void WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed)
+        public override bool WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed, CancellationToken cancellationToken)
         {
             CheckWait(byteIndex, expectedValue, size, timeout);
-            completed((_waits++ & 1) == 0);
+
+            // Every third wait is refused (the runtime has too many waiters): Atomics.waitAsync throws a RangeError
+            var wait = _waits++;
+            if (wait % 3 == 2)
+                return false;
+
+            completed((wait & 1) == 0);
+            return true;
         }
 
         private void CheckWait(int byteIndex, long expectedValue, int size, TimeSpan? timeout)

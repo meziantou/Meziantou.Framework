@@ -15066,6 +15066,15 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public Meziantou.Framework.WebPlatform.Dom.Window Window { get => throw null; }
     }
 
+    public interface IGrowableSharedDataBlock
+    {
+        nint Address { get; }
+        int ByteLength { get; }
+        object DataBlock { get; }
+        void SetWaiters(Meziantou.Framework.WebPlatform.Scripting.ISharedDataBlockWaiters waiters);
+        bool TryGrow(int newByteLength);
+    }
+
     public interface IJsAdapter<TValue> where TValue : class
     {
         object CurrentRealm { get; }
@@ -15088,7 +15097,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public TValue? CreateFixedLengthSharedArrayBuffer(object dataBlock, int byteLength) => throw null;
         TValue CreateFunction(string name, int length, Meziantou.Framework.WebPlatform.Scripting.JsHostFunction<TValue> function);
         public TValue? CreateGrowableSharedArrayBuffer(object dataBlock, System.Action<TValue, int> grow) => throw null;
-        public object? CreateGrowableSharedDataBlock(int byteLength, int maxByteLength) => throw null;
+        public Meziantou.Framework.WebPlatform.Scripting.IGrowableSharedDataBlock? CreateGrowableSharedDataBlock(int byteLength, int maxByteLength) => throw null;
         public TValue CreateHtmlDdaPlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue> handler, Meziantou.Framework.WebPlatform.Scripting.JsHostFunction<TValue> call) => throw null;
         TValue CreateObject(TValue prototype);
         TValue CreatePlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue>? handler);
@@ -15117,7 +15126,6 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public int GetPropertyCount(TValue obj) => throw null;
         TValue GetPrototypeOf(TValue obj);
         public object? GetSharedDataBlock(TValue sharedArrayBuffer) => throw null;
-        public nint GetSharedDataBlockAddress(object dataBlock) => throw null;
         public int GetSharedDataBlockByteLength(object dataBlock) => throw null;
         TValue GetWellKnownSymbol(Meziantou.Framework.WebPlatform.Scripting.JsWellKnownSymbol symbol);
         public bool GrowSharedDataBlock(object dataBlock, int deltaByteLength, out int previousByteLength) => throw null;
@@ -15154,7 +15162,6 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public void SetModuleSourceClassName(TValue obj, string className) { }
         bool SetPrototypeOf(TValue obj, TValue prototype);
         public bool SetSharedDataBlock(TValue sharedArrayBuffer, object dataBlock) => throw null;
-        public bool SetSharedDataBlockWaiters(object dataBlock, Meziantou.Framework.WebPlatform.Scripting.ISharedDataBlockWaiters waiters) => throw null;
         System.Numerics.BigInteger ToBigInt(TValue value);
         bool ToBoolean(TValue value);
         double ToNumber(TValue value);
@@ -15212,7 +15219,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
     {
         int Notify(int byteIndex, int count);
         bool Wait(int byteIndex, long expectedValue, int size, System.TimeSpan? timeout, System.Threading.CancellationToken cancellationToken);
-        void WaitAsync(int byteIndex, long expectedValue, int size, System.TimeSpan? timeout, System.Action<bool> completed);
+        bool WaitAsync(int byteIndex, long expectedValue, int size, System.TimeSpan? timeout, System.Action<bool> completed, System.Threading.CancellationToken cancellationToken);
     }
 
     public interface IWebIdlHost

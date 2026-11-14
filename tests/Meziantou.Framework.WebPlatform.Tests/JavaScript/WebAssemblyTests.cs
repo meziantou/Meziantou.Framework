@@ -437,6 +437,33 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task SharedMemory_ReexportAndGrowableBuffer()
+    {
+        var bytes = Wasm("""
+            (module
+              (import "env" "memory" (memory 1 4 shared))
+              (export "memory" (memory 0))
+              (func (export "size") (result i32) (memory.size)))
+            """);
+        var result = await RunAsync($$"""
+            async () => {
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 4, shared: true });
+              const { instance } = await WebAssembly.instantiate({{bytes}}, { env: { memory } });
+              const buffer = memory.toResizableBuffer();
+              buffer.grow(65536);
+              const sameLength = [buffer.byteLength, instance.exports.size()].join();
+              buffer.grow(3 * 65536);
+              const grown = [buffer.byteLength, instance.exports.size(), memory.grow(0)].join();
+              let smaller;
+              try { buffer.grow(2 * 65536); } catch (error) { smaller = error.name; }
+              return [instance.exports.memory === memory, sameLength, grown, smaller].join('|');
+            }
+            """, crossOriginIsolated: true);
+
+        Assert.Equal("true|65536,1|196608,3,3|RangeError", result);
+    }
+
+    [Fact]
     public async Task SharedMemory_CanBeDefinedByAModule()
     {
         var bytes = Wasm("""

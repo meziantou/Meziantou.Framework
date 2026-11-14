@@ -112,14 +112,28 @@ internal sealed class RecordingWaiters : JsSharedDataBlockWaiters
         return true;
     }
 
-    public override void WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed)
+    public override bool WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed, CancellationToken cancellationToken)
     {
         Calls.Add($"waitAsync {byteIndex} {expectedValue} {size} {timeout?.TotalMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+        if (RefuseAsyncWaits)
+            return false; // Atomics.waitAsync throws a RangeError
+
+        // The token is canceled when the engine is disposed
+        LastAsyncWaitToken = cancellationToken;
         completed(true);
+        return true;
     }
+
+    public bool RefuseAsyncWaits { get; set; }
+
+    public CancellationToken LastAsyncWaitToken { get; private set; }
 }
 ```
 <!-- endref -->
+
+`WaitAsync` returns `false` when your runtime cannot add more waiters: `Atomics.waitAsync` then throws a `RangeError`. Its
+cancellation token is canceled when the engine is disposed or when the cancellation token of its options is canceled:
+stop the wait then.
 
 <!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/Builtins/BinaryDataTests.cs;region=JsSharedDataBlock_Waiters;format=md-fenced-code-block;dedent=true -->
 ```csharp

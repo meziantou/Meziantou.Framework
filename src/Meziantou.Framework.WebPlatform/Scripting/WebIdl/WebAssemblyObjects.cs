@@ -166,7 +166,8 @@ internal sealed class WebAssemblyHost(IWebIdlHost host, Func<ulong, ulong, WasmS
 /// <summary>
 /// The waiters of the data block of a shared memory: <c>Atomics.wait</c>, <c>Atomics.waitAsync</c> and <c>Atomics.notify</c>
 /// use the atomic instructions of the memory, so that the scripts and the WebAssembly code notify each other. A blocking
-/// wait waits on the thread of the agent; an asynchronous wait waits on a thread of its own.
+/// wait waits on the thread of the agent; an asynchronous wait waits on a thread of its own (at most
+/// <see cref="MaxAsyncWaits"/> in the process), which stops when the agent stops.
 /// </summary>
 /// <remarks>
 /// The memory is referenced weakly: the native memory keeps the data block alive, which references its waiters, so a
@@ -176,11 +177,16 @@ internal sealed class WebAssemblyHost(IWebIdlHost host, Func<ulong, ulong, WasmS
 /// </remarks>
 internal sealed class WasmSharedMemoryWaiters(WasmMemory target) : ISharedDataBlockWaiters
 {
+    /// <summary>The maximum number of asynchronous waits of the process: each one has a thread.</summary>
+    internal const int MaxAsyncWaits = 1024;
+
     /// <summary>How long the caller of <see cref="WaitAsync"/> stays a waiter after the thread of the wait is about to wait.</summary>
     private static readonly TimeSpan HandOffDuration = TimeSpan.FromMilliseconds(1);
 
-    /// <summary>The maximum duration of the hand-off of a wait, or of the cancellation of a blocking wait.</summary>
+    /// <summary>The maximum duration of the hand-off of a wait, or of the cancellation of a wait.</summary>
     private static readonly TimeSpan MaxHandOffDuration = TimeSpan.FromSeconds(1);
+
+    private static int s_asyncWaits;
 
     private readonly WeakReference<WasmMemory> _memory = new(target);
 
@@ -211,25 +217,40 @@ internal sealed class WasmSharedMemoryWaiters(WasmMemory target) : ISharedDataBl
         return !wait.IsCanceled && result != WasmWaitResult.TimedOut;
     }
 
-    public void WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed)
+    public bool WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed, CancellationToken cancellationToken)
     {
-        if (!_memory.TryGetTarget(out var memory))
+        if (!_memory.TryGetTarget(out var memory) || cancellationToken.IsCancellationRequested)
         {
             completed(false);
-            return;
+            return true;
         }
 
-        var wait = new AsyncWait(memory, byteIndex, expectedValue, size, timeout, completed);
-        wait.Start();
+        if (Interlocked.Increment(ref s_asyncWaits) > MaxAsyncWaits)
+        {
+            Interlocked.Decrement(ref s_asyncWaits);
+            return false;
+        }
+
+        var wait = new AsyncWait(memory, byteIndex, expectedValue, size, timeout, completed, cancellationToken);
+        try
+        {
+            wait.Start();
+        }
+        catch
+        {
+            Interlocked.Decrement(ref s_asyncWaits);
+            throw;
+        }
 
         // The waiter must be a waiter of the memory when the method returns, but the thread of the wait starts waiting later:
-        // the calling thread waits until the thread of the wait is about to wait, so that a notification that comes before
-        // notifies the caller instead. A notified caller completes the wait, and the thread of the wait gives the
-        // notification it gets afterwards to the next waiter.
+        // the calling thread waits until the native code of the wait is about to wait (it sets the signal right before
+        // it joins the waiters), so that a notification that comes before notifies the caller instead. A notified caller
+        // completes the wait, and the thread of the wait gives the notification it gets afterwards to the next waiter. The
+        // last wait of the caller covers the few instructions between the signal and the waiters of the address.
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         while (true)
         {
-            var handedOff = wait.IsAboutToWait;
+            var handedOff = wait.Signal.IsSet;
             WasmWaitResult result;
             try
             {
@@ -237,21 +258,21 @@ internal sealed class WasmSharedMemoryWaiters(WasmMemory target) : ISharedDataBl
             }
             catch
             {
-                return;
+                return true;
             }
 
             if (result != WasmWaitResult.TimedOut)
             {
                 wait.CompleteByCaller();
-                return;
+                return true;
             }
 
             if (handedOff || System.Diagnostics.Stopwatch.GetElapsedTime(start) > MaxHandOffDuration)
-                return;
+                return true;
         }
     }
 
-    /// <summary>A blocking wait, woken when it is canceled.</summary>
+    /// <summary>A wait, woken when it is canceled.</summary>
     private sealed class CancelableWait(WasmMemory memory, int byteIndex)
     {
         private int _canceled;
@@ -286,8 +307,8 @@ internal sealed class WasmSharedMemoryWaiters(WasmMemory target) : ISharedDataBl
         private void Wake() => memory.AtomicNotify((ulong)byteIndex, uint.MaxValue);
     }
 
-    /// <summary>An asynchronous wait: a thread of its own waits.</summary>
-    private sealed class AsyncWait(WasmMemory memory, int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed)
+    /// <summary>An asynchronous wait: a thread of its own waits, until it is notified, it times out, or the agent stops.</summary>
+    private sealed class AsyncWait(WasmMemory memory, int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed, CancellationToken cancellationToken)
     {
         private readonly Thread _thread = new(static state => ((AsyncWait)state!).Run())
         {
@@ -295,10 +316,9 @@ internal sealed class WasmSharedMemoryWaiters(WasmMemory target) : ISharedDataBl
             Name = "WebAssembly atomic wait",
         };
 
-        private int _aboutToWait;
         private int _state; // 0: waiting, 1: completed
 
-        public bool IsAboutToWait => Volatile.Read(ref _aboutToWait) != 0;
+        public WasmWaitSignal Signal { get; } = new();
 
         public void Start() => _thread.UnsafeStart(this);
 
@@ -313,34 +333,52 @@ internal sealed class WasmSharedMemoryWaiters(WasmMemory target) : ISharedDataBl
 
         private void Run()
         {
-            var result = WasmWaitResult.TimedOut;
             try
             {
-                result = memory.AtomicWait((ulong)byteIndex, expectedValue, size, timeout, () => Volatile.Write(ref _aboutToWait, 1));
-            }
-            catch
-            {
-                // The memory cannot be used anymore (e.g. the runtime is disposed): the wait times out
-            }
-
-            if (Interlocked.Exchange(ref _state, 1) == 0)
-            {
-                // A value that changed since the engine checked it is a notification that happened before the wait
-                completed(result != WasmWaitResult.TimedOut);
-                return;
-            }
-
-            // The caller completed the wait: a notification of this thread was meant for another waiter
-            if (result == WasmWaitResult.Ok)
-            {
-                try
+                var wait = new CancelableWait(memory, byteIndex);
+                var result = WasmWaitResult.TimedOut;
+                using (cancellationToken.UnsafeRegister(static state => ((CancelableWait)state!).Cancel(), wait))
                 {
-                    memory.AtomicNotify((ulong)byteIndex, 1);
+                    try
+                    {
+                        if (!cancellationToken.IsCancellationRequested)
+                        {
+                            result = memory.AtomicWait((ulong)byteIndex, expectedValue, size, timeout, Signal);
+                        }
+                    }
+                    catch
+                    {
+                        // The memory cannot be used anymore (e.g. the runtime is disposed): the wait times out
+                    }
+                    finally
+                    {
+                        wait.Stop();
+                    }
                 }
-                catch
+
+                if (Interlocked.Exchange(ref _state, 1) == 0)
                 {
-                    // The memory cannot be used anymore
+                    // A value that changed since the engine checked it is a notification that happened before the wait
+                    completed(!wait.IsCanceled && result != WasmWaitResult.TimedOut);
+                    return;
                 }
+
+                // The caller completed the wait: a notification of this thread was meant for another waiter
+                if (result == WasmWaitResult.Ok && !wait.IsCanceled)
+                {
+                    try
+                    {
+                        memory.AtomicNotify((ulong)byteIndex, 1);
+                    }
+                    catch
+                    {
+                        // The memory cannot be used anymore
+                    }
+                }
+            }
+            finally
+            {
+                Interlocked.Decrement(ref s_asyncWaits);
             }
         }
     }

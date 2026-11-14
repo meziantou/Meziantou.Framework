@@ -109,7 +109,9 @@ The bytes of a shared memory never move: they are allocated for the maximum size
 memories a maximum no larger than the memory they need.
 
 A `memory.atomic.wait32` or `memory.atomic.wait64` instruction blocks the thread until it is notified or its timeout
-elapses: the limits of the script engine do not interrupt it. The threads of WebAssembly are a
+elapses: the limits of the script engine do not interrupt it. An `Atomics.waitAsync()` on the buffer of a shared memory
+uses a thread until it completes: a process runs at most 1,024 of them at once (beyond, `Atomics.waitAsync()` throws a
+`RangeError`), and they stop when their window or worker is closed. The threads of WebAssembly are a
 [tier 2 feature](https://docs.wasmtime.dev/stability-tiers.html) of Wasmtime.
 
 Wasmtime is a native library: it comes with the `Wasmtime` package, a dependency of

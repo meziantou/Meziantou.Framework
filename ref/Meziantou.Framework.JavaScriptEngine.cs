@@ -688,7 +688,7 @@ namespace Meziantou.Framework.JavaScriptEngine
     {
         public abstract int Notify(int byteIndex, int count);
         public abstract bool Wait(int byteIndex, long expectedValue, int size, System.TimeSpan? timeout, System.Threading.CancellationToken cancellationToken);
-        public abstract void WaitAsync(int byteIndex, long expectedValue, int size, System.TimeSpan? timeout, System.Action<bool> completed);
+        public abstract bool WaitAsync(int byteIndex, long expectedValue, int size, System.TimeSpan? timeout, System.Action<bool> completed, System.Threading.CancellationToken cancellationToken);
     }
 
     public readonly struct JsSourceLocation : System.IEquatable<Meziantou.Framework.JavaScriptEngine.JsSourceLocation>

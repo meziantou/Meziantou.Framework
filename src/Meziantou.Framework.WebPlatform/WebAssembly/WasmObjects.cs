@@ -1,3 +1,5 @@
+using Meziantou.Framework.WebPlatform.Scripting;
+
 namespace Meziantou.Framework.WebPlatform.WebAssembly;
 
 /// <summary>A compiled module. It is immutable: it can be shared by the agents (e.g. posted to a worker).</summary>
@@ -105,10 +107,10 @@ internal abstract class WasmMemory : WasmExtern
     /// <param name="expected">The expected value (the low 32 bits for a 32-bit wait).</param>
     /// <param name="size">The size of the value in bytes: 4 or 8.</param>
     /// <param name="timeout">The maximum duration of the wait, or null to wait until notified.</param>
-    /// <param name="waiting">Called on the calling thread right before it starts waiting, or null.</param>
+    /// <param name="signal">Set by the native code of the wait right before it joins the waiters of the address, or null.</param>
     /// <exception cref="WasmTrapException">The address is out of bounds or not aligned.</exception>
     /// <exception cref="NotSupportedException">The memory is not shared.</exception>
-    public virtual WasmWaitResult AtomicWait(ulong address, long expected, int size, TimeSpan? timeout, Action? waiting = null) => throw new NotSupportedException("The memory is not shared");
+    public virtual WasmWaitResult AtomicWait(ulong address, long expected, int size, TimeSpan? timeout, WasmWaitSignal? signal = null) => throw new NotSupportedException("The memory is not shared");
 
     /// <summary>The size of the memory in pages.</summary>
     public abstract ulong Size { get; }
@@ -116,6 +118,23 @@ internal abstract class WasmMemory : WasmExtern
     /// <summary>Grows the memory (mem_grow) and returns its previous size in pages.</summary>
     /// <exception cref="WasmAllocationException">The memory cannot grow.</exception>
     public abstract ulong Grow(ulong delta);
+
+    /// <summary>
+    /// Grows the memory to <paramref name="newSize"/> pages, and returns its previous size in pages: the memory does not
+    /// change when its size is <paramref name="newSize"/> or more. The agents that share a memory can grow it concurrently:
+    /// the memory of a shared memory grows to the new size, never beyond it.
+    /// </summary>
+    /// <exception cref="WasmAllocationException">The memory cannot grow.</exception>
+    public virtual ulong GrowTo(ulong newSize)
+    {
+        var size = Size;
+        if (newSize > size)
+        {
+            Grow(newSize - size);
+        }
+
+        return size;
+    }
 
     /// <summary>
     /// Called after the bytes of the memory are replaced (the memory grew, by <see cref="Grow"/> or by a <c>memory.grow</c>
@@ -137,29 +156,49 @@ internal enum WasmWaitResult
 /// <summary>
 /// The bytes of a shared memory: a growable shared data block of the script engine (the memory of the
 /// <c>SharedArrayBuffer</c> objects of the memory), allocated once for its capacity and pinned, so that its address never
-/// changes. The memory grows within the capacity. Created by <see cref="IWasmHost.CreateSharedMemoryBytes"/>.
+/// changes. The memory grows within the capacity. Created by <see cref="IWasmHost.CreateSharedMemoryBytes"/>. The memory
+/// keeps them alive as long as it is alive: they do not reference the agent that created them.
 /// </summary>
-internal sealed class WasmSharedMemoryBytes(object dataBlock, nint address, ulong capacity, Func<ulong> getByteLength, Func<ulong, bool> tryGrow)
+internal sealed class WasmSharedMemoryBytes(IGrowableSharedDataBlock block, ulong capacity)
 {
     private int _waitersInstalled;
 
+    /// <summary>The block of the script engine.</summary>
+    public IGrowableSharedDataBlock Block { get; } = block;
+
     /// <summary>The shared data block of the script engine (see <c>IJsAdapter.GetSharedDataBlock</c>).</summary>
-    public object DataBlock { get; } = dataBlock;
+    public object DataBlock => Block.DataBlock;
 
     /// <summary>The address of the first byte, which never changes.</summary>
-    public nint Address { get; } = address;
+    public nint Address { get; } = block.Address;
 
     /// <summary>The number of bytes the memory can grow to.</summary>
     public ulong Capacity { get; } = capacity;
 
     /// <summary>The current size of the memory in bytes.</summary>
-    public ulong ByteLength => getByteLength();
+    public ulong ByteLength => (ulong)Block.ByteLength;
 
     /// <summary>Grows the bytes to <paramref name="newByteLength"/> (the new bytes are zeroed): false when it is less than the current length or greater than the capacity.</summary>
-    public bool TryGrow(ulong newByteLength) => tryGrow(newByteLength);
+    public bool TryGrow(ulong newByteLength) => newByteLength <= Capacity && Block.TryGrow((int)newByteLength);
 
     /// <summary>Returns true the first time it is called: the waiters of the data block are installed once.</summary>
     public bool TryBeginInstallWaiters() => Interlocked.Exchange(ref _waitersInstalled, 1) == 0;
+}
+
+/// <summary>
+/// Tells another thread that a thread is about to join the waiters of an address (see <see cref="WasmMemory.AtomicWait"/>):
+/// the native code of the wait sets it right before it waits, so that a notification sent once it is set reaches the wait,
+/// unless the thread stops for longer than the time the other thread waits after it sees it.
+/// </summary>
+internal sealed class WasmWaitSignal
+{
+    private byte[]? _flag;
+
+    /// <summary>Whether the thread of the wait is about to wait (or is waiting, or waited).</summary>
+    public bool IsSet => Volatile.Read(ref _flag) is { } flag && Volatile.Read(ref flag[0]) != 0;
+
+    /// <summary>Sets the bytes whose first byte the native code of the wait sets (a memory of the helper of the wait).</summary>
+    public void Attach(byte[] flag) => Volatile.Write(ref _flag, flag);
 }
 
 /// <summary>A table (a table address).</summary>

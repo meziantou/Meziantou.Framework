@@ -149,6 +149,7 @@ public sealed partial class JsEngine
     private void DisposeAsyncState()
     {
         _isDisposed = true;
+        CancelAtomicsLifetime();
         SignalJobs();
         PromiseTaskSource[] pending;
         lock (_pendingTasksLock)

@@ -320,6 +320,12 @@ public sealed class BinaryDataTests
         Assert.Equal("2,2,ok,not-equal,timed-out,ok,true,ok", realm.Evaluate("results.join()").ToString());
         Assert.Equal(["notify 4 2147483647", "notify 8 3", "wait 4 5 4 20", "wait 8 0 8 -", "waitAsync 12 0 4 100"], waiters.Calls);
         #endregion
+
+        waiters.RefuseAsyncWaits = true;
+        Assert.Equal("RangeError", realm.Evaluate("try { Atomics.waitAsync(i32, 3, 0); 'no error' } catch (e) { e.name }").ToString());
+        Assert.False(waiters.LastAsyncWaitToken.IsCancellationRequested);
+        engine.Dispose();
+        Assert.True(waiters.LastAsyncWaitToken.IsCancellationRequested);
     }
 
     [Fact]
@@ -1072,10 +1078,20 @@ internal sealed class RecordingWaiters : JsSharedDataBlockWaiters
         return true;
     }
 
-    public override void WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed)
+    public override bool WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed, CancellationToken cancellationToken)
     {
         Calls.Add($"waitAsync {byteIndex} {expectedValue} {size} {timeout?.TotalMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+        if (RefuseAsyncWaits)
+            return false; // Atomics.waitAsync throws a RangeError
+
+        // The token is canceled when the engine is disposed
+        LastAsyncWaitToken = cancellationToken;
         completed(true);
+        return true;
     }
+
+    public bool RefuseAsyncWaits { get; set; }
+
+    public CancellationToken LastAsyncWaitToken { get; private set; }
 }
 #endregion

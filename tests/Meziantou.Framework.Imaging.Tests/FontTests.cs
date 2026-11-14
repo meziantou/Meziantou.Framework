@@ -3291,6 +3291,36 @@ public sealed class FontTests
         Assert.Equal(-1, bottom.Points.Min(point => point.Y) * 50 / face.UnitsPerEm, 1e-9);
     }
 
+    [Fact]
+    public void AContourThatClosesWithACurveEndsWhereItStarted()
+    {
+        // The stems 0 to 100 and 550 to 650; the contour starts at (0, 0) with the first one, and its last curve comes
+        // back to (0, 0) with the second one, whose map would place the height 0 elsewhere (0.15 pixel lower at 13
+        // pixels per em).
+        var font = new FontBuilder { FamilyName = "Meziantou Hint Masks", PostScriptName = "MeziantouHintMasks-Regular", UnitsPerEm = 1000, CmapFormats = FontCmapFormats.Format4 };
+        var cff = new FontCffWriter();
+        font.AddGlyph(FontGlyph.Empty(500), -1);
+        cff.CharStrings.Add(new FontCharstring().Op(FontCharstring.EndChar).ToArray());
+        font.AddGlyph(FontGlyph.Empty(600), 'A');
+        cff.CharStrings.Add(new FontCharstring()
+            .Op(FontCharstring.HStemHM, 0, 100, 450, 100)
+            .Op(FontCharstring.HintMask).Raw(0x80)
+            .Op(FontCharstring.RMoveTo, 0, 0)
+            .Op(FontCharstring.RLineTo, 500, 0, 0, 600)
+            .Op(FontCharstring.HintMask).Raw(0x40)
+            .Op(FontCharstring.RRCurveTo, -250, 0, -250, -300, 0, -300)
+            .Op(FontCharstring.EndChar)
+            .ToArray());
+        cff.Apply(font);
+        var face = FontTestSupport.Load(font).Face;
+        using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("test"));
+        using var hinter = GlyphHinter.Create(face, 13, GlyphHinting.Full, scratch, face.Data.Environment.CreateAllocator("hinter"));
+        var hinted = new PointRecorder();
+        var budget = new GlyphBudget(FontResourceLimits.Default);
+        hinter.DecodeOutline(1, hinted, scratch, ref budget);
+        Assert.Equal(hinted.Points[0], hinted.Points[^1]);
+    }
+
     private static string GetHints(FontFace face, int glyph)
     {
         var recorder = new HintRecorder();

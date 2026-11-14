@@ -79,13 +79,14 @@ internal sealed class CffHinter
         _zones = CreateZones(values);
 
         scratch.Reset();
-        _recorder.Begin(scratch);
+        _recorder.Begin(scratch, face.Data.Limits);
         face.DecodeOutline(glyphId, _recorder, scratch, ref budget);
         if (_recorder.Start < 0)
             return;
 
+        // Each hint map reads every stem of the glyph: the work is charged before it is done.
         var coordinates = scratch.Work[_recorder.Start..];
-        budget.Charge(_recorder.Commands.Count + _recorder.Stems.Count);
+        budget.Charge(_recorder.Commands.Count + _recorder.Stems.Count + ((long)_recorder.Masks.Count * _recorder.Stems.Count));
         BuildMaps();
         Emit(coordinates, sink);
     }
@@ -279,21 +280,15 @@ internal sealed class CffHinter
                     break;
 
                 case LineToCommand:
-                {
-                    // The line that closes a contour ends where the contour started.
-                    var x = coordinates[index];
-                    var y = coordinates[index + 1];
-                    var closes = c + 1 < commands.Count && commands[c + 1] == CloseCommand && x == startX && y == startY;
-                    sink.LineTo(x, closes ? hintedStartY : MapY(map, y));
+                    sink.LineTo(coordinates[index], MapEnd(c, map, coordinates[index], coordinates[index + 1]));
                     break;
-                }
 
                 case QuadraticToCommand:
-                    sink.QuadraticTo(coordinates[index], MapY(map, coordinates[index + 1]), coordinates[index + 2], MapY(map, coordinates[index + 3]));
+                    sink.QuadraticTo(coordinates[index], MapY(map, coordinates[index + 1]), coordinates[index + 2], MapEnd(c, map, coordinates[index + 2], coordinates[index + 3]));
                     break;
 
                 case CubicToCommand:
-                    sink.CubicTo(coordinates[index], MapY(map, coordinates[index + 1]), coordinates[index + 2], MapY(map, coordinates[index + 3]), coordinates[index + 4], MapY(map, coordinates[index + 5]));
+                    sink.CubicTo(coordinates[index], MapY(map, coordinates[index + 1]), coordinates[index + 2], MapY(map, coordinates[index + 3]), coordinates[index + 4], MapEnd(c, map, coordinates[index + 4], coordinates[index + 5]));
                     break;
 
                 default:
@@ -302,6 +297,14 @@ internal sealed class CffHinter
             }
 
             index += GetCoordinateCount(commands[c]);
+        }
+
+        // The segment that closes a contour, a line or a curve, ends where the contour started, whatever mask it is
+        // drawn with.
+        double MapEnd(int command, int map, double x, double y)
+        {
+            var closes = command + 1 < commands.Count && commands[command + 1] == CloseCommand && x == startX && y == startY;
+            return closes ? hintedStartY : MapY(map, y);
         }
     }
 
@@ -324,6 +327,7 @@ internal sealed class CffHinter
     private sealed class Recorder : OutlineSink, ICffHintSink
     {
         private GlyphScratch? _scratch;
+        private GlyphBudget _maskBudget;
 
         public List<byte> Commands { get; } = [];
 
@@ -336,9 +340,10 @@ internal sealed class CffHinter
         /// <summary>Gets the index of the first coordinate in the working numbers of the scratch.</summary>
         public int Start { get; private set; } = -1;
 
-        public void Begin(GlyphScratch scratch)
+        public void Begin(GlyphScratch scratch, FontResourceLimits limits)
         {
             _scratch = scratch;
+            _maskBudget = new GlyphBudget(limits);
             Commands.Clear();
             CommandMasks.Clear();
             Stems.Clear();
@@ -347,14 +352,21 @@ internal sealed class CffHinter
             Start = -1;
         }
 
-        public void AddStem(bool isHorizontal, double edge, double width) => Stems.Add((isHorizontal, edge, width));
+        public void AddStem(bool isHorizontal, double edge, double width)
+        {
+            _maskBudget.Charge(1);
+            Stems.Add((isHorizontal, edge, width));
+        }
 
         public void SetMask(ReadOnlySpan<byte> mask, bool isCounterMask)
         {
-            if (!isCounterMask)
-            {
-                Masks.Add(mask.ToArray());
-            }
+            // A mask that selects the stems of the one before it keeps its map. The bytes of the masks kept are
+            // bounded by the complexity limit: a charstring can repeat masks in subroutines.
+            if (isCounterMask || (Masks[^1] is { } previous && mask.SequenceEqual(previous)))
+                return;
+
+            _maskBudget.Charge(1 + mask.Length);
+            Masks.Add(mask.ToArray());
         }
 
         public override void MoveTo(double x, double y) => Add(MoveToCommand, x, y);

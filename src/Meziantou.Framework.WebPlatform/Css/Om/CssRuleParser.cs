@@ -130,9 +130,13 @@ internal sealed partial class CssRuleParser
     /// <summary>Parses the rules of a style sheet (https://drafts.csswg.org/cssom/#parse-a-css-stylesheet).</summary>
     public List<CssRule> ParseStylesheet(string text, bool allowImport = true)
     {
-        var values = CssParser.ParseListOfComponentValues(text, out _source);
-        var nodes = CssParser.ConsumeStylesheetContents(new CssComponentValueStream(values), reportErrors: false);
-        var rules = new List<CssRule>();
+        // The component values and the rules of the syntax are only used to create the rules: their lists are reused
+        var values = ListPool<CssComponentValue>.Rent();
+        var nodes = ListPool<CssSyntaxNode>.Rent();
+        CssParser.ParseListOfComponentValues(text, values, out _source);
+        CssParser.ConsumeStylesheetContents(new CssComponentValueStream(values), nodes, reportErrors: false);
+        ListPool<CssComponentValue>.Return(values);
+        var rules = new List<CssRule>(nodes.Count);
         foreach (var node in nodes)
         {
             var rule = ConvertRule(node, CssRuleContext.TopLevel);
@@ -154,6 +158,7 @@ internal sealed partial class CssRuleParser
             rules.Add(rule);
         }
 
+        ListPool<CssSyntaxNode>.Return(nodes);
         return rules;
     }
 
@@ -350,17 +355,24 @@ internal sealed partial class CssRuleParser
         var declarations = new List<CssDeclarationEntry>();
         var styleRule = new CssStyleRule(selectors, declarations);
 
+        // The declarations are collected in a list that is reused, then copied to a list of their final size: the list is
+        // kept by the rule, and a list that grows by doubling its capacity allocates about as much again in discarded arrays
+        var parsedDeclarations = ListPool<CssDeclarationEntry>.Rent();
+
         // The rules nested in a style rule are relative to the style rule, not to the scoping root
         _inScopeRule = false;
         try
         {
-            ParseNestedBlock(rule.Block.Value, styleRule, declarations);
+            ParseNestedBlock(rule.Block.Value, styleRule, parsedDeclarations);
         }
         finally
         {
             _inScopeRule = scoped;
         }
 
+        declarations.Capacity = parsedDeclarations.Count;
+        declarations.AddRange(parsedDeclarations);
+        ListPool<CssDeclarationEntry>.Return(parsedDeclarations);
         return styleRule;
     }
 
@@ -390,7 +402,8 @@ internal sealed partial class CssRuleParser
     /// </summary>
     private void ParseNestedBlock(List<CssComponentValue> block, CssGroupingRule parent, List<CssDeclarationEntry>? declarations)
     {
-        var nodes = CssParser.ConsumeBlockContents(new CssComponentValueStream(block));
+        var nodes = ListPool<CssSyntaxNode>.Rent();
+        CssParser.ConsumeBlockContents(new CssComponentValueStream(block), nodes);
         List<CssDeclarationEntry>? nested = null;
         foreach (var node in nodes)
         {
@@ -421,6 +434,8 @@ internal sealed partial class CssRuleParser
                 parent.AddChildRule(child);
             }
         }
+
+        ListPool<CssSyntaxNode>.Return(nodes);
 
         // Remove the empty nested declarations (e.g. only invalid declarations)
         parent.ChildRules.RemoveAll(r => r is CssNestedDeclarations { Style.Length: 0 });
@@ -560,7 +575,8 @@ internal sealed partial class CssRuleParser
             return;
         }
 
-        var nodes = CssParser.ConsumeStylesheetContents(new CssComponentValueStream(block.Value), reportErrors: false, topLevel: false);
+        var nodes = ListPool<CssSyntaxNode>.Rent();
+        CssParser.ConsumeStylesheetContents(new CssComponentValueStream(block.Value), nodes, reportErrors: false, topLevel: false);
         foreach (var node in nodes)
         {
             if (ConvertRule(node, CssRuleContext.Grouping) is { } child)
@@ -568,6 +584,8 @@ internal sealed partial class CssRuleParser
                 parent.AddChildRule(child);
             }
         }
+
+        ListPool<CssSyntaxNode>.Return(nodes);
     }
 
     private List<CssDeclarationEntry> ParseDescriptors(CssSimpleBlock block, string atRule)

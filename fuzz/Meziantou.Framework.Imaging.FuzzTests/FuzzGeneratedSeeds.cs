@@ -124,6 +124,19 @@ internal static class FuzzGeneratedSeeds
         pyramid.SubPages.Add(Level(16, 12, 1, 227));
         pyramid.SubPages.Add(Level(4, 3, 1, 223));
         seeds.Add(new FuzzSeed("tiff/builder-pyramid-subifds-bigtiff", new TiffFileBuilder { BigTiff = true }.AddPage(pyramid).Build()));
+        // Old-style JPEG (compression 6), which no encoder writes: the header of the JPEG interchange format with the
+        // scan in a strip, or the whole datastream at JPEGInterchangeFormat, with 8- and 12-bit samples
+        using (var rgb = CreateRgb24(19, 13, salt: 6))
+        {
+            seeds.Add(OldJpeg("tiff/builder-ojpeg-ycbcr420-interchange-strip", rgb, new JpegEncoder { Quality = 80, ChromaSubsampling = JpegChromaSubsampling.Ratio420 }, bitsPerSample: 8, wholeImage: false));
+            seeds.Add(OldJpeg("tiff/builder-ojpeg12-ycbcr420-interchange-whole", rgb, new JpegEncoder { Quality = 80, ChromaSubsampling = JpegChromaSubsampling.Ratio420, BitDepth = 12 }, bitsPerSample: 12, wholeImage: true));
+        }
+
+        using (var gray16 = CreateGray16(11, 9, salt: 7))
+        {
+            seeds.Add(OldJpeg("tiff/builder-ojpeg12-gray-interchange-strip", gray16, new JpegEncoder { Quality = 85, BitDepth = 12 }, bitsPerSample: 12, wholeImage: false));
+        }
+
         seeds.Add(new FuzzSeed("tiff/builder-rgba32-bigtiff-unassociated", new TiffFileBuilder { BigTiff = true }.AddPage(new TiffPageSpec { Width = 5, Height = 4, SamplesPerPixel = 4, Photometric = 2, ExtraSamples = [2], Compression = 8, Samples = Samples(5 * 4 * 4, 256) }).Build()));
         return seeds;
     }
@@ -362,6 +375,45 @@ internal static class FuzzGeneratedSeeds
             image.Save(stream, new IcoEncoder { Kind = IconKind.Cursor, PayloadFormat = IconPayloadFormat.Dib });
             return stream.ToArray();
         }
+    }
+
+    /// <summary>
+    /// Builds an old-style JPEG page of one strip from a JPEG file: <c>JPEGInterchangeFormat</c> holds the markers of the
+    /// file up to its start of scan and the strip its entropy-coded data, or, for <paramref name="wholeImage"/>, it holds
+    /// the whole file and the page declares no strip byte counts.
+    /// </summary>
+    private static FuzzSeed OldJpeg(string id, Image image, JpegEncoder encoder, int bitsPerSample, bool wholeImage)
+    {
+        using var stream = new MemoryStream();
+        image.Save(stream, encoder);
+        var jpeg = stream.ToArray();
+        var headerLength = TiffOldJpegLayout.FindHeaderLength(jpeg);
+        var isGray = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Gray16;
+        byte[] appended = wholeImage ? jpeg : jpeg[..headerLength];
+
+        TiffPageSpec CreatePage(ulong offset)
+        {
+            var page = new TiffPageSpec
+            {
+                Width = image.Width,
+                Height = image.Height,
+                SamplesPerPixel = isGray ? 1 : 3,
+                BitsPerSample = bitsPerSample,
+                Photometric = isGray ? 1 : 6,
+                Compression = 6,
+                RowsPerStrip = image.Height,
+                OmitByteCounts = wholeImage,
+                EncodedBlocks = [wholeImage ? [0] : jpeg[headerLength..^2]],
+                Samples = [],
+            };
+            page.ExtraFields.Add(TiffFieldSpec.Long(513, (uint)offset));
+            page.ExtraFields.Add(TiffFieldSpec.Long(514, (uint)appended.Length));
+            return page;
+        }
+
+        // The bytes are appended to the file, whose length the value of the offset does not change
+        var length = (ulong)new TiffFileBuilder().AddPage(CreatePage(0)).Build().Length;
+        return new FuzzSeed(id, [.. new TiffFileBuilder().AddPage(CreatePage(length)).Build(), .. appended]);
     }
 
     private static FuzzSeed Encode(string id, Image image, ImageEncoder encoder)

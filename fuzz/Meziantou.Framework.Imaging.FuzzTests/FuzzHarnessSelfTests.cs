@@ -54,6 +54,21 @@ public sealed class FuzzHarnessSelfTests
     }
 
     [Fact]
+    public void TheOldJpegTiffSeedsDecodeWithThePrecisionOfTheirSamples()
+    {
+        // No encoder writes old-style JPEG: the builder seeds must decode, so that their mutations reach the decoder
+        var seeds = FuzzSeeds.Get("tiff").Where(seed => seed.Id.StartsWith("tiff/builder-ojpeg", StringComparison.Ordinal)).ToList();
+        Assert.HasCount(3, seeds);
+        foreach (var seed in seeds)
+        {
+            using var image = Image.Load(seed.Data, cancellationToken: TestContext.Current.CancellationToken);
+            var isTwelveBit = seed.Id.StartsWith("tiff/builder-ojpeg12", StringComparison.Ordinal);
+            Assert.Equal(isTwelveBit ? 12 : 8, Image.Identify(seed.Data).BitsPerComponent);
+            Assert.Equal(isTwelveBit, image.PixelFormat is PixelFormat.Gray16 or PixelFormat.Rgb48);
+        }
+    }
+
+    [Fact]
     public void TheOpenExrSeedsReachEveryCompressionAndLevelMode()
     {
         // The encoder of the library writes scan lines without PXR24 or B44: the corpus files written by OpenEXR and the

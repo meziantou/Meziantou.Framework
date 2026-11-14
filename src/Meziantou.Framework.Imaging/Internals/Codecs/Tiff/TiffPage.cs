@@ -353,7 +353,7 @@ internal sealed class TiffPage
         SampleFormat = ResolveSampleFormat();
 
         // The samples of a JPEG datastream have the precision of its frame: 12 bits, or any number of them when it is lossless
-        var isJpeg = Directory.TryGetUnsigned(TiffFormat.CompressionTag, out var compression) && compression == TiffFormat.CompressionJpeg;
+        var isJpeg = Directory.TryGetUnsigned(TiffFormat.CompressionTag, out var compression) && compression is TiffFormat.CompressionJpeg or TiffFormat.CompressionOldJpeg;
         switch (SampleFormat)
         {
             case TiffFormat.SampleFormatFloat when bits[0] is not (16 or 24 or 32):
@@ -686,8 +686,9 @@ internal sealed class TiffPage
             if (process != 1)
                 throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The old-style JPEG page {Index} uses the JPEG process {process}; the baseline process (1) is supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: old-style JPEG with JPEGProc {process}"));
 
-            if (BitsPerSample != 8)
-                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The old-style JPEG page {Index} stores {BitsPerSample}-bit samples; 8-bit samples are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: old-style JPEG with {BitsPerSample}-bit samples"));
+            // The DCT-based processes code samples of 8 or 12 bits
+            if (BitsPerSample is not (8 or 12))
+                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The old-style JPEG page {Index} stores {BitsPerSample}-bit samples; 8- and 12-bit samples are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: old-style JPEG with {BitsPerSample}-bit samples"));
 
             return;
         }

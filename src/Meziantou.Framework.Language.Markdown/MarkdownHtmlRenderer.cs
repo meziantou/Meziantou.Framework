@@ -148,7 +148,7 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownHtmlBlockSyntax html:
                     Cr();
-                    AppendHtml(html.Html, followedByLineBreak: false);
+                    AppendHtml(html.Html);
                     Cr();
                     break;
 
@@ -303,7 +303,7 @@ public static class MarkdownHtmlRenderer
                     break;
 
                 case MarkdownRawHtmlSyntax html:
-                    AppendHtml(html.Html, followedByLineBreak: false);
+                    AppendHtml(html.Html);
                     break;
 
                 case MarkdownLinkSyntax { IsImage: true } image:
@@ -382,7 +382,7 @@ public static class MarkdownHtmlRenderer
         }
 
         // Raw HTML, where the tag filter of GFM escapes the tags that change how the rest of the page is read
-        private void AppendHtml(ReadOnlySpan<char> html, bool followedByLineBreak)
+        private void AppendHtml(ReadOnlySpan<char> html)
         {
             while (!html.IsEmpty)
             {
@@ -400,15 +400,14 @@ public static class MarkdownHtmlRenderer
                 }
                 else
                 {
-                    _output.Append(IsDisallowedTag(html[index..], followedByLineBreak) ? "&lt;" : "<");
+                    _output.Append(IsDisallowedTag(html[index..]) ? "&lt;" : "<");
                 }
 
                 html = html[(index + 1)..];
             }
         }
 
-        // A line break after the text of a line of an HTML block ends the tag name as whitespace does
-        private static bool IsDisallowedTag(ReadOnlySpan<char> tag, bool followedByLineBreak)
+        private static bool IsDisallowedTag(ReadOnlySpan<char> tag)
         {
             var name = tag[1..];
             if (name.StartsWith('/'))
@@ -418,11 +417,6 @@ public static class MarkdownHtmlRenderer
 
             foreach (var disallowed in (ReadOnlySpan<string>)["title", "textarea", "style", "xmp", "iframe", "noembed", "noframes", "script", "plaintext"])
             {
-                if (name.Length == disallowed.Length && followedByLineBreak && name.Equals(disallowed, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-
                 if (name.Length > disallowed.Length && name.StartsWith(disallowed, StringComparison.OrdinalIgnoreCase))
                 {
                     var next = name[disallowed.Length..];

@@ -488,7 +488,7 @@ internal sealed class CustomPropertySyntax
         if (syntax.IsUniversal)
             return true;
 
-        return ValueMatcher.RemoveWhitespace(values).Count > 0 && (Parse(syntax.Text) is not { } parsed || parsed.TryMatch(values, out _));
+        return !ValueMatcher.IsEmptyOrWhitespace(values) && (Parse(syntax.Text) is not { } parsed || parsed.TryMatch(values, out _));
     }
 
     /// <summary>

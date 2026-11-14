@@ -375,7 +375,7 @@ internal sealed partial class CssRuleParser
     public SelectorList? ParseStyleRuleSelector(List<CssComponentValue> prelude, bool nested, bool scoped = false, string? source = null)
     {
         // An empty selector or a selector containing a {} block is invalid
-        if (ValueMatcher.RemoveWhitespace(prelude).Count == 0)
+        if (ValueMatcher.IsEmptyOrWhitespace(prelude))
             return null;
 
         if (!nested)
@@ -723,7 +723,7 @@ internal sealed partial class CssRuleParser
                     {
                         CssStyleDeclaration.AppendDeclaration(declaration, _source, declarations, "@page");
                     }
-                    else if (node is CssAtRule { Block: not null } marginRule && IsMarginRuleName(InfraAscii.ToAsciiLowercase(marginRule.Name)) && ValueMatcher.RemoveWhitespace(marginRule.Prelude).Count == 0)
+                    else if (node is CssAtRule { Block: not null } marginRule && IsMarginRuleName(InfraAscii.ToAsciiLowercase(marginRule.Name)) && ValueMatcher.IsEmptyOrWhitespace(marginRule.Prelude))
                     {
                         var marginName = InfraAscii.ToAsciiLowercase(marginRule.Name);
                         pageRule.AddChildRule(new CssMarginRule(marginName, ParseDescriptors(marginRule.Block, "@" + marginName)));
@@ -889,7 +889,7 @@ internal sealed partial class CssRuleParser
             {
                 CssStyleDeclaration.AppendDeclaration(declaration, _source, descriptors, "@font-feature-values");
             }
-            else if (node is CssAtRule { Block: { } featureBlock } atRule && ValueMatcher.RemoveWhitespace(atRule.Prelude).Count == 0 && CssFontFeatureValuesRule.GetFeatureType(atRule.Name) is { } featureType)
+            else if (node is CssAtRule { Block: { } featureBlock } atRule && ValueMatcher.IsEmptyOrWhitespace(atRule.Prelude) && CssFontFeatureValuesRule.GetFeatureType(atRule.Name) is { } featureType)
             {
                 var map = rule.GetMapForBlock(featureType);
                 foreach (var item in CssParser.ConsumeBlockContents(new CssComponentValueStream(featureBlock.Value)))
@@ -1320,7 +1320,7 @@ internal sealed partial class CssRuleParser
             case [CssFunction function] when function.Name.StartsWith("--", StringComparison.Ordinal):
             {
                 var arguments = new List<string>();
-                if (ValueMatcher.RemoveWhitespace(function.Value).Count > 0)
+                if (!ValueMatcher.IsEmptyOrWhitespace(function.Value))
                 {
                     foreach (var argument in ValueMatcher.SplitAtCommas(function.Value))
                     {
@@ -1386,7 +1386,7 @@ internal sealed partial class CssRuleParser
 
         var type = CssSyntaxDefinition.Universal;
         var typeValues = declaration[1..colon];
-        if (ValueMatcher.RemoveWhitespace(typeValues).Count > 0)
+        if (!ValueMatcher.IsEmptyOrWhitespace(typeValues))
         {
             if (ParseCssType(typeValues) is not { } parsedType)
                 return null;
@@ -1395,7 +1395,7 @@ internal sealed partial class CssRuleParser
         }
 
         var value = declaration[(colon + 1)..];
-        if (ValueMatcher.RemoveWhitespace(value).Count == 0 || !CssShorthands.IsValidDeclarationValue(value, topLevel: true))
+        if (ValueMatcher.IsEmptyOrWhitespace(value) || !CssShorthands.IsValidDeclarationValue(value, topLevel: true))
             return null;
 
         if (ValueMatcher.ContainsSubstitutionFunction(value))
@@ -1418,7 +1418,7 @@ internal sealed partial class CssRuleParser
     private List<CssFunctionParameterDefinition>? ParseFunctionParameters(List<CssComponentValue> values)
     {
         var result = new List<CssFunctionParameterDefinition>();
-        if (ValueMatcher.RemoveWhitespace(values).Count == 0)
+        if (ValueMatcher.IsEmptyOrWhitespace(values))
             return result;
 
         foreach (var argument in ValueMatcher.SplitAtCommas(values))
@@ -1435,7 +1435,7 @@ internal sealed partial class CssRuleParser
             var colon = parameter.FindIndex(v => v is CssPreservedToken { Type: CssTokenType.Colon });
             var typeValues = parameter[1..(colon < 0 ? parameter.Count : colon)];
             var type = CssSyntaxDefinition.Universal;
-            if (ValueMatcher.RemoveWhitespace(typeValues).Count > 0)
+            if (!ValueMatcher.IsEmptyOrWhitespace(typeValues))
             {
                 if (ParseCssType(typeValues) is not { } parsedType)
                     return null;
@@ -1448,7 +1448,7 @@ internal sealed partial class CssRuleParser
             {
                 // The default value is a <declaration-value> that matches the type (unless it contains arbitrary substitution functions)
                 var defaultValues = parameter[(colon + 1)..];
-                if (ValueMatcher.RemoveWhitespace(defaultValues).Count == 0 || !CssShorthands.IsValidDeclarationValue(defaultValues, topLevel: true))
+                if (ValueMatcher.IsEmptyOrWhitespace(defaultValues) || !CssShorthands.IsValidDeclarationValue(defaultValues, topLevel: true))
                     return null;
 
                 if (ValueMatcher.ContainsSubstitutionFunction(defaultValues))

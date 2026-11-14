@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.WebPlatform.Css.Syntax;
 using Meziantou.Framework.WebPlatform.Infra;
 
@@ -76,6 +77,48 @@ internal static class ValueMatcher
 
         return false;
     }
+
+    /// <summary>Removes the whitespace (it is not significant between component values).</summary>
+    public static List<CssComponentValue> RemoveWhitespace(List<CssComponentValue> values)
+    {
+        // The list is indexed, so that its enumerator is not boxed
+        var count = 0;
+        foreach (var value in CollectionsMarshal.AsSpan(values))
+        {
+            if (!IsWhitespace(value))
+            {
+                count++;
+            }
+        }
+
+        var result = new List<CssComponentValue>(count);
+        foreach (var value in CollectionsMarshal.AsSpan(values))
+        {
+            if (!IsWhitespace(value))
+            {
+                result.Add(value);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Returns whether the component values are empty or whitespace, without creating the list of <see cref="RemoveWhitespace(List{CssComponentValue})"/>.</summary>
+    public static bool IsEmptyOrWhitespace(List<CssComponentValue> values) => IsEmptyOrWhitespace(CollectionsMarshal.AsSpan(values));
+
+    /// <inheritdoc cref="IsEmptyOrWhitespace(List{CssComponentValue})"/>
+    public static bool IsEmptyOrWhitespace(ReadOnlySpan<CssComponentValue> values)
+    {
+        foreach (var value in values)
+        {
+            if (!IsWhitespace(value))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool IsWhitespace(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Whitespace };
 
     /// <summary>Removes the whitespace (it is not significant between component values).</summary>
     public static List<CssComponentValue> RemoveWhitespace(IEnumerable<CssComponentValue> values)
@@ -574,7 +617,7 @@ internal static class ValueMatcher
         {
             case "number" or "integer" or "percentage" or "length" or "angle" or "time" or "frequency" or "resolution" or "flex" or "dimension" or "zero":
                 // https://drafts.csswg.org/css-values-5/#tree-counting: sibling-index() and sibling-count() are <integer>s
-                if (value is CssFunction treeCounting && InfraAscii.ToAsciiLowercase(treeCounting.Name) is "sibling-index" or "sibling-count" && RemoveWhitespace(treeCounting.Value).Count == 0)
+                if (value is CssFunction treeCounting && InfraAscii.ToAsciiLowercase(treeCounting.Name) is "sibling-index" or "sibling-count" && IsEmptyOrWhitespace(treeCounting.Value))
                     return name is "number" or "integer";
 
                 if (value is CssFunction function && MathFunctions.Contains(InfraAscii.ToAsciiLowercase(function.Name)))
@@ -979,7 +1022,7 @@ internal static class ValueMatcher
                     else if (name == "if")
                     {
                         // https://drafts.csswg.org/css-values-5/#if-notation: the branches are validated when they are substituted
-                        if (RemoveWhitespace(function.Value).Count == 0)
+                        if (IsEmptyOrWhitespace(function.Value))
                             return false;
                     }
                     else if (name == "ident")
@@ -1007,7 +1050,7 @@ internal static class ValueMatcher
                     else if (name == "attr")
                     {
                         // attr() accepts a namespace prefix (attr(|name), attr(ns|name))
-                        if (RemoveWhitespace(function.Value).Count == 0)
+                        if (IsEmptyOrWhitespace(function.Value))
                             return false;
                     }
 
@@ -1097,7 +1140,7 @@ internal static class ValueMatcher
     /// </summary>
     private static bool AreDashedFunctionArgumentsValid(List<CssComponentValue> values)
     {
-        if (RemoveWhitespace(values).Count == 0)
+        if (IsEmptyOrWhitespace(values))
             return true;
 
         foreach (var argument in SplitAtCommas(values))
@@ -1112,7 +1155,7 @@ internal static class ValueMatcher
 
             if (significant is [CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket } block])
             {
-                if (RemoveWhitespace(block.Value).Count == 0 || !CssShorthands.IsValidDeclarationValue(block.Value, topLevel: true))
+                if (IsEmptyOrWhitespace(block.Value) || !CssShorthands.IsValidDeclarationValue(block.Value, topLevel: true))
                     return false;
             }
             else if (significant.Exists(v => v is CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket }) || !CssShorthands.IsValidDeclarationValue(argument, topLevel: true))

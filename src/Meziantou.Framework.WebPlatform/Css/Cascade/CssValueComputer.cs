@@ -632,7 +632,7 @@ internal static partial class CssValueComputer
                     // https://drafts.csswg.org/css-anchor-position-1/#anchor-pos: the function is kept (its fallback is computed)
                     return Raw(SerializeAnchorFunction(function, context));
                 }
-                else if (name is "sibling-index" or "sibling-count" && ValueMatcher.RemoveWhitespace(function.Value).Count == 0)
+                else if (name is "sibling-index" or "sibling-count" && ValueMatcher.IsEmptyOrWhitespace(function.Value))
                 {
                     // https://drafts.csswg.org/css-values-5/#tree-counting
                     return Raw(SerializeNumber(ResolveTreeCountingFunction(name, context.Style.Element) ?? 1));

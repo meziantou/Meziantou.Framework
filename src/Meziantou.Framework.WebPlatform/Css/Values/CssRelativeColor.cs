@@ -147,7 +147,7 @@ internal static class CssRelativeColor
 
             // https://drafts.csswg.org/css-values-5/#tree-counting: sibling-index() and sibling-count() are integers
             case CssFunction treeCounting when InfraAscii.ToAsciiLowercase(treeCounting.Name) is "sibling-index" or "sibling-count":
-                return ValueMatcher.RemoveWhitespace(treeCounting.Value).Count == 0;
+                return ValueMatcher.IsEmptyOrWhitespace(treeCounting.Value);
 
             case CssFunction math when CssCalc.IsMathFunction(math.Name):
             {

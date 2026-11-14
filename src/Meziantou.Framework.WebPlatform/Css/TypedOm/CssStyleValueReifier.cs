@@ -65,7 +65,7 @@ internal static class CssStyleValueReifier
     private static bool IsValid(string property, List<CssComponentValue> values, string source)
     {
         // An empty value is invalid, even for a custom property
-        if (ValueMatcher.RemoveWhitespace(values).Count == 0)
+        if (ValueMatcher.IsEmptyOrWhitespace(values))
             return false;
 
         return CssStyleDeclaration.ParseValue(atRule: null, property, values, source.Trim(' ', '\t', '\n')) is not null;

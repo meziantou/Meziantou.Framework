@@ -427,7 +427,7 @@ internal static class CssSubstitution
         // An argument containing commas is written in a {} block (https://drafts.csswg.org/css-values-5/#component-function-commas).
         // The attr()-taint of the arguments is tracked by the function: its result is tainted when its value is.
         var arguments = new List<(string? Value, bool Tainted)>();
-        if (ValueMatcher.RemoveWhitespace(function.Value).Count > 0)
+        if (!ValueMatcher.IsEmptyOrWhitespace(function.Value))
         {
             foreach (var argument in ValueMatcher.SplitAtCommas(function.Value))
             {
@@ -521,7 +521,7 @@ internal static class CssSubstitution
         foreach (var branch in branches)
         {
             var colon = branch.FindIndex(v => v is CssPreservedToken { Type: CssTokenType.Colon });
-            if (colon < 0 || ValueMatcher.RemoveWhitespace(branch[..colon]).Count == 0)
+            if (colon < 0 || ValueMatcher.IsEmptyOrWhitespace(branch[..colon]))
                 return null;
 
             parsed.Add((branch[..colon], branch[(colon + 1)..]));
@@ -658,7 +658,7 @@ internal static class CssSubstitution
 
                     // The declarations are parsed in the mode of the document (the quirky lengths are valid in quirks mode)
                     case "supports":
-                        return ValueMatcher.RemoveWhitespace(function.Value).Count > 0 && Om.Css.Supports(GetSource(function.Value, source), context.Style.Element.NodeDocument.Mode == DocumentMode.Quirks);
+                        return !ValueMatcher.IsEmptyOrWhitespace(function.Value) && Om.Css.Supports(GetSource(function.Value, source), context.Style.Element.NodeDocument.Mode == DocumentMode.Quirks);
 
                     default:
                         return null;
@@ -742,7 +742,7 @@ internal static class CssSubstitution
             item = block.Value;
         }
 
-        if (ValueMatcher.RemoveWhitespace(item).Count == 0)
+        if (ValueMatcher.IsEmptyOrWhitespace(item))
             return null;
 
         var value = new SubstitutionBuilder();

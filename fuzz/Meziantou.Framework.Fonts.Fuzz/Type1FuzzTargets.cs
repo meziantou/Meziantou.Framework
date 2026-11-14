@@ -171,6 +171,7 @@ public static class Type1FuzzTargets
             ("sample.pfb", FontType1Writer.Sample().WritePfb()),
             ("standard.pfb", standard.WritePfb()),
             ("light.pfa", light.WritePfa()),
+            ("literal-encoding.pfa", Encoding.Latin1.GetBytes(Encoding.Latin1.GetString(FontType1Writer.Sample(standardEncoding: true).WritePfa()).Replace("/Encoding StandardEncoding def\n", "/Encoding [/.notdef /A /O /Aacute] dup 3 /H put readonly def\n", StringComparison.Ordinal))),
         ];
         foreach (var (name, data) in fonts)
         {

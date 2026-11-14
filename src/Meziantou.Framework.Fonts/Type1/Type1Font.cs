@@ -371,7 +371,8 @@ internal sealed class Type1Font : IDisposable
     }
 
     /// <summary>
-    /// Reads the encoding (5.3): <c>StandardEncoding</c>, or an array of 256 names, then the names that
+    /// Reads the encoding (5.3): <c>StandardEncoding</c>, an array of 256 names, or a literal array of names
+    /// (<c>[/.notdef /A /B ...]</c>), then the names that
     /// <c>dup code /name put</c> assigns up to the <c>def</c> that stores it. A copy of the standard encoding that
     /// assigns other names (<c>StandardEncoding 256 array copy dup 65 /Agrave put</c>) is a custom encoding.
     /// </summary>
@@ -386,6 +387,35 @@ internal sealed class Type1Font : IDisposable
         else if (value.Kind == PostScriptTokenKind.Number)
         {
             encoding = new string?[256];
+        }
+        else if (value.Kind == PostScriptTokenKind.ArrayStart)
+        {
+            // A literal array gives the names of the codes in order: [/.notdef /A /B ...]
+            encoding = new string?[256];
+            var code = 0;
+            while (true)
+            {
+                var token = tokenizer.Read();
+                if (token.Kind is PostScriptTokenKind.EndOfData or PostScriptTokenKind.ArrayEnd)
+                    break;
+
+                if (token.Kind == PostScriptTokenKind.LiteralName)
+                {
+                    if (code < 256)
+                    {
+                        var glyphName = tokenizer.GetText(token);
+                        encoding[code] = glyphName == ".notdef" ? null : glyphName;
+                    }
+                }
+                else
+                {
+                    tokenizer.SkipValue(token);
+                }
+
+                code++;
+            }
+
+            isStandard = encoding.AsSpan().SequenceEqual(CffFont.StandardEncoding.Value);
         }
         else
         {

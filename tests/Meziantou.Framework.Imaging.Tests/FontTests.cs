@@ -3567,6 +3567,13 @@ public sealed class FontTests
         var cff = GetCff(FontLoader.Load(Encoding.Latin1.GetBytes(pfa), environment)[0]);
         Assert.Equal((4, 6, 0), (cff.GetGlyphByCode('A'), cff.GetGlyphByCode('O'), cff.GetGlyphByCode('a')));
 
+        // A literal array gives the names of the codes in order, and later puts override them
+        var literal = "/Encoding [/.notdef /A /O /Aacute] dup 3 /H put readonly def\n";
+        pfa = Encoding.Latin1.GetString(FontType1Writer.Sample(standardEncoding: true).WritePfa());
+        pfa = pfa.Replace("/Encoding StandardEncoding def\n", literal, StringComparison.Ordinal);
+        cff = GetCff(FontLoader.Load(Encoding.Latin1.GetBytes(pfa), environment)[0]);
+        Assert.Equal((0, 2, 6, 7, 0), (cff.GetGlyphByCode(0), cff.GetGlyphByCode(1), cff.GetGlyphByCode(2), cff.GetGlyphByCode(3), cff.GetGlyphByCode('A')));
+
         // Every code assigned: 255 supplements, and the first glyphs take a code in the format 0 part
         string[] names = ["space", "A", "acute", "Aacute", "Aring", "O", "H", "x", "E", "period", "fi", "a.sc", "uni2206"];
         var all = FontType1Writer.Sample();

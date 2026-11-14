@@ -47,7 +47,8 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
     private BlockKind _block;
     private int _subBlockIndex;
     private List<byte[]>? _comment;
-    private List<byte[]>? _profile;
+    private PooledBuffer? _profile;
+    private int _profileLength;
     private bool _loopExtensionPending;
     private GifGraphicControl? _pendingControl;
     private bool _headerReported;
@@ -292,6 +293,17 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
 
     public override ImageInfo GetResult() => _result ?? throw new InvalidOperationException("The GIF structure was not parsed.");
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _profile?.Dispose();
+            _profile = null;
+        }
+
+        base.Dispose(disposing);
+    }
+
     private bool TryYield() => _walk == StructureWalk.Decode && _context.TryConsumeYield();
 
     private void ProcessHeader(ReadOnlySpan<byte> header)
@@ -413,12 +425,12 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
                 else if (data.SequenceEqual(XmpApplication))
                 {
                     _block = BlockKind.Xmp;
-                    _profile = [];
+                    _profileLength = 0;
                 }
                 else if (data.SequenceEqual(IccApplication))
                 {
                     _block = BlockKind.IccProfile;
-                    _profile = [];
+                    _profileLength = 0;
                 }
 
                 break;
@@ -426,12 +438,13 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
             case BlockKind.Xmp:
                 // The packet is stored as it is: the length bytes of the sub-blocks are bytes of the packet too
                 _metadata.Charge(data.Length + 1);
-                _profile!.Add([(byte)data.Length, .. data]);
+                AppendProfile([(byte)data.Length]);
+                AppendProfile(data);
                 break;
 
             case BlockKind.IccProfile:
                 _metadata.Charge(data.Length);
-                _profile!.Add(data.ToArray());
+                AppendProfile(data);
                 break;
 
             case BlockKind.LoopApplication when _loopExtensionPending && data.Length >= 3 && data[0] == 1:
@@ -468,17 +481,14 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
                 return true;
 
             case BlockKind.Xmp:
-                AdoptXmp(Concatenate(_profile!));
-                _profile = null;
+                AdoptXmp(GetProfile());
                 return true;
 
             case BlockKind.IccProfile:
                 // A GIF stores RGB colors: a profile of another color space cannot label them and is not adopted
-                var profile = Concatenate(_profile!);
-                _profile = null;
-                if (profile.Length > 0)
+                if (_profileLength > 0)
                 {
-                    _metadata.TryAdoptIccProfile(profile, grayscaleSamples: false);
+                    _metadata.TryAdoptIccProfile(GetProfile().ToArray(), grayscaleSamples: false);
                 }
 
                 return true;
@@ -493,7 +503,7 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
     /// trailer of 257 bytes (<c>0x01</c>, then <c>0xFF</c> down to <c>0x00</c>) that brings any reader that walks the bytes
     /// as data sub-blocks to the block terminator.
     /// </summary>
-    private void AdoptXmp(byte[] data)
+    private void AdoptXmp(ReadOnlySpan<byte> data)
     {
         var start = data.Length - XmpTrailerLength;
         if (start < 0 || data[start] != 0x01)
@@ -505,8 +515,37 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
                 throw Invalid("The GIF XMP application extension does not end with the magic trailer of the XMP specification.");
         }
 
-        _metadata.TryAdoptXmp(data.AsSpan(0, start), alreadyCharged: true);
+        _metadata.TryAdoptXmp(data[..start], alreadyCharged: true);
     }
+
+    /// <summary>
+    /// Appends bytes of an XMP or ICC application extension to a buffer of the allocation scope, which grows by doubling;
+    /// the metadata limit bounds its length, since every byte is charged before it is appended.
+    /// </summary>
+    private void AppendProfile(ReadOnlySpan<byte> data)
+    {
+        var required = (long)_profileLength + data.Length;
+        if (_profile is null || required > _profile.Length)
+        {
+            if (required > CheckedSizes.MaxBufferLength)
+                throw new ImageResourceLimitException(ImageResourceLimitKind.LiveAllocationBytes, CheckedSizes.MaxBufferLength, required);
+
+            var grown = _context.Scope.Rent((int)Math.Min(CheckedSizes.MaxBufferLength, Math.Max(required, Math.Max(1024L, (_profile?.Length ?? 0) * 2L))), AllocationKind.DecoderState, clear: false);
+            if (_profile is not null)
+            {
+                _profile.Span[.._profileLength].CopyTo(grown.Span);
+                _profile.Dispose();
+            }
+
+            _profile = grown;
+        }
+
+        data.CopyTo(_profile.Span[_profileLength..]);
+        _profileLength = (int)required;
+    }
+
+    /// <summary>Gets the bytes of the extension that ended; they stay valid until the next extension starts.</summary>
+    private ReadOnlySpan<byte> GetProfile() => _profile is null ? [] : _profile.Span[.._profileLength];
 
     private static byte[] Concatenate(List<byte[]> parts)
     {

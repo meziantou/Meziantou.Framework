@@ -45,20 +45,25 @@ internal sealed class PnmCollectionReader : ImageCollectionReader
         var source = new RandomAccessSource(input, context, ImageFormat.Pnm);
         var entries = new List<Entry>();
         var offset = 0L;
-        Span<byte> next = stackalloc byte[1];
+        Span<byte> magic = stackalloc byte[2];
         do
         {
             if (entries.Count >= configuration.Limits.MaxFrames)
                 throw new ImageResourceLimitException(ImageResourceLimitKind.Frames, configuration.Limits.MaxFrames, (long)configuration.Limits.MaxFrames + 1);
 
-            var (info, header, headerLength) = Walk(source, offset, StructureWalk.Header, context);
-            var length = headerLength;
-            if (header.IsPlain)
+            // A plain image (P1 to P3) is scanned whole and a binary one walked to the end of its header: each byte is read
+            // by one walk, so a limit of encoded bytes equal to the length of the input is enough
+            var isPlain = false;
+            if (source.Length - offset >= magic.Length)
             {
-                (info, _, length) = Walk(source, offset, StructureWalk.FullScan, context);
+                source.Read(offset, magic, charge: false);
+                isPlain = magic[0] == (byte)'P' && magic[1] is (byte)'1' or (byte)'2' or (byte)'3';
             }
-            else
+
+            var (info, header, length) = Walk(source, offset, isPlain ? StructureWalk.FullScan : StructureWalk.Header, context);
+            if (!header.IsPlain)
             {
+                var headerLength = length;
                 var rasterLength = (long)header.StoredRowLength * header.Height;
                 if (rasterLength > source.Length - offset - headerLength)
                     throw PnmFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The Netpbm image {entries.Count} is truncated: its raster needs {rasterLength} bytes after its header, and the file has {source.Length - offset - headerLength}."));
@@ -67,15 +72,7 @@ internal sealed class PnmCollectionReader : ImageCollectionReader
             }
 
             entries.Add(new Entry(offset, length, info, header.HasAlpha));
-            offset += length;
-            while (offset < source.Length)
-            {
-                source.Read(offset, next);
-                if (!PnmFormat.IsWhiteSpace(next[0]))
-                    break;
-
-                offset++;
-            }
+            offset = SkipWhiteSpace(source, offset + length, context);
         }
         while (offset < source.Length);
 
@@ -111,6 +108,33 @@ internal sealed class PnmCollectionReader : ImageCollectionReader
         using var owner = copy;
         using var parser = PnmCodec.Instance.CreateDecodeParser(request, context);
         return ImageInputPump.Run(data, parser, context);
+    }
+
+    /// <summary>Skips the white space that follows an image, reading the input in bounded chunks.</summary>
+    /// <returns>The offset of the first byte that is not white space, or the length of the input.</returns>
+    private static long SkipWhiteSpace(RandomAccessSource source, long offset, ImageCodecContext context)
+    {
+        while (offset < source.Length)
+        {
+            var length = (int)Math.Min(source.Length - offset, ScanChunkLength);
+            int skipped;
+            using (var chunk = source.ReadToBuffer(offset, length, charge: false))
+            {
+                skipped = 0;
+                while (skipped < length && PnmFormat.IsWhiteSpace(chunk.Span[skipped]))
+                {
+                    skipped++;
+                }
+            }
+
+            // The byte that ends the run is the first byte of the next image, which its walk charges
+            context.Tracker.ChargeEncodedBytes(skipped);
+            offset += skipped;
+            if (skipped < length)
+                break;
+        }
+
+        return offset;
     }
 
     /// <summary>Runs a structure walk of the image at <paramref name="offset"/>, reading the input in bounded chunks.</summary>

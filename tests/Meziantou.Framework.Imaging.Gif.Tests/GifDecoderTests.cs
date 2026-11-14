@@ -554,6 +554,14 @@ public sealed class GifDecoderTests
             Assert.Equal(packet, image.Metadata.XmpProfile!.Data.ToArray());
         }
 
+        // A packet of several kilobytes grows the buffer the sub-blocks are joined in
+        var large = Encoding.UTF8.GetBytes($"<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" a=\"{new string('y', 5000)}\"/>");
+        var withLarge = new GifTestBuilder(2, 1, Palette).Application("XMP DataXMP", RawSubBlocks([.. large, .. XmpMagicTrailer()])).Image(0, 0, 2, 1, [0, 1], 3).ToArray();
+        using (var image = Image.Load(withLarge))
+        {
+            Assert.Equal(large, image.Metadata.XmpProfile!.Data.ToArray());
+        }
+
         // An XMP extension without the magic trailer is malformed
         var noTrailer = new GifTestBuilder(2, 1, Palette).Application("XMP DataXMP", RawSubBlocks(packet)).Image(0, 0, 2, 1, [0, 1], 3).ToArray();
         Assert.Throws<InvalidImageContentException>(() => Image.Load(noTrailer));

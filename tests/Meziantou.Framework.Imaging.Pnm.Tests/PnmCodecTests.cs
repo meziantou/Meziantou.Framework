@@ -376,6 +376,25 @@ public sealed class PnmCodecTests
         {
             Assert.Equal(5, exact.Entries.Count);
         }
+
+        // Every byte is read once when the collection is located: a limit of encoded bytes equal to the length of the input
+        // is enough, one less is not (a plain raster is scanned, so the limit covers it)
+        var plain = Bytes("P1\n1 1\n0\n", []);
+        using (var exactBytes = ImageCollection.Load(plain, new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = plain.Length } }))
+        {
+            Assert.Single(exactBytes.Entries);
+        }
+
+        Assert.Throws<ImageResourceLimitException>(() => ImageCollection.Load(plain, new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = plain.Length - 1 } }));
+
+        // A long run of white space between two images
+        var spaced = (byte[])[.. Bytes("P5\n2 1\n255\n", [10, 20]), .. Enumerable.Repeat((byte)' ', 200_000), .. Bytes("P5\n1 1\n255\n", [30])];
+        using (var collection2 = ImageCollection.Load(spaced, new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = spaced.Length } }))
+        {
+            Assert.Equal([new Size(2, 1), new Size(1, 1)], collection2.Entries.Select(entry => entry.Size));
+            using var second = collection2[1].Decode<Gray8>();
+            Assert.Equal([new Gray8(30)], GetPixels(second.Frames[0]));
+        }
     }
 
     public static TheoryData<InputVariant> Variants => [.. InputVariants.All];

@@ -422,6 +422,50 @@ public sealed class UserScrollingTests : IDisposable
     }
 
     [Fact]
+    public void ScrollIntoView_SmoothScrollOfTheVisualViewport_RepeatedAbortedAndScrollEnd()
+    {
+        var document = Load("<div id=top style='height: 10px'></div><div id=middle style='position: absolute; top: 150px; height: 10px'></div><div style='height: 2000px'></div>");
+        var visualViewport = document.DefaultView!.VisualViewport!;
+        var events = Log(visualViewport, "scrollend");
+        var top = document.GetElementById("top")!;
+        var smooth = new ScrollIntoViewOptions { Behavior = ScrollBehavior.Smooth };
+
+        // The scrollend event of the pinch, queued before the smooth scroll starts, is fired at the end of the smooth scroll
+        Assert.True(document.BrowsingContext!.Input.Pinch(400, 300, 2));
+        var first = top.ScrollIntoView(smooth);
+        RunFrames(3);
+        Assert.Empty(events);
+
+        // A smooth scroll to the same position continues the one in progress
+        var offset = visualViewport.OffsetTop;
+        var second = top.ScrollIntoView(smooth);
+        Assert.False(first.IsCompleted);
+        Assert.False(second.IsCompleted);
+        RunFrames(30);
+        Assert.Equal(0, visualViewport.OffsetTop);
+        Assert.True(first.IsCompletedSuccessfully);
+        Assert.True(second.IsCompletedSuccessfully);
+        Assert.InRange(offset, 0.001, 149.999);
+        Assert.Equal(["scrollend"], events);
+
+        // A scroll that does not move the visual viewport aborts the smooth scroll in progress
+        var middle = document.GetElementById("middle")!;
+        _ = middle.ScrollIntoView();
+        Assert.Equal(150, visualViewport.OffsetTop);
+        var third = top.ScrollIntoView(smooth);
+        RunFrames(3);
+        var aborted = visualViewport.OffsetTop;
+        Assert.InRange(aborted, 0.001, 149.999);
+        // (the element is in the visual viewport: it is not moved by the nearest alignment)
+        var instant = middle.ScrollIntoView(new ScrollIntoViewOptions { Block = ScrollLogicalPosition.Nearest });
+        Assert.Equal(aborted, visualViewport.OffsetTop);
+        Assert.True(third.IsCompleted);
+        Assert.True(instant.IsCompleted);
+        RunFrames(30);
+        Assert.Equal(aborted, visualViewport.OffsetTop);
+    }
+
+    [Fact]
     public void Touch_ScrollEndWhenTheOtherFingerIsReleasedLast()
     {
         var document = Load("<div style='height: 2000px'></div>");

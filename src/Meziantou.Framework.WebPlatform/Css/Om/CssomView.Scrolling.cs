@@ -1445,20 +1445,33 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     /// <summary>
     /// Scrolls the visual viewport in the layout viewport (a programmatic scroll, e.g. <c>scrollIntoView()</c>, see
     /// <see cref="SetPinchZoom"/>): at once, or animated by the scroll steps of the next frames when it is smooth (as the smooth
-    /// scrolls of the scrolling boxes). Returns a task completed when the scroll ends.
+    /// scrolls of the scrolling boxes). A scroll aborts the smooth scroll in progress, even when it does not move the visual
+    /// viewport, except a smooth scroll to the position it goes to, which continues it (as in the browsers, WPT
+    /// smooth-scroll-nonstop.html). Returns a task completed when the scroll ends.
     /// </summary>
     internal Task ScrollBy(PhysicalOffset delta, bool smooth)
     {
-        AbortSmoothScroll();
         var offset = PinchOffset;
         var target = ClampOffset(offset + delta, _pinchScale);
+        var eventLoop = _document.EventLoop;
+        if (smooth && eventLoop is not null && _smoothScroll is { } ongoing && ongoing.Target == target && _smoothScrollCompletion is { } ongoingCompletion)
+            return ongoingCompletion.Task;
+
+        AbortSmoothScroll();
         if (target == offset)
             return Task.CompletedTask;
 
-        if (!smooth || _document.EventLoop is not { } eventLoop)
+        if (!smooth || eventLoop is null)
         {
             SetPinchZoom(_pinchScale, target, endsGesture: true);
             return Task.CompletedTask;
+        }
+
+        // The scroll is not completed: the scrollend event of a previous scroll that is not fired yet is fired at the end of the
+        // smooth scroll, as for the scrolling boxes
+        if (_document.LayoutEngineOrNull?.CancelVisualViewportScrollEndEvent(this) == true)
+        {
+            _scrollEndPending = true;
         }
 
         _smoothScroll = new SmoothScroll(offset, target, eventLoop.TimeProvider.GetTimestamp());

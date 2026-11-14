@@ -418,6 +418,21 @@ internal sealed partial class LayoutEngine
     /// <summary>Queues a <c>scroll</c> or <c>scrollend</c> event at the visual viewport of the document, fired by the next scroll steps.</summary>
     internal void QueueVisualViewportScrollEvent(Dom.VisualViewport visualViewport, string type) => QueuePendingScrollEvent(visualViewport, type);
 
+    /// <summary>Removes the pending <c>scrollend</c> event of the visual viewport of the document (a smooth scroll starts: it is fired at its end). Returns whether there was one.</summary>
+    internal bool CancelVisualViewportScrollEndEvent(Dom.VisualViewport visualViewport)
+    {
+        for (var i = 0; i < _pendingScrollEvents.Count; i++)
+        {
+            if (ReferenceEquals(_pendingScrollEvents[i].Target, visualViewport) && _pendingScrollEvents[i].Type == "scrollend")
+            {
+                _pendingScrollEvents.RemoveAt(i);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void QueuePendingScrollEvent(EventTarget target, string type, Node? snapTargetBlock = null, Node? snapTargetInline = null)
     {
         for (var i = 0; i < _pendingScrollEvents.Count; i++)

@@ -187,9 +187,10 @@ internal static class ScrollIntoView
                     engine.UpdateScrollSnapChangeTargets(state);
                 }
 
-                if (visualDelta != PhysicalOffset.Zero)
+                // (also without move: the scroll aborts a smooth scroll of the visual viewport in progress)
+                if (visualViewport is not null && visualViewport.ScrollBy(visualDelta, engine.IsSmoothScroll(state, behavior, associatedElement)) is { IsCompleted: false } visualScroll)
                 {
-                    (promises ??= []).Add(visualViewport!.ScrollBy(visualDelta, engine.IsSmoothScroll(state, behavior, associatedElement)));
+                    (promises ??= []).Add(visualScroll);
                 }
 
                 // The target moves with the contents of the scrolling box. For the scrolling boxes of the ancestors, the target is

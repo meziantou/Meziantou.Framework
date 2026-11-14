@@ -20,7 +20,9 @@ These instructions complete the repository-level `AGENTS.md`.
   `false`), and the public API is recorded in `ref/` by the build. The one exception is the AFM reader
   (`AfmFontMetrics` and the `Afm*` types it returns): it is a standalone reader of font metrics, public so that
   applications (PDF writers, text measurement) can read AFM files; `Meziantou.Framework.Pdf` reads the metrics of the
-  standard fonts with `AfmFontMetrics.GetStandardFont`.
+  standard fonts with `AfmFontMetrics.GetStandardFont`. `FontLoader.LoadType1` is public for the same reason: it is
+  how an application gives the AFM file of a Type 1 font (its kerning and metrics), which `FontLoader.Load` has no
+  room for.
 - `DeterministicAngle` (`Infrastructure/`) and `FontTags` are compiled into `Meziantou.Framework.Imaging`
   too, in its namespace (`MEZIANTOU_FRAMEWORK_IMAGING`): they are helpers, not font API, and stay internal to both
   assemblies. WebPlatform has its own tag constants (`OpenTypeTag`).
@@ -129,6 +131,9 @@ the Adobe Glyph List (`Type1/GlyphList`, vendored, see `THIRD-PARTY-NOTICES.md`)
 
 - Written from the Adobe Type 1 Font Format and Technical Note #5040 (PFB segments). The font program is never run as
   PostScript: the dictionaries are read from the tokens of the usual layout of a font.
+- **Rented storage.** The decrypted font program (the subroutines and the charstrings are decrypted in place, as ranges
+  of it) and the converted charstrings (`FontByteWriter`) are rented from an allocation scope of the environment; the
+  tables of the converted font are checked against `MaxFontBytes` before they are allocated.
 - **Eager and strict.** Every charstring is converted at load time, each one charged to its own `GlyphBudget`, and the
   whole font to a budget of `MaxGlyphComplexity` plus 64 operations per byte of the file. A malformed charstring fails
   the loading (`InvalidFontException` naming the glyph): a converted font has no charstring that fails to decode, which

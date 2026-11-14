@@ -18,8 +18,12 @@ namespace Meziantou.Framework.Fonts;
 /// Multiple master fonts, CID-keyed fonts and fonts that are not of type 1 are
 /// <see cref="UnsupportedFontFeatureException"/>.
 /// </para>
+/// <para>
+/// The decrypted font program is rented from an allocation scope, and the subroutines and the charstrings are
+/// decrypted in place: they are ranges of it. Dispose the font to return it.
+/// </para>
 /// </remarks>
-internal sealed class Type1Font
+internal sealed class Type1Font : IDisposable
 {
     // The keys of eexec and charstring encryption, and the constants of the cipher (7.1)
     private const int EexecKey = 55665;
@@ -29,6 +33,9 @@ internal sealed class Type1Font
 
     // The glyphs an OpenType font can have
     private const int MaxGlyphs = 65535;
+
+    private FontBuffer? _program;
+    private int _programLength;
 
     private Type1Font()
     {
@@ -67,11 +74,36 @@ internal sealed class Type1Font
     /// <summary>Gets a value indicating whether the encoding is the standard encoding.</summary>
     public bool HasStandardEncoding { get; private set; }
 
-    /// <summary>Gets the decrypted subroutines by their index; the font defines the indexes it uses, which can leave gaps.</summary>
-    public Dictionary<int, byte[]> Subroutines { get; } = [];
+    /// <summary>Gets where the decrypted subroutines are in <see cref="Program"/>, by their index; the font defines the indexes it uses, which can leave gaps.</summary>
+    public Dictionary<int, (int Start, int Length)> Subroutines { get; } = [];
 
-    /// <summary>Gets the names of the glyphs and their decrypted charstrings, in the order of the font program; a name is given once.</summary>
-    public List<(string Name, byte[] Charstring)> CharStrings { get; } = [];
+    /// <summary>Gets the names of the glyphs and where their decrypted charstrings are in <see cref="Program"/>, in the order of the font program; a name is given once.</summary>
+    public List<(string Name, int Start, int Length)> CharStrings { get; } = [];
+
+    /// <summary>Gets the decrypted part of the font program, without its four random bytes.</summary>
+    public ReadOnlySpan<byte> Program => _program is null ? default : _program.Span.Slice(4, _programLength);
+
+    /// <summary>Gets the decrypted charstring of a glyph of <see cref="CharStrings"/>.</summary>
+    public ReadOnlySpan<byte> GetCharstring(int index) => Program.Slice(CharStrings[index].Start, CharStrings[index].Length);
+
+    /// <summary>Gets the decrypted charstring of a subroutine.</summary>
+    public bool TryGetSubroutine(int index, out ReadOnlySpan<byte> charstring)
+    {
+        if (Subroutines.TryGetValue(index, out var range))
+        {
+            charstring = Program.Slice(range.Start, range.Length);
+            return true;
+        }
+
+        charstring = default;
+        return false;
+    }
+
+    public void Dispose()
+    {
+        _program?.Dispose();
+        _program = null;
+    }
 
     /// <summary>Gets the numbers of the private dictionary that describe the alignment zones and the stems (5.6 to 5.8).</summary>
     public Dictionary<string, double[]> PrivateValues { get; } = new(StringComparer.Ordinal);
@@ -82,53 +114,69 @@ internal sealed class Type1Font
         || data.StartsWith("%!PS-AdobeFont"u8)
         || data.StartsWith("%!FontType1"u8);
 
-    /// <summary>Reads a PFB or a PFA file.</summary>
-    public static Type1Font Read(ReadOnlySpan<byte> data)
+    /// <summary>Reads a PFB or a PFA file; the decrypted font program is rented from the scope.</summary>
+    public static Type1Font Read(ReadOnlySpan<byte> data, FontAllocator scope)
     {
-        byte[] clearText;
-        byte[] encrypted;
-        if (data.Length >= 2 && data[0] == 0x80)
+        Type1Font? font = new();
+        try
         {
-            (clearText, encrypted) = ReadSegments(data);
+            using var clearTextWriter = new FontByteWriter(scope);
+            using var encryptedWriter = new FontByteWriter(scope);
+            ReadOnlySpan<byte> clearText;
+            ReadOnlySpan<byte> encrypted;
+            if (data.Length >= 2 && data[0] == 0x80)
+            {
+                ReadSegments(data, clearTextWriter, encryptedWriter);
+                clearText = clearTextWriter.Written;
+                encrypted = encryptedWriter.Written;
+            }
+            else
+            {
+                SplitAtEexec(data, out clearText, out encrypted);
+            }
+
+            font.ReadClearText(clearText);
+
+            // 7.2: the first four bytes are random; they are hexadecimal digits when the encrypted part is in hexadecimal
+            var isHex = encrypted.Length >= 4 && encrypted[..4].IndexOfAnyExcept("0123456789abcdefABCDEF"u8) < 0;
+            var program = scope.Rent(Math.Max(4, isHex ? (encrypted.Length + 1) / 2 : encrypted.Length), clear: true);
+            font._program = program;
+            var length = encrypted.Length;
+            if (isHex)
+            {
+                length = PostScriptTokenizer.DecodeHex(encrypted, program.Span);
+            }
+            else
+            {
+                encrypted.CopyTo(program.Span);
+            }
+
+            DecryptInPlace(program.Span[..length], EexecKey);
+            font._programLength = Math.Max(0, length - 4);
+            font.ReadPrivate(program.Span.Slice(4, font._programLength));
+            if (font.CharStrings.Count == 0)
+                throw FontErrors.InvalidType1("the font has no CharStrings dictionary.");
+
+            var result = font;
+            font = null;
+            return result;
         }
-        else
+        finally
         {
-            (clearText, encrypted) = SplitAtEexec(data);
+            font?.Dispose();
         }
-
-        var font = new Type1Font();
-        font.ReadClearText(clearText);
-
-        // 7.2: the first four bytes are random; they are hexadecimal digits when the encrypted part is in hexadecimal
-        if (encrypted.Length >= 4 && encrypted.AsSpan(0, 4).IndexOfAnyExcept("0123456789abcdefABCDEF"u8) < 0)
-        {
-            encrypted = PostScriptTokenizer.DecodeHex(encrypted);
-        }
-
-        font.ReadPrivate(Decrypt(encrypted, EexecKey, skip: 4));
-        if (font.CharStrings.Count == 0)
-            throw FontErrors.InvalidType1("the font has no CharStrings dictionary.");
-
-        return font;
     }
 
-    /// <summary>Decrypts the eexec part or a charstring (7.1): the first bytes are random and are dropped.</summary>
-    public static byte[] Decrypt(ReadOnlySpan<byte> data, int key, int skip)
+    /// <summary>Decrypts the eexec part or a charstring in place (7.1); the first bytes are random.</summary>
+    private static void DecryptInPlace(Span<byte> data, int key)
     {
         var r = key;
-        var result = new byte[Math.Max(0, data.Length - skip)];
         for (var i = 0; i < data.Length; i++)
         {
             var cipher = data[i];
-            if (i >= skip)
-            {
-                result[i - skip] = (byte)(cipher ^ (r >> 8));
-            }
-
+            data[i] = (byte)(cipher ^ (r >> 8));
             r = (((cipher + r) * CipherMultiplier) + CipherIncrement) & 0xFFFF;
         }
-
-        return result;
     }
 
     /// <summary>
@@ -136,10 +184,8 @@ internal sealed class Type1Font
     /// a marker 128, a type (1: text, 2: binary, 3: end of file) and a length of 32 bits in little-endian order. The
     /// text before the first binary segment is the clear text; the binary segments that follow are the encrypted part.
     /// </summary>
-    private static (byte[] ClearText, byte[] Encrypted) ReadSegments(ReadOnlySpan<byte> data)
+    private static void ReadSegments(ReadOnlySpan<byte> data, FontByteWriter clearText, FontByteWriter encrypted)
     {
-        var clearText = new List<byte>();
-        var encrypted = new List<byte>();
         var position = 0;
         while (true)
         {
@@ -163,28 +209,26 @@ internal sealed class Type1Font
             if (type == 1)
             {
                 // The text after the encrypted part is the trailer: zeros and cleartomark
-                if (encrypted.Count > 0)
+                if (encrypted.Length > 0)
                     break;
 
-                clearText.AddRange(segment);
+                segment.CopyTo(clearText.Append(segment.Length));
             }
             else
             {
-                encrypted.AddRange(segment);
+                segment.CopyTo(encrypted.Append(segment.Length));
             }
 
             if (position == data.Length)
                 break;
         }
 
-        if (encrypted.Count == 0)
+        if (encrypted.Length == 0)
             throw FontErrors.InvalidType1("the PFB file has no binary segment.");
-
-        return ([.. clearText], [.. encrypted]);
     }
 
     /// <summary>Splits a PFA file at the <c>eexec</c> operator: the encrypted part starts after the white space that follows it (7.2).</summary>
-    private static (byte[] ClearText, byte[] Encrypted) SplitAtEexec(ReadOnlySpan<byte> data)
+    private static void SplitAtEexec(ReadOnlySpan<byte> data, out ReadOnlySpan<byte> clearText, out ReadOnlySpan<byte> encrypted)
     {
         var tokenizer = new PostScriptTokenizer(data);
         while (true)
@@ -203,12 +247,14 @@ internal sealed class Type1Font
                 position++;
             }
 
-            return (data[..token.Start].ToArray(), data[position..].ToArray());
+            clearText = data[..token.Start];
+            encrypted = data[position..];
+            return;
         }
     }
 
     /// <summary>Reads the entries of the font dictionary and of the FontInfo dictionary (chapter 5).</summary>
-    private void ReadClearText(byte[] text)
+    private void ReadClearText(ReadOnlySpan<byte> text)
     {
         var tokenizer = new PostScriptTokenizer(text);
         var hasFontType = false;
@@ -225,7 +271,7 @@ internal sealed class Type1Font
                 continue;
             }
 
-            var key = System.Text.Encoding.Latin1.GetString(text, token.Start, token.Length);
+            var key = System.Text.Encoding.Latin1.GetString(text.Slice(token.Start, token.Length));
             var value = tokenizer.Read();
             switch (key)
             {
@@ -325,25 +371,28 @@ internal sealed class Type1Font
     }
 
     /// <summary>
-    /// Reads the encoding (5.3): <c>StandardEncoding</c>, or an array of 256 names filled by <c>dup code /name put</c>
-    /// up to the <c>def</c> that stores it.
+    /// Reads the encoding (5.3): <c>StandardEncoding</c>, or an array of 256 names, then the names that
+    /// <c>dup code /name put</c> assigns up to the <c>def</c> that stores it. A copy of the standard encoding that
+    /// assigns other names (<c>StandardEncoding 256 array copy dup 65 /Agrave put</c>) is a custom encoding.
     /// </summary>
-    private void ReadEncoding(ref PostScriptTokenizer tokenizer, byte[] text, PostScriptToken value)
+    private void ReadEncoding(ref PostScriptTokenizer tokenizer, ReadOnlySpan<byte> text, PostScriptToken value)
     {
-        if (value.IsExecutable(text, "StandardEncoding"u8))
+        string?[] encoding;
+        var isStandard = value.IsExecutable(text, "StandardEncoding"u8);
+        if (isStandard)
         {
-            HasStandardEncoding = true;
-            Encoding = (string?[])CffFont.StandardEncoding.Value.Clone();
-            return;
+            encoding = (string?[])CffFont.StandardEncoding.Value.Clone();
         }
-
-        if (value.Kind != PostScriptTokenKind.Number)
+        else if (value.Kind == PostScriptTokenKind.Number)
+        {
+            encoding = new string?[256];
+        }
+        else
         {
             tokenizer.SkipValue(value);
             return;
         }
 
-        var encoding = new string?[256];
         while (true)
         {
             var token = tokenizer.Read();
@@ -371,18 +420,21 @@ internal sealed class Type1Font
             {
                 tokenizer.Read();
                 var glyphName = tokenizer.GetText(name);
-                encoding[(int)code.Number] = glyphName == ".notdef" ? null : glyphName;
+                var assigned = glyphName == ".notdef" ? null : glyphName;
+                isStandard &= string.Equals(encoding[(int)code.Number], assigned, StringComparison.Ordinal);
+                encoding[(int)code.Number] = assigned;
             }
         }
 
         Encoding = encoding;
+        HasStandardEncoding = isStandard;
     }
 
     /// <summary>
     /// Reads the private dictionary (chapter 5.5 to 5.8): <c>lenIV</c>, the hinting values, the subroutines
     /// (<c>dup index length RD binary NP</c>) and the charstrings (<c>/name length RD binary ND</c>).
     /// </summary>
-    private void ReadPrivate(byte[] text)
+    private void ReadPrivate(Span<byte> text)
     {
         var tokenizer = new PostScriptTokenizer(text);
         var lenIV = 4;
@@ -406,7 +458,7 @@ internal sealed class Type1Font
                 continue;
             }
 
-            var key = System.Text.Encoding.Latin1.GetString(text, token.Start, token.Length);
+            var key = System.Text.Encoding.Latin1.GetString(text.Slice(token.Start, token.Length));
             switch (key)
             {
                 case "Private":
@@ -459,7 +511,7 @@ internal sealed class Type1Font
             if (index >= subroutineCount)
                 throw FontErrors.InvalidType1($"the subroutine {index} is outside the {subroutineCount} subroutines of the font.");
 
-            Subroutines[index] = DecryptCharstring(text.AsSpan(start, length), lenIV);
+            Subroutines[index] = DecryptCharstring(text, start, length, lenIV);
         }
 
         var names = new HashSet<string>(StringComparer.Ordinal);
@@ -471,12 +523,13 @@ internal sealed class Type1Font
             if (CharStrings.Count == MaxGlyphs)
                 throw FontErrors.Unsupported($"The Type 1 font has more glyphs than the {MaxGlyphs} glyphs an OpenType font can have.", "Type 1 fonts of more than 65,535 glyphs");
 
-            CharStrings.Add((name, DecryptCharstring(text.AsSpan(start, length), lenIV)));
+            var (charstringStart, charstringLength) = DecryptCharstring(text, start, length, lenIV);
+            CharStrings.Add((name, charstringStart, charstringLength));
         }
     }
 
     /// <summary>Reads the entries <c>dup index length RD binary NP</c> of the subroutines, up to the first token that is not <c>dup</c>.</summary>
-    private static void ReadSubroutines(ref PostScriptTokenizer tokenizer, byte[] text, List<(int Index, int Start, int Length)> subroutines)
+    private static void ReadSubroutines(ref PostScriptTokenizer tokenizer, ReadOnlySpan<byte> text, List<(int Index, int Start, int Length)> subroutines)
     {
         // "array"
         tokenizer.Read();
@@ -505,12 +558,12 @@ internal sealed class Type1Font
     }
 
     /// <summary>Determines whether a token is part of what stores a subroutine in its array: <c>NP</c>, <c>|</c>, or <c>noaccess put</c>.</summary>
-    private static bool IsSubroutineTerminator(PostScriptToken token, byte[] text)
+    private static bool IsSubroutineTerminator(PostScriptToken token, ReadOnlySpan<byte> text)
         => token.IsExecutable(text, "NP"u8) || token.IsExecutable(text, "|"u8) || token.IsExecutable(text, "noaccess"u8)
         || token.IsExecutable(text, "readonly"u8) || token.IsExecutable(text, "executeonly"u8) || token.IsExecutable(text, "put"u8);
 
     /// <summary>Reads the entries <c>/name length RD binary ND</c> of the charstrings, up to <c>end</c>.</summary>
-    private static void ReadCharStrings(ref PostScriptTokenizer tokenizer, byte[] text, List<(string Name, int Start, int Length)> charstrings)
+    private static void ReadCharStrings(ref PostScriptTokenizer tokenizer, ReadOnlySpan<byte> text, List<(string Name, int Start, int Length)> charstrings)
     {
         while (true)
         {
@@ -532,10 +585,21 @@ internal sealed class Type1Font
             tokenizer.Read();
             var start = tokenizer.Position + 1;
             var binary = tokenizer.ReadBinary((int)length.Number);
-            charstrings.Add((System.Text.Encoding.Latin1.GetString(text, token.Start, token.Length), start, binary.Length));
+            charstrings.Add((System.Text.Encoding.Latin1.GetString(text.Slice(token.Start, token.Length)), start, binary.Length));
         }
     }
 
-    /// <summary>Decrypts a charstring; a negative <c>lenIV</c> means that the charstrings are not encrypted (5.7).</summary>
-    private static byte[] DecryptCharstring(ReadOnlySpan<byte> data, int lenIV) => lenIV < 0 ? data.ToArray() : Decrypt(data, CharstringKey, lenIV);
+    /// <summary>
+    /// Decrypts a charstring in place and gets where it is without its random bytes; a negative <c>lenIV</c> means that
+    /// the charstrings are not encrypted (5.7).
+    /// </summary>
+    private static (int Start, int Length) DecryptCharstring(Span<byte> text, int start, int length, int lenIV)
+    {
+        if (lenIV < 0)
+            return (start, length);
+
+        DecryptInPlace(text.Slice(start, length), CharstringKey);
+        var skipped = Math.Min(lenIV, length);
+        return (start + skipped, length - skipped);
+    }
 }

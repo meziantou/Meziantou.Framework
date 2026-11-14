@@ -3440,6 +3440,34 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void TheEncodingOfAType1FontIsTheEncodingOfItsCffTable()
+    {
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024);
+        static CffFont GetCff(FontFace face) => face.TryGetTable(FontTags.Cff, out var table) ? CffFont.Load(table.Span) : throw new InvalidOperationException("No CFF table");
+
+        // A copy of the standard encoding that assigns another name to a code is a custom encoding
+        var pfa = Encoding.Latin1.GetString(FontType1Writer.Sample(standardEncoding: true).WritePfa());
+        pfa = pfa.Replace("/Encoding StandardEncoding def\n", "/Encoding StandardEncoding 256 array copy\ndup 65 /Aacute put\nreadonly def\n", StringComparison.Ordinal);
+        var cff = GetCff(FontLoader.Load(Encoding.Latin1.GetBytes(pfa), environment)[0]);
+        Assert.Equal((4, 6, 0), (cff.GetGlyphByCode('A'), cff.GetGlyphByCode('O'), cff.GetGlyphByCode('a')));
+
+        // Every code assigned: 255 supplements, and the first glyphs take a code in the format 0 part
+        string[] names = ["space", "A", "acute", "Aacute", "Aring", "O", "H", "x", "E", "period", "fi", "a.sc", "uni2206"];
+        var all = FontType1Writer.Sample();
+        all.Encoding = new();
+        for (var code = 0; code < 256; code++)
+        {
+            all.Encoding[code] = names[code % names.Length];
+        }
+
+        cff = GetCff(FontLoader.Load(all.WritePfb(), environment)[0]);
+        for (var code = 0; code < 256; code++)
+        {
+            Assert.Equal(names[code % names.Length], cff.GetGlyphName(cff.GetGlyphByCode(code)));
+        }
+    }
+
+    [Fact]
     public void AType1FontMatrixGivesTheUnitsPerEm()
     {
         // A matrix of 1/2048 is an em of 2048 units; a slanted matrix transforms the outlines
@@ -3530,6 +3558,9 @@ public sealed class FontTests
         Assert.Equal(FontResourceLimitKind.GlyphComplexity, exception.Kind);
         Assert.Equal(FontResourceLimitKind.EncodedBytes, Assert.Throws<FontResourceLimitException>(() => FontLoader.LoadType1(data, metrics: null, new PooledFontEnvironment(new FontResourceLimits { MaxEncodedBytes = 100 }, 1024 * 1024))).Kind);
         Assert.Equal(FontResourceLimitKind.FontBytes, Assert.Throws<FontResourceLimitException>(() => FontLoader.Load(data, new PooledFontEnvironment(new FontResourceLimits { MaxFontBytes = data.Length }, 1024 * 1024))).Kind);
+
+        // The decrypted font program and the converted charstrings are rented from the environment
+        Assert.Equal(FontResourceLimitKind.LiveAllocationBytes, Assert.Throws<FontResourceLimitException>(() => FontLoader.Load(data, new PooledFontEnvironment(FontResourceLimits.Default, maxLiveAllocationBytes: 1024))).Kind);
     }
 
     [Fact]

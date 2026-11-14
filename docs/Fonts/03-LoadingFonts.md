@@ -27,10 +27,12 @@ bytes of the file.
 
 ## PostScript Type 1 fonts
 
-The `Load` methods also read PostScript Type 1 fonts: PFB files (binary) and PFA files (text). The format is detected
-from the content. The font is converted to an OpenType font with CFF outlines when it is loaded, so it is measured,
-shaped, drawn and subset like any other font: `Outlines` is `Cff`, and `FontFace.Data.Bytes` are the bytes of the
-converted font.
+The [Load](cref:Meziantou.Framework.Fonts.FontLoader.Load) methods also read PostScript Type 1 fonts: PFB files
+(binary) and PFA files (text). The format is detected from the content. The font is converted to an OpenType font with
+CFF outlines when it is loaded, so it is measured, shaped, drawn and subset like any other font:
+[Outlines](cref:Meziantou.Framework.Fonts.FontFace.Outlines) is `Cff`, and the
+[Bytes](cref:Meziantou.Framework.Fonts.FontData.Bytes) of [FontFace.Data](cref:Meziantou.Framework.Fonts.FontFace.Data)
+are the bytes of the converted font.
 
 - The glyphs are the ones of the font program, in its order, with `.notdef` first. The outlines are the ones of the
   charstrings: the subroutines, the flex mechanism and the accented characters made with `seac` are expanded. The

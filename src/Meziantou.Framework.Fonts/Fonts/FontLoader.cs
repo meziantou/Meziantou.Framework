@@ -79,7 +79,7 @@ public static class FontLoader
         if (!Type1Font.HasSignature(data))
             throw new UnknownFontFormatException("The data is not a PostScript Type 1 font: it does not start with the signature of a PFB or a PFA file.");
 
-        return new FontFace(new FontData(Type1FontConverter.Convert(data, metrics, limits), environment), directoryOffset: 0);
+        return new FontFace(new FontData(Type1FontConverter.Convert(data, metrics, environment), environment), directoryOffset: 0);
     }
 
     private static void EnsureFontBytes(FontResourceLimits limits, long length)
@@ -95,7 +95,7 @@ public static class FontLoader
             throw new UnknownFontFormatException("The data is not a font: it is shorter than a font signature.");
 
         if (Type1Font.HasSignature(bytes))
-            return [new FontFace(new FontData(Type1FontConverter.Convert(bytes, metrics: null, environment.Limits), environment, useEmbeddedBitmaps), directoryOffset: 0)];
+            return [new FontFace(new FontData(Type1FontConverter.Convert(bytes, metrics: null, environment), environment, useEmbeddedBitmaps), directoryOffset: 0)];
 
         switch (FontBinary.UInt32(bytes, 0))
         {

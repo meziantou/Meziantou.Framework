@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>
@@ -7,9 +9,10 @@ namespace Meziantou.Framework.Fonts;
 /// </summary>
 /// <remarks>
 /// The points are rounded to the 16.16 fixed-point numbers of the format, and each point is written relative to the
-/// rounded previous one: the decoded points are exactly the rounded points.
+/// rounded previous one: the decoded points are exactly the rounded points. The charstrings of the glyphs follow each
+/// other in a <see cref="FontByteWriter"/>, whose storage is rented from the allocation scope of the conversion.
 /// </remarks>
-internal sealed class Type2CharstringWriter
+internal sealed class Type2CharstringWriter(FontByteWriter output)
 {
     private const int RLineTo = 5;
     private const int RRCurveTo = 8;
@@ -17,12 +20,21 @@ internal sealed class Type2CharstringWriter
     private const int RMoveTo = 21;
     private const long One = 65536;
 
-    private readonly List<byte> _bytes = [];
     private long _currentX;
     private long _currentY;
     private long _writtenX;
     private long _writtenY;
     private bool _isContourOpen;
+    private int _start;
+
+    /// <summary>Gets or sets the width, the first operand of the charstring when it is not 0 (the nominal width); set before the first operator is written.</summary>
+    public double Width { get; set; }
+
+    /// <summary>Gets a value indicating whether an operator of the charstring is written.</summary>
+    public bool HasStarted { get; private set; }
+
+    /// <summary>Gets the length of the charstring of the glyph.</summary>
+    public int Length => output.Length - _start;
 
     /// <summary>Gets a value indicating whether the outline has a line or a curve.</summary>
     public bool HasPoints { get; private set; }
@@ -39,10 +51,12 @@ internal sealed class Type2CharstringWriter
     /// <summary>Gets the largest y of the points written, the control points included.</summary>
     public double YMax { get; private set; }
 
-    /// <summary>Starts a glyph.</summary>
-    public void Reset()
+    /// <summary>Starts the charstring of a glyph, after the ones written before.</summary>
+    public void Begin()
     {
-        _bytes.Clear();
+        _start = output.Length;
+        Width = 0;
+        HasStarted = false;
         _currentX = 0;
         _currentY = 0;
         _writtenX = 0;
@@ -85,16 +99,11 @@ internal sealed class Type2CharstringWriter
         _currentY = fixedY;
     }
 
-    /// <summary>Ends the charstring and gets its bytes; the width is the first operand when it is not 0 (the nominal width).</summary>
-    public byte[] Finish(double width)
+    /// <summary>Ends the charstring.</summary>
+    public void Finish()
     {
+        WriteWidth();
         WriteOperator(EndChar);
-        if (width == 0)
-            return [.. _bytes];
-
-        var widthBytes = new List<byte>(5);
-        WriteNumber(widthBytes, ToFixed(width));
-        return [.. widthBytes, .. _bytes];
     }
 
     private void OpenContour()
@@ -102,15 +111,26 @@ internal sealed class Type2CharstringWriter
         if (_isContourOpen)
             return;
 
+        WriteWidth();
         WritePoint(_currentX, _currentY);
         WriteOperator(RMoveTo);
         _isContourOpen = true;
     }
 
+    private void WriteWidth()
+    {
+        if (!HasStarted && Width != 0)
+        {
+            WriteNumber(ToFixed(Width));
+        }
+
+        HasStarted = true;
+    }
+
     private void WritePoint(long x, long y)
     {
-        WriteNumber(_bytes, x - _writtenX);
-        WriteNumber(_bytes, y - _writtenY);
+        WriteNumber(x - _writtenX);
+        WriteNumber(y - _writtenY);
         _writtenX = x;
         _writtenY = y;
 
@@ -131,48 +151,53 @@ internal sealed class Type2CharstringWriter
         }
     }
 
-    private void WriteOperator(int value) => _bytes.Add((byte)value);
+    private void WriteOperator(int value) => output.Append(1)[0] = (byte)value;
 
     /// <summary>Writes a number given in 16.16 fixed point (table 3): an integer in its shortest form, a fraction as 255 and 32 bits.</summary>
-    private static void WriteNumber(List<byte> bytes, long value)
+    private void WriteNumber(long value)
     {
+        Span<byte> bytes = stackalloc byte[5];
+        int length;
         if (value % One == 0 && value / One is >= -32768 and <= 32767)
         {
             var integer = (int)(value / One);
             switch (integer)
             {
                 case >= -107 and <= 107:
-                    bytes.Add((byte)(integer + 139));
+                    bytes[0] = (byte)(integer + 139);
+                    length = 1;
                     break;
                 case >= 108 and <= 1131:
                     integer -= 108;
-                    bytes.Add((byte)((integer >> 8) + 247));
-                    bytes.Add((byte)integer);
+                    bytes[0] = (byte)((integer >> 8) + 247);
+                    bytes[1] = (byte)integer;
+                    length = 2;
                     break;
                 case >= -1131 and <= -108:
                     integer = -integer - 108;
-                    bytes.Add((byte)((integer >> 8) + 251));
-                    bytes.Add((byte)integer);
+                    bytes[0] = (byte)((integer >> 8) + 251);
+                    bytes[1] = (byte)integer;
+                    length = 2;
                     break;
                 default:
-                    bytes.Add(28);
-                    bytes.Add((byte)(integer >> 8));
-                    bytes.Add((byte)integer);
+                    bytes[0] = 28;
+                    bytes[1] = (byte)(integer >> 8);
+                    bytes[2] = (byte)integer;
+                    length = 3;
                     break;
             }
+        }
+        else
+        {
+            if (value is < int.MinValue or > int.MaxValue)
+                throw FontErrors.InvalidType1("a glyph has two points farther apart than a CFF charstring can describe (32,768 units).");
 
-            return;
+            bytes[0] = 255;
+            BinaryPrimitives.WriteInt32BigEndian(bytes[1..], (int)value);
+            length = 5;
         }
 
-        if (value is < int.MinValue or > int.MaxValue)
-            throw FontErrors.InvalidType1("a glyph has two points farther apart than a CFF charstring can describe (32,768 units).");
-
-        var fixedValue = (int)value;
-        bytes.Add(255);
-        bytes.Add((byte)(fixedValue >> 24));
-        bytes.Add((byte)(fixedValue >> 16));
-        bytes.Add((byte)(fixedValue >> 8));
-        bytes.Add((byte)fixedValue);
+        bytes[..length].CopyTo(output.Append(length));
     }
 
     private static long ToFixed(double value)

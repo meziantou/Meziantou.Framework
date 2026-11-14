@@ -287,6 +287,12 @@ internal ref struct PostScriptTokenizer
     public static byte[] DecodeHex(ReadOnlySpan<byte> text)
     {
         var result = new byte[(text.Length + 1) / 2];
+        return result.AsSpan(0, DecodeHex(text, result)).ToArray();
+    }
+
+    /// <summary>Decodes hexadecimal digits into a destination of at least half the length of the text, rounded up, and gets the number of bytes.</summary>
+    public static int DecodeHex(ReadOnlySpan<byte> text, Span<byte> result)
+    {
         var count = 0;
         var high = -1;
         foreach (var value in text)
@@ -311,7 +317,7 @@ internal ref struct PostScriptTokenizer
             result[count++] = (byte)(high << 4);
         }
 
-        return result.AsSpan(0, count).ToArray();
+        return count;
     }
 
     public static int HexDigit(byte value) => value switch

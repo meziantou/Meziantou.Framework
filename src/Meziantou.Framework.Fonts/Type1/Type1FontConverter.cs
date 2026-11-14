@@ -45,10 +45,17 @@ internal static class Type1FontConverter
         return result;
     });
 
-    /// <summary>Converts the bytes of a PFB or a PFA file to the bytes of an OpenType font.</summary>
-    public static byte[] Convert(ReadOnlySpan<byte> data, AfmFontMetrics? metrics, FontResourceLimits limits)
+    /// <summary>
+    /// Converts the bytes of a PFB or a PFA file to the bytes of an OpenType font. The decrypted font program and the
+    /// converted charstrings are rented from an allocation scope of the environment; the tables of the font are
+    /// checked against <see cref="FontResourceLimits.MaxFontBytes"/> before they are allocated.
+    /// </summary>
+    public static byte[] Convert(ReadOnlySpan<byte> data, AfmFontMetrics? metrics, FontEnvironment environment)
     {
-        var font = Type1Font.Read(data);
+        var limits = environment.Limits;
+        var scope = environment.CreateAllocator("Type 1");
+        using var font = Type1Font.Read(data, scope);
+        using var output = new FontByteWriter(scope);
 
         // The glyphs: .notdef first, then the glyphs of the font program in its order
         var glyphs = new List<int>(font.CharStrings.Count + 1);
@@ -74,26 +81,27 @@ internal static class Type1FontConverter
         var (unitsPerEm, matrix) = GetUnitsPerEm(font.FontMatrix);
         var glyphNames = glyphs.ConvertAll(index => index < 0 ? ".notdef" : font.CharStrings[index].Name);
 
-        // The charstrings, the advance widths and the bounds of the glyphs
-        var charstrings = new byte[glyphs.Count][];
+        // The charstrings, one after the other in the output (offsets[glyph] is where the charstring of a glyph starts),
+        // the advance widths and the bounds of the glyphs
+        var offsets = new int[glyphs.Count + 1];
         var advances = new int[glyphs.Count];
         var bounds = new (double XMin, double YMin, double XMax, double YMax)?[glyphs.Count];
         var converter = new Type1CharstringConverter(font, glyphsByName, matrix);
-        var writer = new Type2CharstringWriter();
+        var writer = new Type2CharstringWriter(output);
         var fontBudget = new GlyphBudget(new FontResourceLimits { MaxGlyphComplexity = limits.MaxGlyphComplexity + (64L * data.Length) });
-        long totalBytes = 0;
         for (var glyph = 0; glyph < glyphs.Count; glyph++)
         {
+            offsets[glyph] = output.Length;
             if (glyphs[glyph] < 0)
             {
-                charstrings[glyph] = [14];
+                output.Append(1)[0] = 14;
                 continue;
             }
 
             var budget = new GlyphBudget(limits);
             try
             {
-                charstrings[glyph] = converter.Convert(font.CharStrings[glyphs[glyph]].Charstring, writer, ref budget);
+                converter.Convert(font.GetCharstring(glyphs[glyph]), writer, ref budget);
             }
             catch (InvalidFontException exception)
             {
@@ -107,16 +115,17 @@ internal static class Type1FontConverter
                 bounds[glyph] = (writer.XMin, writer.YMin, writer.XMax, writer.YMax);
             }
 
-            totalBytes += charstrings[glyph].Length;
-            if (totalBytes > limits.MaxFontBytes)
-                throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, totalBytes);
+            if (output.Length > limits.MaxFontBytes)
+                throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, output.Length);
         }
+
+        offsets[glyphs.Count] = output.Length;
 
         var afmScale = unitsPerEm / 1000.0;
         var info = new FontInfo(font, metrics, unitsPerEm, matrix, glyphNames, advances, bounds, afmScale);
         var tables = new SortedDictionary<uint, byte[]>
         {
-            [FontTags.Cff] = WriteCff(font, info, glyphNames, charstrings),
+            [FontTags.Cff] = WriteCff(font, info, glyphNames, output.Written, offsets, limits),
             [FontTags.Head] = WriteHead(info),
             [FontTags.Hhea] = WriteHhea(info),
             [FontTags.Maxp] = WriteMaxp(glyphs.Count),
@@ -297,8 +306,10 @@ internal static class Type1FontConverter
     private static int ToInt16(double value) => (int)Math.Clamp(Math.Round(value, MidpointRounding.AwayFromZero), short.MinValue, short.MaxValue);
 
     /// <summary>Writes the CFF table (Technical Note #5176): one font whose glyphs have names, with the converted charstrings.</summary>
-    private static byte[] WriteCff(Type1Font font, FontInfo info, List<string> glyphNames, byte[][] charstrings)
+    private static byte[] WriteCff(Type1Font font, FontInfo info, List<string> glyphNames, ReadOnlySpan<byte> charstrings, int[] offsets, FontResourceLimits limits)
     {
+        // A string identifier is a number of 16 bits, at most 64,999 (section 10)
+        const int MaxStringId = 64999;
         var strings = new List<byte[]>();
         var customStrings = new Dictionary<string, int>(StringComparer.Ordinal);
         int GetStringId(string value)
@@ -309,6 +320,9 @@ internal static class Type1FontConverter
             if (!customStrings.TryGetValue(value, out var id))
             {
                 id = CffStandardStrings.Names.Length + strings.Count;
+                if (id > MaxStringId)
+                    throw FontErrors.Unsupported("The Type 1 font has more glyph names and strings than a CFF table can hold.", "Type 1 fonts of more than 64,609 glyph names");
+
                 customStrings.Add(value, id);
                 strings.Add(Encoding.Latin1.GetBytes(value));
             }
@@ -358,25 +372,44 @@ internal static class Type1FontConverter
             BinaryPrimitives.WriteUInt16BigEndian(charset.AsSpan(1 + ((glyph - 1) * 2)), (ushort)GetStringId(glyphNames[glyph]));
         }
 
-        // The encoding: the standard encoding, or supplements that give the name of each code (format 0 without codes, section 12)
+        // The encoding (section 12): the standard encoding, or supplements that give the name of each code. There are at
+        // most 255 supplements: when the font assigns more codes, the glyphs 1, 2, ... that have a code take one of
+        // their codes in the format 0 part, which gives codes to the glyphs in their order. Only a font that assigns
+        // the 256 codes and whose glyph 1 has no code loses the assignment of its last code.
         byte[]? encoding = null;
         if (!font.HasStandardEncoding)
         {
             var glyphSet = new HashSet<string>(glyphNames, StringComparer.Ordinal);
-            var supplements = new List<byte> { 0x80, 0, 0 };
-            var count = 0;
-            for (var code = 0; code < 256 && count < 255; code++)
+            var assignments = new List<(int Code, string Name)>();
+            for (var code = 0; code < 256; code++)
             {
                 if (font.Encoding[code] is { } name && glyphSet.Contains(name))
                 {
-                    var sid = GetStringId(name);
-                    supplements.AddRange([(byte)code, (byte)(sid >> 8), (byte)sid]);
-                    count++;
+                    assignments.Add((code, name));
                 }
             }
 
-            supplements[2] = (byte)count;
-            encoding = [.. supplements];
+            var mainCodes = new List<byte>();
+            if (assignments.Count > 255)
+            {
+                for (var glyph = 1; glyph < glyphNames.Count && assignments.FindIndex(a => a.Name == glyphNames[glyph]) is var assignment and >= 0; glyph++)
+                {
+                    mainCodes.Add((byte)assignments[assignment].Code);
+                    assignments.RemoveAt(assignment);
+                }
+            }
+
+            var supplements = assignments.Take(255).ToList();
+            var bytes = new List<byte> { 0x80, (byte)mainCodes.Count };
+            bytes.AddRange(mainCodes);
+            bytes.Add((byte)supplements.Count);
+            foreach (var (code, name) in supplements)
+            {
+                var sid = GetStringId(name);
+                bytes.AddRange([(byte)code, (byte)(sid >> 8), (byte)sid]);
+            }
+
+            encoding = [.. bytes];
         }
 
         // The private DICT: the alignment zones and the stems (table 23), in the units of the font
@@ -420,7 +453,11 @@ internal static class Type1FontConverter
         var nameIndex = CffSubsetWriter.WriteIndex([Encoding.Latin1.GetBytes(font.FontName.Length == 0 ? "Untitled" : font.FontName)]);
         var stringIndex = CffSubsetWriter.WriteIndex(strings);
         byte[] globalSubroutines = [0, 0];
-        var charStringsIndex = CffSubsetWriter.WriteIndex(charstrings);
+
+        // The CharStrings INDEX (section 5), written in place from the charstrings and their offsets
+        var glyphCount = offsets.Length - 1;
+        var offsetSize = charstrings.Length + 1 <= 0xFF ? 1 : charstrings.Length + 1 <= 0xFFFF ? 2 : charstrings.Length + 1 <= 0xFFFFFF ? 3 : 4;
+        var charStringsIndexLength = 3L + ((glyphCount + 1L) * offsetSize) + charstrings.Length;
 
         // Every position is written on five bytes: the length of the Top DICT does not depend on them
         byte[] BuildTopDict(int charsetOffset, int encodingOffset, int charStringsOffset, int privateOffset)
@@ -448,7 +485,11 @@ internal static class Type1FontConverter
         var charsetOffset = HeaderLength + nameIndex.Length + topDictIndexLength + stringIndex.Length + globalSubroutines.Length;
         var encodingOffset = charsetOffset + charset.Length;
         var charStringsOffset = encodingOffset + (encoding?.Length ?? 0);
-        var privateOffset = charStringsOffset + charStringsIndex.Length;
+        var tableLength = charStringsOffset + charStringsIndexLength + privateDict.Count;
+        if (tableLength > limits.MaxFontBytes)
+            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, tableLength);
+
+        var privateOffset = (int)(charStringsOffset + charStringsIndexLength);
         var topDictIndex = CffSubsetWriter.WriteIndex([BuildTopDict(charsetOffset, encodingOffset, charStringsOffset, privateOffset)]);
 
         var output = new byte[privateOffset + privateDict.Count];
@@ -466,7 +507,21 @@ internal static class Type1FontConverter
         Append(globalSubroutines);
         Append(charset);
         Append(encoding);
-        Append(charStringsIndex);
+
+        var index = output.AsSpan(position);
+        BinaryPrimitives.WriteUInt16BigEndian(index, (ushort)glyphCount);
+        index[2] = (byte)offsetSize;
+        for (var i = 0; i <= glyphCount; i++)
+        {
+            var offset = offsets[i] + 1;
+            for (var b = 0; b < offsetSize; b++)
+            {
+                index[3 + (i * offsetSize) + b] = (byte)(offset >> ((offsetSize - 1 - b) * 8));
+            }
+        }
+
+        position += 3 + ((glyphCount + 1) * offsetSize);
+        Append(charstrings);
         Append([.. privateDict]);
         return output;
     }

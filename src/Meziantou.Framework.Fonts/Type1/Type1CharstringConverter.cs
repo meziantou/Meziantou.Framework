@@ -59,29 +59,22 @@ internal sealed class Type1CharstringConverter
 
     /// <summary>Converts the charstring of a glyph.</summary>
     /// <param name="charstring">The decrypted charstring.</param>
-    /// <param name="writer">Receives the outline.</param>
+    /// <param name="writer">Receives the outline, as a Type 2 charstring.</param>
     /// <param name="budget">The budget of the glyph.</param>
-    /// <returns>The Type 2 charstring.</returns>
-    public byte[] Convert(byte[] charstring, Type2CharstringWriter writer, ref GlyphBudget budget)
+    public void Convert(ReadOnlySpan<byte> charstring, Type2CharstringWriter writer, ref GlyphBudget budget)
     {
         _writer = writer;
-        writer.Reset();
+        writer.Begin();
         AdvanceWidth = 0;
         Operations = 0;
         _sideBearingX = 0;
         _hasWidth = false;
         _isComponent = false;
         Run(charstring, offsetX: 0, offsetY: 0, ref budget);
-
-        // The advance widths of an OpenType font are whole numbers of units
-        AdvanceWidth = Math.Round(AdvanceWidth, MidpointRounding.AwayFromZero);
-        if (!(Math.Abs(AdvanceWidth) <= ushort.MaxValue))
-            throw FontErrors.InvalidType1("a glyph has an advance width larger than an OpenType font can have.");
-
-        return writer.Finish(AdvanceWidth);
+        writer.Finish();
     }
 
-    private void Run(byte[] charstring, double offsetX, double offsetY, ref GlyphBudget budget)
+    private void Run(ReadOnlySpan<byte> charstring, double offsetX, double offsetY, ref GlyphBudget budget)
     {
         _count = 0;
         _resultCount = 0;
@@ -95,7 +88,7 @@ internal sealed class Type1CharstringConverter
         Execute(charstring, depth: 0, ref budget);
     }
 
-    private void Execute(byte[] code, int depth, ref GlyphBudget budget)
+    private void Execute(ReadOnlySpan<byte> code, int depth, ref GlyphBudget budget)
     {
         var position = 0;
         while (position < code.Length && !_ended)
@@ -162,7 +155,7 @@ internal sealed class Type1CharstringConverter
                     if (depth >= MaxCallDepth)
                         throw FontErrors.InvalidType1("the subroutines of a charstring are nested more than 10 deep.");
 
-                    if (index != Math.Floor(index) || index is < 0 or > int.MaxValue || !_font.Subroutines.TryGetValue((int)index, out var subroutine))
+                    if (index != Math.Floor(index) || index is < 0 or > int.MaxValue || !_font.TryGetSubroutine((int)index, out var subroutine))
                         throw FontErrors.InvalidType1($"a charstring calls the subroutine {index}, which the font does not have.");
 
                     Execute(subroutine, depth + 1, ref budget);
@@ -365,11 +358,11 @@ internal sealed class Type1CharstringConverter
         _ended = true;
     }
 
-    private byte[] GetStandardEncodingCharstring(double code)
+    private ReadOnlySpan<byte> GetStandardEncodingCharstring(double code)
     {
         var standard = CffFont.StandardEncoding.Value;
         if (code is >= 0 and < 256 && code == Math.Floor(code) && standard[(int)code] is { } name && _glyphsByName.TryGetValue(name, out var glyph))
-            return _font.CharStrings[glyph].Charstring;
+            return _font.GetCharstring(glyph);
 
         throw FontErrors.InvalidType1($"an accented character has the component {code}, which is not a glyph of the font in the standard encoding.");
     }
@@ -379,7 +372,16 @@ internal sealed class Type1CharstringConverter
         // The width of an accented character is the one of its own charstring, not of its components
         if (!_isComponent && !_hasWidth)
         {
-            AdvanceWidth = width * _matrix[0];
+            // The advance widths of an OpenType font are whole numbers of units. The width is the first operand of
+            // the Type 2 charstring: the outline cannot have started.
+            AdvanceWidth = Math.Round(width * _matrix[0], MidpointRounding.AwayFromZero);
+            if (!(Math.Abs(AdvanceWidth) <= ushort.MaxValue))
+                throw FontErrors.InvalidType1("a glyph has an advance width larger than an OpenType font can have.");
+
+            if (_writer.HasStarted)
+                throw FontErrors.InvalidType1("the side bearing and the width of a glyph (hsbw or sbw) come after its outline starts.");
+
+            _writer.Width = AdvanceWidth;
             _sideBearingX = x;
             _hasWidth = true;
         }
@@ -486,7 +488,7 @@ internal sealed class Type1CharstringConverter
 
     private void Clear() => _count = 0;
 
-    private static int ReadByte(byte[] code, ref int position)
+    private static int ReadByte(ReadOnlySpan<byte> code, ref int position)
     {
         if (position >= code.Length)
             throw FontErrors.InvalidType1("a charstring ends in the middle of a number or an operator.");

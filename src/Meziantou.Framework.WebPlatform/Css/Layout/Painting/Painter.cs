@@ -1578,7 +1578,7 @@ internal sealed partial class Painter
     /// <summary>Returns the color of a component of a computed value (e.g. a color of a gradient, of a shadow): currentcolor is the color of the style.</summary>
     internal static DisplayColor? ResolveColor(ComputedStyle style, Css.Syntax.CssComponentValue value)
     {
-        if (value is Css.Syntax.CssPreservedToken { Type: Css.Syntax.CssTokenType.Ident } ident && Infra.InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "currentcolor"))
+        if (value is Css.Syntax.CssPreservedToken { Type: Css.Syntax.CssTokenType.Ident } ident && Infra.InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "currentcolor"))
             return GetColor(style, "color");
 
         // The colors that depend on currentcolor (color-mix(), the relative colors) are computed with the color of the style

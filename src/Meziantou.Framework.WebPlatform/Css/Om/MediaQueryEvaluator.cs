@@ -274,7 +274,7 @@ internal static class MediaQueryEvaluator
 
         var index = 0;
         var negated = false;
-        var first = InfraAscii.ToAsciiLowercase(firstToken.Token.Value);
+        var first = InfraAscii.ToAsciiLowercase(firstToken.Value);
         if (first is "not" or "only")
         {
             // "not (...)" is a <media-condition>
@@ -289,7 +289,7 @@ internal static class MediaQueryEvaluator
             return null;
 
         // https://drafts.csswg.org/mediaqueries-5/#typedef-media-type: the keywords only, not, and, or and layer are not media types
-        var type = InfraAscii.ToAsciiLowercase(typeToken.Token.Value);
+        var type = InfraAscii.ToAsciiLowercase(typeToken.Value);
         if (type is "only" or "not" or "and" or "or" or "layer")
             return null;
 
@@ -297,7 +297,7 @@ internal static class MediaQueryEvaluator
         Condition? condition = null;
         if (index < tokens.Count)
         {
-            if (!(tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } and && and.Token.IsIdent("and")))
+            if (!(tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } and && and.IsIdent("and")))
                 return null;
 
             condition = ParseCondition(tokens, index + 1, allowOr: false, out var end);
@@ -324,7 +324,7 @@ internal static class MediaQueryEvaluator
         if (index >= tokens.Count)
             return null;
 
-        if (tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } not && not.Token.IsIdent("not"))
+        if (tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } not && not.IsIdent("not"))
         {
             var inner = ParseInParens(tokens, index + 1);
             if (inner is null)
@@ -341,10 +341,10 @@ internal static class MediaQueryEvaluator
         var conditions = new List<Condition> { first };
         index++;
         string? combinator = null;
-        while (index < tokens.Count && tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } word && InfraAscii.ToAsciiLowercase(word.Token.Value) is "and" or "or")
+        while (index < tokens.Count && tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } word && InfraAscii.ToAsciiLowercase(word.Value) is "and" or "or")
         {
             // "and" and "or" cannot be mixed at the same level
-            var keyword = InfraAscii.ToAsciiLowercase(word.Token.Value);
+            var keyword = InfraAscii.ToAsciiLowercase(word.Value);
             if ((combinator is not null && combinator != keyword) || (keyword == "or" && !allowOr))
                 return null;
 
@@ -385,8 +385,8 @@ internal static class MediaQueryEvaluator
                     return condition;
 
                 // A reference to a custom media query (https://drafts.csswg.org/mediaqueries-5/#typedef-extension-name)
-                if (inner is [CssPreservedToken { Type: CssTokenType.Ident } name] && name.Token.Value.StartsWith("--", StringComparison.Ordinal))
-                    return new CustomMediaCondition(name.Token.Value);
+                if (inner is [CssPreservedToken { Type: CssTokenType.Ident } name] && name.Value.StartsWith("--", StringComparison.Ordinal))
+                    return new CustomMediaCondition(name.Value);
 
                 // A block that is not a valid <media-feature> is a <general-enclosed>: it evaluates to unknown
                 return ParseFeature(inner);
@@ -433,7 +433,7 @@ internal static class MediaQueryEvaluator
 
         if (tokens[0] is CssPreservedToken { Type: CssTokenType.Ident } nameToken)
         {
-            var name = InfraAscii.ToAsciiLowercase(nameToken.Token.Value);
+            var name = InfraAscii.ToAsciiLowercase(nameToken.Value);
 
             // <mf-boolean>: the min-/max- prefixes are not allowed
             if (tokens.Count == 1)
@@ -505,7 +505,7 @@ internal static class MediaQueryEvaluator
             {
                 // "<=" and ">=" are two delim tokens with no whitespace in between
                 var orEqual = false;
-                if (delim.Value is "<" or ">" && i + 1 < tokens.Count && tokens[i + 1] is CssPreservedToken equals && equals.Token.IsDelim('=') && equals.Start == delimToken.End)
+                if (delim.Value is "<" or ">" && i + 1 < tokens.Count && tokens[i + 1] is CssPreservedToken equals && equals.IsDelim('=') && equals.Start == delimToken.End)
                 {
                     orEqual = true;
                     i++;
@@ -531,12 +531,12 @@ internal static class MediaQueryEvaluator
         if (comparisons.Count == 1)
         {
             // <mf-name> <mf-comparison> <mf-value>
-            if (parts[0] is [CssPreservedToken { Type: CssTokenType.Ident } left] && Features.ContainsKey(InfraAscii.ToAsciiLowercase(left.Token.Value)))
-                return CreateRangeFeature(InfraAscii.ToAsciiLowercase(left.Token.Value), (comparisons[0], parts[1]));
+            if (parts[0] is [CssPreservedToken { Type: CssTokenType.Ident } left] && Features.ContainsKey(InfraAscii.ToAsciiLowercase(left.Value)))
+                return CreateRangeFeature(InfraAscii.ToAsciiLowercase(left.Value), (comparisons[0], parts[1]));
 
             // <mf-value> <mf-comparison> <mf-name>: "value < name" is "name > value"
             if (parts[1] is [CssPreservedToken { Type: CssTokenType.Ident } right])
-                return CreateRangeFeature(InfraAscii.ToAsciiLowercase(right.Token.Value), (Reverse(comparisons[0]), parts[0]));
+                return CreateRangeFeature(InfraAscii.ToAsciiLowercase(right.Value), (Reverse(comparisons[0]), parts[0]));
 
             return UnknownCondition.Instance;
         }
@@ -553,7 +553,7 @@ internal static class MediaQueryEvaluator
             if (parts[1] is not [CssPreservedToken { Type: CssTokenType.Ident } middle])
                 return UnknownCondition.Instance;
 
-            return CreateRangeFeature(InfraAscii.ToAsciiLowercase(middle.Token.Value), (Reverse(first), parts[0]), (second, parts[2]));
+            return CreateRangeFeature(InfraAscii.ToAsciiLowercase(middle.Value), (Reverse(first), parts[0]), (second, parts[2]));
         }
 
         return UnknownCondition.Instance;
@@ -593,7 +593,7 @@ internal static class MediaQueryEvaluator
         switch (tokens)
         {
             case [CssPreservedToken { Type: CssTokenType.Ident } ident]:
-                return new IdentValue(InfraAscii.ToAsciiLowercase(ident.Token.Value));
+                return new IdentValue(InfraAscii.ToAsciiLowercase(ident.Value));
 
             case [var single]:
                 return CalcParser.ParseNumeric(single) is { } expression ? new NumericValue(expression) : null;
@@ -1303,7 +1303,7 @@ internal static class MediaQueryEvaluator
         var comma = function.Value.FindIndex(v => v is CssPreservedToken { Type: CssTokenType.Comma });
         var name = ValueMatcher.RemoveWhitespace(comma < 0 ? function.Value : function.Value[..comma]);
         if (name is [CssPreservedToken { Type: CssTokenType.Ident } nameToken, .. var indexTokens] && GetIndices(indexTokens) is { } indices
-            && Cascade.CssSubstitution.GetEnvironmentVariable(nameToken.Token.Value, indices, environment) is { } text)
+            && Cascade.CssSubstitution.GetEnvironmentVariable(nameToken.Value, indices, environment) is { } text)
         {
             return CssParser.ParseListOfComponentValues(text);
         }
@@ -1323,7 +1323,7 @@ internal static class MediaQueryEvaluator
             if (tokens[i] is not CssPreservedToken { Type: CssTokenType.Number, Token: { IsInteger: true, NumericValue: >= 0 and <= int.MaxValue } } token)
                 return null;
 
-            indices[i] = (int)token.Token.NumericValue;
+            indices[i] = (int)token.NumericValue;
         }
 
         return indices;
@@ -1391,15 +1391,15 @@ internal static class MediaQueryEvaluator
             switch (value)
             {
                 case CssPreservedToken { Type: CssTokenType.Number } number:
-                    return new CalcLeaf(number.Token.NumericValue, unit: null, number.Token.IsInteger);
+                    return new CalcLeaf(number.NumericValue, unit: null, number.IsInteger);
 
                 case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
                 {
-                    var unit = InfraAscii.ToAsciiLowercase(dimension.Token.Value);
+                    var unit = InfraAscii.ToAsciiLowercase(dimension.Value);
                     if (CalcLeaf.GetResolutionFactor(unit) is null && CalcLeaf.GetLengthFactor(unit, MediaEnvironment.Default) is null)
                         return null;
 
-                    return new CalcLeaf(dimension.Token.NumericValue, unit, isInteger: false);
+                    return new CalcLeaf(dimension.NumericValue, unit, isInteger: false);
                 }
 
                 case CssFunction function when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "env"):
@@ -1480,7 +1480,7 @@ internal static class MediaQueryEvaluator
         {
             if (_index < _values.Count && _values[_index] is CssPreservedToken { Token: { Type: CssTokenType.Delim, Value: ['+' or '-' or '*' or '/'] } } token)
             {
-                delim = token.Token.Value[0];
+                delim = token.Value[0];
                 return true;
             }
 
@@ -1549,7 +1549,7 @@ internal static class MediaQueryEvaluator
                 CssSimpleBlock { AssociatedToken: CssTokenType.LeftParenthesis } block => ParseSum(block.Value),
 
                 // https://drafts.csswg.org/css-values-4/#calc-constants
-                CssPreservedToken { Type: CssTokenType.Ident } ident => InfraAscii.ToAsciiLowercase(ident.Token.Value) switch
+                CssPreservedToken { Type: CssTokenType.Ident } ident => InfraAscii.ToAsciiLowercase(ident.Value) switch
                 {
                     "e" => new CalcLeaf(Math.E, unit: null, isInteger: false),
                     "pi" => new CalcLeaf(Math.PI, unit: null, isInteger: false),

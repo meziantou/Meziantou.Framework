@@ -58,7 +58,7 @@ internal static class CssRelativeColor
             if (value is CssPreservedToken { Type: CssTokenType.Whitespace })
                 continue;
 
-            return value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "from");
+            return value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "from");
         }
 
         return false;
@@ -81,7 +81,7 @@ internal static class CssRelativeColor
             if (index >= values.Count || values[index] is not CssPreservedToken { Type: CssTokenType.Ident } space)
                 return false;
 
-            var spaceName = InfraAscii.ToAsciiLowercase(space.Token.Value);
+            var spaceName = InfraAscii.ToAsciiLowercase(space.Value);
             index++;
             if (RgbSpaces.Contains(spaceName))
             {

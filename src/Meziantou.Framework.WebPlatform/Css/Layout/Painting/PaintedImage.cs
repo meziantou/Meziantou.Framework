@@ -69,7 +69,7 @@ internal abstract class PaintedImage
                 return CssUrlModifiers.TryGetUrl(value, out var address, out _) ? ResolveUrl(document, style, address, painter) : null;
 
             case CssPreservedToken { Type: CssTokenType.String } text:
-                return ResolveUrl(document, style, text.Token.Value, painter);
+                return ResolveUrl(document, style, text.Value, painter);
 
             case CssFunction function:
             {
@@ -333,7 +333,7 @@ internal abstract class PaintedImage
             double? legacyAmount = null;
             if (arguments.Count == 3 && ValueMatcher.RemoveWhitespace(arguments[2]) is [CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage } amount])
             {
-                legacyAmount = Math.Clamp(amount.Token.Type == CssTokenType.Percentage ? amount.Token.NumericValue : amount.Token.NumericValue * 100, 0, 100);
+                legacyAmount = Math.Clamp(amount.Type == CssTokenType.Percentage ? amount.NumericValue : amount.NumericValue * 100, 0, 100);
                 arguments.RemoveAt(2);
             }
 
@@ -345,7 +345,7 @@ internal abstract class PaintedImage
                 {
                     if (component is CssPreservedToken { Type: CssTokenType.Percentage } token)
                     {
-                        percentage = Math.Clamp(token.Token.NumericValue, 0, 100);
+                        percentage = Math.Clamp(token.NumericValue, 0, 100);
                     }
                     else
                     {

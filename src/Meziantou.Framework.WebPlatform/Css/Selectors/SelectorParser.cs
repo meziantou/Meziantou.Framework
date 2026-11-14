@@ -216,11 +216,11 @@ internal sealed class SelectorParser
 
     private static bool IsWhitespace(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Whitespace };
 
-    private static bool IsDelim(CssComponentValue? value, char c) => value is CssPreservedToken token && token.Token.IsDelim(c);
+    private static bool IsDelim(CssComponentValue? value, char c) => value is CssPreservedToken token && token.IsDelim(c);
 
     private static bool IsToken(CssComponentValue? value, CssTokenType type) => value is CssPreservedToken token && token.Type == type;
 
-    private static string? GetIdent(CssComponentValue? value) => value is CssPreservedToken { Type: CssTokenType.Ident } token ? token.Token.Value : null;
+    private static string? GetIdent(CssComponentValue? value) => value is CssPreservedToken { Type: CssTokenType.Ident } token ? token.Value : null;
 
     private static CssComponentValue? At(List<CssComponentValue> values, int index) => index < values.Count ? values[index] : null;
 
@@ -398,7 +398,7 @@ internal sealed class SelectorParser
         {
             switch (value)
             {
-                case CssPreservedToken token when token.Token.IsDelim('&'):
+                case CssPreservedToken token when token.IsDelim('&'):
                 case CssFunction function when ContainsNestingDelim(CollectionsMarshal.AsSpan(function.Value)):
                 case CssSimpleBlock block when ContainsNestingDelim(CollectionsMarshal.AsSpan(block.Value)):
                     return true;
@@ -574,10 +574,10 @@ internal sealed class SelectorParser
             var value = values[index];
             if (value is CssPreservedToken { Type: CssTokenType.Hash } hash)
             {
-                if (!hash.Token.IsIdHash || pseudoElement is not null)
+                if (!hash.IsIdHash || pseudoElement is not null)
                     return null;
 
-                selectors.Add(new IdSelector(hash.Token.Value));
+                selectors.Add(new IdSelector(hash.Value));
                 index++;
             }
             else if (IsDelim(value, '.'))
@@ -948,7 +948,7 @@ internal sealed class SelectorParser
         }
         else if (IsDelim(At(values, index + 1), '=') && matcher is CssPreservedToken { Type: CssTokenType.Delim } delim)
         {
-            op = delim.Token.Value switch
+            op = delim.Value switch
             {
                 "~" => AttributeOperator.Includes,
                 "|" => AttributeOperator.DashMatch,
@@ -972,7 +972,7 @@ internal sealed class SelectorParser
         string value;
         if (At(values, index) is CssPreservedToken { Type: CssTokenType.Ident or CssTokenType.String } valueToken)
         {
-            value = valueToken.Token.Value;
+            value = valueToken.Value;
             index++;
         }
         else
@@ -1118,13 +1118,13 @@ internal sealed class SelectorParser
                     if (trimmed is not [CssPreservedToken { Type: CssTokenType.Ident or CssTokenType.String } range])
                         return null;
 
-                    ranges.Add(range.Token.Value);
+                    ranges.Add(range.Value);
                 }
 
                 return new PseudoClassSelector(PseudoClass.Lang)
                 {
                     Strings = [.. ranges],
-                    ArgumentText = string.Join(", ", SplitByComma(arguments).Select(part => part.First(v => !IsWhitespace(v)) is CssPreservedToken { Type: CssTokenType.String } str ? Values.CssSerializer.SerializeString(str.Token.Value) : Values.CssSerializer.SerializeIdentifier(GetIdent(part.First(v => !IsWhitespace(v)))!))),
+                    ArgumentText = string.Join(", ", SplitByComma(arguments).Select(part => part.First(v => !IsWhitespace(v)) is CssPreservedToken { Type: CssTokenType.String } str ? Values.CssSerializer.SerializeString(str.Value) : Values.CssSerializer.SerializeIdentifier(GetIdent(part.First(v => !IsWhitespace(v)))!))),
                 };
             }
 
@@ -1134,7 +1134,7 @@ internal sealed class SelectorParser
                 if (trimmed is not [CssPreservedToken { Type: CssTokenType.Ident } direction])
                     return null;
 
-                return new PseudoClassSelector(PseudoClass.Dir) { Strings = [InfraAscii.ToAsciiLowercase(direction.Token.Value)] };
+                return new PseudoClassSelector(PseudoClass.Dir) { Strings = [InfraAscii.ToAsciiLowercase(direction.Value)] };
             }
 
             case "state":
@@ -1143,7 +1143,7 @@ internal sealed class SelectorParser
                 if (trimmed is not [CssPreservedToken { Type: CssTokenType.Ident } state])
                     return null;
 
-                return new PseudoClassSelector(PseudoClass.State) { Strings = [state.Token.Value] };
+                return new PseudoClassSelector(PseudoClass.State) { Strings = [state.Value] };
             }
 
             case "active-view-transition-type":
@@ -1153,15 +1153,15 @@ internal sealed class SelectorParser
                 foreach (var part in SplitByComma(arguments))
                 {
                     var trimmed = part.Where(v => !IsWhitespace(v)).ToList();
-                    if (trimmed is not [CssPreservedToken { Type: CssTokenType.Ident } type] || Values.ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(type.Token.Value)) || InfraAscii.EqualsIgnoreAsciiCase(type.Token.Value, "default"))
+                    if (trimmed is not [CssPreservedToken { Type: CssTokenType.Ident } type] || Values.ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(type.Value)) || InfraAscii.EqualsIgnoreAsciiCase(type.Value, "default"))
                         return null;
 
                     // https://drafts.csswg.org/css-view-transitions-2/#typedef-view-transition-type: none and the names that start
                     // with -ua- are reserved
-                    if (InfraAscii.EqualsIgnoreAsciiCase(type.Token.Value, "none") || type.Token.Value.StartsWith("-ua-", StringComparison.Ordinal))
+                    if (InfraAscii.EqualsIgnoreAsciiCase(type.Value, "none") || type.Value.StartsWith("-ua-", StringComparison.Ordinal))
                         return null;
 
-                    types.Add(type.Token.Value);
+                    types.Add(type.Value);
                 }
 
                 return new PseudoClassSelector(PseudoClass.ActiveViewTransitionType) { Strings = [.. types] };
@@ -1185,7 +1185,7 @@ internal sealed class SelectorParser
                     if (trimmed is not [CssPreservedToken { Type: CssTokenType.Number, Token.IsInteger: true } level])
                         return null;
 
-                    levels.Add((int)Math.Clamp(level.Token.NumericValue, int.MinValue, int.MaxValue));
+                    levels.Add((int)Math.Clamp(level.NumericValue, int.MinValue, int.MaxValue));
                 }
 
                 return new PseudoClassSelector(PseudoClass.HeadingFunction) { Levels = [.. levels] };
@@ -1267,12 +1267,12 @@ internal sealed class SelectorParser
                     return new PseudoElementSelector(functionName) { IsFunction = true, ArgumentText = "*" };
 
                 if (arguments is not [CssPreservedToken { Type: CssTokenType.Ident } direction]
-                    || InfraAscii.ToAsciiLowercase(direction.Token.Value) is not ("up" or "down" or "left" or "right" or "block-start" or "block-end" or "inline-start" or "inline-end" or "prev" or "next"))
+                    || InfraAscii.ToAsciiLowercase(direction.Value) is not ("up" or "down" or "left" or "right" or "block-start" or "block-end" or "inline-start" or "inline-end" or "prev" or "next"))
                 {
                     return null;
                 }
 
-                return new PseudoElementSelector(functionName) { IsFunction = true, ArgumentText = InfraAscii.ToAsciiLowercase(direction.Token.Value) };
+                return new PseudoElementSelector(functionName) { IsFunction = true, ArgumentText = InfraAscii.ToAsciiLowercase(direction.Value) };
 
             case "view-transition-group" or "view-transition-image-pair" or "view-transition-old" or "view-transition-new" or "view-transition-group-children":
                 return ParseViewTransitionArgument(function.Value) is { } argument ? new PseudoElementSelector(functionName) { IsFunction = true, ArgumentText = argument } : null;
@@ -1280,7 +1280,7 @@ internal sealed class SelectorParser
             case "picker":
                 // https://drafts.csswg.org/css-forms-1/#picker-pseudo: ::picker(<form-control-identifier>), where the only form
                 // control identifier is select
-                if (arguments is not [CssPreservedToken { Type: CssTokenType.Ident } control] || !InfraAscii.EqualsIgnoreAsciiCase(control.Token.Value, "select"))
+                if (arguments is not [CssPreservedToken { Type: CssTokenType.Ident } control] || !InfraAscii.EqualsIgnoreAsciiCase(control.Value, "select"))
                     return null;
 
                 return new PseudoElementSelector(functionName) { IsFunction = true, ArgumentText = "select" };

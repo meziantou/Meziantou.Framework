@@ -78,7 +78,7 @@ internal static partial class CssPropertyRules
                     case 1:
                     {
                         // <position> [ / <bg-size> ]?
-                        var slash = captured.FindIndex(value => value is CssPreservedToken token && token.Token.IsDelim('/'));
+                        var slash = captured.FindIndex(value => value is CssPreservedToken token && token.IsDelim('/'));
                         layerValues["mask-position"] = SerializePosition(slash < 0 ? captured : captured[..slash], computed: false);
                         if (slash >= 0)
                         {

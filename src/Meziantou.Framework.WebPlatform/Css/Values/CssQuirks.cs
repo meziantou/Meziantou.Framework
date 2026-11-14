@@ -48,19 +48,19 @@ internal static class CssQuirks
             switch (value)
             {
                 case CssPreservedToken { Type: CssTokenType.Number } number when lengths:
-                    builder.Append(CssSerializer.SerializeNumber(number.Token.NumericValue)).Append("px ");
+                    builder.Append(CssSerializer.SerializeNumber(number.NumericValue)).Append("px ");
                     break;
 
                 case CssPreservedToken { Type: CssTokenType.Number } number when colors && GetQuirkyColorDigits(number.Token, unit: "") is { } digits:
                     builder.Append('#').Append(digits).Append(' ');
                     break;
 
-                case CssPreservedToken { Type: CssTokenType.Dimension } dimension when colors && GetQuirkyColorDigits(dimension.Token, dimension.Token.Value) is { } digits:
+                case CssPreservedToken { Type: CssTokenType.Dimension } dimension when colors && GetQuirkyColorDigits(dimension.Token, dimension.Value) is { } digits:
                     builder.Append('#').Append(digits).Append(' ');
                     break;
 
-                case CssPreservedToken { Type: CssTokenType.Ident } ident when colors && ident.Token.Value.Length is 3 or 6 && ident.Token.Value.All(char.IsAsciiHexDigit):
-                    builder.Append('#').Append(ident.Token.Value).Append(' ');
+                case CssPreservedToken { Type: CssTokenType.Ident } ident when colors && ident.Value.Length is 3 or 6 && ident.Value.All(char.IsAsciiHexDigit):
+                    builder.Append('#').Append(ident.Value).Append(' ');
                     break;
 
                 case CssFunction function when clip && InfraAscii.EqualsIgnoreAsciiCase(function.Name, "rect"):

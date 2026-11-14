@@ -486,7 +486,7 @@ internal sealed partial class ComputedStyle
                         builder.Append(color);
                         break;
 
-                    case CssPreservedToken { Type: CssTokenType.Ident } ident when ident.Token.Value is not ("none" or "context-fill" or "context-stroke" or "repeat"):
+                    case CssPreservedToken { Type: CssTokenType.Ident } ident when ident.Value is not ("none" or "context-fill" or "context-stroke" or "repeat"):
                         // (auto is the color of the text for caret-color; the other identifiers are colors)
                         builder.Append(color);
                         break;

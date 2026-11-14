@@ -80,7 +80,7 @@ internal static partial class CssPropertyRules
             if (value is not CssPreservedToken { Type: CssTokenType.Ident } ident)
                 return null;
 
-            var keyword = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+            var keyword = InfraAscii.ToAsciiLowercase(ident.Value);
             var index = Array.FindIndex(FontSynthesisKeywords, entry => entry.Keyword == keyword);
             if (index < 0)
                 return null;
@@ -113,7 +113,7 @@ internal static partial class CssPropertyRules
     /// 1 to 4 ASCII characters (padded with spaces).
     /// </summary>
     private static bool IsValidFontLanguageOverride(CssPropertyDefinition property, List<CssComponentValue> significant)
-        => significant is not [CssPreservedToken { Type: CssTokenType.String } tag] || (tag.Token.Value.Length is >= 1 and <= 4 && tag.Token.Value.All(c => c is >= ' ' and <= '~'));
+        => significant is not [CssPreservedToken { Type: CssTokenType.String } tag] || (tag.Value.Length is >= 1 and <= 4 && tag.Value.All(c => c is >= ' ' and <= '~'));
 
     /// <summary>
     /// Returns whether a value that matches the grammar of a descriptor satisfies the constraints defined in prose:
@@ -129,7 +129,7 @@ internal static partial class CssPropertyRules
         {
             switch (value)
             {
-                case CssPreservedToken { Type: CssTokenType.Ident } ident when ident.Token.IsIdent("currentcolor") || CssColor.IsSystemColor(ident.Token.Value):
+                case CssPreservedToken { Type: CssTokenType.Ident } ident when ident.IsIdent("currentcolor") || CssColor.IsSystemColor(ident.Value):
                     return true;
                 case CssFunction function when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "light-dark") || ContainsNonAbsoluteColor(function.Value):
                     return true;

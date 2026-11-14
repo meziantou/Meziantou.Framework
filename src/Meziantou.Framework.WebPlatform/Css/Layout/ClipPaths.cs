@@ -59,7 +59,7 @@ internal static class ClipPaths
     private static PhysicalRect? GetInsetBounds(CssFunction shape, PhysicalRect box, double zoom)
     {
         var arguments = ValueMatcher.RemoveWhitespace(shape.Value);
-        var round = arguments.FindIndex(argument => argument is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "round"));
+        var round = arguments.FindIndex(argument => argument is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "round"));
         var count = round < 0 ? arguments.Count : round;
         if (count is 0 or > 4)
             return null;

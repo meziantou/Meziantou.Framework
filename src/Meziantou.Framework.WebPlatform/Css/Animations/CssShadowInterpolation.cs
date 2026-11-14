@@ -90,7 +90,7 @@ internal static class CssShadowInterpolation
     private static List<Shadow>? Parse(string value)
     {
         var components = CssGenericInterpolation.Parse(value);
-        if (components is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ident.Token.IsIdent("none"))
+        if (components is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ident.IsIdent("none"))
             return [];
 
         var result = new List<Shadow>();
@@ -101,7 +101,7 @@ internal static class CssShadowInterpolation
             var inset = false;
             foreach (var component in item)
             {
-                if (component is CssPreservedToken { Type: CssTokenType.Ident } keyword && keyword.Token.IsIdent("inset"))
+                if (component is CssPreservedToken { Type: CssTokenType.Ident } keyword && keyword.IsIdent("inset"))
                 {
                     inset = true;
                 }

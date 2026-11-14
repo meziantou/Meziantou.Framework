@@ -120,7 +120,7 @@ internal static partial class CssParser
     public static CssAtRule? ConsumeAtRule(CssComponentValueStream input, bool nested)
     {
         var keyword = (CssPreservedToken)input.Consume();
-        var rule = new CssAtRule(keyword.Token.Value);
+        var rule = new CssAtRule(keyword.Value);
         while (true)
         {
             switch (input.Next)
@@ -181,7 +181,7 @@ internal static partial class CssParser
             index++;
         }
 
-        if (index >= prelude.Count || prelude[index] is not CssPreservedToken { Type: CssTokenType.Ident } ident || !ident.Token.Value.StartsWith("--", StringComparison.Ordinal))
+        if (index >= prelude.Count || prelude[index] is not CssPreservedToken { Type: CssTokenType.Ident } ident || !ident.Value.StartsWith("--", StringComparison.Ordinal))
             return false;
 
         index++;
@@ -259,7 +259,7 @@ internal static partial class CssParser
         }
 
         input.Discard();
-        var declaration = new CssDeclaration(name.Token.Value);
+        var declaration = new CssDeclaration(name.Value);
         input.DiscardWhitespace();
         if (!input.NextIs(CssTokenType.Colon))
         {
@@ -287,10 +287,10 @@ internal static partial class CssParser
 
         // !important
         var last = LastNonWhitespace(declaration.Value, declaration.Value.Count);
-        if (last >= 0 && declaration.Value[last] is CssPreservedToken { Type: CssTokenType.Ident } important && Infra.InfraAscii.EqualsIgnoreAsciiCase(important.Token.Value, "important"))
+        if (last >= 0 && declaration.Value[last] is CssPreservedToken { Type: CssTokenType.Ident } important && Infra.InfraAscii.EqualsIgnoreAsciiCase(important.Value, "important"))
         {
             var bang = LastNonWhitespace(declaration.Value, last);
-            if (bang >= 0 && declaration.Value[bang] is CssPreservedToken bangToken && bangToken.Token.IsDelim('!'))
+            if (bang >= 0 && declaration.Value[bang] is CssPreservedToken bangToken && bangToken.IsDelim('!'))
             {
                 declaration.Value.RemoveRange(bang, declaration.Value.Count - bang);
                 declaration.Important = true;

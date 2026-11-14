@@ -102,10 +102,10 @@ internal sealed class TimelineRangeBoundary : IEquatable<TimelineRangeBoundary>
         var index = 0;
         if (values.Count > 0 && values[0] is CssPreservedToken { Type: CssTokenType.Ident } ident)
         {
-            if (ident.Token.IsIdent("normal") && values.Count == 1)
+            if (ident.IsIdent("normal") && values.Count == 1)
                 return true;
 
-            if (!TryParseName(ident.Token.Value, out name))
+            if (!TryParseName(ident.Value, out name))
                 return false;
 
             index = 1;
@@ -138,9 +138,9 @@ internal sealed class TimelineRangeBoundary : IEquatable<TimelineRangeBoundary>
     /// <summary>Parses a &lt;length-percentage&gt; whose absolute lengths are converted to px.</summary>
     private static bool TryParseOffset(CssComponentValue component, out LengthPercentage offset)
     {
-        if (component is CssPreservedToken { Type: CssTokenType.Dimension } dimension && !string.Equals(dimension.Token.Value, "px", StringComparison.OrdinalIgnoreCase))
+        if (component is CssPreservedToken { Type: CssTokenType.Dimension } dimension && !string.Equals(dimension.Value, "px", StringComparison.OrdinalIgnoreCase))
         {
-            if (CssUnits.Convert(dimension.Token.NumericValue, InfraAscii.ToAsciiLowercase(dimension.Token.Value), "px") is { } pixels)
+            if (CssUnits.Convert(dimension.NumericValue, InfraAscii.ToAsciiLowercase(dimension.Value), "px") is { } pixels)
             {
                 offset = LengthPercentage.FromPixels(pixels);
                 return true;
@@ -171,7 +171,7 @@ internal sealed class TimelineRangeBoundary : IEquatable<TimelineRangeBoundary>
         switch (component)
         {
             case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
-                return CssUnits.Convert(1, InfraAscii.ToAsciiLowercase(dimension.Token.Value), "px") is null;
+                return CssUnits.Convert(1, InfraAscii.ToAsciiLowercase(dimension.Value), "px") is null;
             case CssFunction function:
                 foreach (var argument in function.Value)
                 {
@@ -266,7 +266,7 @@ internal sealed class TimelineRangeBoundary : IEquatable<TimelineRangeBoundary>
         if (values is not [var component] || HasRelativeUnits(component))
             throw new TypeErrorException("The offset of a timeline range must be a length or a percentage with an absolute unit.");
 
-        if (component is CssPreservedToken { Type: CssTokenType.Number } number && number.Token.NumericValue != 0)
+        if (component is CssPreservedToken { Type: CssTokenType.Number } number && number.NumericValue != 0)
             throw new TypeErrorException("The offset of a timeline range must be a length or a percentage.");
 
         if (!TryParseOffset(component, out var offset))
@@ -282,10 +282,10 @@ internal sealed class TimelineRangeBoundary : IEquatable<TimelineRangeBoundary>
     /// </summary>
     public static TimelineRangeBoundary? ParseKeyframeSelector(List<CssComponentValue> values)
     {
-        if (values is not [CssPreservedToken { Type: CssTokenType.Ident } ident, CssPreservedToken { Type: CssTokenType.Percentage } percentage] || !TryParseName(ident.Token.Value, out var name))
+        if (values is not [CssPreservedToken { Type: CssTokenType.Ident } ident, CssPreservedToken { Type: CssTokenType.Percentage } percentage] || !TryParseName(ident.Value, out var name))
             return null;
 
-        return new TimelineRangeBoundary(name, LengthPercentage.FromPercentage(percentage.Token.NumericValue), new CssUnitValue(percentage.Token.NumericValue, "percent"));
+        return new TimelineRangeBoundary(name, LengthPercentage.FromPercentage(percentage.NumericValue), new CssUnitValue(percentage.NumericValue, "percent"));
     }
 
     /// <summary>Converts a <see cref="TimelineRangeOffset"/> keyframe offset: a timeline range name and a percentage, or returns null.</summary>

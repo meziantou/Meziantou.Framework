@@ -104,9 +104,9 @@ internal static class CssShorthands
             return null;
 
         // CSS-wide keywords apply to all the longhands
-        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } keywordToken] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(keywordToken.Token.Value)))
+        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } keywordToken] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(keywordToken.Value)))
         {
-            var keyword = InfraAscii.ToAsciiLowercase(keywordToken.Token.Value);
+            var keyword = InfraAscii.ToAsciiLowercase(keywordToken.Value);
             return property.IsShorthand ? [.. CssPropertyRegistry.GetLonghandsRecursive(property).Select(l => new CssLonghandValue(l, keyword))] : [new CssLonghandValue(property.Name, keyword)];
         }
 
@@ -366,9 +366,9 @@ internal static class CssShorthands
 
         // A keyword alternative of the shorthand (e.g. font-variant: none, marker: none)
         if (significant is [CssPreservedToken { Type: CssTokenType.Ident } keywordToken] && Unwrap(grammar) is GroupNode { Combinator: GrammarCombinator.OneOf } oneOf
-            && oneOf.Children.Exists(c => c is KeywordNode k && keywordToken.Token.IsIdent(k.Keyword)))
+            && oneOf.Children.Exists(c => c is KeywordNode k && keywordToken.IsIdent(k.Keyword)))
         {
-            var keyword = InfraAscii.ToAsciiLowercase(keywordToken.Token.Value);
+            var keyword = InfraAscii.ToAsciiLowercase(keywordToken.Value);
             if (KeywordExpansions.TryGetValue((shorthand.Name, keyword), out var expansion))
                 return [.. shorthand.Longhands.Select((l, i) => new CssLonghandValue(l, expansion[i]))];
 

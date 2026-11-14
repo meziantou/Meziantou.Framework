@@ -168,19 +168,18 @@ internal sealed class HtmlTokenizer
     private int _current;
 
     // Pending character run
-    private char[] _characters = new char[256];
-    private int _characterCount;
+    private InputTextBuilder _characters = new();
 
     // Pending non-character token, emitted after the character run
     private HtmlTokenType _pendingTokenType;
 
     // Current tag token
-    private readonly StringBuilder _tagName = new();
+    private readonly InputTextBuilder _tagName = new();
     private bool _isEndTag;
     private bool _selfClosing;
     private readonly List<HtmlTokenAttribute> _attributes = [];
-    private readonly StringBuilder _attributeName = new();
-    private readonly StringBuilder _attributeValue = new();
+    private readonly InputTextBuilder _attributeName = new();
+    private readonly InputTextBuilder _attributeValue = new();
     private bool _hasCurrentAttribute;
     private bool _currentAttributeIsDuplicate;
 
@@ -190,7 +189,7 @@ internal sealed class HtmlTokenizer
     private string? _lastStartTagName;
 
     // Current comment, DOCTYPE, processing instruction token
-    private readonly StringBuilder _commentData = new();
+    private readonly InputTextBuilder _commentData = new();
     private readonly StringBuilder _doctypeName = new();
     private readonly StringBuilder _doctypePublicId = new();
     private readonly StringBuilder _doctypeSystemId = new();
@@ -392,7 +391,7 @@ internal sealed class HtmlTokenizer
             ReturnState = _returnState,
             Reconsume = _reconsume,
             Current = _current,
-            CharacterCount = _characterCount,
+            CharacterCount = _characters.Length,
             StreamErrorsReportedUpTo = _streamErrorsReportedUpTo,
         };
     }
@@ -404,7 +403,7 @@ internal sealed class HtmlTokenizer
         _returnState = _resumePoint.ReturnState;
         _reconsume = _resumePoint.Reconsume;
         _current = _resumePoint.Current;
-        _characterCount = _resumePoint.CharacterCount;
+        _characters.Truncate(_resumePoint.CharacterCount);
         _streamErrorsReportedUpTo = _resumePoint.StreamErrorsReportedUpTo;
     }
 
@@ -436,10 +435,9 @@ internal sealed class HtmlTokenizer
 
     public HtmlTokenType TokenType { get; private set; }
 
-    public ReadOnlySpan<char> Characters => _emittedCharacters.AsSpan(0, _emittedCharacterCount);
+    public ReadOnlySpan<char> Characters => _emittedCharacters.Span;
 
-    private char[] _emittedCharacters = new char[256];
-    private int _emittedCharacterCount;
+    private InputTextBuilder _emittedCharacters = new();
 
     public HtmlTagToken? Tag { get; private set; }
 
@@ -524,7 +522,7 @@ internal sealed class HtmlTokenizer
         catch (SuspendException)
         {
             RestoreResumePoint();
-            if (_characterCount > 0)
+            if (_characters.Length > 0)
             {
                 ReturnCharacters();
                 return TokenType;
@@ -540,7 +538,7 @@ internal sealed class HtmlTokenizer
 
     private HtmlTokenType ReturnToken()
     {
-        if (_characterCount > 0)
+        if (_characters.Length > 0)
         {
             // Return the character run first; the other token is returned by the next call
             ReturnCharacters();
@@ -554,8 +552,7 @@ internal sealed class HtmlTokenizer
     private void ReturnCharacters()
     {
         (_emittedCharacters, _characters) = (_characters, _emittedCharacters);
-        _emittedCharacterCount = _characterCount;
-        _characterCount = 0;
+        _characters.Clear();
         TokenType = HtmlTokenType.Characters;
     }
 
@@ -716,16 +713,7 @@ internal sealed class HtmlTokenizer
     // Emitting
     // ----------------------------------------------------------------------------------------------------------------
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void EmitCharacter(char c)
-    {
-        if (_characterCount == _characters.Length)
-        {
-            Array.Resize(ref _characters, _characters.Length * 2);
-        }
-
-        _characters[_characterCount++] = c;
-    }
+    private void EmitCharacter(char c) => _characters.Append(c);
 
     private void EmitCharacter(int codePoint)
     {
@@ -741,24 +729,7 @@ internal sealed class HtmlTokenizer
         EmitCharacter(buffer[1]);
     }
 
-    private void EmitCharacters(ReadOnlySpan<char> value)
-    {
-        if (_characterCount + value.Length > _characters.Length)
-        {
-            Array.Resize(ref _characters, Math.Max(_characters.Length * 2, _characterCount + value.Length));
-        }
-
-        value.CopyTo(_characters.AsSpan(_characterCount));
-        _characterCount += value.Length;
-    }
-
-    private void EmitCharacters(StringBuilder value)
-    {
-        foreach (var chunk in value.GetChunks())
-        {
-            EmitCharacters(chunk.Span);
-        }
-    }
+    private void EmitCharacters(StringBuilder value) => _characters.Append(value);
 
     private void EmitEndOfFile()
     {
@@ -790,7 +761,7 @@ internal sealed class HtmlTokenizer
     private void EmitTag()
     {
         FinishAttribute();
-        var name = _nameTable.GetTagName(_tagName, out var tagId);
+        var name = _nameTable.GetTagName(_tagName.Span, out var tagId);
         var attributes = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_attributes);
         if (_isEndTag)
         {
@@ -883,10 +854,10 @@ internal sealed class HtmlTokenizer
             return;
         }
 
-        var name = _nameTable.GetAttributeName(_attributeName);
+        var name = _nameTable.GetAttributeName(_attributeName.Span);
 
         // The classes repeat a lot in a document (unlike e.g. the URLs): their values are shared
-        _attributes.Add(new HtmlTokenAttribute(name, ReferenceEquals(name, "class") ? _nameTable.GetAttributeValue(_attributeValue) : _attributeValue.ToString()));
+        _attributes.Add(new HtmlTokenAttribute(name, ReferenceEquals(name, "class") ? _nameTable.GetAttributeValue(_attributeValue.Span) : _attributeValue.ToString()));
     }
 
     private bool IsAppropriateEndTag() => _lastStartTagName is not null && _tagName.Equals(_lastStartTagName);
@@ -959,7 +930,7 @@ internal sealed class HtmlTokenizer
 
                     if (index > 0)
                     {
-                        EmitCharacters(remaining[..index]);
+                        _characters.Append(_input, _position, index);
                         _position += index;
                         return;
                     }
@@ -1004,7 +975,7 @@ internal sealed class HtmlTokenizer
 
                     if (index > 0)
                     {
-                        EmitCharacters(remaining[..index]);
+                        _characters.Append(_input, _position, index);
                         _position += index;
                         return;
                     }
@@ -1050,7 +1021,7 @@ internal sealed class HtmlTokenizer
 
                     if (index > 0)
                     {
-                        EmitCharacters(remaining[..index]);
+                        _characters.Append(_input, _position, index);
                         _position += index;
                         return;
                     }
@@ -1091,7 +1062,7 @@ internal sealed class HtmlTokenizer
 
                     if (index > 0)
                     {
-                        EmitCharacters(remaining[..index]);
+                        _characters.Append(_input, _position, index);
                         _position += index;
                         return;
                     }
@@ -1206,7 +1177,7 @@ internal sealed class HtmlTokenizer
 
                     if (index > 0)
                     {
-                        _tagName.Append(remaining[..index]);
+                        _tagName.Append(_input, _position, index);
                         _position += index;
                         return;
                     }
@@ -1234,7 +1205,7 @@ internal sealed class HtmlTokenizer
                         EmitEndOfFile();
                         break;
                     default:
-                        _tagName.Append(ToAsciiLower((char)c));
+                        _tagName.AppendConsumed(ToAsciiLower((char)c), _input, _position - 1);
                         break;
                 }
 
@@ -1650,7 +1621,7 @@ internal sealed class HtmlTokenizer
 
                     if (index > 0)
                     {
-                        _attributeName.Append(remaining[..index]);
+                        _attributeName.Append(_input, _position, index);
                         _position += index;
                         return;
                     }
@@ -1676,7 +1647,7 @@ internal sealed class HtmlTokenizer
                         _attributeName.Append((char)c);
                         break;
                     default:
-                        _attributeName.Append(ToAsciiLower((char)c));
+                        _attributeName.AppendConsumed(ToAsciiLower((char)c), _input, _position - 1);
                         break;
                 }
 
@@ -1757,7 +1728,7 @@ internal sealed class HtmlTokenizer
 
                     if (index > 0)
                     {
-                        _attributeValue.Append(remaining[..index]);
+                        _attributeValue.Append(_input, _position, index);
                         _position += index;
                         return;
                     }
@@ -1786,7 +1757,7 @@ internal sealed class HtmlTokenizer
                 }
                 else
                 {
-                    _attributeValue.Append((char)c);
+                    _attributeValue.AppendConsumed((char)c, _input, _position - 1);
                 }
 
                 break;
@@ -1806,7 +1777,7 @@ internal sealed class HtmlTokenizer
 
                     if (index > 0)
                     {
-                        _attributeValue.Append(remaining[..index]);
+                        _attributeValue.Append(_input, _position, index);
                         _position += index;
                         return;
                     }
@@ -1832,14 +1803,14 @@ internal sealed class HtmlTokenizer
                         break;
                     case '"' or '\'' or '<' or '=' or '`':
                         ReportError("unexpected-character-in-unquoted-attribute-value");
-                        _attributeValue.Append((char)c);
+                        _attributeValue.AppendConsumed((char)c, _input, _position - 1);
                         break;
                     case Eof:
                         ReportError("eof-in-tag");
                         EmitEndOfFile();
                         break;
                     default:
-                        _attributeValue.Append((char)c);
+                        _attributeValue.AppendConsumed((char)c, _input, _position - 1);
                         break;
                 }
 
@@ -1917,7 +1888,7 @@ internal sealed class HtmlTokenizer
                         _commentData.Append('\U0000FFFD');
                         break;
                     default:
-                        _commentData.Append((char)c);
+                        _commentData.AppendConsumed((char)c, _input, _position - 1);
                         break;
                 }
 
@@ -2033,7 +2004,7 @@ internal sealed class HtmlTokenizer
 
                     if (index > 0)
                     {
-                        _commentData.Append(remaining[..index]);
+                        _commentData.Append(_input, _position, index);
                         _position += index;
                         return;
                     }
@@ -2059,7 +2030,7 @@ internal sealed class HtmlTokenizer
                         EmitEndOfFileAfterPendingToken();
                         break;
                     default:
-                        _commentData.Append((char)c);
+                        _commentData.AppendConsumed((char)c, _input, _position - 1);
                         break;
                 }
 
@@ -2711,7 +2682,7 @@ internal sealed class HtmlTokenizer
                 {
                     if (IsConsumedAsPartOfAnAttribute)
                     {
-                        _attributeValue.Append((char)c);
+                        _attributeValue.AppendConsumed((char)c, _input, _position - 1);
                     }
                     else
                     {
@@ -3027,7 +2998,7 @@ internal sealed class HtmlTokenizer
 
         if (c != Eof && char.IsAsciiLetter((char)c))
         {
-            _tagName.Append(ToAsciiLower((char)c));
+            _tagName.AppendConsumed(ToAsciiLower((char)c), _input, _position - 1);
             _temporaryBuffer.Append((char)c);
             return;
         }

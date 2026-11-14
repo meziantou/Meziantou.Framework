@@ -1,3 +1,5 @@
+using Meziantou.Framework.WebPlatform.Scripting;
+
 namespace Meziantou.Framework.WebPlatform.WebAssembly;
 
 /// <summary>A compiled module. It is immutable: it can be shared by the agents (e.g. posted to a worker).</summary>
@@ -70,15 +72,45 @@ internal abstract class WasmFunction : WasmExtern
     public abstract void Invoke(ReadOnlySpan<WasmValue> arguments, Span<WasmValue> results);
 }
 
-/// <summary>A memory (a memory address). The bytes of a memory that is not shared are a .NET array, replaced when the memory grows.</summary>
+/// <summary>
+/// A memory (a memory address). The bytes of a memory that is not shared are a .NET array, replaced when the memory grows.
+/// The bytes of a shared memory are a shared data block of the script engine (<see cref="SharedBytes"/>), which never
+/// moves: a shared memory can be used by any agent (its methods can be called from any thread).
+/// </summary>
 internal abstract class WasmMemory : WasmExtern
 {
     public override WasmExternKind Kind => WasmExternKind.Memory;
 
     public abstract WasmMemoryType Type { get; }
 
-    /// <summary>The bytes of the memory (the length is the size of the memory).</summary>
+    /// <summary>The bytes of a memory that is not shared (the length is the size of the memory).</summary>
+    /// <exception cref="NotSupportedException">The memory is shared.</exception>
     public abstract byte[] Data { get; }
+
+    /// <summary>The bytes of a shared memory, or null for a memory that is not shared.</summary>
+    public virtual WasmSharedMemoryBytes? SharedBytes => null;
+
+    /// <summary>
+    /// Notifies the waiters of an address of a shared memory (<c>memory.atomic.notify</c>), from any thread, and returns the
+    /// number of waiters notified.
+    /// </summary>
+    /// <exception cref="WasmTrapException">The address is out of bounds or not aligned.</exception>
+    /// <exception cref="NotSupportedException">The memory is not shared.</exception>
+    public virtual uint AtomicNotify(ulong address, uint count) => throw new NotSupportedException("The memory is not shared");
+
+    /// <summary>
+    /// Blocks the calling thread until the waiter of an address of a shared memory is notified or the timeout elapses
+    /// (<c>memory.atomic.wait32</c> and <c>memory.atomic.wait64</c>), when the address contains <paramref name="expected"/>.
+    /// It can be called from any thread.
+    /// </summary>
+    /// <param name="address">The address: a multiple of <paramref name="size"/>.</param>
+    /// <param name="expected">The expected value (the low 32 bits for a 32-bit wait).</param>
+    /// <param name="size">The size of the value in bytes: 4 or 8.</param>
+    /// <param name="timeout">The maximum duration of the wait, or null to wait until notified.</param>
+    /// <param name="signal">Set by the native code of the wait right before it joins the waiters of the address, or null.</param>
+    /// <exception cref="WasmTrapException">The address is out of bounds or not aligned.</exception>
+    /// <exception cref="NotSupportedException">The memory is not shared.</exception>
+    public virtual WasmWaitResult AtomicWait(ulong address, long expected, int size, TimeSpan? timeout, WasmWaitSignal? signal = null) => throw new NotSupportedException("The memory is not shared");
 
     /// <summary>The size of the memory in pages.</summary>
     public abstract ulong Size { get; }
@@ -88,12 +120,85 @@ internal abstract class WasmMemory : WasmExtern
     public abstract ulong Grow(ulong delta);
 
     /// <summary>
+    /// Grows the memory to <paramref name="newSize"/> pages, and returns its previous size in pages: the memory does not
+    /// change when its size is <paramref name="newSize"/> or more. The agents that share a memory can grow it concurrently:
+    /// the memory of a shared memory grows to the new size, never beyond it.
+    /// </summary>
+    /// <exception cref="WasmAllocationException">The memory cannot grow.</exception>
+    public virtual ulong GrowTo(ulong newSize)
+    {
+        var size = Size;
+        if (newSize > size)
+        {
+            Grow(newSize - size);
+        }
+
+        return size;
+    }
+
+    /// <summary>
     /// Called after the bytes of the memory are replaced (the memory grew, by <see cref="Grow"/> or by a <c>memory.grow</c>
     /// instruction): the buffer of the memory must be refreshed (https://webassembly.github.io/spec/js-api/#refresh-the-memory-buffer).
     /// </summary>
     public Action<WasmMemory>? DataChanged { get; set; }
 
     protected void OnDataChanged() => DataChanged?.Invoke(this);
+}
+
+/// <summary>The result of <see cref="WasmMemory.AtomicWait"/>: the values of <c>memory.atomic.wait32</c>.</summary>
+internal enum WasmWaitResult
+{
+    Ok = 0,
+    NotEqual = 1,
+    TimedOut = 2,
+}
+
+/// <summary>
+/// The bytes of a shared memory: a growable shared data block of the script engine (the memory of the
+/// <c>SharedArrayBuffer</c> objects of the memory), allocated once for its capacity and pinned, so that its address never
+/// changes. The memory grows within the capacity. Created by <see cref="IWasmHost.CreateSharedMemoryBytes"/>. The memory
+/// keeps them alive as long as it is alive: they do not reference the agent that created them.
+/// </summary>
+internal sealed class WasmSharedMemoryBytes(IGrowableSharedDataBlock block, ulong capacity)
+{
+    private int _waitersInstalled;
+
+    /// <summary>The block of the script engine.</summary>
+    public IGrowableSharedDataBlock Block { get; } = block;
+
+    /// <summary>The shared data block of the script engine (see <c>IJsAdapter.GetSharedDataBlock</c>).</summary>
+    public object DataBlock => Block.DataBlock;
+
+    /// <summary>The address of the first byte, which never changes.</summary>
+    public nint Address { get; } = block.Address;
+
+    /// <summary>The number of bytes the memory can grow to.</summary>
+    public ulong Capacity { get; } = capacity;
+
+    /// <summary>The current size of the memory in bytes.</summary>
+    public ulong ByteLength => (ulong)Block.ByteLength;
+
+    /// <summary>Grows the bytes to <paramref name="newByteLength"/> (the new bytes are zeroed): false when it is less than the current length or greater than the capacity.</summary>
+    public bool TryGrow(ulong newByteLength) => newByteLength <= Capacity && Block.TryGrow((int)newByteLength);
+
+    /// <summary>Returns true the first time it is called: the waiters of the data block are installed once.</summary>
+    public bool TryBeginInstallWaiters() => Interlocked.Exchange(ref _waitersInstalled, 1) == 0;
+}
+
+/// <summary>
+/// Tells another thread that a thread is about to join the waiters of an address (see <see cref="WasmMemory.AtomicWait"/>):
+/// the native code of the wait sets it right before it waits, so that a notification sent once it is set reaches the wait,
+/// unless the thread stops for longer than the time the other thread waits after it sees it.
+/// </summary>
+internal sealed class WasmWaitSignal
+{
+    private byte[]? _flag;
+
+    /// <summary>Whether the thread of the wait is about to wait (or is waiting, or waited).</summary>
+    public bool IsSet => Volatile.Read(ref _flag) is { } flag && Volatile.Read(ref flag[0]) != 0;
+
+    /// <summary>Sets the bytes whose first byte the native code of the wait sets (a memory of the helper of the wait).</summary>
+    public void Attach(byte[] flag) => Volatile.Write(ref _flag, flag);
 }
 
 /// <summary>A table (a table address).</summary>

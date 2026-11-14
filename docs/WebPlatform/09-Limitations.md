@@ -72,8 +72,8 @@ fails.
 
 ## Scripting
 
-- WebAssembly threads are not supported: a shared `WebAssembly.Memory` can be created, grown and posted to the workers of
-  the agent cluster, but a module cannot import it nor declare a shared memory, and there are no atomic instructions.
+- The bytes of a shared `WebAssembly.Memory` are allocated for its maximum size, up to 2 GiB minus one page: a shared
+  memory cannot grow beyond. A `memory.atomic.wait32` instruction is not interrupted by the limits of the script engine.
 - JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising()`) is not supported.
 - The time spent on the styles and the layout is not measured: the long animation frames report a `styleDuration`, a
   `layoutDuration` and forced style and layout durations of 0, and no `presentationTime`.

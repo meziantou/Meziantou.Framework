@@ -12,8 +12,14 @@ namespace Meziantou.Framework.WebPlatform.Wasmtime;
 /// <remarks>
 /// <para>
 /// The WebAssembly 3.0 features are enabled (the reference types, the GC types, the exceptions, the tail calls, memory64,
-/// the multiple memories, the SIMD and relaxed SIMD instructions). The threads are not supported: the shared memories can
-/// only be created by JavaScript and cannot be imported by a module.
+/// the multiple memories, the SIMD and relaxed SIMD instructions), and the threads (the shared memories and the atomic
+/// instructions).
+/// </para>
+/// <para>
+/// The bytes of a shared memory are a shared data block of the script engine, allocated for the maximum size of the memory:
+/// the agents (the windows and the workers) share the memory, and <c>Atomics.wait</c> and <c>Atomics.notify</c> use the
+/// waiters of Wasmtime, so that they notify the <c>memory.atomic.wait32</c> waiters and are notified by
+/// <c>memory.atomic.notify</c>.
 /// </para>
 /// <para>
 /// The memories are .NET arrays, which the <c>ArrayBuffer</c> objects of JavaScript share. The WebAssembly code is
@@ -25,7 +31,8 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
     private readonly EngineHandle _engine;
     private readonly Timer _epochTimer;
     private WasmModule? _conversionsModule;
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<(ulong Minimum, ulong? Maximum, bool Is64), WasmModule> _memoryModules = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<(ulong Minimum, ulong? Maximum, bool Is64, bool Shared), WasmModule> _memoryModules = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<(ulong? Maximum, bool Is64, bool Wait), WasmModule> _atomicsModules = new();
     private int _disposed;
 
     /// <summary>Creates a runtime.</summary>
@@ -68,7 +75,8 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
         NativeMethods.wasmtime_config_epoch_interruption_set(config, value: true);
         NativeMethods.wasmtime_config_max_wasm_stack_set(config, (nuint)options.MaxStackSize);
 
-        // WebAssembly 3.0 (https://webassembly.org/features/), without the threads (the shared memories are not .NET arrays)
+        // WebAssembly 3.0 (https://webassembly.org/features/) and the threads (the shared memories are created by the memory
+        // creator too, see SharedLinearMemory)
         NativeMethods.wasmtime_config_wasm_bulk_memory_set(config, value: true);
         NativeMethods.wasmtime_config_wasm_multi_value_set(config, value: true);
         NativeMethods.wasmtime_config_wasm_reference_types_set(config, value: true);
@@ -83,8 +91,8 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
         NativeMethods.wasmtime_config_wasm_multi_memory_set(config, value: true);
         NativeMethods.wasmtime_config_wasm_memory64_set(config, value: true);
         NativeMethods.wasmtime_config_wasm_wide_arithmetic_set(config, value: true);
-        NativeMethods.wasmtime_config_wasm_threads_set(config, value: false);
-        NativeMethods.wasmtime_config_shared_memory_set(config, value: false);
+        NativeMethods.wasmtime_config_wasm_threads_set(config, value: true);
+        NativeMethods.wasmtime_config_shared_memory_set(config, value: true);
 
         // The traps are detected by explicit checks, not by signal handlers that would compete with the ones of .NET
         NativeMethods.wasmtime_config_signals_based_traps_set(config, value: false);
@@ -216,7 +224,103 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
     }
 
     /// <summary>Returns a module that exports a memory of a type (see <see cref="WasmtimeModules.CreateMemoryModule"/>), compiled once per type.</summary>
-    internal WasmModule GetMemoryModule(WasmMemoryType type) => _memoryModules.GetOrAdd((type.Minimum, type.Maximum, type.Is64), static (key, runtime) => runtime.Compile(WasmtimeModules.CreateMemoryModule(new WasmMemoryType(key.Minimum, key.Maximum, key.Is64, shared: false))), this);
+    internal WasmModule GetMemoryModule(WasmMemoryType type) => _memoryModules.GetOrAdd((type.Minimum, type.Maximum, type.Is64, type.Shared), static (key, runtime) => runtime.Compile(WasmtimeModules.CreateMemoryModule(new WasmMemoryType(key.Minimum, key.Maximum, key.Is64, key.Shared))), this);
+
+    /// <summary>
+    /// Returns the wrapper of a shared memory, and takes the ownership of <paramref name="sharedMemory"/> (a
+    /// <c>wasmtime_sharedmemory_t*</c>): the same wrapper for the same memory, whatever the store or the reference.
+    /// </summary>
+    internal unsafe WasmtimeSharedMemory GetSharedMemory(nint sharedMemory)
+    {
+        SharedMemoryHandle? handle = new(sharedMemory);
+        try
+        {
+            if (SharedLinearMemory.Find((nint)NativeMethods.wasmtime_sharedmemory_data(sharedMemory)) is not { } linearMemory)
+                throw new InvalidOperationException("The shared memory was not created by the runtime");
+
+            lock (linearMemory)
+            {
+                if (linearMemory.Wrapper is { } wrapper && wrapper.TryGetTarget(out var existing))
+                    return existing;
+
+                var type = NativeMethods.wasmtime_sharedmemory_type(sharedMemory);
+                WasmMemoryType memoryType;
+                try
+                {
+                    memoryType = WasmtimeTypes.ReadMemoryType(type);
+                }
+                finally
+                {
+                    NativeMethods.wasm_memorytype_delete(type);
+                }
+
+                var memory = new WasmtimeSharedMemory(this, handle, linearMemory.Bytes, memoryType);
+                handle = null;
+                linearMemory.Wrapper = new WeakReference<WasmtimeSharedMemory>(memory);
+                return memory;
+            }
+        }
+        finally
+        {
+            handle?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// <c>memory.atomic.notify</c> on a shared memory, from any thread: the instructions run in a store of their own (see
+    /// <see cref="WasmtimeModules.CreateAtomicNotifyModule"/> and <see cref="WasmtimeModules.CreateAtomicWaitModule"/>), so that they use the waiters of Wasmtime.
+    /// </summary>
+    internal uint AtomicNotify(WasmtimeSharedMemory memory, ulong address, uint count)
+    {
+        using var store = new WasmtimeStore(this, AtomicsHost.Instance);
+        var notify = (WasmFunction)GetExport(store.Instantiate(GetAtomicsModule(memory.Type, wait: false), [memory]), "notify");
+        Span<WasmValue> results = [default];
+        notify.Invoke([ToAddress(memory, address), WasmValue.FromI32(unchecked((int)count))], results);
+        return unchecked((uint)results[0].I32);
+    }
+
+    /// <summary><c>memory.atomic.wait32</c> and <c>memory.atomic.wait64</c> on a shared memory, from any thread (see <see cref="AtomicNotify"/>): it blocks the calling thread.</summary>
+    internal WasmWaitResult AtomicWait(WasmtimeSharedMemory memory, ulong address, long expected, int size, TimeSpan? timeout, WasmWaitSignal? signal)
+    {
+        // A negative timeout waits until notified
+        var nanoseconds = timeout is { } duration ? (duration.Ticks >= long.MaxValue / 100 ? long.MaxValue : Math.Max(duration.Ticks, 0) * 100) : -1;
+        using var store = new WasmtimeStore(this, AtomicsHost.Instance);
+        var instance = store.Instantiate(GetAtomicsModule(memory.Type, wait: true), [memory]);
+        var wait = (WasmFunction)GetExport(instance, size == 8 ? "wait64" : "wait32");
+
+        // The bytes of the memory of the helper are a pinned .NET array: the signal keeps them alive after the store is disposed
+        signal?.Attach(((WasmMemory)GetExport(instance, "signal")).Data);
+        Span<WasmValue> results = [default];
+        wait.Invoke([ToAddress(memory, address), size == 8 ? WasmValue.FromI64(expected) : WasmValue.FromI32(unchecked((int)expected)), WasmValue.FromI64(nanoseconds)], results);
+        return (WasmWaitResult)results[0].I32;
+    }
+
+    private static WasmExtern GetExport(WasmInstance instance, string name)
+    {
+        foreach (var (exportName, value) in instance.Exports)
+        {
+            if (exportName == name)
+                return value;
+        }
+
+        throw new InvalidOperationException($"The export '{name}' does not exist");
+    }
+
+    private static WasmValue ToAddress(WasmtimeSharedMemory memory, ulong address) => memory.Type.Is64 ? WasmValue.FromI64(unchecked((long)address)) : WasmValue.FromI32(unchecked((int)(uint)address));
+
+    private WasmModule GetAtomicsModule(WasmMemoryType type, bool wait) => _atomicsModules.GetOrAdd((type.Maximum, type.Is64, wait), static (key, runtime) => runtime.Compile(key.Wait ? WasmtimeModules.CreateAtomicWaitModule(key.Maximum, key.Is64) : WasmtimeModules.CreateAtomicNotifyModule(key.Maximum, key.Is64)), this);
+
+    /// <summary>The host of the stores of the atomic operations: they are not interrupted, and they create no memory.</summary>
+    private sealed class AtomicsHost : IWasmHost
+    {
+        public static AtomicsHost Instance { get; } = new();
+
+        public void CheckInterrupt()
+        {
+        }
+
+        public WasmSharedMemoryBytes CreateSharedMemoryBytes(ulong byteLength, ulong capacity) => throw new WasmAllocationException("The store cannot create a shared memory");
+    }
 
     /// <summary>The module of the conversions between the any and the extern hierarchies (see <see cref="WasmtimeModules.Conversions"/>).</summary>
     internal WasmModule ConversionsModule => LazyInitializer.EnsureInitialized(ref _conversionsModule, () => Compile(WasmtimeModules.Conversions));

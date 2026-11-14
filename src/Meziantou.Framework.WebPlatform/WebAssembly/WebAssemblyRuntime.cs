@@ -35,4 +35,13 @@ internal interface IWasmHost
     /// timeout of the script engine). The exception is thrown by the call into WebAssembly.
     /// </summary>
     void CheckInterrupt();
+
+    /// <summary>
+    /// Creates the bytes of a shared memory (a growable shared data block of the script engine, so that the
+    /// <c>SharedArrayBuffer</c> objects of the memory share them). It is called by the store while it creates a shared memory.
+    /// </summary>
+    /// <param name="byteLength">The initial size of the memory in bytes.</param>
+    /// <param name="capacity">The maximum size of the memory in bytes: the bytes are allocated for it.</param>
+    /// <exception cref="WasmAllocationException">The bytes cannot be allocated.</exception>
+    WasmSharedMemoryBytes CreateSharedMemoryBytes(ulong byteLength, ulong capacity);
 }

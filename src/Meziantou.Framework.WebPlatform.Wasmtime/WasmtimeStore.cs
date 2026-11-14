@@ -229,6 +229,9 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
                 WasmtimeGlobal global when global.Store == this => new WasmtimeExtern { Kind = WasmtimeExternKind.Global, Global = global.Handle },
                 WasmtimeTable table when table.Store == this => new WasmtimeExtern { Kind = WasmtimeExternKind.Table, Table = table.Handle },
                 WasmtimeMemory memory when memory.Store == this => new WasmtimeExtern { Kind = WasmtimeExternKind.Memory, Memory = memory.Handle },
+
+                // Wasmtime clones the reference: the shared memory stays alive while the store uses it
+                WasmtimeSharedMemory sharedMemory when sharedMemory.Runtime == _runtime => new WasmtimeExtern { Kind = WasmtimeExternKind.SharedMemory, SharedMemory = sharedMemory.Handle.DangerousGetHandle() },
                 WasmtimeTag tag when tag.Store == this => new WasmtimeExtern { Kind = WasmtimeExternKind.Tag, Tag = tag.Handle },
                 _ => throw new WasmLinkException($"The import #{i} cannot be imported by this module"),
             };
@@ -248,6 +251,7 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
             }
 
             GC.KeepAlive(wasmtimeModule);
+            GC.KeepAlive(imports);
             ThrowIfFailed(error, trap, static message => new WasmLinkException(message));
         }
         finally
@@ -271,6 +275,12 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
             var exportName = System.Text.Encoding.UTF8.GetString(name, checked((int)nameLength));
             if (sections.GetReexportedImport(exportName) is { } importIndex && importIndex < imports.Count)
             {
+                // The extern of a shared memory owns a reference to it, which the import does not need
+                if (item.Kind == WasmtimeExternKind.SharedMemory)
+                {
+                    NativeMethods.wasmtime_sharedmemory_delete(item.SharedMemory);
+                }
+
                 exports.Add((exportName, imports[importIndex]));
                 continue;
             }
@@ -288,7 +298,10 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
         WasmtimeExternKind.Table => GetTable(item->Table, tableLimits),
         WasmtimeExternKind.Memory => GetMemory(item->Memory),
         WasmtimeExternKind.Tag => GetTag(item->Tag),
-        _ => throw new NotSupportedException("The shared memories are not supported"),
+
+        // The extern owns the reference to the shared memory: the wrapper takes it
+        WasmtimeExternKind.SharedMemory => _runtime.GetSharedMemory(item->SharedMemory),
+        _ => throw new NotSupportedException("The kind of the extern is not supported"),
     };
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -496,13 +509,24 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
 
     public override WasmMemory CreateMemory(WasmMemoryType type)
     {
-        if (type.Shared)
-            throw new WasmAllocationException("The shared memories are not supported");
-
-        // The memories created by wasmtime_memory_new are not allocated by the memory creator: a module creates the memory
-        var instance = Instantiate(_runtime.GetMemoryModule(type), []);
-        return (WasmtimeMemory)instance.Exports[0].Value;
+        // The memories created by wasmtime_memory_new and wasmtime_sharedmemory_new are not allocated by the memory creator:
+        // a module creates the memory
+        try
+        {
+            var instance = Instantiate(_runtime.GetMemoryModule(type), []);
+            return (WasmMemory)instance.Exports[0].Value;
+        }
+        catch (WasmLinkException ex)
+        {
+            throw new WasmAllocationException(ex.Message);
+        }
     }
+
+    /// <summary>Called by the memory creator for the shared memories created by this store (see <see cref="SharedLinearMemory"/>).</summary>
+    internal WasmSharedMemoryBytes CreateSharedMemoryBytes(ulong byteLength, ulong capacity) => _host.CreateSharedMemoryBytes(byteLength, capacity);
+
+    /// <summary>Sets the exception of the host thrown by the running operation (see <see cref="ThrowIfFailed"/>).</summary>
+    internal void SetPendingException(Exception exception) => _pendingException = ExceptionDispatchInfo.Capture(exception);
 
     internal ulong GrowMemory(WasmtimeMemory memory, ulong delta)
     {

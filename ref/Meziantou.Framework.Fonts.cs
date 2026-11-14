@@ -453,6 +453,8 @@ namespace Meziantou.Framework.Fonts
         public Meziantou.Framework.Fonts.FontEnvironment Environment { get => throw null; }
         public Meziantou.Framework.Fonts.FontResourceLimits Limits { get => throw null; }
         public bool UseEmbeddedBitmaps { get => throw null; }
+        public string? GetWoffMetadata() => throw null;
+        public System.ReadOnlyMemory<byte> GetWoffPrivateData() => throw null;
     }
 
     public abstract class FontEnvironment

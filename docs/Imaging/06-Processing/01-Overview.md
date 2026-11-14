@@ -21,6 +21,7 @@ original.
 | Make black and white | [Threshold](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Threshold) | [Binarization](09-Binarization.md) |
 | Measure how similar two images look, draw their differences | [ImageSimilarity](cref:Meziantou.Framework.Imaging.ImageSimilarity) | [Comparing images](10-ComparingImages.md) |
 | Erode, dilate, open, close, extract small bright or dark details | [Erode](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Erode), [Dilate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Dilate), [MorphologicalOpen](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.MorphologicalOpen), [MorphologicalClose](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.MorphologicalClose), [TopHat](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.TopHat), [BlackHat](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BlackHat) | [Morphology](11-Morphology.md) |
+| Find straight lines and corners | [DetectLines](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.DetectLines), [DetectCorners](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.DetectCorners) | [Lines and corners](14-LinesAndCorners.md) |
 | Remove scratches, captions and small objects | [Inpaint](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Inpaint), [PixelMask](cref:Meziantou.Framework.Imaging.PixelMask) | [Inpainting](13-Inpainting.md) |
 | Run a filter or a processor of your own on every frame | [ApplyRowOperation](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyRowOperation), [ApplyNeighborhoodOperation](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyNeighborhoodOperation), [ApplyProcessor](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyProcessor) | [Custom operations](12-CustomOperations.md) |
 
@@ -105,3 +106,5 @@ processed concurrently, with the same result. See [Performance](../11-Performanc
 - [Morphology](11-Morphology.md): erosion, dilation, opening, closing and top-hat transforms.
 - [Custom operations](12-CustomOperations.md): your own filters and processors, on every frame.
 - [Inpainting](13-Inpainting.md): fill scratches, captions and small objects from the pixels around them.
+- [Lines and corners](14-LinesAndCorners.md): the Hough transform of lines, and the Harris, Shi-Tomasi and FAST corner
+  detectors.

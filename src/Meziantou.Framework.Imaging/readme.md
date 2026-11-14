@@ -39,7 +39,7 @@ color conversion, and bounded-memory streaming.
   `RgbaHalf`) for scene-referred and high dynamic range data, and two CMYK ones (`Cmyk32`, `Cmyk64`) that keep the inks
   of print images
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
-  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions and resizing (seam carving), inpainting, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions and resizing (seam carving), inpainting, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians, Canny), Hough line and corner detection (Harris, Shi-Tomasi, FAST), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -779,7 +779,8 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
 `Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `SeamCarve` (a
 content-aware resize, see [Content-aware resize](#content-aware-resize)), `Inpaint` (a mask filled from the pixels
-around it, see [Inpainting](#inpainting)), `Pad` (a border of a given
+around it, see [Inpainting](#inpainting)), `DetectLines` and `DetectCorners` (analyses of one frame, see
+[Lines and corners](#lines-and-corners)), `Pad` (a border of a given
 width on each side), `ExtendCanvas` (a larger canvas, with the image at one of nine anchors), `Rotate` (exact 90/180/270
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
@@ -1350,6 +1351,41 @@ public static void RemoveScratches(string photoPath, string maskPath, string out
     // The pixels of the mask are filled from the pixels around them; a larger radius gives smoother fills
     photo.Inpaint(mask, new InpaintingOptions { Radius = 4 });
     photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Lines and corners
+
+`ImageFrame.DetectLines(options)` returns the straight lines of a frame by the Hough transform (Duda and Hart, 1972): the
+Canny edges of the frame (`HoughLineOptions.EdgeOptions`) vote, at their pixel index, for the lines `ρ = x cos θ + y sin
+θ` at the angles `θ` from 0 to 180 degrees by `AngleStep` within 30 degrees of the sector of their gradient (O'Gorman
+and Clowes, 1976; sines and cosines that do not depend on the platform) and the distances rounded to `DistanceStep`; a line is a peak of the votes, with at least `MinVotes` (a quarter of the smaller side by
+default; among equal votes, the smaller sum of rounding residuals of the votes wins), the lines are sorted by votes
+(ties by residuals, angle, then distance), and of two lines within both `MinAngleSeparation` and `MinDistanceSeparation` (5 degrees and 5 pixels) the
+first is kept, up to `MaxLines` (32). A `HoughLine` (`Angle`, `Distance` in the coordinates of the pixel centers,
+`Votes`, `Slope`) is infinite. `ImageFrame.DetectCorners(options)` returns the corners of the luma premultiplied by
+alpha, by `CornerDetectionMethod.Harris` (`det(M) - k trace(M)²` of the structure tensor of the Sobel gradients in a
+Gaussian window of `Sigma`, `HarrisK` 0.04), `ShiTomasi` (its smaller eigenvalue) or `Fast` (FAST-9 of Rosten and
+Drummond: 9 contiguous pixels of the circle of 16 brighter or darker than the center by `FastThreshold`); a corner is a
+local maximum above `ResponseThreshold` times the strongest response (or a FAST corner), and the strongest are kept at
+least `MinDistance` apart, up to `MaxCorners`, sorted by response, then row, then column. Both are deterministic, read
+one frame without changing it, and charge their working memory to the image.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_DetectLines;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static IReadOnlyList<HoughLine> FindStraightLines(string inputPath)
+{
+    using var photo = Image.Load(inputPath);
+
+    // The 8 strongest lines of the first frame: x cos(Angle) + y sin(Angle) = Distance, in pixels
+    var lines = photo.Frames[0].DetectLines(new HoughLineOptions { MaxLines = 8 });
+    foreach (var line in lines)
+    {
+        Console.WriteLine($"{line.Slope:F1} degrees from horizontal, {line.Votes} edge pixels");
+    }
+
+    return lines;
 }
 ```
 <!-- endref -->

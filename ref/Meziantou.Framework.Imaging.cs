@@ -620,6 +620,25 @@ namespace Meziantou.Framework.Imaging
         LinearSrgb = 1,
     }
 
+    public enum CornerDetectionMethod
+    {
+        Harris = 0,
+        ShiTomasi = 1,
+        Fast = 2,
+    }
+
+    public sealed class CornerDetectionOptions
+    {
+        public static Meziantou.Framework.Imaging.CornerDetectionOptions Default { get => throw null; }
+        public double FastThreshold { get => throw null; init { } }
+        public double HarrisK { get => throw null; init { } }
+        public int MaxCorners { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.CornerDetectionMethod Method { get => throw null; init { } }
+        public int MinDistance { get => throw null; init { } }
+        public double ResponseThreshold { get => throw null; init { } }
+        public double Sigma { get => throw null; init { } }
+    }
+
     public enum CropEnergy
     {
         Edges = 0,
@@ -836,6 +855,33 @@ namespace Meziantou.Framework.Imaging
         public bool ShareHistogramAcrossFrames { get => throw null; init { } }
         public int TileCountX { get => throw null; init { } }
         public int TileCountY { get => throw null; init { } }
+    }
+
+    public readonly struct HoughLine : System.IEquatable<Meziantou.Framework.Imaging.HoughLine>
+    {
+        public double Angle { get => throw null; }
+        public double Distance { get => throw null; }
+        public double Slope { get => throw null; }
+        public int Votes { get => throw null; }
+        public HoughLine(double angle, double distance, int votes) { }
+        public bool Equals(Meziantou.Framework.Imaging.HoughLine other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.HoughLine left, Meziantou.Framework.Imaging.HoughLine right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.HoughLine left, Meziantou.Framework.Imaging.HoughLine right) => throw null;
+    }
+
+    public sealed class HoughLineOptions
+    {
+        public double AngleStep { get => throw null; init { } }
+        public static Meziantou.Framework.Imaging.HoughLineOptions Default { get => throw null; }
+        public double DistanceStep { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.CannyEdgeOptions EdgeOptions { get => throw null; init { } }
+        public int MaxLines { get => throw null; init { } }
+        public double MinAngleSeparation { get => throw null; init { } }
+        public double MinDistanceSeparation { get => throw null; init { } }
+        public int? MinVotes { get => throw null; init { } }
     }
 
     public readonly struct Hsl : System.IEquatable<Meziantou.Framework.Imaging.Hsl>
@@ -1088,6 +1134,21 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.OpenExrDecodingOptions OpenExrDecoding { get => throw null; init { } }
     }
 
+    public readonly struct ImageCorner : System.IEquatable<Meziantou.Framework.Imaging.ImageCorner>
+    {
+        public Meziantou.Framework.Imaging.Point Location { get => throw null; }
+        public double Response { get => throw null; }
+        public int X { get => throw null; }
+        public int Y { get => throw null; }
+        public ImageCorner(int x, int y, double response) { }
+        public bool Equals(Meziantou.Framework.Imaging.ImageCorner other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.ImageCorner left, Meziantou.Framework.Imaging.ImageCorner right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.ImageCorner left, Meziantou.Framework.Imaging.ImageCorner right) => throw null;
+    }
+
     public sealed class ImageDecodeOptions
     {
         public Meziantou.Framework.Imaging.CieLabConversionOptions? CieLabConversion { get => throw null; init { } }
@@ -1300,8 +1361,10 @@ namespace Meziantou.Framework.Imaging
         public static void Crop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rectangle rectangle, System.Threading.CancellationToken cancellationToken = default) { }
         public static void DetectCannyEdges(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.CannyEdgeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void DetectCannyEdges(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.CannyEdgeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.ImageCorner> DetectCorners(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.CornerDetectionOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static void DetectEdges(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.EdgeDetector detector, bool grayscale = true, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void DetectEdges(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.EdgeDetector detector, bool grayscale = true, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.HoughLine> DetectLines(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.HoughLineOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static void Dilate(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.StructuringElement element, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Dilate(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.StructuringElement element, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Equalize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.HistogramEqualizationOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }

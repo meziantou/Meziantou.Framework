@@ -2872,4 +2872,165 @@ public sealed class ConvolutionTests
         Assert.Equal(new Gray8(7), image.Frames[0][1, 1]);
         Assert.Throws<ArgumentNullException>(() => ((Image)null!).DetectCannyEdges());
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Hough lines and corners: the images are made of known lines and corners, and the expectations are their positions,
+    // within the pixel or two by which the edges of the Canny detector and the corner responses spread
+    // -----------------------------------------------------------------------------------------------------------------
+
+    #region DetectLines_FindTheEdgesOfAPage
+    [Fact]
+    public void DetectLines_FindTheEdgesOfAPage()
+    {
+        // A light page on a dark desk: its edges are the lines x = 12, x = 52, y = 10 and y = 40
+        using var photo = new Image<Rgb24>(64, 48, new Rgb24(40, 40, 40));
+        for (var y = 10; y < 40; y++)
+        {
+            for (var x = 12; x < 52; x++)
+            {
+                photo.Frames[0][x, y] = new Rgb24(240, 240, 230);
+            }
+        }
+
+        // The four strongest lines, within the degree or two by which the Canny edges round the corners of the page.
+        // Vertical lines have an angle near 0 (x = distance), horizontal ones near 90 (y = distance)
+        var lines = photo.Frames[0].DetectLines(new HoughLineOptions { MaxLines = 4 });
+
+        Assert.Equal(4, lines.Count);
+        var vertical = lines.Where(line => Math.Abs(line.Slope) >= 88).Select(line => Math.Abs(line.Distance)).Order().ToArray();
+        var horizontal = lines.Where(line => Math.Abs(line.Slope) <= 2).Select(line => line.Distance).Order().ToArray();
+        Assert.HasCount(2, vertical);
+        Assert.HasCount(2, horizontal);
+        Assert.InRange(vertical[0], 10, 14);
+        Assert.InRange(vertical[1], 50, 54);
+        Assert.InRange(horizontal[0], 8, 12);
+        Assert.InRange(horizontal[1], 38, 42);
+    }
+    #endregion
+
+    [Fact]
+    public void DetectLinesFindsADiagonalEdge()
+    {
+        // White above the diagonal y = x: the edge is the line -x sin 45 + y cos 45 = 0, of normal angle 135 and distance 0
+        using var image = new Image<Gray8>(40, 40);
+        for (var y = 0; y < 40; y++)
+        {
+            for (var x = y + 1; x < 40; x++)
+            {
+                image.Frames[0][x, y] = new Gray8(255);
+            }
+        }
+
+        var lines = image.Frames[0].DetectLines(cancellationToken: Ct);
+        var strongest = lines[0];
+        Assert.InRange(strongest.Angle, 134, 136);
+        Assert.InRange(strongest.Distance, -2, 2);
+        Assert.InRange(strongest.Slope, 44, 46);
+
+        // The same frame gives the same lines, and the options bound them
+        Assert.Equal(lines, image.Frames[0].DetectLines(cancellationToken: Ct));
+        Assert.Single(image.Frames[0].DetectLines(new HoughLineOptions { MaxLines = 1 }, Ct));
+        Assert.Empty(image.Frames[0].DetectLines(new HoughLineOptions { MinVotes = 1000 }, Ct));
+        var fine = image.Frames[0].DetectLines(new HoughLineOptions { AngleStep = 0.25, DistanceStep = 0.5 }, Ct)[0];
+        Assert.InRange(fine.Angle, 134.5, 135.5);
+
+        // A flat frame has no edge, so no line; the frame is not changed
+        using var flat = new Image<Rgba64>(10, 10, new Rgba64(1000, 2000, 3000, 65535));
+        Assert.Empty(flat.Frames[0].DetectLines(cancellationToken: Ct));
+        Assert.Equal(new Rgba64(1000, 2000, 3000, 65535), flat.Frames[0][5, 5]);
+    }
+
+    [Fact]
+    public void DetectLinesValidatesItsArguments()
+    {
+        using var image = new Image<Rgb24>(4, 4);
+        Assert.Throws<ArgumentNullException>(() => ((ImageFrame)null!).DetectLines());
+        Assert.Throws<ArgumentException>(() => image.Frames[0].DetectLines(new HoughLineOptions { EdgeOptions = new CannyEdgeOptions { LowThreshold = 0.5, HighThreshold = 0.4 } }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HoughLineOptions { AngleStep = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HoughLineOptions { DistanceStep = 0.1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HoughLineOptions { MinVotes = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HoughLineOptions { MaxLines = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HoughLineOptions { MinAngleSeparation = 91 });
+        Assert.Throws<ArgumentNullException>(() => new HoughLineOptions { EdgeOptions = null! });
+        Assert.Throws<OperationCanceledException>(() => image.Frames[0].DetectLines(cancellationToken: new CancellationToken(canceled: true)));
+
+        using var cmyk = new Image<Cmyk32>(2, 2);
+        Assert.Throws<UnsupportedImageFeatureException>(() => cmyk.Frames[0].DetectLines());
+
+        using var limited = new Image<Gray8>(64, 64, new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 32_768 } });
+        Assert.Throws<ImageResourceLimitException>(() => limited.Frames[0].DetectLines());
+    }
+
+    #region DetectCorners_FindTheCornersOfARectangle
+    [Fact]
+    public void DetectCorners_FindTheCornersOfARectangle()
+    {
+        // A white square on black: its corners are the pixels (10, 10), (29, 10), (10, 29) and (29, 29)
+        using var image = new Image<Gray8>(40, 40);
+        for (var y = 10; y < 30; y++)
+        {
+            for (var x = 10; x < 30; x++)
+            {
+                image.Frames[0][x, y] = new Gray8(255);
+            }
+        }
+
+        var corners = image.Frames[0].DetectCorners();
+
+        Assert.Equal(4, corners.Count);
+        Point[] expected = [new(10, 10), new(29, 10), new(10, 29), new(29, 29)];
+        Assert.All(expected, point => Assert.Contains(corners, corner => Math.Abs(corner.X - point.X) <= 2 && Math.Abs(corner.Y - point.Y) <= 2));
+    }
+    #endregion
+
+    [Theory]
+    [InlineData(CornerDetectionMethod.Harris)]
+    [InlineData(CornerDetectionMethod.ShiTomasi)]
+    [InlineData(CornerDetectionMethod.Fast)]
+    public void DetectCornersFindsTheCornersOfASquare(CornerDetectionMethod method)
+    {
+        using var image = new Image<Rgba32>(40, 40, new Rgba32(20, 20, 20, 255));
+        for (var y = 10; y < 30; y++)
+        {
+            for (var x = 10; x < 30; x++)
+            {
+                image.Frames[0][x, y] = new Rgba32(230, 230, 230, 255);
+            }
+        }
+
+        var corners = image.Frames[0].DetectCorners(new CornerDetectionOptions { Method = method, MinDistance = 5 }, Ct);
+        Point[] expected = [new(10, 10), new(29, 10), new(10, 29), new(29, 29)];
+        Assert.Equal(4, corners.Count);
+        Assert.All(corners, corner => Assert.Contains(expected, point => Math.Abs(corner.X - point.X) <= 3 && Math.Abs(corner.Y - point.Y) <= 3));
+        Assert.All(expected, point => Assert.Contains(corners, corner => Math.Abs(corner.X - point.X) <= 3 && Math.Abs(corner.Y - point.Y) <= 3));
+
+        // Sorted by response, deterministic, bounded
+        Assert.Equal(corners.OrderByDescending(corner => corner.Response).ToArray(), corners.ToArray());
+        Assert.Equal(corners, image.Frames[0].DetectCorners(new CornerDetectionOptions { Method = method, MinDistance = 5 }, Ct));
+        Assert.Single(image.Frames[0].DetectCorners(new CornerDetectionOptions { Method = method, MaxCorners = 1 }, Ct));
+
+        // A flat frame has no corner
+        using var flat = new Image<RgbaHalf>(12, 12, new RgbaHalf((Half)0.5f, (Half)0.5f, (Half)0.5f, Half.One));
+        Assert.Empty(flat.Frames[0].DetectCorners(new CornerDetectionOptions { Method = method }, Ct));
+    }
+
+    [Fact]
+    public void DetectCornersValidatesItsArguments()
+    {
+        Assert.Throws<ArgumentNullException>(() => ((ImageFrame)null!).DetectCorners());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CornerDetectionOptions { Method = (CornerDetectionMethod)10 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CornerDetectionOptions { Sigma = 0.1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CornerDetectionOptions { HarrisK = 0.25 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CornerDetectionOptions { ResponseThreshold = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CornerDetectionOptions { FastThreshold = 1.5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CornerDetectionOptions { MinDistance = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CornerDetectionOptions { MaxCorners = 0 });
+
+        using var image = new Image<Gray8>(8, 8);
+        Assert.Throws<OperationCanceledException>(() => image.Frames[0].DetectCorners(cancellationToken: new CancellationToken(canceled: true)));
+        using var cmyk = new Image<Cmyk32>(2, 2);
+        Assert.Throws<UnsupportedImageFeatureException>(() => cmyk.Frames[0].DetectCorners());
+        using var limited = new Image<Gray8>(64, 64, new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 32_768 } });
+        Assert.Throws<ImageResourceLimitException>(() => limited.Frames[0].DetectCorners());
+    }
 }

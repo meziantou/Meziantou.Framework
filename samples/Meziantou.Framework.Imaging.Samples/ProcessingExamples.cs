@@ -79,6 +79,39 @@ internal static class ProcessingExamples
     }
     #endregion
 
+    /// <summary>Finds the straight lines of a photo, such as the edges of a document or the lines of a court.</summary>
+    #region Imaging_DetectLines
+    public static IReadOnlyList<HoughLine> FindStraightLines(string inputPath)
+    {
+        using var photo = Image.Load(inputPath);
+
+        // The 8 strongest lines of the first frame: x cos(Angle) + y sin(Angle) = Distance, in pixels
+        var lines = photo.Frames[0].DetectLines(new HoughLineOptions { MaxLines = 8 });
+        foreach (var line in lines)
+        {
+            Console.WriteLine($"{line.Slope:F1} degrees from horizontal, {line.Votes} edge pixels");
+        }
+
+        return lines;
+    }
+    #endregion
+
+    /// <summary>Finds the corners of a photo, to track or to match them.</summary>
+    #region Imaging_DetectCorners
+    public static IReadOnlyList<ImageCorner> FindCorners(string inputPath)
+    {
+        using var photo = Image.Load(inputPath);
+
+        // The 100 strongest Shi-Tomasi corners, at least 8 pixels apart
+        return photo.Frames[0].DetectCorners(new CornerDetectionOptions
+        {
+            Method = CornerDetectionMethod.ShiTomasi,
+            MaxCorners = 100,
+            MinDistance = 8,
+        });
+    }
+    #endregion
+
     /// <summary>Quarter turns and mirrors: exact pixel permutations.</summary>
     #region Imaging_RotateAndFlip
     public static void RotateAndFlip(string inputPath, string outputPath)

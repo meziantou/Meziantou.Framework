@@ -30,6 +30,8 @@ public sealed class ApiSurfaceTests
         typeof(CropSuggestionOptions),
         typeof(SeamCarvingOptions),
         typeof(InpaintingOptions),
+        typeof(HoughLineOptions),
+        typeof(CornerDetectionOptions),
         typeof(RadialBlurOptions),
         typeof(ImageSimilarityOptions),
         typeof(DifferenceMapOptions),

@@ -30,6 +30,8 @@ public static partial class ImagingFuzzTargets
         new("imaging-processor", ProcessorTarget) { Seeds = GetProcessorSeeds, Dictionary = Tokens },
         new("imaging-seam-carving", SeamCarvingTarget) { Seeds = GetSeamCarvingSeeds, Dictionary = Tokens },
         new("imaging-inpainting", InpaintingTarget) { Seeds = GetInpaintingSeeds, Dictionary = Tokens },
+        new("imaging-hough-lines", LinesTarget) { Seeds = GetLinesSeeds, Dictionary = Tokens },
+        new("imaging-corners", CornersTarget) { Seeds = GetCornersSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>

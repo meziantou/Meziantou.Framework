@@ -3741,6 +3741,32 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DetectLinesAndCornersFindTheSquare()
+    {
+        // A light square on a dark background: four lines (two horizontal, two vertical) and four corners
+        var input = GetPath("square.png");
+        using (var source = new Image<Rgb24>(60, 60, new Rgb24(20, 20, 20)))
+        {
+            for (var y = 15; y < 45; y++)
+            {
+                for (var x = 15; x < 45; x++)
+                {
+                    source.Frames[0][x, y] = new Rgb24(230, 230, 230);
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var lines = ProcessingExamples.FindStraightLines(input);
+        Assert.Equal(4, lines.Take(4).Count(line => Math.Abs(line.Slope) is <= 2 or >= 88));
+
+        var corners = ProcessingExamples.FindCorners(input);
+        Assert.Equal(4, corners.Count);
+        Assert.All(corners, corner => Assert.True(Math.Abs(corner.X - 29.5) is > 12 and < 17 && Math.Abs(corner.Y - 29.5) is > 12 and < 17, $"{corner} is not a corner of the square"));
+    }
+
+    [Fact]
     public void RotateAndFlipTransposesThePixels()
     {
         // A quarter turn clockwise then a horizontal mirror moves the pixel (x, y) to (y, x)

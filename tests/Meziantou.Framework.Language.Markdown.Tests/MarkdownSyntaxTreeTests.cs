@@ -348,6 +348,53 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal("The note.", reference.Definition.GetPlainText());
     }
 
+    // The cases of 1.x: after an inline that is not text, attributes are for it; after text, for the block
+    [Theory]
+    [InlineData("# a {#x} b\n", "<h1 id=\"x\">a</h1>\n")]
+    [InlineData("a `c`{.k} *e*{.m} <b>h</b>{.n} ![i](u){.o} t{.p}\n", "<p class=\"p\">a <code class=\"k\">c</code> <em class=\"m\">e</em> <b>h</b> <img src=\"u\" class=\"o\" alt=\"i\" /> t</p>\n")]
+    [InlineData("- item {.x}\n- b\n", "<ul>\n<li>item</li>\n<li>b</li>\n</ul>\n")]
+    [InlineData("```cs {.x #y}\ncode\n```\n", "<pre><code id=\"y\" class=\"x language-cs\">code\n</code></pre>\n")]
+    [InlineData("{.z}\n```cs\ncode\n```\n", "<pre><code class=\"language-cs z\">code\n</code></pre>\n")]
+    [InlineData("    code\n{.z}\n", "<pre><code>code\n</code></pre>\n<p class=\"z\"></p>\n")]
+    [InlineData("{.a}\n\n# h\n", "<h1 class=\"a\">h</h1>\n")]
+    [InlineData("a\n{.b}\nc\n", "<p>a\nc</p>\n")]
+    [InlineData("[a{.x}](u)\n", "<p class=\"x\"><a href=\"u\">a</a></p>\n")]
+    [InlineData("*{.c}\nA\n", "<p>*A</p>\n")]
+    [InlineData("[l](u) {title=t}\n", "<p title=\"t\"><a href=\"u\">l</a></p>\n")]
+    [InlineData("[l](u \"md\"){#i title=t onclick=x data-x=1 hidden}\n", "<p><a href=\"u\" id=\"i\" title=\"t\" hidden=\"\" title=\"md\">l</a></p>\n")]
+    [InlineData("a{#x .b lang=de}{#y .c lang=en lang=fr}\n", "<p id=\"y\" class=\"b c\" lang=\"de\">a</p>\n")]
+    [InlineData("a{#y .c lang=en lang=fr}\n", "<p id=\"y\" class=\"c\" lang=\"en\" lang=\"fr\">a</p>\n")]
+    [InlineData("$$ {.e}\nx\n$$\n", "<div class=\"math e\">")]
+    public void RendersGenericAttributes(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.Mathematics });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GenericAttributesHaveTheirTarget()
+    {
+        var root = MarkdownSyntaxTree.ParseText("[l](u){#i .c title=\"a b\" hidden}\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes }).GetRoot();
+        var attributes = root.DescendantNodes().OfType<MarkdownGenericAttributesSyntax>().Single();
+
+        Assert.Equal("i", attributes.Id);
+        Assert.Equal(["c"], attributes.Classes.ToArray());
+        Assert.Equal([new KeyValuePair<string, string?>("title", "a b"), new KeyValuePair<string, string?>("hidden", null)], attributes.Properties.ToArray());
+        Assert.IsType<MarkdownLinkSyntax>(attributes.Target);
+    }
+
+    [Fact]
+    public void AttributeFilterChoosesTheAttributesToWrite()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("a{#i data-x=1 onclick=y}\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes });
+
+        var html = MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { AttributeFilter = name => name.StartsWith("data-", StringComparison.Ordinal) });
+
+        Assert.Equal("<p id=\"i\" data-x=\"1\">a</p>\n", html);
+    }
+
     [Fact]
     public void AlertHasItsKind()
     {

@@ -760,8 +760,12 @@ internal sealed class BlockParser
         var block = AddChild(SyntaxKind.AtxHeading);
         block.Leading.Add(BuildElement.Token(SyntaxKind.AtxHeadingMarkerToken, markerStart, position));
 
+        // The attributes are read before the closing sequence, which is before them
+        var lineEnd = _lineEnd;
+        var attributes = ParseBlockAttributes(_offset, ref lineEnd);
+
         // The closing sequence is a run of '#' at the end, after a space, or alone
-        var end = _lineEnd;
+        var end = lineEnd;
         while (end > _offset && Scanners.IsSpaceOrTab(_text[end - 1]))
         {
             end--;
@@ -784,9 +788,48 @@ internal sealed class BlockParser
             }
         }
 
+        if (attributes is not null)
+        {
+            block.Trailing.Add(attributes);
+        }
+
         AddLine(block, new Line(_offset, contentEnd, contentEnd, 0));
         _offset = _lineEnd;
         return true;
+    }
+
+    // The generic attributes of a block, from the first { of its line: the text after them is dropped, as Markdig drops it
+    private BuildNode? ParseBlockAttributes(int start, ref int lineEnd)
+    {
+        if (!HasExtension(MarkdownExtensions.GenericAttributes))
+        {
+            return null;
+        }
+
+        var brace = _text.AsSpan(start, lineEnd - start).IndexOf('{');
+        if (brace < 0 || AttributesScanner.TryParse(_text, start + brace, lineEnd, out _) is not (>= 0 and var end))
+        {
+            return null;
+        }
+
+        brace += start;
+        var node = new BuildNode(SyntaxKind.GenericAttributes, 2);
+        node.AddToken(SyntaxKind.AttributesToken, brace, end, value: 3);
+        var rest = end;
+        var restEnd = lineEnd;
+        while (rest < restEnd && TableScanner.IsSpace(_text[rest]))
+        {
+            rest++;
+        }
+
+        while (restEnd > rest && TableScanner.IsSpace(_text[restEnd - 1]))
+        {
+            restEnd--;
+        }
+
+        node.AddToken(SyntaxKind.AttributesTrailingTextToken, rest, restEnd);
+        lineEnd = brace;
+        return node;
     }
 
     private bool TryStartFencedCodeBlock(char c)
@@ -797,10 +840,13 @@ internal sealed class BlockParser
             position++;
         }
 
-        // A math block opens with exactly $$, and nothing else on the line
+        // The attributes are read first, and the info string is before them. A math block opens with exactly $$, and nothing
+        // else on the line.
+        var lineEnd = _lineEnd;
+        var attributes = ParseBlockAttributes(position, ref lineEnd);
         var length = position - _nextNonspace;
         var math = c == '$';
-        if (math ? length != 2 || !_text.AsSpan(position, _lineEnd - position).Trim(" \t").IsEmpty : length < 3 || (c == '`' && _text.AsSpan(position, _lineEnd - position).Contains('`')))
+        if (math ? length != 2 || !_text.AsSpan(position, lineEnd - position).Trim(" \t").IsEmpty : length < 3 || (c == '`' && _text.AsSpan(position, lineEnd - position).Contains('`')))
         {
             return false;
         }
@@ -817,7 +863,7 @@ internal sealed class BlockParser
 
         // The info string is the rest of the line, without the whitespace around it
         var infoStart = _offset;
-        var infoEnd = _lineEnd;
+        var infoEnd = lineEnd;
         while (infoStart < infoEnd && Scanners.IsSpaceOrTab(_text[infoStart]))
         {
             infoStart++;
@@ -831,6 +877,11 @@ internal sealed class BlockParser
         if (infoEnd > infoStart)
         {
             block.Leading.Add(BuildElement.Token(SyntaxKind.InfoStringToken, infoStart, infoEnd));
+        }
+
+        if (attributes is not null)
+        {
+            block.Leading.Add(attributes);
         }
 
         _skipAddLine = true;

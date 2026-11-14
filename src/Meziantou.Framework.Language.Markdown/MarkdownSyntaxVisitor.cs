@@ -83,6 +83,9 @@ public abstract class MarkdownSyntaxVisitor
     /// <summary>Visits a <see cref="MarkdownFootnoteReferenceSyntax"/>.</summary>
     public virtual void VisitMarkdownFootnoteReference(MarkdownFootnoteReferenceSyntax node) => DefaultVisit(node);
 
+    /// <summary>Visits a <see cref="MarkdownGenericAttributesSyntax"/>.</summary>
+    public virtual void VisitMarkdownGenericAttributes(MarkdownGenericAttributesSyntax node) => DefaultVisit(node);
+
     /// <summary>Visits a <see cref="MarkdownCodeSpanSyntax"/>.</summary>
     public virtual void VisitMarkdownCodeSpan(MarkdownCodeSpanSyntax node) => DefaultVisit(node);
 
@@ -176,6 +179,9 @@ public abstract class MarkdownSyntaxVisitor<TResult>
 
     /// <summary>Visits a <see cref="MarkdownFootnoteReferenceSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownFootnoteReference(MarkdownFootnoteReferenceSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownGenericAttributesSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownGenericAttributes(MarkdownGenericAttributesSyntax node) => DefaultVisit(node);
 
     /// <summary>Visits a <see cref="MarkdownCodeSpanSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownCodeSpan(MarkdownCodeSpanSyntax node) => DefaultVisit(node);

@@ -25,4 +25,8 @@ internal sealed class SyntaxListNode : SyntaxNode
     }
 
     internal override SyntaxNode? GetCachedSlot(int index) => _children[index];
+
+    // The green list knows where its children are: walking back to the previous red sibling is linear for the tokens of a list,
+    // which have none, and makes enumerating a long list of tokens quadratic
+    internal override int GetChildPosition(int index) => Position + Green.GetSlotOffset(index);
 }

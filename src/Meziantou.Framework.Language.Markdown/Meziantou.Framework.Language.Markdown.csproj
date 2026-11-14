@@ -19,4 +19,9 @@
     <ProjectReference Include="../Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The attributes that generic attributes write by default, as in Meziantou.Framework.Markdown -->
+    <Compile Include="../Meziantou.Framework.HtmlSanitizer/DescriptiveHtmlAttributes.cs" Link="Parsing/DescriptiveHtmlAttributes.cs" />
+  </ItemGroup>
+
 </Project>

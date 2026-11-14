@@ -18,6 +18,11 @@ internal sealed class InlineParser
     private readonly bool _inserted;
     private readonly bool _marked;
     private readonly bool _mathematics;
+    private readonly bool _genericAttributes;
+
+    // Whether attributes are valid from each position of the subject, computed at the first {
+    private byte[]? _attributesOutcomes;
+    private int _attributesOutcomesStart;
     private long _abbreviationExpansion;
     private readonly bool _autolinks;
     private readonly bool _disableHtml;
@@ -44,6 +49,7 @@ internal sealed class InlineParser
         _inserted = extensions.HasFlag(MarkdownExtensions.Inserted);
         _marked = extensions.HasFlag(MarkdownExtensions.Marked);
         _mathematics = extensions.HasFlag(MarkdownExtensions.Mathematics);
+        _genericAttributes = extensions.HasFlag(MarkdownExtensions.GenericAttributes);
         _autolinks = extensions.HasFlag(MarkdownExtensions.Autolinks);
     }
 
@@ -65,6 +71,7 @@ internal sealed class InlineParser
         }
 
         _usedNodes = 0;
+        _attributesOutcomes = null;
         _root = NewNode(SyntaxKind.Paragraph, _pos, _pos);
         _delimiters = null;
         _brackets = null;
@@ -74,6 +81,11 @@ internal sealed class InlineParser
         }
 
         ProcessEmphasis(stackBottom: null);
+        if (_genericAttributes)
+        {
+            DetachAttributes(_root);
+        }
+
         if (_autolinks)
         {
             LinkEmailAddresses(_root);
@@ -232,6 +244,14 @@ internal sealed class InlineParser
             case '=' when _marked:
                 HandleDelimiter(c);
                 break;
+            case '{' when _genericAttributes:
+                if (!ParseAttributes())
+                {
+                    AppendText(_pos, _pos + 1);
+                    _pos++;
+                }
+
+                break;
             case '$' when _mathematics:
                 if (!ParseMath())
                 {
@@ -315,6 +335,7 @@ internal sealed class InlineParser
         '+' => _inserted,
         '=' => _marked,
         '$' => _mathematics,
+        '{' => _genericAttributes,
         ':' => _autolinks,
         'w' => _autolinks && _pos + 3 < _end && _text[_pos + 1] == 'w' && _text[_pos + 2] == 'w' && _text[_pos + 3] == '.',
         _ => false,
@@ -807,6 +828,80 @@ internal sealed class InlineParser
     }
 
     private char MathAt(int index) => index < _end ? _text[index] : '\0';
+
+    // Attributes after a delimiter that is text, or after a bracket that opens no link, are for that delimiter in Markdig, which
+    // writes them nowhere
+    private static void DetachAttributes(InlineNode container)
+    {
+        InlineNode? previous = null;
+        for (var child = container.FirstChild; child is not null; child = child.Next)
+        {
+            if (child.Kind == SyntaxKind.GenericAttributes)
+            {
+                if (previous is { IsDelimiterRun: true } or { Kind: SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken } && child.FirstChild is { Value: 0 } first)
+                {
+                    first.Value = 1;
+                }
+
+                continue;
+            }
+
+            if (!child.IsToken)
+            {
+                DetachAttributes(child);
+            }
+
+            previous = child;
+        }
+    }
+
+    // Generic attributes: {#id .class name=value}, with the line ending after them. They apply to the inline before them, or to
+    // the block when the inline before them is text; the whitespace before attributes that end the text is not text.
+    private bool ParseAttributes()
+    {
+        if (_attributesOutcomes is null)
+        {
+            _attributesOutcomesStart = _pos;
+            _attributesOutcomes = AttributesScanner.ComputeOutcomes(_text, _pos, _end);
+        }
+
+        if (!AttributesScanner.IsValid(_attributesOutcomes, _attributesOutcomesStart, _pos) || AttributesScanner.TryParse(_text, _pos, _end, out _) is not (>= 0 and var end))
+        {
+            return false;
+        }
+
+        var afterText = false;
+        if (_text.AsSpan(end, _end - end).IndexOfAnyExcept(" \t\n\v\f\r") < 0)
+        {
+            while (_root.LastChild is { Kind: SyntaxKind.TextToken, IsDelimiterRun: false } text)
+            {
+                afterText = true;
+                while (text.End > text.Start && _text[text.End - 1] is ' ' or '\t' or '\v' or '\f')
+                {
+                    text.End--;
+                }
+
+                if (text.End > text.Start)
+                {
+                    break;
+                }
+
+                text.Unlink();
+            }
+        }
+
+        var attributes = NewNode(SyntaxKind.GenericAttributes, _pos, end);
+        AppendLines(attributes, SyntaxKind.AttributesToken, _pos, end);
+        if (afterText && attributes.FirstChild is { } first && (_root.LastChild is not { Kind: SyntaxKind.TextToken } || _root.LastChild.End < _pos))
+        {
+            // The whitespace before them was text: they are for the block
+            first.Value = 2;
+        }
+
+        _root.Append(attributes);
+        _pos = end;
+        return true;
+    }
 
     // As Markdig: the end of the text is whitespace, and an ASCII punctuation character or a Unicode one is punctuation
     private static bool IsMathWhitespace(char c) => c is '\0' or ' ' or '\t' or '\n' or '\r' or '\v' or '\f' || (c > 127 && char.IsWhiteSpace(c));
@@ -1778,7 +1873,7 @@ internal sealed class InlineParser
         {
             if (node.End > node.Start)
             {
-                result.Add(BuildElement.Token(node.Kind, _subject.ToSourceStart(node.Start), _subject.ToSourceEnd(node.End)));
+                result.Add(BuildElement.Token(node.Kind, _subject.ToSourceStart(node.Start), _subject.ToSourceEnd(node.End), node.Value));
             }
 
             return;

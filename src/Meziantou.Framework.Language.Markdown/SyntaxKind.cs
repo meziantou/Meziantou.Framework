@@ -65,6 +65,8 @@ public enum SyntaxKind
     AbbreviationLabelToken,
     AbbreviationTextToken,
     FootnoteLabelToken,
+    AttributesToken,
+    AttributesTrailingTextToken,
     ExtendedAutolinkToken,
 
     // Blocks
@@ -108,4 +110,5 @@ public enum SyntaxKind
     MathInline,
     Abbreviation,
     FootnoteReference,
+    GenericAttributes,
 }

@@ -13,6 +13,10 @@ internal sealed class InlineNode
     // A text token that is a run of emphasis delimiters, which Markdig keeps apart from the text around it
     public bool IsDelimiterRun { get; set; }
 
+    // The value of a token: for the first token of generic attributes, 1 when they are for no element, 2 when they are for the
+    // block, because they were after text that is whitespace only, and 3 for the attributes of the first line of a block
+    public int Value { get; set; }
+
     public bool IsToken => Kind < SyntaxKind.Document;
 
     public InlineNode? Parent { get; private set; }
@@ -31,6 +35,7 @@ internal sealed class InlineNode
         Start = start;
         End = end;
         IsDelimiterRun = false;
+        Value = 0;
         Parent = null;
         Previous = null;
         Next = null;

@@ -25,11 +25,22 @@ public static class MarkdownHtmlRenderer
 
     /// <summary>Renders the document as HTML.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="tree"/> is <see langword="null"/>.</exception>
-    public static string ToHtml(MarkdownSyntaxTree tree)
+    public static string ToHtml(MarkdownSyntaxTree tree) => ToHtml(tree, options: null);
+
+    /// <summary>Renders the document as HTML.</summary>
+    /// <param name="tree">The document.</param>
+    /// <param name="options">How to write the HTML, or <see langword="null"/> for <see cref="MarkdownHtmlRendererOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="tree"/> is <see langword="null"/>.</exception>
+    public static string ToHtml(MarkdownSyntaxTree tree, MarkdownHtmlRendererOptions? options)
     {
         ArgumentNullException.ThrowIfNull(tree);
 
-        var writer = new Writer(tree.GetText().Length, tree.Options);
+        var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default);
+        if (tree.Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes))
+        {
+            writer.CollectAttributes(tree.GetRoot());
+        }
+
         writer.WriteBlocks(tree.GetRoot().Blocks);
         if (tree.Options.Extensions.HasFlag(MarkdownExtensions.Footnotes))
         {
@@ -39,8 +50,14 @@ public static class MarkdownHtmlRenderer
         return writer.ToString();
     }
 
-    private sealed class Writer(int sourceLength, MarkdownParseOptions options)
+    private sealed class Writer(int sourceLength, MarkdownParseOptions options, MarkdownHtmlRendererOptions rendererOptions)
     {
+        // The generic attributes of the nodes, merged as Markdig merges them, and the classes of the attributes of the first line of a
+        // block, which come before the classes of the block
+        private Dictionary<SyntaxNode, ParsedAttributes>? _attributes;
+        private Dictionary<SyntaxNode, List<string>>? _blockLineClasses;
+        private Dictionary<MarkdownParagraphSyntax, MarkdownBlockSyntax>? _nextBlocks;
+
         // The HTML is about as long as the Markdown
         private readonly StringBuilder _output = new(sourceLength + 16);
         private readonly bool _tagFilter = options.Extensions.HasFlag(MarkdownExtensions.TagFilter);
@@ -59,6 +76,150 @@ public static class MarkdownHtmlRenderer
         private string? _backLinks;
 
         public override string ToString() => _output.ToString();
+
+        // The id of the last attributes wins, their classes are added, and a property is only added when there is none with its name
+        public void CollectAttributes(MarkdownDocumentSyntax document)
+        {
+            _attributes = [];
+            _nextBlocks = [];
+
+            // The block after each paragraph of attributes only, which its last attributes are for
+            foreach (var container in document.DescendantNodesAndSelf(MarkdownDocumentSyntax.IsBlockContainer))
+            {
+                MarkdownParagraphSyntax? attributesParagraph = null;
+                foreach (var child in container.ChildNodes())
+                {
+                    if (child is not MarkdownBlockSyntax block)
+                    {
+                        continue;
+                    }
+
+                    if (attributesParagraph is not null)
+                    {
+                        _nextBlocks[attributesParagraph] = block;
+                    }
+
+                    attributesParagraph = block is MarkdownParagraphSyntax paragraph && IsAttributesOnly(paragraph) ? paragraph : null;
+                }
+            }
+
+            // The targets of the attributes of each node, found in one pass over its children
+            foreach (var node in document.DescendantNodesAndSelf())
+            {
+                SyntaxNodeOrToken previous = default;
+                var attributesParagraph = node is MarkdownParagraphSyntax paragraph && _nextBlocks.ContainsKey(paragraph);
+                var children = node.ChildNodesAndTokens();
+                var count = children.Count;
+                var index = 0;
+                foreach (var child in children)
+                {
+                    index++;
+                    if (child.AsNode() is not MarkdownGenericAttributesSyntax attributes)
+                    {
+                        previous = child;
+                        continue;
+                    }
+
+                    if (attributes.GetTarget(previous, attributesParagraph && index == count, _nextBlocks.GetValueOrDefault) is { } target)
+                    {
+                        Merge(attributes, target);
+                    }
+                }
+            }
+        }
+
+        private static bool IsAttributesOnly(MarkdownParagraphSyntax paragraph)
+        {
+            foreach (var child in paragraph.ChildNodesAndTokens())
+            {
+                if (child.AsNode() is not MarkdownGenericAttributesSyntax)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void Merge(MarkdownGenericAttributesSyntax attributes, SyntaxNode target)
+        {
+            {
+                if (!_attributes!.TryGetValue(target, out var merged))
+                {
+                    merged = new ParsedAttributes(null, [], []);
+                }
+
+                // A property is added when the element has none with its name from other attributes: the ones of the same attributes are all kept
+                var properties = merged.Properties;
+                var existingCount = properties.Count;
+                foreach (var property in attributes.Properties)
+                {
+                    if (rendererOptions.AttributeFilter(property.Key) && properties.FindIndex(0, existingCount, existing => string.Equals(existing.Key, property.Key, StringComparison.Ordinal)) < 0)
+                    {
+                        properties.Add(property);
+                    }
+                }
+
+                if (attributes.IsBlockLine)
+                {
+                    _blockLineClasses ??= [];
+                    _blockLineClasses[target] = [.. attributes.Classes];
+                }
+                else
+                {
+                    merged.Classes.AddRange(attributes.Classes);
+                }
+
+                _attributes![target] = merged with { Id = attributes.Id ?? merged.Id };
+            }
+        }
+
+        // The generic attributes of the element of the node: its id, the classes of the element and the ones of the attributes, and
+        // the other attributes
+        private void AppendAttributes(SyntaxNode node, string? leadingClasses = null, string? trailingClasses = null)
+        {
+            ParsedAttributes? attributes = null;
+            _ = _attributes?.TryGetValue(node, out attributes);
+            if (attributes?.Id is { } id)
+            {
+                _output.Append(" id=\"");
+                AppendEscaped(id);
+                _output.Append('"');
+            }
+
+            List<string>? blockLineClasses = null;
+            _ = _blockLineClasses?.TryGetValue(node, out blockLineClasses);
+            var hasClasses = attributes is { Classes.Count: > 0 } || blockLineClasses is { Count: > 0 };
+            if (hasClasses || leadingClasses is not null || trailingClasses is not null)
+            {
+                _output.Append(" class=\"");
+                var first = true;
+                foreach (var cssClass in (string?[])[leadingClasses, .. blockLineClasses ?? [], trailingClasses, .. attributes?.Classes ?? []])
+                {
+                    if (cssClass is null)
+                    {
+                        continue;
+                    }
+
+                    if (!first)
+                    {
+                        _output.Append(' ');
+                    }
+
+                    AppendEscaped(cssClass);
+                    first = false;
+                }
+
+                _output.Append('"');
+            }
+
+            foreach (var property in attributes?.Properties ?? [])
+            {
+                _output.Append(' ').Append(property.Key).Append("=\"");
+                AppendEscaped(property.Value ?? "");
+                _output.Append('"');
+            }
+        }
 
         private void Cr()
         {
@@ -80,6 +241,10 @@ public static class MarkdownHtmlRenderer
         {
             switch (block)
             {
+                case MarkdownParagraphSyntax paragraph when _attributes is not null && IsAttributesParagraph(paragraph):
+                    // Its attributes are for the next block
+                    break;
+
                 case MarkdownParagraphSyntax paragraph:
                 {
                     // The paragraphs of a tight list have no <p>
@@ -87,7 +252,9 @@ public static class MarkdownHtmlRenderer
                     if (!tight)
                     {
                         Cr();
-                        _output.Append("<p>");
+                        _output.Append("<p");
+                        AppendAttributes(paragraph);
+                        _output.Append('>');
                     }
 
                     if (_pendingCheckbox is not null)
@@ -113,7 +280,9 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownHeadingSyntax heading:
                     Cr();
-                    _output.Append("<h").Append(heading.Level).Append('>');
+                    _output.Append("<h").Append(heading.Level);
+                    AppendAttributes(heading);
+                    _output.Append('>');
                     WriteInlines(heading.Inlines);
                     _output.Append("</h").Append(heading.Level).Append('>');
                     Cr();
@@ -121,7 +290,9 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownThematicBreakSyntax:
                     Cr();
-                    _output.Append("<hr />");
+                    _output.Append("<hr");
+                    AppendAttributes(block);
+                    _output.Append(" />");
                     Cr();
                     break;
 
@@ -143,7 +314,9 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownBlockQuoteSyntax quote:
                     Cr();
-                    _output.Append("<blockquote>");
+                    _output.Append("<blockquote");
+                    AppendAttributes(quote);
+                    _output.Append('>');
                     Cr();
                     WriteBlocks(quote.Blocks);
                     Cr();
@@ -155,11 +328,15 @@ public static class MarkdownHtmlRenderer
                     Cr();
                     if (list.StartNumber is { } start)
                     {
-                        _output.Append(start == 1 ? "<ol>" : "<ol start=\"" + start.ToString(CultureInfo.InvariantCulture) + "\">");
+                        _output.Append(start == 1 ? "<ol" : "<ol start=\"" + start.ToString(CultureInfo.InvariantCulture) + "\"");
+                        AppendAttributes(list);
+                        _output.Append('>');
                     }
                     else
                     {
-                        _output.Append("<ul>");
+                        _output.Append("<ul");
+                        AppendAttributes(list);
+                        _output.Append('>');
                     }
 
                     Cr();
@@ -188,13 +365,7 @@ public static class MarkdownHtmlRenderer
                 case MarkdownCodeBlockSyntax code:
                     Cr();
                     _output.Append("<pre><code");
-                    if (code.Language is { } language)
-                    {
-                        _output.Append(" class=\"language-");
-                        AppendEscaped(language);
-                        _output.Append('"');
-                    }
-
+                    AppendAttributes(code, trailingClasses: code.Language is { } language ? "language-" + language : null);
                     _output.Append('>');
                     AppendEscaped(code.Code);
                     _output.Append("</code></pre>");
@@ -203,7 +374,9 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownMathBlockSyntax math:
                     Cr();
-                    _output.Append("<div class=\"math\">\n\\[\n");
+                    _output.Append("<div");
+                    AppendAttributes(math, leadingClasses: "math");
+                    _output.Append(">\n\\[\n");
                     AppendEscaped(math.Math);
                     _output.Append("\\]</div>");
                     Cr();
@@ -259,9 +432,14 @@ public static class MarkdownHtmlRenderer
             _output.Append("</ol>\n</div>\n");
         }
 
+        // A paragraph of attributes only, whose last attributes are for the next block, is not written
+        private bool IsAttributesParagraph(MarkdownParagraphSyntax paragraph) => _nextBlocks!.ContainsKey(paragraph);
+
         private void WriteListItem(MarkdownListItemSyntax item)
         {
-            _output.Append("<li>");
+            _output.Append("<li");
+            AppendAttributes(item);
+            _output.Append('>');
             if (item.IsTask)
             {
                 // The checkbox starts the first paragraph, or the item when it starts with another block
@@ -377,14 +555,18 @@ public static class MarkdownHtmlRenderer
                 case MarkdownEmphasisSyntax emphasis:
                 {
                     var tag = emphasis.IsStrong ? "strong" : "em";
-                    _output.Append('<').Append(tag).Append('>');
+                    _output.Append('<').Append(tag);
+                    AppendAttributes(emphasis);
+                    _output.Append('>');
                     WriteInlines(emphasis.Inlines);
                     _output.Append("</").Append(tag).Append('>');
                     break;
                 }
 
                 case MarkdownStrikethroughSyntax strikethrough:
-                    _output.Append("<del>");
+                    _output.Append("<del");
+                    AppendAttributes(strikethrough);
+                    _output.Append('>');
                     WriteInlines(strikethrough.Inlines);
                     _output.Append("</del>");
                     break;
@@ -399,14 +581,18 @@ public static class MarkdownHtmlRenderer
                         _ => "mark",
                     };
 
-                    _output.Append('<').Append(tag).Append('>');
+                    _output.Append('<').Append(tag);
+                    AppendAttributes(extra);
+                    _output.Append('>');
                     WriteInlines(extra.Inlines);
                     _output.Append("</").Append(tag).Append('>');
                     break;
                 }
 
                 case MarkdownCodeSpanSyntax code:
-                    _output.Append("<code>");
+                    _output.Append("<code");
+                    AppendAttributes(code);
+                    _output.Append('>');
                     AppendEscaped(code.Code);
                     _output.Append("</code>");
                     break;
@@ -414,7 +600,9 @@ public static class MarkdownHtmlRenderer
                 case MarkdownAutolinkSyntax autolink:
                     _output.Append("<a href=\"");
                     AppendEscaped(NormalizeUri(autolink.Destination));
-                    _output.Append("\">");
+                    _output.Append('"');
+                    AppendAttributes(autolink);
+                    _output.Append('>');
                     AppendEscaped(autolink.Text);
                     _output.Append("</a>");
                     break;
@@ -452,7 +640,9 @@ public static class MarkdownHtmlRenderer
                 }
 
                 case MarkdownMathInlineSyntax math:
-                    _output.Append("<span class=\"math\">\\(");
+                    _output.Append("<span");
+                    AppendAttributes(math, leadingClasses: "math");
+                    _output.Append(">\\(");
                     AppendEscaped(math.Math);
                     _output.Append("\\)</span>");
                     break;
@@ -460,7 +650,9 @@ public static class MarkdownHtmlRenderer
                 case MarkdownLinkSyntax { IsImage: true } image:
                     _output.Append("<img src=\"");
                     AppendEscaped(NormalizeUri(image.Destination));
-                    _output.Append("\" alt=\"");
+                    _output.Append('"');
+                    AppendAttributes(image);
+                    _output.Append(" alt=\"");
                     AppendEscaped(image.GetPlainText());
                     _output.Append('"');
                     AppendTitle(image.Title);
@@ -471,6 +663,7 @@ public static class MarkdownHtmlRenderer
                     _output.Append("<a href=\"");
                     AppendEscaped(NormalizeUri(link.Destination));
                     _output.Append('"');
+                    AppendAttributes(link);
                     AppendTitle(link.Title);
                     _output.Append('>');
                     WriteInlines(link.Text);

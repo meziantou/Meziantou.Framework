@@ -252,6 +252,16 @@ extensions of `Meziantou.Framework.Markdown`, which this parser is meant to repl
   [MarkdownFootnoteReferenceSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownFootnoteReferenceSyntax). The
   renderer writes the footnotes that are referred to at the end of the document, numbered in the order of their first
   reference, with links back to the references.
+- [GenericAttributes](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.GenericAttributes): `{#id .class
+  name=value}` sets the HTML attributes of an element, as
+  [MarkdownGenericAttributesSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownGenericAttributesSyntax) nodes:
+  after an inline that is not text, such as a link, a code span or an emphasis, the attributes are for it; after text, they
+  are for the block; at the end of the line of a heading, or after the info string of a fenced block, they are for the
+  block; and a paragraph of attributes only gives them to the next block. By default, the renderer only writes the
+  attributes that describe the content, such as `title`, `lang` or `aria-*`: event handlers, URL attributes, `style` or
+  `data-*` can run script when the Markdown is not trusted.
+  [MarkdownHtmlRendererOptions.AttributeFilter](cref:Meziantou.Framework.Language.Markdown.MarkdownHtmlRendererOptions.AttributeFilter)
+  changes this.
 - [Alerts](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Alerts): the alerts of GitHub, a block quote
   whose first line is `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]` or `[!CAUTION]`, which is a
   [MarkdownAlertSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownAlertSyntax). Only the block quotes of the

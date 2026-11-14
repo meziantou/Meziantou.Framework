@@ -53,6 +53,7 @@ public sealed class ExtensionSpecTests
         ["alerts"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Alerts },
         ["abbreviations"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Abbreviations },
         ["footnotes"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Footnotes },
+        ["attributes"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.GenericAttributes },
     };
 
     public static TheoryData<string, int, string> SupportedExamples()

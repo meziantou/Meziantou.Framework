@@ -66,7 +66,7 @@ public static partial class ImageProcessingExtensions
     /// <param name="cancellationToken">The token checked during the filling of each frame and once more before the new frames replace the old ones.</param>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> or <paramref name="mask"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="mask"/> does not have the size of the image, or holds every pixel.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixels are CMYK inks, or a sample of a floating-point image is not a number. The image is unchanged.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixels are CMYK inks, or a sample of a floating-point image that the fill reads is not a finite number. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory and the new frames exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>

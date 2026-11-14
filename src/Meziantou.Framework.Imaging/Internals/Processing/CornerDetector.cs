@@ -280,19 +280,59 @@ internal static class CornerDetector
             return byRow != 0 ? byRow : a.X.CompareTo(b.X);
         });
 
+        // The kept corners by cells of the minimum distance: a closer corner is in the cell of the candidate or a neighbor
         var corners = new List<ImageCorner>();
-        var minDistanceSquared = (long)options.MinDistance * options.MinDistance;
-        foreach (var candidate in candidates)
+        var cells = new Dictionary<(int X, int Y), List<ImageCorner>>();
+        var cellSize = options.MinDistance;
+        var minDistanceSquared = (long)cellSize * cellSize;
+        for (var i = 0; i < candidates.Count; i++)
         {
-            if (corners.Exists(corner => (((long)(corner.X - candidate.X) * (corner.X - candidate.X)) + ((long)(corner.Y - candidate.Y) * (corner.Y - candidate.Y))) < minDistanceSquared))
+            if (i % 4096 == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            var candidate = candidates[i];
+            var cellX = candidate.X / cellSize;
+            var cellY = candidate.Y / cellSize;
+            if (HasCloseCorner(cells, cellX, cellY, candidate, minDistanceSquared))
                 continue;
 
             corners.Add(candidate);
+            if (!cells.TryGetValue((cellX, cellY), out var cell))
+            {
+                cell = [];
+                cells.Add((cellX, cellY), cell);
+            }
+
+            cell.Add(candidate);
             if (corners.Count == options.MaxCorners)
                 break;
         }
 
         return corners;
+    }
+
+    private static bool HasCloseCorner(Dictionary<(int X, int Y), List<ImageCorner>> cells, int cellX, int cellY, ImageCorner candidate, long minDistanceSquared)
+    {
+        for (var dy = -1; dy <= 1; dy++)
+        {
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                if (!cells.TryGetValue((cellX + dx, cellY + dy), out var cell))
+                    continue;
+
+                foreach (var corner in cell)
+                {
+                    var x = (long)corner.X - candidate.X;
+                    var y = (long)corner.Y - candidate.Y;
+                    if ((x * x) + (y * y) < minDistanceSquared)
+                        return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static bool IsLocalMaximum(ReadOnlySpan<double> responses, int width, int height, int x, int y, double response)

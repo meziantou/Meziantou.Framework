@@ -739,18 +739,39 @@ public sealed class SmoothingTests
     [Fact]
     public void InpaintingKeepsTheStoredBytesOutsideTheMask()
     {
-        // A half that is not a number keeps its payload: the pixels outside the mask are copied, not converted
-        using var image = new Image<RgbaHalf>(3, 1, new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)0.75f, Half.One));
+        // A half that is not a number, beyond the reach of the fill, keeps its payload: the pixels outside the mask are
+        // copied, not converted
+        using var image = new Image<RgbaHalf>(5, 1, new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)0.75f, Half.One));
         var nan = BitConverter.UInt16BitsToHalf(0xFD0A);
         image.Frames[0][0, 0] = new RgbaHalf((Half)0.25f, nan, (Half)0.75f, Half.One);
-        var before = new byte[24];
+        var before = new byte[40];
         image.Frames[0].CopyPixelBytesTo(before);
-        var mask = new PixelMask(3, 1);
-        mask[2, 0] = true;
-        image.Inpaint(mask, cancellationToken: Ct);
-        var after = new byte[24];
+        var mask = new PixelMask(5, 1);
+        mask[4, 0] = true;
+        image.Inpaint(mask, new InpaintingOptions { Radius = 1 }, Ct);
+        var after = new byte[40];
         image.Frames[0].CopyPixelBytesTo(after);
-        Assert.Equal(before.AsSpan(0, 16).ToArray(), after.AsSpan(0, 16).ToArray());
+        Assert.Equal(before.AsSpan(0, 32).ToArray(), after.AsSpan(0, 32).ToArray());
+    }
+
+    [Fact]
+    public void InpaintingRejectsSamplesThatAreNotFinite()
+    {
+        // A not-a-number pixel next to the mask would spread into it: the operation fails and the image is unchanged
+        using var image = new Image<RgbaFloat>(3, 1, new RgbaFloat(0.5f, 0.5f, 0.5f, 1));
+        image.Frames[0][0, 0] = new RgbaFloat(float.NaN, 0, 0, 1);
+        var mask = new PixelMask(3, 1);
+        mask[1, 0] = true;
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.Inpaint(mask, new InpaintingOptions { Radius = 1 }, Ct));
+        Assert.Equal(new RgbaFloat(0.5f, 0.5f, 0.5f, 1), image.Frames[0][1, 0]);
+
+        // A pixel the fill does not read may hold any value
+        using var far = new Image<RgbaFloat>(5, 1, new RgbaFloat(0.5f, 0.5f, 0.5f, 1));
+        far.Frames[0][0, 0] = new RgbaFloat(float.PositiveInfinity, 0, 0, 1);
+        var farMask = new PixelMask(5, 1);
+        farMask[4, 0] = true;
+        far.Inpaint(farMask, new InpaintingOptions { Radius = 1 }, Ct);
+        Assert.Equal(new RgbaFloat(0.5f, 0.5f, 0.5f, 1), far.Frames[0][4, 0]);
     }
 
     [Fact]

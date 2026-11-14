@@ -19,7 +19,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// The colors are filled premultiplied by alpha, in double precision, and each channel is clamped to the range of the
-/// values it is estimated from, so that the gradient term never overshoots. The band is a binary heap ordered by distance,
+/// values it is estimated from, so that the gradient term never overshoots. A sample the fill reads that is not a finite
+/// number (or that makes an estimate infinite) fails the operation instead of spreading into the mask. The band is a binary heap ordered by distance,
 /// then by pixel index: the order is total, so the result does not depend on the platform. The working memory is 17 bytes
 /// per pixel (flags, distances, the heap and its positions) and a working copy of the frame, charged to the image.
 /// </para>
@@ -289,6 +290,9 @@ internal sealed class Inpainter : IDisposable
                 {
                     var value = pixels[(4 * q) + c];
                     var estimate = value + (GetColorDerivative(qx, qy, c, 1, 0) * dx) + (GetColorDerivative(qx, qy, c, 0, 1) * dy);
+                    if (!double.IsFinite(estimate))
+                        ThrowNotFinite(qx, qy);
+
                     sums[c] += weight * estimate;
                     minimums[c] = Math.Min(minimums[c], value);
                     maximums[c] = Math.Max(maximums[c], value);
@@ -303,6 +307,14 @@ internal sealed class Inpainter : IDisposable
             pixels[(4 * index) + c] = Math.Clamp(sums[c] / totalWeight, minimums[c], maximums[c]);
         }
     }
+
+    /// <summary>A pixel a fill reads (or one of the neighbors of its gradient) has a sample that is not a finite number: it would spread into the mask.</summary>
+    [DoesNotReturn]
+    private static void ThrowNotFinite(int x, int y)
+        => throw new UnsupportedImageFeatureException(
+            string.Create(CultureInfo.InvariantCulture, $"Cannot inpaint the image: the pixel ({x}, {y}), or a neighbor of it, which the fill of the mask reads, has a sample that is not a finite number."),
+            ImageFormat.Unknown,
+            "Inpainting from samples that are not finite");
 
     /// <summary>Gets the derivative of the distance along an axis: central when both neighbors have one, one-sided otherwise, 0 without any.</summary>
     private double GetDistanceDerivative(int x, int y, int stepX, int stepY)

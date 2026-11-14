@@ -1,8 +1,12 @@
 using System.Globalization;
+using Meziantou.AspNetCore.Testing;
+using Meziantou.AspNetCore.Testing.Components;
+using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Xunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging.Abstractions;
+using static Meziantou.AspNetCore.Testing.Expectations;
 
 namespace Meziantou.AspNetCore.Components.Tests;
 
@@ -300,5 +304,166 @@ public class LogViewerComponentTests
         public string Name { get; } = name;
 
         public Node? Next { get; set; }
+    }
+
+    private static ComponentTestHost CreateInteractiveHost() => new(new ComponentTestHostOptions
+    {
+        // The styles of the components apply to the whole page: the tests do not load the bundle of the CSS isolation
+        StyleSheets =
+        {
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Styles", "LogViewer.razor.css")),
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Styles", "LogEntryDetails.razor.css")),
+        },
+    });
+
+    private static LogEntry Entry(string message, LogLevel level = LogLevel.Information, params LogEntry[] children) => new()
+    {
+        Timestamp = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero),
+        LogLevel = level,
+        Message = message,
+        Children = children.Length > 0 ? children : null,
+    };
+
+    private static string[] GetSelectedLineNumbers<TComponent>(RenderedComponent<TComponent> viewer)
+        where TComponent : IComponent
+        => [.. viewer.FindAll(".log-entry.selected .log-linenumber").Select(button => button.TextContent ?? "")];
+
+    [Fact]
+    public async Task Interactive_ClickingALineNumberSelectsTheEntry()
+    {
+        await using var host = CreateInteractiveHost();
+        var viewer = await host.RenderAsync<LogViewer>(parameters => parameters.Add(c => c.Entries, [Entry("first"), Entry("second"), Entry("third")]));
+
+        await viewer.GetByRole("button", "1").ClickAsync();
+        Assert.Equal(["1"], GetSelectedLineNumbers(viewer));
+
+        await viewer.GetByRole("button", "2").ClickAsync();
+        Assert.Equal(["2"], GetSelectedLineNumbers(viewer));
+
+        // Ctrl (or Cmd) adds the entry to the selection, or removes it when it is selected
+        await viewer.GetByRole("button", "3").ClickAsync(new ClickOptions { Modifiers = InputModifiers.Control });
+        Assert.Equal(["2", "3"], GetSelectedLineNumbers(viewer));
+
+        await viewer.GetByRole("button", "2").ClickAsync(new ClickOptions { Modifiers = InputModifiers.Control });
+        Assert.Equal(["3"], GetSelectedLineNumbers(viewer));
+
+        await viewer.GetByRole("button", "1").ClickAsync(new ClickOptions { Modifiers = InputModifiers.Meta });
+        Assert.Equal(["1", "3"], GetSelectedLineNumbers(viewer));
+
+        // The selected line number is highlighted
+        var style = host.BrowsingContext.Window.GetComputedStyle(viewer.GetByRole("button", "1", new() { Exact = true }).GetElement());
+        Assert.Equal("rgb(88, 166, 255)", style.Color);
+        Assert.Equal("underline", style.GetPropertyValue("text-decoration-line"));
+    }
+
+    [Fact]
+    public async Task Interactive_ToggleShowsAndHidesTheChildEntries()
+    {
+        await using var host = CreateInteractiveHost();
+        var expandedParent = Entry("expanded parent", LogLevel.Information, Entry("expanded child"));
+        expandedParent.Expanded = true;
+        var viewer = await host.RenderAsync<LogViewer>(parameters => parameters.Add(c => c.Entries, [Entry("parent", LogLevel.Information, Entry("child 1"), Entry("child 2")), expandedParent]));
+
+        Assert.Equal(["parent", "expanded parent", "expanded child"], viewer.FindAll(".log-message").Select(message => message.TextContent));
+        var toggles = viewer.FindAll(".log-toggle-details");
+        Assert.Equal(["false", "true"], toggles.Select(toggle => toggle.GetAttribute("aria-expanded")));
+        Assert.Equal("Toggle child entries", toggles[0].ComputedName);
+
+        await toggles[0].ClickAsync();
+        Assert.Equal(["parent", "child 1", "child 2", "expanded parent", "expanded child"], viewer.FindAll(".log-message").Select(message => message.TextContent));
+        Assert.Equal(["1", "2", "3", "4", "5"], viewer.FindAll(".log-linenumber").Select(button => button.TextContent));
+        Assert.Equal("true", viewer.FindAll(".log-toggle-details")[0].GetAttribute("aria-expanded"));
+
+        await viewer.FindAll(".log-toggle-details")[1].ClickAsync();
+        await viewer.FindAll(".log-toggle-details")[0].ClickAsync();
+        Assert.Equal(["parent", "expanded parent"], viewer.FindAll(".log-message").Select(message => message.TextContent));
+    }
+
+    [Fact]
+    public async Task Interactive_ControlsWorkWithTheKeyboard()
+    {
+        await using var host = CreateInteractiveHost();
+        var viewer = await host.RenderAsync<LogViewer>(parameters => parameters.Add(c => c.Entries, [Entry("parent", LogLevel.Information, Entry("child"))]));
+
+        // Tab moves the focus to the line number, then to the toggle; Enter activates the focused button
+        await host.Input.PressAsync("Tab");
+        await Expect(viewer.GetByRole("button", "1", new() { Exact = true })).ToBeFocusedAsync();
+        await host.Input.PressAsync("Enter");
+        Assert.Equal(["1"], GetSelectedLineNumbers(viewer));
+
+        await host.Input.PressAsync("Tab");
+        await Expect(viewer.Locator(".log-toggle-details")).ToBeFocusedAsync();
+        await host.Input.PressAsync("Enter");
+        Assert.Equal(["parent", "child"], viewer.FindAll(".log-message").Select(message => message.TextContent));
+    }
+
+    [Fact]
+    public async Task Interactive_StateIsKeptForTheSameEntriesAndResetForNewOnes()
+    {
+        await using var host = CreateInteractiveHost();
+        var entries = new List<LogEntry> { Entry("first"), Entry("parent", LogLevel.Information, Entry("child")) };
+        var viewer = await host.RenderAsync<LogViewer>(parameters => parameters.Add(c => c.Entries, entries));
+        await viewer.GetByRole("button", "1").ClickAsync();
+        await viewer.Find(".log-toggle-details").ClickAsync();
+
+        // The same collection with a new entry: the selection and the expanded entries stay
+        entries.Add(Entry("appended"));
+        await viewer.SetParametersAsync(parameters => parameters.Add(c => c.Entries, entries));
+        Assert.Equal(["1"], GetSelectedLineNumbers(viewer));
+        Assert.Equal(["first", "parent", "child", "appended"], viewer.FindAll(".log-message").Select(message => message.TextContent));
+
+        // Another collection: the state is reset
+        await viewer.SetParametersAsync(parameters => parameters.Add(c => c.Entries, [.. entries]));
+        Assert.Empty(GetSelectedLineNumbers(viewer));
+        Assert.Equal(["first", "parent", "appended"], viewer.FindAll(".log-message").Select(message => message.TextContent));
+    }
+
+    [Fact]
+    public async Task Interactive_DetailsSwitchBetweenTableAndJson()
+    {
+        await using var host = CreateInteractiveHost();
+        var entry = new LogEntry { Timestamp = DateTimeOffset.UnixEpoch, Message = new { Name = "Ada", Level = LogLevel.Warning } };
+        var viewer = await host.RenderAsync<LogViewer>(parameters => parameters.Add(c => c.Entries, [entry]));
+        Assert.Equal(["Name:", "Level:"], viewer.FindAll("th").Select(header => header.TextContent));
+
+        // The links do not navigate (href="#" with @onclick:preventDefault)
+        await viewer.GetByRole("link", "json").ClickAsync();
+        Assert.Equal("""
+            {
+              "Name": "Ada",
+              "Level": "Warning"
+            }
+            """, viewer.Find("pre").TextContent);
+        Assert.Equal("https://localhost/", host.Url);
+
+        // A render of the parent keeps the format the user selected
+        await viewer.SetParametersAsync(parameters => parameters.Add(c => c.ShowLineNumbers, false));
+        Assert.NotNull(viewer.FindOrDefault("pre"));
+        Assert.Empty(viewer.FindAll(".log-linenumber"));
+
+        await viewer.GetByRole("link", "table").ClickAsync();
+        Assert.Null(viewer.FindOrDefault("pre"));
+        Assert.Equal(["Name:", "Level:"], viewer.FindAll("th").Select(header => header.TextContent));
+    }
+
+    [Fact]
+    public async Task Interactive_LevelsAndLinksAreRendered()
+    {
+        await using var host = CreateInteractiveHost();
+        var viewer = await host.RenderAsync<LogViewer>(parameters => parameters.Add(c => c.Entries,
+        [
+            Entry("Downloading https://example.com/file.zip"),
+            Entry("Disk almost full", LogLevel.Warning),
+            Entry("Request failed", LogLevel.Error),
+        ]));
+
+        var window = host.BrowsingContext.Window;
+        Assert.Equal(["rgb(255, 255, 255)", "rgb(255, 165, 0)", "rgb(255, 0, 0)"], viewer.FindAll(".log-message").Select(message => window.GetComputedStyle(message).Color));
+
+        var link = viewer.GetByRole("link", "https://example.com/file.zip");
+        Assert.Equal("_blank", link.GetAttribute("target"));
+        Assert.Equal("noopener noreferrer", link.GetAttribute("rel"));
+
+        Assert.Equal([0x89, (byte)'P', (byte)'N', (byte)'G'], viewer.TakeScreenshotAsPng().Take(4));
     }
 }

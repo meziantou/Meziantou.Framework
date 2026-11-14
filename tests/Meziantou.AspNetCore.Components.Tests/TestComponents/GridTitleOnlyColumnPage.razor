@@ -1,0 +1,9 @@
+<DataGrid TRowData="Person" Items="Items">
+    <DataGridColumn TRowData="Person" Title="Notes" />
+    <DataGridColumn TRowData="Person" Expression="p => p.Name" />
+</DataGrid>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<Person> Items { get; set; } = [];
+}

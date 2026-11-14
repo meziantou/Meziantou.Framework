@@ -1,4 +1,7 @@
 using System.Linq.Expressions;
+using Meziantou.AspNetCore.Components.Tests.TestComponents;
+using Meziantou.AspNetCore.Testing;
+using Meziantou.AspNetCore.Testing.Components;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 
@@ -153,5 +156,81 @@ public sealed class DataGridTests
             }));
             builder.CloseComponent();
         }
+    }
+
+    [Fact]
+    public async Task Interactive_RendersColumnsRowsAndCellTemplates()
+    {
+        await using var host = new ComponentTestHost();
+        var deleted = new List<Person>();
+        var grid = await host.RenderAsync<GridPage>(parameters => parameters
+            .Add(c => c.Items, [new Person(1, "Ada", 36), new Person(2, "Alan", 41)])
+            .Add(c => c.OnDelete, (Person person) => deleted.Add(person)));
+
+        Assert.Equal(["Name", "Age", "Actions"], grid.FindAll("th").Select(th => th.TextContent));
+        Assert.Equal(["even", "odd"], grid.FindAll("tbody tr").Select(row => row.GetAttribute("class")));
+        Assert.Equal(["Ada", "036", "Delete Ada"], grid.FindAll("tbody tr:first-child td").Select(cell => cell.TextContent));
+        Assert.Equal("grid", grid.Find("table").GetAttribute("class"));
+
+        await grid.GetByRole("button", "Delete Alan").ClickAsync();
+        Assert.Equal([new Person(2, "Alan", 41)], deleted);
+    }
+
+    [Fact]
+    public async Task Interactive_RowKeyMovesTheExistingRows()
+    {
+        await using var host = new ComponentTestHost();
+        var ada = new Person(1, "Ada", 36);
+        var alan = new Person(2, "Alan", 41);
+        var grid = await host.RenderAsync<GridPage>(parameters => parameters.Add(c => c.Items, [ada, alan]));
+        var adaRow = grid.FindAll("tbody tr")[0];
+
+        await grid.SetParametersAsync(parameters => parameters.Add(c => c.Items, [alan, ada]));
+
+        Assert.Equal(["Alan", "Ada"], grid.FindAll("tbody tr td:first-child").Select(cell => cell.TextContent));
+        Assert.Same(adaRow, grid.FindAll("tbody tr")[1]);
+        Assert.Equal(["even", "odd"], grid.FindAll("tbody tr").Select(row => row.GetAttribute("class")));
+    }
+
+    [Fact]
+    public async Task Interactive_ColumnsCanBeRemovedAndAddedAgain()
+    {
+        await using var host = new ComponentTestHost();
+        var grid = await host.RenderAsync<GridPage>(parameters => parameters.Add(c => c.Items, [new Person(1, "Ada", 36)]));
+
+        await grid.SetParametersAsync(parameters => parameters.Add(c => c.ShowAge, false));
+        Assert.Equal(["Name", "Actions"], grid.FindAll("th").Select(th => th.TextContent));
+        Assert.Equal(["Ada", "Delete Ada"], grid.FindAll("td").Select(cell => cell.TextContent));
+
+        // The column is back at its position in ChildContent, once
+        await grid.SetParametersAsync(parameters => parameters.Add(c => c.ShowAge, true));
+        Assert.Equal(["Name", "Age", "Actions"], grid.FindAll("th").Select(th => th.TextContent));
+        Assert.Equal(["Ada", "036", "Delete Ada"], grid.FindAll("td").Select(cell => cell.TextContent));
+    }
+
+    [Fact]
+    public async Task Interactive_ColumnsWithUnchangedParametersKeepTheirPosition()
+    {
+        // A column with only a title does not render again when the grid renders again: it keeps its position
+        await using var host = new ComponentTestHost();
+        var grid = await host.RenderAsync<GridTitleOnlyColumnPage>(parameters => parameters.Add(c => c.Items, [new Person(1, "Ada", 36)]));
+        Assert.Equal(["Notes", "Name"], grid.FindAll("th").Select(th => th.TextContent));
+
+        await grid.SetParametersAsync(parameters => parameters.Add(c => c.Items, [new Person(2, "Alan", 41)]));
+
+        Assert.Equal(["Notes", "Name"], grid.FindAll("th").Select(th => th.TextContent));
+        Assert.Equal(["", "Alan"], grid.FindAll("td").Select(cell => cell.TextContent));
+    }
+
+    [Fact]
+    public async Task Interactive_ExposesATableToAssistiveTechnologies()
+    {
+        await using var host = new ComponentTestHost();
+        var grid = await host.RenderAsync<GridPage>(parameters => parameters.Add(c => c.Items, [new Person(1, "Ada", 36)]));
+
+        Assert.Equal("table", grid.Find("table").ComputedRole);
+        Assert.Equal("columnheader", grid.Find("th").ComputedRole);
+        Assert.Equal("cell", grid.Find("td").ComputedRole);
+        Assert.Equal("Delete Ada", grid.GetByRole("button").GetElement().ComputedName);
     }
 }

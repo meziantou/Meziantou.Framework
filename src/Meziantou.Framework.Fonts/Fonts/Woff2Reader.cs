@@ -16,7 +16,8 @@ namespace Meziantou.Framework.Fonts;
 /// The rebuilt font is not byte-identical to the one the file was made from: the glyphs are written again, with the
 /// same points. The bytes of the Brotli stream and the rebuilt glyph table are temporary storage, bounded by
 /// <see cref="FontAllocator.Limit"/>; the font itself is bounded by
-/// <see cref="FontResourceLimits.MaxFontBytes"/> before it is allocated.
+/// <see cref="FontResourceLimits.MaxFontBytes"/> before it is allocated. The metadata and the private data of the file
+/// are kept apart from the font (<see cref="WoffExtendedData"/>).
 /// </para>
 /// </remarks>
 internal static class Woff2Reader
@@ -28,7 +29,7 @@ internal static class Woff2Reader
     private static ReadOnlySpan<byte> KnownTags =>
         "cmapheadhheahmtxmaxpnameOS/2postcvt fpgmglyflocaprepCFF VORGEBDTEBLCgasphdmxkernLTSHPCLTVDMXvheavmtxBASEGDEFGPOSGSUBEBSCJSTFMATHCBDTCBLCCOLRCPALSVG sbixacntavarbdatblocbslncvarfdscfeatfmtxfvargvarhstyjustlcarmortmorxopbdproptrakZapfSilfGlatGlocFeatSill"u8;
 
-    public static byte[] Decode(ReadOnlySpan<byte> data, FontEnvironment environment)
+    public static byte[] Decode(ReadOnlySpan<byte> data, FontEnvironment environment, out WoffExtendedData? extendedData)
     {
         var limits = environment.Limits;
         var header = FontBinary.Slice(data, 0, HeaderLength);
@@ -50,6 +51,7 @@ internal static class Woff2Reader
 
         var compressed = FontBinary.Slice(data, cursor, compressedLength);
         EnsureNoExtraneousData(header, cursor + (long)compressedLength, data.Length);
+        extendedData = WoffExtendedData.ReadWoff2(data, header);
         var scope = environment.CreateAllocator("WOFF2");
         if (sourceLength > Array.MaxLength)
             throw new FontResourceLimitException(FontResourceLimitKind.LiveAllocationBytes, scope.Limit, sourceLength);

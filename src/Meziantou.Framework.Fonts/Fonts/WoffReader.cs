@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Fonts;
 /// The size of the font is the sum of the lengths the directory declares: it is checked against
 /// <see cref="FontResourceLimits.MaxFontBytes"/> before anything is allocated, and a table that does not decompress to
 /// exactly its declared length is an error, so a small file cannot expand to more than the limit. The metadata and the
-/// private data of the file are not read.
+/// private data of the file are kept apart from the font (<see cref="WoffExtendedData"/>).
 /// </para>
 /// </remarks>
 internal static class WoffReader
@@ -23,7 +23,7 @@ internal static class WoffReader
     private const int HeaderLength = 44;
     private const int EntryLength = 20;
 
-    public static byte[] Decode(byte[] file, FontResourceLimits limits)
+    public static byte[] Decode(byte[] file, FontResourceLimits limits, out WoffExtendedData? extendedData)
     {
         ReadOnlySpan<byte> data = file;
         var header = FontBinary.Slice(data, 0, HeaderLength);
@@ -31,6 +31,7 @@ internal static class WoffReader
         if (flavor == FontTags.Collection)
             throw FontErrors.Invalid("a WOFF file cannot contain a font collection.");
 
+        extendedData = WoffExtendedData.ReadWoff(data, header);
         var tableCount = FontBinary.UInt16(header, 12);
         var entries = FontBinary.Slice(data, HeaderLength, (long)tableCount * EntryLength);
 

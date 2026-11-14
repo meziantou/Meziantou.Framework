@@ -1,9 +1,11 @@
+using System.Globalization;
 using System.Xml;
 using Meziantou.Framework.Fuzzing;
 using CssApi = Meziantou.Framework.WebPlatform.Css.Om.Css;
 using DomUrl = Meziantou.Framework.WebPlatform.Dom.Url;
 using Meziantou.Framework.WebPlatform.Css.Fonts;
 using Meziantou.Framework.WebPlatform.Css.Om;
+using Meziantou.Framework.WebPlatform.Css.Syntax;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Formatting;
 using Meziantou.Framework.WebPlatform.Unicode;
@@ -364,6 +366,7 @@ public static partial class WebPlatformFuzzTargets
     /// <summary>Parses a style sheet, a declaration block and a condition, and serializes them.</summary>
     public static void Css(string input)
     {
+        CssNumbers(input);
         var sheet = new CssStyleSheet();
         sheet.ReplaceSync(input);
         var text = Serialize(sheet.CssRules);
@@ -792,6 +795,49 @@ public static partial class WebPlatformFuzzTargets
     private sealed class FixedTimeProvider : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    }
+
+    /// <summary>The value of a numeric token has the bits of double.Parse of its number (the tokenizer has a fast path for the short numbers).</summary>
+    private static void CssNumbers(string input)
+    {
+        var source = CssTokenizer.Preprocess(input);
+        foreach (var token in CssTokenizer.Tokenize(input))
+        {
+            if (token.Type is not (CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension))
+                continue;
+
+            var text = source.AsSpan(token.Start, token.End - token.Start);
+            var length = 0;
+            if (text[length] is '+' or '-')
+            {
+                length++;
+            }
+
+            length += CountDigits(text[length..]);
+            if (length + 1 < text.Length && text[length] == '.' && char.IsAsciiDigit(text[length + 1]))
+            {
+                length += 1 + CountDigits(text[(length + 1)..]);
+            }
+
+            if (length + 1 < text.Length && text[length] is 'e' or 'E')
+            {
+                var exponent = length + (text[length + 1] is '+' or '-' ? 2 : 1);
+                var digits = exponent < text.Length ? CountDigits(text[exponent..]) : 0;
+                if (digits > 0)
+                {
+                    length = exponent + digits;
+                }
+            }
+
+            var expected = double.Parse(text[..length], NumberStyles.Float, CultureInfo.InvariantCulture);
+            FuzzAssert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(token.NumericValue), $"The value of the number {FuzzAssert.Format(text[..length].ToString())} is not the value of double.Parse");
+        }
+
+        static int CountDigits(ReadOnlySpan<char> text)
+        {
+            var index = text.IndexOfAnyExceptInRange('0', '9');
+            return index < 0 ? text.Length : index;
+        }
     }
 
     private static Document CreateDocument() => QueryDocument.Value.Implementation.CreateHtmlDocument("");

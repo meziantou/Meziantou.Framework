@@ -53,5 +53,28 @@ internal sealed class MarkdownNode : GreenNode
 
     internal override bool IsEndOfLineTrivia(GreenNode trivia) => trivia.RawKind == (int)SyntaxKind.EndOfLineTrivia;
 
-    internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Markdown.MarkdownSyntaxNode(this, parent, position);
+    // Each kind has a type of red node, which reads the children of its construct
+    internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => (SyntaxKind)RawKind switch
+        {
+            SyntaxKind.Document => new Markdown.MarkdownDocumentSyntax(this, parent, position),
+            SyntaxKind.Paragraph => new Markdown.MarkdownParagraphSyntax(this, parent, position),
+            SyntaxKind.AtxHeading or SyntaxKind.SetextHeading => new Markdown.MarkdownHeadingSyntax(this, parent, position),
+            SyntaxKind.BlockQuote => new Markdown.MarkdownBlockQuoteSyntax(this, parent, position),
+            SyntaxKind.List => new Markdown.MarkdownListSyntax(this, parent, position),
+            SyntaxKind.ListItem => new Markdown.MarkdownListItemSyntax(this, parent, position),
+            SyntaxKind.FencedCodeBlock or SyntaxKind.IndentedCodeBlock => new Markdown.MarkdownCodeBlockSyntax(this, parent, position),
+            SyntaxKind.HtmlBlock => new Markdown.MarkdownHtmlBlockSyntax(this, parent, position),
+            SyntaxKind.ThematicBreak => new Markdown.MarkdownThematicBreakSyntax(this, parent, position),
+            SyntaxKind.LinkReferenceDefinition => new Markdown.MarkdownLinkReferenceDefinitionSyntax(this, parent, position),
+            SyntaxKind.Table => new Markdown.MarkdownTableSyntax(this, parent, position),
+            SyntaxKind.TableHeaderRow or SyntaxKind.TableDelimiterRow or SyntaxKind.TableRow => new Markdown.MarkdownTableRowSyntax(this, parent, position),
+            SyntaxKind.TableCell => new Markdown.MarkdownTableCellSyntax(this, parent, position),
+            SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis => new Markdown.MarkdownEmphasisSyntax(this, parent, position),
+            SyntaxKind.Strikethrough => new Markdown.MarkdownStrikethroughSyntax(this, parent, position),
+            SyntaxKind.CodeSpan => new Markdown.MarkdownCodeSpanSyntax(this, parent, position),
+            SyntaxKind.Link or SyntaxKind.Image => new Markdown.MarkdownLinkSyntax(this, parent, position),
+            SyntaxKind.Autolink or SyntaxKind.ExtendedAutolink => new Markdown.MarkdownAutolinkSyntax(this, parent, position),
+            SyntaxKind.RawHtml => new Markdown.MarkdownRawHtmlSyntax(this, parent, position),
+            _ => throw new InvalidOperationException($"The kind {(SyntaxKind)RawKind} is not a node."),
+        };
 }

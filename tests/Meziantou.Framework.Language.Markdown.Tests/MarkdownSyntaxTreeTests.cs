@@ -178,6 +178,8 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("| a \\\\| b |\n| - |\n", "<table>\n<thead>\n<tr>\n<th>a | b</th>\n</tr>\n</thead>\n</table>\n")]
     [InlineData("| a\v|\n| - \f|\n|\fb\n", "<table>\n<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>b</td>\n</tr>\n</tbody>\n</table>\n")]
     [InlineData("Foo\\\n---\f\n", "<table>\n<thead>\n<tr>\n<th>Foo\\</th>\n</tr>\n</thead>\n</table>\n")]
+    [InlineData("[r]: /u\n-\n\n[r]\n", "<p>-</p>\n<p><a href=\"/u\">r</a></p>\n")]
+    [InlineData("[r]: /u\n-\n|-|\n\n[r]\n", "<table>\n<thead>\n<tr>\n<th>-</th>\n</tr>\n</thead>\n</table>\n<p><a href=\"/u\">r</a></p>\n")]
     [InlineData("| a | b |\n| - | - | - |\n| c | d |\n", "<p>| a | b |\n| - | - | - |\n| c | d |</p>\n")]
     [InlineData("- [x] a\n\n- [ ] b\n", "<ul>\n<li>\n<p><input checked=\"\" disabled=\"\" type=\"checkbox\"> a</p>\n</li>\n<li>\n<p><input disabled=\"\" type=\"checkbox\"> b</p>\n</li>\n</ul>\n")]
     [InlineData("> 1. [X] a\n", "<blockquote>\n<ol>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> a</li>\n</ol>\n</blockquote>\n")]
@@ -248,5 +250,311 @@ public sealed class MarkdownSyntaxTreeTests
         var text = "[a](" + '\uD800' + ")\n";
 
         Assert.Equal("<p><a href=\"%EF%BF%BD\">a</a></p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text)));
+    }
+
+    [Fact]
+    public void ReadmeExample_TypedApi()
+    {
+        #region MarkdownSyntaxTree_TypedApi
+        var tree = MarkdownSyntaxTree.ParseText("""
+            # Install *the* tool
+
+            See [the guide][guide] or ![logo](/logo.png "Logo").
+
+            [guide]: https://example.com/guide
+            """);
+        var root = tree.GetRoot();
+
+        var heading = Assert.IsType<MarkdownHeadingSyntax>(root.Blocks[0]);
+        Assert.Equal(1, heading.Level);
+        Assert.Equal("Install the tool", heading.GetPlainText());
+
+        // A reference link gets its destination from its definition
+        var links = root.DescendantNodes().OfType<MarkdownLinkSyntax>().ToList();
+        Assert.Equal(MarkdownLinkKind.Full, links[0].LinkKind);
+        Assert.Equal("https://example.com/guide", links[0].Destination);
+        Assert.True(links[1].IsImage);
+        Assert.Equal("Logo", links[1].Title);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Rewriter()
+    {
+        #region MarkdownSyntaxRewriter_Usage
+        var tree = MarkdownSyntaxTree.ParseText("<div>\nhidden\n</div>\n\nText with <b>tags</b>.\n");
+
+        var root = new RemoveHtml().Visit(tree.GetRoot())!;
+
+        Assert.Equal("\nText with tags.\n", root.ToFullString());
+        #endregion
+    }
+
+    #region MarkdownSyntaxRewriter_RemoveHtml
+    private sealed class RemoveHtml : MarkdownSyntaxRewriter
+    {
+        public override SyntaxNode? VisitMarkdownHtmlBlock(MarkdownHtmlBlockSyntax node) => null;
+
+        public override SyntaxNode? VisitMarkdownRawHtml(MarkdownRawHtmlSyntax node) => null;
+    }
+    #endregion
+
+    [Fact]
+    public void ReadmeExample_InsertBlocks()
+    {
+        #region MarkdownSyntaxTree_InsertBlocks
+        var tree = MarkdownSyntaxTree.ParseText("> - first\n> - second\n");
+        var first = tree.GetRoot().DescendantNodes().OfType<MarkdownListItemSyntax>().First();
+
+        // The markers of the block quote are added to the new line
+        var updated = tree.InsertBlocksAfter(first, "- inserted");
+
+        Assert.Equal("> - first\n> - inserted\n> - second\n", updated.GetRoot().ToFullString());
+        Assert.HasCount(3, updated.GetRoot().DescendantNodes().OfType<MarkdownListItemSyntax>());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("# a #\n", 1, false)]
+    [InlineData("###### a\n", 6, false)]
+    [InlineData("a\n===\n", 1, true)]
+    [InlineData("a\n---\n", 2, true)]
+    public void HeadingHasItsLevel(string text, int level, bool setext)
+    {
+        var heading = Assert.IsType<MarkdownHeadingSyntax>(MarkdownSyntaxTree.ParseText(text).GetRoot().Blocks.Single());
+
+        Assert.Equal(level, heading.Level);
+        Assert.Equal(setext, heading.IsSetext);
+        Assert.Equal("a", heading.GetPlainText());
+    }
+
+    [Fact]
+    public void ListHasItsMarkersAndTightness()
+    {
+        var blocks = MarkdownSyntaxTree.ParseText("3) a\n4) b\n\n- c\n\n- d\n", MarkdownParseOptions.GitHubFlavored).GetRoot().Blocks;
+        var ordered = Assert.IsType<MarkdownListSyntax>(blocks[0]);
+        var bullet = Assert.IsType<MarkdownListSyntax>(blocks[1]);
+
+        Assert.True(ordered.IsOrdered);
+        Assert.Equal(3, ordered.StartNumber);
+        Assert.Equal(')', ordered.MarkerCharacter);
+        Assert.True(ordered.IsTight);
+        Assert.Equal(2, ordered.Items.Count);
+        Assert.False(bullet.IsOrdered);
+        Assert.Null(bullet.StartNumber);
+        Assert.Equal('-', bullet.MarkerCharacter);
+        Assert.False(bullet.IsTight);
+    }
+
+    [Fact]
+    public void TaskListItemIsChecked()
+    {
+        var items = MarkdownSyntaxTree.ParseText("- [x] a\n- [ ] b\n- c\n", MarkdownParseOptions.GitHubFlavored).GetRoot().DescendantNodes().OfType<MarkdownListItemSyntax>().ToList();
+
+        Assert.Equal([true, true, false], items.Select(item => item.IsTask).ToArray());
+        Assert.Equal([true, false, false], items.Select(item => item.IsChecked).ToArray());
+        Assert.Equal("[x]", items[0].TaskListItemMarkerToken.Text);
+    }
+
+    [Fact]
+    public void CodeBlockHasItsCodeAndLanguage()
+    {
+        var blocks = MarkdownSyntaxTree.ParseText("> ```c\\# extra\n> a\n>\tb\n> ```\n\n    code\n").GetRoot().DescendantNodes().OfType<MarkdownCodeBlockSyntax>().ToList();
+
+        Assert.True(blocks[0].IsFenced);
+        Assert.Equal("c# extra", blocks[0].Info);
+        Assert.Equal("c#", blocks[0].Language);
+        Assert.Equal("a\n  b\n", blocks[0].Code);
+        Assert.Equal("```", blocks[0].ClosingFenceToken.Text);
+        Assert.False(blocks[1].IsFenced);
+        Assert.Null(blocks[1].Language);
+        Assert.Equal("code\n", blocks[1].Code);
+        Assert.Equal(0, blocks[1].OpeningFenceToken.RawKind);
+    }
+
+    [Fact]
+    public void HtmlBlockAndRawHtmlHaveTheirHtml()
+    {
+        var root = MarkdownSyntaxTree.ParseText("<div>\r\na\r\n</div>\r\n\r\nb <span\r\nid=\"x\">\r\n").GetRoot();
+
+        Assert.Equal("<div>\na\n</div>", Assert.IsType<MarkdownHtmlBlockSyntax>(root.Blocks[0]).Html);
+        Assert.Equal("<span\nid=\"x\">", root.DescendantNodes().OfType<MarkdownRawHtmlSyntax>().Single().Html);
+    }
+
+    [Theory]
+    [InlineData("[a](</my url> 'the \\'title\\'')\n", MarkdownLinkKind.Inline, "/my url", "the 'title'", null)]
+    [InlineData("[a][B]\n\n[b]: /u \"t\"\n", MarkdownLinkKind.Full, "/u", "t", "B")]
+    [InlineData("[a][]\n\n[A]: /u\n", MarkdownLinkKind.Collapsed, "/u", null, "a")]
+    [InlineData("[*a*]\n\n[*A*]: /u&amp;v\n", MarkdownLinkKind.Shortcut, "/u&v", null, "*a*")]
+    public void LinkHasItsDestination(string text, MarkdownLinkKind kind, string destination, string? title, string? label)
+    {
+        var link = MarkdownSyntaxTree.ParseText(text).GetRoot().DescendantNodes().OfType<MarkdownLinkSyntax>().Single();
+
+        Assert.Equal(kind, link.LinkKind);
+        Assert.Equal(destination, link.Destination);
+        Assert.Equal(title, link.Title);
+        Assert.Equal(label, link.Label);
+        Assert.Equal("a", link.GetPlainText());
+    }
+
+    [Fact]
+    public void LinkReferenceDefinitionsAreFoundByLabel()
+    {
+        var root = MarkdownSyntaxTree.ParseText("> [Foo  Bar]: /first\n\n[foo bar]: /second\n").GetRoot();
+
+        // The first definition of a label wins, and labels are compared without case and extra whitespace
+        Assert.HasCount(2, root.LinkReferenceDefinitions);
+        Assert.Equal("/first", root.GetLinkReferenceDefinition("FOO BAR")!.Destination);
+        Assert.Equal("Foo  Bar", root.GetLinkReferenceDefinition("foo bar")!.Label);
+        Assert.Null(root.GetLinkReferenceDefinition("other"));
+    }
+
+    [Theory]
+    [InlineData("<https://a.b/c>", false, false, "https://a.b/c", "https://a.b/c")]
+    [InlineData("<a@b.c>", false, true, "a@b.c", "mailto:a@b.c")]
+    [InlineData("www.a.b", true, false, "www.a.b", "http://www.a.b")]
+    [InlineData("a\\_b@c.d", true, true, "a_b@c.d", "mailto:a_b@c.d")]
+    public void AutolinkHasItsDestination(string text, bool extended, bool email, string expectedText, string destination)
+    {
+        var autolink = MarkdownSyntaxTree.ParseText(text, MarkdownParseOptions.GitHubFlavored).GetRoot().DescendantNodes().OfType<MarkdownAutolinkSyntax>().Single();
+
+        Assert.Equal(extended, autolink.IsExtended);
+        Assert.Equal(email, autolink.IsEmail);
+        Assert.Equal(expectedText, autolink.Text);
+        Assert.Equal(destination, autolink.Destination);
+    }
+
+    [Fact]
+    public void InlinesHaveTheirContent()
+    {
+        var root = MarkdownSyntaxTree.ParseText("**a** _b_ ~~c~~ ``  ` d ` `` e\\*&lt;\n", MarkdownParseOptions.GitHubFlavored).GetRoot();
+        var emphases = root.DescendantNodes().OfType<MarkdownEmphasisSyntax>().ToList();
+
+        Assert.True(emphases[0].IsStrong);
+        Assert.Equal("**", emphases[0].OpeningDelimiterToken.Text);
+        Assert.False(emphases[1].IsStrong);
+        Assert.Equal("~~", root.DescendantNodes().OfType<MarkdownStrikethroughSyntax>().Single().ClosingDelimiterToken.Text);
+        Assert.Equal(" ` d `", root.DescendantNodes().OfType<MarkdownCodeSpanSyntax>().Single().Code);
+        Assert.Equal("a b c  ` d ` e*<", root.Blocks[0].GetPlainText());
+    }
+
+    [Fact]
+    public void TableHasItsRowsAndAlignments()
+    {
+        var table = Assert.IsType<MarkdownTableSyntax>(MarkdownSyntaxTree.ParseText("| a | b | c | d |\n|---|:--|:-:|--:|\n| `x\\|y` | [l](/u\\|v) |\n", MarkdownParseOptions.GitHubFlavored).GetRoot().Blocks.Single());
+
+        Assert.Equal([MarkdownTableAlignment.None, MarkdownTableAlignment.Left, MarkdownTableAlignment.Center, MarkdownTableAlignment.Right], table.Alignments.ToArray());
+        Assert.True(table.HeaderRow.IsHeader);
+        Assert.True(table.DelimiterRow.IsDelimiter);
+        Assert.Equal(4, table.DelimiterRow.DelimiterTokens.Count);
+        Assert.Equal(["a", "b", "c", "d"], table.HeaderRow.Cells.Select(cell => cell.GetPlainText()).ToArray());
+
+        // In a cell, \| is a pipe, even in a code span and a link destination
+        var row = Assert.Single(table.Rows);
+        Assert.Equal("x|y", row.DescendantNodes().OfType<MarkdownCodeSpanSyntax>().Single().Code);
+        Assert.Equal("/u|v", row.DescendantNodes().OfType<MarkdownLinkSyntax>().Single().Destination);
+    }
+
+    [Fact]
+    public void WalkerVisitsEveryNode()
+    {
+        var root = MarkdownSyntaxTree.ParseText(CommonMarkSpec.Examples[300].Markdown + "\n" + CommonMarkSpec.GfmExamples[0].Markdown, MarkdownParseOptions.GitHubFlavored).GetRoot();
+        var walker = new CountingWalker();
+
+        walker.Visit(root);
+
+        Assert.Equal(root.DescendantNodesAndSelf().Count(), walker.Count);
+    }
+
+    [Fact]
+    public void RewriterThatChangesNothingKeepsTheNodes()
+    {
+        var root = MarkdownSyntaxTree.ParseText("> - a *b*\n", MarkdownParseOptions.GitHubFlavored).GetRoot();
+
+        Assert.Same(root, new MarkdownSyntaxRewriter().Visit(root));
+    }
+
+    [Fact]
+    public void RewriterReplacesTokens()
+    {
+        var root = MarkdownSyntaxTree.ParseText("> # old\n>\n> *old*\n").GetRoot();
+
+        var rewritten = new ReplaceText().Visit(root)!;
+
+        Assert.Equal("> # new\n>\n> *new*\n", rewritten.ToFullString());
+        Assert.IsType<MarkdownDocumentSyntax>(rewritten);
+        Assert.Equal("new\nnew", ((MarkdownDocumentSyntax)rewritten).GetPlainText());
+    }
+
+    [Theory]
+    [InlineData("- a\n- b\n", true, 1, "- c\n", "- a\n- c\n- b\n")]
+    [InlineData("- a\n\n  b\n", false, 0, "c\n\n", "- c\n\n  a\n\n  b\n")]
+    [InlineData("> a\r\n", false, 0, "b\n\nc", "> b\r\n>\r\n> c\r\n> a\r\n")]
+    public void InsertsBlocksBefore(string text, bool listItem, int blockIndex, string markdown, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text);
+        var nodes = tree.GetRoot().DescendantNodes();
+        var block = listItem ? (MarkdownBlockSyntax)nodes.OfType<MarkdownListItemSyntax>().ElementAt(blockIndex) : nodes.OfType<MarkdownParagraphSyntax>().ElementAt(blockIndex);
+
+        Assert.Equal(expected, tree.InsertBlocksBefore(block, markdown).GetRoot().ToFullString());
+    }
+
+    [Theory]
+    [InlineData("a", "\nb\n", "a\n\nb")]
+    [InlineData("```\ncode\n```\nc\n", "# t", "```\ncode\n```\n# t\nc\n")]
+    [InlineData("> - a\n>   b\n", "\n  c", ">   b\n>\n>     c\n")]
+    public void InsertsBlocksAfter(string text, string markdown, string expectedEnd)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text);
+        var block = tree.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().First(node => node is MarkdownParagraphSyntax or MarkdownCodeBlockSyntax);
+
+        Assert.EndsWith(expectedEnd, tree.InsertBlocksAfter(block, markdown).GetRoot().ToFullString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("a\n\nb\n\nc\n", 1, "a\n\n\nc\n")]
+    [InlineData("> a\n>\n> b\n", 0, ">\n> b\n")]
+    [InlineData("- a\n- b\n", 0, "- b\n")]
+    [InlineData("1. a\n", 1, "1. \n")]
+    [InlineData("a\r\n\r\nb", 1, "a\r\n\r\n")]
+    public void RemovesBlocks(string text, int blockIndex, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text);
+        var block = tree.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Where(node => node is not (MarkdownBlockQuoteSyntax or MarkdownListSyntax)).ToList()[blockIndex];
+
+        Assert.Equal(expected, tree.RemoveBlock(block).GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void EditingABlockOfAnotherTreeThrows()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("a\n");
+        var other = MarkdownSyntaxTree.ParseText("b\n").GetRoot().Blocks[0];
+
+        Assert.Throws<ArgumentException>("block", () => tree.RemoveBlock(other));
+    }
+
+    private sealed class CountingWalker : MarkdownSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public override void DefaultVisit(MarkdownSyntaxNode node)
+        {
+            Count++;
+            base.DefaultVisit(node);
+        }
+    }
+
+    private sealed class ReplaceText : MarkdownSyntaxRewriter
+    {
+        public override SyntaxToken VisitToken(SyntaxToken token)
+        {
+            if (token.RawKind == (int)SyntaxKind.TextToken && token.Text == "old")
+            {
+                return MarkdownSyntaxTree.ParseText("new").GetRoot().DescendantTokens().First().WithTriviaFrom(token);
+            }
+
+            return base.VisitToken(token);
+        }
     }
 }

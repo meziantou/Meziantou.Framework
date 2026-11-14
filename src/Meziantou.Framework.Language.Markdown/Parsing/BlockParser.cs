@@ -473,6 +473,13 @@ internal sealed class BlockParser
             return false;
         }
 
+        // A setext underline that found only link reference definitions read the paragraph already: a line of a definition is
+        // not a header row
+        if (paragraph.LineCount <= paragraph.DefinitionLineCount)
+        {
+            return false;
+        }
+
         // The header row must have as many cells as the delimiter row. A paragraph that fails is never a table: its next lines
         // are not tried again.
         var header = _lines[paragraph.LineStart + paragraph.LineCount - 1];
@@ -843,6 +850,7 @@ internal sealed class BlockParser
         }
 
         paragraph.ContentStart = position;
+        paragraph.DefinitionLineCount = position == subject.Length ? paragraph.LineCount : subject.Text.AsSpan(0, position).Count('\n');
         paragraph.Subject = subject;
         paragraph.IsEmpty = subject.Text.AsSpan(position).Trim(" \t\n").IsEmpty;
     }
@@ -1107,6 +1115,9 @@ internal sealed class BlockParser
         public List<BuildNode>? DefinitionsOrNull { get; private set; }
 
         public int ContentStart { get; set; }
+
+        // The lines that the link reference definitions take
+        public int DefinitionLineCount { get; set; }
 
         public Subject? Subject { get; set; }
 

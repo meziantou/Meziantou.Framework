@@ -23,17 +23,66 @@ Assert.Equal("<blockquote>\n<p>A quote with <em>emphasis</em>\non two lines</p>\
 ```
 <!-- endref -->
 
-Each node of the tree is a [MarkdownSyntaxNode](cref:Meziantou.Framework.Language.Markdown.MarkdownSyntaxNode) whose
-[Kind](cref:Meziantou.Framework.Language.Markdown.MarkdownSyntaxNode.Kind) is a block (a paragraph, a block quote, a list
-item...) or an inline (an emphasis, a link...). The tokens are what the constructs are made of: the marker that opens
-a block quote, the backticks of a code span, the brackets and the destination of a link, the delimiters of an
-emphasis.
+The tokens are what the constructs are made of: the marker that opens a block quote, the backticks of a code span, the
+brackets and the destination of a link, the delimiters of an emphasis.
 
 The characters that no token covers are trivia, as in the other languages: the indentation, the line endings that end
 blocks, and the markers of the containers on their continuation lines. In `> a` followed by `> b`, the first `>` is a
 token of the block quote, and the second one is a
 [BlockQuoteMarkerTrivia](cref:Meziantou.Framework.Language.Markdown.SyntaxKind.BlockQuoteMarkerTrivia) before `b`. The
 line endings in a paragraph are tokens, because they are part of its text: a soft or a hard line break.
+
+## Read the nodes
+
+Each construct has its type of node, which derives from
+[MarkdownBlockSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownBlockSyntax) for a block, or from
+[MarkdownInlineSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownInlineSyntax) for an inline:
+
+| Blocks | Inlines |
+| --- | --- |
+| [MarkdownParagraphSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownParagraphSyntax) | [MarkdownEmphasisSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownEmphasisSyntax) |
+| [MarkdownHeadingSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownHeadingSyntax) | [MarkdownStrikethroughSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownStrikethroughSyntax) |
+| [MarkdownBlockQuoteSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownBlockQuoteSyntax) | [MarkdownCodeSpanSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownCodeSpanSyntax) |
+| [MarkdownListSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownListSyntax), [MarkdownListItemSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownListItemSyntax) | [MarkdownLinkSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownLinkSyntax), for links and images |
+| [MarkdownCodeBlockSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownCodeBlockSyntax), fenced or indented | [MarkdownAutolinkSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownAutolinkSyntax) |
+| [MarkdownHtmlBlockSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownHtmlBlockSyntax) | [MarkdownRawHtmlSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownRawHtmlSyntax) |
+| [MarkdownThematicBreakSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownThematicBreakSyntax) | |
+| [MarkdownLinkReferenceDefinitionSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownLinkReferenceDefinitionSyntax) | |
+| [MarkdownTableSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownTableSyntax), with its rows and cells | |
+
+The nodes give their tokens, such as the marker of a list item, and the values they stand for: the level of a heading,
+the code of a code block without the markers of its containers, the destination of a link without its escapes, which a
+reference link takes from its definition. The text between the inlines is tokens, such as a
+[TextToken](cref:Meziantou.Framework.Language.Markdown.SyntaxKind.TextToken).
+[GetPlainText](cref:Meziantou.Framework.Language.Markdown.MarkdownSyntaxNode.GetPlainText) gives the text of a node as a
+reader sees it:
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_TypedApi;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = MarkdownSyntaxTree.ParseText("""
+    # Install *the* tool
+
+    See [the guide][guide] or ![logo](/logo.png "Logo").
+
+    [guide]: https://example.com/guide
+    """);
+var root = tree.GetRoot();
+
+var heading = Assert.IsType<MarkdownHeadingSyntax>(root.Blocks[0]);
+Assert.Equal(1, heading.Level);
+Assert.Equal("Install the tool", heading.GetPlainText());
+
+// A reference link gets its destination from its definition
+var links = root.DescendantNodes().OfType<MarkdownLinkSyntax>().ToList();
+Assert.Equal(MarkdownLinkKind.Full, links[0].LinkKind);
+Assert.Equal("https://example.com/guide", links[0].Destination);
+Assert.True(links[1].IsImage);
+Assert.Equal("Logo", links[1].Title);
+```
+<!-- endref -->
+
+[MarkdownSyntaxWalker](cref:Meziantou.Framework.Language.Markdown.MarkdownSyntaxWalker) visits every node of a tree, with
+a method for each type of node.
 
 ## Edit a document
 
@@ -52,6 +101,53 @@ var updated = root.ReplaceToken(first, replacement);
 Assert.Equal("> - updated\n>   item\n> - second\n", updated.ToFullString());
 ```
 <!-- endref -->
+
+[MarkdownSyntaxRewriter](cref:Meziantou.Framework.Language.Markdown.MarkdownSyntaxRewriter) builds a new tree from the
+nodes and tokens its methods return. A node it returns `null` for is removed, with its text:
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxRewriter_RemoveHtml;format=md-fenced-code-block;dedent=true -->
+```csharp
+private sealed class RemoveHtml : MarkdownSyntaxRewriter
+{
+    public override SyntaxNode? VisitMarkdownHtmlBlock(MarkdownHtmlBlockSyntax node) => null;
+
+    public override SyntaxNode? VisitMarkdownRawHtml(MarkdownRawHtmlSyntax node) => null;
+}
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxRewriter_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = MarkdownSyntaxTree.ParseText("<div>\nhidden\n</div>\n\nText with <b>tags</b>.\n");
+
+var root = new RemoveHtml().Visit(tree.GetRoot())!;
+
+Assert.Equal("\nText with tags.\n", root.ToFullString());
+```
+<!-- endref -->
+
+To add blocks, or to remove a block with its lines,
+[InsertBlocksBefore](cref:Meziantou.Framework.Language.Markdown.MarkdownSyntaxTree.InsertBlocksBefore(Meziantou.Framework.Language.Markdown.MarkdownBlockSyntax,System.String)),
+[InsertBlocksAfter](cref:Meziantou.Framework.Language.Markdown.MarkdownSyntaxTree.InsertBlocksAfter(Meziantou.Framework.Language.Markdown.MarkdownBlockSyntax,System.String))
+and [RemoveBlock](cref:Meziantou.Framework.Language.Markdown.MarkdownSyntaxTree.RemoveBlock(Meziantou.Framework.Language.Markdown.MarkdownBlockSyntax))
+change the text and parse it again. The new blocks are written as if they were not in a container: the markers of the
+containers of the block are added to each of their lines.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_InsertBlocks;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = MarkdownSyntaxTree.ParseText("> - first\n> - second\n");
+var first = tree.GetRoot().DescendantNodes().OfType<MarkdownListItemSyntax>().First();
+
+// The markers of the block quote are added to the new line
+var updated = tree.InsertBlocksAfter(first, "- inserted");
+
+Assert.Equal("> - first\n> - inserted\n> - second\n", updated.GetRoot().ToFullString());
+Assert.HasCount(3, updated.GetRoot().DescendantNodes().OfType<MarkdownListItemSyntax>());
+```
+<!-- endref -->
+
+The text is inserted as it is: separate the new blocks from the others with a blank line when they would otherwise be
+read as one, such as two paragraphs. Removing the first block of a list item keeps the marker of the item.
 
 ## Render HTML
 
@@ -129,6 +225,5 @@ never overlap.
 ## Limitations of the prototype
 
 - Only CommonMark and the extensions of GitHub Flavored Markdown: no footnotes, front matter, math...
-- No typed API: the nodes are read by their kind and the kinds of their tokens.
-- The nodes cannot be inserted or removed in a list of blocks yet: replace a node or a token instead.
+- Inserting and removing blocks parses the whole text again.
 - Parsing allocates more and is slower than [Meziantou.Framework.Markdown](../Markdown/01-Introduction.md).

@@ -46,6 +46,82 @@ internal static class MarkdownFuzzTargets
         }
 
         _ = MarkdownHtmlRenderer.ToHtml(tree);
+        CheckTypedApi(tree, text);
+    }
+
+    // The typed nodes read their tokens without throwing, the walker visits every node, a rewrite that changes nothing keeps
+    // the tree, and the editing helpers give trees for any block
+    private static void CheckTypedApi(MarkdownSyntaxTree tree, string text)
+    {
+        var root = tree.GetRoot();
+        var count = 0;
+        foreach (var node in root.DescendantNodesAndSelf().Cast<MarkdownSyntaxNode>())
+        {
+            count++;
+            _ = node.GetPlainText();
+            switch (node)
+            {
+                case MarkdownHeadingSyntax heading:
+                    FuzzAssert.True(heading.Level is >= 1 and <= 6, $"The heading at {heading.Span} has the level {heading.Level}: {FuzzAssert.Format(text)}");
+                    break;
+                case MarkdownListSyntax list:
+                    _ = (list.IsTight, list.StartNumber, list.MarkerCharacter);
+                    FuzzAssert.True(list.Items.Count > 0, $"The list at {list.Span} has no item: {FuzzAssert.Format(text)}");
+                    break;
+                case MarkdownListItemSyntax item:
+                    _ = (item.IsTask, item.IsChecked, item.MarkerToken);
+                    break;
+                case MarkdownCodeBlockSyntax code:
+                    _ = (code.Code, code.Language, code.ClosingFenceToken);
+                    break;
+                case MarkdownHtmlBlockSyntax html:
+                    _ = html.Html;
+                    break;
+                case MarkdownLinkReferenceDefinitionSyntax definition:
+                    _ = (definition.Label, definition.Destination, definition.Title);
+                    break;
+                case MarkdownTableSyntax table:
+                    FuzzAssert.True(table.Alignments.Count == table.HeaderRow.Cells.Count, $"The table at {table.Span} has {table.Alignments.Count} columns and {table.HeaderRow.Cells.Count} header cells: {FuzzAssert.Format(text)}");
+                    _ = table.Rows;
+                    break;
+                case MarkdownCodeSpanSyntax codeSpan:
+                    _ = codeSpan.Code;
+                    break;
+                case MarkdownLinkSyntax link:
+                    _ = (link.LinkKind, link.Destination, link.Title, link.Label);
+                    FuzzAssert.True(link.LinkKind == MarkdownLinkKind.Inline || link.Definition is not null, $"The reference link at {link.Span} has no definition: {FuzzAssert.Format(text)}");
+                    break;
+                case MarkdownAutolinkSyntax autolink:
+                    _ = (autolink.Destination, autolink.IsEmail);
+                    break;
+                case MarkdownRawHtmlSyntax rawHtml:
+                    _ = rawHtml.Html;
+                    break;
+            }
+        }
+
+        var walker = new CountingWalker();
+        walker.Visit(root);
+        FuzzAssert.True(walker.Count == count, $"The walker visits {walker.Count} nodes of {count}: {FuzzAssert.Format(text)}");
+        FuzzAssert.True(ReferenceEquals(new MarkdownSyntaxRewriter().Visit(root), root), $"A rewrite that changes nothing changes the tree: {FuzzAssert.Format(text)}");
+
+        if (text.Length < 4096 && root.DescendantNodes().OfType<MarkdownBlockSyntax>().LastOrDefault() is { } block)
+        {
+            _ = tree.RemoveBlock(block);
+            _ = tree.InsertBlocksBefore(block, "- a\n\n> b");
+            _ = tree.InsertBlocksAfter(block, "\nc\n");
+        }
+    }
+
+    private sealed class CountingWalker : MarkdownSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public override void DefaultVisit(MarkdownSyntaxNode node)
+        {
+            Count++;
+            base.DefaultVisit(node);
+        }
     }
 
     // The examples of the CommonMark specification

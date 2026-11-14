@@ -111,7 +111,7 @@ Each page has a clipboard of its own, so tests that run in parallel do not see w
 ([ProvideContent](cref:Meziantou.AspNetCore.Testing.FakeClipboard.ProvideContent)) and receives what they copy
 ([ContentChanged](cref:Meziantou.AspNetCore.Testing.FakeClipboard.ContentChanged)). Set it with
 [ConfigureBrowsingContext](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.ConfigureBrowsingContext): the pages that
-use the same instance share it. Without `ProvideContent`, the pages read what was last written.
+use the same instance share it. Without [ProvideContent](cref:Meziantou.AspNetCore.Testing.FakeClipboard.ProvideContent), the pages read what was last written.
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=FakeClipboard_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -141,7 +141,7 @@ Assert.Equal("Pasted text", page.Find("output").TextContent);
 ```
 <!-- endref -->
 
-When the content returned by `ProvideContent` changes, as when another application writes to the clipboard,
+When the content returned by [ProvideContent](cref:Meziantou.AspNetCore.Testing.FakeClipboard.ProvideContent) changes, as when another application writes to the clipboard,
 [NotifyContentChanged](cref:Meziantou.AspNetCore.Testing.FakeClipboard.NotifyContentChanged) fires the `clipboardchange`
 events of the pages.
 

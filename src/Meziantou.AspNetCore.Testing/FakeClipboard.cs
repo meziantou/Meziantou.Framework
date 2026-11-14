@@ -38,7 +38,8 @@ namespace Meziantou.AspNetCore.Testing;
 /// </example>
 public sealed class FakeClipboard : SystemClipboard
 {
-    private long _externalChangeCount;
+    private IReadOnlyList<SystemClipboardItem> _items = [];
+    private long _changeCount;
 
     /// <summary>
     /// Gets a function that returns the content of the clipboard each time it is read (the paste action,
@@ -46,21 +47,28 @@ public sealed class FakeClipboard : SystemClipboard
     /// </summary>
     public Func<IReadOnlyList<SystemClipboardItem>>? ProvideContent { get; init; }
 
-    /// <summary>Gets a function called with the new content each time the clipboard is written (the copy and cut actions, <c>navigator.clipboard.write()</c> and <c>writeText()</c>).</summary>
+    /// <summary>
+    /// Gets a function called with the new content each time the clipboard is written (the copy and cut actions,
+    /// <c>navigator.clipboard.write()</c> and <c>writeText()</c>). It is called before <see cref="SystemClipboard.Changed"/>
+    /// and the <c>clipboardchange</c> events, so their listeners read the new content.
+    /// </summary>
     public Action<IReadOnlyList<SystemClipboardItem>>? ContentChanged { get; init; }
 
     /// <inheritdoc />
-    public override IReadOnlyList<SystemClipboardItem> Items => ProvideContent?.Invoke() ?? base.Items;
+    public override IReadOnlyList<SystemClipboardItem> Items => ProvideContent?.Invoke() ?? Volatile.Read(ref _items);
 
     /// <inheritdoc />
-    public override long ChangeCount => base.ChangeCount + Interlocked.Read(ref _externalChangeCount);
+    public override long ChangeCount => Interlocked.Read(ref _changeCount);
 
     /// <inheritdoc />
     public override void Write(IReadOnlyList<SystemClipboardItem> items)
     {
         ArgumentNullException.ThrowIfNull(items);
-        base.Write(items);
-        ContentChanged?.Invoke(items);
+        IReadOnlyList<SystemClipboardItem> content = [.. items];
+        Volatile.Write(ref _items, content);
+        Interlocked.Increment(ref _changeCount);
+        ContentChanged?.Invoke(content);
+        OnChanged();
     }
 
     /// <summary>
@@ -69,7 +77,7 @@ public sealed class FakeClipboard : SystemClipboard
     /// </summary>
     public void NotifyContentChanged()
     {
-        Interlocked.Increment(ref _externalChangeCount);
+        Interlocked.Increment(ref _changeCount);
         OnChanged();
     }
 

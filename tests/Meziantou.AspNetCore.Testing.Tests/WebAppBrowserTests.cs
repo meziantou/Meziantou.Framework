@@ -172,6 +172,24 @@ public sealed class WebAppBrowserTests
     }
 
     [Fact]
+    public void FakeClipboard_ContentChangedRunsBeforeTheChangeEvents()
+    {
+        var content = new List<SystemClipboardItem>();
+        var clipboard = new FakeClipboard
+        {
+            ProvideContent = () => content,
+            ContentChanged = items => content = [.. items],
+        };
+        string? textSeenByListener = null;
+        clipboard.Changed += (_, _) => textSeenByListener = clipboard.ReadText();
+
+        clipboard.WriteText("New text");
+
+        Assert.Equal("New text", textSeenByListener);
+        Assert.Equal(1, clipboard.ChangeCount);
+    }
+
+    [Fact]
     public void FakeClipboard_NotifyContentChanged()
     {
         var text = "First";

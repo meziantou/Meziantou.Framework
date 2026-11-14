@@ -149,6 +149,31 @@ public sealed class PdfPrintTests : IDisposable
     }
 
     [Fact]
+    public void PrintToPdf_ColorGlyphsAreRasterized()
+    {
+        // The emoji of Noto Color Emoji are PNG images (CBDT), and the glyphs of the font of the tests of Imaging are SVG
+        // documents: PDF draws neither, so they are images of the page
+        _pages.Resources["/emoji.ttf"] = (File.ReadAllBytes(RepositoryPaths.Root / "tests" / "Meziantou.Framework.WebPlatform.Imaging.Tests" / "TestData" / "NotoColorEmoji-subset.ttf"), "font/ttf");
+        _pages.Resources["/svg.ttf"] = (Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.SvgBoxes().Build(), "font/ttf");
+        var context = _pages.Load(PageStyle + """
+            <style>
+              @font-face { font-family: Emoji; src: url(/emoji.ttf) }
+              @font-face { font-family: Svg; src: url(/svg.ttf) }
+              p { margin: 10px; color: blue }
+            </style>
+            <p style='font: 32px/1 Emoji'>😀</p>
+            <p style='font: 32px/1 Svg'>ABE</p>
+            """);
+
+        var pdf = Reopen(context.PrintToPdf());
+
+        var xobjects = pdf.Pages[0].Resources!.Get<PdfDictionary>(PdfName.Create("XObject"));
+        Assert.NotNull(xobjects);
+        Assert.NotEmpty(xobjects.Keys);
+        AssertRendersAsTheRasterizer(context, pdf);
+    }
+
+    [Fact]
     public void PrintToPdf_TextIsEmbeddedAndExtractable()
     {
         var context = _pages.Load(PageStyle + LoadFont() + "<style>p { font: 14px Noto; margin: 0 }</style><p>office hours</p><p>Café — 1€</p>");

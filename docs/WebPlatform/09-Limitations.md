@@ -29,9 +29,8 @@ fails.
     Windows-1256 fonts.
 - **Painting.** The core library paints the documents into a display list; a [rendering backend](07-Rendering/01-Overview.md)
   produces the pixels. Without a backend, nothing is painted, the images are not decoded and `canvas.getContext("2d")`
-  returns `null`. The Imaging backend does not paint:
-  - the SVG color glyphs (the `SVG ` table of a font): they are drawn as their outlines (the `COLR` glyphs, versions 0 and
-    1, and the bitmap glyphs of `sbix` and `CBDT` are drawn with their colors);
+  returns `null`. The Imaging backend draws the color glyphs (`COLR` versions 0 and 1, `SVG `, `sbix` and `CBDT`) with
+  their colors, but does not paint:
   - the wrapping of the SVG texts in the shapes of `shape-inside`;
   - the `CanvasFilter` objects, also as the filter of a canvas layer (`beginLayer()`).
 

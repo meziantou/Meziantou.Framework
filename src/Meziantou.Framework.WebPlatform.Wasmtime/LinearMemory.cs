@@ -181,10 +181,10 @@ internal sealed unsafe class SharedLinearMemory
 
     // The size a growth of the current thread must reach (see BeginExactGrowth), and whether another growth came first
     [ThreadStatic]
-    private static ulong t_exactGrowthByteSize;
+    private static ulong s_exactGrowthByteSize;
 
     [ThreadStatic]
-    private static bool t_exactGrowthRaced;
+    private static bool s_exactGrowthRaced;
 
     /// <summary>
     /// Makes the growths of the shared memories by the current thread fail when they would not reach exactly
@@ -194,15 +194,15 @@ internal sealed unsafe class SharedLinearMemory
     /// </summary>
     public static void BeginExactGrowth(ulong byteSize)
     {
-        t_exactGrowthByteSize = byteSize;
-        t_exactGrowthRaced = false;
+        s_exactGrowthByteSize = byteSize;
+        s_exactGrowthRaced = false;
     }
 
     /// <summary>Ends <see cref="BeginExactGrowth"/>, and returns whether a growth failed because another growth came first.</summary>
     public static bool EndExactGrowth()
     {
-        t_exactGrowthByteSize = 0;
-        return t_exactGrowthRaced;
+        s_exactGrowthByteSize = 0;
+        return s_exactGrowthRaced;
     }
 
     /// <summary>Returns the shared memory whose bytes start at <paramref name="address"/>, or null.</summary>
@@ -266,9 +266,9 @@ internal sealed unsafe class SharedLinearMemory
     {
         try
         {
-            if (t_exactGrowthByteSize != 0 && (ulong)newSize != t_exactGrowthByteSize)
+            if (s_exactGrowthByteSize != 0 && (ulong)newSize != s_exactGrowthByteSize)
             {
-                t_exactGrowthRaced = true;
+                s_exactGrowthRaced = true;
                 return NativeErrors.CreateError("The shared memory grew concurrently");
             }
 

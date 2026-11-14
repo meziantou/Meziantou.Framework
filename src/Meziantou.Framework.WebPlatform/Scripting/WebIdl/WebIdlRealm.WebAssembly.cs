@@ -750,7 +750,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if ((ulong)newByteLength % WasmPageSize != 0)
             throw CreateRangeError("The buffer of a memory can only grow by a multiple of the page size");
 
-        if (memoryObject.Memory.SharedBytes is { } sharedBytes)
+        if (memoryObject.Memory.SharedBytes is not null)
         {
             // https://webassembly.github.io/threads/js-api/#sec-hostgrowsharedarraybuffer: the agents that share the memory can
             // grow it concurrently (Memory.grow, memory.grow), so the memory grows to the new length (a delta computed from a

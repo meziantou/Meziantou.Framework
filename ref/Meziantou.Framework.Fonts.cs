@@ -609,6 +609,7 @@ namespace Meziantou.Framework.Fonts
         public static Meziantou.Framework.Fonts.FontFace[] Load(System.IO.Stream stream, Meziantou.Framework.Fonts.FontEnvironment environment, bool useEmbeddedBitmaps = false) => throw null;
         public static Meziantou.Framework.Fonts.FontFace[] Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Fonts.FontEnvironment environment, bool useEmbeddedBitmaps = false) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Fonts.FontFace[]> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Fonts.FontEnvironment environment, bool useEmbeddedBitmaps, System.Threading.CancellationToken cancellationToken) => throw null;
+        public static Meziantou.Framework.Fonts.FontFace LoadType1(System.ReadOnlySpan<byte> data, Meziantou.Framework.Fonts.AfmFontMetrics? metrics, Meziantou.Framework.Fonts.FontEnvironment environment) => throw null;
     }
 
     public enum FontOutlineKind

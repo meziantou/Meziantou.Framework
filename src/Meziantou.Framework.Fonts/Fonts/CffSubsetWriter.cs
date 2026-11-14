@@ -281,7 +281,7 @@ internal static class CffSubsetWriter
         return (long)value;
     }
 
-    private static void WriteEntries(List<byte> output, IEnumerable<(int Operator, double[] Operands)> entries)
+    internal static void WriteEntries(List<byte> output, IEnumerable<(int Operator, double[] Operands)> entries)
     {
         foreach (var (@operator, operands) in entries)
         {
@@ -294,7 +294,7 @@ internal static class CffSubsetWriter
         }
     }
 
-    private static void WriteOperator(List<byte> output, int @operator)
+    internal static void WriteOperator(List<byte> output, int @operator)
     {
         if (@operator >= Escape)
         {
@@ -308,7 +308,7 @@ internal static class CffSubsetWriter
     }
 
     /// <summary>Writes an integer on five bytes (operand 29), whatever its value.</summary>
-    private static void WriteFixedInteger(List<byte> output, int value)
+    internal static void WriteFixedInteger(List<byte> output, int value)
     {
         output.Add(29);
         output.Add((byte)(value >> 24));
@@ -318,7 +318,7 @@ internal static class CffSubsetWriter
     }
 
     /// <summary>Writes a number with the shortest of the encodings of table 3, or as a real number (table 5).</summary>
-    private static void WriteNumber(List<byte> output, double value)
+    internal static void WriteNumber(List<byte> output, double value)
     {
         if (value == Math.Floor(value) && value is >= int.MinValue and <= int.MaxValue)
         {
@@ -396,7 +396,7 @@ internal static class CffSubsetWriter
     }
 
     /// <summary>Writes an INDEX (section 5) with the shortest size of offsets.</summary>
-    private static byte[] WriteIndex(IReadOnlyList<byte[]> items)
+    internal static byte[] WriteIndex(IReadOnlyList<byte[]> items)
     {
         if (items.Count == 0)
             return [0, 0];

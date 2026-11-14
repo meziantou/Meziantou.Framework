@@ -123,6 +123,7 @@ public static class FontsFuzzTargets
         new("fonts-split-runs", SplitRuns) { Seeds = GetSplitRunsSeeds, Dictionary = SplitRunsTokens },
         new("fonts-bitmaps", Bitmaps) { Seeds = GetBitmapSeeds, Dictionary = BitmapTokens },
         new("fonts-woff-blocks", WoffBlocks) { Seeds = GetWoffBlocksSeeds, Dictionary = WoffBlocksTokens },
+        .. Type1FuzzTargets.All,
     ];
 
     /// <summary>

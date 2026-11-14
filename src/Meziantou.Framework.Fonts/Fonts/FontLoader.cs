@@ -4,10 +4,17 @@ namespace Meziantou.Framework.Fonts;
 /// Reads a font file into memory, within the limits of an environment, and creates its faces.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The whole file is read: the tables of a font are a graph of offsets, and the font keeps its bytes to read them in
 /// place. The bytes read are bounded by <see cref="FontResourceLimits.MaxEncodedBytes"/>, and the bytes the font keeps
 /// by <see cref="FontResourceLimits.MaxFontBytes"/>, and the faces of a collection by
 /// <see cref="FontResourceLimits.MaxCollectionFaces"/>.
+/// </para>
+/// <para>
+/// A PostScript Type 1 font (a PFB or a PFA file) is converted to an OpenType font with CFF outlines when it is
+/// loaded: <see cref="FontData.Bytes"/> are the bytes of that font. <see cref="LoadType1"/> adds the metrics of its AFM
+/// file.
+/// </para>
 /// </remarks>
 public static class FontLoader
 {
@@ -52,6 +59,32 @@ public static class FontLoader
         return Parse(bytes, environment, useEmbeddedBitmaps);
     }
 
+    /// <summary>Reads a PostScript Type 1 font (a PFB or a PFA file) and the metrics of its AFM file.</summary>
+    /// <param name="data">The bytes of the PFB or PFA file.</param>
+    /// <param name="metrics">
+    /// The metrics of the font, read from its AFM file, or <see langword="null"/>: their kerning pairs become the
+    /// kerning of the font, and their ascender, descender, cap height and x-height replace the values computed from the
+    /// font program. The advance widths are always the ones of the font program.
+    /// </param>
+    /// <param name="environment">The limits and the storage of the font code.</param>
+    /// <returns>The face of the font.</returns>
+    /// <exception cref="UnknownFontFormatException">The data is not a PFB or a PFA file.</exception>
+    /// <exception cref="InvalidFontException">The font program is malformed.</exception>
+    /// <exception cref="UnsupportedFontFeatureException">The font is a multiple master, CID-keyed or stroked font.</exception>
+    /// <exception cref="FontResourceLimitException">The font exceeds a limit of the environment.</exception>
+    public static FontFace LoadType1(ReadOnlySpan<byte> data, AfmFontMetrics? metrics, FontEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(environment);
+        var limits = environment.Limits;
+        if (data.Length > limits.MaxEncodedBytes)
+            throw new FontResourceLimitException(FontResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, data.Length);
+
+        if (!Type1Font.HasSignature(data))
+            throw new UnknownFontFormatException("The data is not a PostScript Type 1 font: it does not start with the signature of a PFB or a PFA file.");
+
+        return new FontFace(new FontData(Type1FontConverter.Convert(data, metrics, environment), environment), directoryOffset: 0);
+    }
+
     private static void EnsureFontBytes(FontResourceLimits limits, long length)
     {
         if (length > limits.MaxFontBytes)
@@ -63,6 +96,9 @@ public static class FontLoader
     {
         if (bytes.Length < 4)
             throw new UnknownFontFormatException("The data is not a font: it is shorter than a font signature.");
+
+        if (Type1Font.HasSignature(bytes))
+            return [new FontFace(new FontData(Type1FontConverter.Convert(bytes, metrics: null, environment), environment, useEmbeddedBitmaps), directoryOffset: 0)];
 
         WoffExtendedData? extendedData = null;
         switch (FontBinary.UInt32(bytes, 0))
@@ -100,7 +136,7 @@ public static class FontLoader
                 if (AfmParser.HasAfmSignature(bytes))
                     throw new UnknownFontFormatException($"The data is not a font: it is an AFM file (Adobe Font Metrics), which has metrics but no glyphs. Read it with {nameof(AfmFontMetrics)}.");
 
-                throw new UnknownFontFormatException("The data is not a font: it does not start with the signature of a TrueType, OpenType, WOFF or WOFF2 font or of a font collection.");
+                throw new UnknownFontFormatException("The data is not a font: it does not start with the signature of a TrueType, OpenType, WOFF, WOFF2 or PostScript Type 1 font or of a font collection.");
         }
     }
 

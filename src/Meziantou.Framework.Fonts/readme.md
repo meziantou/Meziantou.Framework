@@ -7,6 +7,7 @@ Its public API (`FontLoader`, `FontFace`, `TextShaper`, `GlyphBuffer`, ...) is t
 What it covers:
 
 - TrueType and OpenType fonts and font collections, WOFF 1.0 and WOFF 2.0
+- PostScript Type 1 fonts (PFB and PFA files), converted to OpenType fonts with CFF outlines when they are loaded, with the kerning and the metrics of their AFM file (`FontLoader.LoadType1`)
 - TrueType, CFF and CFF2 outlines, variable fonts (`fvar`, `avar` 1 and 2, `gvar`, `HVAR`, `VVAR`, `MVAR`)
 - Color fonts: `COLR` versions 0 and 1, `CPAL`, `sbix`, `CBDT`
 - Horizontal and vertical metrics, `BASE` baselines

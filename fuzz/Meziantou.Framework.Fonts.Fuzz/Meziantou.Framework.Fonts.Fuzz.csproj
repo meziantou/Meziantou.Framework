@@ -1,5 +1,5 @@
 <Project Sdk="Meziantou.NET.Sdk">
-  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter, the subsetter, the shaper, the bitmap glyphs and the blocks of WOFF files). See fuzz/README.md. -->
+  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter, the subsetter, the shaper, the bitmap glyphs, the blocks of WOFF files and the Type 1 reader). See fuzz/README.md. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
@@ -31,6 +31,11 @@
 
     <!-- The writer of the bitmap tables of the unit tests, which makes the seeds of the other formats -->
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontBitmapWriter.cs;..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontBitmapStrike.cs;..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontBitmapGlyph.cs;..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontWriter.cs" Link="Shared\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The writer of the Type 1 fonts of the tests: the seeds of the Type 1 targets, and the font the charstrings of the input are put in -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontType1Writer.cs" Link="Shared\FontType1Writer.cs" />
   </ItemGroup>
 
   <ItemGroup>

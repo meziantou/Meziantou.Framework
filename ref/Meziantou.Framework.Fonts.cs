@@ -298,6 +298,7 @@ namespace Meziantou.Framework.Fonts
         public int ClipDepth { get => throw null; }
         public Meziantou.Framework.Fonts.ColorImage? Image { get => throw null; }
         public bool IsEmpty { get => throw null; }
+        public bool IsMask { get => throw null; }
         public int LayerDepth { get => throw null; }
         public System.ReadOnlySpan<double> Numbers { get => throw null; }
         public System.ReadOnlySpan<Meziantou.Framework.Fonts.ColorOp> Ops { get => throw null; }

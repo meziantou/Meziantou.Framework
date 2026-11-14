@@ -3206,8 +3206,8 @@ public static void DrawWeights(string variableFontPath, string outputPath)
   position has exactly the pixels of its bitmap. At another size, and for a glyph the strike does not have, the
   outline is drawn. The advances stay those of the outlines. A glyph made of other glyphs (image formats 8 and 9)
   has their pixels at their offsets. A strike of 2, 4 or 8 bits per pixel gives the coverage of each pixel: the glyph
-  is drawn like a color glyph that takes the color of the text (a solid color or a gradient; the text is black with
-  the other brushes, as for the parts of a `COLR` glyph that take the text color). A font without outlines, whose
+  is painted with the brush of the text, any brush, through that coverage (interpolated between the pixels of the
+  bitmap), after the outlines of the text. A font without outlines, whose
   glyphs are only bitmaps, is drawn with them at every size, without the option: from the smallest strike that is at
   least as large as the text, or from the largest one, scaled.
 - **Not supported**: the variation of the hinting values (`cvar`), glyphs in SVG (`SVG `: their outlines are drawn),

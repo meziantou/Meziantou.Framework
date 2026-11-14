@@ -673,6 +673,28 @@ public sealed class DrawingTextTests
         Assert.Equal((255, 0, 0), (red[covered], red[covered + 1], red[covered + 2]));
         Assert.True(Math.Abs(red[covered + 3] - 128) <= 1);
 
+        // Any brush: an image gives each covered pixel its color, as it gives it to a rectangle. The pixels (9, 11) and
+        // (2, 12) are covered entirely, and (2, 11) not at all.
+        using var source = new Image<Rgba32>(16, 16);
+        for (var y = 0; y < 16; y++)
+        {
+            for (var x = 0; x < 16; x++)
+            {
+                source.Frames[0][x, y] = new Rgba32((byte)(x * 16), (byte)(y * 16), 200);
+            }
+        }
+
+        var imageBrush = new ImageBrush(source.Frames[0]);
+        var painted = Render(PixelFormat.Rgba32, 16, 16, canvas => canvas.FillText(imageBrush, "A", font, 16, new PointD(0, 0)));
+        var filled = Render(PixelFormat.Rgba32, 16, 16, canvas => canvas.FillRectangle(imageBrush, new RectangleD(0, 0, 16, 16)));
+        foreach (var (x, y) in ((int, int)[])[(9, 11), (2, 12)])
+        {
+            var offset = ((y * 16) + x) * 4;
+            Assert.Equal(filled.AsSpan(offset, 4).ToArray(), painted.AsSpan(offset, 4).ToArray());
+        }
+
+        Assert.Equal([0, 0, 0, 0], painted.AsSpan(((11 * 16) + 2) * 4, 4).ToArray());
+
         // The mask is decoded as a black image whose opacity is the coverage.
         using var glyph = font.DecodeBitmapGlyph(new Rune('A'), 16);
         Assert.NotNull(glyph);

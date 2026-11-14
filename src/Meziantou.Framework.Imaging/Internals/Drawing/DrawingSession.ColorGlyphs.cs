@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -8,6 +9,7 @@ internal sealed partial class DrawingSession
 {
     private ColorSurface? _colorSurface;
     private GradientEvaluator? _foregroundGradient;
+    private PooledBuffer? _maskRow;
 
     /// <summary>
     /// Draws the color glyphs of a layout, or prepares their drawing: each one is drawn on a surface of its own, by the
@@ -63,6 +65,11 @@ internal sealed partial class DrawingSession
 
                 // A color glyph is drawn in the pixels of the canvas: its placement includes the transformation
                 placement = ToCanvas(placement);
+                if (glyph.IsMask)
+                {
+                    DrawMaskGlyph(layout.GetBrush(runBrush) ?? brush, glyph, placement, paint);
+                    continue;
+                }
 
                 if (!surface.Reserve(glyph, placement, Width, Height))
                     continue;
@@ -116,6 +123,12 @@ internal sealed partial class DrawingSession
     private void DrawColorGlyph(Brush brush, ColorGlyph glyph, FontFace face, Affine2D placement)
     {
         placement = ToCanvas(placement);
+        if (glyph.IsMask)
+        {
+            DrawMaskGlyph(brush, glyph, placement, paint: true);
+            return;
+        }
+
         var surface = _colorSurface ??= new ColorSurface(_image.Owner.Scope);
         if (!surface.Reserve(glyph, placement, Width, Height))
             return;
@@ -275,6 +288,78 @@ internal sealed partial class DrawingSession
                 _frames[i].CompositePixels(_storages[i], surface.Top + row, x, coverage, source);
             }
         }
+    }
+
+    /// <summary>
+    /// Draws a glyph that is a mask (a bitmap of several bits per pixel) with a brush, like a shape: the coverage of the
+    /// rectangle of its image, multiplied by the opacity of the image, interpolated at the center of each pixel, is
+    /// painted with the brush, so that every brush gives the glyph its colors.
+    /// </summary>
+    /// <param name="brush">The brush of the text.</param>
+    /// <param name="glyph">The glyph, whose image is the mask.</param>
+    /// <param name="placement">The placement of the glyph in the pixels of the canvas.</param>
+    /// <param name="paint"><see langword="false"/> to only rent what the drawing needs.</param>
+    private void DrawMaskGlyph(Brush brush, ColorGlyph glyph, in Affine2D placement, bool paint)
+    {
+        _maskRow ??= ResampleWeights.Rent<uint>(_image.Owner.Scope, Width);
+        ReadOnlySpan<double> box = [glyph.XMin, glyph.YMin, glyph.XMax, glyph.YMax];
+        // The brush first: a pattern draws its tile, with the sweep the box then starts.
+        if (!PrepareBrush(brush, out var color, out var evaluator) || !BeginBox(box, placement) || !placement.TryInvert(out var inverse) || !paint || _isPreparing)
+            return;
+
+        RemoveStaleThumbnail();
+        var mask = glyph.Image!;
+        var geometry = glyph.Numbers[..4];
+        var row = unsafe(MemoryMarshal.Cast<byte, uint>(_maskRow.Span));
+        var rasterizer = _rasterizer!;
+        evaluator?.Begin();
+        try
+        {
+            while (rasterizer.MoveNext())
+            {
+                var coverage = rasterizer.Coverage;
+                var y = rasterizer.Y;
+                var target = row[..coverage.Length];
+                for (var i = 0; i < coverage.Length; i++)
+                {
+                    var px = rasterizer.X + i + 0.5;
+                    var opacity = SampleOpacity(mask, geometry, inverse.TransformX(px, y + 0.5), inverse.TransformY(px, y + 0.5));
+                    target[i] = (uint)Math.Round(coverage[i] * opacity, MidpointRounding.AwayFromZero);
+                }
+
+                PaintSpan(color, evaluator, brush.CompositeMode, brush.BlendMode, CoverageRasterizer.FullCoverage, y, rasterizer.X, target, brush.Opacity);
+            }
+        }
+        finally
+        {
+            evaluator?.End();
+        }
+    }
+
+    /// <summary>Interpolates the opacity of an image at a point of the space of a glyph (bilinear, clamped at the edges).</summary>
+    /// <param name="image">The image.</param>
+    /// <param name="geometry">The left and the top of the image, and the width and the height of one of its pixels, in the units of the glyph.</param>
+    /// <param name="x">The horizontal coordinate of the point.</param>
+    /// <param name="y">The vertical coordinate of the point.</param>
+    private static double SampleOpacity(ColorImage image, ReadOnlySpan<double> geometry, double x, double y)
+    {
+        // The position in pixels of the image, from the center of its top-left pixel; its rows go down.
+        var u = ((x - geometry[0]) / geometry[2]) - 0.5;
+        var v = ((geometry[1] - y) / geometry[3]) - 0.5;
+        var column = Math.Floor(u);
+        var line = Math.Floor(v);
+        var fx = u - column;
+        var fy = v - line;
+        var x0 = (int)Math.Clamp(column, 0, image.Width - 1);
+        var x1 = (int)Math.Clamp(column + 1, 0, image.Width - 1);
+        var y0 = (int)Math.Clamp(line, 0, image.Height - 1);
+        var y1 = (int)Math.Clamp(line + 1, 0, image.Height - 1);
+        var pixels = image.Pixels;
+        var opacity = ((1 - fx) * (1 - fy) * pixels[(((y0 * image.Width) + x0) * 4) + 3])
+            + (fx * (1 - fy) * pixels[(((y0 * image.Width) + x1) * 4) + 3])
+            + ((1 - fx) * fy * pixels[(((y1 * image.Width) + x0) * 4) + 3])
+            + (fx * fy * pixels[(((y1 * image.Width) + x1) * 4) + 3]);
+        return opacity / 255;
     }
 
     /// <summary>Gets the transformation from the pixels of the canvas to the space of a paint.</summary>

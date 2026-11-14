@@ -331,6 +331,12 @@ internal sealed partial class DrawingSession
         }
 
         var canvas = ToCanvas(placement);
+        if (glyph.IsMask)
+        {
+            DrawMaskGlyph(brush, glyph, canvas, paint: !_isPreparing);
+            return;
+        }
+
         var surface = _colorSurface ??= new ColorSurface(_image.Owner.Scope);
         if (!surface.Reserve(glyph, canvas, Width, Height))
             return;

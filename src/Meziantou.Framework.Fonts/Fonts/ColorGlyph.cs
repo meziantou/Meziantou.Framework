@@ -56,6 +56,12 @@ public sealed class ColorGlyph
     /// <summary>Gets the image of a glyph the font gives as a bitmap, which the display list draws; <see langword="null"/> for a glyph made of paints.</summary>
     public ColorImage? Image { get; private init; }
 
+    /// <summary>
+    /// Gets a value indicating whether the glyph is a mask (<see cref="FromMask"/>): the opacity of its <see cref="Image"/>
+    /// is the coverage of the text, which a renderer can paint with any brush instead of running the display list.
+    /// </summary>
+    public bool IsMask { get; private init; }
+
     /// <summary>Gets a value indicating whether the glyph draws nothing.</summary>
     public bool IsEmpty => _ops.Length == 0 || !(XMax > XMin) || !(YMax > YMin);
 
@@ -125,6 +131,7 @@ public sealed class ColorGlyph
             LayerDepth = 3,
             ClipDepth = 0,
             Image = mask,
+            IsMask = true,
         };
     }
 }

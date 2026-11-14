@@ -110,7 +110,8 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   `CBDT`) are color glyphs: `BitmapGlyph` says which format the font gives for the data, and Imaging's
   `BitmapGlyphDecoder` decodes them and rejects data of another one. The pixels that are not encoded (image formats 1,
   2, 5, 6, 7, and the glyphs made of other glyphs, 8 and 9) are decoded here (`FontFace.DecodeBitmap`): 32 bits per
-  pixel are colors (`Bgra`), 2, 4 and 8 bits a coverage drawn with the text color (`Mask`, `ColorGlyph.FromMask`).
+  pixel are colors (`Bgra`), 2, 4 and 8 bits a coverage drawn with the text color (`Mask`, `ColorGlyph.FromMask`,
+  whose `IsMask` lets Imaging paint it with the brush of the text, through the coverage, instead of its display list).
   The bitmaps of one bit per pixel are outlines: `FontFace.DecodeOutline(glyph, size, ...)` emits a rectangle per run
   of pixels, so nothing of the drawing pipeline knows about them. Every caller that decodes an outline for a text
   passes the size; a cache of what depends on the outline of a glyph has the size in its key. A font with outlines

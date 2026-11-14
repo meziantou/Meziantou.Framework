@@ -95,6 +95,18 @@ namespace Meziantou.AspNetCore.Testing
         public static Meziantou.AspNetCore.Testing.PageAssertions Expect(Meziantou.AspNetCore.Testing.TestPage page) => throw null;
     }
 
+    public sealed class FakeClipboard : Meziantou.Framework.WebPlatform.Dom.SystemClipboard
+    {
+        public override long ChangeCount { get => throw null; }
+        public System.Action<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem>>? ContentChanged { get => throw null; init { } }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem> Items { get => throw null; }
+        public System.Func<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem>>? ProvideContent { get => throw null; init { } }
+        public static Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem CreateTextItem(string text) => throw null;
+        public static string? GetText(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem> items) => throw null;
+        public void NotifyContentChanged() { }
+        public override void Write(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem> items) { }
+    }
+
     public sealed class GetByRoleOptions
     {
         public bool? Checked { get => throw null; init { } }
@@ -282,7 +294,6 @@ namespace Meziantou.AspNetCore.Testing
     public abstract class TestPage : Meziantou.AspNetCore.Testing.LocatorScope, System.IAsyncDisposable, System.IDisposable
     {
         public Meziantou.Framework.WebPlatform.Dom.BrowsingContext BrowsingContext { get => throw null; }
-        public Meziantou.Framework.WebPlatform.Dom.SystemClipboard Clipboard { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> ConsoleMessages { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ContentSecurityPolicyViolationReport> ContentSecurityPolicyViolations { get => throw null; }
         public System.TimeSpan DefaultTimeout { get => throw null; }
@@ -331,7 +342,6 @@ namespace Meziantou.AspNetCore.Testing
     public sealed class WebAppBrowser : System.IAsyncDisposable, System.IDisposable
     {
         public System.Uri BaseAddress { get => throw null; }
-        public Meziantou.Framework.WebPlatform.Dom.SystemClipboard Clipboard { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar Cookies { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.AspNetCore.Testing.BrowserPage> Pages { get => throw null; }
         public WebAppBrowser(System.Uri baseAddress, Meziantou.Framework.WebPlatform.Dom.DocumentLoader loader, Meziantou.AspNetCore.Testing.WebAppBrowserOptions? options = null) { }

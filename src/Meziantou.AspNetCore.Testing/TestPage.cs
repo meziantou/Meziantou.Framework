@@ -60,10 +60,8 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
         var unhandledScriptError = options.UnhandledScriptError;
         var contentSecurityPolicyViolation = options.ContentSecurityPolicyViolation;
         var documentActivated = options.DocumentActivated;
-        Clipboard = options.Clipboard ?? new SystemClipboard();
         _browsingContext = new BrowsingContext(options with
         {
-            Clipboard = Clipboard,
             ConsoleMessage = (context, message) =>
             {
                 lock (_consoleMessages)
@@ -155,13 +153,6 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
             }
         }
     }
-
-    /// <summary>
-    /// Gets the system clipboard of the page: read what the page copies, or write what the page pastes. It is the
-    /// <see cref="BrowsingContextOptions.Clipboard"/> set by <see cref="TestPageSettings.ConfigureBrowsingContext"/>, or
-    /// a clipboard of the page.
-    /// </summary>
-    public SystemClipboard Clipboard { get; }
 
     /// <summary>Gets the maximum time the waits of the page wait for.</summary>
     public TimeSpan DefaultTimeout { get; }

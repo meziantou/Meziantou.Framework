@@ -55,8 +55,8 @@ public sealed class WebAppBrowserOptions
 
     /// <summary>
     /// Gets a function that changes the options of the browsing contexts of the pages, or null (see
-    /// <see cref="TestPageSettings.ConfigureBrowsingContext"/>). The options it receives use the
-    /// <see cref="WebAppBrowser.Clipboard"/> of the browser.
+    /// <see cref="TestPageSettings.ConfigureBrowsingContext"/>). It is called for each page: return the same
+    /// <see cref="BrowsingContextOptions.Clipboard"/> (for instance a <see cref="FakeClipboard"/>) for the pages to share it.
     /// </summary>
     public Func<BrowsingContextOptions, BrowsingContextOptions>? ConfigureBrowsingContext { get; init; }
 

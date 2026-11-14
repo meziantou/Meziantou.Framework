@@ -31,9 +31,9 @@ public sealed class ComponentTestHostTests
     }
 
     [Fact]
-    public async Task ConfigureBrowsingContext_ChangesTheOptionsAndIsolatesTheClipboard()
+    public async Task ConfigureBrowsingContext_ChangesTheOptions()
     {
-        var clipboard = new SystemClipboard();
+        var clipboard = new FakeClipboard();
         await using var host = new ComponentTestHost(new ComponentTestHostOptions
         {
             ConfigureBrowsingContext = options => options with { UserAgent = "TestBrowser/1.0", Clipboard = clipboard },
@@ -41,8 +41,8 @@ public sealed class ComponentTestHostTests
         await using var otherHost = new ComponentTestHost();
 
         Assert.Equal("TestBrowser/1.0", host.BrowsingContext.Window.Navigator.UserAgent);
-        Assert.Same(clipboard, host.Clipboard);
-        Assert.NotSame(host.Clipboard, otherHost.Clipboard);
+        Assert.Same(clipboard, host.BrowsingContext.Options.Clipboard);
+        Assert.Null(otherHost.BrowsingContext.Options.Clipboard);
     }
 
     [Fact]

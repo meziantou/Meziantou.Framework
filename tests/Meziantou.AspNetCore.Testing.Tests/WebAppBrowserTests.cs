@@ -123,21 +123,86 @@ public sealed class WebAppBrowserTests
     }
 
     [Fact]
-    public async Task PagesShareTheClipboardOfTheirBrowser()
+    public async Task FakeClipboard_SuppliesWhatThePagesPasteAndReceivesWhatTheyCopy()
+    {
+        #region FakeClipboard_Usage
+        var copied = new List<string?>();
+        var clipboard = new FakeClipboard
+        {
+            // What the pages paste or read
+            ProvideContent = () => [FakeClipboard.CreateTextItem("Pasted text")],
+
+            // Called with what the pages copy or write
+            ContentChanged = items => copied.Add(FakeClipboard.GetText(items)),
+        };
+
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions
+        {
+            // The pages that use the same clipboard share it
+            ConfigureBrowsingContext = options => options with { Clipboard = clipboard },
+        });
+        var page = await browser.OpenAsync("/secure");
+
+        await page.Find("#copy").ClickAsync();
+        await page.Find("#paste").ClickAsync();
+
+        Assert.Equal(["Copied text"], copied);
+        Assert.Equal("Pasted text", page.Find("output").TextContent);
+        #endregion
+    }
+
+    [Fact]
+    public async Task FakeClipboard_WithoutProviderReadsWhatWasWritten()
+    {
+        var clipboard = new FakeClipboard();
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions
+        {
+            ConfigureBrowsingContext = options => options with { Clipboard = clipboard },
+        });
+        var page = await browser.OpenAsync("/secure");
+        var otherPage = await browser.OpenAsync("/secure");
+
+        await page.Find("#copy").ClickAsync();
+        await otherPage.Find("#paste").ClickAsync();
+
+        Assert.Equal("Copied text", clipboard.ReadText());
+        Assert.Equal("Copied text", otherPage.Find("output").TextContent);
+    }
+
+    [Fact]
+    public void FakeClipboard_NotifyContentChanged()
+    {
+        var text = "First";
+        var clipboard = new FakeClipboard { ProvideContent = () => [FakeClipboard.CreateTextItem(text)] };
+        var changes = 0;
+        clipboard.Changed += (_, _) => changes++;
+        var changeCount = clipboard.ChangeCount;
+
+        text = "Second";
+        clipboard.NotifyContentChanged();
+
+        Assert.Equal("Second", clipboard.ReadText());
+        Assert.Equal(1, changes);
+        Assert.NotEqual(changeCount, clipboard.ChangeCount);
+    }
+
+    [Fact]
+    public async Task PagesHaveTheirOwnClipboardByDefault()
     {
         await using var factory = new WebApplicationFactory<Program>();
         await using var browser = WebAppBrowser.Create(factory.Server);
         var page = await browser.OpenAsync("/secure");
+        var otherPage = await browser.OpenAsync("/secure");
 
         await page.Find("#copy").ClickAsync();
+        await otherPage.Find("#paste").ClickAsync();
+        await page.Find("#paste").ClickAsync();
 
-        Assert.Equal("Copied text", browser.Clipboard.ReadText());
-        Assert.Same(browser.Clipboard, page.Clipboard);
-        var otherPage = await browser.OpenAsync("/");
-        Assert.Same(browser.Clipboard, otherPage.Clipboard);
-
-        await using var otherBrowser = WebAppBrowser.Create(factory.Server);
-        Assert.Null(otherBrowser.Clipboard.ReadText());
+        Assert.Null(page.BrowsingContext.Options.Clipboard);
+        Assert.Equal("", otherPage.Find("output").TextContent);
+        Assert.Equal("Copied text", page.Find("output").TextContent);
     }
 
     [Fact]
@@ -163,8 +228,6 @@ public sealed class WebAppBrowserTests
         Assert.Single(page.ContentSecurityPolicyViolations);
         Assert.Single(reports);
         #endregion
-
-        Assert.Same(browser.Clipboard, page.Clipboard);
     }
 
     [Fact]

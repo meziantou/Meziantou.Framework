@@ -112,6 +112,16 @@ public abstract class JsonPathNavigator<TValue>
     /// </remarks>
     public virtual bool HasConstantTimePropertyLookup => true;
 
+    /// <summary>
+    /// Gets whether <see cref="TryGetPropertyValue"/> returns the value of the last property that
+    /// <see cref="GetProperties"/> returns with the same name, compared ordinally, and fails when there is none.
+    /// </summary>
+    /// <remarks>
+    /// When this is <see langword="true"/>, a descendant segment matches its name selectors while it enumerates the
+    /// properties of an object, instead of looking up each name.
+    /// </remarks>
+    internal virtual bool PropertyLookupMatchesEnumeration => false;
+
     /// <summary>Copies the elements of an array, in index order, to the start of <paramref name="destination"/>.</summary>
     /// <param name="value">The array value.</param>
     /// <param name="destination">A buffer holding at least <see cref="GetArrayLength"/> items.</param>

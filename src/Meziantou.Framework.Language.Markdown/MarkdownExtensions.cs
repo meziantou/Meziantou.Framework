@@ -52,6 +52,9 @@ public enum MarkdownExtensions
     /// <summary>Abbreviations: <c>*[HTML]: Hypertext Markup Language</c> defines an abbreviation, and the words of the text that are an abbreviation are rendered as <c>&lt;abbr&gt;</c>.</summary>
     Abbreviations = 1 << 14,
 
+    /// <summary>Footnotes: <c>[^1]: text</c> defines a footnote, <c>[^1]</c> refers to it, and the renderer writes the footnotes that are referred to at the end of the document.</summary>
+    Footnotes = 1 << 15,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

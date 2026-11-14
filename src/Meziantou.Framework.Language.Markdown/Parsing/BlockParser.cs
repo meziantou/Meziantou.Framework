@@ -249,7 +249,7 @@ internal sealed class BlockParser
 
     private static bool CanContain(SyntaxKind parent, SyntaxKind child) => parent switch
     {
-        SyntaxKind.Document or SyntaxKind.BlockQuote or SyntaxKind.ListItem => child != SyntaxKind.ListItem,
+        SyntaxKind.Document or SyntaxKind.BlockQuote or SyntaxKind.ListItem or SyntaxKind.FootnoteDefinition => child != SyntaxKind.ListItem,
         SyntaxKind.List => child == SyntaxKind.ListItem,
         _ => false,
     };
@@ -258,7 +258,7 @@ internal sealed class BlockParser
 
     // Whether the line can start a block of an extension: a delimiter row under a paragraph, a row of a table, or the task
     // list item marker after the marker of a list item
-    private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || container.Kind switch
+    private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || (c == '[' && IsFootnoteContainer(container)) || container.Kind switch
     {
         SyntaxKind.Paragraph => HasExtension(MarkdownExtensions.Tables) && c is '|' or ':',
         SyntaxKind.Table => true,
@@ -268,7 +268,7 @@ internal sealed class BlockParser
 
     private bool HasExtension(MarkdownExtensions extension) => _extensions.HasFlag(extension);
 
-    // 0: the line continues the block, 1: it does not, 2: it ends the block and nothing else is on it
+    // 0: the line continues the block, 1: it does not, 2: the block takes the whole line
     private int Continue(Block block)
     {
         switch (block.Kind)
@@ -371,6 +371,45 @@ internal sealed class BlockParser
             case SyntaxKind.HtmlBlock:
                 return _blank && block.HtmlBlockType is 6 or 7 ? 1 : 0;
 
+            case SyntaxKind.FootnoteDefinition:
+            {
+                // As in Markdig: a blank line continues the footnote, and a line that is not indented ends it after a blank line or
+                // when it starts another footnote. The lines of a fenced block in the footnote are its own.
+                var leaf = block;
+                while (leaf.LastChild is { Open: true } open)
+                {
+                    leaf = open;
+                }
+
+                if (leaf.Kind is not (SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock))
+                {
+                    // A blank line closes the blocks of the footnote, and the footnote takes it
+                    if (_blank)
+                    {
+                        block.FootnoteLastLineBlank = true;
+                        while (_tip != block)
+                        {
+                            Finalize(_tip);
+                        }
+
+                        return 2;
+                    }
+
+                    if (_indent == 0 && (block.FootnoteLastLineBlank || ScanFootnoteLabel(_nextNonspace) > 0))
+                    {
+                        return 1;
+                    }
+                }
+
+                block.FootnoteLastLineBlank = false;
+                if (_indented)
+                {
+                    AdvanceOffset(CodeIndent, columns: true);
+                }
+
+                return 0;
+            }
+
             case SyntaxKind.Paragraph:
                 return _blank ? 1 : 0;
 
@@ -387,6 +426,34 @@ internal sealed class BlockParser
     private int TryStart(Block container)
     {
         var c = Peek(_nextNonspace);
+
+        // Footnote definition: [^label]: at the level of the document, which the rest of the line is the content of
+        if (!_indented && c == '[' && IsFootnoteContainer(container) && ScanFootnoteLabel(_nextNonspace) is > 0 and var labelEnd)
+        {
+            // The label is without the whitespace around it, which is trivia
+            var labelStart = _nextNonspace + 1;
+            var labelTextEnd = labelEnd - 1;
+            while (_text[labelStart] is ' ' or '\t')
+            {
+                labelStart++;
+            }
+
+            while (_text[labelTextEnd - 1] is ' ' or '\t')
+            {
+                labelTextEnd--;
+            }
+
+            CloseUnmatchedBlocks();
+            var footnote = AddChild(SyntaxKind.FootnoteDefinition);
+            footnote.Leading.Add(BuildElement.Token(SyntaxKind.OpenBracketToken, _nextNonspace, _nextNonspace + 1));
+            footnote.Leading.Add(BuildElement.Token(SyntaxKind.FootnoteLabelToken, labelStart, labelTextEnd));
+            footnote.Leading.Add(BuildElement.Token(SyntaxKind.CloseBracketToken, labelEnd - 1, labelEnd));
+            footnote.Leading.Add(BuildElement.Token(SyntaxKind.ColonToken, labelEnd, labelEnd + 1));
+            _inlineParser.Footnotes.Add(Scanners.NormalizeLabel(_text[labelStart..labelTextEnd]));
+            AdvanceNextNonspace();
+            AdvanceOffset(labelEnd + 1 - _offset, columns: false);
+            return 1;
+        }
 
         // Block quote
         if (!_indented && c == '>')
@@ -572,6 +639,36 @@ internal sealed class BlockParser
         _inlineParser.Abbreviations[Scanners.NormalizeAbbreviationLabel(_text.AsSpan(labelStart, labelEnd - labelStart))] = textEnd - textStart;
         _offset = _lineEnd;
         return true;
+    }
+
+    // A footnote is a child of the document, which can interrupt a paragraph, and end a list whose item the line does not continue
+    private bool IsFootnoteContainer(Block container) => HasExtension(MarkdownExtensions.Footnotes) && (container == _document || (container.Kind is SyntaxKind.Paragraph or SyntaxKind.List && container.Parent == _document));
+
+    // [^label]: where the label is a link label that starts with ^ once trimmed. Returns where the ] ends, or 0.
+    private int ScanFootnoteLabel(int start)
+    {
+        var position = start + 1;
+        while (Peek(position) is ' ' or '\t')
+        {
+            position++;
+        }
+
+        if (Peek(start) != '[' || Peek(position) != '^')
+        {
+            return 0;
+        }
+
+        while (position < _lineEnd && _text[position] != ']' && position - start <= 1000)
+        {
+            if (_text[position] == '[')
+            {
+                return 0;
+            }
+
+            position += _text[position] == '\\' && position + 1 < _lineEnd ? 2 : 1;
+        }
+
+        return position < _lineEnd && _text[position] == ']' && Peek(position + 1) == ':' ? position + 1 : 0;
     }
 
     private bool IsTaskListItemMarker()
@@ -1307,6 +1404,9 @@ internal sealed class BlockParser
         public int FenceOffset { get; set; }
 
         public int HtmlBlockType { get; set; }
+
+        // A footnote whose last line is blank, which a line that is not indented ends
+        public bool FootnoteLastLineBlank { get; set; }
 
         // A paragraph whose last line was not the header row of a table: GFM tries a paragraph once
         public bool TableVisited { get; set; }

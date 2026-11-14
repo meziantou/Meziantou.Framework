@@ -527,6 +527,9 @@ internal sealed class InlineParser
         }
     }
 
+    /// <summary>Gets the normalized labels of the footnotes of the document, which the block parser adds as it reads their definitions.</summary>
+    public HashSet<string> Footnotes { get; } = new(StringComparer.Ordinal);
+
     /// <summary>Gets the labels of the abbreviations of the document, with the length of their title, which the block parser adds as it reads their definitions.</summary>
     public Dictionary<string, int> Abbreviations { get; } = new(StringComparer.Ordinal);
 
@@ -560,7 +563,7 @@ internal sealed class InlineParser
                 continue;
             }
 
-            if (!child.IsToken && child.Kind is not (SyntaxKind.CodeSpan or SyntaxKind.Autolink or SyntaxKind.ExtendedAutolink or SyntaxKind.RawHtml or SyntaxKind.MathInline or SyntaxKind.Abbreviation))
+            if (!child.IsToken && child.Kind is not (SyntaxKind.CodeSpan or SyntaxKind.Autolink or SyntaxKind.ExtendedAutolink or SyntaxKind.RawHtml or SyntaxKind.MathInline or SyntaxKind.Abbreviation or SyntaxKind.FootnoteReference))
             {
                 MarkAbbreviations(child);
             }
@@ -894,6 +897,7 @@ internal sealed class InlineParser
         var savePosition = _pos;
         var suffix = new List<InlineNode>();
         var matched = false;
+        var footnote = false;
 
         // An inline link: (destination "title")
         if (PeekIs('('))
@@ -963,7 +967,9 @@ internal sealed class InlineParser
                 _pos = savePosition;
             }
 
-            if (label is not null && _references.ContainsKey(Scanners.NormalizeLabel(label)))
+            // A label of a footnote makes a reference to the footnote, as in Markdig, an image included
+            var normalized = label is null ? null : Scanners.NormalizeLabel(label);
+            if (normalized is not null && (_references.ContainsKey(normalized) || (footnote = Footnotes.Contains(normalized))))
             {
                 matched = true;
                 if (labelLength >= 2)
@@ -989,7 +995,7 @@ internal sealed class InlineParser
             return;
         }
 
-        var link = NewNode(opener.Image ? SyntaxKind.Image : SyntaxKind.Link, opener.Node.Start, _pos);
+        var link = NewNode(footnote ? SyntaxKind.FootnoteReference : opener.Image ? SyntaxKind.Image : SyntaxKind.Link, opener.Node.Start, _pos);
         var current = opener.Node.Next;
         while (current is not null)
         {

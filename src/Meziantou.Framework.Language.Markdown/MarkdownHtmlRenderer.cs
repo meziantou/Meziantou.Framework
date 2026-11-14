@@ -31,6 +31,11 @@ public static class MarkdownHtmlRenderer
 
         var writer = new Writer(tree.GetText().Length, tree.Options);
         writer.WriteBlocks(tree.GetRoot().Blocks);
+        if (tree.Options.Extensions.HasFlag(MarkdownExtensions.Footnotes))
+        {
+            writer.WriteFootnotes(tree.GetRoot());
+        }
+
         return writer.ToString();
     }
 
@@ -47,6 +52,11 @@ public static class MarkdownHtmlRenderer
 
         // The checkbox of a task list item, which its first paragraph starts with
         private string? _pendingCheckbox;
+
+        // The footnotes and their numbers, and the links back to the references of a footnote, which its last paragraph ends with
+        private MarkdownFootnotes? _footnotes;
+        private MarkdownParagraphSyntax? _backLinksParagraph;
+        private string? _backLinks;
 
         public override string ToString() => _output.ToString();
 
@@ -87,6 +97,11 @@ public static class MarkdownHtmlRenderer
                     }
 
                     WriteInlines(paragraph.Inlines);
+                    if (paragraph == _backLinksParagraph)
+                    {
+                        _output.Append(_backLinks);
+                    }
+
                     if (!tight)
                     {
                         _output.Append("</p>");
@@ -204,6 +219,44 @@ public static class MarkdownHtmlRenderer
                     WriteTable(table);
                     break;
             }
+        }
+
+        // The footnotes that are referred to, at the end of the document, each one with the links back to its references
+        public void WriteFootnotes(MarkdownDocumentSyntax document)
+        {
+            // A document with footnotes has the list of the footnotes, even when none is referred to, as 1.x writes it
+            _footnotes = new MarkdownFootnotes(document);
+            if (!document.Blocks.OfType<MarkdownFootnoteDefinitionSyntax>().Any())
+            {
+                return;
+            }
+
+            Cr();
+            _output.Append("<div class=\"footnotes\">\n<hr />\n<ol>\n");
+            foreach (var footnote in _footnotes.Footnotes)
+            {
+                _output.Append("<li id=\"fn:").Append(_footnotes.GetNumber(footnote)).Append("\">\n");
+                var backLinks = new StringBuilder();
+                foreach (var reference in _footnotes.GetReferences(footnote))
+                {
+                    backLinks.Append("<a href=\"#fnref:").Append(_footnotes.GetReferenceNumber(reference)).Append("\" class=\"footnote-back-ref\">&#8617;</a>");
+                }
+
+                // The links end the last paragraph, or a paragraph of their own
+                _backLinks = backLinks.ToString();
+                _backLinksParagraph = footnote.Blocks.Count > 0 ? footnote.Blocks[^1] as MarkdownParagraphSyntax : null;
+                WriteBlocks(footnote.Blocks);
+                if (_backLinksParagraph is null)
+                {
+                    Cr();
+                    _output.Append("<p>").Append(_backLinks).Append("</p>");
+                }
+
+                Cr();
+                _output.Append("</li>\n");
+            }
+
+            _output.Append("</ol>\n</div>\n");
         }
 
         private void WriteListItem(MarkdownListItemSyntax item)
@@ -385,6 +438,18 @@ public static class MarkdownHtmlRenderer
                     }
 
                     break;
+
+                case MarkdownFootnoteReferenceSyntax reference:
+                {
+                    _footnotes ??= new MarkdownFootnotes(reference.FirstAncestorOrSelf<MarkdownDocumentSyntax>()!);
+                    if (reference.Definition is { } footnote && _footnotes.Footnotes.Contains(footnote))
+                    {
+                        var number = _footnotes.GetNumber(footnote);
+                        _output.Append("<a id=\"fnref:").Append(_footnotes.GetReferenceNumber(reference)).Append("\" href=\"#fn:").Append(number).Append("\" class=\"footnote-ref\"><sup>").Append(number).Append("</sup></a>");
+                    }
+
+                    break;
+                }
 
                 case MarkdownMathInlineSyntax math:
                     _output.Append("<span class=\"math\">\\(");

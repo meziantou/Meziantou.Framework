@@ -14,6 +14,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
     private Dictionary<string, MarkdownLinkReferenceDefinitionSyntax>? _definitions;
     private Dictionary<string, MarkdownAbbreviationDefinitionSyntax>? _abbreviations;
+    private Dictionary<string, MarkdownFootnoteDefinitionSyntax>? _footnotes;
 
     /// <summary>Gets the blocks of the document, in the order of the text.</summary>
     public IReadOnlyList<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
@@ -22,7 +23,31 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     public SyntaxToken EndOfFileToken => GetToken(SyntaxKind.EndOfFileToken);
 
     /// <summary>Gets the link reference definitions of the document, in the order of the text.</summary>
-    public IEnumerable<MarkdownLinkReferenceDefinitionSyntax> LinkReferenceDefinitions => DescendantNodes(node => node is MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownAlertSyntax or MarkdownListSyntax or MarkdownListItemSyntax).OfType<MarkdownLinkReferenceDefinitionSyntax>();
+    public IEnumerable<MarkdownLinkReferenceDefinitionSyntax> LinkReferenceDefinitions => DescendantNodes(IsBlockContainer).OfType<MarkdownLinkReferenceDefinitionSyntax>();
+
+    // The nodes whose children are blocks, where definitions can be
+    internal static bool IsBlockContainer(SyntaxNode node) => node is MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownAlertSyntax or MarkdownListSyntax or MarkdownListItemSyntax or MarkdownFootnoteDefinitionSyntax;
+
+    /// <summary>Finds the definition of a footnote: the first one with the same label, compared as CommonMark compares link labels.</summary>
+    /// <param name="label">The label, with its <c>^</c>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="label"/> is <see langword="null"/>.</exception>
+    public MarkdownFootnoteDefinitionSyntax? GetFootnoteDefinition(string label)
+    {
+        ArgumentNullException.ThrowIfNull(label);
+
+        if (_footnotes is null)
+        {
+            var footnotes = new Dictionary<string, MarkdownFootnoteDefinitionSyntax>(StringComparer.Ordinal);
+            foreach (var definition in Blocks.OfType<MarkdownFootnoteDefinitionSyntax>())
+            {
+                footnotes.TryAdd(Scanners.NormalizeLabel(definition.Label), definition);
+            }
+
+            _footnotes = footnotes;
+        }
+
+        return _footnotes.GetValueOrDefault(Scanners.NormalizeLabel(label));
+    }
 
     /// <summary>Finds the definition of an abbreviation: the last one with the same label, compared as the text writes it.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="label"/> is <see langword="null"/>.</exception>
@@ -33,7 +58,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
         if (_abbreviations is null)
         {
             var abbreviations = new Dictionary<string, MarkdownAbbreviationDefinitionSyntax>(StringComparer.Ordinal);
-            foreach (var definition in DescendantNodes(node => node is MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownAlertSyntax or MarkdownListSyntax or MarkdownListItemSyntax).OfType<MarkdownAbbreviationDefinitionSyntax>())
+            foreach (var definition in DescendantNodes(IsBlockContainer).OfType<MarkdownAbbreviationDefinitionSyntax>())
             {
                 abbreviations[definition.Label] = definition;
             }

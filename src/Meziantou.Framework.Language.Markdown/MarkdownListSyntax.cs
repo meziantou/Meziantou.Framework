@@ -78,9 +78,11 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
         var quoteDepth = Ancestors().Count(ancestor => ancestor is MarkdownBlockQuoteSyntax);
         for (var i = 1; i < nodes.Count; i++)
         {
-            // The text between two siblings is trivia: the end of the line of the first one, and the lines before the second
-            var gap = (nodes[i - 1].GetLastToken().TrailingTrivia.ToFullString() + nodes[i].GetFirstToken().LeadingTrivia.ToFullString()).ReplaceLineEndings("\n").Split('\n');
-            for (var j = 1; j < gap.Length - 1; j++)
+            // The text between two siblings is trivia: the end of the line of the first one, unless its last token ends the line, such
+            // as a line of code, and the lines before the second
+            var last = nodes[i - 1].GetLastToken();
+            var gap = (last.TrailingTrivia.ToFullString() + nodes[i].GetFirstToken().LeadingTrivia.ToFullString()).ReplaceLineEndings("\n").Split('\n');
+            for (var j = last.Text is [.., '\n' or '\r'] ? 0 : 1; j < gap.Length - 1; j++)
             {
                 if (gap[j].Count(c => c == '>') <= quoteDepth)
                 {

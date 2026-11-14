@@ -52,6 +52,7 @@ public sealed class ExtensionSpecTests
         ["mathematics"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Mathematics },
         ["alerts"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Alerts },
         ["abbreviations"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Abbreviations },
+        ["footnotes"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Footnotes },
     };
 
     public static TheoryData<string, int, string> SupportedExamples()

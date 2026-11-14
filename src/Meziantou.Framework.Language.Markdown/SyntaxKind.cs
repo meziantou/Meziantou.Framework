@@ -64,6 +64,7 @@ public enum SyntaxKind
     AsteriskToken,
     AbbreviationLabelToken,
     AbbreviationTextToken,
+    FootnoteLabelToken,
     ExtendedAutolinkToken,
 
     // Blocks
@@ -88,6 +89,7 @@ public enum SyntaxKind
     MathBlock,
     Alert,
     AbbreviationDefinition,
+    FootnoteDefinition,
 
     // Inlines
     Emphasis,
@@ -105,4 +107,5 @@ public enum SyntaxKind
     Marked,
     MathInline,
     Abbreviation,
+    FootnoteReference,
 }

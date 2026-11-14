@@ -161,6 +161,8 @@ public sealed class MarkdownSyntaxTreeTests
 
     [Theory]
     [InlineData("2) ````\n\t", "<ol start=\"2\">\n<li>\n<pre><code>\n</code></pre>\n</li>\n</ol>\n")]
+    [InlineData("-        { code }\n\n    b\n", "<ul>\n<li>\n<pre><code>   { code }\n</code></pre>\n<p>b</p>\n</li>\n</ul>\n")]
+    [InlineData("- ```\n  a\n  ```\n\n  b\n", "<ul>\n<li>\n<pre><code>a\n</code></pre>\n<p>b</p>\n</li>\n</ul>\n")]
     [InlineData("[a](\t<b)c>)\n", "<p><a href=\"b)c\">a</a></p>\n")]
     [InlineData("[a](<')~>)\n", "<p><a href=\"')~\">a</a></p>\n")]
     [InlineData("<div>a\0\r\nb</div>\r\n", "<div>a\uFFFD\nb</div>\n")]
@@ -314,6 +316,36 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.HasCount(100, abbreviations);
         Assert.Equal("A", abbreviations[0].Label);
         Assert.HasCount(1000, abbreviations[0].Definition!.Title);
+    }
+
+    [Theory]
+    [InlineData("a[t][^1] b[^1][] c[^ 1] d![^1]\n\n[^1]: x\n", "<p>a<a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a> b<a id=\"fnref:2\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a> c[^ 1] d<a id=\"fnref:3\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n")]
+    [InlineData("a[^1]\n\n[^1]: x\n[^1]: y\n", "<p>x<a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n")]
+    [InlineData("a[^b]\n\n[ ^a]: unused\n\n[^b]: used\n", "<li id=\"fn:1\">\n<p>used<a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>")]
+    [InlineData("[^a]: unused\n", "<div class=\"footnotes\">\n<hr />\n<ol>\n</ol>\n</div>\n")]
+    [InlineData("> [^1]: x\n\na[^1]\n", "<p>a<a href=\"x\">^1</a></p>\n")]
+    [InlineData("[foo]\n\n[^1]: [foo]: /url\n", "<p><a href=\"/url\">foo</a></p>\n")]
+    [InlineData("a[^1]\n\n[^1]:\n    > q\n", "<li id=\"fn:1\">\n<blockquote>\n<p>q</p>\n</blockquote>\n<p><a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>")]
+    [InlineData("a[^1]\n\n[^1]: ```\n    code\n\nnot code\n    ```\n", "<pre><code>code\n\nnot code\n</code></pre>")]
+    [InlineData("a[^1]\n\n[^1]:     x\n\n        y\n", "<pre><code>y\n</code></pre>")]
+    public void RendersFootnotes(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FootnoteReferenceHasItsDefinition()
+    {
+        var root = MarkdownSyntaxTree.ParseText("See[^Note].\n\n[^note]: The *note*.\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes }).GetRoot();
+        var reference = root.DescendantNodes().OfType<MarkdownFootnoteReferenceSyntax>().Single();
+
+        Assert.Equal("^Note", reference.Label);
+        Assert.Same(root.Blocks[1], reference.Definition);
+        Assert.Equal("^note", reference.Definition!.Label);
+        Assert.Equal("The note.", reference.Definition.GetPlainText());
     }
 
     [Fact]

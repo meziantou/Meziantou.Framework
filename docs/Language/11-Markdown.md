@@ -246,6 +246,12 @@ extensions of `Meziantou.Framework.Markdown`, which this parser is meant to repl
   [MarkdownAbbreviationSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownAbbreviationSyntax), rendered as
   `<abbr title="Hypertext Markup Language">HTML</abbr>`. The titles that the abbreviations add are limited to the length
   of the text, and to at least 100,000 characters, so that a short text cannot render as a huge one.
+- [Footnotes](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Footnotes): `[^1]: text` defines a footnote,
+  a [MarkdownFootnoteDefinitionSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownFootnoteDefinitionSyntax) whose
+  next lines are indented by four spaces, and `[^1]` refers to it, a
+  [MarkdownFootnoteReferenceSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownFootnoteReferenceSyntax). The
+  renderer writes the footnotes that are referred to at the end of the document, numbered in the order of their first
+  reference, with links back to the references.
 - [Alerts](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Alerts): the alerts of GitHub, a block quote
   whose first line is `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]` or `[!CAUTION]`, which is a
   [MarkdownAlertSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownAlertSyntax). Only the block quotes of the

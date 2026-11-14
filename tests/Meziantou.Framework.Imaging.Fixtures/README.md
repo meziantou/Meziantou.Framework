@@ -813,7 +813,7 @@ follows it, so keep both headings unique in this file.
 | Format | Valid | Invalid | Unsupported | Limit |
 | --- | --- | --- | --- | --- |
 | avif | 189 | 45 | 28 | 12 |
-| bmp | 24 | 21 | 4 | 2 |
+| bmp | 24 | 21 | 2 | 2 |
 | exr | 54 | 7 | 33 | 2 |
 | gif | 24 | 13 | 1 | 2 |
 | heic | 117 | 31 | 20 | 11 |

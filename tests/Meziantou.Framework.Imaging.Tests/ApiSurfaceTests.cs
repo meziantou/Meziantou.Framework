@@ -180,6 +180,7 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(MasteringDisplayColorVolume), nameof(ImageMetadata.MasteringDisplay))]
     [InlineData(typeof(PixelAspectRatio), nameof(ImageMetadata.PixelAspectRatio))]
     [InlineData(typeof(OpenExrWindows), nameof(ImageMetadata.OpenExrWindows))]
+    [InlineData(typeof(RadianceHeader), nameof(ImageMetadata.RadianceHeader))]
     public void HighDynamicRangeAndPixelShapeLabelsHaveTheirPublicShape(Type type, string propertyName)
     {
         // Immutable values with value equality...
@@ -332,7 +333,6 @@ public sealed class ApiSurfaceTests
     {
         // A new format is appended: the values of the existing members never change
         Assert.Equal(17, (int)ImageFormat.OpenExr);
-        Assert.Equal(17, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
 
         var type = typeof(OpenExrEncoder);
         Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
@@ -348,6 +348,26 @@ public sealed class ApiSurfaceTests
         Assert.Equal([nameof(OpenExrCompression.None), nameof(OpenExrCompression.Rle), nameof(OpenExrCompression.Zips), nameof(OpenExrCompression.Zip), nameof(OpenExrCompression.Piz)], Enum.GetNames<OpenExrCompression>());
         Assert.Equal([0, 1, 2, 3, 4], Enum.GetValues<OpenExrCompression>().Select(value => (int)value));
         Assert.Equal([nameof(OpenExrPixelType.Half), nameof(OpenExrPixelType.Float)], Enum.GetNames<OpenExrPixelType>());
+    }
+
+    [Fact]
+    public void RadianceAdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(18, (int)ImageFormat.Radiance);
+        Assert.Equal(18, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
+
+        var type = typeof(RadianceEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(RadianceEncoder.BackgroundColor), nameof(RadianceEncoder.Compression), nameof(RadianceEncoder.Format)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(RadianceCompression), GetDeclaredProperty(type, nameof(RadianceEncoder.Compression)).PropertyType);
+        Assert.Equal(typeof(Rgba64?), GetDeclaredProperty(type, nameof(RadianceEncoder.BackgroundColor)).PropertyType);
+        Assert.Equal([nameof(RadianceCompression.None), nameof(RadianceCompression.RunLength)], Enum.GetNames<RadianceCompression>());
+        Assert.Equal([0, 1], Enum.GetValues<RadianceCompression>().Select(value => (int)value));
     }
 
     [Theory]

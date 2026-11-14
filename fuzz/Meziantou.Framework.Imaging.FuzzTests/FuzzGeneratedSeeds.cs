@@ -2,12 +2,13 @@ using System.IO.Compression;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Exr;
+using Meziantou.Framework.Imaging.TestHarness.Radiance;
 using Meziantou.Framework.Imaging.Tests;
 
 namespace Meziantou.Framework.Imaging.FuzzTests;
 
 /// <summary>
-/// The seeds of the formats the golden corpus has no fixture of (TIFF, ICO and CUR, ANI), and of OpenEXR, whose corpus fixtures
+/// The seeds of the formats the golden corpus has no fixture of (TIFF, ICO and CUR, ANI), and of OpenEXR and Radiance HDR, whose corpus fixtures
 /// <see cref="FuzzSeeds"/> adds to these: files written by the encoders of
 /// the library (every compression, pixel layout and container option they have), and files assembled byte by byte by the
 /// builders of the unit tests for what the encoders never write (tiles, the horizontal predictor, packed samples, signed,
@@ -16,7 +17,7 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// </summary>
 internal static class FuzzGeneratedSeeds
 {
-    public static IReadOnlyList<string> Groups { get; } = ["tiff", "ico", "ani", "exr"];
+    public static IReadOnlyList<string> Groups { get; } = ["tiff", "ico", "ani", "exr", "hdr"];
 
     public static List<FuzzSeed> Get(string group) => group switch
     {
@@ -24,6 +25,7 @@ internal static class FuzzGeneratedSeeds
         "ico" => GetIconSeeds(),
         "ani" => GetAnimatedCursorSeeds(),
         "exr" => GetOpenExrSeeds(),
+        "hdr" => GetRadianceSeeds(),
         _ => throw new ArgumentOutOfRangeException(nameof(group), group, "The group has no generated seeds."),
     };
 
@@ -414,6 +416,45 @@ internal static class FuzzGeneratedSeeds
         // The bytes are appended to the file, whose length the value of the offset does not change
         var length = (ulong)new TiffFileBuilder().AddPage(CreatePage(0)).Build().Length;
         return new FuzzSeed(id, [.. new TiffFileBuilder().AddPage(CreatePage(length)).Build(), .. appended]);
+    }
+
+    private static List<FuzzSeed> GetRadianceSeeds()
+    {
+        var seeds = new List<FuzzSeed>();
+        foreach (var (width, height) in new[] { (7, 3), (19, 11), (130, 2) })
+        {
+            using var rgba = CreateRgba32(width, height, salt: 50 + width);
+            using var full = rgba.CloneAs<RgbaFloat>();
+            full.Metadata.TransferFunction = Metadata.ColorTransferFunction.Linear;
+            full.Frames[0][1, 1] = new RgbaFloat(12.5f, 0f, 3e20f, 1f);
+            foreach (var compression in Enum.GetValues<RadianceCompression>())
+            {
+                seeds.Add(Encode(string.Create(CultureInfo.InvariantCulture, $"hdr/{compression.ToString().ToLowerInvariant()}-{width}x{height}"), full, new RadianceEncoder { Compression = compression, BackgroundColor = new Rgba64(0, 0, 0, 65535) }));
+            }
+        }
+
+        // The old encoding, the other orientations and header variables, which the encoder never writes
+        var pixels = new byte[9 * 8 * 4];
+        for (var i = 0; i < 9 * 8; i++)
+        {
+            byte[] pixel = i % 3 == 0 ? [200, 100, 50, 130] : [(byte)(128 + i), (byte)i, 3, (byte)(120 + (i % 5))];
+            pixel.CopyTo(pixels, i * 4);
+        }
+
+        seeds.Add(new FuzzSeed("hdr/builder-old-rle", RadianceFileBuilder.Create(9, 8, pixels, RadianceScanlineEncoding.OldRunLength).Build()));
+        foreach (var order in RadianceFileBuilder.ScanOrders.Skip(1))
+        {
+            seeds.Add(new FuzzSeed("hdr/builder-" + order.Replace(' ', '_'), RadianceFileBuilder.Create(9, 8, pixels, RadianceScanlineEncoding.NewRunLength, order).Build()));
+        }
+
+        var header = RadianceFileBuilder.Create(9, 8, pixels, RadianceScanlineEncoding.Flat, format: "32-bit_rle_xyze");
+        header.HeaderLines.Add("EXPOSURE=2");
+        header.HeaderLines.Add("COLORCORR=1 0.5 2");
+        header.HeaderLines.Add("PRIMARIES=0.670 0.330 0.210 0.710 0.140 0.080 0.333 0.333");
+        header.HeaderLines.Add("PIXASPECT=0.5");
+        header.HeaderLines.Add("VIEW= -vh 45");
+        seeds.Add(new FuzzSeed("hdr/builder-xyze-variables", header.Build()));
+        return seeds;
     }
 
     private static FuzzSeed Encode(string id, Image image, ImageEncoder encoder)

@@ -152,7 +152,7 @@ public sealed partial class FaultInjectionTests
         // The integer encoders reject floating-point pixels: an OpenEXR source is reduced to 16-bit integers first, its
         // samples clipped to [0, 1] (no conversion gives a value to a NaN sample: such a source is skipped)
         Image image;
-        if (encoderName != "exr" && SuiteReaders.ReadsFloats(data))
+        if (encoderName is not ("exr" or "hdr") && SuiteReaders.ReadsFloats(data))
         {
             using var floats = Image.Load<RgbaFloat>(data, new ImageDecodeOptions { Conversion = Conversion });
             if (!HasOnlyNumbers(floats))
@@ -274,6 +274,15 @@ public sealed partial class FaultInjectionTests
 
                 image.Dispose();
                 return null;
+            case "hdr":
+                // The run-length encoding of every scanline; RGBE stores no alpha (composited over black), no negative color
+                // and no sample that is not a number (such a source is skipped)
+                encoder = new RadianceEncoder { MetadataHandling = MetadataHandling.Strip, BackgroundColor = new Rgba64(0, 0, 0, 65535) };
+                if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated && CanStoreAsRgbe(image))
+                    return image;
+
+                image.Dispose();
+                return null;
             case "qoi":
             case "bmp":
             case "bmp-indexed":
@@ -305,6 +314,31 @@ public sealed partial class FaultInjectionTests
                 image.Dispose();
                 return null;
         }
+    }
+
+    private static bool CanStoreAsRgbe(Image image)
+    {
+        if (!PixelFormats.IsFloatingPoint(image.PixelFormat))
+            return true;
+
+        using var floats = image.CloneAs<RgbaFloat>();
+        foreach (var frame in floats.Frames)
+        {
+            for (var y = 0; y < frame.Height; y++)
+            {
+                for (var x = 0; x < frame.Width; x++)
+                {
+                    var pixel = frame[x, y];
+                    if (!IsRgbeColor(pixel.R) || !IsRgbeColor(pixel.G) || !IsRgbeColor(pixel.B) || !float.IsFinite(pixel.A))
+                        return false;
+                }
+            }
+        }
+
+        return true;
+
+        // From 0 to 2^127, excluded
+        static bool IsRgbeColor(float value) => value is >= 0 and < 1.7014118346046923E+38f;
     }
 
     private static bool HasOnlyNumbers(Image<RgbaFloat> image)

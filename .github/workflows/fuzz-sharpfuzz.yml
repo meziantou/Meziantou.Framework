@@ -40,6 +40,7 @@ on:
           - http-caching
           - http
           - htpasswd
+          - imaging-processing
           - javascript-engine
           - jsonpath
           - language
@@ -126,6 +127,7 @@ env:
       { "project": "Meziantou.Framework.Http.Caching.Fuzz",        "component": "http-caching",          "day": 2 },
       { "project": "Meziantou.Framework.Http.Fuzz",                "component": "http",                  "day": 3 },
       { "project": "Meziantou.Framework.Http.Htpasswd.Fuzz",       "component": "htpasswd",              "day": 1 },
+      { "project": "Meziantou.Framework.Imaging.Fuzz",             "component": "imaging-processing",    "day": 4 },
       { "project": "Meziantou.Framework.JavaScriptEngine.Fuzz",     "component": "javascript-engine",     "day": 6 },
       { "project": "Meziantou.Framework.JsonPath.Fuzz",            "component": "jsonpath",              "day": 1 },
       { "project": "Meziantou.Framework.Language.Fuzz",            "component": "language",              "day": 2 },

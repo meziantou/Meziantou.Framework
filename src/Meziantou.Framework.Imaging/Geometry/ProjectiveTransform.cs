@@ -21,7 +21,7 @@ namespace Meziantou.Framework.Imaging;
 /// </para>
 /// </remarks>
 [StructLayout(LayoutKind.Auto)]
-public readonly struct ProjectiveTransform : IEquatable<ProjectiveTransform>
+public readonly partial struct ProjectiveTransform : IEquatable<ProjectiveTransform>
 {
     // The default value of the structure is the identity: the coefficients are only read once they were set
     private readonly bool _isSet;

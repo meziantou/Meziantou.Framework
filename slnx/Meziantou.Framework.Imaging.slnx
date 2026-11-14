@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Imaging.Fuzz/Meziantou.Framework.Imaging.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" />
   </Folder>
   <Folder Name="/src/">

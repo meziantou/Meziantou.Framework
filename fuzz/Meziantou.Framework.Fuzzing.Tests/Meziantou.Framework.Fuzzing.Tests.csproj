@@ -34,6 +34,7 @@
     <ProjectReference Include="..\Meziantou.Framework.Http.Caching.Fuzz\Meziantou.Framework.Http.Caching.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Http.Fuzz\Meziantou.Framework.Http.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Http.Htpasswd.Fuzz\Meziantou.Framework.Http.Htpasswd.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Imaging.Fuzz\Meziantou.Framework.Imaging.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.JavaScriptEngine.Fuzz\Meziantou.Framework.JavaScriptEngine.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.JsonPath.Fuzz\Meziantou.Framework.JsonPath.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Language.Fuzz\Meziantou.Framework.Language.Fuzz.csproj" />

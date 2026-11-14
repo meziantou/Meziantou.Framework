@@ -620,6 +620,25 @@ namespace Meziantou.Framework.Imaging
         LinearSrgb = 1,
     }
 
+    public enum CornerDetectionMethod
+    {
+        Harris = 0,
+        ShiTomasi = 1,
+        Fast = 2,
+    }
+
+    public sealed class CornerDetectionOptions
+    {
+        public static Meziantou.Framework.Imaging.CornerDetectionOptions Default { get => throw null; }
+        public double FastThreshold { get => throw null; init { } }
+        public double HarrisK { get => throw null; init { } }
+        public int MaxCorners { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.CornerDetectionMethod Method { get => throw null; init { } }
+        public int MinDistance { get => throw null; init { } }
+        public double ResponseThreshold { get => throw null; init { } }
+        public double Sigma { get => throw null; init { } }
+    }
+
     public enum CropEnergy
     {
         Edges = 0,
@@ -838,6 +857,49 @@ namespace Meziantou.Framework.Imaging
         public int TileCountY { get => throw null; init { } }
     }
 
+    public sealed class HomographyEstimate
+    {
+        public int InlierCount { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<bool> Inliers { get => throw null; }
+        public double RootMeanSquareError { get => throw null; }
+        public Meziantou.Framework.Imaging.ProjectiveTransform Transform { get => throw null; }
+    }
+
+    public sealed class HomographyRansacOptions
+    {
+        public static Meziantou.Framework.Imaging.HomographyRansacOptions Default { get => throw null; }
+        public int Iterations { get => throw null; init { } }
+        public int Seed { get => throw null; init { } }
+        public double Threshold { get => throw null; init { } }
+    }
+
+    public readonly struct HoughLine : System.IEquatable<Meziantou.Framework.Imaging.HoughLine>
+    {
+        public double Angle { get => throw null; }
+        public double Distance { get => throw null; }
+        public double Slope { get => throw null; }
+        public int Votes { get => throw null; }
+        public HoughLine(double angle, double distance, int votes) { }
+        public bool Equals(Meziantou.Framework.Imaging.HoughLine other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.HoughLine left, Meziantou.Framework.Imaging.HoughLine right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.HoughLine left, Meziantou.Framework.Imaging.HoughLine right) => throw null;
+    }
+
+    public sealed class HoughLineOptions
+    {
+        public double AngleStep { get => throw null; init { } }
+        public static Meziantou.Framework.Imaging.HoughLineOptions Default { get => throw null; }
+        public double DistanceStep { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.CannyEdgeOptions EdgeOptions { get => throw null; init { } }
+        public int MaxLines { get => throw null; init { } }
+        public double MinAngleSeparation { get => throw null; init { } }
+        public double MinDistanceSeparation { get => throw null; init { } }
+        public int? MinVotes { get => throw null; init { } }
+    }
+
     public readonly struct Hsl : System.IEquatable<Meziantou.Framework.Imaging.Hsl>
     {
         public double H { get => throw null; }
@@ -904,6 +966,13 @@ namespace Meziantou.Framework.Imaging
         public static bool TryParse(System.ReadOnlySpan<char> value, out Meziantou.Framework.Imaging.Hwb result, out double alpha) => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Hwb left, Meziantou.Framework.Imaging.Hwb right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Hwb left, Meziantou.Framework.Imaging.Hwb right) => throw null;
+    }
+
+    public interface IImageProcessor<TPixel> where TPixel : unmanaged
+    {
+        Meziantou.Framework.Imaging.Size GetOutputSize(Meziantou.Framework.Imaging.Size size);
+        void Process(int frameIndex, Meziantou.Framework.Imaging.PixelRowSource<TPixel> source, Meziantou.Framework.Imaging.PixelAccessor<TPixel> destination, System.Threading.CancellationToken cancellationToken);
+        public bool TryMapPoint(Meziantou.Framework.Imaging.Point source, Meziantou.Framework.Imaging.Size sourceSize, Meziantou.Framework.Imaging.Size destinationSize, out Meziantou.Framework.Imaging.Point destination) => throw null;
     }
 
     public interface IPixelNeighborhoodOperation<TPixel> where TPixel : unmanaged
@@ -1079,6 +1148,21 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.ImageResourceLimits Limits { get => throw null; init { } }
         public int MaxDegreeOfParallelism { get => throw null; init { } }
         public Meziantou.Framework.Imaging.OpenExrDecodingOptions OpenExrDecoding { get => throw null; init { } }
+    }
+
+    public readonly struct ImageCorner : System.IEquatable<Meziantou.Framework.Imaging.ImageCorner>
+    {
+        public Meziantou.Framework.Imaging.Point Location { get => throw null; }
+        public double Response { get => throw null; }
+        public int X { get => throw null; }
+        public int Y { get => throw null; }
+        public ImageCorner(int x, int y, double response) { }
+        public bool Equals(Meziantou.Framework.Imaging.ImageCorner other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.ImageCorner left, Meziantou.Framework.Imaging.ImageCorner right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.ImageCorner left, Meziantou.Framework.Imaging.ImageCorner right) => throw null;
     }
 
     public sealed class ImageDecodeOptions
@@ -1267,6 +1351,7 @@ namespace Meziantou.Framework.Imaging
         public static void ApplyLut(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.CubeLut lut, Meziantou.Framework.Imaging.LutInterpolation interpolation = Meziantou.Framework.Imaging.LutInterpolation.Tetrahedral, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ApplyLut(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.CubeLut lut, Meziantou.Framework.Imaging.LutInterpolation interpolation = Meziantou.Framework.Imaging.LutInterpolation.Tetrahedral, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ApplyNeighborhoodOperation<TPixel, TOperation>(this Meziantou.Framework.Imaging.Image image, TOperation operation, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged where TOperation : Meziantou.Framework.Imaging.IPixelNeighborhoodOperation<TPixel> { }
+        public static void ApplyProcessor<TPixel, TProcessor>(this Meziantou.Framework.Imaging.Image image, TProcessor processor, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged where TProcessor : Meziantou.Framework.Imaging.IImageProcessor<TPixel> { }
         public static void ApplyRowOperation<TPixel, TOperation>(this Meziantou.Framework.Imaging.Image image, TOperation operation, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged where TOperation : Meziantou.Framework.Imaging.IPixelRowOperation<TPixel> { }
         public static void ApplyToneCurve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ToneCurve curve, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ApplyToneCurve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ToneCurve curve, System.Threading.CancellationToken cancellationToken = default) { }
@@ -1290,16 +1375,20 @@ namespace Meziantou.Framework.Imaging
         public static void Convolve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void CorrectPerspective(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.PointD topLeft, Meziantou.Framework.Imaging.PointD topRight, Meziantou.Framework.Imaging.PointD bottomRight, Meziantou.Framework.Imaging.PointD bottomLeft, Meziantou.Framework.Imaging.Size? size = null, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Crop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rectangle rectangle, System.Threading.CancellationToken cancellationToken = default) { }
+        public static double Deskew(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.SkewEstimationOptions? options = null, Meziantou.Framework.Imaging.TransformOptions? transformOptions = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static void DetectCannyEdges(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.CannyEdgeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void DetectCannyEdges(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.CannyEdgeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.ImageCorner> DetectCorners(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.CornerDetectionOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static void DetectEdges(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.EdgeDetector detector, bool grayscale = true, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void DetectEdges(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.EdgeDetector detector, bool grayscale = true, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.HoughLine> DetectLines(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.HoughLineOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static void Dilate(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.StructuringElement element, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Dilate(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.StructuringElement element, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Equalize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.HistogramEqualizationOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Equalize(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.HistogramEqualizationOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Erode(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.StructuringElement element, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Erode(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.StructuringElement element, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
+        public static double EstimateSkew(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.SkewEstimationOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static void ExtendCanvas(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Size size, Meziantou.Framework.Imaging.ResizeAnchor anchor = Meziantou.Framework.Imaging.ResizeAnchor.Center, Meziantou.Framework.Imaging.Rgba64? backgroundColor = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Flatten(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rgba64 backgroundColor, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Flatten(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.Rgba64 backgroundColor, System.Threading.CancellationToken cancellationToken = default) { }
@@ -1313,6 +1402,7 @@ namespace Meziantou.Framework.Imaging
         public static void Grayscale(this Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) { }
         public static void GuidedFilter(this Meziantou.Framework.Imaging.Image image, int radius, double epsilon, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void GuidedFilter(this Meziantou.Framework.Imaging.ImageFrame frame, int radius, double epsilon, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Inpaint(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.PixelMask mask, Meziantou.Framework.Imaging.InpaintingOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void MedianBlur(this Meziantou.Framework.Imaging.Image image, int radius, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void MedianBlur(this Meziantou.Framework.Imaging.ImageFrame frame, int radius, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void MorphologicalClose(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.StructuringElement element, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
@@ -1335,6 +1425,7 @@ namespace Meziantou.Framework.Imaging
         public static void Resize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ResizeOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Rotate(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.RotateMode mode, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Rotate(this Meziantou.Framework.Imaging.Image image, double degrees, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void SeamCarve(this Meziantou.Framework.Imaging.Image image, int width, int height, Meziantou.Framework.Imaging.SeamCarvingOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Sharpen(this Meziantou.Framework.Imaging.Image image, double sigma, double amount = 1d, double threshold = 0d, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Sharpen(this Meziantou.Framework.Imaging.ImageFrame frame, double sigma, double amount = 1d, double threshold = 0d, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Skew(this Meziantou.Framework.Imaging.Image image, double degreesX, double degreesY, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
@@ -1504,6 +1595,13 @@ namespace Meziantou.Framework.Imaging
         public override Meziantou.Framework.Imaging.Image<TPixel> ClonePosterFrame() => throw null;
         public override Meziantou.Framework.Imaging.ImageFrame<TPixel> InsertFrame(int index, Meziantou.Framework.Imaging.ImageFrame source) => throw null;
         public override Meziantou.Framework.Imaging.ImageFrame<TPixel> SetPosterFrame(Meziantou.Framework.Imaging.ImageFrame source) => throw null;
+    }
+
+    public sealed class InpaintingOptions
+    {
+        public const int MaxRadius = 64;
+        public static Meziantou.Framework.Imaging.InpaintingOptions Default { get => throw null; }
+        public int Radius { get => throw null; init { } }
     }
 
     public class InvalidImageContentException : Meziantou.Framework.Imaging.ImageException
@@ -1736,6 +1834,20 @@ namespace Meziantou.Framework.Imaging
         public static bool IsSupported<TPixel>() where TPixel : unmanaged => throw null;
     }
 
+    public sealed class PixelMask
+    {
+        public int Count { get => throw null; }
+        public int Height { get => throw null; }
+        public bool this[int x, int y] { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Size Size { get => throw null; }
+        public int Width { get => throw null; }
+        public PixelMask(Meziantou.Framework.Imaging.Size size) { }
+        public PixelMask(int width, int height) { }
+        public void Clear() { }
+        public void Fill(Meziantou.Framework.Imaging.Rectangle rectangle, bool value = true) { }
+        public static Meziantou.Framework.Imaging.PixelMask FromFrame(Meziantou.Framework.Imaging.ImageFrame frame) => throw null;
+    }
+
     public ref struct PixelRowSource<TPixel> where TPixel : unmanaged
     {
         public int Height { get => throw null; }
@@ -1812,6 +1924,8 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.ProjectiveTransform CreateFromQuadrilateral(Meziantou.Framework.Imaging.RectangleD source, Meziantou.Framework.Imaging.PointD topLeft, Meziantou.Framework.Imaging.PointD topRight, Meziantou.Framework.Imaging.PointD bottomRight, Meziantou.Framework.Imaging.PointD bottomLeft) => throw null;
         public bool Equals(Meziantou.Framework.Imaging.ProjectiveTransform other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.ProjectiveTransform EstimateHomography(System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> source, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> destination) => throw null;
+        public static Meziantou.Framework.Imaging.HomographyEstimate EstimateHomographyRobust(System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> source, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> destination, Meziantou.Framework.Imaging.HomographyRansacOptions? options = null) => throw null;
         public override int GetHashCode() => throw null;
         public static Meziantou.Framework.Imaging.ProjectiveTransform Multiply(Meziantou.Framework.Imaging.ProjectiveTransform first, Meziantou.Framework.Imaging.ProjectiveTransform second) => throw null;
         public Meziantou.Framework.Imaging.ProjectiveTransform Then(Meziantou.Framework.Imaging.ProjectiveTransform next) => throw null;
@@ -2104,6 +2218,13 @@ namespace Meziantou.Framework.Imaging
         Rotate270 = 270,
     }
 
+    public sealed class SeamCarvingOptions
+    {
+        public static Meziantou.Framework.Imaging.SeamCarvingOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.PixelMask? ProtectedRegion { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.PixelMask? RemovedRegion { get => throw null; init { } }
+    }
+
     public enum SimilarityPrecision
     {
         EightBit = 0,
@@ -2126,6 +2247,13 @@ namespace Meziantou.Framework.Imaging
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Size left, Meziantou.Framework.Imaging.Size right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Size left, Meziantou.Framework.Imaging.Size right) => throw null;
+    }
+
+    public sealed class SkewEstimationOptions
+    {
+        public static Meziantou.Framework.Imaging.SkewEstimationOptions Default { get => throw null; }
+        public double MaxAngle { get => throw null; init { } }
+        public double Precision { get => throw null; init { } }
     }
 
     public sealed class StructuringElement

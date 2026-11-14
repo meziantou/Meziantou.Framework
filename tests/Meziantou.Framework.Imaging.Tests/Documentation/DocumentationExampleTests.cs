@@ -3673,6 +3673,154 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SeamCarveKeepsTheProtectedRegion()
+    {
+        // A flat background, a textured subject on the left and a smaller one on the right: halving the width keeps the
+        // protected subject whole
+        var input = GetPath("scene.png");
+        using (var source = new Image<Rgb24>(40, 10, new Rgb24(200, 220, 240)))
+        {
+            for (var y = 0; y < 10; y++)
+            {
+                for (var x = 2; x < 12; x++)
+                {
+                    source.Frames[0][x, y] = new Rgb24((byte)(40 + (45 * (((7 * x) + (3 * y)) % 5))), 60, 20);
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var output = GetPath("banner.png");
+        ProcessingExamples.ResizeToBanner(input, output, new Rectangle(2, 0, 10, 10));
+
+        using var result = Image.Load<Rgb24>(output);
+        Assert.Equal(new Size(20, 10), result.Size);
+        var subjectPixels = 0;
+        for (var y = 0; y < 10; y++)
+        {
+            for (var x = 0; x < 20; x++)
+            {
+                if (result.Frames[0][x, y] != new Rgb24(200, 220, 240))
+                {
+                    subjectPixels++;
+                }
+            }
+        }
+
+        Assert.Equal(100, subjectPixels);
+    }
+
+    [Fact]
+    public void InpaintRemovesTheMaskedScratch()
+    {
+        // A uniform blue photo with a white scratch, and its mask
+        var photoPath = GetPath("scratched.png");
+        var maskPath = GetPath("scratch-mask.png");
+        using (var photo = new Image<Rgb24>(20, 12, new Rgb24(30, 60, 160)))
+        using (var mask = new Image<Gray8>(20, 12))
+        {
+            for (var x = 2; x < 18; x++)
+            {
+                photo.Frames[0][x, 6] = new Rgb24(255, 255, 255);
+                mask.Frames[0][x, 6] = new Gray8(255);
+            }
+
+            photo.Save(photoPath);
+            mask.Save(maskPath);
+        }
+
+        var output = GetPath("repaired.png");
+        ProcessingExamples.RemoveScratches(photoPath, maskPath, output);
+
+        using var result = Image.Load<Rgb24>(output);
+        for (var x = 0; x < 20; x++)
+        {
+            Assert.Equal(new Rgb24(30, 60, 160), result.Frames[0][x, 6]);
+        }
+    }
+
+    [Fact]
+    public void DetectLinesAndCornersFindTheSquare()
+    {
+        // A light square on a dark background: four lines (two horizontal, two vertical) and four corners
+        var input = GetPath("square.png");
+        using (var source = new Image<Rgb24>(60, 60, new Rgb24(20, 20, 20)))
+        {
+            for (var y = 15; y < 45; y++)
+            {
+                for (var x = 15; x < 45; x++)
+                {
+                    source.Frames[0][x, y] = new Rgb24(230, 230, 230);
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var lines = ProcessingExamples.FindStraightLines(input);
+        Assert.Equal(4, lines.Take(4).Count(line => Math.Abs(line.Slope) is <= 2 or >= 88));
+
+        var corners = ProcessingExamples.FindCorners(input);
+        Assert.Equal(4, corners.Count);
+        Assert.All(corners, corner => Assert.True(Math.Abs(corner.X - 29.5) is > 12 and < 17 && Math.Abs(corner.Y - 29.5) is > 12 and < 17, $"{corner} is not a corner of the square"));
+    }
+
+    [Fact]
+    public void DeskewStraightensTheLinesOfText()
+    {
+        // Lines of words drawn on a page, scanned 4 degrees counterclockwise
+        var input = GetPath("skewed.png");
+        using (var page = new Image<Rgb24>(200, 160, new Rgb24(255, 255, 255)))
+        {
+            for (var line = 0; line < 7; line++)
+            {
+                for (var y = 20 + (line * 18); y < 26 + (line * 18); y++)
+                {
+                    for (var x = 20; x < 180; x++)
+                    {
+                        if (x % 21 < 16)
+                        {
+                            page.Frames[0][x, y] = new Rgb24(0, 0, 0);
+                        }
+                    }
+                }
+            }
+
+            page.Rotate(-4, new TransformOptions { CanvasMode = TransformCanvasMode.Keep, BackgroundColor = new Rgba64(65535, 65535, 65535, 65535) });
+            page.Save(input);
+        }
+
+        var output = GetPath("straight.png");
+        Assert.InRange(ProcessingExamples.StraightenScan(input, output), -4.1, -3.9);
+        using var result = Image.Load(output);
+        Assert.InRange(result.Frames[0].EstimateSkew(), -0.1, 0.1);
+    }
+
+    [Fact]
+    public void AlignToReferenceIgnoresTheWrongMatches()
+    {
+        var input = GetPath("photo.png");
+        using (var photo = new Image<Rgb24>(64, 48, new Rgb24(10, 120, 200)))
+        {
+            photo.Save(input);
+        }
+
+        // The photo is the reference moved by (5, 3), and one match of five is wrong
+        PointD[] photoPoints = [new(10, 10), new(50, 12), new(48, 40), new(12, 38), new(30, 25), new(20, 20)];
+        PointD[] referencePoints = [new(5, 7), new(45, 9), new(43, 37), new(7, 35), new(25, 22), new(60, 2)];
+        var output = GetPath("aligned.png");
+        var estimate = ProcessingExamples.AlignToReference(input, output, photoPoints, referencePoints, new Size(64, 48));
+
+        Assert.Equal(5, estimate.InlierCount);
+        Assert.False(estimate.Inliers[5]);
+        Assert.True(estimate.Transform.TryTransform(new PointD(30, 30), out var moved));
+        Assert.InRange(moved.DistanceTo(new PointD(25, 27)), 0, 1e-6);
+        using var result = Image.Load<Rgb24>(output);
+        Assert.Equal(new Rgb24(10, 120, 200), result.Frames[0][20, 20]);
+    }
+
+    [Fact]
     public void RotateAndFlipTransposesThePixels()
     {
         // A quarter turn clockwise then a horizontal mirror moves the pixel (x, y) to (y, x)
@@ -4823,6 +4971,21 @@ public sealed class DocumentationExampleTests : IDisposable
         using var uniform = new Image<Rgba32>(4, 4, new Rgba32(10, 20, 30, 77));
         ExtensibilityExamples.Emboss(uniform);
         Assert.Equal(new Rgba32(128, 128, 128, 77), uniform.Frames[0][2, 2]);
+    }
+
+    [Fact]
+    public void ProcessorExampleUpscalesEveryFrame()
+    {
+        using var image = new Image<Rgb24>(2, 1, new Rgb24(10, 20, 30));
+        image.Frames[0][1, 0] = new Rgb24(200, 100, 0);
+        image.InsertFrame(1, image.Frames[0]);
+        image.Frames[1].Metadata.Hotspot = new Point(1, 0);
+        ExtensibilityExamples.UpscalePixelArt(image, 3);
+
+        Assert.Equal(new Size(6, 3), image.Size);
+        Assert.All(Enumerable.Range(0, image.Frames.Count), i => Assert.Equal(new Rgb24(200, 100, 0), image.Frames[i][3, 2]));
+        Assert.Equal(new Rgb24(10, 20, 30), image.Frames[1][2, 2]);
+        Assert.Equal(new Point(3, 0), image.Frames[1].Metadata.Hotspot);
     }
 
     [Fact]

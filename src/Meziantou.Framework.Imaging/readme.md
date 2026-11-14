@@ -39,7 +39,7 @@ color conversion, and bounded-memory streaming.
   `RgbaHalf`) for scene-referred and high dynamic range data, and two CMYK ones (`Cmyk32`, `Cmyk64`) that keep the inks
   of print images
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
-  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, homography estimation (least squares and RANSAC), document deskew, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions and resizing (seam carving), inpainting, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians, Canny), Hough line and corner detection (Harris, Shi-Tomasi, FAST), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -529,7 +529,8 @@ scratch, charged to `MaxLiveAllocationBytes`, so a limit that fits one worker ma
 
 
 
-- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `Pad`, `ExtendCanvas`, `Rotate`, `Skew`, `Transform` and `AutoOrient` apply to every
+- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `SeamCarve`, `Pad`, `ExtendCanvas`, `Rotate`, `Deskew`, `Skew`,
+  `Transform`, `AutoOrient`, `Inpaint` and `ApplyProcessor` apply to every
   frame and the poster in one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
   (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, cursor hotspots and
   metadata unchanged.
@@ -776,7 +777,11 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 ### Processing
 
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
-`Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `Pad` (a border of a given
+`Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `SeamCarve` (a
+content-aware resize, see [Content-aware resize](#content-aware-resize)), `Inpaint` (a mask filled from the pixels
+around it, see [Inpainting](#inpainting)), `Deskew` and `EstimateSkew` (see the perspective correction below),
+`DetectLines` and `DetectCorners` (analyses of one frame, see
+[Lines and corners](#lines-and-corners)), `Pad` (a border of a given
 width on each side), `ExtendCanvas` (a larger canvas, with the image at one of nine anchors), `Rotate` (exact 90/180/270
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
@@ -1031,6 +1036,40 @@ of `ProjectiveTransform.CreateFromQuadrilateral`, sampled as `Transform` samples
 longer of the top and bottom edges by the longer of the left and right edges, rounded, as a scanner app gives it. The
 filter, background color and working space come from the `TransformOptions` (their canvas settings are not used).
 
+**Homography estimation**. `ProjectiveTransform.EstimateHomography(source, destination)` fits the homography that maps
+each source point onto its destination point (at least four pairs, no three of four points on a line) with the
+normalized direct linear transformation (Hartley and Zisserman, algorithm 4.2: centered and scaled points, the
+eigenvector of the smallest eigenvalue of `AᵀA` by the cyclic Jacobi method), scaled so that `W` is 1 at the centroid of
+the source points; degenerate points throw `ArgumentException`. `EstimateHomographyRobust(source, destination, options)`
+runs RANSAC (Fischler and Bolles, 1981): `HomographyRansacOptions.Iterations` samples of four pairs (1,000) drawn by a
+xorshift generator seeded by `Seed`, scored by their inliers within `Threshold` (3 pixels; ties by the sum of squared
+errors, then the earlier sample), refitted on the inliers; the `HomographyEstimate` gives the `Transform`, the
+`Inliers`, their count and their root mean square error. Both are deterministic and feed `Transform` (with
+`TransformCanvasMode.Explicit`, the canvas has the coordinates of the destination points).
+
+**Deskew**. `ImageFrame.EstimateSkew(options)` returns the angle of the lines of text of a document, in degrees, positive
+when they go down to the right, by projection profiles (Postl 1986, Baird 1987): the luma composited over white, split
+by the threshold of Otsu into paper and ink (the smaller class, so light text on dark paper works), the ink counted
+along the lines of every multiple of 0.5 degree up to `SkewEstimationOptions.MaxAngle` (15) then of `Precision` (0.05)
+near the best one, and the angle of the largest sum of squared counts wins (integer scores, ties to the angle nearest to
+0; a frame without contrast gives 0). `Image.Deskew(options, transformOptions)` estimates the skew of the first frame and
+rotates every frame by its opposite (`Rotate`, by default on a canvas of the same size with an opaque white background),
+transactionally, and returns the angle.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_Deskew;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static double StraightenScan(string inputPath, string outputPath)
+{
+    using var scan = Image.Load(inputPath);
+
+    // The angle of the lines of text is estimated, and the page rotated back; the corners it uncovers are white
+    var skew = scan.Deskew(new SkewEstimationOptions { MaxAngle = 10 });
+    scan.Save(outputPath);
+    return skew;
+}
+```
+<!-- endref -->
+
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_CorrectPerspective;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static Size StraightenDocument(string inputPath, string outputPath, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft)
@@ -1280,6 +1319,108 @@ public static void ApplyColorFilters(string photoPath, string iconPath, string o
     });
 
     photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Content-aware resize
+
+`SeamCarve(width, height, options)` resizes every frame and the poster by seam carving (Avidan and Shamir, 2007): it
+removes, or duplicates, the connected paths of one pixel per row (vertical seams, for the width) or per column
+(horizontal seams, for the height) whose removal brings together the least different pixels, the forward energy of
+Rubinstein, Shamir and Avidan (2008) on the Rec. 709 luma premultiplied by alpha and on the alpha, at the storage
+precision. The width changes first, then the height. An enlargement duplicates the seams a reduction would remove, at
+most half of the current size at a time, each new pixel blended from the seam pixel and its neighbor (premultiplied by
+alpha, in single precision); the other pixels keep their stored values. The seams are computed once from the energies of
+every frame and the poster, so an animation stays aligned, and a cursor hotspot follows its pixel (the operation fails
+when a seam removes it). `SeamCarvingOptions.ProtectedRegion` and `RemovedRegion` are `PixelMask`s of the size of the
+image: a seam is compared by the protected pixels minus the pixels to remove it crosses, then by its energy. Costs are
+integers and ties go to the straight path, then the left, then the right, and to the leftmost seam, so the result is the
+same on every platform. The time is the number of seams times the number of pixels and frames; the working memory
+(about 8 bytes per pixel and frame, 13 per pixel for the search, and two working frames) is charged to the image, and
+the operation is transactional.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_SeamCarve;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ResizeToBanner(string inputPath, string outputPath, Rectangle face)
+{
+    using var image = Image.Load(inputPath);
+
+    // Half as wide: the seams of least detail are removed, and never through the face while another seam remains
+    var protectedRegion = new PixelMask(image.Size);
+    protectedRegion.Fill(face);
+    image.SeamCarve(image.Width / 2, image.Height, new SeamCarvingOptions { ProtectedRegion = protectedRegion });
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Inpainting
+
+`Inpaint(mask, options)` fills the pixels of a `PixelMask` (the size of the image, at least one pixel left out) of every
+frame and the poster from the pixels around them, with the fast marching method of Telea (2004): the pixels of the mask
+are filled in the order of their distance to its boundary (the eikonal equation on the pixel grid, with a heap ordered
+by distance then pixel index), each one the weighted mean of the first-order extrapolations `I(q) + ∇I(q) · (p - q)` of
+the known or filled pixels within `InpaintingOptions.Radius` (1 to 64, default 5), weighted by their alignment with
+the direction of the front, the inverse square of their distance and their difference of distance to the boundary.
+Colors are filled premultiplied by alpha, in double precision, each channel clamped to the range of the pixels it comes
+from; the pixels outside the mask keep their stored values. The result is the same on every platform. It suits thin
+and small regions (scratches, text, small objects) and blurs the texture of large ones, which it does not reconstruct.
+The working memory (17 bytes per pixel, a working copy of a frame and the new frames) is charged to the image, and the
+operation is transactional. `PixelMask.FromFrame` reads a mask from the light pixels of a frame (luma times alpha at
+least half, alpha for `A8`).
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_Inpaint;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void RemoveScratches(string photoPath, string maskPath, string outputPath)
+{
+    using var photo = Image.Load(photoPath);
+
+    // The mask is painted in white on black, at the size of the photo
+    PixelMask mask;
+    using (var maskImage = Image.Load(maskPath))
+    {
+        mask = PixelMask.FromFrame(maskImage.Frames[0]);
+    }
+
+    // The pixels of the mask are filled from the pixels around them; a larger radius gives smoother fills
+    photo.Inpaint(mask, new InpaintingOptions { Radius = 4 });
+    photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Lines and corners
+
+`ImageFrame.DetectLines(options)` returns the straight lines of a frame by the Hough transform (Duda and Hart, 1972): the
+Canny edges of the frame (`HoughLineOptions.EdgeOptions`) vote, at their pixel index, for the lines `ρ = x cos θ + y sin
+θ` at the angles `θ` from 0 to 180 degrees by `AngleStep` within 30 degrees of the sector of their gradient (O'Gorman
+and Clowes, 1976; sines and cosines that do not depend on the platform) and the distances rounded to `DistanceStep`; a line is a peak of the votes, with at least `MinVotes` (a quarter of the smaller side by
+default; among equal votes, the smaller sum of rounding residuals of the votes wins), the lines are sorted by votes
+(ties by residuals, angle, then distance), and of two lines within both `MinAngleSeparation` and `MinDistanceSeparation` (5 degrees and 5 pixels) the
+first is kept, up to `MaxLines` (32). A `HoughLine` (`Angle`, `Distance` in the coordinates of the pixel centers,
+`Votes`, `Slope`) is infinite. `ImageFrame.DetectCorners(options)` returns the corners of the luma premultiplied by
+alpha, by `CornerDetectionMethod.Harris` (`det(M) - k trace(M)²` of the structure tensor of the Sobel gradients in a
+Gaussian window of `Sigma`, `HarrisK` 0.04), `ShiTomasi` (its smaller eigenvalue) or `Fast` (FAST-9 of Rosten and
+Drummond: 9 contiguous pixels of the circle of 16 brighter or darker than the center by `FastThreshold`); a corner is a
+local maximum above `ResponseThreshold` times the strongest response (or a FAST corner), and the strongest are kept at
+least `MinDistance` apart, up to `MaxCorners`, sorted by response, then row, then column. Both are deterministic, read
+one frame without changing it, and charge their working memory to the image.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_DetectLines;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static IReadOnlyList<HoughLine> FindStraightLines(string inputPath)
+{
+    using var photo = Image.Load(inputPath);
+
+    // The 8 strongest lines of the first frame: x cos(Angle) + y sin(Angle) = Distance, in pixels
+    var lines = photo.Frames[0].DetectLines(new HoughLineOptions { MaxLines = 8 });
+    foreach (var line in lines)
+    {
+        Console.WriteLine($"{line.Slope:F1} degrees from horizontal, {line.Votes} edge pixels");
+    }
+
+    return lines;
 }
 ```
 <!-- endref -->
@@ -4781,10 +4922,55 @@ public static Image LoadLeniently(string path)
   the poster, by bands of rows on up to `MaxDegreeOfParallelism` workers. The rows are the pixel type of the image,
   `Rgba64` (integer formats) or `RgbaFloat` (any format), converted without loss; storing them back clips the
   floating-point samples an integer format cannot hold.
+- **Custom processors.** `ApplyProcessor` (`IImageProcessor<TPixel>`) replaces every frame and the poster with a frame
+  of the size the processor returns, computed from the whole frame before the operation, transactionally like the
+  built-in geometry operations: a failure, a limit or a cancellation leaves the image unchanged. The frames are in the
+  pixel type of the image, `Rgba64` or `RgbaFloat`, with the conversions of the pixel operations; `TryMapPoint` moves
+  the cursor hotspots (see the example below).
 - **Wrapped memory.** `Image.WrapMemory` creates an image over a `Memory<byte>` or a pointer, with a stride and a pixel
   format, without copying it (see the ownership table).
 - **Buffer pool.** `ImageBufferPool.MaxRetainedBytes` bounds the bytes the process-wide pool keeps for reuse (32 MiB by
   default, 0 disables retention, lowering it releases buffers); `ImageBufferPool.Trim` releases them all.
+
+A custom processor that changes the size of every frame:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ExtensibilityExamples.cs;region=Imaging_Processor;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void UpscalePixelArt(Image image, int factor)
+{
+    // Every frame and the poster are computed before they replace the old ones: a failure leaves the image unchanged
+    image.ApplyProcessor<Rgba64, PixelArtUpscaler>(new PixelArtUpscaler(factor));
+}
+
+/// <summary>Repeats every pixel in a square of factor x factor pixels.</summary>
+public readonly struct PixelArtUpscaler(int factor) : IImageProcessor<Rgba64>
+{
+    // Called once, before anything is allocated: the canvas limits apply to the result
+    public Size GetOutputSize(Size size) => new(checked(size.Width * factor), checked(size.Height * factor));
+
+    public void Process(int frameIndex, PixelRowSource<Rgba64> source, PixelAccessor<Rgba64> destination, CancellationToken cancellationToken)
+    {
+        for (var y = 0; y < destination.Height; y++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var sourceRow = source.GetRow(y / factor);
+            var row = destination.GetRowSpan(y);
+            for (var x = 0; x < row.Length; x++)
+            {
+                row[x] = sourceRow[x / factor];
+            }
+        }
+    }
+
+    // The hotspot of a cursor stays on the top-left pixel of its square
+    public bool TryMapPoint(Point source, Size sourceSize, Size destinationSize, out Point destination)
+    {
+        destination = new Point(source.X * factor, source.Y * factor);
+        return true;
+    }
+}
+```
+<!-- endref -->
 
 ## Format reference
 
@@ -5949,7 +6135,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based), device-link and abstract profiles in sequences of profiles: no version 5 (iccMAX) or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); CMYK pixels (`Cmyk32`, `Cmyk64`) are only read and written by JPEG and TIFF, and only moved (crop, flip, quarter turns, orientation) by the processing operations; the untyped load of a CMYK file needs `CmykConversionOptions`; CMYK JPEG output is baseline only; gamut mapping is per-channel clipping or a chroma reduction in Oklab, never a perceptual compression of in-gamut colors |
 | Drawing | Coverages computed on one thread (large shapes are composited by several workers); under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range); on a floating-point canvas, paints have 16-bit colors in [0, 1], layers, patterns, filters, shadows, blurs, masks and groups are drawn on images of 16-bit samples (what is drawn in them is clipped to [0, 1]), and what reads the canvas back (a backdrop layer, a backdrop blur, a group that is not isolated) or draws a floating-point image combines it through 16-bit colors, so its samples must be in [0, 1] (others are rejected with an `UnsupportedImageFeatureException`, never clipped) and are quantized to 1/65535 |
 | Floating-point pixels | `RgbaFloat` and `RgbaHalf` only (no floating-point grayscale format); OpenEXR and TIFF are the formats that decode to them and store them (the other encoders reduce them to `Rgba64` with `ImageEncoder.FloatingPointConversion`); HDR samples of the integer formats are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping |
-| Processing | No custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; histograms, equalization and auto-levels work on the encoded samples (floating-point samples are binned to 65,536 levels from 0 to 1), and CLAHE does not pad a frame whose size is not a multiple of the tile grid (its tiles divide it as evenly as possible) |
+| Processing | `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; histograms, equalization and auto-levels work on the encoded samples (floating-point samples are binned to 65,536 levels from 0 to 1), and CLAHE does not pad a frame whose size is not a multiple of the tile grid (its tiles divide it as evenly as possible) |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Two refinements of the motion search were measured the same way, on the bytes of the predicted images of its sequences at 256x192 and at equal quality (qualities 35 to 90), and left out: the motion vectors are refined to a quarter of a sample and compared by the sum of the absolute differences of their prediction. Comparing them by the absolute values of the Hadamard transform of the differences (SATD) went from 1.4% smaller to 0.8% larger depending on the sequence and the effort (2, 5 and 9; 0.1% larger on average); motion vectors in eighths of a sample (`allow_high_precision_mv`) were, at the efforts 5 and 9, 0.2 to 0.8% smaller on the motions by fractions of a sample (`drift`, `glide`) but 0.1 to 1.8% larger on the others (`pan`, `cut`, `zoom`), since every coded vector pays for the bit of its eighth. Each one also took about 15% more encoding time at effort 5. Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas (a chroma delta was measured: it only trades luma for chroma, -1.3% at equal luma PSNR for +1.1% at equal RGB PSNR with +6, the reverse with -6), quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: more than eight nested derivations, an image built from images of several color descriptions, an overlay whose sRGB fill color shows on an image that is not an sRGB one, an alpha plane of an overlay or of a grid of derived images, a derived image with more than 1,024 input images, an image built from more than 16,384 images (an image counts once for each derivation that uses it, since it is decoded for each), an alpha plane that is not presented as its derived color image, movie fragments that do not follow each other, have composition time offsets, precede their `moov` box or follow their samples, an edit list that selects a part of a fragmented sequence, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits out of order or overlapping), an alpha track with another edit list than its color track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: the images that are not the primary item (`AuxiliaryImageCollection` lists the thumbnails, auxiliary images and gain maps of the primary item), a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |
 | HEIC encoding | One slice per picture, without tiles: a picture is coded by one worker, and only the pictures of the tiles of a grid (`GridTileSize`) are coded concurrently. Only the large still images have wavefront streams, which decoders decode concurrently; the pictures of a sequence and the tiles of a grid have none. An image of a sequence is a P picture predicted from the previous image only: no B pictures, no second reference, no bi-prediction, no weighted prediction, no long-term reference, no scene change detection. Not used: intra coding blocks of 64x64 samples, PCM blocks, scaling lists, quantizer changes inside a picture (no adaptive quantization, no rate control: `Quality` is a quantizer, not a size), rate-distortion optimized quantization, searched deblocking offsets, and the tools of the range extensions (lossless output is the plain transform bypass of version 1, which every HEVC decoder reads: residual DPCM and cross-component prediction would make it smaller). No screen content tools: a lossless screenshot is larger than its PNG. An image is one picture unless `GridTileSize` asks for a grid. No premultiplied alpha, no `pasp`, mastering display or content light level box, no orientation for an image sequence, and the decoded picture hash is not written. An image of an odd size with subsampled chroma relies on the clean aperture of the file: libheif ignores the one of a sequence and shows one more column or row, which repeats the last one, and FFmpeg reports the even size of the coded pictures (its command-line tool then crops them to an even size). The readers upsample subsampled chroma each in their own way: the edges of a 4:2:0 or 4:2:2 image differ visibly from one reader to another, as they do for the files of any HEVC encoder. FFmpeg 9 decodes 12-bit lossy output of the coarsest quantizers (`Quality` 0 to 2) to other pictures than libde265, the HM reference decoder and this library, which agree. libheif reports the edit list of a sequence that plays once as unsupported, and plays it once. An image sequence of one image cannot store animation settings. An image sequence needs a seekable destination and its frame count |

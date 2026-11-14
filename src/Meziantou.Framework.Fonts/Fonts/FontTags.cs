@@ -146,6 +146,15 @@ internal static class FontTags
     /// <summary>The tag of the 'EBDT' table.</summary>
     public const uint Ebdt = ((uint)'E' << 24) | ((uint)'B' << 16) | ((uint)'D' << 8) | 'T';
 
+    /// <summary>The tag of the 'bhed' table: the header of an Apple font without outlines, which replaces 'head'.</summary>
+    public const uint Bhed = ((uint)'b' << 24) | ((uint)'h' << 16) | ((uint)'e' << 8) | 'd';
+
+    /// <summary>The tag of the 'bloc' table: the Apple name of 'EBLC'.</summary>
+    public const uint Bloc = ((uint)'b' << 24) | ((uint)'l' << 16) | ((uint)'o' << 8) | 'c';
+
+    /// <summary>The tag of the 'bdat' table: the Apple name of 'EBDT'.</summary>
+    public const uint Bdat = ((uint)'b' << 24) | ((uint)'d' << 16) | ((uint)'a' << 8) | 't';
+
     /// <summary>The tag of the 'MATH' table.</summary>
     public const uint Math = ((uint)'M' << 24) | ((uint)'A' << 16) | ((uint)'T' << 8) | 'H';
 

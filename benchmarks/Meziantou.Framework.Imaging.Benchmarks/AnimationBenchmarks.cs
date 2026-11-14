@@ -58,6 +58,10 @@ public class AnimationBenchmarks : IDisposable
     public long SaveGif() => ImageWorkloads.Encode(_animation, new GifEncoder(), _output);
 
     [Benchmark]
+    [Workload("Rgba32 320x240x48 -> GIF (256 colors, no dithering, frames reduced to the region that changes)", Frames = Frames, ReturnsOutputBytes = true)]
+    public long SaveGifOptimized() => ImageWorkloads.Encode(_animation, new GifEncoder { OptimizeFrames = true }, _output);
+
+    [Benchmark]
     [Workload("Rgba32 320x240x48 -> APNG (adaptive filters, optimal zlib)", Frames = Frames, ReturnsOutputBytes = true)]
     public long SaveApng() => ImageWorkloads.Encode(_animation, new PngEncoder { AnimationMode = PngAnimationMode.Animated }, _output);
 

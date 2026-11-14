@@ -1,3 +1,8 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>The lookup of a <see cref="CubeLut"/>: per channel for a one-dimensional table, of whole colors for a three-dimensional one.</summary>
@@ -78,6 +83,151 @@ internal sealed class CubeLutLookup(CubeLut lut, LutInterpolation interpolation)
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// Maps the colors of a three-dimensional table <see cref="Vector{T}.Count"/> pixels at a time (2 lanes of doubles on
+    /// Arm64, 4 with AVX2): the lanes compute what <see cref="MapColor"/> computes, in the same order, the tetrahedron of
+    /// each lane being selected by masks instead of branches, and the corners are read one lane at a time. Trilinear
+    /// interpolation reads 8 corners: with 2 lanes on x64 (no AVX2), the vectors are slower than the scalar loop.
+    /// </summary>
+    public override int MapColors(Span<ushort> samples, double scale, int max)
+    {
+        if (!lut.IsThreeDimensional || !Vector.IsHardwareAccelerated || Vector<double>.Count is not (2 or 4))
+            return 0;
+
+        if (interpolation == LutInterpolation.Trilinear && Vector<double>.Count == 2 && !AdvSimd.IsSupported)
+            return 0;
+
+        var size = lut.Size;
+        var last = (double)(size - 1);
+        var min = lut.DomainMin;
+        var range = lut.DomainMax;
+        var values = lut.Values;
+        var lanes = Vector<double>.Count;
+        var pixels = samples.Length / 4 / lanes * lanes;
+        var scales = new Vector<double>(scale);
+        var redMin = new Vector<double>(min[0]);
+        var greenMin = new Vector<double>(min[1]);
+        var blueMin = new Vector<double>(min[2]);
+        var redRange = new Vector<double>(range[0] - min[0]);
+        var greenRange = new Vector<double>(range[1] - min[1]);
+        var blueRange = new Vector<double>(range[2] - min[2]);
+        var lasts = new Vector<double>(last);
+        var maxCell = new Vector<double>(last - 1);
+        var levels = new Vector<double>(max);
+        var dr = 3;
+        var dg = 3 * size;
+        var db = 3 * size * size;
+        Span<int> corners = stackalloc int[4 * 4];
+        for (var p = 0; p < pixels; p += lanes)
+        {
+            var row = samples.Slice(4 * p, 4 * lanes);
+            var fr = Locate(LoadChannel(row, 0) * scales, redMin, redRange, lasts, maxCell, out var ir);
+            var fg = Locate(LoadChannel(row, 1) * scales, greenMin, greenRange, lasts, maxCell, out var ig);
+            var fb = Locate(LoadChannel(row, 2) * scales, blueMin, blueRange, lasts, maxCell, out var ib);
+
+            // The offsets of the corners of the cell in values (exact integers in doubles)
+            var origin = new Vector<double>(3) * (ir + (new Vector<double>(size) * (ig + (new Vector<double>(size) * ib))));
+            if (interpolation == LutInterpolation.Trilinear)
+            {
+                for (var l = 0; l < lanes; l++)
+                {
+                    corners[l] = (int)origin[l];
+                }
+
+                for (var c = 0; c < 3; c++)
+                {
+                    var c00 = Lerp(Gather(values, corners, c), Gather(values, corners, c + dr), fr);
+                    var c10 = Lerp(Gather(values, corners, c + dg), Gather(values, corners, c + dg + dr), fr);
+                    var c01 = Lerp(Gather(values, corners, c + db), Gather(values, corners, c + db + dr), fr);
+                    var c11 = Lerp(Gather(values, corners, c + db + dg), Gather(values, corners, c + db + dg + dr), fr);
+                    Store(row, c, Quantize(Lerp(Lerp(c00, c10, fg), Lerp(c01, c11, fg), fb), levels));
+                }
+
+                continue;
+            }
+
+            // The tetrahedron of each lane (Tetrahedral): its fractions from the largest, and its second and third corners
+            var rg = Vector.GreaterThan(fr, fg);
+            var gb = Vector.GreaterThan(fg, fb);
+            var rb = Vector.GreaterThan(fr, fb);
+            var bg = Vector.GreaterThan(fb, fg);
+            var br = Vector.GreaterThan(fb, fr);
+            var x1 = Vector.ConditionalSelect(rg, Vector.ConditionalSelect(gb | rb, fr, fb), Vector.ConditionalSelect(bg, fb, fg));
+            var x2 = Vector.ConditionalSelect(rg, Vector.ConditionalSelect(gb, fg, Vector.ConditionalSelect(rb, fb, fr)), Vector.ConditionalSelect(bg, fg, Vector.ConditionalSelect(br, fb, fr)));
+            var x3 = Vector.ConditionalSelect(rg, Vector.ConditionalSelect(gb, fb, fg), Vector.ConditionalSelect(bg | br, fr, fb));
+            var vr = new Vector<double>(dr);
+            var vg = new Vector<double>(dg);
+            var vb = new Vector<double>(db);
+            var second = origin + Vector.ConditionalSelect(rg, Vector.ConditionalSelect(gb | rb, vr, vb), Vector.ConditionalSelect(bg, vb, vg));
+            var third = origin + Vector.ConditionalSelect(rg, Vector.ConditionalSelect(gb, vr + vg, vr + vb), Vector.ConditionalSelect(bg | br, vg + vb, vr + vg));
+            for (var l = 0; l < lanes; l++)
+            {
+                corners[l] = (int)origin[l];
+                corners[4 + l] = (int)second[l];
+                corners[8 + l] = (int)third[l];
+            }
+
+            var w0 = Vector<double>.One - x1;
+            var w1 = x1 - x2;
+            var w2 = x2 - x3;
+            for (var c = 0; c < 3; c++)
+            {
+                var result = (w0 * Gather(values, corners, c)) + (w1 * Gather(values, corners[4..], c)) + (w2 * Gather(values, corners[8..], c)) + (x3 * Gather(values, corners, c + dr + dg + db));
+                Store(row, c, Quantize(result, levels));
+            }
+        }
+
+        return pixels;
+    }
+
+    /// <summary>Gets one sample of every pixel of a group, as doubles.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector<double> LoadChannel(ReadOnlySpan<ushort> row, int channel)
+        => Vector<double>.Count == 4
+            ? Vector256.Create((double)row[channel], row[channel + 4], row[channel + 8], row[channel + 12]).AsVector()
+            : Vector128.Create((double)row[channel], row[channel + 4]).AsVector();
+
+    /// <summary>Gets the values at the offsets of the lanes plus <paramref name="add"/>, as doubles.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector<double> Gather(ReadOnlySpan<float> values, ReadOnlySpan<int> offsets, int add)
+        => Vector<double>.Count == 4
+            ? Vector256.Create((double)values[offsets[0] + add], values[offsets[1] + add], values[offsets[2] + add], values[offsets[3] + add]).AsVector()
+            : Vector128.Create((double)values[offsets[0] + add], values[offsets[1] + add]).AsVector();
+
+    /// <summary>Stores one sample of every pixel of a group (levels, as exact doubles).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Store(Span<ushort> row, int channel, Vector<double> levels)
+    {
+        for (var l = 0; l < Vector<double>.Count; l++)
+        {
+            row[channel + (4 * l)] = (ushort)levels[l];
+        }
+    }
+
+    /// <summary>The lanes of <see cref="Locate(double, double, double, int, out int)"/>: the index is a double.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector<double> Locate(Vector<double> value, Vector<double> min, Vector<double> range, Vector<double> last, Vector<double> maxCell, out Vector<double> index)
+    {
+        // Math.Clamp keeps the value unless it is below 0 or above 1
+        var fraction = (value - min) / range;
+        fraction = Vector.ConditionalSelect(Vector.LessThan(fraction, Vector<double>.Zero), Vector<double>.Zero, Vector.ConditionalSelect(Vector.GreaterThan(fraction, Vector<double>.One), Vector<double>.One, fraction));
+        var position = fraction * last;
+        index = Vector.Min(Vector.Floor(position), maxCell);
+        return position - index;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector<double> Lerp(Vector<double> a, Vector<double> b, Vector<double> t) => a + (t * (b - a));
+
+    /// <summary>The lanes of <see cref="ColorLookup.Quantize"/>: values that are not numbers do not occur.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector<double> Quantize(Vector<double> value, Vector<double> max)
+    {
+        var level = Vector.Min(Vector.Floor((value * max) + new Vector<double>(0.5)), max);
+        level = Vector.ConditionalSelect(Vector.GreaterThanOrEqual(value, Vector<double>.One), max, level);
+        return Vector.ConditionalSelect(Vector.GreaterThan(value, Vector<double>.Zero), level, Vector<double>.Zero);
     }
 
     /// <summary>Clamps a value to the domain and locates it on the lattice: the index of the lower point (at most <paramref name="last"/> - 1) and the fraction of the way to the next one.</summary>

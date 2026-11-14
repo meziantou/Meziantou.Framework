@@ -42,7 +42,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// reference: vectorized kernels must produce bit-identical results and are tested against it. With 128-bit hardware
 /// vectors, every pair of the formats other than <see cref="La16"/>, <see cref="La32"/>, <see cref="Rgb48"/>,
 /// <see cref="A8"/>, <see cref="Argb32"/>, <see cref="Abgr32"/>, <see cref="Bgr565"/> and <see cref="Rgba1010102"/> (whose
-/// conversions use the scalar reference) and the search for a non-opaque pixel process 16 bytes at a time: byte moves (channel
+/// conversions use the scalar reference, but those of the processing bridge between <see cref="La16"/>, <see cref="A8"/>,
+/// <see cref="Argb32"/> or <see cref="Abgr32"/> and <see cref="Rgba32"/>, and <see cref="La32"/> and <see cref="Rgba64"/>)
+/// and the search for a non-opaque pixel process 16 bytes at a time: byte moves (channel
 /// order, alpha added or dropped, gray replicated, 8-bit samples to 16 bits), the reduction of 16-bit samples to 8 bits,
 /// luma and flattening use integer forms (or a <see cref="float"/> division that is checked or corrected) that give the
 /// results of the scalar formulas for every input.
@@ -798,6 +800,127 @@ internal static partial class PixelConverter
     }
 
     /// <summary>
+    /// Converts the leading pixels of a row between a format of the processing bridge and its kernel format with 128-bit
+    /// vectors (<see cref="ProcessingBridge"/>: <see cref="La16"/>, <see cref="A8"/>, <see cref="Argb32"/> and
+    /// <see cref="Abgr32"/> to and from <see cref="Rgba32"/>, <see cref="La32"/> to and from <see cref="Rgba64"/>): the
+    /// samples are moved, and the gray level of a color is its luma (<see cref="Luma8Vector(Vector128{byte}, bool)"/>,
+    /// <see cref="Luma16Vector"/>).
+    /// </summary>
+    /// <returns>The number of pixels converted; the scalar reference converts the others (and the other pairs of formats).</returns>
+    private static int ConvertBridgedVector<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination)
+        where TSource : unmanaged
+        where TDestination : unmanaged
+    {
+        ref var input = ref unsafe(Unsafe.As<TSource, byte>(ref MemoryMarshal.GetReference(source)));
+        ref var output = ref unsafe(Unsafe.As<TDestination, byte>(ref MemoryMarshal.GetReference(destination)));
+        var length = source.Length;
+        var i = 0;
+        if (typeof(TDestination) == typeof(Rgba32))
+        {
+            if (typeof(TSource) == typeof(La16))
+            {
+                // 8 pixels: the gray level three times, then alpha
+                var low = Vector128.Create((byte)0, 0, 0, 1, 2, 2, 2, 3, 4, 4, 4, 5, 6, 6, 6, 7);
+                var high = Vector128.Create((byte)8, 8, 8, 9, 10, 10, 10, 11, 12, 12, 12, 13, 14, 14, 14, 15);
+                for (; i + 8 <= length; i += 8)
+                {
+                    var pixels = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(2 * i)));
+                    unsafe { Vector128.Shuffle(pixels, low).StoreUnsafe(ref output, (nuint)(4 * i)); }
+                    unsafe { Vector128.Shuffle(pixels, high).StoreUnsafe(ref output, (nuint)((4 * i) + 16)); }
+                }
+            }
+            else if (typeof(TSource) == typeof(A8))
+            {
+                // 16 pixels: black with the alpha
+                for (; i + 16 <= length; i += 16)
+                {
+                    var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref input, (nuint)i)));
+                    var (first, second) = Vector128.Widen(low);
+                    var (third, fourth) = Vector128.Widen(high);
+                    unsafe { Vector128.ShiftLeft(first, 24).StoreUnsafe(ref Unsafe.As<byte, uint>(ref output), (nuint)i); }
+                    unsafe { Vector128.ShiftLeft(second, 24).StoreUnsafe(ref Unsafe.As<byte, uint>(ref output), (nuint)(i + 4)); }
+                    unsafe { Vector128.ShiftLeft(third, 24).StoreUnsafe(ref Unsafe.As<byte, uint>(ref output), (nuint)(i + 8)); }
+                    unsafe { Vector128.ShiftLeft(fourth, 24).StoreUnsafe(ref Unsafe.As<byte, uint>(ref output), (nuint)(i + 12)); }
+                }
+            }
+            else if (typeof(TSource) == typeof(Argb32) || typeof(TSource) == typeof(Abgr32))
+            {
+                // 4 pixels: A R G B, or A B G R, to R G B A
+                var order = typeof(TSource) == typeof(Argb32)
+                    ? Vector128.Create((byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12)
+                    : Vector128.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
+                for (; i + 4 <= length; i += 4)
+                {
+                    unsafe { Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(4 * i)), order).StoreUnsafe(ref output, (nuint)(4 * i)); }
+                }
+            }
+        }
+        else if (typeof(TSource) == typeof(Rgba32))
+        {
+            if (typeof(TDestination) == typeof(La16))
+            {
+                // 8 pixels: the luma, then alpha
+                for (; i + 8 <= length; i += 8)
+                {
+                    var first = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(4 * i)));
+                    var second = unsafe(Vector128.LoadUnsafe(ref input, (nuint)((4 * i) + 16)));
+                    var low = Luma8Vector(first, bgr: false).AsUInt32() | Vector128.ShiftLeft(Vector128.ShiftRightLogical(first.AsUInt32(), 24), 8);
+                    var high = Luma8Vector(second, bgr: false).AsUInt32() | Vector128.ShiftLeft(Vector128.ShiftRightLogical(second.AsUInt32(), 24), 8);
+                    unsafe { Vector128.Narrow(low, high).AsByte().StoreUnsafe(ref output, (nuint)(2 * i)); }
+                }
+            }
+            else if (typeof(TDestination) == typeof(A8))
+            {
+                // 16 pixels: the alpha
+                for (; i + 16 <= length; i += 16)
+                {
+                    var first = Vector128.ShiftRightLogical(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(4 * i))).AsUInt32(), 24);
+                    var second = Vector128.ShiftRightLogical(unsafe(Vector128.LoadUnsafe(ref input, (nuint)((4 * i) + 16))).AsUInt32(), 24);
+                    var third = Vector128.ShiftRightLogical(unsafe(Vector128.LoadUnsafe(ref input, (nuint)((4 * i) + 32))).AsUInt32(), 24);
+                    var fourth = Vector128.ShiftRightLogical(unsafe(Vector128.LoadUnsafe(ref input, (nuint)((4 * i) + 48))).AsUInt32(), 24);
+                    unsafe { Vector128.Narrow(Vector128.Narrow(first, second), Vector128.Narrow(third, fourth)).StoreUnsafe(ref output, (nuint)i); }
+                }
+            }
+            else if (typeof(TDestination) == typeof(Argb32) || typeof(TDestination) == typeof(Abgr32))
+            {
+                // 4 pixels: R G B A to A R G B, or A B G R
+                var order = typeof(TDestination) == typeof(Argb32)
+                    ? Vector128.Create((byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14)
+                    : Vector128.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
+                for (; i + 4 <= length; i += 4)
+                {
+                    unsafe { Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(4 * i)), order).StoreUnsafe(ref output, (nuint)(4 * i)); }
+                }
+            }
+        }
+        else if (typeof(TSource) == typeof(La32) && typeof(TDestination) == typeof(Rgba64))
+        {
+            // 4 pixels: the gray level three times, then alpha
+            var low = Vector128.Create((byte)0, 1, 0, 1, 0, 1, 2, 3, 4, 5, 4, 5, 4, 5, 6, 7);
+            var high = Vector128.Create((byte)8, 9, 8, 9, 8, 9, 10, 11, 12, 13, 12, 13, 12, 13, 14, 15);
+            for (; i + 4 <= length; i += 4)
+            {
+                var pixels = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(4 * i)));
+                unsafe { Vector128.Shuffle(pixels, low).StoreUnsafe(ref output, (nuint)(8 * i)); }
+                unsafe { Vector128.Shuffle(pixels, high).StoreUnsafe(ref output, (nuint)((8 * i) + 16)); }
+            }
+        }
+        else if (typeof(TSource) == typeof(Rgba64) && typeof(TDestination) == typeof(La32))
+        {
+            // 4 pixels: the luma, then alpha
+            for (; i + 4 <= length; i += 4)
+            {
+                var first = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(8 * i))).AsUInt16();
+                var second = unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 16))).AsUInt16();
+                var alpha = Vector128.Narrow(Vector128.ShiftRightLogical(first.AsUInt64(), 48), Vector128.ShiftRightLogical(second.AsUInt64(), 48));
+                unsafe { (Luma16Vector(first, second) | Vector128.ShiftLeft(alpha, 16)).StoreUnsafe(ref Unsafe.As<byte, uint>(ref output), (nuint)i); }
+            }
+        }
+
+        return i;
+    }
+
+    /// <summary>
     /// Converts the leading pixels of a row with 128-bit vectors: the conversions that only move bytes (channel order, added
     /// opaque alpha, dropped alpha, replicated gray, 8-bit samples repeated into 16 bits), reduce 16-bit samples to 8 bits
     /// (<see cref="To8BitVector"/>), compute luma (<see cref="Luma8Vector(Vector128{byte}, bool)"/>, <see cref="Luma16Vector"/>) or flatten
@@ -817,9 +940,10 @@ internal static partial class PixelConverter
         where TSource : unmanaged
         where TDestination : unmanaged
     {
-        // The formats added after the vector kernels (gray with alpha, 16-bit RGB, alpha only) use the scalar reference
+        // The formats added after the vector kernels (gray with alpha, 16-bit RGB, alpha only) use the scalar reference, but
+        // for the copies of the processing bridge
         if (IsScalarOnly<TSource>() || IsScalarOnly<TDestination>())
-            return 0;
+            return background is null ? ConvertBridgedVector(source, destination) : 0;
 
         Debug.Assert(destination.Length >= source.Length);
         ref var input = ref unsafe(Unsafe.As<TSource, byte>(ref MemoryMarshal.GetReference(source)));
@@ -1473,7 +1597,7 @@ internal static partial class PixelConverter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsGray<TPixel>() => typeof(TPixel) == typeof(Gray8) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32);
 
-    /// <summary>Gets a value indicating whether the conversions of a pixel type have no vector kernel (<see cref="ConvertVector"/>).</summary>
+    /// <summary>Gets a value indicating whether the conversions of a pixel type have no vector kernel (<see cref="ConvertVector"/>), but for those of <see cref="ConvertBridgedVector"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsScalarOnly<TPixel>() => typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(Rgb48) || typeof(TPixel) == typeof(A8) || typeof(TPixel) == typeof(Argb32) || typeof(TPixel) == typeof(Abgr32) || IsPacked<TPixel>();
 

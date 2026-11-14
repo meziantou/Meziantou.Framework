@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -64,7 +65,12 @@ internal sealed class IccClutStage : IccStage
         }
     }
 
-    public override void Apply(Span<double> values)
+    public override void Apply(Span<double> values) => Apply(values, isScalar: false);
+
+    /// <summary>The reference of <see cref="Apply(Span{double})"/>: each entry is divided when it is read (<see cref="InterpolateScalar"/>).</summary>
+    internal void ApplyScalar(Span<double> values) => Apply(values, isScalar: true);
+
+    private void Apply(Span<double> values, bool isScalar)
     {
         Span<double> fractions = unsafe(stackalloc double[IccPipeline.MaxChannels]);
         Span<int> order = unsafe(stackalloc int[IccPipeline.MaxChannels]);
@@ -144,14 +150,110 @@ internal sealed class IccClutStage : IccStage
             count = _inputs + 1;
         }
 
-        Interpolate(vertexWeights[..count], vertexOffsets[..count], values);
+        if (isScalar)
+        {
+            InterpolateScalar(vertexWeights[..count], vertexOffsets[..count], values);
+        }
+        else
+        {
+            Interpolate(vertexWeights[..count], vertexOffsets[..count], values);
+        }
     }
 
     /// <summary>
     /// Sets the outputs to the sum, in vertex order, of the entries of the vertices whose weight is not zero times their
     /// weights: <c>0 + w0 e0 + w1 e1 + ...</c> for each output.
     /// </summary>
+    /// <remarks>
+    /// The three sums of the usual case are the lanes of a vector, read in place from the table: each entry divided by
+    /// <c>255</c> or <c>65535</c> in its lane, then the same products and additions in the same order as
+    /// <see cref="InterpolateScalar"/>.
+    /// </remarks>
     private void Interpolate(ReadOnlySpan<double> weights, ReadOnlySpan<int> offsets, Span<double> values)
+    {
+        if (_outputs != 3 || !Vector128.IsHardwareAccelerated)
+        {
+            InterpolateScalar(weights, offsets, values);
+            return;
+        }
+
+        var data = _data.Span;
+        if (!Vector256.IsHardwareAccelerated)
+        {
+            Interpolate128(weights, offsets, values, data);
+            return;
+        }
+
+        var sums = Vector256<double>.Zero;
+        if (_bytesPerEntry == 1)
+        {
+            var divisor = Vector256.Create(255.0);
+            for (var vertex = 0; vertex < weights.Length; vertex++)
+            {
+                var weight = weights[vertex];
+                if (weight == 0)
+                    continue;
+
+                var entry = data.Slice(offsets[vertex], 3);
+                sums += Vector256.Create(weight) * (Vector256.Create(entry[0], entry[1], entry[2], 0.0) / divisor);
+            }
+        }
+        else
+        {
+            var divisor = Vector256.Create(65535.0);
+            for (var vertex = 0; vertex < weights.Length; vertex++)
+            {
+                var weight = weights[vertex];
+                if (weight == 0)
+                    continue;
+
+                var entry = data.Slice(offsets[vertex], 6);
+                var samples = Vector256.Create(BinaryPrimitives.ReadUInt16BigEndian(entry), BinaryPrimitives.ReadUInt16BigEndian(entry[2..]), BinaryPrimitives.ReadUInt16BigEndian(entry[4..]), 0.0);
+                sums += Vector256.Create(weight) * (samples / divisor);
+            }
+        }
+
+        values[0] = sums.GetElement(0);
+        values[1] = sums.GetElement(1);
+        values[2] = sums.GetElement(2);
+    }
+
+    /// <summary>The three sums of <see cref="Interpolate"/>: the first two in the lanes of a vector, the third alone.</summary>
+    private void Interpolate128(ReadOnlySpan<double> weights, ReadOnlySpan<int> offsets, Span<double> values, ReadOnlySpan<byte> data)
+    {
+        var sums = Vector128<double>.Zero;
+        double sum2 = 0;
+        var scale = _bytesPerEntry == 1 ? 255.0 : 65535.0;
+        var divisor = Vector128.Create(scale);
+        for (var vertex = 0; vertex < weights.Length; vertex++)
+        {
+            var weight = weights[vertex];
+            if (weight == 0)
+                continue;
+
+            double sample0, sample1, sample2;
+            if (_bytesPerEntry == 1)
+            {
+                var entry = data.Slice(offsets[vertex], 3);
+                (sample0, sample1, sample2) = (entry[0], entry[1], entry[2]);
+            }
+            else
+            {
+                var entry = data.Slice(offsets[vertex], 6);
+                (sample0, sample1, sample2) = (BinaryPrimitives.ReadUInt16BigEndian(entry), BinaryPrimitives.ReadUInt16BigEndian(entry[2..]), BinaryPrimitives.ReadUInt16BigEndian(entry[4..]));
+            }
+
+            sums += Vector128.Create(weight) * (Vector128.Create(sample0, sample1) / divisor);
+            sum2 += weight * (sample2 / scale);
+        }
+
+        values[0] = sums.GetElement(0);
+        values[1] = sums.GetElement(1);
+        values[2] = sum2;
+    }
+
+    /// <summary>The reference of <see cref="Interpolate"/>: each entry divided when it is read.</summary>
+    private void InterpolateScalar(ReadOnlySpan<double> weights, ReadOnlySpan<int> offsets, Span<double> values)
     {
         var data = _data.Span;
         if (_outputs == 3)

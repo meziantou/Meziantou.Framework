@@ -131,8 +131,6 @@ public sealed class WebIdlAgent<TAdapter, TValue>
 
     internal ConditionalWeakTable<TValue, object> CallableWrapperTargets { get; } = [];
 
-    internal ConditionalWeakTable<TValue, JsCallbackInterface<TAdapter, TValue>> CallbackInterfaces { get; } = [];
-
     internal ConditionalWeakTable<TValue, Dictionary<Type, Delegate>> Delegates { get; } = [];
 
     [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = CachesNeverCreateValues)]

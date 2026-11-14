@@ -28,7 +28,8 @@ Assert.Equal(["lang", "session", "theme"], names);
 
 - The jar follows the rules of the browsers ([RFC 6265bis](https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html)):
   `Expires` and `Max-Age`, `Domain` and `Path`, `Secure`, `HttpOnly`, `SameSite` (`Lax` by default), `Partitioned`,
-  the cookie prefixes and the public suffixes. Third-party cookies are not blocked.
+  the cookie prefixes and the public suffixes. Third-party cookies are not blocked by default (see
+  [Third-party cookies and storage access](#third-party-cookies-and-storage-access)).
 - As in the browsers, the cookies of a host are shared by its schemes and its ports. Set
   [OriginBound](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.OriginBound) (`new CookieJar { OriginBound = true }`) to bind them to the origin that set them
   ([origin-bound cookies](https://github.com/explainers-by-googlers/origin-bound-cookies)): a cookie set by an `https`
@@ -44,6 +45,76 @@ Assert.Equal(["lang", "session", "theme"], names);
 - To keep the persistent cookies between runs, derive from [CookiePersistence](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence) ([LoadCookies](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.LoadCookies), [SetCookie](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.SetCookie), [RemoveCookie](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.RemoveCookie),
   [ClearAll](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.ClearAll)) and give it to the jar: `new CookieJar(persistence, timeProvider)`. The jar keeps the cookies in memory and
   reports each change.
+
+### Cookies in the service workers
+
+A service worker reads and writes the cookies of its script URL with `self.cookieStore` (any URL of its origin with the
+`url` option). It does not get the `change` events of `window.cookieStore`: it subscribes to the changes with
+`registration.cookies.subscribe([{ name, url }])`, and receives a `cookiechange` event (`ExtendableCookieChangeEvent`)
+when a cookie that matches a subscription changes (the service worker is started if needed). A subscription matches the cookies of
+its name (any name when it has none) that are sent to its URL (the scope of the registration when it has none), which
+must be in the scope of the registration. The subscriptions belong to the registration: an update of the service worker
+keeps them, the [ServiceWorkerBackend](cref:Meziantou.Framework.WebPlatform.Dom.ServiceWorkerBackend) saves them with
+the registration ([StoredServiceWorkerRegistration.CookieChangeSubscriptions](cref:Meziantou.Framework.WebPlatform.Dom.StoredServiceWorkerRegistration.CookieChangeSubscriptions)),
+and unregistering drops them.
+
+## Third-party cookies and storage access
+
+By default, as in the browsers that do not block them, a frame of another site than the top-level page sends and stores
+the cookies of its site. Set [BlockThirdPartyCookies](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.BlockThirdPartyCookies) to block them, and
+[SetThirdPartyCookieAccess](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.SetThirdPartyCookieAccess) to block or allow the cookies of a site in the pages of another site (the settings of the
+user):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/CookieJarTests.cs;region=WebPlatform_ThirdPartyCookies;format=md-fenced-code-block;dedent=true -->
+```csharp
+var cookies = new CookieJar { BlockThirdPartyCookies = true };
+cookies.SetCookie("https://embed.example/", "id=42; Path=/; Secure; SameSite=None");
+
+// The request of an iframe of https://embed.example in a page of https://top.example
+var request = new DocumentRequest("https://embed.example/widget")
+{
+    CookieJar = cookies,
+    SiteForCookies = "https://top.example",
+    TopLevelOrigin = "https://top.example",
+    Origin = "https://top.example",
+    Destination = RequestDestination.Iframe,
+};
+Assert.Null(request.GetCookieHeader());
+
+// Allow the cookies of https://embed.example in the pages of https://top.example
+cookies.SetThirdPartyCookieAccess("https://top.example/", "https://embed.example/", blocked: false);
+Assert.Equal("id=42", request.GetCookieHeader());
+```
+<!-- endref -->
+
+- A context is third-party when its site is not the site of the top-level page, or when one of its parent frames is of
+  another site. Its documents (`document.cookie`, `cookieStore`) and its requests (subresources, `fetch()`, WebSockets,
+  the navigations of its frames) neither see nor set the unpartitioned cookies of a blocked site. The cookies with the
+  `Partitioned` attribute are not blocked: they are kept per top-level site.
+- [SetThirdPartyCookieAccess](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.SetThirdPartyCookieAccess) takes null for every top-level site or every embedded site. The rule of a pair of sites
+  wins over the rule of every embedded site, which wins over the rule of every top-level site, which wins over
+  [BlockThirdPartyCookies](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.BlockThirdPartyCookies).
+
+A blocked frame gets its cookies back with the [Storage Access API](https://privacycg.github.io/storage-access/), from
+its scripts or from .NET ([Document.HasStorageAccess](cref:Meziantou.Framework.WebPlatform.Dom.Document.HasStorageAccess) and [Document.RequestStorageAccess](cref:Meziantou.Framework.WebPlatform.Dom.Document.RequestStorageAccess)):
+
+- `document.requestStorageAccess()` is granted when the `storage-access` permission is granted, or when the frame has a
+  user activation (a click) and [RequestPermission](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.RequestPermission) grants it. The
+  permission is kept by [Permissions](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Permissions) for the pair of the sites of the top-level page and of the frame. It is
+  always granted in a top-level page, in a frame of the top-level site, and for a site whose cookies are allowed; it is
+  rejected in a page that is not secure (`https`), that is sandboxed without `allow-storage-access-by-user-activation`,
+  that is loaded in a credentialless iframe, or whose `storage-access` permissions policy is disabled
+  (`<iframe allow="storage-access 'none'">`).
+- Once granted, the frame has storage access: its scripts see the cookies, and so do its requests to its own origin. The
+  requests to other origins, the requests of the workers it starts and the other frames of the site do not. A reload of the frame, or a
+  navigation that the frame starts to its own origin, keeps the access; a navigation started by another frame does not.
+- `document.hasStorageAccess()` tells whether the frame has access to its cookies: always true in a first-party context
+  and for a site whose cookies are not blocked.
+- The requests from a third-party context send the `Sec-Fetch-Storage-Access` header
+  ([Storage Access Headers](https://privacycg.github.io/storage-access-headers/)): `active` when the cookies are sent,
+  `inactive` when the permission is granted but the request does not use it, `none` otherwise. A response with
+  `Activate-Storage-Access: retry; allowed-origin="..."` makes an `inactive` request be sent again with the cookies, and
+  the document of a frame whose response has `Activate-Storage-Access: load` gets storage access.
 
 ## Local storage and session storage
 

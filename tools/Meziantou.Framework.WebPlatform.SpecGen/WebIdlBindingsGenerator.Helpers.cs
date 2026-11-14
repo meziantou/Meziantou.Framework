@@ -62,10 +62,12 @@ internal sealed partial class WebIdlBindingsGenerator
         if (underlying == typeof(IReadOnlyList<Meziantou.Framework.WebPlatform.Animations.ComputedKeyframe>))
             return $"r.FromComputedKeyframes({expression})";
 
-        // A buffer source type (e.g. the Uint8Array of TextEncoder.encode()): a new object containing a copy of the bytes
-        if (idlType is not null && _idl.ResolveTypedefs(idlType) is var resolvedType && IsBufferIdlType(resolvedType) && (underlying == typeof(byte[]) || underlying == typeof(Memory<byte>) || underlying == typeof(ReadOnlyMemory<byte>)))
+        // A buffer source type (e.g. the Uint8Array of TextEncoder.encode()): a new object containing a copy of the bytes. The
+        // bytes of a union of buffer source types (e.g. the BufferSource members of the dictionaries returned by
+        // PublicKeyCredential.parseCreationOptionsFromJSON()) are a new ArrayBuffer.
+        if (idlType is not null && _idl.ResolveTypedefs(idlType) is var resolvedType && (IsBufferIdlType(resolvedType) || IsBufferUnion(resolvedType)) && (underlying == typeof(byte[]) || underlying == typeof(Memory<byte>) || underlying == typeof(ReadOnlyMemory<byte>)))
         {
-            var kind = "global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind." + resolvedType.Name;
+            var kind = "global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind." + (resolvedType.Union ? "ArrayBuffer" : resolvedType.Name);
             return underlying == typeof(byte[]) ? $"({expression} is {{ }} bytes ? r.FromBuffer({kind}, bytes) : r.Adapter.Null)"
                 : isNullableValueType ? $"({expression} is {{ }} bytes ? r.FromBuffer({kind}, bytes) : r.Adapter.Null)"
                 : $"r.FromBuffer({kind}, {expression})";
@@ -584,9 +586,9 @@ internal sealed partial class WebIdlBindingsGenerator
 
         code.Append("    if (r.Adapter.IsObject(value))\n    {\n");
 
-        // The streams are implemented in JavaScript (Streams.js): a .NET member only knows that its argument is a stream
+        // The streams are implemented in JavaScript (Streams.js): a .NET member reads them through the realm (JsReadableStream)
         if (types.Exists(t => t.Name == "ReadableStream" && GetInterfaceClrType(t) is null))
-            code.Append("        if (r.IsReadableStream(value)) return global::Meziantou.Framework.WebPlatform.Scripting.JsReadableStream.Instance;\n");
+            code.Append("        if (r.IsReadableStream(value)) return r.ToJsReadableStream(value);\n");
 
         if (types.Exists(IsBufferIdlType))
         {

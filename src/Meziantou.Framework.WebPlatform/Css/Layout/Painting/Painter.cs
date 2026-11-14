@@ -524,15 +524,28 @@ internal sealed partial class Painter
     }
 
     /// <summary>
-    /// Returns the frame of an animated image displayed now (<see cref="PaintImage.GetDisplayedFrame"/>), and records when the
-    /// painting must be done again to display its next frame. The images are drawn as they are without rendering backend.
+    /// The style whose <c>image-animation</c> applies to the CSS images being painted instead of the style that declares them, or
+    /// null: the background of the canvas propagated from the body element is animated per the value of the root element.
     /// </summary>
-    internal PaintImage GetDisplayedFrame(PaintImage image)
+    private ComputedStyle? _imageAnimationStyle;
+
+    /// <summary>
+    /// Returns the frame of an animated image displayed now by an element (<see cref="PaintImage.GetDisplayedFrame"/>, or the
+    /// position of the animation given by the <c>image-animation</c> of the element, <see cref="ImageAnimationTimelines"/>), and
+    /// records when the painting must be done again to display its next frame. The images are drawn as they are without
+    /// rendering backend.
+    /// </summary>
+    /// <param name="image">The image.</param>
+    /// <param name="style">The style of the element (or the pseudo-element) that displays the image.</param>
+    internal PaintImage GetDisplayedFrame(PaintImage image, ComputedStyle style)
     {
         if (_document.RenderingBackend is not { } backend)
             return image;
 
-        var frame = image.GetDisplayedFrame(backend, out var nextChange);
+        double? nextChange;
+        var frame = _document.ImageAnimationTimelines?.GetPlayback(_imageAnimationStyle ?? style, image) is { } playback
+            ? image.GetFrameAt(backend, playback.Position, playback.IsPlaying, out nextChange)
+            : image.GetDisplayedFrame(backend, out nextChange);
         if (nextChange is { } delay && (_nextFrameDelay is null || delay < _nextFrameDelay))
         {
             _nextFrameDelay = delay;

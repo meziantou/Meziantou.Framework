@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -339,8 +340,24 @@ internal sealed class PngLayoutAnalysis : IDisposable
         var colors = trackColors ? _opaqueColors!.Span : default;
         var width = row.Length / (_isWide16 ? 8 : 4);
         var lastOpaqueIndex = -1;
+
+        // Pixels before this column are read one at a time: the vector at the last check had a pixel that is not quiet
+        var nextCheck = !_isWide16 && !trackColors && UseVectors ? 0 : width;
         for (var x = 0; x < width; x++)
         {
+            if (x >= nextCheck && x + QuietPixels <= width)
+            {
+                // Opaque pixels change nothing once the gray samples need every bit or a pixel is not gray
+                var gray = state.Gray;
+                if (!gray || state.GrayDepths == DepthMask8)
+                {
+                    x += CountQuietPixels(row[(x * 4)..(width * 4)], gray);
+                    nextCheck = x + QuietPixels;
+                    if (x >= width)
+                        break;
+                }
+            }
+
             uint r, g, b, a;
             if (_isWide16)
             {
@@ -406,6 +423,67 @@ internal sealed class PngLayoutAnalysis : IDisposable
         _state = state;
 
         static bool IsEightBit(uint sample) => (sample >> 8) == (sample & 0xFF);
+    }
+
+    /// <summary>The number of 8-bit pixels <see cref="CountQuietPixels"/> checks at a time.</summary>
+    private const int QuietPixels = 4;
+
+    private static bool UseVectors => Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian;
+
+    /// <summary>
+    /// Counts the leading 8-bit RGBA pixels that are opaque and, when <paramref name="gray"/> is set, gray, by whole vectors of
+    /// <see cref="QuietPixels"/> pixels: the pixels that change nothing in an analysis that does not record colors.
+    /// </summary>
+    /// <param name="pixels">The pixels, at least <see cref="QuietPixels"/> of them.</param>
+    /// <param name="gray">Whether the pixels must also be gray.</param>
+    /// <returns>A multiple of <see cref="QuietPixels"/>; 0 when the first vector has a pixel that is not quiet.</returns>
+    internal static int CountQuietPixels(ReadOnlySpan<byte> pixels, bool gray)
+    {
+        ref var start = ref unsafe(MemoryMarshal.GetReference(pixels));
+        var vectors = pixels.Length / Vector128<byte>.Count;
+        var alpha = Vector128.Create(0xFF00_0000u);
+        var i = 0;
+        if (!gray)
+        {
+            // Four vectors at a time: their alpha bytes are all 0xFF only when the alpha bytes of their AND are
+            for (; i + 4 <= vectors; i += 4)
+            {
+                var offset = (nuint)(i * Vector128<byte>.Count);
+                var all = unsafe(Vector128.LoadUnsafe(ref start, offset) & Vector128.LoadUnsafe(ref start, offset + 16) & Vector128.LoadUnsafe(ref start, offset + 32) & Vector128.LoadUnsafe(ref start, offset + 48)).AsUInt32();
+                if ((all & alpha) != alpha)
+                    break;
+            }
+        }
+
+        for (; i < vectors; i++)
+        {
+            var value = unsafe(Vector128.LoadUnsafe(ref start, (nuint)(i * Vector128<byte>.Count))).AsUInt32();
+            if ((value & alpha) != alpha)
+                break;
+
+            // Gray: R = G and G = B, the low 16 bits of the pixel XOR its bytes moved down by one
+            if (gray && ((value ^ (value >>> 8)) & Vector128.Create(0xFFFFu)) != Vector128<uint>.Zero)
+                break;
+        }
+
+        return i * QuietPixels;
+    }
+
+    /// <summary>The scalar reference of <see cref="CountQuietPixels"/>.</summary>
+    internal static int CountQuietPixelsScalar(ReadOnlySpan<byte> pixels, bool gray)
+    {
+        var count = 0;
+        for (; count + QuietPixels <= pixels.Length / 4; count += QuietPixels)
+        {
+            for (var x = count; x < count + QuietPixels; x++)
+            {
+                var pixel = pixels.Slice(x * 4, 4);
+                if (pixel[3] != byte.MaxValue || (gray && (pixel[0] != pixel[1] || pixel[0] != pixel[2])))
+                    return count;
+            }
+        }
+
+        return count;
     }
 
     /// <summary>Gets a value indicating whether an opaque pixel may have a color (always, when colors are not recorded).</summary>

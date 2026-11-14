@@ -5,6 +5,9 @@
   "dom/abort/AbortSignal.any.js#dedicatedworker": {
     "total": 2
   },
+  "dom/abort/abort-signal-any-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/abort/abort-signal-any.any.js": {
     "total": 14
   },
@@ -13,6 +16,12 @@
   },
   "dom/abort/abort-signal-timeout.html": {
     "total": 1
+  },
+  "dom/abort/crashtests/any-on-abort.html": {
+    "crashtest": "PASS"
+  },
+  "dom/abort/crashtests/timeout-close.html": {
+    "crashtest": "PASS"
   },
   "dom/abort/event.any.js": {
     "total": 16
@@ -62,11 +71,26 @@
   "dom/collections/HTMLCollection-supported-property-names.html": {
     "total": 6
   },
+  "dom/collections/childnodes-messagechannel-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/collections/domstringmap-supported-property-names.html": {
     "total": 5
   },
   "dom/collections/namednodemap-supported-property-names.html": {
     "total": 3
+  },
+  "dom/crashtests/adoptNode-reparenting.html": {
+    "crashtest": "PASS"
+  },
+  "dom/crashtests/append-child-recurse.html": {
+    "crashtest": "PASS"
+  },
+  "dom/crashtests/appendChild-document.html": {
+    "crashtest": "PASS"
+  },
+  "dom/crashtests/normalize-crash.html": {
+    "crashtest": "PASS"
   },
   "dom/eventPathRemoved.html": {
     "total": 1
@@ -243,16 +267,10 @@
     "total": 6
   },
   "dom/events/EventListener-incumbent-global-1.sub.html": {
-    "total": 1,
-    "failures": {
-      "Check the incumbent global EventListeners  are called with": "FAIL"
-    }
+    "total": 1
   },
   "dom/events/EventListener-incumbent-global-2.sub.html": {
-    "total": 1,
-    "failures": {
-      "Check the incumbent global EventListeners  are called with": "FAIL"
-    }
+    "total": 1
   },
   "dom/events/EventListener-invoke-legacy.html": {
     "total": 6
@@ -364,6 +382,9 @@
   },
   "dom/events/handler-count.html?window": {
     "total": 2
+  },
+  "dom/events/keypress-dispatch-crash.html": {
+    "crashtest": "PASS"
   },
   "dom/events/label-default-action.html": {
     "total": 1
@@ -526,6 +547,9 @@
   "dom/events/remove-all-listeners.html": {
     "total": 2
   },
+  "dom/events/replace-event-listener-null-browsing-context-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/events/scrolling/iframe-chains.html": {
     "total": 1
   },
@@ -644,8 +668,11 @@
     "total": 1
   },
   "dom/events/scrolling/scrollend-event-fires-on-visual-viewport.html": {
-    "harness": "ERROR",
-    "total": 0
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "visualviewport.onscrollend  and window scrollend order.": "TIMEOUT"
+    }
   },
   "dom/events/scrolling/scrollend-event-fires-to-iframe-window.html": {
     "total": 6
@@ -853,11 +880,17 @@
   "dom/nodes/DOMImplementation-createDocument-no-browsing-context.html": {
     "total": 5
   },
+  "dom/nodes/DOMImplementation-createDocument-with-null-browsing-context-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/nodes/DOMImplementation-createDocument.html": {
     "total": 434
   },
   "dom/nodes/DOMImplementation-createDocumentType.html": {
     "total": 82
+  },
+  "dom/nodes/DOMImplementation-createHTMLDocument-with-null-browsing-context-crash.html": {
+    "crashtest": "PASS"
   },
   "dom/nodes/DOMImplementation-createHTMLDocument-with-saved-implementation.html": {
     "total": 1
@@ -1263,6 +1296,9 @@
   "dom/nodes/MutationObserver-inner-outer.html": {
     "total": 3
   },
+  "dom/nodes/MutationObserver-nested-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/nodes/MutationObserver-overlapping-registrations.html": {
     "total": 3
   },
@@ -1310,6 +1346,9 @@
   },
   "dom/nodes/Node-cloneNode-external-stylesheet-no-bc.sub.html": {
     "total": 1
+  },
+  "dom/nodes/Node-cloneNode-on-inactive-document-crash.html": {
+    "crashtest": "PASS"
   },
   "dom/nodes/Node-cloneNode-parser-created-names.html": {
     "total": 2
@@ -1606,6 +1645,30 @@
   "dom/nodes/case.html": {
     "total": 285
   },
+  "dom/nodes/crashtests/adopt-shadow-host-with-live-collection.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/crashtests/attribute-index-when-no-attributes.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/crashtests/childNodes-last_visited-unwrap-crash.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/crashtests/document-replaceChild-input-documentElement.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/crashtests/documentElement-remove-descendant-query.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/crashtests/multiple-append-mutated-in-unload-document.https.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/crashtests/multiple-append-mutated-in-unload.https.html": {
+    "crashtest": "TIMEOUT"
+  },
+  "dom/nodes/crashtests/replaceChild-host-including-ancestor-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/nodes/create-element-realm-after-adoption.html": {
     "total": 5
   },
@@ -1717,6 +1780,9 @@
   "dom/nodes/insert-adjacent.html": {
     "total": 14
   },
+  "dom/nodes/insertBefore-iframe-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/nodes/insertion-removing-steps/Node-append-form-and-script-from-fragment.html": {
     "total": 1
   },
@@ -1800,6 +1866,15 @@
   "dom/nodes/moveBefore/child-style-preserve.html": {
     "total": 1
   },
+  "dom/nodes/moveBefore/chrome-338071841-crash.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/moveBefore/chrome-433696404-crash.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/moveBefore/chrome-573058979-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/nodes/moveBefore/continue-css-animation-left.html": {
     "total": 1
   },
@@ -1863,6 +1938,9 @@
   "dom/nodes/moveBefore/iframe-document-preserve.window.js": {
     "total": 7
   },
+  "dom/nodes/moveBefore/input-moveBefore-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/nodes/moveBefore/listed-form-element-reset.html": {
     "total": 1
   },
@@ -1893,8 +1971,17 @@
   "dom/nodes/moveBefore/moveBefore-id-map.html": {
     "total": 4
   },
+  "dom/nodes/moveBefore/moveBefore-iframe-crash.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/moveBefore/moveBefore-image-map-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/nodes/moveBefore/moveBefore-image-map.html": {
     "total": 3
+  },
+  "dom/nodes/moveBefore/moveBefore-img-usemap-crash.html": {
+    "crashtest": "PASS"
   },
   "dom/nodes/moveBefore/moveBefore-into-display-none.html": {
     "total": 1
@@ -1902,11 +1989,17 @@
   "dom/nodes/moveBefore/moveBefore-lang.html": {
     "total": 1
   },
+  "dom/nodes/moveBefore/moveBefore-legend-input-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/nodes/moveBefore/moveBefore-name-map.html": {
     "total": 3
   },
   "dom/nodes/moveBefore/moveBefore-nodeiterator.html": {
     "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-optgroup-crash.html": {
+    "crashtest": "PASS"
   },
   "dom/nodes/moveBefore/moveBefore-optgroup.html": {
     "total": 3
@@ -1914,8 +2007,17 @@
   "dom/nodes/moveBefore/moveBefore-option-recalc-style.html": {
     "total": 1
   },
+  "dom/nodes/moveBefore/moveBefore-out-of-flow-sibling-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/nodes/moveBefore/moveBefore-radio-groups.html": {
     "total": 8
+  },
+  "dom/nodes/moveBefore/moveBefore-range-iframe-crash.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/moveBefore/moveBefore-select-hr-crash.html": {
+    "crashtest": "PASS"
   },
   "dom/nodes/moveBefore/moveBefore-selector-matching.html": {
     "total": 1
@@ -1934,6 +2036,15 @@
   },
   "dom/nodes/moveBefore/moveBefore-size-query.html": {
     "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-slotted-element-crash.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/moveBefore/moveBefore-slotted-text-crash.html": {
+    "crashtest": "PASS"
+  },
+  "dom/nodes/moveBefore/moveBefore-subframe-count-crash.html": {
+    "crashtest": "PASS"
   },
   "dom/nodes/moveBefore/mutation-observer-moved-subtree.window.js": {
     "total": 1
@@ -2002,6 +2113,9 @@
   "dom/nodes/namespaced-attribute-mutations.html": {
     "total": 24
   },
+  "dom/nodes/node-appendchild-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/nodes/node-creation-realm.html": {
     "total": 13
   },
@@ -2062,11 +2176,26 @@
   "dom/nodes/remove-unscopable.html": {
     "total": 6
   },
+  "dom/nodes/replaceWith-document-element-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/nodes/rootNode.html": {
     "total": 5
   },
   "dom/nodes/svg-template-querySelector.html": {
     "total": 3
+  },
+  "dom/observable/tentative/crashtests/observable-gc.any.js": {
+    "total": 8
+  },
+  "dom/observable/tentative/crashtests/observable-gc.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "dom/observable/tentative/crashtests/observable-takeUntil-toArray.any.js": {
+    "total": 1
+  },
+  "dom/observable/tentative/crashtests/observable-takeUntil-toArray.any.js#dedicatedworker": {
+    "total": 1
   },
   "dom/observable/tentative/idlharness.html": {
     "total": 36
@@ -2248,6 +2377,9 @@
   "dom/ranges/Range-commonAncestorContainer.html": {
     "total": 63
   },
+  "dom/ranges/Range-compareBoundaryPoints-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/ranges/Range-compareBoundaryPoints.html": {
     "total": 9313
   },
@@ -2320,6 +2452,9 @@
   "dom/ranges/Range-in-shadow-after-the-shadow-removed.html?mode=open": {
     "total": 2
   },
+  "dom/ranges/Range-insertNode-multiple-document-children-crash.html": {
+    "crashtest": "PASS"
+  },
   "dom/ranges/Range-insertNode.html": {
     "total": 1840
   },
@@ -2385,6 +2520,12 @@
   },
   "dom/ranges/StaticRange-constructor.html": {
     "total": 17
+  },
+  "dom/ranges/crashtests/Range-deleteContents-when-selecting-shadow-root-all-children.html": {
+    "crashtest": "PASS"
+  },
+  "dom/ranges/crashtests/Range-setEnd-to-node-removed-by-extractContents.html": {
+    "crashtest": "PASS"
   },
   "dom/ranges/tentative/OpaqueRange-auto-disconnect.html": {
     "total": 17,
@@ -2672,6 +2813,9 @@
   },
   "dom/slot-recalc.html": {
     "reftest": "PASS"
+  },
+  "dom/svg-insert-crash.html": {
+    "crashtest": "PASS"
   },
   "dom/traversal/NodeFilter-constants.html": {
     "total": 2

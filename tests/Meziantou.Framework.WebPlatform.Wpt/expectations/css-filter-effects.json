@@ -200,6 +200,9 @@
   "css/filter-effects/backdrop-filter-edge-pixels.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/backdrop-filter-feimage-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/filter-effects/backdrop-filter-fixed-clip.html": {
     "reftest": "PASS"
   },
@@ -278,6 +281,9 @@
   "css/filter-effects/backdrop-filter-root-element.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/backdrop-filter-root-toggle-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/filter-effects/backdrop-filter-scale-transform.html": {
     "reftest": "PASS"
   },
@@ -295,6 +301,9 @@
   },
   "css/filter-effects/backdrop-filter-svg.html": {
     "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-transform-popover-crash.html": {
+    "crashtest": "PASS"
   },
   "css/filter-effects/backdrop-filter-transform.html": {
     "reftest": "PASS"
@@ -370,6 +379,36 @@
   },
   "css/filter-effects/clip-under-filter-003.html": {
     "reftest": "PASS"
+  },
+  "css/filter-effects/crashtests/broken-reference-crash-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/filter-effects/crashtests/external-reference-in-interleaved-oof-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/filter-effects/crashtests/fecomponenttransfer-tablevalues-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/filter-effects/crashtests/felighting-display-none-mutation-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/filter-effects/crashtests/filter-change.html": {
+    "crashtest": "PASS"
+  },
+  "css/filter-effects/crashtests/filter-empty-element.html": {
+    "crashtest": "PASS"
+  },
+  "css/filter-effects/crashtests/filter-hw-sw-switch.html": {
+    "crashtest": "PASS"
+  },
+  "css/filter-effects/crashtests/kernelUnitLength-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/filter-effects/crashtests/multiple-references-id-crash-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/filter-effects/crashtests/multiple-references-id-crash-002.html": {
+    "crashtest": "PASS"
   },
   "css/filter-effects/css-backdrop-filter-transform-clip.html": {
     "reftest": "PASS"
@@ -539,6 +578,9 @@
   "css/filter-effects/effect-reference-rename-002.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/effect-reference-reset-style-delete-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/filter-effects/effect-reference-source-alpha-001.html": {
     "reftest": "PASS"
   },
@@ -635,17 +677,29 @@
   "css/filter-effects/feflood-with-filter-reference.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/feimage-circular-reference-foreign-object-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/filter-effects/feimage-element-ref-geometry.html": {
     "reftest": "PASS"
   },
   "css/filter-effects/feimage-huge-subregion.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/feimage-reference-foreign-object-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/filter-effects/feimage-reference-text-with-filter-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/filter-effects/feimage-subregion-beyond-filter-region.html": {
     "reftest": "PASS"
   },
   "css/filter-effects/feimage-svg-fragment.html": {
     "reftest": "PASS"
+  },
+  "css/filter-effects/feimage-svg-image-with-nested-data-url-crash.html": {
+    "crashtest": "PASS"
   },
   "css/filter-effects/feimage-svg-preserveaspectratio-slice.html": {
     "reftest": "PASS"
@@ -655,6 +709,12 @@
   },
   "css/filter-effects/feimage-svg-root-preserveaspectratio.html": {
     "reftest": "PASS"
+  },
+  "css/filter-effects/feimage-target-child-reference-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/filter-effects/felighting-no-light-source-style-update-crash.html": {
+    "crashtest": "PASS"
   },
   "css/filter-effects/filter-3d-child-behind-eye-plane.html": {
     "reftest": "PASS"
@@ -691,6 +751,9 @@
   },
   "css/filter-effects/filter-change-to-reference-filter.html": {
     "reftest": "PASS"
+  },
+  "css/filter-effects/filter-clip-overflow-crash.html": {
+    "crashtest": "PASS"
   },
   "css/filter-effects/filter-contrast-001.html": {
     "reftest": "PASS"
@@ -1144,6 +1207,9 @@
   },
   "css/filter-effects/svg-unknown-input-002.html": {
     "reftest": "PASS"
+  },
+  "css/filter-effects/svg-unused-filter-on-clippath-mutated-crash.html": {
+    "crashtest": "PASS"
   },
   "css/filter-effects/svg-visibility-hidden-element-with-filter-001.html": {
     "reftest": "PASS"

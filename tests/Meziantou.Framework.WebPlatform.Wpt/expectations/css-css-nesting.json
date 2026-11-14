@@ -20,6 +20,12 @@
   "css/css-nesting/cssom.html": {
     "total": 14
   },
+  "css/css-nesting/delete-other-rule-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-nesting/double-parent-pseudo-in-placeholder-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-nesting/has-nesting.html": {
     "reftest": "PASS"
   },
@@ -46,6 +52,9 @@
   },
   "css/css-nesting/implicit-nesting.html": {
     "reftest": "PASS"
+  },
+  "css/css-nesting/implicit-parent-insertion-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-nesting/invalid-inner-rules.html": {
     "total": 2
@@ -101,8 +110,17 @@
   "css/css-nesting/nesting-type-selector.html": {
     "reftest": "PASS"
   },
+  "css/css-nesting/parent-pseudo-in-placeholder-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-nesting/parsing.html": {
     "total": 32
+  },
+  "css/css-nesting/pseudo-part-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-nesting/pseudo-where-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-nesting/serialize-group-rules-with-decls.html": {
     "total": 15

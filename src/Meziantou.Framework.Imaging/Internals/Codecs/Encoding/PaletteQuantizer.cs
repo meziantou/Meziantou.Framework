@@ -94,6 +94,11 @@ internal sealed class PaletteQuantizer : IDisposable
     private const int RgbaCacheLength = 4096;
     private const int NoKey = unchecked((int)0xFF00_0000);
 
+    // The vectorized translucent search: the premultiplied coordinates as double planes of whole vectors (at most 8 lanes),
+    // padded with a coordinate whose distance is larger than any distance between colors (and still finite)
+    private const int PremultipliedPlaneLength = 256;
+    private const double FarCoordinate = 1e9;
+
     // The colors mapped last (key and palette index, at the slot of the key): it takes the memory of the histogram sums once
     // the palette is built. An empty slot reads as the key 0xFFFFFF, which is never taken from the cache
     private const int MapCacheBits = 16;
@@ -102,6 +107,10 @@ internal sealed class PaletteQuantizer : IDisposable
 
     // The largest number of k-means passes that refine the palette of the median cut
     private const int RefinementPasses = 8;
+
+    // The k-means refinement compares an item with every entry at once: the coordinates of the entries as planes of 32-bit
+    // samples, padded to whole blocks of 16 entries (AssignItemsVector)
+    private const int AssignPlaneLength = 256;
 
     // The scratch of the palette build, after the other state: the sums of the items of each entry (ComputeEntries), the
     // coordinates of each entry, and the counts of the radix sort (SortKeys); too large for the stack
@@ -124,6 +133,7 @@ internal sealed class PaletteQuantizer : IDisposable
     private readonly int _exactOffset;
     private readonly int _exactCountsOffset;
     private readonly int _vectorPaletteOffset;
+    private readonly int _premultipliedPlanesOffset;
     private readonly int _buildScratchOffset;
     private readonly int _stateLength;
 
@@ -141,6 +151,7 @@ internal sealed class PaletteQuantizer : IDisposable
     private readonly int[] _premultiplied = new int[256 * 4];
     private readonly bool _translucent;
     private int[]? _rgbaCacheKeys;
+    private int _premultipliedPlanesVersion = -1;
     private byte[]? _rgbaCacheIndexes;
 
     // For each red sample, the index of the first palette entry whose red sample is at least that value (the palette is sorted)
@@ -177,7 +188,11 @@ internal sealed class PaletteQuantizer : IDisposable
         _exactOffset = _translucentSumsOffset + (translucent ? Buckets * 4 * sizeof(long) : 0);
         _exactCountsOffset = _exactOffset + (ExactSlots * sizeof(int));
         _vectorPaletteOffset = _exactCountsOffset + (ExactSlots * sizeof(int));
-        _buildScratchOffset = _vectorPaletteOffset + (3 * VectorPlaneLength * sizeof(int));
+        _premultipliedPlanesOffset = _vectorPaletteOffset + (3 * VectorPlaneLength * sizeof(int));
+
+        // Only a quantizer of translucent colors searches them often enough for the planes of the vector search: an opaque
+        // one searches its few translucent colors with the scalar reference
+        _buildScratchOffset = _premultipliedPlanesOffset + (translucent ? 4 * PremultipliedPlaneLength * sizeof(double) : 0);
         _stateLength = _buildScratchOffset + BuildScratchLength;
         _state = scope.Rent(_stateLength, AllocationKind.Temporary, clear: false);
     }
@@ -1151,6 +1166,22 @@ internal sealed class PaletteQuantizer : IDisposable
             red = green = blue = 0;
         }
 
+        var best = UseRgbaVectors && _translucent && _paletteCount > 0 ? FindNearestPremultipliedVector(red, green, blue, alpha) : FindNearestPremultipliedScalar(red, green, blue, alpha);
+        cacheKeys[slot] = key;
+        cacheIndexes[slot] = (byte)best;
+        return best;
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether <see cref="FindNearestRgba"/> compares a color with several entries at once (the
+    /// default with 128-bit hardware vectors, for a quantizer of translucent colors). Tests turn it off to compare both paths.
+    /// </summary>
+    internal bool UseRgbaVectors { get; set; } = Vector128.IsHardwareAccelerated;
+
+    /// <summary>The scalar reference of <see cref="FindNearestPremultipliedVector"/>: the smallest 64-bit distance, ties to the lowest index.</summary>
+    /// <returns>The palette index.</returns>
+    internal int FindNearestPremultipliedScalar(int red, int green, int blue, int alpha)
+    {
         var best = 0;
         var bestDistance = long.MaxValue;
         for (var i = 0; i < _paletteCount; i++)
@@ -1167,9 +1198,124 @@ internal sealed class PaletteQuantizer : IDisposable
             }
         }
 
-        cacheKeys[slot] = key;
-        cacheIndexes[slot] = (byte)best;
         return best;
+    }
+
+    /// <summary>
+    /// Gets the entry nearest to premultiplied coordinates as <see cref="FindNearestPremultipliedScalar"/>, a vector of entries at
+    /// a time, in double precision: every value is an integer below 2^53, so the arithmetic is exact. A coordinate is at most
+    /// 255², a distance below 2^35, and the key <c>distance × 256 + index</c> (below 2^43) orders the entries by distance, then
+    /// by index: the smallest key is the result.
+    /// </summary>
+    /// <returns>The palette index.</returns>
+    internal int FindNearestPremultipliedVector(int red, int green, int blue, int alpha)
+    {
+        var planes = GetPremultipliedPlanes();
+        var count = _paletteCount;
+        Debug.Assert(count is > 0 and <= 256 && planes.Length == 4 * PremultipliedPlaneLength);
+        ref var reds = ref unsafe(MemoryMarshal.GetReference(planes));
+        ref var greens = ref unsafe(Unsafe.Add(ref reds, PremultipliedPlaneLength));
+        ref var blues = ref unsafe(Unsafe.Add(ref reds, 2 * PremultipliedPlaneLength));
+        ref var alphas = ref unsafe(Unsafe.Add(ref reds, 3 * PremultipliedPlaneLength));
+        double smallest;
+        if (Vector512.IsHardwareAccelerated)
+        {
+            var r = Vector512.Create((double)red);
+            var g = Vector512.Create((double)green);
+            var b = Vector512.Create((double)blue);
+            var a = Vector512.Create((double)alpha);
+            var scale = Vector512.Create(256d);
+            var index = Vector512.Create(0d, 1, 2, 3, 4, 5, 6, 7);
+            var step = Vector512.Create((double)Vector512<double>.Count);
+            var keys = Vector512.Create(double.MaxValue);
+            for (var i = 0; i < count; i += Vector512<double>.Count)
+            {
+                var dr = unsafe(Vector512.LoadUnsafe(ref reds, (nuint)i)) - r;
+                var dg = unsafe(Vector512.LoadUnsafe(ref greens, (nuint)i)) - g;
+                var db = unsafe(Vector512.LoadUnsafe(ref blues, (nuint)i)) - b;
+                var da = unsafe(Vector512.LoadUnsafe(ref alphas, (nuint)i)) - a;
+                keys = Vector512.Min(keys, ((((dr * dr) + (dg * dg)) + ((db * db) + (da * da))) * scale) + index);
+                index += step;
+            }
+
+            var half = Vector256.Min(keys.GetLower(), keys.GetUpper());
+            smallest = Math.Min(Math.Min(half[0], half[1]), Math.Min(half[2], half[3]));
+        }
+        else if (Vector256.IsHardwareAccelerated)
+        {
+            var r = Vector256.Create((double)red);
+            var g = Vector256.Create((double)green);
+            var b = Vector256.Create((double)blue);
+            var a = Vector256.Create((double)alpha);
+            var scale = Vector256.Create(256d);
+            var index = Vector256.Create(0d, 1, 2, 3);
+            var step = Vector256.Create((double)Vector256<double>.Count);
+            var keys = Vector256.Create(double.MaxValue);
+            for (var i = 0; i < count; i += Vector256<double>.Count)
+            {
+                var dr = unsafe(Vector256.LoadUnsafe(ref reds, (nuint)i)) - r;
+                var dg = unsafe(Vector256.LoadUnsafe(ref greens, (nuint)i)) - g;
+                var db = unsafe(Vector256.LoadUnsafe(ref blues, (nuint)i)) - b;
+                var da = unsafe(Vector256.LoadUnsafe(ref alphas, (nuint)i)) - a;
+                keys = Vector256.Min(keys, ((((dr * dr) + (dg * dg)) + ((db * db) + (da * da))) * scale) + index);
+                index += step;
+            }
+
+            smallest = Math.Min(Math.Min(keys[0], keys[1]), Math.Min(keys[2], keys[3]));
+        }
+        else
+        {
+            var r = Vector128.Create((double)red);
+            var g = Vector128.Create((double)green);
+            var b = Vector128.Create((double)blue);
+            var a = Vector128.Create((double)alpha);
+            var scale = Vector128.Create(256d);
+            var index = Vector128.Create(0d, 1);
+            var step = Vector128.Create((double)Vector128<double>.Count);
+            var keys = Vector128.Create(double.MaxValue);
+            for (var i = 0; i < count; i += Vector128<double>.Count)
+            {
+                var dr = unsafe(Vector128.LoadUnsafe(ref reds, (nuint)i)) - r;
+                var dg = unsafe(Vector128.LoadUnsafe(ref greens, (nuint)i)) - g;
+                var db = unsafe(Vector128.LoadUnsafe(ref blues, (nuint)i)) - b;
+                var da = unsafe(Vector128.LoadUnsafe(ref alphas, (nuint)i)) - a;
+                keys = Vector128.Min(keys, ((((dr * dr) + (dg * dg)) + ((db * db) + (da * da))) * scale) + index);
+                index += step;
+            }
+
+            smallest = Math.Min(keys[0], keys[1]);
+        }
+
+        return (int)((long)smallest & 0xFF);
+    }
+
+    /// <summary>
+    /// Gets the premultiplied coordinates of the palette entries as double planes (R·A, G·A, B·A, A·255), each padded to whole
+    /// vectors of 8 entries with an entry farther than any color (never selected); refreshed when the palette changes. They
+    /// are a region of the working memory of their own, charged to the scope with the rest of it, that only a quantizer of
+    /// translucent colors has.
+    /// </summary>
+    private Span<double> GetPremultipliedPlanes()
+    {
+        Debug.Assert(_translucent);
+        var planes = unsafe(MemoryMarshal.Cast<byte, double>(GetState().Slice(_premultipliedPlanesOffset, 4 * PremultipliedPlaneLength * sizeof(double))));
+        if (_premultipliedPlanesVersion != PaletteVersion)
+        {
+            for (var plane = 0; plane < 4; plane++)
+            {
+                var samples = planes.Slice(plane * PremultipliedPlaneLength, PremultipliedPlaneLength);
+                for (var i = 0; i < _paletteCount; i++)
+                {
+                    samples[i] = _premultiplied[(4 * i) + plane];
+                }
+
+                samples[_paletteCount..].Fill(FarCoordinate);
+            }
+
+            _premultipliedPlanesVersion = PaletteVersion;
+        }
+
+        return planes;
     }
 
     public void Dispose()
@@ -1268,6 +1414,182 @@ internal sealed class PaletteQuantizer : IDisposable
     /// </summary>
     /// <returns><see langword="true"/> when an item moved.</returns>
     private bool AssignItems(int entries, int itemCount, ReadOnlySpan<int> items, ReadOnlySpan<int> colors, ReadOnlySpan<int> exact, Span<int> owners, ReadOnlySpan<int> coordinates, ReadOnlySpan<bool> entryTranslucent)
+        => Vector128.IsHardwareAccelerated
+            ? AssignItemsVector(entries, itemCount, items, colors, exact, owners, coordinates, entryTranslucent)
+            : AssignItemsScalar(entries, itemCount, items, colors, exact, owners, coordinates, entryTranslucent);
+
+    /// <summary>
+    /// The vector version of <see cref="AssignItemsScalar"/>: the distances of an item to every entry are computed a vector
+    /// of entries at a time, each as the key <c>(distance &lt;&lt; 8) | entry</c> (a distance is at most 4 × 255², 19 bits), so
+    /// the smallest key is the nearest entry of lowest index; the entries of the other class (and the padding) have the key
+    /// <see cref="int.MaxValue"/>. The item stays with its entry unless the nearest one is strictly nearer, as in the scalar loop.
+    /// </summary>
+    /// <returns><see langword="true"/> when an item moved.</returns>
+    internal bool AssignItemsVector(int entries, int itemCount, ReadOnlySpan<int> items, ReadOnlySpan<int> colors, ReadOnlySpan<int> exact, Span<int> owners, ReadOnlySpan<int> coordinates, ReadOnlySpan<bool> entryTranslucent)
+    {
+        // The coordinates as planes of whole blocks of 16 entries, then the entry numbers of each class (int.MaxValue for
+        // the entries of the other class and the padding)
+        Debug.Assert(entries is > 0 and <= AssignPlaneLength);
+        var length = (entries + 15) & ~15;
+        Span<int> planes = stackalloc int[6 * AssignPlaneLength];
+        var reds = planes[..length];
+        var greens = planes.Slice(AssignPlaneLength, length);
+        var blues = planes.Slice(2 * AssignPlaneLength, length);
+        var alphas = planes.Slice(3 * AssignPlaneLength, length);
+        var opaqueEntries = planes.Slice(4 * AssignPlaneLength, length);
+        var translucentEntries = planes.Slice(5 * AssignPlaneLength, length);
+        for (var entry = 0; entry < length; entry++)
+        {
+            if (entry < entries)
+            {
+                reds[entry] = coordinates[4 * entry];
+                greens[entry] = coordinates[(4 * entry) + 1];
+                blues[entry] = coordinates[(4 * entry) + 2];
+                alphas[entry] = coordinates[(4 * entry) + 3];
+                opaqueEntries[entry] = entryTranslucent[entry] ? int.MaxValue : entry;
+                translucentEntries[entry] = entryTranslucent[entry] ? entry : int.MaxValue;
+            }
+            else
+            {
+                reds[entry] = greens[entry] = blues[entry] = alphas[entry] = 0;
+                opaqueEntries[entry] = translucentEntries[entry] = int.MaxValue;
+            }
+        }
+
+        // An opaque item has the alpha 255, as the opaque entries have: the alpha adds nothing to their distances (checked)
+        var opaqueAlphas = true;
+        for (var entry = 0; entry < entries; entry++)
+        {
+            opaqueAlphas &= entryTranslucent[entry] || alphas[entry] == byte.MaxValue;
+        }
+
+        var moved = false;
+        for (var i = 0; i < itemCount; i++)
+        {
+            var item = items[i];
+            var color = colors[item];
+            var r = (color >> 16) & 0xFF;
+            var g = (color >> 8) & 0xFF;
+            var b = color & 0xFF;
+            var a = (color >>> 24) & 0xFF;
+            var owner = owners[i];
+            var ownerDistance = GetDistance(coordinates.Slice(owner * 4, 4), r, g, b, a);
+            if (ownerDistance == 0)
+                continue;
+
+            int nearest;
+            if (IsTranslucentItem(item, exact))
+            {
+                nearest = FindNearestEntryKey<WithAlpha>(planes, length, translucentEntries, r, g, b, a);
+            }
+            else
+            {
+                nearest = opaqueAlphas && a == byte.MaxValue ? FindNearestEntryKey<WithoutAlpha>(planes, length, opaqueEntries, r, g, b, a) : FindNearestEntryKey<WithAlpha>(planes, length, opaqueEntries, r, g, b, a);
+            }
+
+            // No entry of the class gives int.MaxValue, whose distance (2^23 - 1) is larger than any distance
+            if ((nearest >> 8) < ownerDistance)
+            {
+                owners[i] = nearest & 0xFF;
+                moved = true;
+            }
+        }
+
+        return moved;
+    }
+
+    /// <summary>
+    /// Gets the smallest key <c>(distance &lt;&lt; 8) | entry</c> of the entries of the planes of <see cref="AssignItemsVector"/>;
+    /// <typeparamref name="TAlpha"/> is <see cref="WithoutAlpha"/> when the alpha of every entry it compares equals the one of
+    /// the item (the alpha plane is not read).
+    /// </summary>
+    private static int FindNearestEntryKey<TAlpha>(ReadOnlySpan<int> planes, int length, ReadOnlySpan<int> entryNumbers, int r, int g, int b, int a)
+        where TAlpha : struct
+    {
+        Debug.Assert(length % 16 == 0 && length <= AssignPlaneLength && entryNumbers.Length >= length);
+        ref var reds = ref unsafe(MemoryMarshal.GetReference(planes));
+        ref var greens = ref unsafe(Unsafe.Add(ref reds, AssignPlaneLength));
+        ref var blues = ref unsafe(Unsafe.Add(ref reds, 2 * AssignPlaneLength));
+        ref var alphas = ref unsafe(Unsafe.Add(ref reds, 3 * AssignPlaneLength));
+        ref var numbers = ref unsafe(MemoryMarshal.GetReference(entryNumbers));
+        Vector128<int> smallest;
+        if (Vector512.IsHardwareAccelerated)
+        {
+            var red = Vector512.Create(r);
+            var green = Vector512.Create(g);
+            var blue = Vector512.Create(b);
+            var alpha = Vector512.Create(a);
+            var keys = Vector512.Create(int.MaxValue);
+            for (var block = 0; block < length; block += Vector512<int>.Count)
+            {
+                var dr = unsafe(Vector512.LoadUnsafe(ref reds, (nuint)block)) - red;
+                var dg = unsafe(Vector512.LoadUnsafe(ref greens, (nuint)block)) - green;
+                var db = unsafe(Vector512.LoadUnsafe(ref blues, (nuint)block)) - blue;
+                var distance = (dr * dr) + (dg * dg) + (db * db);
+                if (typeof(TAlpha) == typeof(WithAlpha))
+                {
+                    var da = unsafe(Vector512.LoadUnsafe(ref alphas, (nuint)block)) - alpha;
+                    distance += da * da;
+                }
+                keys = Vector512.Min(keys, Vector512.ShiftLeft(distance, 8) | unsafe(Vector512.LoadUnsafe(ref numbers, (nuint)block)));
+            }
+
+            var half = Vector256.Min(keys.GetLower(), keys.GetUpper());
+            smallest = Vector128.Min(half.GetLower(), half.GetUpper());
+        }
+        else if (Vector256.IsHardwareAccelerated)
+        {
+            var red = Vector256.Create(r);
+            var green = Vector256.Create(g);
+            var blue = Vector256.Create(b);
+            var alpha = Vector256.Create(a);
+            var keys = Vector256.Create(int.MaxValue);
+            for (var block = 0; block < length; block += Vector256<int>.Count)
+            {
+                var dr = unsafe(Vector256.LoadUnsafe(ref reds, (nuint)block)) - red;
+                var dg = unsafe(Vector256.LoadUnsafe(ref greens, (nuint)block)) - green;
+                var db = unsafe(Vector256.LoadUnsafe(ref blues, (nuint)block)) - blue;
+                var distance = (dr * dr) + (dg * dg) + (db * db);
+                if (typeof(TAlpha) == typeof(WithAlpha))
+                {
+                    var da = unsafe(Vector256.LoadUnsafe(ref alphas, (nuint)block)) - alpha;
+                    distance += da * da;
+                }
+                keys = Vector256.Min(keys, Vector256.ShiftLeft(distance, 8) | unsafe(Vector256.LoadUnsafe(ref numbers, (nuint)block)));
+            }
+
+            smallest = Vector128.Min(keys.GetLower(), keys.GetUpper());
+        }
+        else
+        {
+            var red = Vector128.Create(r);
+            var green = Vector128.Create(g);
+            var blue = Vector128.Create(b);
+            var alpha = Vector128.Create(a);
+            smallest = Vector128.Create(int.MaxValue);
+            for (var block = 0; block < length; block += Vector128<int>.Count)
+            {
+                var dr = unsafe(Vector128.LoadUnsafe(ref reds, (nuint)block)) - red;
+                var dg = unsafe(Vector128.LoadUnsafe(ref greens, (nuint)block)) - green;
+                var db = unsafe(Vector128.LoadUnsafe(ref blues, (nuint)block)) - blue;
+                var distance = (dr * dr) + (dg * dg) + (db * db);
+                if (typeof(TAlpha) == typeof(WithAlpha))
+                {
+                    var da = unsafe(Vector128.LoadUnsafe(ref alphas, (nuint)block)) - alpha;
+                    distance += da * da;
+                }
+                smallest = Vector128.Min(smallest, Vector128.ShiftLeft(distance, 8) | unsafe(Vector128.LoadUnsafe(ref numbers, (nuint)block)));
+            }
+        }
+
+        smallest = Vector128.Min(smallest, Vector128.Shuffle(smallest, Vector128.Create(2, 3, 0, 1)));
+        smallest = Vector128.Min(smallest, Vector128.Shuffle(smallest, Vector128.Create(1, 0, 3, 2)));
+        return smallest.ToScalar();
+    }
+
+    /// <summary>The scalar reference of <see cref="AssignItemsVector"/>.</summary>
+    /// <returns><see langword="true"/> when an item moved.</returns>
+    internal bool AssignItemsScalar(int entries, int itemCount, ReadOnlySpan<int> items, ReadOnlySpan<int> colors, ReadOnlySpan<int> exact, Span<int> owners, ReadOnlySpan<int> coordinates, ReadOnlySpan<bool> entryTranslucent)
     {
         var moved = false;
         for (var i = 0; i < itemCount; i++)
@@ -1280,13 +1602,13 @@ internal sealed class PaletteQuantizer : IDisposable
             var b = color & 0xFF;
             var a = (color >>> 24) & 0xFF;
             var best = owners[i];
-            var bestDistance = Distance(coordinates.Slice(best * 4, 4), r, g, b, a);
+            var bestDistance = GetDistance(coordinates.Slice(best * 4, 4), r, g, b, a);
             for (var entry = 0; entry < entries && bestDistance > 0; entry++)
             {
                 if (entryTranslucent[entry] != translucent || entry == best)
                     continue;
 
-                var distance = Distance(coordinates.Slice(entry * 4, 4), r, g, b, a);
+                var distance = GetDistance(coordinates.Slice(entry * 4, 4), r, g, b, a);
                 if (distance < bestDistance)
                 {
                     bestDistance = distance;
@@ -1302,15 +1624,16 @@ internal sealed class PaletteQuantizer : IDisposable
         }
 
         return moved;
+    }
 
-        static int Distance(ReadOnlySpan<int> entry, int r, int g, int b, int a)
-        {
-            var dr = entry[0] - r;
-            var dg = entry[1] - g;
-            var db = entry[2] - b;
-            var da = entry[3] - a;
-            return (dr * dr) + (dg * dg) + (db * db) + (da * da);
-        }
+    /// <summary>Gets the squared distance between the coordinates of an entry and those of an item.</summary>
+    private static int GetDistance(ReadOnlySpan<int> entry, int r, int g, int b, int a)
+    {
+        var dr = entry[0] - r;
+        var dg = entry[1] - g;
+        var db = entry[2] - b;
+        var da = entry[3] - a;
+        return (dr * dr) + (dg * dg) + (db * db) + (da * da);
     }
 
     /// <summary>
@@ -1566,6 +1889,12 @@ internal sealed class PaletteQuantizer : IDisposable
         Debug.Assert(length >= 0);
         Debug.Assert(_paletteRed.Length >= length && _paletteGreen.Length >= length && _paletteBlue.Length >= length);
     }
+
+    /// <summary>Selects the distances of <see cref="FindNearestEntryKey{TAlpha}"/> over the four coordinates.</summary>
+    private readonly struct WithAlpha;
+
+    /// <summary>Selects the distances of <see cref="FindNearestEntryKey{TAlpha}"/> over the color coordinates only.</summary>
+    private readonly struct WithoutAlpha;
 
     private Span<byte> GetState() => (_state ?? throw new ObjectDisposedException(nameof(PaletteQuantizer))).RawBuffer.AsSpan(0, _stateLength);
 }

@@ -27,6 +27,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// come from <c>acTL num_plays</c> (0 is infinite). No player minimum-delay heuristic is applied.
 /// </description></item>
 /// <item><description>
+/// The frames are decoded at full size: a request for an exact scale (<see cref="ImageDecodeRequest.ScaleDenominator"/>) is
+/// rejected, and a target size is satisfied by them.
+/// </description></item>
+/// <item><description>
 /// Memory: the compositor canvas, at most one restore-previous region, one datastream decoder and one converted row, all charged
 /// to the operation scope; frames and pixels are charged to the per-input limits before each image is produced.
 /// </description></item>
@@ -60,6 +64,10 @@ internal sealed class ApngDecoder : PngDecodeObserver
         ArgumentNullException.ThrowIfNull(structure);
         if (!structure.IsAnimated)
             throw new InvalidOperationException("The PNG file is not an APNG.");
+
+        // The frames of an animation are decoded at full size (a target size is satisfied by them)
+        if (_request.ScaleDenominator > 1)
+            throw _request.CreateUnsupportedScaleException(ImageFormat.Png, "the frames of an animated PNG image are not reduced");
 
         _structure = structure;
         _format = PngSampleFormat.Create(structure);

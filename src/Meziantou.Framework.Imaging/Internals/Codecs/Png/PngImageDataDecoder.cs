@@ -18,9 +18,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// it and, once the image is complete, the Adler-32 checksum of the decompressed bytes after it, so that both datastreams
 /// are validated by the same zlib inflater. Memory is bounded by two scanlines, one expanded row (none when the scanline
 /// bytes already are the source pixels), one compressed piece, one piece of decompressed data and the inflater window,
-/// whatever the image or chunk sizes; every buffer is charged to the operation scope as decoder state. The two scanline
-/// buffers are swapped after each row instead of being copied. The inflater is asked for pieces of up to
-/// <see cref="InflatedCapacity"/> bytes, never past the size of the image, rather than for each scanline: each call
+/// whatever the image or chunk sizes (the scanlines and the row are those of the widest pass that is decoded); every
+/// buffer is charged to the operation scope as decoder state. The two scanline buffers are swapped after each row instead
+/// of being copied. The inflater is asked for pieces of up to <see cref="InflatedCapacity"/> bytes, never past the size of the image, rather than for each scanline: each call
 /// costs as much as tens of bytes of data.
 /// </para>
 /// <para>
@@ -33,6 +33,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// are read as the checksum and do not match it, and an inflater that did not reach it reads the byte pushed after the
 /// checksum, which a finished one leaves unread.
 /// </para>
+/// <para>
+/// Scaled decoding: an Adam7 datastream decoded at 1/2, 1/4 or 1/8 of its size stops after the first passes, which hold
+/// the pixel at the top left of each block of that many pixels a side (<see cref="PngInterlace.GetPassCountForScale"/>), and
+/// gives the rows of the reduced image. Nothing after these passes is inflated: the data that follows them is neither
+/// decompressed nor validated, and the checksum of the datastream is not checked.
+/// </para>
 /// </remarks>
 internal sealed class PngImageDataDecoder : IDisposable
 {
@@ -43,7 +49,10 @@ internal sealed class PngImageDataDecoder : IDisposable
     private readonly PngSampleFormat _format;
     private readonly int _width;
     private readonly int _height;
+    private readonly bool _interlaced;
     private readonly int _passCount;
+    private readonly int _scaleDenominator;
+    private readonly bool _isPartial;
     private readonly long _totalScanlines;
     private PooledBuffer? _scanlineBuffer;
     private PooledBuffer? _previousBuffer;
@@ -78,8 +87,12 @@ internal sealed class PngImageDataDecoder : IDisposable
     /// <param name="width">The image width (the canvas, or an APNG frame region).</param>
     /// <param name="height">The image height.</param>
     /// <param name="interlaced">Whether the datastream is Adam7-interlaced.</param>
+    /// <param name="scaleDenominator">
+    /// The factor by which the image is reduced: 1, or 2, 4 or 8 for an interlaced datastream, whose first passes alone are
+    /// then decoded. The rows are those of the reduced image.
+    /// </param>
     /// <exception cref="ImageResourceLimitException">The working buffers exceed the allocation limit.</exception>
-    public PngImageDataDecoder(ImageCodecContext context, PngSampleFormat format, int width, int height, bool interlaced)
+    public PngImageDataDecoder(ImageCodecContext context, PngSampleFormat format, int width, int height, bool interlaced, int scaleDenominator = 1)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(format);
@@ -89,7 +102,14 @@ internal sealed class PngImageDataDecoder : IDisposable
         _format = format;
         _width = width;
         _height = height;
-        _passCount = interlaced ? PngInterlace.PassCount : 1;
+        if (scaleDenominator != 1 && !interlaced)
+            throw new ArgumentOutOfRangeException(nameof(scaleDenominator), scaleDenominator, "Only an interlaced PNG image is decoded at a reduced size.");
+
+        _interlaced = interlaced;
+        _scaleDenominator = scaleDenominator;
+        _passCount = interlaced ? PngInterlace.GetPassCountForScale(scaleDenominator) : 1;
+        _isPartial = _passCount < (interlaced ? PngInterlace.PassCount : 1);
+        var widestPass = 0;
         for (var pass = 0; pass < _passCount; pass++)
         {
             var (passWidth, passHeight) = GetPassSize(pass);
@@ -97,12 +117,13 @@ internal sealed class PngImageDataDecoder : IDisposable
             {
                 _totalScanlines += passHeight;
                 _remainingBytes += passHeight * (format.GetScanlineLength(passWidth) + 1);
+                widestPass = Math.Max(widestPass, passWidth);
             }
         }
 
-        // The widest scanline is the full width (non-interlaced, or Adam7 pass 7 / pass 6)
-        var scanlineLength = format.GetScanlineLength(width) + 1;
-        var pixelLength = (long)width * format.SourceBytesPerPixel;
+        // The widest scanline is the full width when every pass is decoded (non-interlaced, or Adam7 pass 7 / pass 6)
+        var scanlineLength = format.GetScanlineLength(widestPass) + 1;
+        var pixelLength = (long)widestPass * format.SourceBytesPerPixel;
         if (scanlineLength > CheckedSizes.MaxBufferLength || pixelLength > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(context.Limits);
 
@@ -134,7 +155,7 @@ internal sealed class PngImageDataDecoder : IDisposable
     /// <summary>Gets the number of scanlines of the datastream (Adam7: every non-empty pass).</summary>
     public long TotalScanlines => _totalScanlines;
 
-    /// <summary>Gets a value indicating whether every scanline was decoded.</summary>
+    /// <summary>Gets a value indicating whether every scanline that is decoded was decoded.</summary>
     public bool IsComplete => _done;
 
     /// <summary>
@@ -148,6 +169,10 @@ internal sealed class PngImageDataDecoder : IDisposable
     public int Feed(ReadOnlySpan<byte> compressed)
     {
         var feed = _feed ?? throw new ObjectDisposedException(nameof(PngImageDataDecoder));
+
+        // The passes after those of a reduced image are not decoded: their data is skipped
+        if (_done && _isPartial)
+            return compressed.Length;
 
         // A finished inflater stops reading its source: unread bytes follow the end of the zlib datastream
         if (feed.Available != 0)
@@ -188,7 +213,11 @@ internal sealed class PngImageDataDecoder : IDisposable
         row = default;
         if (_done)
         {
-            EnsureNoExtraData();
+            if (!_isPartial)
+            {
+                EnsureNoExtraData();
+            }
+
             return false;
         }
 
@@ -237,8 +266,10 @@ internal sealed class PngImageDataDecoder : IDisposable
         // until the scanline after the next one, so the row may reference it
         (_scanlineBuffer, _previousBuffer) = (_previousBuffer, _scanlineBuffer);
 
-        var (x0, y0, dx, dy) = _passCount == 1 ? (0, 0, 1, 1) : PngInterlace.GetPass(_pass);
-        row = new PngDecodedRow(y0 + (_passRow * dy), x0, dx, _passWidth, pixels);
+        // The origin and the steps of the passes of a reduced image are multiples of its scale
+        var (x0, y0, dx, dy) = _interlaced ? PngInterlace.GetPass(_pass) : (0, 0, 1, 1);
+        var scale = _scaleDenominator;
+        row = new PngDecodedRow((y0 + (_passRow * dy)) / scale, x0 / scale, dx / scale, _passWidth, pixels);
         _filled = 0;
         _decodedScanlines++;
         _passRow++;
@@ -261,6 +292,10 @@ internal sealed class PngImageDataDecoder : IDisposable
             // Rows complete in the data fed so far are read first by the caller; nothing else can be produced
             throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The PNG image data ends after {_decodedScanlines} of {_totalScanlines} scanlines (truncated or too short zlib datastream)."));
         }
+
+        // The data after the passes of a reduced image is not decompressed: its end cannot be checked
+        if (_isPartial)
+            return;
 
         EnsureNoExtraData();
         if (_format.IsAppleCgbi)
@@ -293,7 +328,7 @@ internal sealed class PngImageDataDecoder : IDisposable
 
     private static InvalidImageContentException Invalid(string message, Exception? innerException = null) => new(message, ImageFormat.Png, innerException);
 
-    private (int Width, int Height) GetPassSize(int pass) => _passCount == 1 ? (_width, _height) : PngInterlace.GetPassSize(_width, _height, pass);
+    private (int Width, int Height) GetPassSize(int pass) => _interlaced ? PngInterlace.GetPassSize(_width, _height, pass) : (_width, _height);
 
     private void StartNextPass()
     {

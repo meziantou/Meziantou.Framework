@@ -320,8 +320,34 @@ internal static class ColorMatrixKernel
         var count = colors.Length / 4;
         if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
         {
+            // The colors are 8-bit samples: narrowing them keeps their value
             var samples = row.Slice(x * 4, count * 4);
-            for (var i = 0; i < samples.Length; i++)
+            var i = 0;
+            if (Vector512.IsHardwareAccelerated)
+            {
+                for (; i + 64 <= samples.Length; i += 64)
+                {
+                    Vector512.Narrow(Vector512.Create(colors.Slice(i, 32)), Vector512.Create(colors.Slice(i + 32, 32))).CopyTo(samples.Slice(i, 64));
+                }
+            }
+
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; i + 32 <= samples.Length; i += 32)
+                {
+                    Vector256.Narrow(Vector256.Create(colors.Slice(i, 16)), Vector256.Create(colors.Slice(i + 16, 16))).CopyTo(samples.Slice(i, 32));
+                }
+            }
+
+            if (Vector128.IsHardwareAccelerated)
+            {
+                for (; i + 16 <= samples.Length; i += 16)
+                {
+                    Vector128.Narrow(Vector128.Create(colors.Slice(i, 8)), Vector128.Create(colors.Slice(i + 8, 8))).CopyTo(samples.Slice(i, 16));
+                }
+            }
+
+            for (; i < samples.Length; i++)
             {
                 samples[i] = (byte)colors[i];
             }
@@ -457,6 +483,13 @@ internal static class ColorMatrixKernel
         private readonly Vector128<double> _max;
         private readonly double _maxValue;
 
+        // The four rows in one vector, when the hardware has 256-bit vectors
+        private readonly Vector256<double> _red;
+        private readonly Vector256<double> _green;
+        private readonly Vector256<double> _blue;
+        private readonly Vector256<double> _alpha;
+        private readonly Vector256<double> _offset;
+
         public MatrixColumns(ReadOnlySpan<double> m, double max)
         {
             const int Columns = ColorMatrix.ColumnCount;
@@ -472,6 +505,11 @@ internal static class ColorMatrixKernel
             _offset23 = Vector128.Create(m[(2 * Columns) + 4] * max, m[(3 * Columns) + 4] * max);
             _max = Vector128.Create(max);
             _maxValue = max;
+            _red = Vector256.Create(_red01, _red23);
+            _green = Vector256.Create(_green01, _green23);
+            _blue = Vector256.Create(_blue01, _blue23);
+            _alpha = Vector256.Create(_alpha01, _alpha23);
+            _offset = Vector256.Create(_offset01, _offset23);
         }
 
         public void Transform(double r, double g, double b, double a, Span<ushort> color, bool isBlueFirst)
@@ -497,6 +535,16 @@ internal static class ColorMatrixKernel
         /// <summary>Gets the samples of the four rows, as <see cref="Row"/> computes them, as whole numbers.</summary>
         private (Vector128<long> Rows01, Vector128<long> Rows23) Rows(double r, double g, double b, double a)
         {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                var rows = (((((_red * Vector256.Create(r)) + (_green * Vector256.Create(g))) + (_blue * Vector256.Create(b))) + (_alpha * Vector256.Create(a))) + _offset) + Vector256.Create(RoundingOffset);
+                var max = Vector256.Create(_maxValue);
+                var floor = Vector256.Floor(rows);
+                var clamped = Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(floor, max), max, Vector256.ConditionalSelect(Vector256.GreaterThan(floor, Vector256<double>.Zero), floor, Vector256<double>.Zero));
+                var whole = ToInt64(clamped);
+                return (whole.GetLower(), whole.GetUpper());
+            }
+
             var red = Vector128.Create(r);
             var green = Vector128.Create(g);
             var blue = Vector128.Create(b);
@@ -526,6 +574,14 @@ internal static class ColorMatrixKernel
     internal static Vector128<long> ToInt64WithBias(Vector128<double> value)
     {
         var bias = Vector128.Create(4503599627370496.0);
+        return (value + bias).AsInt64() - bias.AsInt64();
+    }
+
+    /// <summary>Converts whole numbers from 0 to 2^52, with an addition and a subtraction (see <see cref="ToInt64WithBias"/>).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector256<long> ToInt64(Vector256<double> value)
+    {
+        var bias = Vector256.Create(4503599627370496.0);
         return (value + bias).AsInt64() - bias.AsInt64();
     }
 

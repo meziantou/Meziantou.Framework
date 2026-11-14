@@ -29,14 +29,14 @@ creds = CredentialManager.PromptForCredentials(
 Console.WriteLine($"User: {creds?.UserName}, Password: {creds?.Password}, Domain: {creds?.Domain}");
 
 creds = CredentialManager.PromptForCredentials(
-    captionText: "https://www.meziantou.net/dummy",
+    captionText: "https://www.example.com",
     messageText: "This will allow SampleApp to authenticate to Meziantou's blog with prefilled username",
     userName: "Meziantou",
     saveCredential: CredentialSaveOption.Unselected);
 Console.WriteLine($"User: {creds?.UserName}, Password: {creds?.Password}, Domain: {creds?.Domain}");
 
 creds = CredentialManager.PromptForCredentials(
-    captionText: "https://www.meziantou.net/dummy",
+    captionText: "https://www.example.com",
     messageText: "This will allow SampleApp to authenticate to Meziantou's blog with prefilled username and password",
     userName: "Meziantou",
     password: "dummy",

@@ -23,6 +23,9 @@
   "html/editing/dnd/canvas/007.html": {
     "total": 1
   },
+  "html/editing/dnd/crashtests/DataTransfer-getData-RefCell-already-borrowed.html": {
+    "crashtest": "PASS"
+  },
   "html/editing/dnd/datastore/datatransfer-constructor-001.html": {
     "total": 1
   },

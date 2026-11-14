@@ -38,15 +38,25 @@ internal static class WorkingSamples
     /// <remarks>
     /// With 128-bit hardware vectors, encoded samples are converted 4 at a time (one 256-bit vector with AVX2, except the
     /// colors of opaque pixels): every sample and product is an integer below 2^32, so the conversions and the products are
-    /// exact and give the doubles of <see cref="LoadScalar"/>.
+    /// exact and give the doubles of <see cref="LoadScalar"/>. Linear light is read from the same tables and stored 2
+    /// samples at a time (an AVX2 gather of the 3 colors of a pixel was slower on Zen 5), and multiplied by the same
+    /// alphas. <see cref="float"/> samples are widened to doubles, which is exact, and multiplied by the same alphas.
     /// </remarks>
     public static void Load<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha, byte transfer)
         where TSample : unmanaged
     {
         var done = 0;
-        if (transfer is 0 && !IsFloatingPoint<TSample>() && !Resampler.TestForceScalar)
+        if (!IsFloatingPoint<TSample>() && !Resampler.TestForceScalar)
         {
-            if (Vector256.IsHardwareAccelerated && Avx2.IsSupported && alpha != WorkingAlpha.Opaque)
+            if (transfer is not 0)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    var decode = typeof(TSample) == typeof(byte) ? CicpTransfer.GetDecode8(transfer) : CicpTransfer.GetDecode16(transfer);
+                    done = LoadLinearVector(samples, working, alpha, decode);
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated && Avx2.IsSupported && alpha != WorkingAlpha.Opaque)
             {
                 done = LoadVector256(samples, working, alpha);
             }
@@ -54,6 +64,10 @@ internal static class WorkingSamples
             {
                 done = LoadVector(samples, working, alpha);
             }
+        }
+        else if (typeof(TSample) == typeof(float) && transfer is 0 && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar)
+        {
+            done = LoadSingleVector(unsafe(MemoryMarshal.Cast<TSample, float>(samples)), working, alpha);
         }
 
         LoadScalar(samples[done..], working[GetWorkingLength(done, alpha)..], alpha, transfer);
@@ -172,7 +186,9 @@ internal static class WorkingSamples
     /// 4 at a time (one 256-bit vector with AVX2, except opaque pixels) with the same IEEE operations (division, addition,
     /// floor) as <see cref="StoreScalar"/>, so the results are identical. Linear light is encoded to 8-bit samples with the
     /// thresholds of the encoding (<see cref="QuantizationThresholds"/>), which give the samples of
-    /// <see cref="StoreScalar"/> without evaluating the transfer function.
+    /// <see cref="StoreScalar"/> without evaluating the transfer function: 4 samples at a time when no interval of their
+    /// coarse index holds more than one threshold (<see cref="QuantizationThresholds.Intervals"/>), the intervals gathered
+    /// with AVX2.
     /// </remarks>
     public static void Store<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, byte transfer, int max)
         where TSample : unmanaged
@@ -198,6 +214,12 @@ internal static class WorkingSamples
         }
 
         var thresholds = typeof(TSample) == typeof(byte) && max == byte.MaxValue && transfer is not 0 and not CicpTransfer.Linear && transfer < Thresholds8.Length && !Resampler.TestForceScalar ? GetThresholds8(transfer) : null;
+        if (thresholds is not null && !thresholds.Intervals.IsEmpty && Vector128.IsHardwareAccelerated)
+        {
+            var bytes = unsafe(MemoryMarshal.Cast<TSample, byte>(samples));
+            done = Vector256.IsHardwareAccelerated && Avx2.IsSupported ? StoreLinearVector256(values, bytes, alpha, thresholds.Intervals) : StoreLinearVector(values, bytes, alpha, thresholds.Intervals);
+        }
+
         StoreCore(values[GetWorkingLength(done, alpha)..], samples[done..], alpha, transfer, max, thresholds);
     }
 
@@ -684,6 +706,209 @@ internal static class WorkingSamples
             else
             {
                 unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 2 * i), narrowed.AsUInt64().ToScalar()); }
+            }
+        }
+
+        return i;
+    }
+
+    /// <summary>
+    /// Reads the linear light of the leading integer samples from their table, 2 samples at a time, and multiplies the colors
+    /// by the alpha sample as <see cref="LoadScalar"/> does (the alpha itself is multiplied by 1, which is exact).
+    /// </summary>
+    /// <returns>The number of samples converted, a multiple of 4 (2 without alpha).</returns>
+    private static int LoadLinearVector<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha, ReadOnlySpan<double> decode)
+        where TSample : unmanaged
+    {
+        Debug.Assert(working.Length >= GetWorkingLength(samples.Length, alpha));
+        Debug.Assert(decode.Length > (typeof(TSample) == typeof(byte) ? byte.MaxValue : ushort.MaxValue));
+        ref var input = ref unsafe(MemoryMarshal.GetReference(samples));
+        ref var table = ref unsafe(MemoryMarshal.GetReference(decode));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(working));
+        var length = samples.Length;
+        var i = 0;
+        if (alpha == WorkingAlpha.None)
+        {
+            for (; i + 2 <= length; i += 2)
+            {
+                var pair = Vector128.Create(Lookup(ref table, ref input, i), Lookup(ref table, ref input, i + 1));
+                unsafe { pair.StoreUnsafe(ref output, (nuint)i); }
+            }
+
+            return i;
+        }
+
+        for (var o = 0; i + 4 <= length; i += 4, o += 3)
+        {
+            var colors = Vector128.Create(Lookup(ref table, ref input, i), Lookup(ref table, ref input, i + 1));
+            var blue = Lookup(ref table, ref input, i + 2);
+            if (alpha == WorkingAlpha.Opaque)
+            {
+                unsafe { colors.StoreUnsafe(ref output, (nuint)o); }
+                unsafe { Unsafe.Add(ref output, o + 2) = blue; }
+                continue;
+            }
+
+            double a = ToInt(unsafe(Unsafe.Add(ref input, i + 3)));
+            var rest = Vector128.Create(blue, a);
+            if (alpha == WorkingAlpha.Premultiplied)
+            {
+                colors *= Vector128.Create(a);
+                rest *= Vector128.Create(a, 1);
+            }
+
+            unsafe { colors.StoreUnsafe(ref output, (nuint)i); }
+            unsafe { rest.StoreUnsafe(ref output, (nuint)(i + 2)); }
+        }
+
+        return i;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static double Lookup<TSample>(ref double table, ref TSample input, int index)
+        where TSample : unmanaged
+        => unsafe(Unsafe.Add(ref table, ToInt(Unsafe.Add(ref input, index))));
+
+    /// <summary>
+    /// Converts the leading <see cref="float"/> samples a pixel at a time: the widening to doubles is exact, and with
+    /// <see cref="WorkingAlpha.Premultiplied"/> the colors are multiplied by the same alpha as <see cref="LoadScalar"/>.
+    /// </summary>
+    /// <returns>The number of samples converted, a multiple of 4.</returns>
+    private static int LoadSingleVector(ReadOnlySpan<float> samples, Span<double> working, WorkingAlpha alpha)
+    {
+        Debug.Assert(working.Length >= GetWorkingLength(samples.Length, alpha));
+        ref var input = ref unsafe(MemoryMarshal.GetReference(samples));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(working));
+        var length = samples.Length;
+
+        // Opaque pixels are written 3 doubles apart, as 4 doubles whose last one the next pixel overwrites: the last pixel is
+        // left to the scalar loop
+        var end = alpha == WorkingAlpha.Opaque ? length - 1 : length;
+        var alphaLane = Vector128.Create(0, -1L).AsDouble();
+        var i = 0;
+        for (var o = 0; i + 4 <= end; i += 4, o += 3)
+        {
+            var pixel = unsafe(Vector128.LoadUnsafe(ref input, (nuint)i));
+            var low = Vector128.WidenLower(pixel);
+            var high = Vector128.WidenUpper(pixel);
+            if (alpha == WorkingAlpha.Premultiplied)
+            {
+                // The alpha itself is kept, not multiplied
+                var a = Vector128.Create(high.GetElement(1));
+                low *= a;
+                high = Vector128.ConditionalSelect(alphaLane, high, high * a);
+            }
+
+            var index = alpha == WorkingAlpha.Opaque ? o : i;
+            unsafe { low.StoreUnsafe(ref output, (nuint)index); }
+            unsafe { high.StoreUnsafe(ref output, (nuint)(index + 2)); }
+        }
+
+        return i;
+    }
+
+    /// <summary>
+    /// Encodes the leading linear-light working samples to 8-bit samples with the intervals of their thresholds
+    /// (<see cref="QuantizationThresholds.Quantize(Vector128{double}, ref double)"/>), 4 samples at a time: the same
+    /// divisions by the unrounded alpha and the same rounding of the alpha as <see cref="StoreCore"/>.
+    /// </summary>
+    /// <returns>The number of samples stored, a multiple of 4.</returns>
+    private static int StoreLinearVector(ReadOnlySpan<double> values, Span<byte> samples, WorkingAlpha alpha, ReadOnlySpan<double> intervals)
+    {
+        Debug.Assert(values.Length == GetWorkingLength(samples.Length, alpha));
+        ref var input = ref unsafe(MemoryMarshal.GetReference(values));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(samples));
+        ref var table = ref unsafe(MemoryMarshal.GetReference(intervals));
+        var maximum = Vector128.Create((double)byte.MaxValue);
+        var alphaLane = Vector128.Create(0, 0, 0, -1);
+
+        // Opaque pixels are read 3 doubles apart, as 4 doubles whose last one is the first of the next pixel: the last pixel
+        // is left to the scalar loop
+        var i = 0;
+        for (var o = 0; (alpha == WorkingAlpha.Opaque ? o : i) + 4 <= values.Length; i += 4, o += 3)
+        {
+            var index = alpha == WorkingAlpha.Opaque ? o : i;
+            var low = unsafe(Vector128.LoadUnsafe(ref input, (nuint)index));
+            var high = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(index + 2)));
+            Vector128<int> encoded;
+            if (alpha == WorkingAlpha.Premultiplied)
+            {
+                // Colors are divided by the unrounded alpha, alpha itself is rounded (a division by a zero alpha gives a
+                // meaningless value, replaced below)
+                var a = Vector128.Create(high.GetElement(1));
+                var colors = QuantizationThresholds.Quantize(low / a, ref table);
+                var rest = Vector128.ConditionalSelect(Vector128.Create(0, -1L).AsDouble(), RoundVector(high, maximum), QuantizationThresholds.Quantize(high / a, ref table));
+                encoded = Vector128.ConvertToInt32(Vector128.Narrow(colors, rest));
+
+                // A zero rounded alpha gives transparent black
+                encoded &= ~Vector128.Equals(Vector128.Shuffle(encoded, Vector128.Create(3)), Vector128<int>.Zero);
+            }
+            else
+            {
+                encoded = Vector128.ConvertToInt32(Vector128.Narrow(QuantizationThresholds.Quantize(low, ref table), QuantizationThresholds.Quantize(high, ref table)));
+                if (alpha == WorkingAlpha.Opaque)
+                {
+                    encoded = Vector128.ConditionalSelect(alphaLane, Vector128.Create((int)byte.MaxValue), encoded);
+                }
+                else if (alpha == WorkingAlpha.Preserved)
+                {
+                    encoded = Vector128.ConditionalSelect(alphaLane, Vector128.Create((int)unsafe(Unsafe.Add(ref output, i + 3))), encoded);
+                }
+            }
+
+            var narrowed = Vector128.Narrow(Vector128.Narrow(encoded.AsUInt32(), Vector128<uint>.Zero), Vector128<ushort>.Zero);
+            unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, i), narrowed.AsUInt32().ToScalar()); }
+        }
+
+        return i;
+    }
+
+    /// <summary>The AVX2 version of <see cref="StoreLinearVector"/>: 4 working samples (one pixel when there is alpha) per 256-bit vector, the thresholds gathered.</summary>
+    /// <returns>The number of samples stored, a multiple of 4.</returns>
+    private static int StoreLinearVector256(ReadOnlySpan<double> values, Span<byte> samples, WorkingAlpha alpha, ReadOnlySpan<double> intervals)
+    {
+        Debug.Assert(values.Length == GetWorkingLength(samples.Length, alpha));
+        ref var input = ref unsafe(MemoryMarshal.GetReference(values));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(samples));
+        var maximum = Vector256.Create((double)byte.MaxValue);
+        var alphaLane = Vector128.Create(0, 0, 0, -1);
+        var i = 0;
+        unsafe
+        {
+            fixed (double* table = intervals)
+            {
+                for (var o = 0; (alpha == WorkingAlpha.Opaque ? o : i) + 4 <= values.Length; i += 4, o += 3)
+                {
+                    var value = Vector256.LoadUnsafe(ref input, (nuint)(alpha == WorkingAlpha.Opaque ? o : i));
+                    Vector128<int> encoded;
+                    if (alpha == WorkingAlpha.Premultiplied)
+                    {
+                        // Colors are divided by the unrounded alpha, alpha itself is rounded (a division by a zero alpha
+                        // gives a meaningless value, replaced below)
+                        var a = Avx2.Permute4x64(value, 0b11_11_11_11);
+                        var rounded = Vector256.Min(Vector256.Max(Vector256.Floor(value + Vector256.Create(RoundingOffset)), Vector256<double>.Zero), maximum);
+                        var colors = Vector256.ConditionalSelect(Vector256.Create(0, 0, 0, -1L).AsDouble(), rounded, QuantizationThresholds.Quantize(value / a, table));
+                        encoded = Avx.ConvertToVector128Int32WithTruncation(colors);
+
+                        // A zero rounded alpha gives transparent black
+                        encoded &= ~Vector128.Equals(Vector128.Shuffle(encoded, Vector128.Create(3)), Vector128<int>.Zero);
+                    }
+                    else
+                    {
+                        encoded = Avx.ConvertToVector128Int32WithTruncation(QuantizationThresholds.Quantize(value, table));
+                        if (alpha == WorkingAlpha.Opaque)
+                        {
+                            encoded = Vector128.ConditionalSelect(alphaLane, Vector128.Create((int)byte.MaxValue), encoded);
+                        }
+                        else if (alpha == WorkingAlpha.Preserved)
+                        {
+                            encoded = Vector128.ConditionalSelect(alphaLane, Vector128.Create((int)Unsafe.Add(ref output, i + 3)), encoded);
+                        }
+                    }
+
+                    var narrowed = Vector128.Narrow(Vector128.Narrow(encoded.AsUInt32(), Vector128<uint>.Zero), Vector128<ushort>.Zero);
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, i), narrowed.AsUInt32().ToScalar());
+                }
             }
         }
 

@@ -332,4 +332,190 @@ public class DataMatrixTests
 
         return sb.ToString();
     }
+
+    [Fact]
+    public void Documentation_Decode()
+    {
+        #region Barcode2DDecoder_Decode
+        var dataMatrix = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+
+        var result = Barcode2DDecoder.Decode(dataMatrix);
+
+        Assert.Equal("https://www.meziantou.net", result.Text);
+        Assert.Equal(Barcode2DType.DataMatrix, result.Type);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DecodeGs1()
+    {
+        #region Barcode2DDecoder_DecodeGs1
+        var gs1 = Barcode2D.CreateGs1DataMatrix(
+            new Gs1Element("01", "09521234543213"),
+            new Gs1Element("10", "ABC123"),
+            new Gs1Element("21", "XYZ"));
+
+        var result = Barcode2DDecoder.Decode(gs1);
+
+        // The human-readable interpretation, and the bytes with a GS character for each FNC1 separator
+        Assert.True(result.IsGs1);
+        Assert.Equal("(01)09521234543213(10)ABC123(21)XYZ", result.Text);
+        Assert.Equal("010952123454321310ABC123\u001D21XYZ"u8.ToArray(), result.Bytes.ToArray());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("Hello")]
+    [InlineData("HELLO WORLD 0123456789")]
+    [InlineData("hello world, lowercase text")]
+    [InlineData("*ABC>123*\r*XYZ>456*\r")]
+    [InlineData("@ABC^_@DEF^_@GHI^_")]
+    [InlineData("0123456789012345678901234567890123456789")]
+    [InlineData("Mixed: ABC abc 123 *>\r @^_ \u007f\u0001")]
+    [InlineData("caf\u00E9 cr\u00E8me")]
+    [InlineData("Ελληνικά 漢字 😀")]
+    [InlineData("A")]
+    public void Decode_Text(string text)
+    {
+        text = System.Text.RegularExpressions.Regex.Unescape(text);
+        foreach (var shape in Enum.GetValues<DataMatrixShape>())
+        {
+            Barcode2D barcode;
+            try
+            {
+                barcode = Barcode2D.CreateDataMatrix(text, new DataMatrixOptions { Shape = shape });
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+
+            var result = Barcode2DDecoder.Decode(barcode);
+            Assert.Equal((text, false, 0), (result.Text, result.IsGs1, result.CorrectedErrorCount));
+            Assert.Equal(Ascii.IsValid(text) ? null : 26, result.EciAssignmentNumber);
+        }
+    }
+
+    [Fact]
+    public void Decode_Binary()
+    {
+        // Base 256 fields of 1 to 249 bytes have a 1-codeword length, longer ones a 2-codeword length
+        foreach (var length in (int[])[1, 2, 100, 249, 250, 251, 600, 1555])
+        {
+            var bytes = Enumerable.Range(0, length).Select(i => (byte)((i * 37) + 128)).ToArray();
+            var result = Barcode2DDecoder.Decode(Barcode2D.CreateDataMatrix(bytes));
+            Assert.Equal(bytes, result.Bytes.ToArray());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllSizes))]
+    public void Decode_AllSizes(int rows, int columns, int dataCodewords)
+    {
+        var options = new DataMatrixOptions { Height = rows, Width = columns };
+
+        // The digits fill the symbol, two per codeword
+        var digits = string.Concat(Enumerable.Range(0, dataCodewords * 2).Select(i => (char)('0' + (i % 10))));
+        Assert.Equal(digits, Barcode2DDecoder.Decode(Barcode2D.CreateDataMatrix(digits, options)).Text);
+        Assert.Equal("42", Barcode2DDecoder.Decode(Barcode2D.CreateDataMatrix("42", options)).Text);
+    }
+
+    [Fact]
+    public void Decode_AnyOrientation()
+    {
+        foreach (var barcode in new[] { Barcode2D.CreateDataMatrix("Orientation test 123"), Barcode2D.CreateDataMatrix("ABC-12345", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }) })
+        {
+            for (var transform = 0; transform < MatrixTransforms.Count; transform++)
+            {
+                var modules = MatrixTransforms.Apply(GetModules(barcode), transform);
+                Assert.Equal(barcode.Height == barcode.Width ? "Orientation test 123" : "ABC-12345", Barcode2DDecoder.Decode(modules, Barcode2DType.DataMatrix).Text);
+            }
+        }
+    }
+
+    [Fact]
+    public void Decode_CorrectsErrors()
+    {
+        var barcode = Barcode2D.CreateDataMatrix("Error correction of a Data Matrix symbol", new DataMatrixOptions { Height = 32, Width = 32 });
+        var modules = GetModules(barcode);
+
+        // Damage a few modules of the data region
+        for (var i = 0; i < 6; i++)
+        {
+            modules[5 + i, 5 + i] = !modules[5 + i, 5 + i];
+        }
+
+        var result = Barcode2DDecoder.Decode(modules, Barcode2DType.DataMatrix);
+        Assert.Equal("Error correction of a Data Matrix symbol", result.Text);
+        Assert.True(result.CorrectedErrorCount > 0);
+
+        // Damage half of the symbol: too many errors
+        for (var row = 1; row < 16; row++)
+        {
+            for (var column = 1; column < 31; column++)
+            {
+                modules[row, column] = !modules[row, column];
+            }
+        }
+
+        Assert.False(Barcode2DDecoder.TryDecode(modules, Barcode2DType.DataMatrix, out _));
+        Assert.Throws<FormatException>(() => Barcode2DDecoder.Decode(modules, Barcode2DType.DataMatrix));
+    }
+
+    [Fact]
+    public void Decode_LargestSymbolWithErrorsInEveryBlock()
+    {
+        var bytes = Enumerable.Range(0, 1500).Select(i => (byte)i).ToArray();
+        var barcode = Barcode2D.CreateDataMatrix(bytes);
+        var modules = GetModules(barcode);
+        for (var row = 1; row < barcode.Height - 1; row += 7)
+        {
+            modules[row, 40] = !modules[row, 40];
+        }
+
+        var result = Barcode2DDecoder.Decode(modules, Barcode2DType.DataMatrix);
+        Assert.Equal(bytes, result.Bytes.ToArray());
+        Assert.True(result.CorrectedErrorCount > 0);
+    }
+
+    [Fact]
+    public void Decode_UnlatchAsTheLastCodeword()
+    {
+        // zint ends the Text segment of this symbol with an unlatch, although a single codeword is left
+        string[] rows = ["AAAA8", "BE76C", "C4048", "E156C", "CB290", "DE164", "C7DF0", "E4E8C", "A0D58", "DD694", "F6E60", "A0E7C", "A8600", "D6894", "D14C0", "F92DC", "F6B90", "FFFFC"];
+        var modules = new bool[18, 18];
+        for (var row = 0; row < 18; row++)
+        {
+            for (var column = 0; column < 18; column++)
+            {
+                modules[row, column] = (Convert.ToInt32(rows[row][column / 4].ToString(), 16) & (8 >> (column % 4))) != 0;
+            }
+        }
+
+        Assert.Equal("hello world, lowercase", Barcode2DDecoder.Decode(modules, Barcode2DType.DataMatrix).Text);
+    }
+
+    [Fact]
+    public void Decode_InvalidArguments()
+    {
+        Assert.Throws<ArgumentNullException>("barcode", () => Barcode2DDecoder.Decode(null!));
+        Assert.Throws<ArgumentNullException>("modules", () => Barcode2DDecoder.Decode(null!, Barcode2DType.DataMatrix));
+        Assert.Throws<ArgumentOutOfRangeException>("type", () => Barcode2DDecoder.Decode(new bool[10, 10], (Barcode2DType)42));
+        Assert.Throws<FormatException>(() => Barcode2DDecoder.Decode(new bool[11, 11], Barcode2DType.DataMatrix));
+        Assert.Throws<FormatException>(() => Barcode2DDecoder.Decode(new bool[10, 10], Barcode2DType.DataMatrix));
+    }
+
+    internal static bool[,] GetModules(Barcode2D barcode)
+    {
+        var modules = new bool[barcode.Height, barcode.Width];
+        for (var row = 0; row < barcode.Height; row++)
+        {
+            for (var column = 0; column < barcode.Width; column++)
+            {
+                modules[row, column] = barcode[row, column];
+            }
+        }
+
+        return modules;
+    }
 }

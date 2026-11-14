@@ -97,7 +97,34 @@ internal static class AztecEncoder
         return baseSize + 1 + (2 * (((baseSize / 2) - 1) / 15));
     }
 
-    private static BinaryGaloisField GetField(int wordSize) => wordSize switch
+    // The positions of the modules without the reference grid, mapped to the positions in the symbol
+    internal static int[] GetAlignmentMap(bool compact, int layers)
+    {
+        var baseSize = (compact ? 11 : 14) + (layers * 4);
+        var alignmentMap = new int[baseSize];
+        if (compact)
+        {
+            for (var i = 0; i < alignmentMap.Length; i++)
+            {
+                alignmentMap[i] = i;
+            }
+
+            return alignmentMap;
+        }
+
+        var originalCenter = baseSize / 2;
+        var center = GetSize(compact, layers) / 2;
+        for (var i = 0; i < originalCenter; i++)
+        {
+            var offset = i + (i / 15);
+            alignmentMap[originalCenter - i - 1] = center - offset - 1;
+            alignmentMap[originalCenter + i] = center + offset + 1;
+        }
+
+        return alignmentMap;
+    }
+
+    internal static BinaryGaloisField GetField(int wordSize) => wordSize switch
     {
         4 => BinaryGaloisField.Aztec16,
         6 => BinaryGaloisField.Aztec64,
@@ -163,29 +190,9 @@ internal static class AztecEncoder
 
         var modeMessage = CreateModeMessage(compact, layers, dataWords.Length);
 
-        // The positions of the modules without the reference grid, mapped to the positions in the symbol
         var baseSize = (compact ? 11 : 14) + (layers * 4);
         var size = GetSize(compact, layers);
-        var alignmentMap = new int[baseSize];
-        if (compact)
-        {
-            for (var i = 0; i < alignmentMap.Length; i++)
-            {
-                alignmentMap[i] = i;
-            }
-        }
-        else
-        {
-            var originalCenter = baseSize / 2;
-            var center = size / 2;
-            for (var i = 0; i < originalCenter; i++)
-            {
-                var offset = i + (i / 15);
-                alignmentMap[originalCenter - i - 1] = center - offset - 1;
-                alignmentMap[originalCenter + i] = center + offset + 1;
-            }
-        }
-
+        var alignmentMap = GetAlignmentMap(compact, layers);
         var matrix = new bool[size, size];
 
         // The layers, from the outermost one, are made of 2-module wide strips that go clockwise around the core,
@@ -233,8 +240,10 @@ internal static class AztecEncoder
         {
             DrawBullsEye(matrix, middle, 7);
 
-            // The reference grid: every 16th row and column from the center has alternating modules
-            for (int i = 0, j = 0; i < (baseSize / 2) - 1; i += 15, j += 16)
+            // The reference grid: every 16th row and column from the center has alternating modules, up to the edges of
+            // the symbol. GetSize reserves a line every 15 modules of the base symbol, including the last one when
+            // (baseSize / 2) - 1 is a multiple of 15 (12 and 27 layers).
+            for (var j = 0; j <= middle; j += 16)
             {
                 for (var k = middle & 1; k < size; k += 2)
                 {

@@ -598,6 +598,43 @@ public sealed class ParallelFlowFragmentationTests : IDisposable
     }
 
     [Fact]
+    public void GridLanes_AvoidedBreakMovesToAnEarlierBreak()
+    {
+        // The third item cannot be broken and does not fit in the first column, but the break before it is avoided: the break moves
+        // before the second item, which is pushed with it (https://drafts.csswg.org/css-break-3/#breaking-rules); the other lane is
+        // fragmented independently
+        var document = Parse("""
+            <div style='display: grid-lanes; grid-template-columns: 25px 25px'>
+              <div id=a style='grid-column: 1; height: 20px'></div>
+              <div id=b style='grid-column: 1; height: 40px; break-inside: avoid'></div>
+              <div id=c style='grid-column: 1; height: 60px; break-inside: avoid; break-before: avoid'></div>
+              <div id=d style='grid-column: 2; height: 150px'></div>
+            </div>
+            """);
+        Assert.Equal([Rect(0, 0, 25, 20)], GetClientRects(document, "a"));
+        Assert.Equal([Rect(50, 0, 25, 40)], GetClientRects(document, "b"));
+        Assert.Equal([Rect(50, 40, 25, 60)], GetClientRects(document, "c"));
+        Assert.Equal([Rect(25, 0, 25, 100), Rect(75, 0, 25, 50)], GetClientRects(document, "d"));
+    }
+
+    [Fact]
+    public void GridLanes_AvoidedBreakMovesToAnEarlierBreakInAResumedContainer()
+    {
+        var document = Parse("""
+            <div style='display: grid-lanes; grid-template-columns: 25px 25px'>
+              <div id=a style='grid-column: 1; height: 120px; break-inside: avoid'></div>
+              <div id=b style='grid-column: 1; height: 20px; break-inside: avoid'></div>
+              <div id=c style='grid-column: 1; height: 40px; break-inside: avoid'></div>
+              <div id=d style='grid-column: 1; height: 60px; break-inside: avoid; break-before: avoid'></div>
+            </div>
+            """);
+        Assert.Equal([Rect(0, 0, 25, 100), Rect(50, 0, 25, 20)], GetClientRects(document, "a"));
+        Assert.Equal([Rect(50, 20, 25, 20)], GetClientRects(document, "b"));
+        Assert.Equal([Rect(100, 0, 25, 40)], GetClientRects(document, "c"));
+        Assert.Equal([Rect(100, 40, 25, 60)], GetClientRects(document, "d"));
+    }
+
+    [Fact]
     public void GridLanes_ForcedBreakInContainerThatFits()
     {
         // The container fits in the first column, but the forced break before the second item pushes it to the next column, where

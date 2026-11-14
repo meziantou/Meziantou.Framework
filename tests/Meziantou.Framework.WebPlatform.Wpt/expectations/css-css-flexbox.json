@@ -551,6 +551,9 @@
   "css/css-flexbox/animation/flex-basis-composition.html": {
     "total": 50
   },
+  "css/css-flexbox/animation/flex-basis-content-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-flexbox/animation/flex-basis-interpolation.html": {
     "total": 180
   },
@@ -583,6 +586,9 @@
   },
   "css/css-flexbox/anonymous-flex-item-006.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/anonymous-flex-item-document-white-space-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-flexbox/anonymous-flex-item-restyle.html": {
     "reftest": "PASS"
@@ -697,6 +703,9 @@
   },
   "css/css-flexbox/balance/balance-flex-grow.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/balance/balance-line-break-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-flexbox/balance/balance-line-break-overflowing-item.html": {
     "reftest": "PASS"
@@ -830,6 +839,9 @@
   "css/css-flexbox/break-nested-float-in-flex-item-002-print.html": {
     "reftest": "PASS"
   },
+  "css/css-flexbox/button-column-wrap-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-flexbox/canvas-contain-size.html": {
     "reftest": "PASS"
   },
@@ -854,6 +866,9 @@
   "css/css-flexbox/column-flex-child-with-overflow-scroll.html": {
     "total": 2
   },
+  "css/css-flexbox/column-intrinsic-size-aspect-ratio-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-flexbox/column-reverse-gap.html": {
     "total": 1
   },
@@ -863,8 +878,20 @@
   "css/css-flexbox/columns-height-set-via-top-bottom.html": {
     "total": 2
   },
+  "css/css-flexbox/contain-size-layout-abspos-flex-container-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-flexbox/content-height-with-scrollbars.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/crashtests/anonymous-block-merge.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-flexbox/crashtests/fragmented-anon-box-remove.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-flexbox/crashtests/insert-text.html": {
+    "crashtest": "PASS"
   },
   "css/css-flexbox/cross-axis-scrollbar.html": {
     "reftest": "PASS"
@@ -964,6 +991,9 @@
   },
   "css/css-flexbox/fixed-table-layout-with-percentage-width-in-flex-item.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/fixedpos-video-in-abspos-quirk-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-flexbox/flex-001.htm": {
     "reftest": "PASS"
@@ -1630,6 +1660,9 @@
   },
   "css/css-flexbox/flex-shrink-008.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/flex-shrink-large-value-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-flexbox/flex-svg-no-intrinsic-column-001.html": {
     "reftest": "PASS"
@@ -2996,6 +3029,12 @@
   "css/css-flexbox/flexitem-stretch-range.html": {
     "reftest": "PASS"
   },
+  "css/css-flexbox/frame-flex-item-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-flexbox/frameset-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-flexbox/gap-001-lr.html": {
     "reftest": "PASS"
   },
@@ -3449,11 +3488,23 @@
   "css/css-flexbox/inline-flex-column-image-load.html": {
     "reftest": "PASS"
   },
+  "css/css-flexbox/inline-flex-editing-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-flexbox/inline-flex-editing-with-updating-text-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-flexbox/inline-flex-frameset-main-axis-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-flexbox/inline-flex-min-content-height.html": {
     "reftest": "PASS"
   },
   "css/css-flexbox/inline-flex.html": {
     "total": 1
+  },
+  "css/css-flexbox/inline-flexbox-absurd-block-size-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-flexbox/inline-flexbox-vertical-rl-image-flexitem-crash-print.html": {
     "reftest": "PASS"
@@ -3535,6 +3586,9 @@
   },
   "css/css-flexbox/intrinsic-size/col-wrap-calc-size-001.html": {
     "total": 2
+  },
+  "css/css-flexbox/intrinsic-size/col-wrap-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-flexbox/intrinsic-size/col-wrap-dynamic-002.html": {
     "total": 2
@@ -3653,8 +3707,14 @@
   "css/css-flexbox/max-width-violation.html": {
     "total": 2
   },
+  "css/css-flexbox/min-height-min-content-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-flexbox/min-size-auto-overflow-clip.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/mixed-containing-blocks-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-flexbox/multiline-column-max-height.html": {
     "reftest": "PASS"
@@ -3673,6 +3733,21 @@
   },
   "css/css-flexbox/multiline-shrink-to-fit.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/negative-available-size-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-flexbox/negative-flex-margins-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-flexbox/negative-flex-rounding-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-flexbox/negative-item-margins-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-flexbox/negative-item-margins-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-flexbox/negative-margins-001.html": {
     "reftest": "PASS"
@@ -3715,6 +3790,9 @@
   },
   "css/css-flexbox/ortho-table-item-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/orthogonal-flex-item-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-flexbox/orthogonal-writing-modes-and-intrinsic-sizing.html": {
     "total": 2
@@ -4004,6 +4082,9 @@
   "css/css-flexbox/position-relative-stretch-height-001.html": {
     "total": 4
   },
+  "css/css-flexbox/position-relative-with-scrollable-with-abspos-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-flexbox/quirks-auto-block-size-with-percentage-item.html": {
     "total": 1
   },
@@ -4021,6 +4102,9 @@
   },
   "css/css-flexbox/relayout-intrinsic-block-size.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/remove-out-of-flow-child-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-flexbox/remove-wrapped-001.html": {
     "reftest": "PASS"
@@ -4243,5 +4327,8 @@
   },
   "css/css-flexbox/whitespace-in-flexitem-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/zero-content-size-with-scrollbar-crash.html": {
+    "crashtest": "PASS"
   }
 }

@@ -65,6 +65,12 @@ namespace Meziantou.Framework.NodeJs
         public static Meziantou.Framework.NodeJs.JSValue Date(System.DateTimeOffset value) => throw null;
         public static Meziantou.Framework.NodeJs.JSValue Number(System.Half value) => throw null;
         public static Meziantou.Framework.NodeJs.JSValue Number(System.Int128 value) => throw null;
+        #if NET11_0
+        public static Meziantou.Framework.NodeJs.JSValue Number(System.Numerics.BFloat16 value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(System.Numerics.Decimal128 value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(System.Numerics.Decimal32 value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(System.Numerics.Decimal64 value) => throw null;
+        #endif
         public static Meziantou.Framework.NodeJs.JSValue Number(System.UInt128 value) => throw null;
         public static Meziantou.Framework.NodeJs.JSValue Number(byte value) => throw null;
         public static Meziantou.Framework.NodeJs.JSValue Number(decimal value) => throw null;

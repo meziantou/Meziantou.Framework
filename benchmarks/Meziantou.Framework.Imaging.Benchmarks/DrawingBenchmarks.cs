@@ -20,6 +20,9 @@ public class DrawingBenchmarks : IDisposable
 
     private static readonly GradientStop[] Stops = [new(0, new Rgba64(65535, 0, 0, 65535)), new(0.3, new Rgba64(0, 65535, 0, 65535)), new(0.7, new Rgba64(0, 0, 65535, 32768)), new(1, new Rgba64(65535, 65535, 0, 65535))];
 
+    // Translucent stops: combined with the exclusive-or operator again and again, the alpha of a pixel settles at one half
+    private static readonly GradientStop[] TranslucentStops = [new(0, new Rgba64(65535, 0, 0, 26214)), new(0.3, new Rgba64(0, 65535, 0, 32768)), new(0.7, new Rgba64(0, 0, 65535, 22000)), new(1, new Rgba64(65535, 65535, 0, 30000))];
+
     private static readonly BlurFilter BoxBlurFilter = new(6);
     private static readonly BlurFilter WeightedBlurFilter = new(1.5);
     private static readonly DropShadowFilter ShadowFilter = new(new Rgba64(0, 0, 0, 40000), new PointD(6, 8), 8);
@@ -37,6 +40,8 @@ public class DrawingBenchmarks : IDisposable
     private Brush _horizontal = null!;
     private Brush _radial = null!;
     private Brush _sweep = null!;
+    private Brush _radialMultiply = null!;
+    private Brush _linearXor = null!;
     private FilterGraph _turbulence = null!;
     private PointD[] _dots = null!;
     private ImageBrush _repeatBrush = null!;
@@ -69,6 +74,8 @@ public class DrawingBenchmarks : IDisposable
         _horizontal = new LinearGradientBrush(new PointD(0, 0), new PointD(Width, 0), Stops);
         _radial = new RadialGradientBrush(new PointD(512, 384), 300, Stops) { SpreadMode = GradientSpreadMode.Repeat };
         _sweep = new SweepGradientBrush(new PointD(512, 384), Stops);
+        _radialMultiply = new RadialGradientBrush(new PointD(512, 384), 300, Stops) { SpreadMode = GradientSpreadMode.Repeat, BlendMode = BlendMode.Multiply };
+        _linearXor = new LinearGradientBrush(new PointD(40, 30), new PointD(980, 700), TranslucentStops) { SpreadMode = GradientSpreadMode.Reflect, CompositeMode = CompositeMode.Xor };
         _turbulence = new FilterGraph(new TurbulencePrimitive(FilterTurbulenceType.FractalNoise, 0.02, 0.03, 4, 7) { Subregion = new RectangleD(0, 0, 512, 384) });
 
         // The dots of a text: small shapes on a grid, at positions that are not whole pixels
@@ -195,6 +202,22 @@ public class DrawingBenchmarks : IDisposable
     public int FillSweepGradient()
     {
         _image.Draw(_sweep, static (canvas, brush) => canvas.Fill(brush));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Radial gradient with four stops, repeated, multiply blend: fill of the canvas")]
+    public int FillRadialGradientMultiply()
+    {
+        _image.Draw(_radialMultiply, (canvas, brush) => canvas.Fill(brush));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Linear gradient with four translucent stops, reflected, exclusive-or operator: fill of an ellipse covering most of the canvas")]
+    public int FillGradientXor()
+    {
+        _image.Draw(_linearXor, (canvas, brush) => canvas.FillEllipse(brush, new PointD(512, 384), 500, 370));
         return _image.Width;
     }
 
@@ -368,6 +391,14 @@ public class DrawingBenchmarks : IDisposable
     public int FillMultiply()
     {
         _image.Draw(static canvas => canvas.FillEllipse(new SolidBrush(new Rgba64(60000, 40000, 20000, 65535)) { BlendMode = BlendMode.Multiply }, new PointD(512, 384), 400, 300));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Translucent ellipse combined with the exclusive-or operator: the pixels it covers keep about half their opacity")]
+    public int FillXor()
+    {
+        _image.Draw(canvas => canvas.FillEllipse(new SolidBrush(new Rgba32(30, 120, 200, 100)) { CompositeMode = CompositeMode.Xor }, new PointD(512, 384), 400, 300));
         return _image.Width;
     }
 }

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Pdf.VectorGraphics</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.2</Version>
     <Description>Draws the scenes of Meziantou.Framework.VectorGraphics (charts, diagrams) as PDF with Meziantou.Framework.Pdf: vector shapes, gradients and text, with subsets of the fonts of the scene embedded.</Description>
     <PackageTags>pdf;svg;vector;graphics;scene;chart;diagram;drawing</PackageTags>
 

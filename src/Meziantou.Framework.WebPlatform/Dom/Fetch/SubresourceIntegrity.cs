@@ -8,18 +8,28 @@ internal static class SubresourceIntegrity
     private static readonly System.Buffers.SearchValues<char> Base64Characters = System.Buffers.SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/-_");
 
     /// <summary>
-    /// https://w3c.github.io/webappsec-subresource-integrity/#does-response-match-metadatalist: the digest of the body must
-    /// match one of the metadata of the strongest algorithm (SHA-256, SHA-384 or SHA-512). Metadata without valid hash is a
-    /// match, and an opaque response (a cross-origin response of a no-cors request) matches no hash.
+    /// https://w3c.github.io/webappsec-subresource-integrity/#does-response-match-metadatalist and
+    /// https://wicg.github.io/signature-based-sri/#client-initiated-integrity-checks: the digest of the body must match one of
+    /// the metadata of the strongest algorithm (SHA-256, SHA-384 or SHA-512), and, when the metadata have Ed25519 public keys
+    /// (<c>ed25519-</c>), the response must have a valid signature of one of them (<paramref name="signatures"/>). Metadata
+    /// without valid hash nor key is a match, and an opaque response (a cross-origin response of a no-cors request) matches
+    /// no metadata.
     /// </summary>
-    public static bool Matches(ReadOnlySpan<byte> body, bool opaque, string metadata)
+    public static bool Matches(ReadOnlySpan<byte> body, bool opaque, string metadata, IntegritySignatureResult? signatures = null)
     {
         var items = ParseItems(metadata);
-        if (items.Count == 0)
+        var keys = ParsePublicKeys(metadata);
+        if (items.Count == 0 && keys.Count == 0)
             return true;
 
         if (opaque)
             return false;
+
+        if (keys.Count > 0 && !keys.Exists(key => signatures?.ValidKeys.Any(validKey => DecodeKey(key) is { } decoded && decoded.AsSpan().SequenceEqual(validKey)) == true))
+            return false;
+
+        if (items.Count == 0)
+            return true;
 
         var strongest = items.Max(item => item.Strength);
         foreach (var (strength, algorithm, value) in items)
@@ -87,7 +97,52 @@ internal static class SubresourceIntegrity
             result.Add(algorithm + "-" + value);
         }
 
+        foreach (var key in ParsePublicKeys(metadata))
+        {
+            result.Add("ed25519-" + key);
+        }
+
         return result;
+    }
+
+    /// <summary>
+    /// https://wicg.github.io/signature-based-sri/#parsing: the Ed25519 public keys of the metadata (the values of the
+    /// <c>ed25519-</c> expressions, in base64), in order and without duplicates.
+    /// </summary>
+    public static List<string> ParsePublicKeys(string metadata)
+    {
+        var keys = new List<string>();
+        foreach (var token in metadata.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var expression = token.Split('?')[0];
+            var dash = expression.IndexOf('-', StringComparison.Ordinal);
+            if (dash < 0 || !expression.AsSpan(0, dash).Equals("ed25519", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var value = expression[(dash + 1)..];
+            var digits = value.AsSpan().TrimEnd('=');
+            if (digits.Length > 0 && !digits.ContainsAnyExcept(Base64Characters) && !keys.Contains(value, StringComparer.Ordinal))
+            {
+                keys.Add(value);
+            }
+        }
+
+        return keys;
+    }
+
+    /// <summary>The bytes of a public key of the metadata (base64 or base64url), or null.</summary>
+    private static byte[]? DecodeKey(string key)
+    {
+        var base64 = key.Replace('-', '+').Replace('_', '/').TrimEnd('=');
+        base64 = base64.PadRight(base64.Length + ((4 - (base64.Length % 4)) % 4), '=');
+        try
+        {
+            return Convert.FromBase64String(base64);
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
     }
 
     private static List<(int Strength, string Algorithm, string Value)> ParseItems(string metadata)

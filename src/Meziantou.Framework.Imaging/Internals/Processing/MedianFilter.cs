@@ -1,5 +1,7 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -29,7 +31,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// counts the low 16 bits of the keys of one group only (the <c>active</c> group of the sample), which gives the median.
 /// When the median moves to another group, the second tree is rebuilt from the keys of the window: that costs the square
 /// of the radius, but only when the median changes groups (65,536 keys per group: for numbers between 0.5 and 1, a group
-/// spans 1/256). A window of 9 keys (a radius of 1) is sorted instead: that is faster.
+/// spans 1/256).
+/// </para>
+/// <para>
+/// A window of 9 keys (a radius of 1) is selected by a network of minimums and maximums instead
+/// (<see cref="SelectRow"/>), for many samples at a time in vectors: the keys have the size of the samples, and the 9 keys
+/// of a sample are at the same index of the 3 rows, shifted by 0, 1 and 2 pixels. The median of a window of 25 keys (a
+/// radius of 2) is selected the same way (<see cref="SelectMedian25"/>), its columns being sorted once for the 5 windows
+/// that read them. A network only selects one of the keys, so it gives the key the histograms give.
 /// </para>
 /// <para>
 /// The frame is rewritten in place, band by band, with the ring and the halos of the convolution
@@ -144,6 +153,23 @@ internal static class MedianFilter
         where TSample : unmanaged
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (plan.UsesSortingNetwork)
+        {
+            if (typeof(TSample) == typeof(byte))
+            {
+                ApplyNetwork<TSample, byte>(storage, plan, cancellationToken);
+            }
+            else if (typeof(TSample) == typeof(float))
+            {
+                ApplyNetwork<TSample, uint>(storage, plan, cancellationToken);
+            }
+            else
+            {
+                ApplyNetwork<TSample, ushort>(storage, plan, cancellationToken);
+            }
+
+            return;
+        }
 
         // Every band reads its halos from the original pixels: load them all before the first row is rewritten
         var workers = plan.Workers;
@@ -223,17 +249,7 @@ internal static class MedianFilter
                     cancellationToken.ThrowIfCancellationRequested();
                 }
 
-                if (plan.SortsWindows)
-                {
-                    if (y > start && y + radius < end)
-                    {
-                        LoadRow<TSample>(storage, y + radius, plan, GetRingRow(plan, keys, y + radius));
-                    }
-
-                    GetWindowRows(plan, start, end, y, rows);
-                    SortWindows(plan, keys, rows, unsafe(MemoryMarshal.Cast<int, uint>(counts)), output, rank);
-                }
-                else if (y == start)
+                if (y == start)
                 {
                     GetWindowRows(plan, start, end, y, rows);
                     for (var j = 0; j < diameter; j++)
@@ -271,10 +287,7 @@ internal static class MedianFilter
         finally
         {
             // The scratch serves the next frame
-            if (!plan.SortsWindows)
-            {
-                counts.Clear();
-            }
+            counts.Clear();
         }
     }
 
@@ -318,31 +331,6 @@ internal static class MedianFilter
             for (var c = 0; c < channels; c++)
             {
                 output[(x * channels) + c] = THistograms.Select(plan, keys, counts, active, rows, x, c, rank);
-            }
-        }
-    }
-
-    /// <summary>Sets the medians of a row by sorting the keys of every window (small windows of 32-bit keys).</summary>
-    private static void SortWindows(MedianPlan plan, ReadOnlySpan<uint> keys, ReadOnlySpan<int> rows, Span<uint> window, Span<uint> output, int rank)
-    {
-        var channels = plan.Channels;
-        var diameter = plan.Diameter;
-        window = window[..(diameter * diameter)];
-        for (var x = 0; x < plan.Size.Width; x++)
-        {
-            for (var c = 0; c < channels; c++)
-            {
-                var count = 0;
-                foreach (var row in rows)
-                {
-                    for (var i = 0; i < diameter; i++)
-                    {
-                        window[count++] = keys[row + ((x + i) * channels) + c];
-                    }
-                }
-
-                window.Sort();
-                output[(x * channels) + c] = window[rank];
             }
         }
     }
@@ -549,5 +537,839 @@ internal static class MedianFilter
         {
             padded.Slice((radius + sourceColumn) * channels, channels).CopyTo(destination);
         }
+    }
+
+    /// <summary>
+    /// Filters with a network (<see cref="MedianPlan.UsesSortingNetwork"/>): the keys of the rows have the size of the
+    /// samples (<typeparamref name="TKey"/>: <see cref="byte"/>, <see cref="ushort"/> for 16-bit and half-precision samples,
+    /// <see cref="uint"/> for single-precision ones), and the selected keys are written to the row, then turned back into
+    /// samples.
+    /// </summary>
+    private static void ApplyNetwork<TSample, TKey>(PixelStorage storage, MedianPlan plan, CancellationToken cancellationToken)
+        where TSample : unmanaged
+        where TKey : unmanaged, IBinaryInteger<TKey>, IUnsignedNumber<TKey>
+    {
+        // Every band reads its halos from the original pixels: load them all before the first row is rewritten
+        var workers = plan.Workers;
+        var paddedLength = plan.PaddedLength;
+        var radius = plan.Radius;
+        for (var band = 0; band < workers; band++)
+        {
+            var keys = GetNetworkKeys<TKey>(plan, band);
+            var start = plan.GetBandStart(band);
+            var end = plan.GetBandStart(band + 1);
+            for (var i = 0; i < radius; i++)
+            {
+                LoadKeys<TSample, TKey>(storage, start - radius + i, plan, keys.Slice((plan.Diameter + i) * paddedLength, paddedLength));
+                LoadKeys<TSample, TKey>(storage, end + i, plan, keys.Slice((plan.Diameter + radius + i) * paddedLength, paddedLength));
+            }
+        }
+
+        if (workers == 1)
+        {
+            FilterBandNetwork<TSample, TKey>(storage, plan, 0, cancellationToken);
+            return;
+        }
+
+        RowBands.RunParallel(workers, band => FilterBandNetwork<TSample, TKey>(storage, plan, band, cancellationToken));
+    }
+
+    private static void FilterBandNetwork<TSample, TKey>(PixelStorage storage, MedianPlan plan, int band, CancellationToken cancellationToken)
+        where TSample : unmanaged
+        where TKey : unmanaged, IBinaryInteger<TKey>, IUnsignedNumber<TKey>
+    {
+        var keys = GetNetworkKeys<TKey>(plan, band);
+        var start = plan.GetBandStart(band);
+        var end = plan.GetBandStart(band + 1);
+        var paddedLength = plan.PaddedLength;
+        var length = plan.Size.Width * plan.Channels;
+        var radius = plan.Radius;
+        var diameter = plan.Diameter;
+        Span<int> rows = stackalloc int[diameter];
+
+        // The sorted columns of 5x5 windows, after the ring and the halos
+        var sorted = radius == 2 ? keys.Slice((diameter + (2 * radius)) * paddedLength, 5 * paddedLength) : [];
+
+        // The rows of the band in the window of its first row
+        for (var y = start; y <= start + radius && y < end; y++)
+        {
+            LoadKeys<TSample, TKey>(storage, y, plan, keys.Slice(y % diameter * paddedLength, paddedLength));
+        }
+
+        for (var y = start; y < end; y++)
+        {
+            if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            if (y > start && y + radius < end)
+            {
+                LoadKeys<TSample, TKey>(storage, y + radius, plan, keys.Slice((y + radius) % diameter * paddedLength, paddedLength));
+            }
+
+            // The keys of the row are in the ring: the row receives the selected keys, then the samples of these keys
+            GetWindowRows(plan, start, end, y, rows);
+            var output = unsafe(MemoryMarshal.Cast<byte, TKey>(storage.GetRowSpanCore(y)))[..length];
+            if (radius == 1)
+            {
+                SelectRow<TKey>(keys.Slice(rows[0], paddedLength), keys.Slice(rows[1], paddedLength), keys.Slice(rows[2], paddedLength), output, plan.Channels, plan.Rank);
+            }
+            else
+            {
+                SelectMedian25<TKey>(keys, rows, paddedLength, sorted, output, plan.Channels);
+            }
+
+            ConvertKeys<TSample, TKey>(output, toKeys: false);
+        }
+    }
+
+    private static Span<TKey> GetNetworkKeys<TKey>(MedianPlan plan, int worker)
+        where TKey : unmanaged
+        => unsafe(MemoryMarshal.Cast<uint, TKey>(plan.GetKeys(worker)));
+
+    /// <summary>Loads the keys of row <paramref name="y"/> as <see cref="LoadRow"/> does, in keys of the size of the samples.</summary>
+    private static void LoadKeys<TSample, TKey>(PixelStorage storage, int y, MedianPlan plan, Span<TKey> destination)
+        where TSample : unmanaged
+        where TKey : unmanaged, IBinaryInteger<TKey>, IUnsignedNumber<TKey>
+    {
+        var zero = TKey.CreateTruncating(ToKey<TSample>(default));
+        var source = plan.MapRow(y);
+        if (source < 0)
+        {
+            destination.Fill(zero);
+            return;
+        }
+
+        var channels = plan.Channels;
+        var width = plan.Size.Width;
+        var radius = plan.Radius;
+        var row = destination.Slice(radius * channels, width * channels);
+        var samples = unsafe(MemoryMarshal.Cast<byte, TKey>(storage.GetRowSpanCore(source)));
+        samples[..row.Length].CopyTo(row);
+        ConvertKeys<TSample, TKey>(row, toKeys: true);
+        for (var i = 0; i < radius; i++)
+        {
+            FillPadding(destination, i, plan.MapColumn(i - radius), radius, channels, zero);
+            FillPadding(destination, radius + width + i, plan.MapColumn(width + i), radius, channels, zero);
+        }
+    }
+
+    private static void FillPadding<TKey>(Span<TKey> padded, int pixel, int sourceColumn, int radius, int channels, TKey zero)
+        where TKey : unmanaged
+    {
+        var destination = padded.Slice(pixel * channels, channels);
+        if (sourceColumn < 0)
+        {
+            destination.Fill(zero);
+        }
+        else
+        {
+            padded.Slice((radius + sourceColumn) * channels, channels).CopyTo(destination);
+        }
+    }
+
+    /// <summary>
+    /// Replaces the bits of half-precision or single-precision samples by their keys (<see cref="ToKey"/>), or keys by the
+    /// bits of their samples (<see cref="FromKey"/>), in place; the keys of 8-bit and 16-bit samples are their bits.
+    /// </summary>
+    internal static void ConvertKeys<TSample, TKey>(Span<TKey> values, bool toKeys)
+        where TSample : unmanaged
+        where TKey : unmanaged
+    {
+        if (typeof(TSample) == typeof(float))
+        {
+            var bits = unsafe(MemoryMarshal.Cast<TKey, uint>(values));
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar)
+            {
+                ref var start = ref unsafe(MemoryMarshal.GetReference(bits));
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    for (; i + Vector256<uint>.Count <= bits.Length; i += Vector256<uint>.Count)
+                    {
+                        var value = unsafe(Vector256.LoadUnsafe(ref start, (nuint)i));
+                        unsafe { (toKeys ? SingleToKeys(value) : KeysToSingle(value)).StoreUnsafe(ref start, (nuint)i); }
+                    }
+                }
+
+                for (; i + Vector128<uint>.Count <= bits.Length; i += Vector128<uint>.Count)
+                {
+                    var value = unsafe(Vector128.LoadUnsafe(ref start, (nuint)i));
+                    unsafe { (toKeys ? SingleToKeys(value) : KeysToSingle(value)).StoreUnsafe(ref start, (nuint)i); }
+                }
+            }
+
+            for (; i < bits.Length; i++)
+            {
+                bits[i] = toKeys ? ToKey(BitConverter.UInt32BitsToSingle(bits[i])) : BitConverter.SingleToUInt32Bits(FromKey<float>(bits[i]));
+            }
+        }
+        else if (typeof(TSample) == typeof(Half))
+        {
+            var bits = unsafe(MemoryMarshal.Cast<TKey, ushort>(values));
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar)
+            {
+                ref var start = ref unsafe(MemoryMarshal.GetReference(bits));
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    for (; i + Vector256<ushort>.Count <= bits.Length; i += Vector256<ushort>.Count)
+                    {
+                        var value = unsafe(Vector256.LoadUnsafe(ref start, (nuint)i));
+                        unsafe { (toKeys ? HalfToKeys(value) : KeysToHalf(value)).StoreUnsafe(ref start, (nuint)i); }
+                    }
+                }
+
+                for (; i + Vector128<ushort>.Count <= bits.Length; i += Vector128<ushort>.Count)
+                {
+                    var value = unsafe(Vector128.LoadUnsafe(ref start, (nuint)i));
+                    unsafe { (toKeys ? HalfToKeys(value) : KeysToHalf(value)).StoreUnsafe(ref start, (nuint)i); }
+                }
+            }
+
+            for (; i < bits.Length; i++)
+            {
+                bits[i] = toKeys ? (ushort)ToKey(BitConverter.UInt16BitsToHalf(bits[i])) : BitConverter.HalfToUInt16Bits(FromKey<Half>(bits[i]));
+            }
+        }
+    }
+
+    // The keys of ToKey: a number that is not a number is made positive, then the sign bit is set for positive numbers and
+    // every bit is inverted for negative ones; FromKey inverts every bit of the keys whose high bit is clear
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<uint> SingleToKeys(Vector128<uint> value)
+    {
+        var magnitude = value & Vector128.Create(0x7FFF_FFFFu);
+        value = Vector128.ConditionalSelect(Vector128.GreaterThan(magnitude.AsInt32(), Vector128.Create(0x7F80_0000)).AsUInt32(), magnitude, value);
+        return value ^ (Vector128.ShiftRightArithmetic(value.AsInt32(), 31).AsUInt32() | Vector128.Create(0x8000_0000u));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<uint> SingleToKeys(Vector256<uint> value)
+    {
+        var magnitude = value & Vector256.Create(0x7FFF_FFFFu);
+        value = Vector256.ConditionalSelect(Vector256.GreaterThan(magnitude.AsInt32(), Vector256.Create(0x7F80_0000)).AsUInt32(), magnitude, value);
+        return value ^ (Vector256.ShiftRightArithmetic(value.AsInt32(), 31).AsUInt32() | Vector256.Create(0x8000_0000u));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<uint> KeysToSingle(Vector128<uint> key) => key ^ (~Vector128.ShiftRightArithmetic(key.AsInt32(), 31).AsUInt32() | Vector128.Create(0x8000_0000u));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<uint> KeysToSingle(Vector256<uint> key) => key ^ (~Vector256.ShiftRightArithmetic(key.AsInt32(), 31).AsUInt32() | Vector256.Create(0x8000_0000u));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<ushort> HalfToKeys(Vector128<ushort> value)
+    {
+        var magnitude = value & Vector128.Create((ushort)0x7FFF);
+        value = Vector128.ConditionalSelect(Vector128.GreaterThan(magnitude.AsInt16(), Vector128.Create((short)0x7C00)).AsUInt16(), magnitude, value);
+        return value ^ (Vector128.ShiftRightArithmetic(value.AsInt16(), 15).AsUInt16() | Vector128.Create((ushort)0x8000));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<ushort> HalfToKeys(Vector256<ushort> value)
+    {
+        var magnitude = value & Vector256.Create((ushort)0x7FFF);
+        value = Vector256.ConditionalSelect(Vector256.GreaterThan(magnitude.AsInt16(), Vector256.Create((short)0x7C00)).AsUInt16(), magnitude, value);
+        return value ^ (Vector256.ShiftRightArithmetic(value.AsInt16(), 15).AsUInt16() | Vector256.Create((ushort)0x8000));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<ushort> KeysToHalf(Vector128<ushort> key) => key ^ (~Vector128.ShiftRightArithmetic(key.AsInt16(), 15).AsUInt16() | Vector128.Create((ushort)0x8000));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<ushort> KeysToHalf(Vector256<ushort> key) => key ^ (~Vector256.ShiftRightArithmetic(key.AsInt16(), 15).AsUInt16() | Vector256.Create((ushort)0x8000));
+
+    /// <summary>
+    /// Sets every key of <paramref name="output"/> to the key of rank <paramref name="rank"/> of its window of 3x3 pixels: key
+    /// <c>i</c> of the output is selected among the keys <c>i</c>, <c>i + channels</c> and <c>i + 2 channels</c> of the 3
+    /// padded rows. The median sorts the 3 keys of each column and takes the median of the largest of the smallest keys, the
+    /// median of the middle keys and the smallest of the largest keys; other ranks sort the 9 keys (25 exchanges).
+    /// </summary>
+    internal static void SelectRow<TKey>(ReadOnlySpan<TKey> top, ReadOnlySpan<TKey> middle, ReadOnlySpan<TKey> bottom, Span<TKey> output, int channels, int rank)
+        where TKey : unmanaged, IBinaryInteger<TKey>, IUnsignedNumber<TKey>
+    {
+        var done = 0;
+        if (Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar)
+        {
+            done = Vector512.IsHardwareAccelerated && output.Length >= Vector512<TKey>.Count ? SelectRowVectors<TKey, Vector512<TKey>, Lanes512<TKey>>(top, middle, bottom, output, channels, rank)
+                : Vector256.IsHardwareAccelerated && output.Length >= Vector256<TKey>.Count ? SelectRowVectors<TKey, Vector256<TKey>, Lanes256<TKey>>(top, middle, bottom, output, channels, rank)
+                : SelectRowVectors<TKey, Vector128<TKey>, Lanes128<TKey>>(top, middle, bottom, output, channels, rank);
+        }
+
+        for (var i = done; i < output.Length; i++)
+        {
+            var c1 = i + channels;
+            var c2 = c1 + channels;
+            output[i] = rank == 4
+                ? Median9<TKey, TKey, ScalarLanes<TKey>>(top[i], top[c1], top[c2], middle[i], middle[c1], middle[c2], bottom[i], bottom[c1], bottom[c2])
+                : Select9<TKey, TKey, ScalarLanes<TKey>>(top[i], top[c1], top[c2], middle[i], middle[c1], middle[c2], bottom[i], bottom[c1], bottom[c2], rank);
+        }
+    }
+
+    /// <summary>The reference of <see cref="SelectRow"/>: the 9 keys of every window are sorted.</summary>
+    internal static void SelectRowScalar<TKey>(ReadOnlySpan<TKey> top, ReadOnlySpan<TKey> middle, ReadOnlySpan<TKey> bottom, Span<TKey> output, int channels, int rank)
+        where TKey : unmanaged, IBinaryInteger<TKey>
+    {
+        Span<TKey> window = stackalloc TKey[9];
+        for (var i = 0; i < output.Length; i++)
+        {
+            for (var k = 0; k < 3; k++)
+            {
+                window[k] = top[i + (k * channels)];
+                window[3 + k] = middle[i + (k * channels)];
+                window[6 + k] = bottom[i + (k * channels)];
+            }
+
+            window.Sort();
+            output[i] = window[rank];
+        }
+    }
+
+    /// <summary>
+    /// Sets every key of <paramref name="output"/> to the median of its window of 5x5 pixels, whose rows are at
+    /// <paramref name="rows"/> in <paramref name="keys"/>. The keys of each column of 5 are sorted first, once for the 5
+    /// windows that read it (<paramref name="sorted"/>: 5 rows, the smallest keys first), then a network of 110 minimums and
+    /// maximums selects the median of the 25 sorted keys of a window (<see cref="Median25"/>).
+    /// </summary>
+    internal static void SelectMedian25<TKey>(ReadOnlySpan<TKey> keys, ReadOnlySpan<int> rows, int paddedLength, Span<TKey> sorted, Span<TKey> output, int channels)
+        where TKey : unmanaged, IBinaryInteger<TKey>, IUnsignedNumber<TKey>
+    {
+        ref var r0 = ref unsafe(MemoryMarshal.GetReference(keys.Slice(rows[0], paddedLength)));
+        ref var r1 = ref unsafe(MemoryMarshal.GetReference(keys.Slice(rows[1], paddedLength)));
+        ref var r2 = ref unsafe(MemoryMarshal.GetReference(keys.Slice(rows[2], paddedLength)));
+        ref var r3 = ref unsafe(MemoryMarshal.GetReference(keys.Slice(rows[3], paddedLength)));
+        ref var r4 = ref unsafe(MemoryMarshal.GetReference(keys.Slice(rows[4], paddedLength)));
+        ref var s0 = ref unsafe(MemoryMarshal.GetReference(sorted[..(5 * paddedLength)]));
+        ref var s1 = ref unsafe(Unsafe.Add(ref s0, paddedLength));
+        ref var s2 = ref unsafe(Unsafe.Add(ref s1, paddedLength));
+        ref var s3 = ref unsafe(Unsafe.Add(ref s2, paddedLength));
+        ref var s4 = ref unsafe(Unsafe.Add(ref s3, paddedLength));
+        ref var o = ref unsafe(MemoryMarshal.GetReference(output));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(output.Length + (4 * channels), paddedLength, nameof(output));
+
+        var c1 = (nuint)channels;
+        var c2 = 2 * c1;
+        var c3 = 3 * c1;
+        var c4 = 4 * c1;
+        var length = (nuint)paddedLength;
+        var vectors = Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar;
+        nuint i = 0;
+        if (vectors && Vector512.IsHardwareAccelerated && length >= (nuint)Vector512<TKey>.Count)
+        {
+            i = SortColumnsVectors<TKey, Vector512<TKey>, Lanes512<TKey>>(ref r0, ref r1, ref r2, ref r3, ref r4, ref s0, length);
+        }
+        else if (vectors && Vector256.IsHardwareAccelerated && length >= (nuint)Vector256<TKey>.Count)
+        {
+            i = SortColumnsVectors<TKey, Vector256<TKey>, Lanes256<TKey>>(ref r0, ref r1, ref r2, ref r3, ref r4, ref s0, length);
+        }
+        else if (vectors && length >= (nuint)Vector128<TKey>.Count)
+        {
+            i = SortColumnsVectors<TKey, Vector128<TKey>, Lanes128<TKey>>(ref r0, ref r1, ref r2, ref r3, ref r4, ref s0, length);
+        }
+
+        for (; i < length; i++)
+        {
+            SortColumn<TKey, TKey, ScalarLanes<TKey>>(ref r0, ref r1, ref r2, ref r3, ref r4, ref s0, i, length);
+        }
+
+        var count = (nuint)output.Length;
+        i = 0;
+        if (vectors && Vector512.IsHardwareAccelerated && count >= (nuint)Vector512<TKey>.Count)
+        {
+            i = Median25Vectors<TKey, Vector512<TKey>, Lanes512<TKey>>(ref s0, ref s1, ref s2, ref s3, ref s4, ref o, count, c1);
+        }
+        else if (vectors && Vector256.IsHardwareAccelerated && count >= (nuint)Vector256<TKey>.Count)
+        {
+            i = Median25Vectors<TKey, Vector256<TKey>, Lanes256<TKey>>(ref s0, ref s1, ref s2, ref s3, ref s4, ref o, count, c1);
+        }
+        else if (vectors && count >= (nuint)Vector128<TKey>.Count)
+        {
+            i = Median25Vectors<TKey, Vector128<TKey>, Lanes128<TKey>>(ref s0, ref s1, ref s2, ref s3, ref s4, ref o, count, c1);
+        }
+
+        for (; i < count; i++)
+        {
+            ScalarLanes<TKey>.Store(Median25<TKey, TKey, ScalarLanes<TKey>>(ref s0, ref s1, ref s2, ref s3, ref s4, i, c1, c2, c3, c4), ref o, i);
+        }
+    }
+
+    /// <summary>The reference of <see cref="SelectMedian25"/>: the 25 keys of every window are sorted.</summary>
+    internal static void SelectMedian25Scalar<TKey>(ReadOnlySpan<TKey> keys, ReadOnlySpan<int> rows, int paddedLength, Span<TKey> output, int channels)
+        where TKey : unmanaged, IBinaryInteger<TKey>
+    {
+        Span<TKey> window = stackalloc TKey[25];
+        for (var i = 0; i < output.Length; i++)
+        {
+            for (var j = 0; j < 5; j++)
+            {
+                var row = keys.Slice(rows[j], paddedLength);
+                for (var k = 0; k < 5; k++)
+                {
+                    window[(5 * j) + k] = row[i + (k * channels)];
+                }
+            }
+
+            window.Sort();
+            output[i] = window[12];
+        }
+    }
+
+    /// <summary>Sorts whole vectors of columns, the last one overlapping the one before it. Returns the number of columns sorted.</summary>
+    private static nuint SortColumnsVectors<TKey, TVector, TLanes>(ref TKey r0, ref TKey r1, ref TKey r2, ref TKey r3, ref TKey r4, ref TKey sorted, nuint length)
+        where TKey : unmanaged
+        where TVector : struct
+        where TLanes : struct, ILanes<TKey, TVector>
+    {
+        var count = (nuint)TLanes.Count;
+        var last = length - count;
+        nuint i = 0;
+        while (true)
+        {
+            SortColumn<TKey, TVector, TLanes>(ref r0, ref r1, ref r2, ref r3, ref r4, ref sorted, i, length);
+            if (i == last)
+                break;
+
+            i = Math.Min(i + count, last);
+        }
+
+        return length;
+    }
+
+    /// <summary>Sorts the keys at <paramref name="i"/> of 5 rows (9 exchanges) into the 5 rows of <paramref name="sorted"/>, of <paramref name="length"/> keys each.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void SortColumn<TKey, TValue, TLanes>(ref TKey r0, ref TKey r1, ref TKey r2, ref TKey r3, ref TKey r4, ref TKey sorted, nuint i, nuint length)
+        where TKey : unmanaged
+        where TValue : struct
+        where TLanes : struct, ILanes<TKey, TValue>
+    {
+        var v0 = TLanes.Load(ref r0, i);
+        var v1 = TLanes.Load(ref r1, i);
+        var v2 = TLanes.Load(ref r2, i);
+        var v3 = TLanes.Load(ref r3, i);
+        var v4 = TLanes.Load(ref r4, i);
+        Exchange<TKey, TValue, TLanes>(ref v0, ref v1);
+        Exchange<TKey, TValue, TLanes>(ref v3, ref v4);
+        Exchange<TKey, TValue, TLanes>(ref v2, ref v4);
+        Exchange<TKey, TValue, TLanes>(ref v2, ref v3);
+        Exchange<TKey, TValue, TLanes>(ref v0, ref v3);
+        Exchange<TKey, TValue, TLanes>(ref v0, ref v2);
+        Exchange<TKey, TValue, TLanes>(ref v1, ref v4);
+        Exchange<TKey, TValue, TLanes>(ref v1, ref v3);
+        Exchange<TKey, TValue, TLanes>(ref v1, ref v2);
+        TLanes.Store(v0, ref sorted, i);
+        TLanes.Store(v1, ref sorted, i + length);
+        TLanes.Store(v2, ref sorted, i + (2 * length));
+        TLanes.Store(v3, ref sorted, i + (3 * length));
+        TLanes.Store(v4, ref sorted, i + (4 * length));
+    }
+
+    /// <summary>Selects whole vectors of medians, the last one overlapping the one before it. Returns the number of keys set.</summary>
+    private static nuint Median25Vectors<TKey, TVector, TLanes>(ref TKey s0, ref TKey s1, ref TKey s2, ref TKey s3, ref TKey s4, ref TKey output, nuint length, nuint channels)
+        where TKey : unmanaged
+        where TVector : struct
+        where TLanes : struct, ILanes<TKey, TVector>
+    {
+        var count = (nuint)TLanes.Count;
+        var last = length - count;
+        nuint i = 0;
+        while (true)
+        {
+            TLanes.Store(Median25<TKey, TVector, TLanes>(ref s0, ref s1, ref s2, ref s3, ref s4, i, channels, 2 * channels, 3 * channels, 4 * channels), ref output, i);
+            if (i == last)
+                break;
+
+            i = Math.Min(i + count, last);
+        }
+
+        return length;
+    }
+
+    /// <summary>
+    /// The median of the 25 keys <c>s_k[i + j c]</c> of 5 sorted columns (<c>s_0</c> holds the smallest key of each column).
+    /// The network was found by pruning a sorting network as long as it selected the median of every input of zeros and
+    /// ones with sorted columns (6^5 inputs): by the 0-1 principle, it selects the median of any keys with sorted columns.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static TValue Median25<TKey, TValue, TLanes>(ref TKey s0, ref TKey s1, ref TKey s2, ref TKey s3, ref TKey s4, nuint i, nuint c1, nuint c2, nuint c3, nuint c4)
+        where TKey : unmanaged
+        where TValue : struct
+        where TLanes : struct, ILanes<TKey, TValue>
+    {
+        var v0x0 = TLanes.Load(ref s0, i);
+        var v1x0 = TLanes.Load(ref s0, i + c1);
+        var v2x0 = TLanes.Load(ref s0, i + c2);
+        var v3x0 = TLanes.Load(ref s0, i + c3);
+        var v4x0 = TLanes.Load(ref s0, i + c4);
+        var v5x0 = TLanes.Load(ref s1, i);
+        var v6x0 = TLanes.Load(ref s1, i + c1);
+        var v7x0 = TLanes.Load(ref s1, i + c2);
+        var v8x0 = TLanes.Load(ref s1, i + c3);
+        var v9x0 = TLanes.Load(ref s1, i + c4);
+        var v10x0 = TLanes.Load(ref s2, i);
+        var v11x0 = TLanes.Load(ref s2, i + c1);
+        var v12x0 = TLanes.Load(ref s2, i + c2);
+        var v13x0 = TLanes.Load(ref s2, i + c3);
+        var v14x0 = TLanes.Load(ref s2, i + c4);
+        var v15x0 = TLanes.Load(ref s3, i);
+        var v16x0 = TLanes.Load(ref s3, i + c1);
+        var v17x0 = TLanes.Load(ref s3, i + c2);
+        var v18x0 = TLanes.Load(ref s3, i + c3);
+        var v19x0 = TLanes.Load(ref s3, i + c4);
+        var v20x0 = TLanes.Load(ref s4, i);
+        var v21x0 = TLanes.Load(ref s4, i + c1);
+        var v22x0 = TLanes.Load(ref s4, i + c2);
+        var v23x0 = TLanes.Load(ref s4, i + c3);
+        var v24x0 = TLanes.Load(ref s4, i + c4);
+        var v2x1 = TLanes.Min(v2x0, v3x0);
+        var v3x1 = TLanes.Max(v2x0, v3x0);
+        var v0x1 = TLanes.Min(v0x0, v3x1);
+        var v3x2 = TLanes.Max(v0x0, v3x1);
+        var v1x1 = TLanes.Min(v1x0, v3x2);
+        var v3x3 = TLanes.Max(v1x0, v3x2);
+        var v5x1 = TLanes.Min(v5x0, v6x0);
+        var v6x1 = TLanes.Max(v5x0, v6x0);
+        var v7x1 = TLanes.Min(v7x0, v9x0);
+        var v9x1 = TLanes.Max(v7x0, v9x0);
+        var v7x2 = TLanes.Min(v7x1, v8x0);
+        var v8x1 = TLanes.Max(v7x1, v8x0);
+        var v5x2 = TLanes.Min(v5x1, v8x1);
+        var v8x2 = TLanes.Max(v5x1, v8x1);
+        var v6x2 = TLanes.Min(v6x1, v9x1);
+        var v9x2 = TLanes.Max(v6x1, v9x1);
+        var v6x3 = TLanes.Min(v6x2, v8x2);
+        var v8x3 = TLanes.Max(v6x2, v8x2);
+        var v10x1 = TLanes.Min(v10x0, v11x0);
+        var v11x1 = TLanes.Max(v10x0, v11x0);
+        var v13x1 = TLanes.Min(v13x0, v14x0);
+        var v14x1 = TLanes.Max(v13x0, v14x0);
+        var v12x1 = TLanes.Min(v12x0, v14x1);
+        var v14x2 = TLanes.Max(v12x0, v14x1);
+        var v12x2 = TLanes.Min(v12x1, v13x1);
+        var v13x2 = TLanes.Max(v12x1, v13x1);
+        var v10x2 = TLanes.Min(v10x1, v13x2);
+        var v13x3 = TLanes.Max(v10x1, v13x2);
+        var v11x2 = TLanes.Min(v11x1, v14x2);
+        var v14x3 = TLanes.Max(v11x1, v14x2);
+        var v15x1 = TLanes.Min(v15x0, v16x0);
+        var v16x1 = TLanes.Max(v15x0, v16x0);
+        var v17x1 = TLanes.Min(v17x0, v19x0);
+        var v19x1 = TLanes.Max(v17x0, v19x0);
+        var v15x2 = TLanes.Min(v15x1, v17x1);
+        var v17x2 = TLanes.Max(v15x1, v17x1);
+        var v16x2 = TLanes.Min(v16x1, v19x1);
+        var v16x3 = TLanes.Min(v16x2, v18x0);
+        var v18x1 = TLanes.Max(v16x2, v18x0);
+        var v16x4 = TLanes.Min(v16x3, v17x2);
+        var v17x3 = TLanes.Max(v16x3, v17x2);
+        var v20x1 = TLanes.Min(v20x0, v21x0);
+        var v21x1 = TLanes.Max(v20x0, v21x0);
+        var v22x1 = TLanes.Min(v22x0, v24x0);
+        var v24x1 = TLanes.Max(v22x0, v24x0);
+        var v20x2 = TLanes.Min(v20x1, v22x1);
+        var v22x2 = TLanes.Max(v20x1, v22x1);
+        var v21x2 = TLanes.Min(v21x1, v24x1);
+        var v21x3 = TLanes.Min(v21x2, v23x0);
+        var v21x4 = TLanes.Min(v21x3, v22x2);
+        var v1x2 = TLanes.Max(v0x1, v1x1);
+        var v5x3 = TLanes.Max(v4x0, v5x2);
+        var v8x4 = TLanes.Min(v8x3, v9x2);
+        var v9x3 = TLanes.Max(v8x3, v9x2);
+        var v14x4 = TLanes.Min(v14x3, v15x2);
+        var v20x3 = TLanes.Min(v20x2, v21x4);
+        var v21x5 = TLanes.Max(v20x2, v21x4);
+        var v5x4 = TLanes.Min(v5x3, v7x2);
+        var v7x3 = TLanes.Max(v5x3, v7x2);
+        var v10x3 = TLanes.Max(v8x4, v10x2);
+        var v9x4 = TLanes.Min(v9x3, v11x2);
+        var v11x3 = TLanes.Max(v9x3, v11x2);
+        var v12x3 = TLanes.Min(v12x2, v14x4);
+        var v14x5 = TLanes.Max(v12x2, v14x4);
+        var v9x5 = TLanes.Min(v9x4, v10x3);
+        var v10x4 = TLanes.Max(v9x4, v10x3);
+        var v13x4 = TLanes.Min(v13x3, v14x5);
+        var v14x6 = TLanes.Max(v13x3, v14x5);
+        var v5x5 = TLanes.Max(v1x2, v5x4);
+        var v6x4 = TLanes.Max(v2x1, v6x3);
+        var v3x4 = TLanes.Min(v3x3, v7x3);
+        var v7x4 = TLanes.Max(v3x3, v7x3);
+        var v9x6 = TLanes.Min(v9x5, v13x4);
+        var v13x5 = TLanes.Max(v9x5, v13x4);
+        var v10x5 = TLanes.Min(v10x4, v14x6);
+        var v14x7 = TLanes.Max(v10x4, v14x6);
+        var v16x5 = TLanes.Min(v16x4, v20x3);
+        var v20x4 = TLanes.Max(v16x4, v20x3);
+        var v17x4 = TLanes.Min(v17x3, v21x5);
+        var v5x6 = TLanes.Max(v3x4, v5x5);
+        var v10x6 = TLanes.Min(v10x5, v12x3);
+        var v12x4 = TLanes.Max(v10x5, v12x3);
+        var v11x4 = TLanes.Min(v11x3, v13x5);
+        var v13x6 = TLanes.Max(v11x3, v13x5);
+        var v6x5 = TLanes.Max(v5x6, v6x4);
+        var v11x5 = TLanes.Min(v11x4, v12x4);
+        var v12x5 = TLanes.Max(v11x4, v12x4);
+        var v13x7 = TLanes.Min(v13x6, v14x7);
+        var v17x5 = TLanes.Min(v17x4, v18x1);
+        var v18x2 = TLanes.Max(v17x4, v18x1);
+        var v10x7 = TLanes.Max(v6x5, v10x6);
+        var v7x5 = TLanes.Min(v7x4, v11x5);
+        var v11x6 = TLanes.Max(v7x4, v11x5);
+        var v9x7 = TLanes.Max(v7x5, v9x6);
+        var v11x7 = TLanes.Min(v11x6, v13x7);
+        var v13x8 = TLanes.Max(v11x6, v13x7);
+        var v18x3 = TLanes.Min(v18x2, v20x4);
+        var v9x8 = TLanes.Min(v9x7, v10x7);
+        var v10x8 = TLanes.Max(v9x7, v10x7);
+        var v11x8 = TLanes.Min(v11x7, v12x5);
+        var v12x6 = TLanes.Max(v11x7, v12x5);
+        var v17x6 = TLanes.Min(v17x5, v18x3);
+        var v18x4 = TLanes.Max(v17x5, v18x3);
+        var v17x7 = TLanes.Max(v9x8, v17x6);
+        var v10x9 = TLanes.Min(v10x8, v18x4);
+        var v12x7 = TLanes.Min(v12x6, v16x5);
+        var v13x9 = TLanes.Min(v13x8, v17x7);
+        var v12x8 = TLanes.Max(v10x9, v12x7);
+        var v11x9 = TLanes.Min(v11x8, v13x9);
+        var v12x9 = TLanes.Max(v11x9, v12x8);
+        return v12x9;
+    }
+
+    /// <summary>Selects whole vectors of keys, the last one overlapping the one before it. Returns the number of keys set: 0 when the row is shorter than a vector.</summary>
+    private static int SelectRowVectors<TKey, TVector, TLanes>(ReadOnlySpan<TKey> top, ReadOnlySpan<TKey> middle, ReadOnlySpan<TKey> bottom, Span<TKey> output, int channels, int rank)
+        where TKey : unmanaged
+        where TVector : struct
+        where TLanes : struct, ILanes<TKey, TVector>
+    {
+        var count = TLanes.Count;
+        if (output.Length < count)
+            return 0;
+
+        ref var t = ref unsafe(MemoryMarshal.GetReference(top));
+        ref var m = ref unsafe(MemoryMarshal.GetReference(middle));
+        ref var b = ref unsafe(MemoryMarshal.GetReference(bottom));
+        ref var o = ref unsafe(MemoryMarshal.GetReference(output));
+        var c1 = (nuint)channels;
+        var c2 = 2 * c1;
+        var last = (nuint)(output.Length - count);
+        nuint i = 0;
+        if (rank == 4)
+        {
+            while (true)
+            {
+                var value = Median9<TKey, TVector, TLanes>(TLanes.Load(ref t, i), TLanes.Load(ref t, i + c1), TLanes.Load(ref t, i + c2), TLanes.Load(ref m, i), TLanes.Load(ref m, i + c1), TLanes.Load(ref m, i + c2), TLanes.Load(ref b, i), TLanes.Load(ref b, i + c1), TLanes.Load(ref b, i + c2));
+                TLanes.Store(value, ref o, i);
+                if (i == last)
+                    break;
+
+                i = Math.Min(i + (nuint)count, last);
+            }
+        }
+        else
+        {
+            while (true)
+            {
+                var value = Select9<TKey, TVector, TLanes>(TLanes.Load(ref t, i), TLanes.Load(ref t, i + c1), TLanes.Load(ref t, i + c2), TLanes.Load(ref m, i), TLanes.Load(ref m, i + c1), TLanes.Load(ref m, i + c2), TLanes.Load(ref b, i), TLanes.Load(ref b, i + c1), TLanes.Load(ref b, i + c2), rank);
+                TLanes.Store(value, ref o, i);
+                if (i == last)
+                    break;
+
+                i = Math.Min(i + (nuint)count, last);
+            }
+        }
+
+        return output.Length;
+    }
+
+    /// <summary>The median of 9 values: the 3 columns <c>(a, d, g)</c>, <c>(b, e, h)</c> and <c>(c, f, i)</c> are sorted first.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static TValue Median9<TKey, TValue, TLanes>(TValue a, TValue b, TValue c, TValue d, TValue e, TValue f, TValue g, TValue h, TValue i)
+        where TKey : unmanaged
+        where TValue : struct
+        where TLanes : struct, ILanes<TKey, TValue>
+    {
+        Sort3<TKey, TValue, TLanes>(ref a, ref d, ref g);
+        Sort3<TKey, TValue, TLanes>(ref b, ref e, ref h);
+        Sort3<TKey, TValue, TLanes>(ref c, ref f, ref i);
+        var low = TLanes.Max(TLanes.Max(a, b), c);
+        var high = TLanes.Min(TLanes.Min(g, h), i);
+        return Median3<TKey, TValue, TLanes>(low, Median3<TKey, TValue, TLanes>(d, e, f), high);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Sort3<TKey, TValue, TLanes>(ref TValue a, ref TValue b, ref TValue c)
+        where TKey : unmanaged
+        where TValue : struct
+        where TLanes : struct, ILanes<TKey, TValue>
+    {
+        var low = TLanes.Min(a, b);
+        var high = TLanes.Max(a, b);
+        a = TLanes.Min(low, c);
+        b = TLanes.Max(low, TLanes.Min(high, c));
+        c = TLanes.Max(high, c);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static TValue Median3<TKey, TValue, TLanes>(TValue a, TValue b, TValue c)
+        where TKey : unmanaged
+        where TValue : struct
+        where TLanes : struct, ILanes<TKey, TValue>
+        => TLanes.Max(TLanes.Min(a, b), TLanes.Min(TLanes.Max(a, b), c));
+
+    /// <summary>The value of rank <paramref name="rank"/> of 9 values, sorted by a network of 25 exchanges.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static TValue Select9<TKey, TValue, TLanes>(TValue v0, TValue v1, TValue v2, TValue v3, TValue v4, TValue v5, TValue v6, TValue v7, TValue v8, int rank)
+        where TKey : unmanaged
+        where TValue : struct
+        where TLanes : struct, ILanes<TKey, TValue>
+    {
+        Exchange<TKey, TValue, TLanes>(ref v0, ref v3);
+        Exchange<TKey, TValue, TLanes>(ref v1, ref v7);
+        Exchange<TKey, TValue, TLanes>(ref v2, ref v5);
+        Exchange<TKey, TValue, TLanes>(ref v4, ref v8);
+        Exchange<TKey, TValue, TLanes>(ref v0, ref v7);
+        Exchange<TKey, TValue, TLanes>(ref v2, ref v4);
+        Exchange<TKey, TValue, TLanes>(ref v3, ref v8);
+        Exchange<TKey, TValue, TLanes>(ref v5, ref v6);
+        Exchange<TKey, TValue, TLanes>(ref v0, ref v2);
+        Exchange<TKey, TValue, TLanes>(ref v1, ref v3);
+        Exchange<TKey, TValue, TLanes>(ref v4, ref v5);
+        Exchange<TKey, TValue, TLanes>(ref v7, ref v8);
+        Exchange<TKey, TValue, TLanes>(ref v1, ref v4);
+        Exchange<TKey, TValue, TLanes>(ref v3, ref v6);
+        Exchange<TKey, TValue, TLanes>(ref v5, ref v7);
+        Exchange<TKey, TValue, TLanes>(ref v0, ref v1);
+        Exchange<TKey, TValue, TLanes>(ref v2, ref v4);
+        Exchange<TKey, TValue, TLanes>(ref v3, ref v5);
+        Exchange<TKey, TValue, TLanes>(ref v6, ref v8);
+        Exchange<TKey, TValue, TLanes>(ref v2, ref v3);
+        Exchange<TKey, TValue, TLanes>(ref v4, ref v5);
+        Exchange<TKey, TValue, TLanes>(ref v6, ref v7);
+        Exchange<TKey, TValue, TLanes>(ref v1, ref v2);
+        Exchange<TKey, TValue, TLanes>(ref v3, ref v4);
+        Exchange<TKey, TValue, TLanes>(ref v5, ref v6);
+        return rank switch
+        {
+            0 => v0,
+            1 => v1,
+            2 => v2,
+            3 => v3,
+            4 => v4,
+            5 => v5,
+            6 => v6,
+            7 => v7,
+            _ => v8,
+        };
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Exchange<TKey, TValue, TLanes>(ref TValue a, ref TValue b)
+        where TKey : unmanaged
+        where TValue : struct
+        where TLanes : struct, ILanes<TKey, TValue>
+    {
+        var low = TLanes.Min(a, b);
+        b = TLanes.Max(a, b);
+        a = low;
+    }
+
+    /// <summary>The operations of the network, on single keys or on vectors of keys.</summary>
+    private interface ILanes<TKey, TValue>
+        where TKey : unmanaged
+        where TValue : struct
+    {
+        static abstract int Count { get; }
+
+        static abstract TValue Load(ref TKey source, nuint index);
+
+        static abstract void Store(TValue value, ref TKey destination, nuint index);
+
+        static abstract TValue Min(TValue left, TValue right);
+
+        static abstract TValue Max(TValue left, TValue right);
+    }
+
+    private readonly struct ScalarLanes<TKey> : ILanes<TKey, TKey>
+        where TKey : unmanaged, IBinaryInteger<TKey>
+    {
+        public static int Count => 1;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TKey Load(ref TKey source, nuint index) => unsafe(Unsafe.Add(ref source, index));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Store(TKey value, ref TKey destination, nuint index)
+        {
+            unsafe { Unsafe.Add(ref destination, index) = value; }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TKey Min(TKey left, TKey right) => left < right ? left : right;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TKey Max(TKey left, TKey right) => left > right ? left : right;
+    }
+
+    private readonly struct Lanes128<TKey> : ILanes<TKey, Vector128<TKey>>
+        where TKey : unmanaged
+    {
+        public static int Count => Vector128<TKey>.Count;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<TKey> Load(ref TKey source, nuint index) => unsafe(Vector128.LoadUnsafe(ref source, index));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Store(Vector128<TKey> value, ref TKey destination, nuint index)
+        {
+            unsafe { value.StoreUnsafe(ref destination, index); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<TKey> Min(Vector128<TKey> left, Vector128<TKey> right) => Vector128.Min(left, right);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<TKey> Max(Vector128<TKey> left, Vector128<TKey> right) => Vector128.Max(left, right);
+    }
+
+    private readonly struct Lanes256<TKey> : ILanes<TKey, Vector256<TKey>>
+        where TKey : unmanaged
+    {
+        public static int Count => Vector256<TKey>.Count;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<TKey> Load(ref TKey source, nuint index) => unsafe(Vector256.LoadUnsafe(ref source, index));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Store(Vector256<TKey> value, ref TKey destination, nuint index)
+        {
+            unsafe { value.StoreUnsafe(ref destination, index); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<TKey> Min(Vector256<TKey> left, Vector256<TKey> right) => Vector256.Min(left, right);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<TKey> Max(Vector256<TKey> left, Vector256<TKey> right) => Vector256.Max(left, right);
+    }
+
+    private readonly struct Lanes512<TKey> : ILanes<TKey, Vector512<TKey>>
+        where TKey : unmanaged
+    {
+        public static int Count => Vector512<TKey>.Count;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<TKey> Load(ref TKey source, nuint index) => unsafe(Vector512.LoadUnsafe(ref source, index));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Store(Vector512<TKey> value, ref TKey destination, nuint index)
+        {
+            unsafe { value.StoreUnsafe(ref destination, index); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<TKey> Min(Vector512<TKey> left, Vector512<TKey> right) => Vector512.Min(left, right);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<TKey> Max(Vector512<TKey> left, Vector512<TKey> right) => Vector512.Max(left, right);
     }
 }

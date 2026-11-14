@@ -175,6 +175,25 @@ public sealed class LegacyEncodingDetectorTests
         Assert.Equal(WebEncodingId.Windows1252, detector.Guess(allowUtf8: false));
     }
 
+    // The first non-ASCII byte is the second byte of a buffer: only the last ASCII byte of the previous buffers is its
+    // context ("R" ends the Roman numeral "XX" before the feminine ordinal)
+    [Theory]
+    [InlineData("RX", "X\U000000AA ")]
+    [InlineData("@XRX", "X\U000000AA ")]
+    [InlineData("R", "X", "X\U000000AA ")]
+    public void Streaming_ContextIsTwoBytes(params string[] buffers)
+    {
+        var whole = new LegacyEncodingDetector();
+        whole.Feed(System.Text.Encoding.Latin1.GetBytes(string.Concat(buffers)), last: true);
+        var chunked = new LegacyEncodingDetector();
+        for (var i = 0; i < buffers.Length; i++)
+        {
+            chunked.Feed(System.Text.Encoding.Latin1.GetBytes(buffers[i]), last: i == buffers.Length - 1);
+        }
+
+        Assert.Equal(whole.GetScores(), chunked.GetScores());
+    }
+
     [Fact]
     public void Streaming_SameGuessAsOneBuffer()
     {

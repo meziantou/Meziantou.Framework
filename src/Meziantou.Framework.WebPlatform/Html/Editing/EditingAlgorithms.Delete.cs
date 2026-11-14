@@ -31,6 +31,7 @@ internal sealed partial class EditingAlgorithms
             overrides.Add(new("createlink", null, link));
         }
 
+        var firstState = overrides.Count;
         foreach (var command in (ReadOnlySpan<string>)["bold", "italic", "strikethrough", "subscript", "superscript", "underline"])
         {
             if (_state.GetStateOverride(_activeRange, command) is { } state)
@@ -38,6 +39,12 @@ internal sealed partial class EditingAlgorithms
                 overrides.Add(new(command, state, null));
             }
         }
+
+        // The specification restores the states in a fixed order. As in the browsers, they are restored in the order of the
+        // commands that set them, so that the formatting of the first command is the outermost one: italic then bold
+        // gives <i><b>a</b></i>, bold then italic gives <b><i>a</i></b>
+        var activeRange = _activeRange;
+        overrides.Sort(firstState, overrides.Count - firstState, Comparer<CommandOverride>.Create((x, y) => _state.GetStateOverrideOrder(activeRange, x.Command).CompareTo(_state.GetStateOverrideOrder(activeRange, y.Command))));
 
         foreach (var command in (ReadOnlySpan<string>)["fontname", "fontsize", "forecolor", "hilitecolor"])
         {

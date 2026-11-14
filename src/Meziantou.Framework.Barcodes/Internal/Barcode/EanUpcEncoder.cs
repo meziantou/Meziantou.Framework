@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Barcodes.Internal.Linear;
 
 internal static class EanUpcEncoder
 {
-    private static readonly string[] LPatterns =
+    internal static readonly string[] LPatterns =
     [
         "0001101",
         "0011001",
@@ -16,7 +16,7 @@ internal static class EanUpcEncoder
         "0001011",
     ];
 
-    private static readonly string[] GPatterns =
+    internal static readonly string[] GPatterns =
     [
         "0100111",
         "0110011",
@@ -30,7 +30,7 @@ internal static class EanUpcEncoder
         "0010111",
     ];
 
-    private static readonly string[] RPatterns =
+    internal static readonly string[] RPatterns =
     [
         "1110010",
         "1100110",
@@ -44,10 +44,10 @@ internal static class EanUpcEncoder
         "1110100",
     ];
 
-    private static readonly int[] Ean13FirstDigitEncodings = [0x00, 0x0B, 0x0D, 0x0E, 0x13, 0x19, 0x1C, 0x15, 0x16, 0x1A];
+    internal static readonly int[] Ean13FirstDigitEncodings = [0x00, 0x0B, 0x0D, 0x0E, 0x13, 0x19, 0x1C, 0x15, 0x16, 0x1A];
     // The parities of the 6 digits of a UPC-E symbol of number system 0, by check digit (1 for G); number system 1 has the complement
-    private static readonly int[] UpcENumberSystem0Encodings = [0x38, 0x34, 0x32, 0x31, 0x2C, 0x26, 0x23, 0x2A, 0x29, 0x25];
-    private static readonly int[] Extension5CheckDigitEncodings = [0x18, 0x14, 0x12, 0x11, 0x0C, 0x06, 0x03, 0x0A, 0x09, 0x05];
+    internal static readonly int[] UpcENumberSystem0Encodings = [0x38, 0x34, 0x32, 0x31, 0x2C, 0x26, 0x23, 0x2A, 0x29, 0x25];
+    internal static readonly int[] Extension5CheckDigitEncodings = [0x18, 0x14, 0x12, 0x11, 0x0C, 0x06, 0x03, 0x0A, 0x09, 0x05];
 
     public static Barcode EncodeEan8(string data, string? extension)
     {
@@ -170,7 +170,7 @@ internal static class EanUpcEncoder
     }
 
     // Returns the 11 digits of the UPC-A number (without check digit) of the number system and the 6 digits of a UPC-E number
-    private static string ExpandUpcE(char numberSystem, string digits)
+    internal static string ExpandUpcE(char numberSystem, string digits)
     {
         return digits[5] switch
         {
@@ -233,7 +233,7 @@ internal static class EanUpcEncoder
         throw new ArgumentException($"The data should be {lengthWithoutChecksum} or {lengthWithChecksum} digits long for {symbology}.", nameof(data));
     }
 
-    private static int ComputeChecksumDigit(ReadOnlySpan<char> data)
+    internal static int ComputeChecksumDigit(ReadOnlySpan<char> data)
     {
         var sum = 0;
         var useWeight3 = true;
@@ -311,7 +311,7 @@ internal static class EanUpcEncoder
         }
     }
 
-    private static int ComputeFiveDigitExtensionChecksum(string extension)
+    internal static int ComputeFiveDigitExtensionChecksum(string extension)
     {
         var sum = 0;
         for (var i = extension.Length - 2; i >= 0; i -= 2)

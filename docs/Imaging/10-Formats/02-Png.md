@@ -10,7 +10,7 @@ nothing is ever reduced, unless you ask for a palette with color reduction.
 
 | | Reading | Writing |
 | --- | --- | --- |
-| Pixels | Every color type and bit depth (1 to 16 bits), palettes with transparency, Adam7 interlacing | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits; palettes of 1, 2, 4 or 8 bits on request; Adam7 |
+| Pixels | Every color type and bit depth (1 to 16 bits), palettes with transparency, Adam7 interlacing (also at 1/2, 1/4 or 1/8 of the size, see [Decode a thumbnail](#decode-a-thumbnail)) | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits; palettes of 1, 2, 4 or 8 bits on request; Adam7 |
 | Animations | APNG animations and their poster frame, composited into full frames with exact delays | APNG with exact delays, play count and poster frame |
 | Metadata | ICC profile, color description (`cICP`), EXIF, XMP, text, resolution, HDR light levels | The same |
 | Other chunks | The ancillary chunks the library does not interpret, in [ImageMetadata.PngChunks](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.PngChunks) | The ones that are safe to copy, at their position |
@@ -140,6 +140,24 @@ chosen by compressing the candidates. Delays are stored exactly by default: a du
 An APNG streams to any destination, including non-seekable streams, but a writer created with [Image.CreateWriter](cref:Meziantou.Framework.Imaging.Image.CreateWriter)
 needs [ImageWriterOptions.ExpectedFrameCount](cref:Meziantou.Framework.Imaging.ImageWriterOptions.ExpectedFrameCount), because the frame count precedes the frames. See
 [Streaming readers and writers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md).
+
+## Decode a thumbnail
+
+An interlaced (Adam7) image stores a reduced copy of itself in its first passes: the first pass holds one pixel of each
+block of 8x8 pixels, the first three one pixel of each block of 4x4, and the first five one of each block of 2x2.
+[ImageDecodeOptions.TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) and [ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) = 2, 4 or 8 decode these passes alone, for a thumbnail of
+a large image at a fraction of the memory and the time of a full decode:
+
+- Each pixel is the pixel at the top left of its block, exactly as a full decode has it: the image is sampled, not
+  averaged, so fine details and thin lines can alias. Resize the result for a smoother thumbnail.
+- The data of the other passes is not decompressed, so an error in it is not reported, and the checksum of the image
+  data is not checked. The chunks that follow the image data are read: the metadata is the one of the file.
+- An image that is not interlaced, and an APNG animation, are decoded at full size for a target size, and an exact scale
+  throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). So does a scale below 1/8.
+- Readers ([ImageReaderOptions](cref:Meziantou.Framework.Imaging.ImageReaderOptions)) give frames of the reduced size, without renderings of the passes before
+  the frame. An icon or cursor representation stored as PNG is always decoded at full size.
+
+See [Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
 
 ## Malformed files
 

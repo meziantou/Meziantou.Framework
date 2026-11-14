@@ -63,6 +63,14 @@ Console.WriteLine(document.Body!.InnerHtml); // <ul id="list"><li>a</li><li>b</l
   cleanup of a `FinalizationRegistry`, `Atomics.waitAsync()`: tasks and timers of the event loop of the realm,
   `HostEnqueueGenericJob`, `HostEnqueueTimeoutJob`), the module loading and `import.meta`. The functions of the WebIDL bindings run in the
   realm of their caller.
+- The incumbent settings object (https://html.spec.whatwg.org/multipage/webappapis.html#incumbent) is the realm of the
+  topmost running script, else the top of the backup incumbent settings object stack. A callback (an event listener, an
+  event handler set by its IDL attribute, a `NodeFilter`, an `XPathNSResolver`) records the incumbent when the value is
+  converted (its callback context), and calling it pushes the callback context onto the stack: the scripts that were
+  running below the callback are skipped (the skip-when-determining-incumbent counter, implemented with the depth of the
+  execution context stack of the engine). A built-in function used as a listener (e.g. a bound `postMessage`) then posts
+  with the global object that called `addEventListener()` as its source. The other callback functions (timers,
+  `requestAnimationFrame()`, ...) do not record their callback context yet.
 - The `console` namespace of the [Console Standard](https://console.spec.whatwg.org/) is implemented by the WebIDL
   bindings (`Scripting/WebIdl/WebIdlRealm.Console.cs`): its formatter works on the JavaScript values. The messages are
   given to `BrowsingContextOptions.ConsoleMessage` (a `ConsoleMessage`: the method, the level, the formatted text, the
@@ -464,13 +472,28 @@ has its own store of instances, memories, tables, globals and tags):
 - The modules are compiled on the thread of the agent, and the promises are settled by a task.
 - A `WebAssembly.Module` is serializable within its agent cluster (`postMessage()` to a window, a dedicated worker or a worklet):
   the compiled module is shared.
+- The bytes of a shared memory are a growable shared data block of the script engine (`IJsAdapter.CreateGrowableSharedDataBlock`),
+  allocated for the maximum size of the memory, which never moves: the memory creator of the Wasmtime runtime gives its
+  address to Wasmtime (`SharedLinearMemory`), and the memory (a `wasmtime_sharedmemory_t`, `WasmtimeSharedMemory`) can be
+  imported by the stores of every agent. A shared memory is serialized as the memory itself (the deserialized object
+  wraps the same `WasmMemory`).
+- `Atomics.wait()`, `Atomics.waitAsync()` and `Atomics.notify()` on the data block of a shared memory use the waiters of
+  Wasmtime (`IGrowableSharedDataBlock.SetWaiters`, `WasmSharedMemoryWaiters`): the C API of Wasmtime has no atomic
+  operation, so they call the `memory.atomic.*` instructions of small modules that import the memory, in a store of
+  their own. A blocking wait waits on the thread of the agent; an asynchronous wait waits on a thread of its own (at most
+  1,024 in the process, stopped when the engine is disposed), and the caller stays a waiter until the native code of that
+  thread sets a byte of its own memory right before it waits (`WasmWaitSignal`), so that no notification is lost
+  meanwhile.
+- The data block of a shared memory does not reference the engine that created it: the native memory keeps it alive, and
+  the stores of the other agents use the memory.
+- `buffer.grow()` on the growable buffer of a shared memory grows the memory to the new length: Wasmtime computes the new
+  size under the lock of the memory, and a growth that another agent overtook fails and starts again (`GrowTo`).
 - The running code is interrupted by the limits of the script engine (e.g. `JavaScriptScriptEngineOptions.Timeout`), and
   a stack overflow throws a `RangeError`.
 
 The Wasmtime runtime enables the features of WebAssembly 3.0 (the reference types, the typed function references, the
 GC types, the exceptions, the tail calls, memory64, the multiple memories, the SIMD and relaxed SIMD instructions) and
-the wide arithmetic. Not implemented: the threads (a shared `WebAssembly.Memory` is only a growable `SharedArrayBuffer`
-that cannot be imported by a module), the JS String Builtins (`builtins`, `importedStringConstants`), the ESM
+the wide arithmetic, and the threads (the shared memories and the atomic instructions). Not implemented: the JS String Builtins (`builtins`, `importedStringConstants`), the ESM
 integration (`import` of a module), JavaScript Promise Integration, the type reflection (`type()`), the resizable buffers
 of the memories (`toResizableBuffer()`): see the [WPT coverage of wasm](../../../docs/WebPlatform/10-WptCoverage/wasm.md).
 

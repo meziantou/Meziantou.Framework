@@ -230,6 +230,32 @@ public sealed class JsExportGeneratorTests
         }
     }
 
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void Generator_Ieee754Types_AreConverted()
+    {
+        const string Source = """
+            using Meziantou.Framework.JavaScriptEngine;
+
+            [JsExport]
+            public sealed partial class Numbers
+            {
+                public System.Numerics.Decimal64 Value { get; set; }
+
+                public static System.Numerics.Decimal32 Convert(System.Numerics.Decimal128 a, System.Numerics.BFloat16? b, System.Half c) => default;
+            }
+            """;
+
+        var result = RunGenerator(Source);
+
+        Assert.Empty(result.GeneratorDiagnostics);
+        Assert.Empty(result.OutputDiagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        var numbers = Assert.Single(result.GeneratedSources);
+        Assert.Contains("\"convert\"", numbers, StringComparison.Ordinal);
+        Assert.Contains("\"value\"", numbers, StringComparison.Ordinal);
+    }
+#endif
+
     [Fact]
     public void Generator_UnrelatedEdit_IsCached()
     {

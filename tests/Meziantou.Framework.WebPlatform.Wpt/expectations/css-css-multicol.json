@@ -14,6 +14,9 @@
   "css/css-multicol/abspos-containing-block-outside-spanner.html": {
     "reftest": "PASS"
   },
+  "css/css-multicol/abspos-in-multicol-with-spanner-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-multicol/abspos-multicol-in-second-outer-clipped.html": {
     "reftest": "PASS"
   },
@@ -65,6 +68,9 @@
   "css/css-multicol/balance-break-avoidance-002.html": {
     "reftest": "PASS"
   },
+  "css/css-multicol/balance-extremely-tall-monolithic-content-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-multicol/balance-grid-001.html": {
     "total": 1
   },
@@ -107,6 +113,9 @@
   "css/css-multicol/broken-column-rule-1.html": {
     "reftest": "PASS"
   },
+  "css/css-multicol/change-abspos-width-in-second-column-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-multicol/change-fragmentainer-size-000.html": {
     "reftest": "PASS"
   },
@@ -121,6 +130,9 @@
   },
   "css/css-multicol/change-intrinsic-width.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/change-out-of-flow-type-and-remove-inner-multicol-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/change-transform-in-nested.html": {
     "reftest": "PASS"
@@ -142,6 +154,9 @@
   },
   "css/css-multicol/column-balancing-with-floats-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/column-balancing-with-overflow-auto-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/column-balancing-with-span-and-oof-001.html": {
     "reftest": "PASS"
@@ -275,8 +290,422 @@
   "css/css-multicol/composited-under-clip-under-multicol.html": {
     "reftest": "PASS"
   },
+  "css/css-multicol/content-visibility-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/add-list-item-marker.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/ancestor-toggle-spanner-remove-child.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/as-baseline-aligned-grid-item.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/balance-break-inside-avoid-on-root.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/balance-with-forced-break.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/balancing-flex-item-trailing-margin-freeze.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/balancing-tall-borders-freeze.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/block-break-before.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/block-flow-split-with-fixed-child.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/block-in-inline-become-float.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/block-in-inline-with-abspos-after-spanner.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/block-in-inline-with-spanner-in-overflowed-parent-nested-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/block-in-inline-with-spanner-in-overflowed-parent.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/body-becomes-spanner-html-becomes-vertical-rl.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/break-before-multicol-caption.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/chrome-bug-1293905.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/chrome-bug-1297118.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/chrome-bug-1301281.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/chrome-bug-1303256.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/chrome-bug-1314866.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/continuation-detach.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/dynamic-simplified-layout-break-propagation.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/first-letter-column-span-fieldset.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/fit-content-with-spanner-and-auto-scrollbar-sibling.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/float-becomes-non-float-spanner-surprises-inside.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/float-becomes-spanner-remove-child.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/float-becomes-spanner.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/float-beside-whitespace-ruby.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/float-cannot-be-spanner.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/float-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/floated-input-in-inline-next-column.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/forced-break-in-oof-in-column-balancing-nested.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/forced-break-in-oof-in-column-balancing.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/grid-with-nested-oof-and-forced-break.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/inline-become-oof-container-make-oof-inflow.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/inline-float-parallel-flow.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/inline-with-spanner-in-overflowed-container-before-multicol-float.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/interleaved-bfc-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/margin-and-break-before-child-spanner.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/monolithic-oof-in-clipped-container.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/move-linebreak-to-different-column.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/move-newline-pre-text.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-at-page-boundary-print.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-block-in-inline-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-cached-consumed-bsize-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-column-change-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-dynamic-contain-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-dynamic-transform-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-floats-after-column-span-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-floats-in-ifc.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-parallel-flow-after-spanner-in-inline.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-table-caption-parallel-flow-after-spanner-in-inline.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-with-monolithic-oof-with-multicol-with-oof.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/multicol-with-oof-in-multicol-with-oof-in-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/negative-margin-on-column-spanner.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-as-balanced-legend.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-as-nested-balanced-legend.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-floated-multicol-with-tall-margin.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-multicol-and-float-with-tall-padding-before-float.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-multicol-and-float-with-tall-padding.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-multicol-fieldset-tall-trailing-border-freeze.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-multicol-fieldset-tall-trailing-padding.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-multicol-in-svg-foreignobject.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-multicol-nested-flex.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-multicol-spanner-reframe.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-multicol-with-float-between.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-oof-multicol-with-monolithic-child.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-oof-multicol-with-oof-needing-additional-columns.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-oof-multicol-with-padding.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-spanner-with-negative-margin.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-with-fragmented-oof-negative-top-offset.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-with-multicol-table-caption.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-with-multicol-table-cell.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-with-oof-inside-fixed-width.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-with-percentage-size-and-oof.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-with-tall-padding-and-oof.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-with-tall-padding-and-spanner-and-content.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/nested-with-tall-padding.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-becomes-spanner.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-additional-column-before-spanner.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-area-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-area-002.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-area-003.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-area-004.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-area-005.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-nested-line-float.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-oof-multicol-in-multicol-spanner-in-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-oof-multicol-in-relpos-in-oof-in-multicol-in-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-oof-multicol-in-relpos-spanner-in-multicol-in-relpos-multicol-in-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-oof-multicol-in-relpos-spanner-in-spanner-multicol-in-multicol-in-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-oof-multicol-in-spanner-in-multicol-in-spanner-in-nested-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-oof-multicol-in-spanner-in-nested-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-relpos-in-oof-multicol-in-oof-in-relpos-in-oof-multicol-in-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-relpos-in-oof-multicol-in-relpos-in-oof-multicol-in-relpos-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-spanner-in-relpos-in-multicol-in-relpos-multicol-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-spanner-in-relpos-in-multicol-in-relpos-multicol-002.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-in-table-row.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/oof-nested-multicol-inside-oof.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/outline-move-oof-with-inline.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/relayout-fixedpos-in-abspos-in-relpos-in-nested-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/relayout-nested-with-oof.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/relpos-inline-with-abspos-multicol-gets-block-child.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/relpos-spanner-with-spanner-child-becomes-regular.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/remove-spanner-after-spanner-in-inline-before-inline.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/remove-spanner-in-table-caption-nested-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/remove-transform-descendant-becomes-spanner-remove-spanner-child.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/repeated-section-in-nested-table-nested-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/repeated-table-column.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/repeated-table-footer-in-caption-nested-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/restricted-height-bottom-border-overflow-and-spanner.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/scrollable-spanner-in-nested.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/shrink-column-height-block-with-margin-in-inline.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/size-containment-become-multicol-add-inline-child.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/spanner-after-parallel-flow.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/spanner-in-inline-after-very-tall-content-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/spanner-in-inline-after-very-tall-content-002.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/spanner-in-overflowed-clipped-container.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/spanner-in-overflowed-container-before-float.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/spanner-in-overflowed-container-before-inline-content.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/spanner-in-relpos-in-abspos-multicol-in-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/spanner-inside-inline-in-overflowed-container.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/specified-height-with-just-spanner-and-oof.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/sticky-in-abs-in-sticky.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/table-caption-change-descendant-display-type.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/table-caption-in-clipped-overflow.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/table-caption-inline-block-remove-child.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/table-cell-writing-mode-root.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/text-box-trim-end-and-widows.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/text-in-inline-interrupted-by-float.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/trailing-parent-padding-between-spanners.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/triply-nested-partial-relayout.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/vertical-rl-column-rules-wide-columns.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/video-container-become-multicol.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/crashtests/zero-column-height.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/dynamic-become-multicol-add-oof-inside-inline-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-multicol/equal-gap-and-rule.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/extremely-tall-multicol-with-extremely-tall-child-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/file-control-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/filter-with-abspos.html": {
     "total": 1
@@ -304,6 +733,12 @@
   },
   "css/css-multicol/fixedpos-static-pos-with-viewport-cb-003.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/flex-grid-item-insert-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/flex-grid-item-insert-002-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/float-and-block.html": {
     "reftest": "PASS"
@@ -349,6 +784,9 @@
   },
   "css/css-multicol/hit-test-transformed-child.html": {
     "total": 2
+  },
+  "css/css-multicol/img-alt-as-multicol-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/increase-prev-sibling-height.html": {
     "reftest": "PASS"
@@ -799,6 +1237,9 @@
   },
   "css/css-multicol/multicol-list-item-008.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-loads-indefinitely-001-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/multicol-margin-001.xht": {
     "reftest": "PASS"
@@ -1385,8 +1826,17 @@
   "css/css-multicol/nested-at-outer-boundary-as-legend.html": {
     "reftest": "PASS"
   },
+  "css/css-multicol/nested-balanced-monolithic-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/nested-balanced-very-tall-content-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-multicol/nested-floated-multicol-with-monolithic-child.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/nested-floated-shape-outside-multicol-with-monolithic-child-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/nested-non-auto-inline-size-offset-top.html": {
     "total": 1
@@ -1396,6 +1846,9 @@
   },
   "css/css-multicol/nested-past-fragmentation-line.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/nested-with-overflowing-padding-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/nested-with-padding-and-spanner.html": {
     "reftest": "PASS"
@@ -1426,6 +1879,9 @@
   },
   "css/css-multicol/orthogonal-writing-mode-spanner.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/overflow-scroll-in-multicol-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/overflow-unsplittable-001.html": {
     "reftest": "PASS"
@@ -1550,11 +2006,23 @@
   "css/css-multicol/relative-child-overflowing-container.html": {
     "reftest": "PASS"
   },
+  "css/css-multicol/remove-block-beside-spanner-in-inline-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/remove-block-sibling-of-inline-with-block-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-multicol/remove-child-in-strict-containment-also-spanner.html": {
     "reftest": "PASS"
   },
+  "css/css-multicol/remove-inline-with-block-beside-spanners-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-multicol/remove-inline-with-block-beside-spanners.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/remove-spanner-beside-spanner-in-inline-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/remove-transform-descendant-becomes-spanner.html": {
     "reftest": "PASS"
@@ -1642,11 +2110,23 @@
   "css/css-multicol/spanner-in-opacity.html": {
     "reftest": "PASS"
   },
+  "css/css-multicol/spanning-legend-000-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/spanning-legend-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-multicol/subpixel-column-progression.html": {
     "total": 4
   },
   "css/css-multicol/subpixel-column-rule-width.tentative.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/subpixel-scroll-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/table/balance-breakafter-before-table-section-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/table/balance-table-with-border-spacing.html": {
     "total": 1
@@ -1683,6 +2163,21 @@
   },
   "css/css-multicol/table/table-cell-multicol-nested-003.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/text-child-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/textarea-text-overflow-ellipsis-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/toggle-spanner-float-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/triply-nested-with-fixedpos-in-abspos-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-multicol/with-custom-layout-on-same-element-crash.https.html": {
+    "crashtest": "PASS"
   },
   "css/css-multicol/with-custom-layout-on-same-element.https.html": {
     "reftest": "PASS"

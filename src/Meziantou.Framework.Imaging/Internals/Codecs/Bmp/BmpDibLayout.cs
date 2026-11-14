@@ -143,6 +143,19 @@ internal sealed class BmpDibLayout
             case 16:
             {
                 var hasAlpha = HasAlpha;
+                if (_green.Mask == 0x03E0 && _red.Mask == 0x7C00 && _blue.Mask == 0x001F && (!hasAlpha || _alpha.Mask == 0x8000))
+                {
+                    // 5-5-5, with the alpha bit or without alpha
+                    SixteenBitColors.Expand(source, width, sixBitGreen: false, hasAlpha, destination);
+                    break;
+                }
+
+                if (_green.Mask == 0x07E0 && _red.Mask == 0xF800 && _blue.Mask == 0x001F && !hasAlpha)
+                {
+                    SixteenBitColors.Expand(source, width, sixBitGreen: true, alpha: false, destination);
+                    break;
+                }
+
                 var step = hasAlpha ? 4 : 3;
                 for (var x = 0; x < width; x++)
                 {

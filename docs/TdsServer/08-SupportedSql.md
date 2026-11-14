@@ -71,6 +71,8 @@ a literal, as in `LIKE '100!%' ESCAPE '!'`. A value of another type is converted
 - A pattern given as a literal or a parameter, made of text with an optional `%` at its start and its end, is translated
   to `==`, `StartsWith`, `EndsWith` or `Contains`, so a LINQ provider can run it. Other patterns call a .NET method,
   which LINQ to objects runs but other providers may not.
+- As in SQL Server, a pattern can be at most 8,000 bytes, so 4,000 characters: a longer one returns an error. The match
+  takes a time proportional to the length of the value times the length of the pattern, whatever the pattern.
 
 ## Scalar subqueries
 

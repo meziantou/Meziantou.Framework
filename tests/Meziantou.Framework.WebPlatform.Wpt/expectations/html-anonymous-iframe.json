@@ -54,8 +54,7 @@
     "total": 1
   },
   "html/anonymous-iframe/hasStorageAccess.tentative.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 2
   },
   "html/anonymous-iframe/indexeddb.tentative.https.window.js": {
     "total": 1
@@ -70,8 +69,7 @@
     "total": 1
   },
   "html/anonymous-iframe/requestStorageAccess.tentative.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 2
   },
   "html/anonymous-iframe/require-corp-embed-anonymous-iframe.tentative.https.window.js": {
     "total": 1

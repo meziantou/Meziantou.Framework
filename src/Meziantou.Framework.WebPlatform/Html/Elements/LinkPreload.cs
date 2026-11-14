@@ -215,6 +215,7 @@ internal static class LinkPreload
                 "prefetch" => LinkHeaderRelations.Prefetch,
                 "stylesheet" => LinkHeaderRelations.StyleSheet,
                 "icon" => LinkHeaderRelations.Icon,
+                "compression-dictionary" => LinkHeaderRelations.CompressionDictionary,
                 _ => LinkHeaderRelations.None,
             };
         }
@@ -283,6 +284,21 @@ internal static class LinkPreload
             return;
         }
 
+        // https://www.rfc-editor.org/rfc/rfc9842#section-2.1.5: a compression dictionary is fetched in "cors" mode once the
+        // document is completely loaded, and its response registers it
+        if (relations.HasFlag(LinkHeaderRelations.CompressionDictionary))
+        {
+            document.RunWhenCompletelyLoaded(() =>
+            {
+                if (document.BrowsingContext is null)
+                    return;
+
+                var dictionaryRequest = SubresourceFetching.CreateRequest(document, linkUrl, RequestDestination.Empty, cors: true, referrerPolicy, initiator: null, useCredentials: useCredentials);
+                SubresourceFetching.FetchResponse(document, dictionaryRequest, onComplete: null, initiatorType: "link");
+            });
+            return;
+        }
+
         // https://html.spec.whatwg.org/multipage/links.html#link-type-prefetch: the response is used by the next requests of
         // the URL through the HTTP cache
         if (relations.HasFlag(LinkHeaderRelations.Prefetch))
@@ -312,6 +328,7 @@ internal static class LinkPreload
         Prefetch = 4,
         StyleSheet = 8,
         Icon = 16,
+        CompressionDictionary = 32,
     }
 }
 

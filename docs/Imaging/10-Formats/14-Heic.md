@@ -124,7 +124,8 @@ a bit-rate or luma-sample-rate limit on playback.
   [ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) above 1, the tiles are coded concurrently, and the file is identical.
 - A side is at most 65,528 pixels, and a still image at most 4 GiB.
 - [ImageDecodeOptions.Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) skips the tiles of a grid that an area does not need, such as
-  most tiles of a phone photo for a crop; an image that is not a grid is decoded whole before the area is kept. See
+  most tiles of a phone photo for a crop. An image that is not a grid is decoded down to the rows of coding tree blocks
+  that the area and a margin of 16 pixels need (an image of several columns of HEVC tiles is decoded whole). See
   [Decode an area](../05-LoadingAndSaving/02-LoadingImages.md#decode-an-area).
 - Premultiplied alpha, extended precision processing, inter pictures of more than 12 bits and the screen content,
   multilayer and 3D extensions of HEVC are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Only the base layer of a layered stream is decoded.

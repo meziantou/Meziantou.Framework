@@ -47,23 +47,33 @@ internal sealed class HevcPicture
     /// <summary>Gets or sets whether the picture is marked as "used for reference", short-term or long-term (clause 8.3.2).</summary>
     public bool UsedForReference { get; set; }
 
+    /// <summary>
+    /// Gets the number of rows of luma samples that the planes hold: <c>pic_height_in_luma_samples</c>, or the first rows of
+    /// coding tree blocks that a decode window needs (<see cref="HevcDecoder.DecodeWindow"/>).
+    /// </summary>
+    public int DecodedHeight { get; private set; }
+
     /// <summary>Gets the plane <paramref name="index"/>: 0 for Y, 1 for Cb, 2 for Cr.</summary>
     public Av1Plane GetPlane(int index) => _planes[index] ?? throw new ObjectDisposedException(nameof(HevcPicture));
 
     /// <summary>
     /// Rents the planes of the picture: <c>pic_width_in_luma_samples</c> x <c>pic_height_in_luma_samples</c> luma samples,
-    /// and the chroma samples of the chroma format, allocated for whole coding tree blocks.
+    /// or the first <paramref name="decodedHeight"/> rows, and the chroma samples of the chroma format, allocated for whole
+    /// coding tree blocks.
     /// </summary>
+    /// <param name="scope">The allocation scope.</param>
+    /// <param name="decodedHeight">The rows of luma samples to hold, a multiple of the height of a coding tree block; <see langword="null"/> for the whole picture.</param>
     /// <exception cref="ImageResourceLimitException">The planes exceed the live-allocation limit.</exception>
-    public void Allocate(AllocationScope scope)
+    public void Allocate(AllocationScope scope, int? decodedHeight = null)
     {
+        DecodedHeight = Math.Min(decodedHeight ?? Sps.PicHeightInLumaSamples, Sps.PicHeightInLumaSamples);
         try
         {
             for (var plane = 0; plane < PlaneCount; plane++)
             {
                 var subWidth = plane > 0 ? Sps.SubWidthC : 1;
                 var subHeight = plane > 0 ? Sps.SubHeightC : 1;
-                _planes[plane] = Av1Plane.Create(scope, Sps.PicWidthInLumaSamples / subWidth, Sps.PicHeightInLumaSamples / subHeight, Sps.CtbSizeY / subWidth);
+                _planes[plane] = Av1Plane.Create(scope, Sps.PicWidthInLumaSamples / subWidth, DecodedHeight / subHeight, Sps.CtbSizeY / subWidth);
             }
         }
         catch

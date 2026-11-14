@@ -78,6 +78,7 @@ internal sealed class SelectorParser
         ["stalled"] = PseudoClass.Stalled,
         ["muted"] = PseudoClass.Muted,
         ["volume-locked"] = PseudoClass.VolumeLocked,
+        ["animated-image"] = PseudoClass.AnimatedImage,
         ["active-view-transition"] = PseudoClass.ActiveViewTransition,
         ["current"] = PseudoClass.Current,
         ["future"] = PseudoClass.Future,

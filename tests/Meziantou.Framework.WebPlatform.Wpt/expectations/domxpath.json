@@ -95,8 +95,14 @@
   "domxpath/text-html-elements.html": {
     "total": 11
   },
+  "domxpath/variables-in-expression-crash.html": {
+    "crashtest": "PASS"
+  },
   "domxpath/xml_xpath_runner.html": {
     "total": 1024
+  },
+  "domxpath/xpath-evaluate-crash.html": {
+    "crashtest": "PASS"
   },
   "domxpath/xpath-shadow-dom.html": {
     "total": 2

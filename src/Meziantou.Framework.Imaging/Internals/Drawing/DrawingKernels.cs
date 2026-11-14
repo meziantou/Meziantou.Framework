@@ -81,6 +81,9 @@ internal static class DrawingKernels
     // The thresholds of the encoding of linear light to 8-bit samples, by code point of the transfer characteristics
     private static readonly QuantizationThresholds?[] LinearThresholds8 = new QuantizationThresholds?[19];
 
+    // The functions those thresholds are created from, by code point of the transfer characteristics
+    private static readonly Func<double, int>?[] LinearEncoders8 = new Func<double, int>?[19];
+
     /// <summary>Gets the largest sample of the paints of a frame: 255 for the 8-bit formats, 65535 for the 16-bit and the floating-point formats.</summary>
     /// <param name="format">The pixel format of the frame.</param>
     public static int GetPaintMax(PixelFormat format) => PixelFormats.GetBitsPerComponent(format) > 8 ? ushort.MaxValue : byte.MaxValue;
@@ -184,7 +187,27 @@ internal static class DrawingKernels
         {
             var chunk = colors.Slice(start, Math.Min(ChunkSize, colors.Length - start));
             var count = chunk.Length;
-            for (var i = 0; i < count; i++)
+            var done = 0;
+            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+            {
+                // The alpha is the last 16 bits of the 64 bits of a color
+                var colorBits = unsafe(MemoryMarshal.Cast<Rgba64, ulong>(chunk));
+                var opaqueBits = unsafe(MemoryMarshal.Cast<Rgba64, ulong>(opaque));
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    for (; done + 4 <= count; done += 4)
+                    {
+                        (Vector256.Create(colorBits.Slice(done, 4)) | Vector256.Create(0xFFFF_0000_0000_0000UL)).CopyTo(opaqueBits.Slice(done, 4));
+                    }
+                }
+
+                for (; done + 2 <= count; done += 2)
+                {
+                    (Vector128.Create(colorBits.Slice(done, 2)) | Vector128.Create(0xFFFF_0000_0000_0000UL)).CopyTo(opaqueBits.Slice(done, 2));
+                }
+            }
+
+            for (var i = done; i < count; i++)
             {
                 var color = chunk[i];
                 opaque[i] = new Rgba64(color.R, color.G, color.B);
@@ -223,7 +246,19 @@ internal static class DrawingKernels
             if (typeof(TPixel) == typeof(Rgba64))
             {
                 var values = unsafe(MemoryMarshal.Cast<TPixel, Rgba64>(pixels));
-                for (var i = 0; i < count; i++)
+                var i = 0;
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    // The converted color with the alpha of the paint, two colors per vector
+                    var paintSamples = unsafe(MemoryMarshal.Cast<Rgba64, ushort>(chunk));
+                    var convertedSamples = unsafe(MemoryMarshal.Cast<Rgba64, ushort>(values));
+                    for (; i + 2 <= count; i += 2)
+                    {
+                        Vector128.ConditionalSelect(AlphaLanes, Vector128.Create(paintSamples.Slice(i * 4, 8)), Vector128.Create(convertedSamples.Slice(i * 4, 8))).CopyTo(entries.Slice(i * 4, 8));
+                    }
+                }
+
+                for (; i < count; i++)
                 {
                     var value = values[i];
                     var entry = entries.Slice(i * 4, 4);
@@ -245,29 +280,17 @@ internal static class DrawingKernels
                     entry[3] = chunk[i].A;
                 }
             }
-            else if (typeof(TPixel) == typeof(Rgba32))
+            else if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
             {
-                var values = unsafe(MemoryMarshal.Cast<TPixel, Rgba32>(pixels));
-                for (var i = 0; i < count; i++)
+                // The bytes of the converted pixels in their stored order, with the alpha of the paint
+                var i = ConvertColors32Vector(unsafe(MemoryMarshal.AsBytes(pixels[..count])), chunk, entries);
+                for (; i < count; i++)
                 {
-                    var value = values[i];
+                    var value = unsafe(MemoryMarshal.AsBytes(pixels.Slice(i, 1)));
                     var entry = entries.Slice(i * 4, 4);
-                    entry[0] = value.R;
-                    entry[1] = value.G;
-                    entry[2] = value.B;
-                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
-                }
-            }
-            else if (typeof(TPixel) == typeof(Bgra32))
-            {
-                var values = unsafe(MemoryMarshal.Cast<TPixel, Bgra32>(pixels));
-                for (var i = 0; i < count; i++)
-                {
-                    var value = values[i];
-                    var entry = entries.Slice(i * 4, 4);
-                    entry[0] = value.B;
-                    entry[1] = value.G;
-                    entry[2] = value.R;
+                    entry[0] = value[0];
+                    entry[1] = value[1];
+                    entry[2] = value[2];
                     entry[3] = PixelConverter.To8Bit(chunk[i].A);
                 }
             }
@@ -343,6 +366,33 @@ internal static class DrawingKernels
                 throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
             }
         }
+    }
+
+    /// <summary>The fourth 16-bit lane of each 64 bits: the alpha of a color of four samples.</summary>
+    private static Vector128<ushort> AlphaLanes => Vector128.Create((ushort)0, 0, 0, ushort.MaxValue, 0, 0, 0, ushort.MaxValue);
+
+    /// <summary>
+    /// Writes the paint colors of the first pixels of four 8-bit samples: their bytes, widened, with the 8-bit alpha
+    /// (<see cref="PixelConverter.To8Bit"/>) of the paint; returns the number of colors written.
+    /// </summary>
+    private static int ConvertColors32Vector(ReadOnlySpan<byte> pixels, ReadOnlySpan<Rgba64> paints, Span<ushort> entries)
+    {
+        var count = pixels.Length / 4;
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var paintSamples = unsafe(MemoryMarshal.Cast<Rgba64, ushort>(paints));
+            for (; i + 4 <= count; i += 4)
+            {
+                var bytes = Vector128.Create(pixels.Slice(i * 4, 16));
+                var alphaLow = PixelConverter.To8BitVector(Vector128.Create(paintSamples.Slice(i * 4, 8)));
+                var alphaHigh = PixelConverter.To8BitVector(Vector128.Create(paintSamples.Slice((i * 4) + 8, 8)));
+                Vector128.ConditionalSelect(AlphaLanes, alphaLow, Vector128.WidenLower(bytes)).CopyTo(entries.Slice(i * 4, 8));
+                Vector128.ConditionalSelect(AlphaLanes, alphaHigh, Vector128.WidenUpper(bytes)).CopyTo(entries.Slice((i * 4) + 8, 8));
+            }
+        }
+
+        return i;
     }
 
     /// <summary>Reads pixels of a row as 16-bit colors, with the rules of pixel conversion (a floating-point sample outside [0, 1] is rejected).</summary>
@@ -437,6 +487,26 @@ internal static class DrawingKernels
         {
             var samples = row.Slice(x * 4, count * 4);
             var i = 0;
+            if (Vector512.IsHardwareAccelerated)
+            {
+                for (; i + 64 <= samples.Length; i += 64)
+                {
+                    var block = Vector512.Create(samples.Slice(i, 64));
+                    Vector512.WidenLower(block).CopyTo(destination.Slice(i, 32));
+                    Vector512.WidenUpper(block).CopyTo(destination.Slice(i + 32, 32));
+                }
+            }
+
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; i + 32 <= samples.Length; i += 32)
+                {
+                    var block = Vector256.Create(samples.Slice(i, 32));
+                    Vector256.WidenLower(block).CopyTo(destination.Slice(i, 16));
+                    Vector256.WidenUpper(block).CopyTo(destination.Slice(i + 16, 16));
+                }
+            }
+
             if (Vector128.IsHardwareAccelerated)
             {
                 for (; i + 16 <= samples.Length; i += 16)
@@ -460,7 +530,22 @@ internal static class DrawingKernels
         else if (typeof(TPixel) == typeof(Rgb24))
         {
             var samples = row.Slice(x * 3, count * 3);
-            for (var i = 0; i < count; i++)
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated)
+            {
+                // Four pixels of each 16 bytes read (the last 4 bytes are not used), an opaque alpha in their fourth byte; the
+                // indices stay in range (a constant shuffle on every platform), the alpha replaces the repeated byte
+                var expand = Vector128.Create((byte)0, 1, 2, 2, 3, 4, 5, 5, 6, 7, 8, 8, 9, 10, 11, 11);
+                var opaque = Vector128.Create(0xFF000000u).AsByte();
+                for (; (i * 3) + 16 <= samples.Length; i += 4)
+                {
+                    var block = Vector128.Shuffle(Vector128.Create(samples.Slice(i * 3, 16)), expand) | opaque;
+                    Vector128.WidenLower(block).CopyTo(destination.Slice(i * 4, 8));
+                    Vector128.WidenUpper(block).CopyTo(destination.Slice((i * 4) + 8, 8));
+                }
+            }
+
+            for (; i < count; i++)
             {
                 var entry = destination.Slice(i * 4, 4);
                 entry[0] = samples[i * 3];
@@ -472,7 +557,24 @@ internal static class DrawingKernels
         else if (typeof(TPixel) == typeof(Gray8))
         {
             var samples = row.Slice(x, count);
-            for (var i = 0; i < count; i++)
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+            {
+                // Each gray sample in the first 16 bits of the 64 bits of its color, with an opaque alpha in the last 16 bits
+                var opaque = Vector128.Create(0x00FF_0000_0000_0000UL);
+                var colors = unsafe(MemoryMarshal.Cast<ushort, ulong>(destination));
+                for (; i + 8 <= count; i += 8)
+                {
+                    var words = Vector128.WidenLower(Vector128.CreateScalar(unsafe(MemoryMarshal.Read<ulong>(samples.Slice(i, 8)))).AsByte());
+                    var (first, second) = Vector128.Widen(words);
+                    (Vector128.WidenLower(first) | opaque).CopyTo(colors.Slice(i, 2));
+                    (Vector128.WidenUpper(first) | opaque).CopyTo(colors.Slice(i + 2, 2));
+                    (Vector128.WidenLower(second) | opaque).CopyTo(colors.Slice(i + 4, 2));
+                    (Vector128.WidenUpper(second) | opaque).CopyTo(colors.Slice(i + 6, 2));
+                }
+            }
+
+            for (; i < count; i++)
             {
                 var entry = destination.Slice(i * 4, 4);
                 entry[0] = samples[i];
@@ -723,6 +825,97 @@ internal static class DrawingKernels
     internal static void Composite<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst = false)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
+        if (typeof(TSample) == typeof(byte) && source.Colors.IsEmpty && SampleTable.IsSeparable(source) && TryCompositeWithTable(unsafe(MemoryMarshal.Cast<TSample, byte>(samples)), channels, coverage, source, isBlueFirst))
+            return;
+
+        CompositeWithFormulas(samples, channels, coverage, source, isBlueFirst);
+    }
+
+    /// <summary>
+    /// Composites a single paint over 8-bit samples with a <see cref="SampleTable"/>: the pixels covered entirely whose
+    /// alpha is the one of the table get its samples, the others go through <see cref="CompositeWithFormulas"/>.
+    /// </summary>
+    /// <returns><see langword="false"/> when no pixel is covered entirely, or the paint has no table yet.</returns>
+    internal static bool TryCompositeWithTable(Span<byte> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst)
+    {
+        const uint Full = CoverageRasterizer.FullCoverage;
+        var first = coverage.IndexOf(Full);
+        if (first < 0)
+            return false;
+
+        // The table of the alpha of the first pixel covered entirely: the pixels inside a shape usually share it
+        var destinationAlpha = channels == 4 ? samples[(first * 4) + 3] : byte.MaxValue;
+        var table = SampleTable.Get(source, channels, isBlueFirst, destinationAlpha, coverage.Length);
+        if (table is null)
+            return false;
+
+        var lookup = table.Samples;
+        var alpha = table.Alpha;
+        var start = 0;
+        var i = first;
+        while (true)
+        {
+            if (i > start)
+            {
+                CompositeWithFormulas(samples[(start * channels)..(i * channels)], channels, coverage[start..i], source.Slice(start, i - start), isBlueFirst);
+            }
+
+            // The pixels the table gives
+            switch (channels)
+            {
+                case 4:
+                    {
+                        // A pixel read as one little-endian integer: the alpha is its high byte
+                        var pixels = unsafe(MemoryMarshal.Cast<byte, uint>(samples));
+                        var pixelAlpha = (uint)destinationAlpha << 24;
+                        var resultAlpha = (uint)alpha << 24;
+                        for (; i < coverage.Length && coverage[i] == Full; i++)
+                        {
+                            var pixel = pixels[i];
+                            if ((pixel & 0xFF000000) != pixelAlpha)
+                                break;
+
+                            pixels[i] = lookup[(int)(pixel & 0xFF)] | ((uint)lookup[256 + (int)((pixel >> 8) & 0xFF)] << 8) | ((uint)lookup[512 + (int)((pixel >> 16) & 0xFF)] << 16) | resultAlpha;
+                        }
+                    }
+
+                    break;
+
+                case 3:
+                    for (; i < coverage.Length && coverage[i] == Full; i++)
+                    {
+                        var pixel = samples.Slice(i * 3, 3);
+                        pixel[0] = lookup[pixel[0]];
+                        pixel[1] = lookup[256 + pixel[1]];
+                        pixel[2] = lookup[512 + pixel[2]];
+                    }
+
+                    break;
+
+                default:
+                    for (; i < coverage.Length && coverage[i] == Full; i++)
+                    {
+                        samples[i] = lookup[samples[i]];
+                    }
+
+                    break;
+            }
+
+            if (i == coverage.Length)
+                return true;
+
+            // The pixels that go through the formulas, up to the next one the table gives
+            start = i;
+            for (i++; i < coverage.Length && (coverage[i] != Full || (channels == 4 && samples[(i * 4) + 3] != destinationAlpha)); i++)
+            {
+            }
+        }
+    }
+
+    /// <summary>Composites a paint over interleaved samples with the formulas of the contract: the reference of <see cref="TryCompositeWithTable"/>.</summary>
+    internal static void CompositeWithFormulas<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst = false)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
         if (source.IsLinearLight)
         {
             CompositeLinear(samples, channels, coverage, source, isBlueFirst);
@@ -969,7 +1162,11 @@ internal static class DrawingKernels
     {
         if (typeof(TSample) == typeof(byte) && channels == 4 && coverage.Length >= 4 && Vector128.IsHardwareAccelerated)
         {
-            if (Avx2.IsSupported && coverage.Length >= 8)
+            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && coverage.Length >= 16)
+            {
+                CompositeOver8Avx512(unsafe(MemoryMarshal.Cast<TSample, byte>(samples)), coverage, source);
+            }
+            else if (Avx2.IsSupported && coverage.Length >= 8)
             {
                 CompositeOver8Avx2(unsafe(MemoryMarshal.Cast<TSample, byte>(samples)), coverage, source);
             }
@@ -1231,6 +1428,137 @@ internal static class DrawingKernels
         }
     }
 
+    /// <summary>
+    /// Composites a paint over pixels of four 8-bit samples (color then alpha) with source-over, with the formulas of
+    /// <see cref="CompositeOver8"/>, sixteen pixels at a time with AVX-512 when they are all opaque or all transparent; the
+    /// other pixels go through <see cref="CompositeOver8Avx2"/>. Each 128-bit lane of a vector holds four pixels, as a
+    /// vector of <see cref="CompositeOver8"/> does: the shuffles and the packs stay within the lanes.
+    /// </summary>
+    internal static void CompositeOver8Avx512(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    {
+        const uint Scale = byte.MaxValue * CoverageRasterizer.FullCoverage;
+        var colors = source.Colors;
+        var color = source.Color;
+        var transpose128 = Vector128.Create((byte)0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15);
+        var transpose = Vector512.Create(Vector256.Create(transpose128, transpose128), Vector256.Create(transpose128, transpose128));
+        var colorMask = Vector512.Create(0x00FFFFFFu).AsByte();
+        var half = Vector512.Create(Scale / 2);
+        var halfCoverage = Vector512.Create(CoverageRasterizer.FullCoverage / 2);
+        var scale = Vector512.Create(Scale);
+        var reciprocal = Vector512.Create(32897u);
+        var red = Vector512.Create((uint)color.C0);
+        var green = Vector512.Create((uint)color.C1);
+        var blue = Vector512.Create((uint)color.C2);
+        var alpha = Vector512.Create((uint)color.Alpha);
+
+        // The pixels from 'pending' on are not composited yet
+        var pending = 0;
+        for (var i = 0; i + 16 <= coverage.Length; i += 16)
+        {
+            // Pixels without coverage stay as they are: the run of them is skipped up to the block of the next covered pixel
+            var blockCoverage = Vector512.Create(coverage.Slice(i, 16));
+            if (blockCoverage == Vector512<uint>.Zero)
+            {
+                if (pending < i)
+                {
+                    CompositeOver8Avx2Range(samples, coverage, source, pending, i);
+                }
+
+                var next = coverage[(i + 16)..].IndexOfAnyExcept(0u);
+                i += (next < 0 ? coverage.Length - i - 16 : next) & ~15;
+                pending = i + 16;
+                continue;
+            }
+
+            var block = samples.Slice(i * 4, 64);
+            var pixels = Vector512.Create(block);
+            var isOpaque = (pixels | colorMask) == Vector512<byte>.AllBitsSet;
+            if (!isOpaque && Vector512.AndNot(pixels, colorMask) != Vector512<byte>.Zero)
+                continue;
+
+            if (pending < i)
+            {
+                CompositeOver8Avx2Range(samples, coverage, source, pending, i);
+            }
+
+            if (!colors.IsEmpty)
+            {
+                // The paint of the sixteen pixels, in the order of the pixels (its samples are 8-bit)
+                var paint = Vector512.Narrow(Vector512.Create(colors.Slice(i * 4, 32)), Vector512.Create(colors.Slice((i * 4) + 32, 32)));
+                Split(paint, transpose, out red, out green, out blue, out alpha);
+            }
+
+            Split(pixels, transpose, out var r, out var g, out var b, out var a);
+            if (isOpaque)
+            {
+                var effective = blockCoverage * alpha;
+                var inverse = scale - effective;
+                r = Blend(red, r, effective, inverse, half, reciprocal);
+                g = Blend(green, g, effective, inverse, half, reciprocal);
+                b = Blend(blue, b, effective, inverse, half, reciprocal);
+                Join(r, g, b, a, transpose).CopyTo(block);
+            }
+            else
+            {
+                // The paint with the alpha of its coverage, where that alpha is not 0
+                var resultAlpha = Vector512.ShiftRightLogical((blockCoverage * alpha) + halfCoverage, 16);
+                var painted = Join(red, green, blue, resultAlpha, transpose);
+                var unchanged = Vector512.Equals(resultAlpha, Vector512<uint>.Zero).AsInt32();
+                var words = Avx512BW.PackSignedSaturate(unchanged, unchanged);
+                var keep = Avx512BW.Shuffle(Avx512BW.PackSignedSaturate(words, words).AsByte(), transpose);
+                Vector512.ConditionalSelect(keep, pixels, painted).CopyTo(block);
+            }
+
+            pending = i + 16;
+        }
+
+        if (pending < coverage.Length)
+        {
+            CompositeOver8Avx2Range(samples, coverage, source, pending, coverage.Length);
+        }
+
+        static Vector512<uint> Blend(Vector512<uint> paint, Vector512<uint> pixel, Vector512<uint> effective, Vector512<uint> inverse, Vector512<uint> half, Vector512<uint> reciprocal)
+        {
+            var x = (paint * effective) + (pixel * inverse) + half;
+            return Vector512.ShiftRightLogical(Vector512.ShiftRightLogical(x, 16) * reciprocal, 23);
+        }
+
+        // The samples of the pixels of each lane, one channel per vector
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Split(Vector512<byte> pixels, Vector512<byte> transpose, out Vector512<uint> red, out Vector512<uint> green, out Vector512<uint> blue, out Vector512<uint> alpha)
+        {
+            var planar = Avx512BW.Shuffle(pixels, transpose);
+            var low = Avx512BW.UnpackLow(planar, Vector512<byte>.Zero).AsUInt16();
+            var high = Avx512BW.UnpackHigh(planar, Vector512<byte>.Zero).AsUInt16();
+            red = Avx512BW.UnpackLow(low, Vector512<ushort>.Zero).AsUInt32();
+            green = Avx512BW.UnpackHigh(low, Vector512<ushort>.Zero).AsUInt32();
+            blue = Avx512BW.UnpackLow(high, Vector512<ushort>.Zero).AsUInt32();
+            alpha = Avx512BW.UnpackHigh(high, Vector512<ushort>.Zero).AsUInt32();
+        }
+
+        // The inverse of Split, for samples up to 255
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector512<byte> Join(Vector512<uint> red, Vector512<uint> green, Vector512<uint> blue, Vector512<uint> alpha, Vector512<byte> transpose)
+        {
+            var low = Avx512BW.PackUnsignedSaturate(red.AsInt32(), green.AsInt32()).AsInt16();
+            var high = Avx512BW.PackUnsignedSaturate(blue.AsInt32(), alpha.AsInt32()).AsInt16();
+            return Avx512BW.Shuffle(Avx512BW.PackUnsignedSaturate(low, high), transpose);
+        }
+    }
+
+    private static void CompositeOver8Avx2Range(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, int end)
+    {
+        var range = samples[(start * 4)..(end * 4)];
+        if (source.Colors.IsEmpty)
+        {
+            CompositeOver8Avx2(range, coverage[start..end], source);
+        }
+        else
+        {
+            CompositeOver8Avx2(range, coverage[start..end], new DrawingSource(source.Colors[(start * 4)..(end * 4)]));
+        }
+    }
+
     private static void CompositeOver8Range(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, int end)
     {
         var range = samples[(start * 4)..(end * 4)];
@@ -1333,6 +1661,21 @@ internal static class DrawingKernels
                     CompositeOverScalarRange16(samples, 4, coverage, source, pending, i);
                 }
 
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    // AVX-512: the two pixels in one vector (a vector of 256 bits per pixel is slower than two of 128 bits with AVX2)
+                    var pairEffective0 = colors.IsEmpty ? paintAlpha * q0 : colors[(i * 4) + 3] * (double)q0;
+                    var pairEffective1 = colors.IsEmpty ? paintAlpha * q1 : colors[(i * 4) + 7] * (double)q1;
+                    var paintSamples = colors.IsEmpty ? Vector128.Create(color.C0, color.C1, color.C2, color.Alpha, color.C0, color.C1, color.C2, color.Alpha) : Vector128.Create(colors.Slice(i * 4, 8));
+                    var effective = Vector512.Create(Vector256.Create(pairEffective0), Vector256.Create(pairEffective1));
+                    var inverse = Vector512.Create(Vector256.Create(Scale - pairEffective0), Vector256.Create(Scale - pairEffective1));
+                    var bits = Blend512(ToDouble512(paintSamples), ToDouble512(pixels), effective, inverse);
+                    var narrowed = Vector256.Narrow(bits.GetLower(), bits.GetUpper());
+                    (Vector128.Narrow(narrowed.GetLower(), narrowed.GetUpper()) | alphaMask).CopyTo(block);
+                    pending = i + 2;
+                    continue;
+                }
+
                 var alpha0 = paintAlpha;
                 var alpha1 = paintAlpha;
                 var paint0Low = paintLow;
@@ -1404,6 +1747,23 @@ internal static class DrawingKernels
         if (pending < coverage.Length)
         {
             CompositeOverScalarRange16(samples, channels, coverage, source, pending, coverage.Length);
+        }
+
+        // The samples of two pixels as doubles, with the bits of 2^52 (see ToDouble)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector512<double> ToDouble512(Vector128<ushort> value)
+        {
+            var magic = Vector512.Create(4503599627370496.0);
+            var words = Vector256.WidenLower(value.ToVector256());
+            return (Vector512.WidenLower(words.ToVector512()) | magic.AsUInt64()).AsDouble() - magic;
+        }
+
+        // floor(x / S) in the low bits of the result, with the operations of Blend
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector512<ulong> Blend512(Vector512<double> paint, Vector512<double> pixel, Vector512<double> effective, Vector512<double> inverse)
+        {
+            var x = (paint * effective) + (pixel * inverse) + Vector512.Create(Scale / 2);
+            return (((x * Vector512.Create(1 / Scale)) - Vector512.Create(0.5 - (1.0 / (1L << 34)))) + Vector512.Create(4503599627370496.0)).AsUInt64();
         }
 
         // Integers below 2^32 widened to 64 bits, as doubles: their bits under the exponent of 2^52
@@ -1518,7 +1878,162 @@ internal static class DrawingKernels
     /// Composites a paint whose color is first mixed with the color of each pixel by a blend mode: the paint of each
     /// pixel becomes a color of its own, composited as any paint.
     /// </summary>
+    /// <remarks>
+    /// A separable blend mode on color pixels is computed on vectors (<see cref="CompositeSeparableBlended{TSample, TBlend, TLanes, TVector}"/>), the others
+    /// by <see cref="CompositeBlendedScalar"/>.
+    /// </remarks>
     private static void CompositeBlended<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        if (channels >= 3 && source.Blend < BlendMode.Hue && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                CompositeSeparableBlended<TSample, DoubleLanes256, Vector256<double>>(samples, channels, coverage, source);
+            }
+            else
+            {
+                CompositeSeparableBlended<TSample, DoubleLanes128, Vector128<double>>(samples, channels, coverage, source);
+            }
+
+            return;
+        }
+
+        CompositeBlendedScalar(samples, channels, coverage, source, isBlueFirst);
+    }
+
+    /// <summary>Chooses the blend mode of <see cref="CompositeSeparableBlended{TSample, TBlend, TLanes, TVector}"/> once for a run.</summary>
+    private static void CompositeSeparableBlended<TSample, TLanes, TVector>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+        where TLanes : IDoubleLanes<TVector>
+        where TVector : unmanaged
+    {
+        switch (source.Blend)
+        {
+            case BlendMode.Screen:
+                CompositeSeparableBlended<TSample, BlendFunctions.ScreenBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.Overlay:
+                CompositeSeparableBlended<TSample, BlendFunctions.OverlayBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.Darken:
+                CompositeSeparableBlended<TSample, BlendFunctions.DarkenBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.Lighten:
+                CompositeSeparableBlended<TSample, BlendFunctions.LightenBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.ColorDodge:
+                CompositeSeparableBlended<TSample, BlendFunctions.ColorDodgeBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.ColorBurn:
+                CompositeSeparableBlended<TSample, BlendFunctions.ColorBurnBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.HardLight:
+                CompositeSeparableBlended<TSample, BlendFunctions.HardLightBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.SoftLight:
+                CompositeSeparableBlended<TSample, BlendFunctions.SoftLightBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.Difference:
+                CompositeSeparableBlended<TSample, BlendFunctions.DifferenceBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            case BlendMode.Exclusion:
+                CompositeSeparableBlended<TSample, BlendFunctions.ExclusionBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+
+            default:
+                CompositeSeparableBlended<TSample, BlendFunctions.MultiplyBlend, TLanes, TVector>(samples, channels, coverage, source);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// <see cref="CompositeBlendedScalar"/> for a separable blend mode and color pixels, the components of a pixel in the
+    /// lanes of vectors: in the order they are stored, since each one is blended with the same component of the pixel.
+    /// </summary>
+    private static void CompositeSeparableBlended<TSample, TBlend, TLanes, TVector>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+        where TBlend : BlendFunctions.ISeparableBlend
+        where TLanes : IDoubleLanes<TVector>
+        where TVector : unmanaged
+    {
+        const int ChunkSize = 64;
+        var max = double.CreateTruncating(TSample.MaxValue);
+        var maxes = TLanes.Create(max);
+        var zero = TLanes.Create(0);
+        var one = TLanes.Create(1);
+        var half = TLanes.Create(0.5);
+        var bias = TLanes.Create(1.0 / 1048576);
+        var count = TLanes.Count;
+        var colors = source.Colors;
+        var color = source.Color;
+        Span<ushort> single = [color.C0, color.C1, color.C2, color.Alpha];
+        Span<ushort> chunkColors = stackalloc ushort[ChunkSize * 4];
+
+        // The color of a single paint from 0 to 1, computed once: the lanes of the first two samples, and of the last two
+        // when a vector has two lanes
+        Span<double> results = stackalloc double[4];
+        var isSingle = colors.IsEmpty;
+        var singleLow = TLanes.Divide(TLanes.Create(single[0], single[1], single[2], single[3], 0), maxes);
+        var singleHigh = TLanes.Divide(TLanes.Create(single[0], single[1], single[2], single[3], 2), maxes);
+
+        for (var start = 0; start < coverage.Length; start += ChunkSize)
+        {
+            var length = Math.Min(ChunkSize, coverage.Length - start);
+            for (var k = 0; k < length; k++)
+            {
+                var i = start + k;
+                if (coverage[i] == 0)
+                    continue;
+
+                var paint = isSingle ? single : colors.Slice(i * 4, 4);
+                var blended = chunkColors.Slice(k * 4, 4);
+                paint.CopyTo(blended);
+                var pixel = samples.Slice(i * channels, channels);
+                var backdropSample = channels == 4 ? double.CreateTruncating(pixel[3]) : max;
+                if (paint[3] == 0 || backdropSample == 0)
+                    continue;
+
+                var pixel0 = double.CreateTruncating(pixel[0]);
+                var pixel1 = double.CreateTruncating(pixel[1]);
+                var pixel2 = double.CreateTruncating(pixel[2]);
+
+                // An opaque backdrop without alpha is 1, which M / M is
+                var backdrop = TLanes.Create(backdropSample / max);
+                var kept = TLanes.Subtract(one, backdrop);
+                for (var lane = 0; lane < 4; lane += count)
+                {
+                    var s = isSingle ? (lane == 0 ? singleLow : singleHigh) : TLanes.Divide(TLanes.Create(paint[0], paint[1], paint[2], paint[3], lane), maxes);
+                    var d = TLanes.Divide(TLanes.Create(pixel0, pixel1, pixel2, 0, lane), maxes);
+                    var mixed = TLanes.Add(TLanes.Multiply(kept, s), TLanes.Multiply(backdrop, TBlend.Blend<TLanes, TVector>(s, d)));
+
+                    // Written so that a value that is not a number is zero
+                    var rounded = TLanes.Floor(TLanes.Add(TLanes.Add(TLanes.Multiply(mixed, maxes), half), bias));
+                    rounded = TLanes.Select(TLanes.GreaterThanOrEqual(rounded, maxes), maxes, TLanes.Select(TLanes.GreaterThan(rounded, zero), rounded, zero));
+                    TLanes.Store(rounded, results[lane..]);
+                }
+
+                blended[0] = (ushort)results[0];
+                blended[1] = (ushort)results[1];
+                blended[2] = (ushort)results[2];
+            }
+
+            // The pixels without coverage are not written: their entry is not read
+            CompositeCore(samples.Slice(start * channels, length * channels), channels, coverage.Slice(start, length), new DrawingSource(chunkColors[..(length * 4)], source.Mode));
+        }
+    }
+
+    /// <summary>The reference of <see cref="CompositeBlended"/>: the color of each pixel blended component by component.</summary>
+    internal static void CompositeBlendedScalar<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
         var max = double.CreateTruncating(TSample.MaxValue);
@@ -1985,7 +2500,17 @@ internal static class DrawingKernels
 
     /// <summary>Gets the thresholds of <see cref="EncodeLight"/> for 8-bit samples and a function of the transfer characteristics, or <see langword="null"/> when they do not give its samples.</summary>
     internal static QuantizationThresholds? GetLinearThresholds8(byte transfer)
-        => QuantizationThresholds.GetOrCreate(LinearThresholds8, transfer, value => (int)EncodeLight(value, byte.MaxValue, transfer, curves: null, channel: 0), byte.MaxValue);
+    {
+        // The function is created once per transfer characteristics: the thresholds are asked for at every run of pixels
+        var encode = Volatile.Read(ref LinearEncoders8[transfer]);
+        if (encode is null)
+        {
+            encode = value => (int)EncodeLight(value, byte.MaxValue, transfer, curves: null, channel: 0);
+            encode = Interlocked.CompareExchange(ref LinearEncoders8[transfer], encode, null) ?? encode;
+        }
+
+        return QuantizationThresholds.GetOrCreate(LinearThresholds8, transfer, encode, byte.MaxValue);
+    }
 
     /// <summary>Encodes linear light to a sample, from 0 to <paramref name="max"/>: the encoding is clipped to the samples, and a value that is not a number is zero.</summary>
     internal static double EncodeLight(double linear, double max, byte transfer, LinearLightCurves? curves, int channel)
@@ -1993,5 +2518,135 @@ internal static class DrawingKernels
         var encoded = curves is null ? CicpTransfer.Encode(transfer, linear) : curves.Encode(channel, linear);
         var rounded = Math.Floor((encoded * max) + 0.5 + (1.0 / 1048576));
         return rounded >= max ? max : rounded > 0 ? rounded : 0;
+    }
+
+    /// <summary>
+    /// The samples that a single paint gives the 8-bit pixels covered entirely that have one alpha (or no alpha), when
+    /// each color sample of the result only depends on the same sample of the pixel: the 256 values of each color,
+    /// computed once with the formulas (<see cref="CompositeWithFormulas"/>), instead of the formulas for every pixel.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// With a single paint, a full coverage and the alpha of the pixel fixed, every formula of the contract computes a
+    /// color of the result from the paint, the alpha of the pixel and the same color of the pixel only, and the alpha of
+    /// the result without its colors: the operators, the separable blend modes and linear light alike. The table is the
+    /// result of the formulas on a pixel of each value (the three colors of that value), so it holds the samples the
+    /// formulas give, exactly. The blend modes that take a color as a whole (<see cref="BlendMode.Hue"/> and after) mix the
+    /// colors and get no table.
+    /// </para>
+    /// <para>
+    /// The paths that have no table already cost little per pixel: source-over of the stored samples has vector kernels, and
+    /// an operator that replaces the pixel writes the paint. The table of a thread is kept between the calls, for the rows
+    /// of a shape and the next shapes with that paint, and built once its paint has been composited over
+    /// <see cref="MinPixels"/> pixels, so a paint that changes at every short run does not pay for it.
+    /// </para>
+    /// </remarks>
+    private sealed class SampleTable
+    {
+        /// <summary>The number of pixels composited with a paint from which its table is built: the table costs about as many pixels.</summary>
+        private const int MinPixels = 256;
+
+        [ThreadStatic]
+        private static SampleTable? s_current;
+
+        private readonly byte[] _samples = new byte[3 * 256];
+        private DrawingColor _color;
+        private CompositeMode _mode;
+        private BlendMode _blend;
+        private byte _transfer;
+        private LinearLightCurves? _curves;
+        private int _channels;
+        private bool _isBlueFirst;
+        private byte _destinationAlpha;
+        private int _pixels;
+        private bool _isBuilt;
+        private bool _isUsable;
+
+        /// <summary>Gets the samples of the result for each value of the first, second and third color sample of a pixel, 256 each.</summary>
+        public ReadOnlySpan<byte> Samples => _samples;
+
+        /// <summary>Gets the alpha of the result.</summary>
+        public byte Alpha { get; private set; }
+
+        /// <summary>Gets a value indicating whether a paint is composited with formulas that give each color of the result from the same color of the pixel, and costly enough to be worth a table.</summary>
+        public static bool IsSeparable(scoped in DrawingSource source)
+            => source.IsLinearLight || source.Blend != BlendMode.Normal ? source.Blend < BlendMode.Hue : source.Mode is not (CompositeMode.SourceOver or CompositeMode.Source);
+
+        /// <summary>Gets the table of a single paint for the pixels of an alpha, or <see langword="null"/> when it is not built yet or the result has no table.</summary>
+        /// <param name="source">The paint.</param>
+        /// <param name="channels">The number of samples per pixel.</param>
+        /// <param name="isBlueFirst"><see langword="true"/> when the first color sample is blue.</param>
+        /// <param name="destinationAlpha">The alpha of the pixels, 255 without alpha.</param>
+        /// <param name="length">The number of pixels about to be composited with the paint.</param>
+        public static SampleTable? Get(scoped in DrawingSource source, int channels, bool isBlueFirst, byte destinationAlpha, int length)
+        {
+            var table = s_current ??= new SampleTable();
+            if (table._color != source.Color || table._mode != source.Mode || table._blend != source.Blend || table._transfer != source.Transfer || !ReferenceEquals(table._curves, source.Curves) ||
+                table._channels != channels || table._isBlueFirst != isBlueFirst || table._destinationAlpha != destinationAlpha)
+            {
+                table._color = source.Color;
+                table._mode = source.Mode;
+                table._blend = source.Blend;
+                table._transfer = source.Transfer;
+                table._curves = source.Curves;
+                table._channels = channels;
+                table._isBlueFirst = isBlueFirst;
+                table._destinationAlpha = destinationAlpha;
+                table._pixels = 0;
+                table._isBuilt = false;
+            }
+
+            if (!table._isBuilt)
+            {
+                table._pixels += length;
+                if (table._pixels < MinPixels)
+                    return null;
+
+                table.Build(source);
+            }
+
+            return table._isUsable ? table : null;
+        }
+
+        /// <summary>Composites the paint over a pixel of each value with the formulas.</summary>
+        private void Build(scoped in DrawingSource source)
+        {
+            const int Values = 256;
+            var channels = _channels;
+            Span<byte> pixels = stackalloc byte[Values * 4];
+            pixels = pixels[..(Values * channels)];
+            Span<uint> coverage = stackalloc uint[Values];
+            coverage.Fill(CoverageRasterizer.FullCoverage);
+            for (var value = 0; value < Values; value++)
+            {
+                var pixel = pixels.Slice(value * channels, channels);
+                pixel.Fill((byte)value);
+                if (channels == 4)
+                {
+                    pixel[3] = _destinationAlpha;
+                }
+            }
+
+            CompositeWithFormulas(pixels, channels, coverage, source, _isBlueFirst);
+            _isBuilt = true;
+            Alpha = channels == 4 ? pixels[3] : byte.MaxValue;
+
+            // The alpha of the result does not depend on the colors of the pixel: the table is not used otherwise
+            _isUsable = true;
+            for (var value = 0; value < Values; value++)
+            {
+                var pixel = pixels.Slice(value * channels, channels);
+                if (channels == 4 && pixel[3] != Alpha)
+                {
+                    _isUsable = false;
+                    return;
+                }
+
+                for (var c = 0; c < 3; c++)
+                {
+                    _samples[(c * Values) + value] = pixel[Math.Min(c, channels - 1)];
+                }
+            }
+        }
     }
 }

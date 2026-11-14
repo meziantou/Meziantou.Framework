@@ -441,6 +441,36 @@ public sealed class ScreenshotTests : IDisposable
         Assert.Equal(Colors.Lime, screenshot.GetPixel(183, 63));
     }
 
+    [Theory]
+    [InlineData("xlink:href", "/icons/sprite.svg#copy", "https://example.com/")]
+    [InlineData("href", "/icons/sprite.svg#copy", "https://example.com/")]
+    [InlineData("xlink:href", "#copy", "https://example.com/")]
+    [InlineData("href", "#copy", "https://example.com/")]
+    [InlineData("xlink:href", "/icons/sprite.svg#copy", "http://localhost:5000/")]
+    public void Svg_UseOfASymbolOfASprite(string attribute, string href, string url)
+    {
+        // An icon (an inline svg element sized by CSS) whose only content is a use element that references a symbol of a sprite,
+        // in an external resource document or in the document. The page served over http://localhost upgrades the insecure
+        // requests, which does not apply to localhost: the sprite is a same-origin resource
+        const string Sprite = "<svg xmlns='http://www.w3.org/2000/svg'><symbol id='a' viewBox='0 0 512 512'><path d='M0 0H512V512Z'/></symbol><symbol id='copy' viewBox='0 0 448 512'><path d='M0 0H448V512H0Z'/></symbol></svg>";
+        _pages.Resources["/icons/sprite.svg"] = (System.Text.Encoding.UTF8.GetBytes(Sprite), "image/svg+xml");
+        var inlineSprite = href[0] == '#' ? Sprite.Replace("<svg xmlns='http://www.w3.org/2000/svg'>", "<svg style='display: none'>", StringComparison.Ordinal) : "";
+        var context = _pages.Load($$"""
+            <meta http-equiv=Content-Security-Policy content=upgrade-insecure-requests>
+            <style>body { color: lime } .icon { height: 1em; fill: currentColor } button { all: unset; font: 20px/1 Ahem }</style>
+            {{inlineSprite}}
+            <button class=action type=button><svg class=icon role=img style="width:1em"><use {{attribute}}="{{href}}"></use></svg>copy</button>
+            """, url: url);
+
+        using var screenshot = context.TakeScreenshot(new ScreenshotOptions { FullPage = true });
+
+        // The symbol (448x512) is scaled to the 20x20 viewport of the icon and centered: 17.5px wide, from x=1.25
+        Assert.Equal(Colors.Lime, screenshot.GetPixel(10, 10));
+        Assert.Equal(Colors.Lime, screenshot.GetPixel(2, 19));
+        Assert.Equal(Colors.White, screenshot.GetPixel(0, 10));
+        Assert.Equal(Colors.White, screenshot.GetPixel(19, 10));
+    }
+
     [Fact]
     public void FragmentedBox_DecorationsAreSlicedFromTheStitchedBox()
     {
@@ -767,6 +797,136 @@ public sealed class ScreenshotTests : IDisposable
         Assert.Equal(Colors.Blue, screenshot.GetPixel(10, 10));
         Assert.Equal(Colors.Blue, screenshot.GetPixel(98, 23));
         Assert.Equal(Colors.White, screenshot.GetPixel(102, 27));
+    }
+
+    [Fact]
+    public void PinchZoom_TheScreenshotIsTheMagnifiedVisualViewport()
+    {
+        // The 200x100 viewport zoomed 2x around (150, 50): the screenshot shows the area (75, 25)-(175, 75) of the layout
+        // viewport, magnified, at the size of the viewport
+        var context = _pages.Load("""
+            <style>body { margin: 0 } div { position: absolute; width: 10px; height: 10px }</style>
+            <div style="left: 75px; top: 25px; background: red"></div>
+            <div style="left: 165px; top: 65px; background: blue"></div>
+            <div style="left: 60px; top: 10px; background: lime"></div>
+            """);
+
+        Assert.True(context.Input.Pinch(150, 50, 2));
+
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal((200, 100), (screenshot.Width, screenshot.Height));
+        Assert.Equal(Colors.Red, screenshot.GetPixel(0, 0));
+        Assert.Equal(Colors.Red, screenshot.GetPixel(19, 19));
+        Assert.Equal(Colors.White, screenshot.GetPixel(21, 21));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(199, 99));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(180, 80));
+        Assert.Equal(Colors.White, screenshot.GetPixel(178, 78));
+
+        // A full page screenshot is not zoomed
+        using var fullPage = context.TakeScreenshot(new ScreenshotOptions { FullPage = true });
+        Assert.Equal((200, 100), (fullPage.Width, fullPage.Height));
+        Assert.Equal(Colors.Lime, fullPage.GetPixel(65, 15));
+    }
+
+    [Fact]
+    public async Task ConcurrentPages_TheLoadsCompleteInTheTasksOfTheEventLoopOfEachPage()
+    {
+        // Each page is rendered on its own thread, which has a synchronization context (as the threads of a UI framework or of
+        // the "aggressive" parallel algorithm of xUnit). The images are loaded asynchronously: their responses must be
+        // processed in the tasks of the event loop of the page, on its thread, not on a thread-pool thread while the page is
+        // styled and painted.
+        var pages = new Task<int>[4];
+        for (var i = 0; i < pages.Length; i++)
+        {
+            var width = 200 + (i * 50);
+            pages[i] = Task.Factory.StartNew(
+                () =>
+                {
+                    var previous = SynchronizationContext.Current;
+                    SynchronizationContext.SetSynchronizationContext(new ThreadSynchronizationContext());
+                    try
+                    {
+                        return RenderPageWithAsynchronousImages(width);
+                    }
+                    finally
+                    {
+                        SynchronizationContext.SetSynchronizationContext(previous);
+                    }
+                },
+                TestContext.Current.CancellationToken,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
+        }
+
+        var loadsOnOtherThreads = await Task.WhenAll(pages);
+        Assert.All(loadsOnOtherThreads, count => Assert.Equal(0, count));
+    }
+
+    /// <summary>Renders a page whose images are loaded asynchronously, and returns the number of load events fired on another thread.</summary>
+    private static int RenderPageWithAsynchronousImages(double width)
+    {
+        const int ImageCount = 20;
+        var thread = Environment.CurrentManagedThreadId;
+        var png = TestPages.CreatePng(1, 1, Colors.Lime);
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { Width = width, Height = 100 },
+            RenderingBackend = new ImagingRenderingBackend(),
+            DocumentLoader = new DelayedImageLoader(png),
+        });
+
+        var html = new System.Text.StringBuilder("<!DOCTYPE html><style>body { margin: 0 } div p img { width: 20px; height: 20px; vertical-align: top } div > p { margin: 0 }</style><div><p>");
+        for (var i = 0; i < ImageCount; i++)
+        {
+            html.Append(System.Globalization.CultureInfo.InvariantCulture, $"<img src='/{i}.png'>");
+        }
+
+        html.Append("</p></div>");
+        context.Navigate("https://example.com/", _ => html.ToString());
+
+        var loads = 0;
+        var loadsOnOtherThreads = 0;
+        foreach (var image in context.Document.QuerySelectorAll<HtmlImageElement>("img"))
+        {
+            image.AddEventListener("load", _ =>
+            {
+                Interlocked.Increment(ref loads);
+                if (Environment.CurrentManagedThreadId != thread)
+                {
+                    Interlocked.Increment(ref loadsOnOtherThreads);
+                }
+            });
+        }
+
+        // The event loop is run on the thread of the page until the images are loaded
+        var timeout = System.Diagnostics.Stopwatch.StartNew();
+        while (Volatile.Read(ref loads) < ImageCount && timeout.Elapsed < TimeSpan.FromSeconds(60))
+        {
+            context.EventLoop.RunUntilIdle();
+            Thread.Sleep(1);
+        }
+
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal(ImageCount, Volatile.Read(ref loads));
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal(Colors.Lime, screenshot.GetPixel(10, 10));
+        return Volatile.Read(ref loadsOnOtherThreads);
+    }
+
+    /// <summary>A synchronization context that is not the default one: the runtime does not run the continuations inline on its thread.</summary>
+    private sealed class ThreadSynchronizationContext : SynchronizationContext
+    {
+        public override SynchronizationContext CreateCopy() => new ThreadSynchronizationContext();
+    }
+
+    /// <summary>A loader whose responses complete asynchronously, on a thread-pool thread.</summary>
+    private sealed class DelayedImageLoader(byte[] png) : DocumentLoader
+    {
+        public override async ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
+        {
+            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+            return new DocumentResource(png) { Headers = [new("Content-Type", "image/png")] };
+        }
     }
 
     private static Func<Rgba32, Rgba32, bool> ColorComparer(int tolerance) => (a, b) => Math.Abs(a.R - b.R) <= tolerance && Math.Abs(a.G - b.G) <= tolerance && Math.Abs(a.B - b.B) <= tolerance && Math.Abs(a.A - b.A) <= tolerance;

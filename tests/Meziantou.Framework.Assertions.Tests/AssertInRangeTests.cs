@@ -129,6 +129,16 @@ public sealed class AssertInRangeTests
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.InRange((Half)actual, (Half)low, (Half)high));
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.InRange((NFloat)actual, (NFloat)low, (NFloat)high));
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.InRange((double?)actual, low, high));
+#if NET11_0_OR_GREATER
+        AssertionsAssert.NotInRange((System.Numerics.BFloat16)actual, (System.Numerics.BFloat16)low, (System.Numerics.BFloat16)high);
+        AssertionsAssert.NotInRange((System.Numerics.Decimal32)actual, (System.Numerics.Decimal32)low, (System.Numerics.Decimal32)high);
+        AssertionsAssert.NotInRange((System.Numerics.Decimal64)actual, (System.Numerics.Decimal64)low, (System.Numerics.Decimal64)high);
+        AssertionsAssert.NotInRange((System.Numerics.Decimal128)actual, (System.Numerics.Decimal128)low, (System.Numerics.Decimal128)high);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.InRange((System.Numerics.BFloat16)actual, (System.Numerics.BFloat16)low, (System.Numerics.BFloat16)high));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.InRange((System.Numerics.Decimal32)actual, (System.Numerics.Decimal32)low, (System.Numerics.Decimal32)high));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.InRange((System.Numerics.Decimal64)actual, (System.Numerics.Decimal64)low, (System.Numerics.Decimal64)high));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.InRange((System.Numerics.Decimal128)actual, (System.Numerics.Decimal128)low, (System.Numerics.Decimal128)high));
+#endif
     }
 
     [Theory]

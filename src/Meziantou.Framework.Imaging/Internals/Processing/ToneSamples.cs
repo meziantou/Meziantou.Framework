@@ -657,6 +657,26 @@ internal static class ToneSamples
             ref var output = ref unsafe(MemoryMarshal.GetReference(pixels));
             ref var up = ref unsafe(Unsafe.As<uint, byte>(ref MemoryMarshal.GetReference(increases)));
             ref var down = ref unsafe(Unsafe.As<uint, byte>(ref MemoryMarshal.GetReference(decreases)));
+            if (Vector512.IsHardwareAccelerated)
+            {
+                for (; x + 16 <= count; x += 16)
+                {
+                    var offset = (nuint)(4 * x);
+                    var shifted = Vector512.SubtractSaturate(Vector512.AddSaturate(unsafe(Vector512.LoadUnsafe(ref output, offset)), unsafe(Vector512.LoadUnsafe(ref up, offset))), unsafe(Vector512.LoadUnsafe(ref down, offset)));
+                    unsafe { shifted.StoreUnsafe(ref output, offset); }
+                }
+            }
+
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; x + 8 <= count; x += 8)
+                {
+                    var offset = (nuint)(4 * x);
+                    var shifted = Vector256.SubtractSaturate(Vector256.AddSaturate(unsafe(Vector256.LoadUnsafe(ref output, offset)), unsafe(Vector256.LoadUnsafe(ref up, offset))), unsafe(Vector256.LoadUnsafe(ref down, offset)));
+                    unsafe { shifted.StoreUnsafe(ref output, offset); }
+                }
+            }
+
             for (; x + 4 <= count; x += 4)
             {
                 var offset = (nuint)(4 * x);
@@ -687,6 +707,17 @@ internal static class ToneSamples
         ref var input = ref unsafe(MemoryMarshal.GetReference(pixels));
         ref var output = ref unsafe(MemoryMarshal.GetReference(luma));
         var x = 0;
+        if (Vector512.IsHardwareAccelerated)
+        {
+            // AVX-512: 16 pixels per vector
+            for (; x + 32 <= luma.Length; x += 32)
+            {
+                var low = PixelConverter.Luma8Vector(unsafe(Vector512.LoadUnsafe(ref input, (nuint)(4 * x))), bgr);
+                var high = PixelConverter.Luma8Vector(unsafe(Vector512.LoadUnsafe(ref input, (nuint)((4 * x) + 64))), bgr);
+                unsafe { Vector512.Narrow(low, high).AsUInt16().StoreUnsafe(ref output, (nuint)x); }
+            }
+        }
+
         if (Vector256.IsHardwareAccelerated)
         {
             // x64: 8 pixels per vector

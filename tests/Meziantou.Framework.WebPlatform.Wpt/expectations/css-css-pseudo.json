@@ -113,6 +113,30 @@
   "css/css-pseudo/chrome-486467574.html": {
     "total": 1
   },
+  "css/css-pseudo/chrome-bug-1299142-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-pseudo/chrome-first-letter-container-query-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-pseudo/chrome-first-letter-inside-replaced-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-pseudo/crashtests/chrome-536997542-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-pseudo/crashtests/first-letter-inherit-position.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-pseudo/crashtests/first-line-marquee-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-pseudo/crashtests/placeholder-style-sharing-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-pseudo/crashtests/pseudoelement-removal-with-scroll-timeline-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-pseudo/events-on-after-before-marker.tentative.html": {
     "total": 4,
     "failures": {
@@ -142,11 +166,20 @@
   "css/css-pseudo/file-selector-button-after-part.html": {
     "reftest": "PASS"
   },
+  "css/css-pseudo/file-selector-button-display-none-overflow-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-pseudo/file-selector-button-display-toggle-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-pseudo/file-selector-button-float.html": {
     "reftest": "PASS"
   },
   "css/css-pseudo/file-selector-button-inherit.html": {
     "total": 1
+  },
+  "css/css-pseudo/firefox-bug-1907238-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-pseudo/first-letter-001.html": {
     "reftest": "FAIL"
@@ -204,6 +237,9 @@
   "css/css-pseudo/first-letter-before-dynamic.html": {
     "reftest": "PASS"
   },
+  "css/css-pseudo/first-letter-bidi-pre-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-pseudo/first-letter-block-to-inline.html": {
     "reftest": "PASS"
   },
@@ -212,6 +248,9 @@
   },
   "css/css-pseudo/first-letter-capitalize-supplementary-char.html": {
     "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-pseudo/first-letter-digraph-document-lang-dynamic.html": {
     "reftest": "PASS"
@@ -230,6 +269,9 @@
   },
   "css/css-pseudo/first-letter-exclude-inline-marker.html": {
     "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-first-line-dynamic-001-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-pseudo/first-letter-float-insert-text-before.html": {
     "reftest": "PASS"
@@ -353,17 +395,29 @@
   "css/css-pseudo/first-line-change-inline-color.html": {
     "reftest": "PASS"
   },
+  "css/css-pseudo/first-line-first-letter-insert-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-pseudo/first-line-float-mapped-attribute-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-pseudo/first-line-font-relative-units-001.html": {
     "reftest": "PASS"
   },
   "css/css-pseudo/first-line-inherited-no-transition.html": {
     "reftest": "PASS"
   },
+  "css/css-pseudo/first-line-inherited-transition-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-pseudo/first-line-inherited-with-transition.html": {
     "reftest": "PASS"
   },
   "css/css-pseudo/first-line-inherited.html": {
     "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-input-image-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-pseudo/first-line-input-textarea.tentative.html": {
     "reftest": "PASS"
@@ -395,6 +449,9 @@
   "css/css-pseudo/first-line-replaced-001.html": {
     "reftest": "PASS"
   },
+  "css/css-pseudo/first-line-select-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-pseudo/first-line-with-before-after.html": {
     "reftest": "PASS"
   },
@@ -418,6 +475,9 @@
   },
   "css/css-pseudo/focus-visible-originating-element.html": {
     "total": 1
+  },
+  "css/css-pseudo/get-computed-style-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-pseudo/grammar-error-001.html": {
     "reftest": "FAIL"
@@ -566,6 +626,9 @@
   "css/css-pseudo/highlight-painting-004.html": {
     "reftest": "FAIL"
   },
+  "css/css-pseudo/highlight-painting-005-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-pseudo/highlight-painting-currentcolor-001.html": {
     "reftest": "PASS"
   },
@@ -610,6 +673,9 @@
   },
   "css/css-pseudo/highlight-painting-soft-hyphens-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-soft-hyphens-002-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-pseudo/highlight-styling-001.html": {
     "reftest": "PASS"
@@ -899,11 +965,17 @@
   "css/css-pseudo/parsing/tree-abiding-pseudo-elements.html": {
     "total": 41
   },
+  "css/css-pseudo/placeholder-as-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-pseudo/placeholder-excluded-properties.html": {
     "reftest": "PASS"
   },
   "css/css-pseudo/placeholder-inherit.html": {
     "total": 1
+  },
+  "css/css-pseudo/placeholder-input-dynamic-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-pseudo/placeholder-input-number.html": {
     "reftest": "PASS"
@@ -1021,6 +1093,12 @@
   },
   "css/css-pseudo/spelling-error-001.html": {
     "reftest": "FAIL"
+  },
+  "css/css-pseudo/spelling-error-004-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-pseudo/spelling-error-005-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-pseudo/spelling-error-006.html": {
     "reftest": "PASS"

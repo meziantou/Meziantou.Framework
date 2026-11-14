@@ -401,6 +401,9 @@
   "navigation-api/navigate-event/navigate-form-get.html": {
     "total": 1
   },
+  "navigation-api/navigate-event/navigate-form-onformdata-navigate-crash.html": {
+    "crashtest": "TIMEOUT"
+  },
   "navigation-api/navigate-event/navigate-form-reload.html": {
     "total": 1
   },
@@ -533,6 +536,9 @@
   "navigation-api/navigate-event/navigation-traverseTo-top-cancels-cross-document-child.html": {
     "total": 1
   },
+  "navigation-api/navigate-event/potentially-reset-focus-no-document-element-crash.html": {
+    "crashtest": "PASS"
+  },
   "navigation-api/navigate-event/reentry-from-focus-reset-navigate-api-tracker.html": {
     "total": 2
   },
@@ -559,6 +565,9 @@
   },
   "navigation-api/navigate-event/signal-abort-reentry-navigate-api-tracker.html": {
     "total": 2
+  },
+  "navigation-api/navigate-event/signal-abort-replaceState-crash.html": {
+    "crashtest": "PASS"
   },
   "navigation-api/navigate-event/signal-abort-window-stop-after-intercept.html": {
     "total": 1

@@ -98,6 +98,18 @@
   "css/css-layout-api/child-constraints/percentage-size-vrl-vrl.https.html": {
     "reftest": "PASS"
   },
+  "css/css-layout-api/chrome-bug-1287843-000-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-layout-api/chrome-bug-1287843-001-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-layout-api/chrome-bug-1291449-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-layout-api/chrome-bug-1296664-crash.https.html": {
+    "crashtest": "PASS"
+  },
   "css/css-layout-api/computed-style-layout-function.https.html": {
     "total": 5
   },
@@ -332,6 +344,12 @@
   "css/css-layout-api/inline-style-layout-function.https.html": {
     "total": 3
   },
+  "css/css-layout-api/input-text-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-layout-api/inside-multicol-crash.https.html": {
+    "crashtest": "PASS"
+  },
   "css/css-layout-api/intrinsic-sizes/absolute.https.html": {
     "reftest": "PASS"
   },
@@ -394,6 +412,21 @@
   },
   "css/css-layout-api/layout-child/text-02.https.html": {
     "reftest": "PASS"
+  },
+  "css/css-layout-api/list-item-multicol-with-custom-layout-child-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-layout-api/multicol-break-before-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-layout-api/multicol-child-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-layout-api/multicol-details-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-layout-api/multicol-fieldset-crash.https.html": {
+    "crashtest": "PASS"
   },
   "css/css-layout-api/position-fragment/htb-ltr.https.html": {
     "reftest": "PASS"

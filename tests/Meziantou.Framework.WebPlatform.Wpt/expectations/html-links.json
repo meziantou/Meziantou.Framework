@@ -1,4 +1,7 @@
 {
+  "html/links/icon/empty-href-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/links/icon/no-error-event.sub.html": {
     "total": 1
   },

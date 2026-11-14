@@ -31,6 +31,33 @@ public sealed class HeicDecoderConformanceTests
 
     private static bool IsMatrixed(GoldenFixture fixture) => (fixture.Entry.Features ?? []).Any(feature => feature.StartsWith("heic.matrix=", StringComparison.Ordinal) && feature != "heic.matrix=0");
 
+    /// <summary>
+    /// Every valid fixture: areas of the image (one pixel at the top left, an area in the middle, the last rows) have the
+    /// pixels of the whole decode there, whatever the decoder skips (the tiles of a grid, the rows below the area, the tiles
+    /// of a frame far from it), or when it decodes the item whole again (an item that is not a single intra picture).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ValidFixtures))]
+    public void ARegionHasThePixelsOfTheWholeDecode(string id)
+    {
+        var data = GoldenCorpus.Default.Get(id).ReadInput();
+        using var whole = Image.Load(data);
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(whole.PixelFormat);
+        var expected = new byte[whole.Width * whole.Height * bytesPerPixel];
+        whole.Frames[0].CopyPixelBytesTo(expected);
+        foreach (var region in (Rectangle[])[new(0, 0, 1, 1), new(whole.Width / 3, whole.Height / 3, Math.Max(1, whole.Width / 3), Math.Max(1, whole.Height / 4)), new(0, whole.Height - 1, whole.Width, 1)])
+        {
+            using var actual = Image.Load(data, new ImageDecodeOptions { Region = region });
+            Assert.Equal((region.Size, whole.PixelFormat, whole.Frames.Count), (actual.Size, actual.PixelFormat, actual.Frames.Count));
+            var pixels = new byte[region.Width * region.Height * bytesPerPixel];
+            actual.Frames[0].CopyPixelBytesTo(pixels);
+            for (var y = 0; y < region.Height; y++)
+            {
+                Assert.True(expected.AsSpan((((region.Y + y) * whole.Width) + region.X) * bytesPerPixel, region.Width * bytesPerPixel).SequenceEqual(pixels.AsSpan(y * region.Width * bytesPerPixel, region.Width * bytesPerPixel)), $"{id}: the row {y} of the region {region} differs from the whole decode.");
+            }
+        }
+    }
+
     [Fact]
     public void FixturesCoverTheDecoderFeatures()
     {

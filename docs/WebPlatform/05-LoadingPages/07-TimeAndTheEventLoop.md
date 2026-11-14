@@ -187,3 +187,9 @@ the frames have no `presentationTime`.
 A host that runs a page on its own thread (as the Playwright server does) sets `EventLoop.WorkSignal`: the callback is
 invoked, from any thread, when a task or a timer is queued, so that the thread wakes up and calls [RunTask()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunTask) and
 [PromoteDueTimers()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.PromoteDueTimers). The callback must not run the event loop itself.
+
+The thread may have a synchronization context (a UI thread, or a thread of a test framework such as the "aggressive"
+parallel algorithm of xUnit): the event loop removes it while it runs a task or the microtasks, and restores it after.
+The network requests and the other asynchronous operations of a page complete in the tasks of its event loop, and the
+rest of their work runs in these tasks, on this thread, never concurrently with the page. The callbacks of your
+application that a task calls, such as the event listeners, run without synchronization context too.

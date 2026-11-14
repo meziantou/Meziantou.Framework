@@ -49,8 +49,8 @@ internal sealed class Av1PostFilter : IDisposable
         var header = frame.Header;
         var sequence = frame.Sequence;
         var workers = TestIgnoreMinimumSize
-            ? Math.Clamp((header.MiRows + 3) / 4, 1, maxDegreeOfParallelism)
-            : RowBands.GetWorkerCount(new Size(header.UpscaledWidth, header.FrameHeight), maxDegreeOfParallelism);
+            ? Math.Clamp((frame.DecodedMiRows + 3) / 4, 1, maxDegreeOfParallelism)
+            : RowBands.GetWorkerCount(new Size(header.UpscaledWidth, frame.DecodedHeight), maxDegreeOfParallelism);
         if (filters.HasFlag(Av1InLoopFilters.Deblock) && (header.LoopFilterLevel[0] is not 0 || header.LoopFilterLevel[1] is not 0))
             Av1LoopFilter.Apply(frame, state, workers, cancellationToken);
 
@@ -121,7 +121,7 @@ internal sealed class Av1PostFilter : IDisposable
                 edges = edgeBuffer;
                 for (var band = 1; band < workers; band++)
                 {
-                    Av1Cdef.SaveBandEdge(frame, GetBandRow(header.MiRows, band, workers), edgeBuffer.Span.Slice((band - 1) * edgeLength, edgeLength));
+                    Av1Cdef.SaveBandEdge(frame, GetBandRow(frame.DecodedMiRows, band, workers), edgeBuffer.Span.Slice((band - 1) * edgeLength, edgeLength));
                 }
 
                 var directions = _cdefDirections;
@@ -130,7 +130,7 @@ internal sealed class Av1PostFilter : IDisposable
                     var edgeSpan = edgeBuffer.Span;
                     var above = band is 0 ? default : edgeSpan.Slice((band - 1) * edgeLength, edgeLength);
                     var below = band == workers - 1 ? default : edgeSpan.Slice(band * edgeLength, edgeLength);
-                    Av1Cdef.ApplyRows(frame, state, rows[band]!.Span, above, below, GetBandRow(header.MiRows, band, workers), GetBandRow(header.MiRows, band + 1, workers), cancellationToken, directions is null ? default : directions.Span);
+                    Av1Cdef.ApplyRows(frame, state, rows[band]!.Span, above, below, GetBandRow(frame.DecodedMiRows, band, workers), GetBandRow(frame.DecodedMiRows, band + 1, workers), cancellationToken, directions is null ? default : directions.Span);
                 });
             }
 

@@ -158,7 +158,8 @@ internal sealed partial class GridLayoutAlgorithm
     /// margin/border/padding contribution of each edge at which it could hypothetically be placed. If the item spans the entire
     /// subgrid, it receives both." The extra margins of the position with the largest ones (an edge of the subgrid and half the
     /// difference of the gutters on the other side, see <see cref="ApplySubgridExtraMargins"/>) are used in every position. An
-    /// item that is itself a subgrid contributes its items in every position, with the extra margins of its first one.
+    /// item that is itself a subgrid contributes its items in every position, with the largest extra margins of each of its edges
+    /// (its layout uses the extra margins of its position, see <see cref="UpdateSubgridEdgeMargins"/>).
     /// </summary>
     private void AddLanesHoistedItems(List<GridSizingItem> output, GridItem item, GridAxis ownAxis, GridAxis targetAxis, int parentStart, int parentEnd, bool reversed, bool everyTrack)
     {
@@ -173,6 +174,20 @@ internal sealed partial class GridLayoutAlgorithm
         }
 
         var (extraStart, extraEnd) = GetLargestLanesExtraMargins(ownAxis, span, count);
+
+        // A nested subgrid contributes its items with the largest extra margins of each edge at which it could be placed (the edges
+        // of this subgrid when it can be placed at them), whatever its current position
+        var setsNestedEdges = nested is not null && _input?.Get(ownAxis) is not null;
+        if (setsNestedEdges)
+        {
+            var input = _input!.Get(ownAxis)!;
+            var half = (GetOwnGap(ownAxis, input) - input.ParentGap) / 2;
+            var largestStart = count > span ? Math.Max(input.EdgeStart, half) : input.EdgeStart;
+            var largestEnd = count > span ? Math.Max(input.EdgeEnd, half) : input.EdgeEnd;
+            SetExtraMargins(item, ownAxis, largestStart, largestEnd);
+            UpdateSubgridEdgeMargins(this, item, nested!, nestedAxis);
+        }
+
         for (var start = 0; start + span <= count; start++)
         {
             var end = start + span;
@@ -190,6 +205,26 @@ internal sealed partial class GridLayoutAlgorithm
                 IsReversed = reversed,
                 IsHypothetical = true,
             });
+        }
+
+        if (setsNestedEdges)
+        {
+            ApplySubgridExtraMargins(item);
+            UpdateSubgridEdgeMargins(this, item, nested!, nestedAxis);
+        }
+
+        static void SetExtraMargins(GridItem item, GridAxis axis, double start, double end)
+        {
+            if (axis == GridAxis.Columns)
+            {
+                item.ExtraColumnStart = start;
+                item.ExtraColumnEnd = end;
+            }
+            else
+            {
+                item.ExtraRowStart = start;
+                item.ExtraRowEnd = end;
+            }
         }
     }
 
@@ -486,9 +521,7 @@ internal sealed partial class GridLayoutAlgorithm
         var parentStartSide = parentAxis == GridAxis.Columns ? _writingDirection.InlineStart : _writingDirection.BlockStart;
         var reversed = itemStartSide != parentStartSide;
 
-        var edges = GetSubgridEdges(item);
-        var outerStart = reversed ? item.GetExtraEnd(parentAxis) : item.GetExtraStart(parentAxis);
-        var outerEnd = reversed ? item.GetExtraStart(parentAxis) : item.GetExtraEnd(parentAxis);
+        var (edgeStart, edgeEnd) = GetSubgridEdgeMargins(item, itemAxis, parentAxis);
 
         // The line names of the parent at the lines of the subgrid, and its named areas that the subgrid overlaps
         var names = new string[]?[span + 1];
@@ -522,8 +555,8 @@ internal sealed partial class GridLayoutAlgorithm
             Span = span,
             LineNames = hasNames ? names : null,
             Areas = areas,
-            EdgeStart = edges.Get(itemStartSide) + outerStart,
-            EdgeEnd = edges.Get(Opposite(itemStartSide)) + outerEnd,
+            EdgeStart = edgeStart,
+            EdgeEnd = edgeEnd,
             ParentGap = GetGap(parentAxis),
             InheritedGap = _input?.Get(parentAxis) is { } ownInput ? GetOwnGap(parentAxis, ownInput) : GetGap(parentAxis),
         };
@@ -538,6 +571,50 @@ internal sealed partial class GridLayoutAlgorithm
             else if (Array.IndexOf(list, name) < 0)
             {
                 names[line] = [.. list, name];
+            }
+        }
+    }
+
+    /// <summary>
+    /// Returns the extra margins of the items at the start and end edges of a subgridded axis of a subgrid item (see
+    /// <see cref="SubgridAxisInput.EdgeStart"/>): its margin, border, padding and scrollbar gutter at each edge, plus its own extra
+    /// margins in this grid.
+    /// </summary>
+    private (double Start, double End) GetSubgridEdgeMargins(GridItem item, GridAxis itemAxis, GridAxis parentAxis)
+    {
+        var itemStartSide = itemAxis == GridAxis.Columns ? item.WritingDirection.InlineStart : item.WritingDirection.BlockStart;
+        var parentStartSide = parentAxis == GridAxis.Columns ? _writingDirection.InlineStart : _writingDirection.BlockStart;
+        var reversed = itemStartSide != parentStartSide;
+        var edges = GetSubgridEdges(item);
+        var outerStart = reversed ? item.GetExtraEnd(parentAxis) : item.GetExtraStart(parentAxis);
+        var outerEnd = reversed ? item.GetExtraStart(parentAxis) : item.GetExtraEnd(parentAxis);
+        return (edges.Get(itemStartSide) + outerStart, edges.Get(Opposite(itemStartSide)) + outerEnd);
+    }
+
+    /// <summary>
+    /// Updates the extra margins of the edges of a subgridded axis of a subgrid item whose position changed (a subgrid with an
+    /// automatic position placed by the grid lanes placement: "the sum of the subgrid's margin, padding, scrollbar gutter, and border
+    /// at each edge are applied as an extra layer of (potentially negative) margin to the items at those edges", the edges of its
+    /// final position, https://drafts.csswg.org/css-grid-2/#subgrid-margins), and the extra margins of its items, recursively
+    /// through its own subgrids ("This extra layer of margin accumulates through multiple levels of subgrids").
+    /// </summary>
+    private static void UpdateSubgridEdgeMargins(GridLayoutAlgorithm parent, GridItem item, GridLayoutAlgorithm subgrid, GridAxis ownAxis)
+    {
+        if (subgrid._input?.Get(ownAxis) is not { } input)
+            return;
+
+        var (edgeStart, edgeEnd) = parent.GetSubgridEdgeMargins(item, ownAxis, input.ParentAxis);
+        if (edgeStart == input.EdgeStart && edgeEnd == input.EdgeEnd)
+            return;
+
+        input.EdgeStart = edgeStart;
+        input.EdgeEnd = edgeEnd;
+        foreach (var child in subgrid._items)
+        {
+            subgrid.ApplySubgridExtraMargins(child);
+            if (child.Subgrid is { } nested && nested.IsSubgriddedIn(ownAxis, out var nestedAxis, out _))
+            {
+                UpdateSubgridEdgeMargins(subgrid, child, nested, nestedAxis);
             }
         }
     }

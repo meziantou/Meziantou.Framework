@@ -62,8 +62,9 @@ public partial class Document
     /// <param name="isCorsSameOrigin">Whether the resource is CORS-same-origin (<c>image-orientation: none</c> applies to it, and it does not taint the canvases).</param>
     internal PaintImage CreatePaintImage(string url, ImageNaturalSize naturalSize, ReadOnlyMemory<byte> data, string? mimeType, bool isCorsSameOrigin = true)
     {
+        var isAnimated = ImageMetadata.IsAnimated(data.Span);
         if (RenderingBackend is null)
-            return new(url, naturalSize.Width ?? 0, naturalSize.Height ?? 0, mimeType == "image/svg+xml" ? data : default, mimeType) { IsCorsSameOrigin = isCorsSameOrigin, ContentDpr = naturalSize.ContentDpr ?? 1 };
+            return new(url, naturalSize.Width ?? 0, naturalSize.Height ?? 0, mimeType == "image/svg+xml" ? data : default, mimeType) { IsCorsSameOrigin = isCorsSameOrigin, ContentDpr = naturalSize.ContentDpr ?? 1, IsAnimated = isAnimated };
 
         var clock = EventLoop?.TimeProvider;
         return new(url, naturalSize.Width ?? 0, naturalSize.Height ?? 0, data, mimeType, ImageMetadata.GetExifOrientation(data.Span))
@@ -71,7 +72,32 @@ public partial class Document
             IsCorsSameOrigin = isCorsSameOrigin,
             ContentDpr = naturalSize.ContentDpr ?? 1,
             AnimationClock = clock is null ? null : (clock, clock.GetTimestamp()),
+            IsAnimated = isAnimated,
         };
+    }
+
+    /// <summary>
+    /// The timelines of the animated images of the elements whose <c>image-animation</c> is not <c>normal</c>, or null when no
+    /// element had another value (see <see cref="Rendering.ImageAnimationTimelines"/>).
+    /// </summary>
+    internal ImageAnimationTimelines? ImageAnimationTimelines { get; private set; }
+
+    /// <summary>Records the value of <c>image-animation</c> of a style the style engine of the document computed (see <see cref="Rendering.ImageAnimationTimelines.OnStyleComputed"/>).</summary>
+    internal void OnImageAnimationStyleComputed(Css.Cascade.ComputedStyle style, Css.Cascade.ComputedStyle? beforeChange)
+    {
+        // The animated images are played on the clock of the event loop of a document with a rendering backend
+        if (RenderingBackend is null || EventLoop?.TimeProvider is not { } clock)
+            return;
+
+        if (ImageAnimationTimelines is null)
+        {
+            if (style.GetComputedValue("image-animation") == "normal" || Rendering.ImageAnimationTimelines.GetMode(style) == ImageAnimationMode.NotRendered)
+                return;
+
+            ImageAnimationTimelines = new();
+        }
+
+        ImageAnimationTimelines.OnStyleComputed(style, beforeChange, clock);
     }
 
     private bool _mayHavePageColorSchemes;
@@ -165,6 +191,13 @@ public partial class Document
         var layoutWidth = GetStyleEngine().Environment.Width;
         return Css.Layout.MobileViewport.GetInitialScale(ViewportMeta, viewport.Width, layoutWidth, engine.GetFullPageSize().Width);
     }
+
+    /// <summary>
+    /// Returns the pinch zoom of the user (see <see cref="UserInput.Pinch"/>): the factor by which the page scale is multiplied
+    /// (1 when the page is not zoomed in), and the offset of the visual viewport in the layout viewport, in CSS pixels.
+    /// </summary>
+    internal (double Scale, Css.Layout.PhysicalOffset Offset) GetPinchZoom()
+        => VisualViewportOrNull is { PinchScale: not 1 } visualViewport && IsFullyActive ? (visualViewport.PinchScale, visualViewport.PinchOffset) : (1, Css.Layout.PhysicalOffset.Zero);
 
     /// <summary>
     /// Called when a <c>meta</c> element is inserted in or removed from the document, or when its name or content changes: the

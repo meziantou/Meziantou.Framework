@@ -76,6 +76,8 @@ public static partial class JavaScriptEngineFuzzTargets
         new("javascript-source-map", SourceMap) { Seeds = GetSourceMapSeeds, Dictionary = SourceMapTokens },
         new("javascript-source-map-mappings", SourceMapMappings) { Seeds = GetSourceMapMappingsSeeds },
         new("javascript-binding", Binding) { Seeds = GetBindingSeeds, Dictionary = BindingTokens },
+        new("javascript-compiled-code", CompiledCode) { Seeds = GetCompiledCodeSeeds, Dictionary = Tokens },
+        new("javascript-atomics-waiters", AtomicsWaiters) { Seeds = GetAtomicsWaitersSeeds, Dictionary = [.. Tokens, .. AtomicsWaitersTokens] },
     ];
 
     private static void Parse(ReadOnlySpan<byte> data)
@@ -180,9 +182,9 @@ public static partial class JavaScriptEngineFuzzTargets
     private static string FormatSyntaxError(JsSyntaxErrorException error) => string.IsNullOrEmpty(error.Message) ? "SyntaxError" : "SyntaxError: " + error.Message;
 
     // Runs a script in a fresh engine, where the clock and Math.random are fixed so that two runs give the same result
-    private static ScriptOutcome RunScript(Func<JsRealm, JsValue> run)
+    private static ScriptOutcome RunScript(Func<JsRealm, JsValue> run, JsEngineOptions? options = null)
     {
-        using var engine = CreateEngine(loader: null, FixedTimeProvider.Instance);
+        using var engine = CreateEngine(loader: null, FixedTimeProvider.Instance, options: options);
         var realm = CreateDeterministicRealm(engine);
         ScriptOutcome outcome;
         try
@@ -500,21 +502,21 @@ public static partial class JavaScriptEngineFuzzTargets
         return result.IsBoolean && result.AsBoolean();
     }
 
-    private static JsEngine CreateEngine(JsModuleLoader? loader, TimeProvider? timeProvider = null, JsDebugger? debugger = null)
+    private static JsEngine CreateEngine(JsModuleLoader? loader, TimeProvider? timeProvider = null, JsDebugger? debugger = null, JsEngineOptions? options = null)
     {
-        return new JsEngine(new JsEngineOptions
-        {
-            // The statement limit bounds the work deterministically; the timeout is only a safety net, as is the memory limit
-            MaxStatements = 100_000,
-            Timeout = TimeSpan.FromSeconds(10),
-            RegExpTimeout = TimeSpan.FromSeconds(1),
-            MemoryLimit = 128 * 1024 * 1024,
-            RecursionLimit = 1_000,
-            TimeZone = "UTC",
-            ModuleLoader = loader,
-            TimeProvider = timeProvider ?? TimeProvider.System,
-            Debugger = debugger,
-        });
+        options ??= new JsEngineOptions();
+
+        // The statement limit bounds the work deterministically; the timeout is only a safety net, as is the memory limit
+        options.MaxStatements = 100_000;
+        options.Timeout = TimeSpan.FromSeconds(10);
+        options.RegExpTimeout = TimeSpan.FromSeconds(1);
+        options.MemoryLimit = 128 * 1024 * 1024;
+        options.RecursionLimit = 1_000;
+        options.TimeZone = "UTC";
+        options.ModuleLoader = loader;
+        options.TimeProvider = timeProvider ?? TimeProvider.System;
+        options.Debugger = debugger;
+        return new JsEngine(options);
     }
 
     private static void Run(Action action)

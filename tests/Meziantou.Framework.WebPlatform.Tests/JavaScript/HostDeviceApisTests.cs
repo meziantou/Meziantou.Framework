@@ -57,6 +57,7 @@ public sealed class HostDeviceApisTests : IDisposable
             ComputePressure = options.ComputePressure,
             IdleDetection = options.IdleDetection,
             DevicePosture = options.DevicePosture,
+            WebAuthentication = options.WebAuthentication,
             Sensors = options.Sensors,
             ScreenOrientation = options.ScreenOrientation,
             VirtualKeyboard = options.VirtualKeyboard,
@@ -651,7 +652,7 @@ public sealed class HostDeviceApisTests : IDisposable
             </script>
             """, options);
 
-        Assert.Equal("show,title,body,tag,https://example.com/icon.png,,fr,rtl,42,true,1000,,false,0,0", Run(document));
+        Assert.Equal("show,title,body,tag,https://example.com/icon.png,,fr,rtl,42,true,1000,,false,0,2", Run(document));
         var notification = Assert.Single(notifications);
         Assert.Equal("title", notification.Title);
         Assert.Equal("body", notification.Body);
@@ -1401,6 +1402,163 @@ public sealed class HostDeviceApisTests : IDisposable
         document.BrowsingContext.IsVisible = true;
         Run(document);
         Assert.Equal("folded", Run(document, "document.title = log.join('|')"));
+    }
+
+    // Web Authentication
+
+    private const string WebAuthnScript = """
+        window.create = (publicKey) => navigator.credentials.create({ publicKey: Object.assign({
+          rp: { name: 'Example' },
+          user: { id: new Uint8Array([1, 2, 3]), name: 'john', displayName: 'John' },
+          challenge: new Uint8Array([0xff]),
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        }, publicKey) });
+        """;
+
+    [Fact]
+    public void WebAuthentication_CreateAndGet()
+    {
+        #region WebPlatform_WebAuthentication
+        var authenticators = new VirtualAuthenticatorEnvironment();
+        var authenticator = authenticators.AddAuthenticator(new VirtualAuthenticatorOptions
+        {
+            Protocol = VirtualAuthenticatorProtocol.Ctap21,
+            Transport = "internal",
+            HasResidentKey = true,
+            HasUserVerification = true,
+            IsUserVerified = true,
+        });
+
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = authenticators },
+        };
+        #endregion
+
+        var document = Load("<script>" + WebAuthnScript + "</script>", options);
+        Assert.Equal("public-key|platform|webauthn.create|true", Run(document, """
+            create({ authenticatorSelection: { residentKey: 'required' }, extensions: { credProps: true } }).then(c => {
+              window.credential = c;
+              const clientData = JSON.parse(new TextDecoder().decode(c.response.clientDataJSON));
+              document.title = [c.type, c.authenticatorAttachment, clientData.type, c.getClientExtensionResults().credProps.rk].join('|');
+            }, e => document.title = e.name)
+            """));
+
+        var credentials = authenticator.GetCredentials();
+        var stored = Assert.Single(credentials);
+        Assert.Equal("example.com", stored.RpId);
+        Assert.True(stored.IsResidentCredential);
+        Assert.Equal([1, 2, 3], stored.UserHandle!.Value.ToArray());
+
+        // A discoverable credential is found without allowCredentials, and its user handle is returned
+        Assert.Equal("true|1,2,3|true", Run(document, """
+            navigator.credentials.get({ publicKey: { challenge: new Uint8Array([1]) } }).then(a => {
+              document.title = [a.id === credential.id, new Uint8Array(a.response.userHandle).join(','), a.response.signature.byteLength > 0].join('|');
+            }, e => document.title = e.name)
+            """));
+        Assert.Equal(1u, authenticator.GetCredentials()[0].SignCount);
+    }
+
+    [Fact]
+    public void WebAuthentication_WithoutAuthenticator_IsNotAllowed()
+    {
+        var document = Load("<script>" + WebAuthnScript + "</script>");
+
+        Assert.Equal("NotAllowedError", Run(document, "create({}).then(() => document.title = 'created', e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public void WebAuthentication_ClientDataJson_IsTheSpecifiedSerialization()
+    {
+        var authenticators = new VirtualAuthenticatorEnvironment();
+        authenticators.AddAuthenticator(new VirtualAuthenticatorOptions());
+        var document = Load("<script>" + WebAuthnScript + "</script>", new BrowsingContextOptions { WebAuthentication = new WebAuthenticationOptions { Authenticators = authenticators } });
+
+        Assert.Equal("""{"type":"webauthn.create","challenge":"_w","origin":"https://example.com","crossOrigin":false}""", Run(document, "create({}).then(c => document.title = new TextDecoder().decode(c.response.clientDataJSON), e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public void WebAuthentication_AddCredential_SignsTheAssertions()
+    {
+        using var key = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+        var authenticators = new VirtualAuthenticatorEnvironment();
+        var authenticator = authenticators.AddAuthenticator(new VirtualAuthenticatorOptions { Protocol = VirtualAuthenticatorProtocol.Ctap1U2f });
+        authenticator.AddCredential(new VirtualCredential
+        {
+            CredentialId = new byte[] { 7, 8, 9 },
+            RpId = "example.com",
+            PrivateKey = key.ExportPkcs8PrivateKey(),
+            SignCount = 41,
+        });
+
+        var document = Load("<script>window.log = [];</script>", new BrowsingContextOptions { WebAuthentication = new WebAuthenticationOptions { Authenticators = authenticators } });
+        Run(document, """
+            navigator.credentials.get({ publicKey: { challenge: new Uint8Array([1]), allowCredentials: [{ type: 'public-key', id: new Uint8Array([7, 8, 9]) }] } }).then(a => {
+              window.assertion = a;
+              document.title = a.id;
+            }, e => document.title = e.name)
+            """);
+
+        Assert.Equal("BwgJ", document.Title);
+        Assert.Equal(42u, authenticator.GetCredentials()[0].SignCount);
+    }
+
+    [Theory]
+    [InlineData("1.2.840.21143491591", false)] // Unknown curve (fuzzing, issue 4912)
+    [InlineData("1.2.840.21143491591", true)]
+    [InlineData("1.3.132.0.34", false)] // P-384
+    [InlineData("1.3.132.0.34", true)]
+    public void WebAuthentication_AddCredential_RejectsEcdsaKeyOfAnotherCurve(string curve, bool inEcPrivateKey)
+    {
+        // The named curve is either the parameters of the AlgorithmIdentifier, or the parameters of the ECPrivateKey (RFC 5915)
+        // when the AlgorithmIdentifier has none
+        using var key = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+        var privateKey = key.ExportParameters(includePrivateParameters: true).D!;
+        var ecPrivateKey = new System.Formats.Asn1.AsnWriter(System.Formats.Asn1.AsnEncodingRules.DER);
+        using (ecPrivateKey.PushSequence())
+        {
+            ecPrivateKey.WriteInteger(1);
+            ecPrivateKey.WriteOctetString(privateKey);
+            if (inEcPrivateKey)
+            {
+                using (ecPrivateKey.PushSequence(new System.Formats.Asn1.Asn1Tag(System.Formats.Asn1.TagClass.ContextSpecific, 0, isConstructed: true)))
+                {
+                    ecPrivateKey.WriteObjectIdentifier(curve);
+                }
+            }
+        }
+
+        var pkcs8 = new System.Formats.Asn1.AsnWriter(System.Formats.Asn1.AsnEncodingRules.DER);
+        using (pkcs8.PushSequence())
+        {
+            pkcs8.WriteInteger(0);
+            using (pkcs8.PushSequence())
+            {
+                pkcs8.WriteObjectIdentifier("1.2.840.10045.2.1");
+                if (!inEcPrivateKey)
+                {
+                    pkcs8.WriteObjectIdentifier(curve);
+                }
+            }
+
+            pkcs8.WriteOctetString(ecPrivateKey.Encode());
+        }
+
+        var authenticator = new VirtualAuthenticatorEnvironment().AddAuthenticator(new VirtualAuthenticatorOptions());
+        Assert.Throws<ArgumentException>(() => authenticator.AddCredential(new VirtualCredential { CredentialId = new byte[] { 1 }, RpId = "example.com", PrivateKey = pkcs8.Encode(), SignCount = 0 }));
+        Assert.Empty(authenticator.GetCredentials());
+    }
+
+    [Fact]
+    public void WebAuthentication_ParseCreationOptionsFromJson_RejectsInvalidBase64Url()
+    {
+        var document = Load("<script></script>");
+
+        Assert.Equal("EncodingError|4", Run(document, """
+            const json = { rp: { name: 'Example' }, user: { id: 'dGVzdA', name: 'a', displayName: 'A' }, challenge: 'dGVzdA', pubKeyCredParams: [] };
+            const options = PublicKeyCredential.parseCreationOptionsFromJSON(json);
+            try { PublicKeyCredential.parseCreationOptionsFromJSON(Object.assign({}, json, { challenge: 'dGVzdA=' })); } catch (e) { document.title = e.name + '|' + options.challenge.byteLength; }
+            """));
     }
 
     // Screen Orientation

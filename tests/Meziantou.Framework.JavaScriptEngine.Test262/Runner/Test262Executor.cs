@@ -7,7 +7,9 @@ namespace Meziantou.Framework.JavaScriptEngine.Test262.Runner;
 /// <summary>Runs a test262 file with the engine, in each of its modes (https://github.com/tc39/test262/blob/main/INTERPRETING.md).</summary>
 internal static class Test262Executor
 {
-    private static readonly ConcurrentDictionary<string, string> HarnessFiles = new(StringComparer.Ordinal);
+    // The harness files are parsed once: their compiled code (the bytecode, and the .NET code of the compiled run) is
+    // shared by the engines of all the tests, as a JsPreparedScript run by many engines is
+    private static readonly ConcurrentDictionary<string, JsPreparedScript> HarnessFiles = new(StringComparer.Ordinal);
 
     public static IReadOnlyList<Test262Result> Run(Test262Test test)
     {
@@ -15,28 +17,56 @@ internal static class Test262Executor
         var source = File.ReadAllText(test.FullPath);
         foreach (var mode in test.Modes)
         {
-            string? error;
-            try
+            // The test runs interpreted, then with every function compiled to .NET code on its first call
+            // (JsEngineOptions.CompilationThreshold = 1): both must give the result of the expectations
+            var interpreted = RunModeSafe(test, source, mode, isCompiled: false);
+            var compiled = RunModeSafe(test, source, mode, isCompiled: true);
+            var error = (interpreted, compiled) switch
             {
-                error = RunMode(test, source, mode);
-            }
-            catch (JsTerminationException ex)
-            {
-                error = "Terminated: " + ex.Message;
-            }
-            catch (InvalidOperationException ex)
-            {
-                error = "Engine failure: " + ex;
-            }
-            catch (NotSupportedException ex)
-            {
-                error = "Not supported: " + ex.Message;
-            }
+                (null, null) => null,
+                (not null, null) => "Interpreted: " + interpreted,
+                (null, not null) => "Compiled: " + compiled,
+                _ when interpreted == compiled => interpreted,
+                _ => "Interpreted: " + interpreted + " | Compiled: " + compiled,
+            };
 
             results.Add(new Test262Result(mode, error is null, error));
         }
 
         return results;
+    }
+
+    /// <summary>The options of the engines of a test (the main engine and the engines of the agents).</summary>
+    internal static JsEngineOptions CreateEngineOptions(bool isCompiled, CancellationToken cancellationToken)
+    {
+        return new JsEngineOptions
+        {
+            CancellationToken = cancellationToken,
+            RecursionLimit = 1_000,
+            EnableCompilation = isCompiled,
+            CompilationThreshold = 1,
+            TimeZone = "UTC",
+        };
+    }
+
+    private static string? RunModeSafe(Test262Test test, string source, Test262Mode mode, bool isCompiled)
+    {
+        try
+        {
+            return RunMode(test, source, mode, isCompiled);
+        }
+        catch (JsTerminationException ex)
+        {
+            return "Terminated: " + ex.Message;
+        }
+        catch (InvalidOperationException ex)
+        {
+            return "Engine failure: " + ex;
+        }
+        catch (NotSupportedException ex)
+        {
+            return "Not supported: " + ex.Message;
+        }
     }
 
     /// <summary>Runs the test in a mode; returns null when it passes, or the reason of the failure.</summary>
@@ -45,23 +75,22 @@ internal static class Test262Executor
     /// Compiler::fgCreateGCPoll) when it recompiles it at tier 1 with the profile data.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private static string? RunMode(Test262Test test, string source, Test262Mode mode)
+    private static string? RunMode(Test262Test test, string source, Test262Mode mode, bool isCompiled)
     {
         var metadata = test.Metadata;
-        // The slowest tests take a few seconds alone; the limit leaves room for the slower CI machines and the parallel runs
-        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+
+        // The slowest tests take a few seconds alone; the limit leaves room for the slower CI machines and the parallel
+        // runs. The compiled run compiles the code that runs once too: the tests that eval tens of thousands of scripts
+        // (language/comments/S7.4_A5.js...) take minutes on CI
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(isCompiled ? 600 : 120));
         var loader = new Test262ModuleLoader(Path.GetDirectoryName(test.FullPath)!);
-        using var engine = new JsEngine(new JsEngineOptions
-        {
-            CancellationToken = cancellation.Token,
-            RecursionLimit = 1_000,
-            TimeZone = "UTC",
-            ModuleLoader = loader,
-        });
+        var options = CreateEngineOptions(isCompiled, cancellation.Token);
+        options.ModuleLoader = loader;
+        using var engine = new JsEngine(options);
 
         // [[CanBlock]]: the tests flagged CanBlockIsFalse expect Atomics.wait to throw in the main agent
         engine.CanBlock = !metadata.HasFlag("CanBlockIsFalse");
-        using var agents = new Test262Agents(cancellation.Token);
+        using var agents = new Test262Agents(isCompiled, cancellation.Token);
         var output = new StringBuilder();
         var realm = engine.CreateRealm();
         Test262Host.Install(realm, output, agents);
@@ -72,7 +101,7 @@ internal static class Test262Executor
             {
                 foreach (var include in GetIncludes(metadata))
                 {
-                    realm.Execute(GetHarnessFile(include), include);
+                    realm.Execute(GetHarnessFile(include));
                 }
             }
 
@@ -157,7 +186,7 @@ internal static class Test262Executor
         }
     }
 
-    private static string GetHarnessFile(string name) => HarnessFiles.GetOrAdd(name, static n => File.ReadAllText(Test262Paths.Harness / n));
+    private static JsPreparedScript GetHarnessFile(string name) => HarnessFiles.GetOrAdd(name, n => JsPreparedScript.Parse(File.ReadAllText(Test262Paths.Harness / n), n));
 
     /// <summary>The name of the constructor of an error, read without running code.</summary>
     private static string GetErrorName(JsValue value)

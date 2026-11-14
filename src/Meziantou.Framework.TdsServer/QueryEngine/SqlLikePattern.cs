@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.Tds.QueryEngine;
 
@@ -11,8 +10,10 @@ namespace Meziantou.Framework.Tds.QueryEngine;
 /// </remarks>
 internal static class SqlLikePattern
 {
-    // NonBacktracking matches in linear time, so a pattern sent by a client cannot make the match exponential
-    private const RegexOptions PatternRegexOptions = RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.NonBacktracking;
+    private const int MaxPatternLength = 4000;
+
+    [ThreadStatic]
+    private static CompiledPattern? s_lastPattern;
 
     /// <summary>Returns whether <paramref name="value"/> matches <paramref name="pattern"/>, or <see langword="null"/> when either is NULL.</summary>
     public static bool? Like(string? value, string? pattern, string? escape)
@@ -22,6 +23,7 @@ internal static class SqlLikePattern
             return null;
         }
 
+        ValidatePattern(pattern);
         var escapeCharacter = GetEscapeCharacter(escape);
         if (TryGetSimplePattern(pattern, escapeCharacter, out var kind, out var text))
         {
@@ -34,8 +36,7 @@ internal static class SqlLikePattern
             };
         }
 
-        // Regex keeps a cache of the patterns it parsed, so a constant pattern is not parsed for every row
-        return Regex.IsMatch(value, ToRegexPattern(pattern, escapeCharacter), PatternRegexOptions);
+        return IsMatch(value, pattern, escapeCharacter);
     }
 
     /// <summary>Gets the escape character of an <c>ESCAPE</c> clause.</summary>
@@ -104,11 +105,38 @@ internal static class SqlLikePattern
         return true;
     }
 
-    /// <summary>Converts a <c>LIKE</c> pattern to an anchored regular expression.</summary>
-    public static string ToRegexPattern(string pattern, char? escape)
+    /// <summary>Returns whether <paramref name="value"/> matches the whole <paramref name="pattern"/>.</summary>
+    /// <remarks>
+    /// The pattern runs as a nondeterministic automaton whose states are bits of a vector, one per element of the
+    /// pattern: each character of the value updates all the states at once, 64 per machine word. So the match takes
+    /// O(value length × pattern length / 64) steps whatever the pattern, and never scans the value twice.
+    /// </remarks>
+    public static bool IsMatch(string value, string pattern, char? escape)
     {
-        var builder = new StringBuilder(pattern.Length + 8);
-        builder.Append(@"\A");
+        var compiled = s_lastPattern;
+        if (compiled is null || compiled.Escape != escape || !string.Equals(compiled.Pattern, pattern, StringComparison.Ordinal))
+        {
+            // Like is called once per row with the same pattern, so keep the last one instead of compiling it again
+            compiled = new CompiledPattern(pattern, escape);
+            s_lastPattern = compiled;
+        }
+
+        return compiled.IsMatch(value);
+    }
+
+    /// <summary>Throws when the pattern is longer than SQL Server accepts: 8,000 bytes, so 4,000 UTF-16 characters.</summary>
+    public static void ValidatePattern(string pattern)
+    {
+        if (pattern.Length > MaxPatternLength)
+        {
+            throw new TdsQueryEngineException("The pattern of LIKE can be a maximum of 8,000 bytes.");
+        }
+    }
+
+    /// <summary>Splits a pattern into elements, or returns <see langword="false"/> when it matches no value.</summary>
+    private static bool TryParse(string pattern, char? escape, out List<LikeElement> elements)
+    {
+        elements = new List<LikeElement>(pattern.Length);
         for (var i = 0; i < pattern.Length; i++)
         {
             var current = pattern[i];
@@ -117,38 +145,43 @@ internal static class SqlLikePattern
                 if (i + 1 >= pattern.Length)
                 {
                     // SQL Server matches no value when the pattern ends with the escape character
-                    return "[^\\s\\S]";
+                    return false;
                 }
 
-                AppendLiteral(builder, pattern[++i]);
+                elements.Add(LikeElement.Literal(pattern[++i]));
                 continue;
             }
 
             switch (current)
             {
                 case '%':
-                    builder.Append(".*");
+                    // Consecutive '%' are equivalent to a single one
+                    if (elements is not [.., { Kind: LikeElementKind.AnyString }])
+                    {
+                        elements.Add(new LikeElement(LikeElementKind.AnyString, default, Ranges: null));
+                    }
+
                     break;
 
                 case '_':
-                    builder.Append('.');
+                    elements.Add(new LikeElement(LikeElementKind.AnyCharacter, default, Ranges: null));
                     break;
 
-                case '[' when TryAppendCharacterSet(builder, pattern, i, escape, out var endIndex):
+                case '[' when TryParseCharacterSet(pattern, i, escape, out var set, out var endIndex):
+                    elements.Add(set);
                     i = endIndex;
                     break;
 
                 default:
-                    AppendLiteral(builder, current);
+                    elements.Add(LikeElement.Literal(current));
                     break;
             }
         }
 
-        builder.Append(@"\z");
-        return builder.ToString();
+        return true;
     }
 
-    private static bool TryAppendCharacterSet(StringBuilder builder, string pattern, int startIndex, char? escape, out int endIndex)
+    private static bool TryParseCharacterSet(string pattern, int startIndex, char? escape, out LikeElement element, out int endIndex)
     {
         var index = startIndex + 1;
         var negated = index < pattern.Length && pattern[index] == '^';
@@ -157,7 +190,7 @@ internal static class SqlLikePattern
             index++;
         }
 
-        var characters = new List<(char Start, char End)>();
+        var ranges = new List<(char Start, char End)>();
         while (index < pattern.Length && pattern[index] != ']')
         {
             var start = pattern[index];
@@ -176,11 +209,11 @@ internal static class SqlLikePattern
                     end = pattern[++index];
                 }
 
-                characters.Add(start <= end ? (start, end) : (end, start));
+                ranges.Add(start <= end ? (start, end) : (end, start));
             }
             else
             {
-                characters.Add((start, start));
+                ranges.Add((start, start));
             }
 
             index++;
@@ -189,41 +222,198 @@ internal static class SqlLikePattern
         if (index >= pattern.Length)
         {
             // No closing bracket: the '[' is a literal
+            element = default;
             endIndex = startIndex;
             return false;
         }
 
+        // "[]" matches no character, and "[^]" any character
+        element = new LikeElement(negated ? LikeElementKind.NegatedSet : LikeElementKind.Set, default, [.. ranges]);
         endIndex = index;
-        if (characters.Count == 0)
-        {
-            // "[]" matches no character, and "[^]" any character
-            builder.Append(negated ? "[\\s\\S]" : "[^\\s\\S]");
-            return true;
-        }
-
-        builder.Append(negated ? "[^" : "[");
-        foreach (var (start, end) in characters)
-        {
-            AppendClassCharacter(builder, start);
-            if (end != start)
-            {
-                builder.Append('-');
-                AppendClassCharacter(builder, end);
-            }
-        }
-
-        builder.Append(']');
         return true;
     }
 
-    private static void AppendLiteral(StringBuilder builder, char value)
+    private sealed class CompiledPattern
     {
-        builder.Append(Regex.Escape(value.ToString()));
+        // Bit j of a state vector is set when the value read so far matches the first j elements of the pattern
+        private readonly int _finalState;
+        private readonly int _wordCount;
+        private readonly List<LikeElement>? _elements;
+        private readonly ulong[] _loopMask = [];
+        private readonly ulong[] _beforeAnyStringMask = [];
+        private readonly char[] _intervalStarts = [];
+        private readonly ulong[]?[] _intervalMasks = [];
+
+        public CompiledPattern(string pattern, char? escape)
+        {
+            Pattern = pattern;
+            Escape = escape;
+            if (!TryParse(pattern, escape, out var elements))
+            {
+                return;
+            }
+
+            _elements = elements;
+            _finalState = elements.Count;
+            _wordCount = (elements.Count / 64) + 1;
+            _loopMask = new ulong[_wordCount];
+            _beforeAnyStringMask = new ulong[_wordCount];
+
+            // The characters between two consecutive bounds of the ranges of the pattern match the same elements, so
+            // a mask per interval gives the elements that a character matches
+            var bounds = new SortedSet<char> { char.MinValue };
+            for (var i = 0; i < elements.Count; i++)
+            {
+                var element = elements[i];
+                if (element.Kind is LikeElementKind.AnyString)
+                {
+                    SetBit(_loopMask, i + 1);
+                    SetBit(_beforeAnyStringMask, i);
+                }
+
+                foreach (var (start, end) in element.GetRanges())
+                {
+                    bounds.Add(start);
+                    if (end < char.MaxValue)
+                    {
+                        bounds.Add((char)(end + 1));
+                    }
+                }
+            }
+
+            _intervalStarts = [.. bounds];
+            _intervalMasks = new ulong[]?[_intervalStarts.Length];
+        }
+
+        public string Pattern { get; }
+
+        public char? Escape { get; }
+
+        public bool IsMatch(string value)
+        {
+            if (_elements is null)
+            {
+                return false;
+            }
+
+            var states = new ulong[_wordCount];
+            var next = new ulong[_wordCount];
+            states[0] = 1;
+            AddEmptyMatches(states);
+            foreach (var c in value)
+            {
+                var mask = GetMask(c);
+                ulong carry = 0;
+                ulong any = 0;
+                for (var i = 0; i < states.Length; i++)
+                {
+                    var word = states[i];
+                    next[i] = (((word << 1) | carry) & mask[i]) | (word & _loopMask[i]);
+                    carry = word >> 63;
+                    any |= next[i];
+                }
+
+                if (any == 0)
+                {
+                    return false;
+                }
+
+                AddEmptyMatches(next);
+                (states, next) = (next, states);
+            }
+
+            return (states[_finalState / 64] & (1UL << (_finalState % 64))) != 0;
+        }
+
+        /// <summary>A '%' matches the empty string: the state before it implies the state after it.</summary>
+        private void AddEmptyMatches(ulong[] states)
+        {
+            // '%' are never consecutive, so a single step reaches every state
+            ulong carry = 0;
+            for (var i = 0; i < states.Length; i++)
+            {
+                var before = states[i] & _beforeAnyStringMask[i];
+                states[i] |= (before << 1) | carry;
+                carry = before >> 63;
+            }
+        }
+
+        private ulong[] GetMask(char c)
+        {
+            var index = Array.BinarySearch(_intervalStarts, c);
+            if (index < 0)
+            {
+                index = ~index - 1;
+            }
+
+            return _intervalMasks[index] ??= CreateMask(c);
+        }
+
+        private ulong[] CreateMask(char c)
+        {
+            var mask = new ulong[_wordCount];
+            for (var i = 0; i < _elements!.Count; i++)
+            {
+                if (_elements[i].Matches(c))
+                {
+                    SetBit(mask, i + 1);
+                }
+            }
+
+            return mask;
+        }
+
+        private static void SetBit(ulong[] bits, int index) => bits[index / 64] |= 1UL << (index % 64);
     }
 
-    private static void AppendClassCharacter(StringBuilder builder, char value)
+    private enum LikeElementKind
     {
-        builder.Append(@"\u").Append(((int)value).ToString("X4", CultureInfo.InvariantCulture));
+        Literal,
+        AnyCharacter,
+        AnyString,
+        Set,
+        NegatedSet,
+    }
+
+    private readonly record struct LikeElement(LikeElementKind Kind, char Value, (char Start, char End)[]? Ranges)
+    {
+        public static LikeElement Literal(char value) => new(LikeElementKind.Literal, value, Ranges: null);
+
+        public bool Matches(char c)
+        {
+            return Kind switch
+            {
+                LikeElementKind.Literal => c == Value,
+                LikeElementKind.AnyCharacter => true,
+                LikeElementKind.Set => IsInRanges(c),
+                LikeElementKind.NegatedSet => !IsInRanges(c),
+                _ => false,
+            };
+        }
+
+        /// <summary>Gets the ranges of characters whose bounds change whether the element matches.</summary>
+        public (char Start, char End)[] GetRanges()
+        {
+            return Kind switch
+            {
+                LikeElementKind.Literal => [(Value, Value)],
+                LikeElementKind.Set or LikeElementKind.NegatedSet => Ranges!,
+                _ => [],
+            };
+        }
+
+        private bool IsInRanges(char c)
+        {
+            foreach (var (start, end) in Ranges!)
+            {
+                if (c >= start && c <= end)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     internal enum SimplePatternKind

@@ -61,6 +61,19 @@ public sealed class StoredServiceWorkerRegistration
 
     /// <summary>Gets the activated service worker, or null.</summary>
     public StoredServiceWorker? Active { get; init; }
+
+    /// <summary>Gets the cookie change subscriptions of the registration (https://cookiestore.spec.whatwg.org/#cookie-change-subscription-list).</summary>
+    public IReadOnlyList<StoredCookieChangeSubscription> CookieChangeSubscriptions { get; init; } = [];
+}
+
+/// <summary>A cookie change subscription (https://cookiestore.spec.whatwg.org/#cookie-change-subscription) of a <see cref="StoredServiceWorkerRegistration"/>.</summary>
+public sealed class StoredCookieChangeSubscription
+{
+    /// <summary>Gets the name of the cookies, or null for any name.</summary>
+    public string? Name { get; init; }
+
+    /// <summary>Gets the serialized URL of the cookies.</summary>
+    public required string Url { get; init; }
 }
 
 /// <summary>An installed or activated service worker (https://w3c.github.io/ServiceWorker/#dfn-service-worker) stored by a <see cref="ServiceWorkerBackend"/>.</summary>

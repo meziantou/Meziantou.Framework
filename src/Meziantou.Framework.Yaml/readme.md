@@ -135,6 +135,7 @@ When a stream contains several documents, `YamlSerializer.Deserialize` binds the
 | Collections | arrays, `List<>`, `HashSet<>`, `ImmutableArray<>`, `ImmutableList<>`, `ImmutableHashSet<>`, `FrozenSet<>`, `Queue<>`, `Stack<>`, `ConcurrentQueue<>`, `ConcurrentStack<>`, `ConcurrentBag<>`, `ArraySegment<>`, `IEnumerable<>`, `ICollection<>`, `IList<>`, `IReadOnlyCollection<>`, `IReadOnlyList<>`, `ISet<>`, `IReadOnlySet<>` |
 | Dictionaries | `Dictionary<,>`, `OrderedDictionary<,>`, `FrozenDictionary<,>`, `IDictionary<,>`, `IReadOnlyDictionary<,>`, with `string` or non-`string` keys |
 | Pairs | `KeyValuePair<,>`, as a mapping with a `Key` and a `Value` entry |
+| Complex numbers | `Complex`, and on net11.0 `Complex<T>` (with `float`, `double`, `Half`, `BFloat16` or `Decimal*` parts), as a mapping with a `Real` and an `Imaginary` entry |
 | Untyped | `object`, `object[]`, `List<object>`, `Dictionary<string, object>` |
 | Documents | any `YamlNode` (`YamlMapping`, `YamlSequence`, `YamlValue`, …) |
 | Unions | [C# unions](#c-unions) |

@@ -71,6 +71,11 @@ internal static partial class CssPropertyRegistry
         // https://compat.spec.whatwg.org/#display-property-mappings
         ["display"] = "[ <display-outside> || [ <display-inside> | math | grid-lanes | layout( <ident> ) ] ] | <display-listitem> | <display-internal> | <display-box> | <display-legacy> | inline-grid-lanes | -webkit-box | -webkit-inline-box | -webkit-flex | -webkit-inline-flex",
 
+        // https://drafts.csswg.org/css-display-4/#reading-flow, with the values of the grid lanes containers resolved by the CSSWG
+        // (https://github.com/w3c/csswg-drafts/issues/14290: "Names are grid-lanes-flow and grid-lanes-track", "Add
+        // grid-lanes-order"), which are not in the css-display-4 of webref yet
+        ["reading-flow"] = "normal | source-order | flex-visual | flex-flow | grid-rows | grid-columns | grid-order | grid-lanes-flow | grid-lanes-track | grid-lanes-order",
+
         // The grammars of the line clamping properties tested by WPT (css/css-overflow/parsing), which follow the resolutions
         // that are not in the css-overflow-4 of webref yet: max-lines is auto (its initial value, none is not valid anymore) or a
         // number of lines with an optional auto (https://drafts.csswg.org/css-overflow-4/#max-lines), block-ellipsis has an

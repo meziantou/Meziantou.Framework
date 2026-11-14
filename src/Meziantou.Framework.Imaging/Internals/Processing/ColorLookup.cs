@@ -35,6 +35,14 @@ internal abstract class ColorLookup
     /// <summary>Maps a color.</summary>
     public abstract void MapColor(ref double red, ref double green, ref double blue);
 
+    /// <summary>
+    /// Maps the colors of the leading pixels of a row of integer samples in place (4 per pixel, red first, alpha unchanged),
+    /// as the samples multiplied by <paramref name="scale"/>, <see cref="MapColor"/> and <see cref="Quantize"/> do one pixel
+    /// at a time; the caller maps the others.
+    /// </summary>
+    /// <returns>The number of pixels mapped: none when the lookup has no batch path.</returns>
+    public virtual int MapColors(Span<ushort> samples, double scale, int max) => 0;
+
     /// <summary>Rents the working memory of a remapping and fills the tables. Called before a pixel changes.</summary>
     /// <param name="scope">The scope charged for the working memory.</param>
     /// <param name="format">The pixel format of the frames.</param>
@@ -157,7 +165,8 @@ internal abstract class ColorLookup
                 }
                 else
                 {
-                    for (var i = 0; i < samples.Length; i += 4)
+                    var mapped = Resampler.TestForceScalar ? 0 : _lookup.MapColors(samples, scale, max);
+                    for (var i = 4 * mapped; i < samples.Length; i += 4)
                     {
                         var r = samples[i] * scale;
                         var g = samples[i + 1] * scale;

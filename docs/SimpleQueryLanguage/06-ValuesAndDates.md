@@ -11,7 +11,7 @@ that cannot be parsed matches nothing.
 | Type | Accepted values |
 | --- | --- |
 | `int`, `long`, `short`, `byte` and their signed or unsigned versions, `Int128`, `UInt128`, `BigInteger`, `nint` | Integers, with the invariant culture. |
-| `double`, `float`, `Half`, `decimal` | Numbers with a `.` decimal separator and optional `,` thousands separators. |
+| `double`, `float`, `Half`, `decimal`, and on .NET 11 `BFloat16`, `Decimal32`, `Decimal64`, `Decimal128` | Numbers with a `.` decimal separator and optional `,` thousands separators. |
 | `DateTime`, `DateTimeOffset` | Dates and times with the invariant culture, such as `2026-03-18` or `2026-03-18T10:30`. A value without an offset is read as UTC, and the result is in UTC. |
 | `DateOnly`, `TimeOnly` | Dates and times with the invariant culture. |
 | Enums | A name, case-insensitive, or a number. |

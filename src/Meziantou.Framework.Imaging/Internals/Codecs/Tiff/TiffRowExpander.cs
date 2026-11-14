@@ -337,6 +337,22 @@ internal sealed class TiffRowExpander : IDisposable
         }
 
         var singles = unsafe(MemoryMarshal.Cast<byte, uint>(destination));
+        if (bytesPerSample == 4 && colors == 3 && hasAlpha && samplesPerPixel == 4)
+        {
+            // RGBA 32-bit samples are the pixels, in the byte order of the file
+            var words = unsafe(MemoryMarshal.Cast<byte, uint>(stored[..(_width * 16)]));
+            if (bigEndian == BitConverter.IsLittleEndian)
+            {
+                BinaryPrimitives.ReverseEndianness(words, singles);
+            }
+            else
+            {
+                words.CopyTo(singles);
+            }
+
+            return;
+        }
+
         for (var x = 0; x < _width; x++)
         {
             var source = stored.Slice(x * pixelLength, pixelLength);

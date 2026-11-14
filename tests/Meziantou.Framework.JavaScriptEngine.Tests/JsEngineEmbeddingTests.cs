@@ -279,6 +279,8 @@ public sealed class JsEngineEmbeddingTests
             Host = new JsHost(),
             EnableV8StackTraceApi = true,
             AllowStringCompilation = false,
+            EnableCompilation = false,
+            CompilationThreshold = 7,
             Debugger = new NoDebugger(),
         };
 
@@ -551,6 +553,15 @@ public sealed class JsEngineEmbeddingTests
             Assert.Equal(42, realm.FromDotNet(42L).AsNumber());
             Assert.Equal("x", realm.FromDotNet('x').AsString());
             Assert.Equal(new System.Numerics.BigInteger(5), realm.FromDotNet(new System.Numerics.BigInteger(5)).AsBigInt());
+            Assert.Equal(0.5, realm.FromDotNet((Half)0.5).AsNumber());
+#if NET11_0_OR_GREATER
+            Assert.Equal(0.5, realm.FromDotNet((System.Numerics.BFloat16)0.5f).AsNumber());
+            Assert.Equal(0.1, realm.FromDotNet(System.Numerics.Decimal32.Parse("0.1", CultureInfo.InvariantCulture)).AsNumber());
+            Assert.Equal(-2.5, realm.FromDotNet(System.Numerics.Decimal64.Parse("-2.5", CultureInfo.InvariantCulture)).AsNumber());
+            Assert.Equal(0.1, realm.FromDotNet(System.Numerics.Decimal128.Parse("0.1000000000000000000000000000000001", CultureInfo.InvariantCulture)).AsNumber());
+            Assert.True(double.IsNaN(realm.FromDotNet(System.Numerics.Decimal128.NaN).AsNumber()));
+            Assert.Equal(double.PositiveInfinity, realm.FromDotNet(System.Numerics.Decimal128.Parse("1E+400", CultureInfo.InvariantCulture)).AsNumber());
+#endif
             Assert.True(realm.FromDotNet<bool>(true).AsBoolean());
             Assert.Equal(1.5, realm.FromDotNet<double>(1.5).AsNumber());
 
@@ -605,6 +616,16 @@ public sealed class JsEngineEmbeddingTests
         Assert.False(engine.ToDotNet<bool>(JsValue.Undefined));
         Assert.Equal(3_000_000_000L, engine.ToDotNet<long>(realm.Execute("3e9")));
         Assert.Equal(1.25m, engine.ToDotNet<decimal>(realm.Execute("1.25")));
+        Assert.Equal((Half)1.25, engine.ToDotNet<Half>(realm.Execute("1.25")));
+        Assert.True(Half.IsNaN(engine.ToDotNet<Half>(realm.Execute("'x'"))));
+        Assert.Null(engine.ToDotNet<Half?>(JsValue.Null));
+#if NET11_0_OR_GREATER
+        Assert.Equal((System.Numerics.BFloat16)1.25f, engine.ToDotNet<System.Numerics.BFloat16>(realm.Execute("1.25")));
+        Assert.Equal(System.Numerics.Decimal32.Parse("1.25", CultureInfo.InvariantCulture), engine.ToDotNet<System.Numerics.Decimal32>(realm.Execute("1.25")));
+        Assert.Equal(System.Numerics.Decimal64.Parse("0.1", CultureInfo.InvariantCulture), engine.ToDotNet<System.Numerics.Decimal64>(realm.Execute("0.1")));
+        Assert.Equal(System.Numerics.Decimal128.NegativeInfinity, engine.ToDotNet<System.Numerics.Decimal128>(realm.Execute("-Infinity")));
+        Assert.Equal(System.Numerics.Decimal64.Parse("3", CultureInfo.InvariantCulture), engine.ToDotNet<System.Numerics.Decimal64?>(realm.Execute("'3'")));
+#endif
         Assert.Equal(new System.Numerics.BigInteger(10), engine.ToDotNet<System.Numerics.BigInteger>(realm.Execute("10n")));
         Assert.Equal(DateTime.UnixEpoch, engine.ToDotNet<DateTime>(realm.Execute("new Date(0)")));
         Assert.Throws<NotSupportedException>(() => engine.ToDotNet(realm.Execute("[Symbol()]")));

@@ -1,4 +1,6 @@
 using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Dom;
 
@@ -590,6 +592,253 @@ internal static class WptTestDriver
         @event.IsTrusted = true;
         return EventDispatcher.Dispatch(@event, element);
     }
+
+    /// <summary>
+    /// The WebDriver extension commands of the virtual authenticators (https://w3c.github.io/webauthn/#sctn-automation), on the
+    /// <see cref="VirtualAuthenticatorEnvironment"/> of the runner: <paramref name="argumentsJson"/> is the JSON array of the
+    /// arguments of the testdriver function. Returns the JSON of the result (or null for no result); throws a
+    /// <see cref="WptWebDriverException"/> for a WebDriver error.
+    /// </summary>
+    public static string? ExecuteWebAuthnCommand(VirtualAuthenticatorEnvironment environment, string command, string argumentsJson)
+    {
+        var arguments = JsonNode.Parse(argumentsJson)?.AsArray() ?? throw WptWebDriverException.InvalidArgument("the arguments are not an array");
+        switch (command)
+        {
+            case "add_virtual_authenticator":
+                return JsonValue.Create(AddVirtualAuthenticator(environment, arguments[0] as JsonObject ?? throw WptWebDriverException.InvalidArgument("the configuration is not an object"))).ToJsonString();
+
+            case "remove_virtual_authenticator":
+                if (!environment.RemoveAuthenticator(GetString(arguments[0], "authenticatorId")))
+                    throw WptWebDriverException.InvalidArgument("there is no virtual authenticator with this id");
+
+                return null;
+
+            case "add_credential":
+                AddCredential(GetAuthenticator(environment, arguments[0]), arguments[1] as JsonObject ?? throw WptWebDriverException.InvalidArgument("the credential parameters are not an object"));
+                return null;
+
+            case "get_credentials":
+                return new JsonArray([.. GetAuthenticator(environment, arguments[0]).GetCredentials().Select(ToCredentialParameters)]).ToJsonString();
+
+            case "remove_credential":
+                if (!GetAuthenticator(environment, arguments[0]).RemoveCredential(DecodeBase64Url(arguments[1], "credentialId")))
+                    throw WptWebDriverException.InvalidArgument("there is no credential with this id");
+
+                return null;
+
+            case "remove_all_credentials":
+                GetAuthenticator(environment, arguments[0]).RemoveAllCredentials();
+                return null;
+
+            case "set_user_verified":
+            {
+                // The parameters of the command ({ isUserVerified }), or the flag itself
+                var authenticator = GetAuthenticator(environment, arguments[0]);
+                var value = arguments[1] is JsonObject parameters ? parameters["isUserVerified"] : arguments[1];
+                authenticator.IsUserVerified = value?.GetValueKind() is JsonValueKind.True or JsonValueKind.False
+                    ? value.GetValue<bool>()
+                    : throw WptWebDriverException.InvalidArgument("isUserVerified is not a boolean");
+                return null;
+            }
+
+            case "set_credential_properties":
+            {
+                var authenticator = GetAuthenticator(environment, arguments[0]);
+                var credentialId = DecodeBase64Url(arguments[1], "credentialId");
+                var properties = arguments[2] as JsonObject ?? throw WptWebDriverException.InvalidArgument("the properties are not an object");
+                if (!authenticator.SetCredentialProperties(credentialId, GetOptionalBoolean(properties, "backupEligibility"), GetOptionalBoolean(properties, "backupState")))
+                    throw WptWebDriverException.InvalidArgument("there is no credential with this id");
+
+                if (properties.TryGetPropertyValue("signCount", out var signCount))
+                {
+                    authenticator.SetSignCount(credentialId, GetSignCount(signCount));
+                }
+
+                return null;
+            }
+
+            default:
+                throw new WptWebDriverException($"unknown command: {command}");
+        }
+    }
+
+    /// <summary>https://w3c.github.io/webauthn/#add-virtual-authenticator</summary>
+    private static string AddVirtualAuthenticator(VirtualAuthenticatorEnvironment environment, JsonObject parameters)
+    {
+        string[] keys = ["protocol", "transport", "hasResidentKey", "hasUserVerification", "isUserConsenting", "isUserVerified", "extensions", "defaultBackupEligibility", "defaultBackupState"];
+        foreach (var (key, _) in parameters)
+        {
+            if (!keys.Contains(key, StringComparer.Ordinal))
+                throw WptWebDriverException.InvalidArgument($"'{key}' is not a property of the authenticator configuration");
+        }
+
+        var protocol = GetString(parameters["protocol"], "protocol") switch
+        {
+            "ctap1/u2f" => VirtualAuthenticatorProtocol.Ctap1U2f,
+            "ctap2" => VirtualAuthenticatorProtocol.Ctap2,
+            "ctap2_1" => VirtualAuthenticatorProtocol.Ctap21,
+            var value => throw WptWebDriverException.InvalidArgument($"'{value}' is not a protocol"),
+        };
+        var transport = GetString(parameters["transport"], "transport");
+        if (transport is not ("usb" or "nfc" or "ble" or "smart-card" or "hybrid" or "internal"))
+            throw WptWebDriverException.InvalidArgument($"'{transport}' is not a transport");
+
+        var extensions = new List<string>();
+        if (parameters["extensions"] is { } extensionsValue)
+        {
+            foreach (var extension in extensionsValue as JsonArray ?? throw WptWebDriverException.InvalidArgument("extensions is not an array"))
+            {
+                var name = GetString(extension, "extensions");
+                if (!VirtualAuthenticatorOptions.SupportedExtensions.Contains(name, StringComparer.Ordinal))
+                    throw new WptWebDriverException($"unsupported operation: the '{name}' extension is not supported");
+
+                extensions.Add(name);
+            }
+        }
+
+        var authenticator = environment.AddAuthenticator(new VirtualAuthenticatorOptions
+        {
+            Protocol = protocol,
+            Transport = transport,
+            HasResidentKey = GetOptionalBoolean(parameters, "hasResidentKey") ?? false,
+            HasUserVerification = GetOptionalBoolean(parameters, "hasUserVerification") ?? false,
+            IsUserConsenting = GetOptionalBoolean(parameters, "isUserConsenting") ?? true,
+            IsUserVerified = GetOptionalBoolean(parameters, "isUserVerified") ?? false,
+            Extensions = extensions,
+            DefaultBackupEligibility = GetOptionalBoolean(parameters, "defaultBackupEligibility") ?? false,
+            DefaultBackupState = GetOptionalBoolean(parameters, "defaultBackupState") ?? false,
+        });
+        return authenticator.Id;
+    }
+
+    /// <summary>https://w3c.github.io/webauthn/#add-credential</summary>
+    private static void AddCredential(VirtualAuthenticator authenticator, JsonObject parameters)
+    {
+        var credentialId = DecodeBase64Url(parameters["credentialId"], "credentialId");
+        var isResidentCredential = GetOptionalBoolean(parameters, "isResidentCredential") ?? throw WptWebDriverException.InvalidArgument("isResidentCredential is not defined");
+        var rpId = GetString(parameters["rpId"], "rpId");
+        if (rpId.Length == 0)
+            throw WptWebDriverException.InvalidArgument("rpId is not a valid RP ID");
+
+        var privateKey = DecodeBase64Url(parameters["privateKey"], "privateKey");
+        byte[]? userHandle = parameters.ContainsKey("userHandle") ? DecodeBase64Url(parameters["userHandle"], "userHandle") : null;
+        if (!parameters.TryGetPropertyValue("signCount", out var signCountValue))
+            throw WptWebDriverException.InvalidArgument("signCount is not defined");
+
+        byte[]? largeBlob = parameters.ContainsKey("largeBlob") ? DecodeBase64Url(parameters["largeBlob"], "largeBlob") : null;
+        try
+        {
+            authenticator.AddCredential(new VirtualCredential
+            {
+                CredentialId = credentialId,
+                IsResidentCredential = isResidentCredential,
+                RpId = rpId,
+                PrivateKey = privateKey,
+                UserHandle = userHandle is null ? null : (ReadOnlyMemory<byte>?)userHandle,
+                SignCount = GetSignCount(signCountValue),
+                LargeBlob = largeBlob is null ? null : (ReadOnlyMemory<byte>?)largeBlob,
+                BackupEligibility = GetOptionalBoolean(parameters, "backupEligibility"),
+                BackupState = GetOptionalBoolean(parameters, "backupState"),
+                UserName = parameters["userName"] is { } userName ? GetString(userName, "userName") : "",
+                UserDisplayName = parameters["userDisplayName"] is { } userDisplayName ? GetString(userDisplayName, "userDisplayName") : "",
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            throw WptWebDriverException.InvalidArgument(ex.Message);
+        }
+    }
+
+    /// <summary>The credential parameters of a credential (https://w3c.github.io/webauthn/#credential-parameters).</summary>
+    private static JsonObject ToCredentialParameters(VirtualCredential credential)
+    {
+        var result = new JsonObject
+        {
+            ["credentialId"] = Convert.ToBase64String(credential.CredentialId.Span).TrimEnd('=').Replace('+', '-').Replace('/', '_'),
+            ["isResidentCredential"] = credential.IsResidentCredential,
+            ["rpId"] = credential.RpId,
+            ["privateKey"] = Convert.ToBase64String(credential.PrivateKey.Span).TrimEnd('=').Replace('+', '-').Replace('/', '_'),
+            ["signCount"] = credential.SignCount,
+            ["backupEligibility"] = credential.BackupEligibility,
+            ["backupState"] = credential.BackupState,
+            ["userName"] = credential.UserName,
+            ["userDisplayName"] = credential.UserDisplayName,
+        };
+        if (credential.UserHandle is { } userHandle)
+        {
+            result["userHandle"] = Convert.ToBase64String(userHandle.Span).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        }
+
+        if (credential.LargeBlob is { } largeBlob)
+        {
+            result["largeBlob"] = Convert.ToBase64String(largeBlob.Span).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        }
+
+        return result;
+    }
+
+    private static VirtualAuthenticator GetAuthenticator(VirtualAuthenticatorEnvironment environment, JsonNode? id)
+        => environment.GetAuthenticator(GetString(id, "authenticatorId")) ?? throw WptWebDriverException.InvalidArgument("there is no virtual authenticator with this id");
+
+    private static string GetString(JsonNode? value, string name)
+        => value?.GetValueKind() == JsonValueKind.String ? value.GetValue<string>() : throw WptWebDriverException.InvalidArgument($"{name} is not a string");
+
+    private static bool? GetOptionalBoolean(JsonObject parameters, string name) => parameters[name] switch
+    {
+        null => null,
+        var value when value.GetValueKind() is JsonValueKind.True or JsonValueKind.False => value.GetValue<bool>(),
+        _ => throw WptWebDriverException.InvalidArgument($"{name} is not a boolean"),
+    };
+
+    /// <summary>A signature counter: an unsigned 32-bit integer, or null (no counter).</summary>
+    private static uint? GetSignCount(JsonNode? value)
+    {
+        if (value is null)
+            return null;
+
+        if (value.GetValueKind() == JsonValueKind.Number && value.GetValue<double>() is var number && number >= 0 && number <= uint.MaxValue && Math.Floor(number) == number)
+            return (uint)number;
+
+        throw WptWebDriverException.InvalidArgument("signCount is not an unsigned 32-bit integer");
+    }
+
+    /// <summary>
+    /// Decodes a base64url string of the WebDriver commands; the padding and the characters of the base64 alphabet are
+    /// accepted (the tests create some values with <c>btoa()</c>).
+    /// </summary>
+    private static byte[] DecodeBase64Url(JsonNode? value, string name)
+    {
+        var text = GetString(value, name).Replace('-', '+').Replace('_', '/');
+        text = text.PadRight(text.Length + ((4 - (text.Length % 4)) % 4), '=');
+        try
+        {
+            return Convert.FromBase64String(text);
+        }
+        catch (FormatException)
+        {
+            throw WptWebDriverException.InvalidArgument($"{name} is not a valid base64url encoding");
+        }
+    }
+}
+
+/// <summary>A WebDriver error of a command of the test driver (https://w3c.github.io/webdriver/#errors): its message starts with the error code.</summary>
+internal sealed class WptWebDriverException : Exception
+{
+    public WptWebDriverException()
+    {
+    }
+
+    public WptWebDriverException(string message)
+        : base(message)
+    {
+    }
+
+    public WptWebDriverException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
+
+    public static WptWebDriverException InvalidArgument(string message) => new("invalid argument: " + message);
 }
 
 /// <summary>

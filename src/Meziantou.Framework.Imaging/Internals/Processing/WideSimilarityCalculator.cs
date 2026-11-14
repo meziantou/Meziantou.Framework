@@ -1,4 +1,6 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -231,47 +233,242 @@ internal static class WideSimilarityCalculator
         }
     }
 
-    /// <summary>Sets the statistics of every column of the window rows that start at <paramref name="windowRow"/>, adding the rows in order.</summary>
-    private static void ComputeColumnStatistics(ReadOnlySpan<double> expectedRing, ReadOnlySpan<double> actualRing, Span<double> columns, int windowRow, int windowHeight, int rowLength)
+    /// <summary>
+    /// Sets the statistics of every column of the window rows that start at <paramref name="windowRow"/>, adding the rows in
+    /// order: per pixel, <see cref="StatisticCount"/> groups of the <see cref="ChannelCount"/> channels. The vectors compute
+    /// the four channels of a pixel.
+    /// </summary>
+    internal static void ComputeColumnStatistics(ReadOnlySpan<double> expectedRing, ReadOnlySpan<double> actualRing, Span<double> columns, int windowRow, int windowHeight, int rowLength)
     {
-        columns.Clear();
+        var width = rowLength / ChannelCount;
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated && expectedRing.Length >= windowHeight * rowLength && actualRing.Length >= windowHeight * rowLength && columns.Length >= rowLength * StatisticCount)
+        {
+            ref var expected0 = ref unsafe(MemoryMarshal.GetReference(expectedRing));
+            ref var actual0 = ref unsafe(MemoryMarshal.GetReference(actualRing));
+            ref var target = ref unsafe(MemoryMarshal.GetReference(columns));
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; x < width; x++)
+                {
+                    var sumExpected = Vector256<double>.Zero;
+                    var sumActual = Vector256<double>.Zero;
+                    var sumExpected2 = Vector256<double>.Zero;
+                    var sumActual2 = Vector256<double>.Zero;
+                    var sumProduct = Vector256<double>.Zero;
+                    for (var row = windowRow; row < windowRow + windowHeight; row++)
+                    {
+                        var offset = (nuint)((row % windowHeight * rowLength) + (x * ChannelCount));
+                        var e = unsafe(Vector256.LoadUnsafe(ref expected0, offset));
+                        var a = unsafe(Vector256.LoadUnsafe(ref actual0, offset));
+                        sumExpected += e;
+                        sumActual += a;
+                        sumExpected2 += e * e;
+                        sumActual2 += a * a;
+                        sumProduct += e * a;
+                    }
+
+                    var column = (nuint)(x * ChannelCount * StatisticCount);
+                    unsafe
+                    {
+                        sumExpected.StoreUnsafe(ref target, column);
+                        sumActual.StoreUnsafe(ref target, column + ChannelCount);
+                        sumExpected2.StoreUnsafe(ref target, column + (2 * ChannelCount));
+                        sumActual2.StoreUnsafe(ref target, column + (3 * ChannelCount));
+                        sumProduct.StoreUnsafe(ref target, column + (4 * ChannelCount));
+                    }
+                }
+            }
+            else
+            {
+                // Half a pixel (two channels) at a time
+                for (var half = 0; half < 2 * width; half++)
+                {
+                    var sumExpected = Vector128<double>.Zero;
+                    var sumActual = Vector128<double>.Zero;
+                    var sumExpected2 = Vector128<double>.Zero;
+                    var sumActual2 = Vector128<double>.Zero;
+                    var sumProduct = Vector128<double>.Zero;
+                    for (var row = windowRow; row < windowRow + windowHeight; row++)
+                    {
+                        var offset = (nuint)((row % windowHeight * rowLength) + (half * 2));
+                        var e = unsafe(Vector128.LoadUnsafe(ref expected0, offset));
+                        var a = unsafe(Vector128.LoadUnsafe(ref actual0, offset));
+                        sumExpected += e;
+                        sumActual += a;
+                        sumExpected2 += e * e;
+                        sumActual2 += a * a;
+                        sumProduct += e * a;
+                    }
+
+                    var column = (nuint)(((half >> 1) * ChannelCount * StatisticCount) + ((half & 1) * 2));
+                    unsafe
+                    {
+                        sumExpected.StoreUnsafe(ref target, column);
+                        sumActual.StoreUnsafe(ref target, column + ChannelCount);
+                        sumExpected2.StoreUnsafe(ref target, column + (2 * ChannelCount));
+                        sumActual2.StoreUnsafe(ref target, column + (3 * ChannelCount));
+                        sumProduct.StoreUnsafe(ref target, column + (4 * ChannelCount));
+                    }
+                }
+
+                x = width;
+            }
+        }
+
+        ComputeColumnStatisticsScalar(expectedRing, actualRing, columns, windowRow, windowHeight, rowLength, x);
+    }
+
+    /// <summary>The scalar reference of <see cref="ComputeColumnStatistics"/>, from pixel <paramref name="start"/>.</summary>
+    internal static void ComputeColumnStatisticsScalar(ReadOnlySpan<double> expectedRing, ReadOnlySpan<double> actualRing, Span<double> columns, int windowRow, int windowHeight, int rowLength, int start = 0)
+    {
+        columns[(start * ChannelCount * StatisticCount)..(rowLength * StatisticCount)].Clear();
         for (var row = windowRow; row < windowRow + windowHeight; row++)
         {
             var slot = row % windowHeight;
             var expected = expectedRing.Slice(slot * rowLength, rowLength);
             var actual = actualRing.Slice(slot * rowLength, rowLength);
-            for (var i = 0; i < rowLength; i++)
+            for (var i = start * ChannelCount; i < rowLength; i++)
             {
                 var e = expected[i];
                 var a = actual[i];
-                var column = columns.Slice(i * StatisticCount, StatisticCount);
+                var column = columns.Slice((i / ChannelCount * StatisticCount * ChannelCount) + (i % ChannelCount));
                 column[0] += e;
-                column[1] += a;
-                column[2] += e * e;
-                column[3] += a * a;
-                column[4] += e * a;
+                column[ChannelCount] += a;
+                column[2 * ChannelCount] += e * e;
+                column[3 * ChannelCount] += a * a;
+                column[4 * ChannelCount] += e * a;
             }
         }
     }
 
-    /// <summary>Adds the scores of the windows of a window row to <paramref name="sums"/>, per channel.</summary>
-    private static void AccumulateWindows(ReadOnlySpan<double> columns, int width, int windowWidth, int windowHeight, double colorRange, double alphaRange, Span<double> sums)
+    /// <summary>
+    /// Adds the scores of the windows of a window row to <paramref name="sums"/>, per channel, in the order of the windows.
+    /// The vectors compute the four channels of a window.
+    /// </summary>
+    internal static void AccumulateWindows(ReadOnlySpan<double> columns, int width, int windowWidth, int windowHeight, double colorRange, double alphaRange, Span<double> sums)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated && columns.Length >= width * ChannelCount * StatisticCount && sums.Length >= ChannelCount)
+        {
+            // The expression of the 8-bit accumulator: the first factors multiplied by count², the second ones by count × (count - 1)
+            double count = windowWidth * windowHeight;
+            var varianceScale = count > 1 ? count * (count - 1) : 1;
+            var colorC1 = (0.01 * colorRange) * (0.01 * colorRange) * count * count;
+            var colorC2 = (0.03 * colorRange) * (0.03 * colorRange) * varianceScale;
+            var alphaC1 = (0.01 * alphaRange) * (0.01 * alphaRange) * count * count;
+            var alphaC2 = (0.03 * alphaRange) * (0.03 * alphaRange) * varianceScale;
+            ref var column0 = ref unsafe(MemoryMarshal.GetReference(columns));
+            if (Vector256.IsHardwareAccelerated)
+            {
+                var c1 = Vector256.Create(colorC1, colorC1, colorC1, alphaC1);
+                var c2 = Vector256.Create(colorC2, colorC2, colorC2, alphaC2);
+                var countVector = Vector256.Create(count);
+                var two = Vector256.Create(2.0);
+                var total = Vector256.Create(sums[0], sums[1], sums[2], sums[3]);
+                for (; x + windowWidth <= width; x++)
+                {
+                    var sumExpected = Vector256<double>.Zero;
+                    var sumActual = Vector256<double>.Zero;
+                    var sumExpected2 = Vector256<double>.Zero;
+                    var sumActual2 = Vector256<double>.Zero;
+                    var sumProduct = Vector256<double>.Zero;
+                    for (var column = x; column < x + windowWidth; column++)
+                    {
+                        var offset = (nuint)(column * ChannelCount * StatisticCount);
+                        unsafe
+                        {
+                            sumExpected += Vector256.LoadUnsafe(ref column0, offset);
+                            sumActual += Vector256.LoadUnsafe(ref column0, offset + ChannelCount);
+                            sumExpected2 += Vector256.LoadUnsafe(ref column0, offset + (2 * ChannelCount));
+                            sumActual2 += Vector256.LoadUnsafe(ref column0, offset + (3 * ChannelCount));
+                            sumProduct += Vector256.LoadUnsafe(ref column0, offset + (4 * ChannelCount));
+                        }
+                    }
+
+                    var meanProduct = sumExpected * sumActual;
+                    var meanSquares = (sumExpected * sumExpected) + (sumActual * sumActual);
+                    var covariance = (countVector * sumProduct) - meanProduct;
+                    var variances = (countVector * (sumExpected2 + sumActual2)) - meanSquares;
+                    total += (two * meanProduct + c1) * (two * covariance + c2) / ((meanSquares + c1) * (variances + c2));
+                }
+
+                sums[0] = total.GetElement(0);
+                sums[1] = total.GetElement(1);
+                sums[2] = total.GetElement(2);
+                sums[3] = total.GetElement(3);
+            }
+            else
+            {
+                var c1Color = Vector128.Create(colorC1);
+                var c2Color = Vector128.Create(colorC2);
+                var c1Alpha = Vector128.Create(colorC1, alphaC1);
+                var c2Alpha = Vector128.Create(colorC2, alphaC2);
+                var countVector = Vector128.Create(count);
+                var two = Vector128.Create(2.0);
+                var total01 = Vector128.Create(sums[0], sums[1]);
+                var total23 = Vector128.Create(sums[2], sums[3]);
+                for (; x + windowWidth <= width; x++)
+                {
+                    total01 += Score(ref column0, x, 0, windowWidth, countVector, two, c1Color, c2Color);
+                    total23 += Score(ref column0, x, 2, windowWidth, countVector, two, c1Alpha, c2Alpha);
+                }
+
+                sums[0] = total01.GetElement(0);
+                sums[1] = total01.GetElement(1);
+                sums[2] = total23.GetElement(0);
+                sums[3] = total23.GetElement(1);
+            }
+        }
+
+        AccumulateWindowsScalar(columns, width, windowWidth, windowHeight, colorRange, alphaRange, sums, x);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<double> Score(ref double column0, int x, int channel, int windowWidth, Vector128<double> countVector, Vector128<double> two, Vector128<double> c1, Vector128<double> c2)
+        {
+            var sumExpected = Vector128<double>.Zero;
+            var sumActual = Vector128<double>.Zero;
+            var sumExpected2 = Vector128<double>.Zero;
+            var sumActual2 = Vector128<double>.Zero;
+            var sumProduct = Vector128<double>.Zero;
+            for (var column = x; column < x + windowWidth; column++)
+            {
+                var offset = (nuint)((column * ChannelCount * StatisticCount) + channel);
+                unsafe
+                {
+                    sumExpected += Vector128.LoadUnsafe(ref column0, offset);
+                    sumActual += Vector128.LoadUnsafe(ref column0, offset + ChannelCount);
+                    sumExpected2 += Vector128.LoadUnsafe(ref column0, offset + (2 * ChannelCount));
+                    sumActual2 += Vector128.LoadUnsafe(ref column0, offset + (3 * ChannelCount));
+                    sumProduct += Vector128.LoadUnsafe(ref column0, offset + (4 * ChannelCount));
+                }
+            }
+
+            var meanProduct = sumExpected * sumActual;
+            var meanSquares = (sumExpected * sumExpected) + (sumActual * sumActual);
+            var covariance = (countVector * sumProduct) - meanProduct;
+            var variances = (countVector * (sumExpected2 + sumActual2)) - meanSquares;
+            return (two * meanProduct + c1) * (two * covariance + c2) / ((meanSquares + c1) * (variances + c2));
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="AccumulateWindows"/>, from the window <paramref name="start"/>.</summary>
+    internal static void AccumulateWindowsScalar(ReadOnlySpan<double> columns, int width, int windowWidth, int windowHeight, double colorRange, double alphaRange, Span<double> sums, int start = 0)
     {
         // The expression of the 8-bit accumulator: the first factors multiplied by count², the second ones by count × (count - 1)
         double count = windowWidth * windowHeight;
         var varianceScale = count > 1 ? count * (count - 1) : 1;
         Span<double> window = stackalloc double[StatisticCount];
-        for (var x = 0; x + windowWidth <= width; x++)
+        for (var x = start; x + windowWidth <= width; x++)
         {
             for (var channel = 0; channel < ChannelCount; channel++)
             {
                 window.Clear();
                 for (var column = x; column < x + windowWidth; column++)
                 {
-                    var statistics = columns.Slice(((column * ChannelCount) + channel) * StatisticCount, StatisticCount);
                     for (var i = 0; i < StatisticCount; i++)
                     {
-                        window[i] += statistics[i];
+                        window[i] += columns[(((column * StatisticCount) + i) * ChannelCount) + channel];
                     }
                 }
 

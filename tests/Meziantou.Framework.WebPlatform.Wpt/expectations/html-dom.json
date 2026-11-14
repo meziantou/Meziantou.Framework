@@ -1326,6 +1326,9 @@
   "html/dom/documents/dom-tree-accessors/nameditem-adoption.html": {
     "total": 1
   },
+  "html/dom/documents/dom-tree-accessors/nameditem-empty-name-dynamic-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/dom/documents/dom-tree-accessors/nameditem-img-name-added-cached-list.html": {
     "total": 1
   },
@@ -1945,6 +1948,12 @@
       "<audio> contents ignored (\"<audio style='display:block'>abc\")": "FAIL"
     }
   },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-domnoderemoved-crash.html": {
+    "crashtest": "PASS"
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-optgroup-document-child-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/dom/elements/the-innertext-and-outertext-properties/innertext-setter.html": {
     "total": 126
   },
@@ -2362,6 +2371,9 @@
   },
   "html/dom/render-blocking/remove-pending-async-render-blocking-script.html": {
     "total": 1
+  },
+  "html/dom/render-blocking/render-blocking-during-update-the-rendering-crash.html": {
+    "crashtest": "PASS"
   },
   "html/dom/render-blocking/script-inserted-inline-module-with-import.html": {
     "total": 1

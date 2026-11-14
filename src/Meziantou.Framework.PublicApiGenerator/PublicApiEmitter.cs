@@ -46,8 +46,10 @@ internal static class PublicApiEmitter
                 continue;
             }
 
-            var extension = file.RelativePath.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase) ? ".g.cs" : Path.GetExtension(file.RelativePath);
-            var baseName = file.RelativePath[..^extension.Length];
+            // Keep the extension as written, so the new name is the original name with the suffix inserted
+            var extensionLength = file.RelativePath.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase) ? ".g.cs".Length : Path.GetExtension(file.RelativePath).Length;
+            var baseName = file.RelativePath[..^extensionLength];
+            var extension = file.RelativePath[^extensionLength..];
             for (var index = 2; ; index++)
             {
                 var relativePath = baseName + "~" + index.ToString(CultureInfo.InvariantCulture) + extension;

@@ -40,6 +40,7 @@ public partial class Document
 /// Upgrade Insecure Requests (https://w3c.github.io/webappsec-upgrade-insecure-requests/): the <c>upgrade-insecure-requests</c>
 /// directive of a content security policy upgrades the <c>http:</c> requests of a document (or worker) to <c>https:</c>, before
 /// the mixed content checks (the request URL of a <c>ws:</c> WebSocket is its <c>http:</c> URL: it is upgraded to <c>wss:</c>).
+/// As in Chromium, the potentially trustworthy URLs (<c>localhost</c>, the loopback addresses) are not upgraded.
 /// The navigations are upgraded when they are form submissions, navigations of nested navigables, or navigations to the host and
 /// port of a protected resource (the upgrade insecure navigations set). The documents of the nested navigables and the workers
 /// inherit the policy of their embedding document or of their creator.
@@ -107,7 +108,7 @@ internal static class UpgradeInsecureRequests
         }
 
         var url = request.CurrentUrl;
-        if (url.Scheme != "http" || request.Client is not { InsecureRequestsPolicy: InsecureRequestsPolicy.Upgrade } client)
+        if (!ShouldUpgrade(url) || request.Client is not { InsecureRequestsPolicy: InsecureRequestsPolicy.Upgrade } client)
             return;
 
         // The navigations of the nested navigables are upgraded, and the navigations of a top-level navigable that are form
@@ -126,7 +127,15 @@ internal static class UpgradeInsecureRequests
     /// URL of an <c>http:</c> URL when the insecure requests policy of the client is "Upgrade", else <paramref name="url"/>.
     /// </summary>
     public static UrlRecord UpgradeSubresourceUrl(Document client, UrlRecord url)
-        => url.Scheme == "http" && client.InsecureRequestsPolicy == InsecureRequestsPolicy.Upgrade ? Upgrade(url) : url;
+        => ShouldUpgrade(url) && client.InsecureRequestsPolicy == InsecureRequestsPolicy.Upgrade ? Upgrade(url) : url;
+
+    /// <summary>
+    /// Returns whether an <c>http:</c> URL is upgraded when the policy is "Upgrade": as in Chromium, a potentially trustworthy
+    /// URL (https://w3c.github.io/webappsec-secure-contexts/#is-url-trustworthy: <c>localhost</c>, a loopback address) is not
+    /// upgraded. Upgrading it would make the requests of a document served over <c>http://localhost</c> cross-origin, so its
+    /// same-origin requests (e.g. the external resources of the <c>use</c> elements) would fail.
+    /// </summary>
+    private static bool ShouldUpgrade(UrlRecord url) => url.Scheme == "http" && !ReferrerPolicies.IsPotentiallyTrustworthy(url);
 
     private static UrlRecord Upgrade(UrlRecord url)
     {

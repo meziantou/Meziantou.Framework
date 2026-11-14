@@ -88,7 +88,7 @@ packageIds:
 - `dotnet run ./eng/update-all.cs` (or `-- --step docs`) checks the lists and writes `eng/PackageProjectUrls.props`:
   the project URL of a package, shown on nuget.org, is the URL of the deepest folder that lists it, such as
   `https://meziantou.github.io/Meziantou.Framework/http/hsts/` (the site redirects a folder URL to its first page). The
-  map packages use the URL of `GeoMaps`. Renaming the `title` or `slug` of a listed folder changes the URL, and the
+  map packages use the URL of `GeoMaps`. The package table of the root `README.md` links to the same URL. Renaming the `title` or `slug` of a listed folder changes the URL, and the
   published packages keep the old one: avoid it.
 
 ## Front matter

@@ -317,6 +317,9 @@
   "svg/animations/animateTransform-pattern-transform.html": {
     "total": 1
   },
+  "svg/animations/animated-classname-crash.svg": {
+    "crashtest": "PASS"
+  },
   "svg/animations/attribute-value-unaffected-by-animation-001.html": {
     "total": 1
   },
@@ -356,6 +359,21 @@
   "svg/animations/correct-events-for-short-animations-with-syncbases.html": {
     "total": 1
   },
+  "svg/animations/crashtests/empty-values-list-paced-animation.html": {
+    "crashtest": "PASS"
+  },
+  "svg/animations/crashtests/firefox-bug-1930221.html": {
+    "crashtest": "PASS"
+  },
+  "svg/animations/crashtests/firefox-bug-1949899.html": {
+    "crashtest": "PASS"
+  },
+  "svg/animations/crashtests/firefox-bug-1957178.html": {
+    "crashtest": "PASS"
+  },
+  "svg/animations/crashtests/firefox-bug-1974334.html": {
+    "crashtest": "PASS"
+  },
   "svg/animations/custom-events.html": {
     "total": 6
   },
@@ -379,6 +397,12 @@
   },
   "svg/animations/end-event.svg": {
     "total": 1
+  },
+  "svg/animations/end-of-time-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "svg/animations/end-of-time-002-crash.html": {
+    "crashtest": "PASS"
   },
   "svg/animations/event-listeners.html": {
     "total": 1
@@ -418,6 +442,9 @@
   },
   "svg/animations/media-fragment-override-animation.html": {
     "reftest": "FAIL"
+  },
+  "svg/animations/mpath-zero-radius-crash.html": {
+    "crashtest": "PASS"
   },
   "svg/animations/multiple-animations-ending.html": {
     "total": 1
@@ -596,6 +623,9 @@
   },
   "svg/animations/stop-animation-01.html": {
     "reftest": "PASS"
+  },
+  "svg/animations/svg-style-animate-crash.html": {
+    "crashtest": "PASS"
   },
   "svg/animations/svgangle-animation-deg-to-grad.html": {
     "total": 1
@@ -1204,6 +1234,9 @@
   "svg/embedded/image-remove-href-3.svg": {
     "reftest": "PASS"
   },
+  "svg/embedded/svg-zero-size-crash.html": {
+    "crashtest": "PASS"
+  },
   "svg/extensibility/foreignObject/composited-inside-object.html": {
     "reftest": "PASS"
   },
@@ -1215,6 +1248,9 @@
   },
   "svg/extensibility/foreignObject/filter-repaint.html": {
     "reftest": "PASS"
+  },
+  "svg/extensibility/foreignObject/foreign-object-circular-filter-reference-crash.html": {
+    "crashtest": "PASS"
   },
   "svg/extensibility/foreignObject/foreign-object-containing-svg-in-svg-in-object.html": {
     "reftest": "PASS"
@@ -1230,6 +1266,12 @@
   },
   "svg/extensibility/foreignObject/foreign-object-size.html": {
     "reftest": "PASS"
+  },
+  "svg/extensibility/foreignObject/foreign-object-under-clip-path-crash.html": {
+    "crashtest": "PASS"
+  },
+  "svg/extensibility/foreignObject/foreign-object-under-defs-crash.html": {
+    "crashtest": "PASS"
   },
   "svg/extensibility/foreignObject/foreign-object-visibility-hidden-visible-content.html": {
     "reftest": "PASS"
@@ -1959,6 +2001,9 @@
   "svg/linking/scripted/rellist-feature-detection.svg": {
     "total": 1
   },
+  "svg/linking/scripted/use-iframe-crash.html": {
+    "crashtest": "PASS"
+  },
   "svg/linking/scripted/xlink-href-compat.html": {
     "total": 12
   },
@@ -2039,6 +2084,12 @@
   },
   "svg/painting/marker-orient-001.svg": {
     "reftest": "PASS"
+  },
+  "svg/painting/marker-with-clip-path-cycle-crash.html": {
+    "crashtest": "PASS"
+  },
+  "svg/painting/marker-with-mask-cycle-crash.html": {
+    "crashtest": "PASS"
   },
   "svg/painting/mask-containing-image-with-clip-path.svg": {
     "reftest": "PASS"
@@ -3022,6 +3073,9 @@
   "svg/struct/SVGSVGElement-deselectAll.html": {
     "total": 7
   },
+  "svg/struct/crashtests/chrome-bug-425405650.html": {
+    "crashtest": "PASS"
+  },
   "svg/struct/reftests/conditional-processing-never-rendered-resources.svg": {
     "reftest": "PASS"
   },
@@ -3421,6 +3475,12 @@
   "svg/styling/css-var-on-length-attributes-quirk.html": {
     "reftest": "PASS"
   },
+  "svg/styling/cx-sibling-index-crash.html": {
+    "crashtest": "PASS"
+  },
+  "svg/styling/font-size-number-calc-crash.svg": {
+    "crashtest": "PASS"
+  },
   "svg/styling/glyph-orientation-horizontal.historical.html": {
     "total": 3
   },
@@ -3643,6 +3703,21 @@
   "svg/styling/vector-effect-invalid.html": {
     "total": 10
   },
+  "svg/svg-in-svg/svg-in-svg-circular-filter-reference-crash.html": {
+    "crashtest": "PASS"
+  },
+  "svg/text/crashtests/abspos-pseudo.html": {
+    "crashtest": "PASS"
+  },
+  "svg/text/crashtests/ruby-crash.svg": {
+    "crashtest": "PASS"
+  },
+  "svg/text/crashtests/textlength-zwj-crash.svg": {
+    "crashtest": "PASS"
+  },
+  "svg/text/crashtests/unicode-bidi-crash.html": {
+    "crashtest": "PASS"
+  },
   "svg/text/dominant-baseline.historical.html": {
     "total": 3
   },
@@ -3772,8 +3847,14 @@
   "svg/text/reftests/text-context-fill.svg": {
     "reftest": "PASS"
   },
+  "svg/text/reftests/text-display-contents-crash.html": {
+    "crashtest": "PASS"
+  },
   "svg/text/reftests/text-font-face-load-image.html": {
     "reftest": "PASS"
+  },
+  "svg/text/reftests/text-huge-font-size-crash.html": {
+    "crashtest": "PASS"
   },
   "svg/text/reftests/text-inline-size-001.svg": {
     "reftest": "FAIL"
@@ -4011,6 +4092,9 @@
   },
   "svg/text/scripted/range-getboundingclientrect-scaled.html": {
     "total": 6
+  },
+  "svg/text/scripted/reattach-crash.html": {
+    "crashtest": "PASS"
   },
   "svg/text/scripted/textlength-inconsistent.svg": {
     "total": 1
@@ -4380,5 +4464,8 @@
   },
   "svg/types/scripted/event-handler-all-document-element-events.svg": {
     "total": 16
+  },
+  "svg/types/scripted/svglength-value-access-when-in-detached-document-crash.html": {
+    "crashtest": "PASS"
   }
 }

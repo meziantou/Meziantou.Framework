@@ -113,6 +113,9 @@ internal sealed partial class WptTestRunner
     /// <summary>The posture of the device, overridden by test_driver.set_device_posture().</summary>
     private readonly DevicePostureProvider _devicePosture = new();
 
+    /// <summary>The virtual authenticators of test_driver.add_virtual_authenticator() (https://w3c.github.io/webauthn/#sctn-automation-virtual-authenticators).</summary>
+    private readonly VirtualAuthenticatorEnvironment _authenticators = new();
+
     /// <summary>The display features of the screen, set by test_driver.set_display_features().</summary>
     private readonly DisplayFeaturesProvider _displayFeatures = new();
     private readonly WptStash _stash = new();
@@ -229,6 +232,9 @@ internal sealed partial class WptTestRunner
                 // The virtual pressure sources and the posture override of the test driver
                 ComputePressure = new ComputePressureOptions { Provider = _pressureSources },
                 DevicePosture = new DevicePostureOptions { Provider = _devicePosture },
+
+                // The virtual authenticators of test_driver.add_virtual_authenticator()
+                WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
 
                 // A screen whose orientation can be locked (as the test environment of Chromium), and whose display features
                 // are set by test_driver.set_display_features()
@@ -449,13 +455,13 @@ internal sealed partial class WptTestRunner
             if (WptServer.IsHost(parsed) && GetDirectory(parsed) is var (path, directory))
                 return LoadDirectory(parsed, path, directory, request, redirectCount);
 
-            // The images and the fonts are bytes
+            // The images and the fonts are bytes. A missing file is a 404 response of wptserve
             if (request.Destination is RequestDestination.Image or RequestDestination.Font)
-                return TrickleBody(parsed, runner.GetResponse(url, GetRequestHeaders(parsed, request)) is var (body, headers, responseUrl) ? new DocumentResource(body) { Headers = headers, StatusCode = WptPipes.GetStatus(WptPipes.Get(responseUrl)) ?? 200 } : null);
+                return TrickleBody(parsed, runner.GetResponse(url, GetRequestHeaders(parsed, request)) is var (body, headers, responseUrl) ? new DocumentResource(body) { Headers = headers, StatusCode = WptPipes.GetStatus(WptPipes.Get(responseUrl)) ?? 200 } : GetNotFoundResource(parsed));
 
             // The media resources and the text tracks are bytes, with the status of the status pipe (a media element fails for an HTTP error)
             if (request.Destination is RequestDestination.Audio or RequestDestination.Video or RequestDestination.Track)
-                return Trickle(parsed, () => runner.GetResponse(url) is var (body, headers, _) ? new DocumentResource(body) { Headers = headers, StatusCode = WptPipes.GetStatus(WptPipes.Get(parsed)) ?? 200 } : null);
+                return Trickle(parsed, () => runner.GetResponse(url) is var (body, headers, _) ? new DocumentResource(body) { Headers = headers, StatusCode = WptPipes.GetStatus(WptPipes.Get(parsed)) ?? 200 } : GetNotFoundResource(parsed));
 
             if (request.Destination is not (RequestDestination.Script or RequestDestination.PaintWorklet or RequestDestination.Json or RequestDestination.Text or RequestDestination.Style or RequestDestination.Worker or RequestDestination.SharedWorker or RequestDestination.ServiceWorker))
                 return ValueTask.FromResult(runner.Trickle(parsed, request, runner.LoadDocument(url, request)));
@@ -747,7 +753,7 @@ internal sealed partial class WptTestRunner
             if (request?.Mode == RequestMode.Navigate)
                 return new DocumentResource("""{"error": {"code": 404, "message": ""}}""") { Headers = [new("Content-Type", "application/json")], StatusCode = 404 };
 
-            return null;
+            return GetNotFoundResource(parsed);
         }
 
         if (path.EndsWith(".asis", StringComparison.Ordinal))
@@ -767,6 +773,19 @@ internal sealed partial class WptTestRunner
         }
 
         return resource;
+    }
+
+    /// <summary>
+    /// The response of wptserve to the request of a file that does not exist (a <c>404</c> response, not a network error), or
+    /// null when the URL is not served by the WPT server.
+    /// </summary>
+    private static DocumentResource? GetNotFoundResource(Url url)
+    {
+        if (!WptServer.IsHost(url))
+            return null;
+
+        var body = "404 Not Found"u8.ToArray();
+        return new DocumentResource(body) { StatusCode = 404, Headers = [new("Content-Type", "text/plain"), new("Content-Length", body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture))] };
     }
 
     /// <summary>The URL list of a request (https://fetch.spec.whatwg.org/#concept-request-url-list): the URLs of its redirects, then its URL.</summary>
@@ -814,6 +833,15 @@ internal sealed partial class WptTestRunner
             AddHeader("Connection", "keep-alive");
             AddHeader("User-Agent", UserAgent);
             AddHeader("Accept-Language", "en-US,en");
+
+            // The content codings of the compression dictionaries (Accept-Encoding: dcb, dcz) are added to the ones of the
+            // network layer
+            var acceptEncodingIndex = headers.FindIndex(header => header.Key.Equals("Accept-Encoding", StringComparison.OrdinalIgnoreCase));
+            if (acceptEncodingIndex >= 0 && headers[acceptEncodingIndex].Value is var acceptEncoding && acceptEncoding.Contains("dcb", StringComparison.Ordinal))
+            {
+                headers[acceptEncodingIndex] = new(headers[acceptEncodingIndex].Key, "gzip, deflate, " + acceptEncoding);
+            }
+
             AddHeader("Accept-Encoding", "gzip, deflate");
         }
         else
@@ -854,8 +882,15 @@ internal sealed partial class WptTestRunner
                 headers.AddRange(request.Headers.Where(header => !header.Key.Equals("Origin", StringComparison.OrdinalIgnoreCase)));
             }
 
-            headers.Add(new("Accept-Encoding", "gzip, deflate"));
+            // The headers of the compression dictionaries (https://www.rfc-editor.org/rfc/rfc9842#section-2.2)
+            var hasDictionary = HeaderList.Get(request.Headers, "Available-Dictionary") is not null;
+            headers.Add(new("Accept-Encoding", hasDictionary ? "gzip, deflate, dcb, dcz" : "gzip, deflate"));
             headers.Add(new("Accept-Language", "en-US,en"));
+            if (hasDictionary)
+            {
+                headers.AddRange(request.Headers.Where(header => header.Key.Equals("Available-Dictionary", StringComparison.OrdinalIgnoreCase) || header.Key.Equals("Dictionary-ID", StringComparison.OrdinalIgnoreCase)));
+            }
+
             if (request.Body is { } body)
             {
                 if (request.BodyContentType is { } contentType)
@@ -921,15 +956,24 @@ internal sealed partial class WptTestRunner
             return (new DocumentResource(notFound) { StatusCode = 404, StatusText = "Not Found", Headers = [new("Content-Type", "text/plain"), new("Content-Length", "13")] }, TimeSpan.Zero, null, null);
         }
 
+        // The network layer parses the raw messages and decodes the content codings
+        var isRawMessage = response.RawMessage is not null;
+        WptHttpMessage.Read(response);
+
         // https://web-platform-tests.org/writing-tests/server-pipes.html: the pipes apply to the responses of the handlers too
         var pipes = WptPipes.Get(url);
-        // wptserve writes the headers as they are: a line break in a value ends the header, and the browsers ignore the
-        // next line (which is not a header)
-        var headers = response.Headers.Select(header => header.Value.IndexOfAny(['\r', '\n']) is var lineBreak and >= 0 ? new KeyValuePair<string, string>(header.Key, header.Value[..lineBreak]) : header).ToList();
+        // wptserve writes the headers as they are: a line break in a value ends the header (the browsers ignore the next line,
+        // which is not a header), except an obsolete line folding
+        var headers = response.Headers.Select(header => new KeyValuePair<string, string>(header.Key, WptHttpMessage.GetFieldValueOnWire(header.Value))).ToList();
         WptPipes.ApplyHeaders(headers, pipes);
         var status = WptPipes.GetStatus(pipes) ?? response.Status;
         var body = WptPipes.HasSubstitutions(pipes) ? WptServer.Substitute(response.Body, url) : response.Body;
         WptPipes.ApplyGzip(headers, pipes, body);
+        if (!isRawMessage)
+        {
+            AddRequiredHeaders(headers);
+        }
+
         StoreCookies(url, request, headers);
 
         // A response that never completes is aborted by the test
@@ -1081,7 +1125,9 @@ internal sealed partial class WptTestRunner
                 // The body of a file served with a content coding is decoded (see CreateResource)
                 var fileResource = CreateResource(new DocumentResource(bytes), file, url, GetRequestHeaders(url, request));
                 bytes = fileResource.ContentBytes?.ToArray() ?? bytes;
-                resource = new DocumentResource(bytes) { StatusCode = fileResource.StatusCode, StatusText = GetStatusText(url, fileResource.StatusCode), Headers = AddContentLength(fileResource.Headers, bytes.Length) };
+                var fileHeaders = AddContentLength(fileResource.Headers, bytes.Length);
+                AddRequiredHeaders(fileHeaders);
+                resource = new DocumentResource(bytes) { StatusCode = fileResource.StatusCode, StatusText = GetStatusText(url, fileResource.StatusCode), Headers = fileHeaders };
                 StoreCookies(url, request, resource.Headers);
 
                 // The body of a trickle() pipe arrives over time, except for a synchronous request of a window
@@ -1183,6 +1229,23 @@ internal sealed partial class WptTestRunner
 
         var body = WptServer.GetDirectoryListing(path, directory);
         return new DocumentResource(body) { StatusText = GetStatusText(url, 200), Headers = [new("Content-Type", "text/html"), new("Content-Length", body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture))] };
+    }
+
+    /// <summary>
+    /// Adds the headers that wptserve adds to the responses whose headers it writes (<c>ResponseWriter.end_headers()</c>):
+    /// <c>Server</c> and <c>Date</c> (the time of the virtual clock), unless the response has them.
+    /// </summary>
+    private void AddRequiredHeaders(List<KeyValuePair<string, string>> headers)
+    {
+        if (!headers.Exists(header => header.Key.Equals("Server", StringComparison.OrdinalIgnoreCase)))
+        {
+            headers.Add(new("Server", "BaseHTTP/0.6 Python/3.12.3"));
+        }
+
+        if (!headers.Exists(header => header.Key.Equals("Date", StringComparison.OrdinalIgnoreCase)))
+        {
+            headers.Add(new("Date", Now.ToString("r", System.Globalization.CultureInfo.InvariantCulture)));
+        }
     }
 
     private static List<KeyValuePair<string, string>> AddContentLength(IReadOnlyList<KeyValuePair<string, string>> headers, int length)
@@ -1301,6 +1364,12 @@ internal sealed partial class WptTestRunner
         var pipes = WptPipes.Get(url);
         var status = WptPipes.GetStatus(pipes) ?? 200;
         WptPipes.ApplyGzip(headers, pipes, resource.Content is { } content ? System.Text.Encoding.UTF8.GetBytes(content) : resource.ContentBytes!.Value.Span);
+
+        // The body ends at the Content-Length of the .headers file (the connection is reused for the next response)
+        if (resource.ContentBytes is { } servedBody && !pipes.Exists(pipe => pipe.Name == "gzip") && WptHttpMessage.ExtractLength(headers) is long contentLength and >= 0 && contentLength < servedBody.Length)
+        {
+            resource = new DocumentResource(servedBody[..(int)contentLength]);
+        }
 
         // A file served with a content coding (e.g. foo.text.gz and its .headers file) is decoded by the network layer of a
         // browser: the Content-Length is the length of the encoded body
@@ -1819,6 +1888,30 @@ internal sealed partial class WptTestRunner
             return adapter.Undefined;
         });
 
+        // The virtual authenticators (https://w3c.github.io/webauthn/#sctn-automation): the arguments and the result are JSON;
+        // as WebDriver commands, they run after the tasks that are already queued
+        Define("__wpt_webauthn", 4, (_, args) =>
+        {
+            var command = adapter.ToString(args[0]);
+            var arguments = adapter.ToString(args[1]);
+            var (resolve, reject) = (args[2], args[3]);
+            QueueTask(() => realm.Run(() =>
+            {
+                string? result;
+                try
+                {
+                    result = WptTestDriver.ExecuteWebAuthnCommand(_authenticators, command, arguments);
+                }
+                catch (WptWebDriverException ex)
+                {
+                    return adapter.Call(reject, adapter.Undefined, [adapter.FromString(ex.Message)]);
+                }
+
+                return adapter.Call(resolve, adapter.Undefined, [result is null ? adapter.Undefined : adapter.FromString(result)]);
+            }));
+            return adapter.Undefined;
+        });
+
         // https://w3c.github.io/device-posture/#set-device-posture and https://w3c.github.io/device-posture/#clear-device-posture
         Define("__wpt_set_device_posture", 3, (_, args) =>
         {
@@ -1966,6 +2059,29 @@ internal sealed partial class WptTestRunner
         Define("__wpt_delete_all_cookies", 0, (_, _) =>
         {
             _cookieJar.Clear();
+            return adapter.Undefined;
+        });
+        // The Set Storage Access command (https://privacycg.github.io/storage-access/#set-storage-access-command), as the
+        // implementation of wptrunner: a rule of the cookie jar of the runner for an embedded origin (or "*") on an embedding
+        // origin (or "*"), set after the tasks that are already queued
+        Define("__wpt_set_storage_access", 5, (_, args) =>
+        {
+            var origin = adapter.ToString(args[0]);
+            var embeddingOrigin = adapter.ToString(args[1]);
+            var blocked = adapter.ToBoolean(args[2]);
+            var completion = CreateCompletion(args[3], args[4]);
+            QueueTask(() =>
+            {
+                try
+                {
+                    _cookieJar.SetThirdPartyCookieAccess(embeddingOrigin == "*" ? null : embeddingOrigin, origin == "*" ? null : origin, blocked);
+                    completion(null);
+                }
+                catch (ArgumentException ex)
+                {
+                    completion("invalid argument: " + ex.Message);
+                }
+            });
             return adapter.Undefined;
         });
         Define("__wpt_get_cookies", 1, (_, args) => adapter.FromString(GetWebDriverCookies(realm.Window.Document, args.Length > 0 && !adapter.IsUndefined(args[0]) ? adapter.ToString(args[0]) : null)));
@@ -2270,7 +2386,10 @@ internal sealed partial class WptTestRunner
     {
         // The waits for the threads of the workers spin, then yield, then sleep: a worker usually answers quickly
         var workerWait = default(SpinWait);
-        while (_result is null && _reftestWait?.Update() is not true)
+
+        // A page of a reftest or of a crash test that includes testharness.js (e.g. a -crash.html file with an empty test) is
+        // ready for the screenshot after the steps of wptrunner, whether its tests completed or not
+        while ((_result is null || _reftestWait is not null) && _reftestWait?.Update() is not true)
         {
             if (_stopwatch.Elapsed > MaxDuration)
                 throw new TimeoutException("The test exceeded the maximum duration");

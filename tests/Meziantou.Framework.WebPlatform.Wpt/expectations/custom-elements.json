@@ -74,14 +74,23 @@
   "custom-elements/cross-realm-callback-report-exception.html": {
     "total": 5
   },
+  "custom-elements/custom-button-abort-insertion-crash.html": {
+    "crashtest": "PASS"
+  },
   "custom-elements/custom-element-reaction-queue.html": {
     "total": 6
+  },
+  "custom-elements/custom-image-abort-insertion-crash.html": {
+    "crashtest": "PASS"
   },
   "custom-elements/customized-built-in-constructor-exceptions.html": {
     "total": 5
   },
   "custom-elements/disconnected-callbacks.html": {
     "total": 40
+  },
+  "custom-elements/duplicate-attr-constructor-crash.html": {
+    "crashtest": "PASS"
   },
   "custom-elements/element-internals-aria-element-reflection-shadow-including-root.tentative.html": {
     "total": 7,
@@ -206,6 +215,12 @@
   "custom-elements/htmlconstructor/newtarget.html": {
     "total": 10
   },
+  "custom-elements/iframe-custom-id-setter-crash.html": {
+    "crashtest": "PASS"
+  },
+  "custom-elements/many-slots-crash.html": {
+    "crashtest": "PASS"
+  },
   "custom-elements/microtasks-and-constructors.html": {
     "total": 5
   },
@@ -265,6 +280,9 @@
   },
   "custom-elements/perform-microtask-checkpoint-before-construction.html": {
     "total": 2
+  },
+  "custom-elements/prevent-extensions-crash.html": {
+    "crashtest": "PASS"
   },
   "custom-elements/pseudo-class-defined-customized-builtins.html": {
     "total": 16
@@ -633,5 +651,11 @@
   },
   "custom-elements/upgrading/upgrading-parser-created-element.html": {
     "total": 6
+  },
+  "custom-elements/when-defined-reentry-crash.html": {
+    "crashtest": "PASS"
+  },
+  "custom-elements/xhtml-crash.xhtml": {
+    "crashtest": "ERROR"
   }
 }

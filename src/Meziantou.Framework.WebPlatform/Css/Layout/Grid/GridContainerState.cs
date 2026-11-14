@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.WebPlatform.Css.Layout;
 
 /// <summary>
@@ -91,6 +93,12 @@ internal sealed class GridContainerState(
     /// </summary>
     public Dictionary<ContainerBox, GridItemRows>? ItemRows { get; set; }
 
+    /// <summary>
+    /// The tracks and the margin box in the stacking axis of each item of a grid lanes container (the position of the item in the
+    /// reading flow of <c>reading-flow: grid-lanes-flow</c> and <c>grid-lanes-track</c>); null for a grid container.
+    /// </summary>
+    public Dictionary<ContainerBox, GridLanesItemArea>? LanesItemAreas { get; set; }
+
     /// <summary>The writing mode of the grid container (the axes of the logical coordinates).</summary>
     public WritingDirection WritingDirection { get; } = writingDirection;
 
@@ -134,3 +142,11 @@ internal sealed class GridContainerState(
 /// <param name="ColumnStart">The index of the first column of the item.</param>
 /// <param name="HasFixedRows">Whether the track sizing functions of the rows of the item are fixed (a length, a resolved percentage): the rows do not grow with the item when it is fragmented.</param>
 internal readonly record struct GridItemRows(int Start, int End, bool Stretches, int ColumnStart, bool HasFixedRows = false);
+
+/// <summary>The tracks of an item of a grid lanes container and its margin box in the stacking axis (see <see cref="GridContainerState.LanesItemAreas"/>).</summary>
+/// <param name="TrackStart">The index of the first track of the item in the grid axis, in the order of the tracks.</param>
+/// <param name="TrackEnd">The index of the track after its last track.</param>
+/// <param name="StackStart">The start edge of the margin box of the item in the stacking axis, from the start edge of the content box of the container (in its writing mode).</param>
+/// <param name="StackEnd">The end edge of the margin box of the item in the stacking axis.</param>
+[StructLayout(LayoutKind.Auto)]
+internal readonly record struct GridLanesItemArea(int TrackStart, int TrackEnd, double StackStart, double StackEnd);

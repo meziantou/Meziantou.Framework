@@ -47,6 +47,8 @@ public class Jpeg2000Benchmarks : IDisposable
     private const int LargeHeight = 2160;
 
     private static readonly Jpeg2000Encoder Lossy = new() { Compression = Jpeg2000Compression.Lossy };
+    private static readonly Jpeg2000Encoder HighThroughput = new() { BlockCoder = Jpeg2000BlockCoder.HighThroughput };
+    private static readonly Jpeg2000Encoder HighThroughputLossy = new() { Compression = Jpeg2000Compression.Lossy, BlockCoder = Jpeg2000BlockCoder.HighThroughput };
     private readonly MemoryStream _output = new();
     private Image<Rgb24> _photo = null!;
     private Image<Rgb24> _photo4K = null!;
@@ -165,6 +167,14 @@ public class Jpeg2000Benchmarks : IDisposable
     [Benchmark]
     [Workload("1024x768 Rgb24 -> lossy JPEG 2000 (9-7, ICT, q90)", ReturnsOutputBytes = true)]
     public long EncodeLossy() => ImageWorkloads.Encode(_photo, Lossy, _output);
+
+    [Benchmark]
+    [Workload("1024x768 Rgb24 -> lossless HTJ2K (5-3, RCT, high-throughput block coder)", ReturnsOutputBytes = true)]
+    public long EncodeHighThroughput() => ImageWorkloads.Encode(_photo, HighThroughput, _output);
+
+    [Benchmark]
+    [Workload("1024x768 Rgb24 -> lossy HTJ2K (9-7, ICT, q90, high-throughput block coder)", ReturnsOutputBytes = true)]
+    public long EncodeHighThroughputLossy() => ImageWorkloads.Encode(_photo, HighThroughputLossy, _output);
 
     [Benchmark]
     [Workload("3840x2160 Rgb24 -> lossless JPEG 2000 (5-3, RCT)", ReturnsOutputBytes = true)]

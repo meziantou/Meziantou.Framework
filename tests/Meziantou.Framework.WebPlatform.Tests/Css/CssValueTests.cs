@@ -133,4 +133,16 @@ public sealed class CssValueTests
         var values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
         Assert.Equal(valid, ValueMatcher.Matches(grammar, values));
     }
+
+    [Theory]
+    [InlineData(ValueMatcher.MaxRepetitions, true)]
+    [InlineData(ValueMatcher.MaxRepetitions + 1, false)]
+    [InlineData(100_000, false)] // WPT css/css-grid/parsing/grid-template-columns-crash.html: fails fast on every platform
+    public void Validation_RepetitionsAreLimited(int count, bool valid)
+    {
+        var grammar = CssPropertyRegistry.GetGrammar(CssPropertyRegistry.Get("grid-template-columns")!)!;
+        var value = string.Join(' ', Enumerable.Range(0, count).Select(i => i.ToString(CultureInfo.InvariantCulture) + "px"));
+        var values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
+        Assert.Equal(valid, ValueMatcher.Matches(grammar, values));
+    }
 }

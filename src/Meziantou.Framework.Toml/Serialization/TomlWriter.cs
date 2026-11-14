@@ -325,6 +325,12 @@ public sealed class TomlWriter
         WriteValue(value);
     }
 
+    // Writes a finite float from its invariant text, such as the exact digits of a Decimal128
+    internal void WriteFloatLiteral(string text)
+    {
+        WriteValue(new TomlFloatLiteral(text));
+    }
+
     /// <summary>
     /// Writes a boolean value.
     /// </summary>

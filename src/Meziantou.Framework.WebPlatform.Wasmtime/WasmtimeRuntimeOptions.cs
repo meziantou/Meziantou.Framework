@@ -18,7 +18,8 @@ public sealed class WasmtimeRuntimeOptions
     /// <summary>
     /// Gets the maximum size of a memory, in bytes. The default and the upper limit is the maximum length of a .NET array
     /// (the memories are .NET arrays, so that the <c>ArrayBuffer</c> objects of JavaScript share their bytes): a memory
-    /// that would be larger cannot grow.
+    /// that would be larger cannot grow. The bytes of a shared memory are allocated for its maximum size, limited by this
+    /// value: a shared memory cannot grow beyond.
     /// </summary>
     public long MaxMemorySize { get; init; } = Array.MaxLength;
 }

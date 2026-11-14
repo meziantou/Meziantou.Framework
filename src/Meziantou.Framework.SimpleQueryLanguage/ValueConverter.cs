@@ -216,6 +216,57 @@ internal static class ValueConverter
             return false;
         }
 
+#if NET11_0_OR_GREATER
+        if (type == typeof(System.Numerics.BFloat16))
+        {
+            if (System.Numerics.BFloat16.TryParse(value, NumberStyles.AllowThousands | NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedValue))
+            {
+                result = (TValue)(object)parsedValue;
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
+
+        if (type == typeof(System.Numerics.Decimal32))
+        {
+            if (System.Numerics.Decimal32.TryParse(value, NumberStyles.AllowThousands | NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedValue))
+            {
+                result = (TValue)(object)parsedValue;
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
+
+        if (type == typeof(System.Numerics.Decimal64))
+        {
+            if (System.Numerics.Decimal64.TryParse(value, NumberStyles.AllowThousands | NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedValue))
+            {
+                result = (TValue)(object)parsedValue;
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
+
+        if (type == typeof(System.Numerics.Decimal128))
+        {
+            if (System.Numerics.Decimal128.TryParse(value, NumberStyles.AllowThousands | NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedValue))
+            {
+                result = (TValue)(object)parsedValue;
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
+
+#endif
+
         if (type == typeof(IntPtr))
         {
             if (IntPtr.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedValue))

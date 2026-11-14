@@ -280,6 +280,47 @@ internal sealed class MatrixBuilder
     }
 
     /// <summary>
+    /// Reads the codewords from the data modules, in the order of <see cref="PlaceDataBits"/>. The modules must be unmasked.
+    /// </summary>
+    public byte[] ReadDataBits(int codewordCount)
+    {
+        var codewords = new byte[codewordCount];
+        var bitIndex = 0;
+        var totalBits = codewordCount * 8;
+
+        var col = _size - 1;
+        while (col >= 0)
+        {
+            if (col == 6)
+            {
+                col--;
+            }
+
+            for (var row = 0; row < _size; row++)
+            {
+                var isUpward = (((_size - 1 - col) / 2) % 2) == 0;
+                var actualRow = isUpward ? _size - 1 - row : row;
+                for (var offset = 0; offset < 2 && col - offset >= 0; offset++)
+                {
+                    if (_isReserved[actualRow, col - offset] || bitIndex >= totalBits)
+                        continue;
+
+                    if (_modules[actualRow, col - offset])
+                    {
+                        codewords[bitIndex >> 3] |= (byte)(0x80 >> (bitIndex & 7));
+                    }
+
+                    bitIndex++;
+                }
+            }
+
+            col -= 2;
+        }
+
+        return codewords;
+    }
+
+    /// <summary>
     /// Flips the data modules selected by the mask pattern. Applying the same mask twice restores the unmasked data.
     /// </summary>
     public void ApplyMask(int maskPattern)

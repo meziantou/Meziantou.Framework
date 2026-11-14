@@ -4,7 +4,7 @@
     <!-- Converts internationalized domain names with IdnMapping -->
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.8</Version>
+    <Version>2.0.9</Version>
     <Description>A DNS client supporting UDP, TCP, DNS over TLS, DNS over HTTPS, DNS over QUIC, DNSSEC, EDNS, IDN, reverse lookups, zone transfers, TSIG, and DNS cookies</Description>
     <PackageTags>dns, dns-client, doh, dot, doq, dnssec, axfr, ixfr, tsig, networking</PackageTags>
   </PropertyGroup>

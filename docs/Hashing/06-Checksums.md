@@ -50,6 +50,9 @@ there is no preceding data.
 ## Performance
 
 Both types use the instructions of the processor when they are available: the CRC32 instructions of Arm64 processors
-and the carry-less multiplication of x64 processors for [Crc32](cref:Meziantou.Framework.Hashing.Crc32), the vector instructions (AdvSimd, AVX2, SSSE3) for
+and the carry-less multiplication of x64 processors for [Crc32](cref:Meziantou.Framework.Hashing.Crc32), the vector instructions (AdvSimd, AVX-512, AVX2, SSSE3) for
 [Adler32](cref:Meziantou.Framework.Hashing.Adler32). Every path computes the same value. Pass large buffers rather than a few bytes at a time to benefit from
 them.
+
+On x64 processors with 256-bit or 512-bit vectors (VPCLMULQDQ, AVX-512), [Crc32](cref:Meziantou.Framework.Hashing.Crc32) processes 128 or 256 bytes per
+step, and [Adler32](cref:Meziantou.Framework.Hashing.Adler32) processes 64 bytes per step.

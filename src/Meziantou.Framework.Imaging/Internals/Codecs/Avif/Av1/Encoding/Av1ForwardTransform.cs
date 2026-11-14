@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -89,7 +90,11 @@ internal static class Av1ForwardTransform
     /// <param name="txType">The transform type (<c>PlaneTxType</c>).</param>
     public static void Forward(ReadOnlySpan<int> residual, Span<int> coefficients, int txSz, int txType)
     {
-        if (Av1Simd.IsSupported)
+        if (Avx2.IsSupported && Av1Tables.TxWidthLog2[txSz] >= 3 && Av1Tables.TxHeightLog2[txSz] >= 3)
+        {
+            ForwardVector256(residual, coefficients, txSz, txType);
+        }
+        else if (Av1Simd.IsSupported)
         {
             ForwardVector(residual, coefficients, txSz, txType);
         }
@@ -223,6 +228,109 @@ internal static class Av1ForwardTransform
                 row3.CopyTo(output[((3 * tw) + l)..]);
             }
         }
+    }
+
+    // ForwardVector with AVX2, for blocks of at least 8x8: 8 columns then 8 rows at once, in the 32-bit lanes of
+    // Vector256 (the vector c of the group g holds the outputs 8g to 8g + 7 of the column c), with 8x8 transpositions
+    [SkipLocalsInit]
+    private static void ForwardVector256(ReadOnlySpan<int> residual, Span<int> coefficients, int txSz, int txType)
+    {
+        var layout = new Layout(txSz, txType);
+        var w = layout.Width;
+        var h = layout.Height;
+        var tw = Math.Min(32, w);
+        var th = Math.Min(32, h);
+        residual = residual[..(w * h)];
+        coefficients = coefficients[..(tw * th)];
+
+        // Every element is written before it is read, as in ForwardVector
+        Span<Vector256<int>> column = unsafe(stackalloc Vector256<int>[64])[..h];
+        Span<Vector256<int>> intermediate = unsafe(stackalloc Vector256<int>[th / 8 * w]);
+        Span<Vector256<int>> rows = unsafe(stackalloc Vector256<int>[8]);
+        var firstRow = layout.FlipUD ? (h - 1) * w : 0;
+        var rowStep = layout.FlipUD ? -w : w;
+        ref var samples = ref unsafe(MemoryMarshal.GetReference(residual));
+        for (var c = 0; c < w; c += 8)
+        {
+            var offset = firstRow + c;
+            for (var r = 0; r < h; r++, offset += rowStep)
+            {
+                column[r] = unsafe(Vector256.LoadUnsafe(ref samples, (nuint)offset)) << layout.ColumnShift;
+            }
+
+            var order = Apply<VectorLanes256, Vector256<int>>(layout.ColumnKind, column, layout.Log2H);
+            for (var k = 0; k < th; k += 8)
+            {
+                Transpose(
+                    VectorLanes256.ShiftRightRounded(column[GetPosition(order, k)], layout.MiddleShift),
+                    VectorLanes256.ShiftRightRounded(column[GetPosition(order, k + 1)], layout.MiddleShift),
+                    VectorLanes256.ShiftRightRounded(column[GetPosition(order, k + 2)], layout.MiddleShift),
+                    VectorLanes256.ShiftRightRounded(column[GetPosition(order, k + 3)], layout.MiddleShift),
+                    VectorLanes256.ShiftRightRounded(column[GetPosition(order, k + 4)], layout.MiddleShift),
+                    VectorLanes256.ShiftRightRounded(column[GetPosition(order, k + 5)], layout.MiddleShift),
+                    VectorLanes256.ShiftRightRounded(column[GetPosition(order, k + 6)], layout.MiddleShift),
+                    VectorLanes256.ShiftRightRounded(column[GetPosition(order, k + 7)], layout.MiddleShift),
+                    intermediate.Slice(((k >> 3) * w) + c, 8));
+            }
+        }
+
+        for (var k = 0; k < th; k += 8)
+        {
+            var row = intermediate.Slice((k >> 3) * w, w);
+            if (layout.FlipLR)
+                row.Reverse();
+
+            var order = Apply<VectorLanes256, Vector256<int>>(layout.RowKind, row, layout.Log2W);
+            var output = coefficients.Slice(k * tw, 8 * tw);
+            for (var l = 0; l < tw; l += 8)
+            {
+                Transpose(
+                    Finish<VectorLanes256, Vector256<int>>(row[GetPosition(order, l)], layout.IsRectangular2To1),
+                    Finish<VectorLanes256, Vector256<int>>(row[GetPosition(order, l + 1)], layout.IsRectangular2To1),
+                    Finish<VectorLanes256, Vector256<int>>(row[GetPosition(order, l + 2)], layout.IsRectangular2To1),
+                    Finish<VectorLanes256, Vector256<int>>(row[GetPosition(order, l + 3)], layout.IsRectangular2To1),
+                    Finish<VectorLanes256, Vector256<int>>(row[GetPosition(order, l + 4)], layout.IsRectangular2To1),
+                    Finish<VectorLanes256, Vector256<int>>(row[GetPosition(order, l + 5)], layout.IsRectangular2To1),
+                    Finish<VectorLanes256, Vector256<int>>(row[GetPosition(order, l + 6)], layout.IsRectangular2To1),
+                    Finish<VectorLanes256, Vector256<int>>(row[GetPosition(order, l + 7)], layout.IsRectangular2To1),
+                    rows);
+                for (var j = 0; j < 8; j++)
+                {
+                    rows[j].CopyTo(output[((j * tw) + l)..]);
+                }
+            }
+        }
+    }
+
+    // The 8x8 transposition of the 32-bit lanes: the lane i of the output j is the lane j of the input i
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transpose(Vector256<int> v0, Vector256<int> v1, Vector256<int> v2, Vector256<int> v3, Vector256<int> v4, Vector256<int> v5, Vector256<int> v6, Vector256<int> v7, Span<Vector256<int>> output)
+    {
+        var t0 = Avx2.UnpackLow(v0, v1);
+        var t1 = Avx2.UnpackHigh(v0, v1);
+        var t2 = Avx2.UnpackLow(v2, v3);
+        var t3 = Avx2.UnpackHigh(v2, v3);
+        var t4 = Avx2.UnpackLow(v4, v5);
+        var t5 = Avx2.UnpackHigh(v4, v5);
+        var t6 = Avx2.UnpackLow(v6, v7);
+        var t7 = Avx2.UnpackHigh(v6, v7);
+        var u0 = Avx2.UnpackLow(t0.AsInt64(), t2.AsInt64()).AsInt32();
+        var u1 = Avx2.UnpackHigh(t0.AsInt64(), t2.AsInt64()).AsInt32();
+        var u2 = Avx2.UnpackLow(t1.AsInt64(), t3.AsInt64()).AsInt32();
+        var u3 = Avx2.UnpackHigh(t1.AsInt64(), t3.AsInt64()).AsInt32();
+        var u4 = Avx2.UnpackLow(t4.AsInt64(), t6.AsInt64()).AsInt32();
+        var u5 = Avx2.UnpackHigh(t4.AsInt64(), t6.AsInt64()).AsInt32();
+        var u6 = Avx2.UnpackLow(t5.AsInt64(), t7.AsInt64()).AsInt32();
+        var u7 = Avx2.UnpackHigh(t5.AsInt64(), t7.AsInt64()).AsInt32();
+        output = output[..8];
+        output[0] = Avx2.Permute2x128(u0, u4, 0x20);
+        output[1] = Avx2.Permute2x128(u1, u5, 0x20);
+        output[2] = Avx2.Permute2x128(u2, u6, 0x20);
+        output[3] = Avx2.Permute2x128(u3, u7, 0x20);
+        output[4] = Avx2.Permute2x128(u0, u4, 0x31);
+        output[5] = Avx2.Permute2x128(u1, u5, 0x31);
+        output[6] = Avx2.Permute2x128(u2, u6, 0x31);
+        output[7] = Avx2.Permute2x128(u3, u7, 0x31);
     }
 
     // The output of a row transform in the scale of the coefficients: sqrt(2) for a 2:1 rectangle, then the rounding of the
@@ -1506,6 +1614,86 @@ internal static class Av1ForwardTransform
             t[3] = Av1Simd.RoundNarrow12Split(
                 Av1Simd.MultiplySplitFirstAndSubtract(Av1Simd.MultiplySplitFirstAndAdd(Av1Simd.MultiplySplitFirstAndSubtract(Av1Simd.MultiplySplitFirst(x0, sinpi29), x1, sinpi49), x2, sinpi39), x3, sinpi19),
                 Av1Simd.MultiplySplitSecondAndSubtract(Av1Simd.MultiplySplitSecondAndAdd(Av1Simd.MultiplySplitSecondAndSubtract(Av1Simd.MultiplySplitSecond(x0, sinpi29), x1, sinpi49), x2, sinpi39), x3, sinpi19));
+        }
+    }
+
+    // The operations on the lanes of 8 lines with AVX2: the 64-bit products of the even lanes, then of the odd lanes shifted
+    // into them, whose roundings are joined like those of Av1InverseTransform
+    private readonly struct VectorLanes256 : ILanes<Vector256<int>>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> Add(Vector256<int> left, Vector256<int> right) => left + right;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> Subtract(Vector256<int> left, Vector256<int> right) => left - right;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> Negate(Vector256<int> value) => -value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> ShiftLeft(Vector256<int> value, int count) => value << count;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> MultiplyRound12(Vector256<int> value, int factor)
+        {
+            var factors = Vector256.Create(factor);
+            return RoundNarrow12(Avx2.Multiply(value, factors), Avx2.Multiply(Odd(value), factors));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> ShiftRightRounded(Vector256<int> value, int shift) => (value + Vector256.Create(1 << (shift - 1))) >> shift;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Rotate(Vector256<int> a, Vector256<int> b, int cos, int sin, out Vector256<int> x, out Vector256<int> y)
+        {
+            var c = Vector256.Create(cos);
+            var s = Vector256.Create(sin);
+            var oddA = Odd(a);
+            var oddB = Odd(b);
+            x = RoundNarrow12(Avx2.Multiply(a, c) - Avx2.Multiply(b, s), Avx2.Multiply(oddA, c) - Avx2.Multiply(oddB, s));
+            y = RoundNarrow12(Avx2.Multiply(a, s) + Avx2.Multiply(b, c), Avx2.Multiply(oddA, s) + Avx2.Multiply(oddB, c));
+        }
+
+        // The sums of products of ScalarLanes.ForwardAdst4, exact in 64 bits, for the even then the odd lanes
+        public static void ForwardAdst4(Span<Vector256<int>> t)
+        {
+            var x0 = t[0];
+            var x1 = t[1];
+            var x2 = t[2];
+            var x3 = t[3];
+            var o0 = Odd(x0);
+            var o1 = Odd(x1);
+            var o2 = Odd(x2);
+            var o3 = Odd(x3);
+            t[0] = Output(x0, x1, x2, x3, o0, o1, o2, o3, Av1Constants.Sinpi19, Av1Constants.Sinpi29, Av1Constants.Sinpi39, Av1Constants.Sinpi49);
+            t[1] = Output(x0, x1, x2, x3, o0, o1, o2, o3, Av1Constants.Sinpi39, Av1Constants.Sinpi39, 0, -Av1Constants.Sinpi39);
+            t[2] = Output(x0, x1, x2, x3, o0, o1, o2, o3, Av1Constants.Sinpi49, -Av1Constants.Sinpi19, -Av1Constants.Sinpi39, Av1Constants.Sinpi29);
+            t[3] = Output(x0, x1, x2, x3, o0, o1, o2, o3, Av1Constants.Sinpi29, -Av1Constants.Sinpi49, Av1Constants.Sinpi39, -Av1Constants.Sinpi19);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector256<int> Output(Vector256<int> x0, Vector256<int> x1, Vector256<int> x2, Vector256<int> x3, Vector256<int> o0, Vector256<int> o1, Vector256<int> o2, Vector256<int> o3, int c0, int c1, int c2, int c3)
+            {
+                var f0 = Vector256.Create(c0);
+                var f1 = Vector256.Create(c1);
+                var f2 = Vector256.Create(c2);
+                var f3 = Vector256.Create(c3);
+                return RoundNarrow12(
+                    Avx2.Multiply(x0, f0) + Avx2.Multiply(x1, f1) + Avx2.Multiply(x2, f2) + Avx2.Multiply(x3, f3),
+                    Avx2.Multiply(o0, f0) + Avx2.Multiply(o1, f1) + Avx2.Multiply(o2, f2) + Avx2.Multiply(o3, f3));
+            }
+        }
+
+        // The lanes 1, 3, 5 and 7 in the lanes 0, 2, 4 and 6, which Avx2.Multiply multiplies
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<int> Odd(Vector256<int> value) => Avx2.ShiftRightLogical(value.AsInt64(), 32).AsInt32();
+
+        // (int)Round2( x, 12 ) of the even and the odd lanes: the bits 12 to 43 of the rounded values, the odd ones in the
+        // upper halves of the 64-bit lanes of odd shifted left by 20 bits
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<int> RoundNarrow12(Vector256<long> even, Vector256<long> odd)
+        {
+            var rounding = Vector256.Create(1L << 11);
+            return Avx2.Blend(Vector256.ShiftRightLogical(even + rounding, 12).AsInt32(), Vector256.ShiftLeft(odd + rounding, 20).AsInt32(), 0xAA);
         }
     }
 

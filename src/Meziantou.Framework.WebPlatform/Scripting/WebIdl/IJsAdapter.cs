@@ -543,6 +543,16 @@ public interface IJsAdapter<TValue>
     bool GrowSharedDataBlockTo(object dataBlock, int newByteLength) => false;
 
     /// <summary>
+    /// Creates a growable shared data block of <paramref name="byteLength"/> zeroed bytes, which can grow to
+    /// <paramref name="maxByteLength"/> bytes without moving (the bytes of a shared <c>WebAssembly.Memory</c>). Its
+    /// <see cref="IGrowableSharedDataBlock.DataBlock"/> is the data block of <c>SharedArrayBuffer</c> objects (see
+    /// <see cref="GetSharedDataBlock"/>). The block must not reference the engine instance that creates it: the agents of
+    /// other engine instances use it, and it lives as long as the memory. Returns null when it is not supported or when the
+    /// memory cannot be allocated. The default implementation returns null.
+    /// </summary>
+    IGrowableSharedDataBlock? CreateGrowableSharedDataBlock(int byteLength, int maxByteLength) => null;
+
+    /// <summary>
     /// Creates a typed array or a <c>DataView</c> (<paramref name="kind"/>) of <paramref name="length"/> elements viewing
     /// <paramref name="buffer"/> from <paramref name="byteOffset"/>, in the current realm. The default implementation calls
     /// the constructor of the global object.

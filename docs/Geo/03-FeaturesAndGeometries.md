@@ -35,7 +35,8 @@ Assert.StartsWith("""{"type":"FeatureCollection","features":[{"type":"Feature","
 <!-- endref -->
 
 The readers give the values of the properties as a `string`, a `double`, a `bool` or `null`; each format documents
-the other types it gives, such as dates. The writers also accept the other numeric types and the dates and times.
+the other types it gives, such as dates. The writers also accept the other numeric types (on .NET 11, including
+`BFloat16`, `Decimal32`, `Decimal64` and `Decimal128`) and the dates and times.
 
 ## Geometries
 

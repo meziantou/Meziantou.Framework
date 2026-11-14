@@ -369,6 +369,27 @@ public sealed class QueryBuilderTests
         Assert.False(query.Evaluate(new()));
     }
 
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void FieldEquals_Ieee754Types()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<BFloat16>("bfloat16", (obj, value) => obj.DoubleValue == (double)value);
+        queryBuilder.AddHandler<Decimal32>("decimal32", (obj, value) => obj.DecimalValue == (decimal)value);
+        queryBuilder.AddHandler<Decimal64>("decimal64", (obj, value) => obj.DecimalValue == (decimal)value);
+        queryBuilder.AddRangeHandler<Decimal128>("decimal128", (obj, range) => range.IsInRange((Decimal128)obj.DecimalValue));
+
+        Assert.True(queryBuilder.Build("bfloat16:1.5").Evaluate(new() { DoubleValue = 1.5 }));
+        Assert.True(queryBuilder.Build("decimal32:10.2").Evaluate(new() { DecimalValue = 10.2m }));
+        Assert.True(queryBuilder.Build("decimal64:1,000.25").Evaluate(new() { DecimalValue = 1000.25m }));
+        Assert.True(queryBuilder.Build("decimal64:1.5e3").Evaluate(new() { DecimalValue = 1500m }));
+        Assert.True(queryBuilder.Build("decimal128>=10.1").Evaluate(new() { DecimalValue = 10.2m }));
+        Assert.False(queryBuilder.Build("decimal128<10.1").Evaluate(new() { DecimalValue = 10.2m }));
+        Assert.True(queryBuilder.Build("decimal128:10..11").Evaluate(new() { DecimalValue = 10.2m }));
+        Assert.False(queryBuilder.Build("decimal64:abc").Evaluate(new() { DecimalValue = 10.2m }));
+    }
+#endif
+
     [Fact]
     public void FieldEquals_DateTimeOffset()
     {

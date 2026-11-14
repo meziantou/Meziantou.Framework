@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -92,6 +93,28 @@ internal static class BoxBlurrer
     /// <param name="channels">The number of samples per pixel.</param>
     internal static void SumWindows(ReadOnlySpan<double> padded, Span<double> suffix, Span<double> sums, int width, int diameter, int channels)
     {
+        // The recurrences of the suffixes and of the prefixes link samples a pixel apart: the samples of a pixel are
+        // independent, and a vector of at most `channels` lanes holds samples that do not depend on each other
+        if (!Resampler.TestForceScalar)
+        {
+            if (Vector256.IsHardwareAccelerated && channels >= Vector256<double>.Count)
+            {
+                SumWindowsVector256(padded, suffix, sums, width, diameter, channels);
+                return;
+            }
+
+            if (Vector128.IsHardwareAccelerated && channels >= Vector128<double>.Count)
+            {
+                SumWindowsVector128(padded, suffix, sums, width, diameter, channels);
+                return;
+            }
+        }
+
+        SumWindowsScalar(padded, suffix, sums, width, diameter, channels);
+    }
+
+    internal static void SumWindowsScalar(ReadOnlySpan<double> padded, Span<double> suffix, Span<double> sums, int width, int diameter, int channels)
+    {
         // The suffix sums of the blocks that windows start in: x_i + (x_{i+1} + ...), from the last sample of the block
         for (var block = 0; block < width; block += diameter)
         {
@@ -123,6 +146,144 @@ internal static class BoxBlurrer
             {
                 var next = (x + diameter - 1) * channels;
                 for (var c = 0; c < channels; c++)
+                {
+                    prefix[c] = offset == 1 ? padded[next + c] : prefix[c] + padded[next + c];
+                    sums[i + c] = suffix[i + c] + prefix[c];
+                }
+            }
+
+            offset = offset == diameter - 1 ? 0 : offset + 1;
+        }
+    }
+
+    private static void SumWindowsVector256(ReadOnlySpan<double> padded, Span<double> suffix, Span<double> sums, int width, int diameter, int channels)
+    {
+        var lanes = Vector256<double>.Count;
+        ref var paddedStart = ref unsafe(MemoryMarshal.GetReference(padded));
+        ref var suffixStart = ref unsafe(MemoryMarshal.GetReference(suffix));
+        ref var sumStart = ref unsafe(MemoryMarshal.GetReference(sums));
+        _ = padded[((width + diameter - 1) * channels) - 1];
+        _ = suffix[((width + diameter - 1) * channels) - 1];
+        _ = sums[(width * channels) - 1];
+        for (var block = 0; block < width; block += diameter)
+        {
+            var first = block * channels;
+            var last = ((block + diameter) * channels) - 1;
+            padded.Slice(last - channels + 1, channels).CopyTo(suffix.Slice(last - channels + 1, channels));
+
+            // Descending, a vector at a time: the samples a pixel after the vector are computed
+            var k = last - channels;
+            for (; k - lanes + 1 >= first; k -= lanes)
+            {
+                var index = (nuint)(k - lanes + 1);
+                unsafe
+                {
+                    var value = Vector256.LoadUnsafe(ref paddedStart, index) + Vector256.LoadUnsafe(ref suffixStart, index + (nuint)channels);
+                    value.StoreUnsafe(ref suffixStart, index);
+                }
+            }
+
+            for (; k >= first; k--)
+            {
+                suffix[k] = padded[k] + suffix[k + channels];
+            }
+        }
+
+        Span<double> prefix = stackalloc double[channels];
+        ref var prefixStart = ref unsafe(MemoryMarshal.GetReference(prefix));
+        var offset = 0;
+        for (var x = 0; x < width; x++)
+        {
+            var i = x * channels;
+            if (offset == 0)
+            {
+                suffix.Slice(i, channels).CopyTo(sums.Slice(i, channels));
+            }
+            else
+            {
+                var next = (x + diameter - 1) * channels;
+                var c = 0;
+                for (; c + lanes <= channels; c += lanes)
+                {
+                    unsafe
+                    {
+                        var sample = Vector256.LoadUnsafe(ref paddedStart, (nuint)(next + c));
+                        var value = offset == 1 ? sample : Vector256.LoadUnsafe(ref prefixStart, (nuint)c) + sample;
+                        value.StoreUnsafe(ref prefixStart, (nuint)c);
+                        (Vector256.LoadUnsafe(ref suffixStart, (nuint)(i + c)) + value).StoreUnsafe(ref sumStart, (nuint)(i + c));
+                    }
+                }
+
+                for (; c < channels; c++)
+                {
+                    prefix[c] = offset == 1 ? padded[next + c] : prefix[c] + padded[next + c];
+                    sums[i + c] = suffix[i + c] + prefix[c];
+                }
+            }
+
+            offset = offset == diameter - 1 ? 0 : offset + 1;
+        }
+    }
+
+    private static void SumWindowsVector128(ReadOnlySpan<double> padded, Span<double> suffix, Span<double> sums, int width, int diameter, int channels)
+    {
+        var lanes = Vector128<double>.Count;
+        ref var paddedStart = ref unsafe(MemoryMarshal.GetReference(padded));
+        ref var suffixStart = ref unsafe(MemoryMarshal.GetReference(suffix));
+        ref var sumStart = ref unsafe(MemoryMarshal.GetReference(sums));
+        _ = padded[((width + diameter - 1) * channels) - 1];
+        _ = suffix[((width + diameter - 1) * channels) - 1];
+        _ = sums[(width * channels) - 1];
+        for (var block = 0; block < width; block += diameter)
+        {
+            var first = block * channels;
+            var last = ((block + diameter) * channels) - 1;
+            padded.Slice(last - channels + 1, channels).CopyTo(suffix.Slice(last - channels + 1, channels));
+
+            // Descending, a vector at a time: the samples a pixel after the vector are computed
+            var k = last - channels;
+            for (; k - lanes + 1 >= first; k -= lanes)
+            {
+                var index = (nuint)(k - lanes + 1);
+                unsafe
+                {
+                    var value = Vector128.LoadUnsafe(ref paddedStart, index) + Vector128.LoadUnsafe(ref suffixStart, index + (nuint)channels);
+                    value.StoreUnsafe(ref suffixStart, index);
+                }
+            }
+
+            for (; k >= first; k--)
+            {
+                suffix[k] = padded[k] + suffix[k + channels];
+            }
+        }
+
+        Span<double> prefix = stackalloc double[channels];
+        ref var prefixStart = ref unsafe(MemoryMarshal.GetReference(prefix));
+        var offset = 0;
+        for (var x = 0; x < width; x++)
+        {
+            var i = x * channels;
+            if (offset == 0)
+            {
+                suffix.Slice(i, channels).CopyTo(sums.Slice(i, channels));
+            }
+            else
+            {
+                var next = (x + diameter - 1) * channels;
+                var c = 0;
+                for (; c + lanes <= channels; c += lanes)
+                {
+                    unsafe
+                    {
+                        var sample = Vector128.LoadUnsafe(ref paddedStart, (nuint)(next + c));
+                        var value = offset == 1 ? sample : Vector128.LoadUnsafe(ref prefixStart, (nuint)c) + sample;
+                        value.StoreUnsafe(ref prefixStart, (nuint)c);
+                        (Vector128.LoadUnsafe(ref suffixStart, (nuint)(i + c)) + value).StoreUnsafe(ref sumStart, (nuint)(i + c));
+                    }
+                }
+
+                for (; c < channels; c++)
                 {
                     prefix[c] = offset == 1 ? padded[next + c] : prefix[c] + padded[next + c];
                     sums[i + c] = suffix[i + c] + prefix[c];

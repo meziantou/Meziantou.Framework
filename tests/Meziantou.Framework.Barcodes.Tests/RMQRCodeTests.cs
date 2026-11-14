@@ -354,4 +354,66 @@ public class RMQRCodeTests
         Assert.Throws<ArgumentOutOfRangeException>("value", () => new RMQRCodeOptions { MaximumHeight = 6 });
         Assert.Throws<ArgumentOutOfRangeException>("value", () => new RMQRCodeOptions { MaximumWidth = 26 });
     }
+
+    // ───── Decoding ─────
+
+    public static TheoryData<int, int, ErrorCorrectionLevel> AllSizesAndLevels()
+    {
+        var data = new TheoryData<int, int, ErrorCorrectionLevel>();
+        foreach (var row in AllSizes())
+        {
+            data.Add(row.Data.Item1, row.Data.Item2, ErrorCorrectionLevel.M);
+            data.Add(row.Data.Item1, row.Data.Item2, ErrorCorrectionLevel.H);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(AllSizesAndLevels))]
+    public void Decode_RoundTrips(int height, int width, ErrorCorrectionLevel ecLevel)
+    {
+        var options = new RMQRCodeOptions { Height = height, Width = width };
+
+        // The longest text of digits, letters and kanji that the size holds
+        var text = "";
+        for (var length = 1; ; length++)
+        {
+            var candidate = string.Concat(Enumerable.Range(0, length).Select(i => "0123456789AZaz日"[i % 15]));
+            try
+            {
+                QRCode.CreateRMQR(candidate, ecLevel, options);
+                text = candidate;
+            }
+            catch (InvalidOperationException)
+            {
+                break;
+            }
+        }
+
+        var result = QRCodeDecoder.Decode(QRCode.CreateRMQR(text, ecLevel, options));
+
+        Assert.Equal((QRCodeType.RMQR, ecLevel, text, (int?)null), (result.Type, result.ErrorCorrectionLevel, result.Text, result.MaskPattern));
+    }
+
+    [Fact]
+    public void Decode_CorrectsErrors()
+    {
+        var qr = QRCode.CreateRMQR("https://www.meziantou.net", ErrorCorrectionLevel.H);
+        var modules = new bool[qr.Height, qr.Width];
+        for (var row = 0; row < qr.Height; row++)
+        {
+            for (var column = 0; column < qr.Width; column++)
+            {
+                modules[row, column] = qr[row, column];
+            }
+        }
+
+        modules[qr.Height / 2, 15] = !modules[qr.Height / 2, 15];
+
+        var result = QRCodeDecoder.Decode(modules);
+
+        Assert.Equal("https://www.meziantou.net", result.Text);
+        Assert.Equal(1, result.CorrectedErrorCount);
+    }
 }

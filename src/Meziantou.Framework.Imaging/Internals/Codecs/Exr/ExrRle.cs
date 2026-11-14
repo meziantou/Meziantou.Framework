@@ -52,7 +52,46 @@ internal static class ExrRle
     /// <param name="source">The bytes.</param>
     /// <param name="destination">Receives the packets.</param>
     /// <returns>The number of bytes written, or -1 when the packets do not fit <paramref name="destination"/>.</returns>
+    /// <remarks>The packets of <see cref="EncodeScalar"/>, the literals found with <see cref="RunLengthSearch.IndexOfTriple"/>.</remarks>
     public static int Encode(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        var input = 0;
+        var output = 0;
+        while (input < source.Length)
+        {
+            var run = RunLengthSearch.CountRun(source[input..], 128);
+            if (run >= 3)
+            {
+                if (destination.Length - output < 2)
+                    return -1;
+
+                destination[output++] = (byte)(run - 1);
+                destination[output++] = source[input];
+                input += run;
+                continue;
+            }
+
+            // A literal stops before a run of 3 equal bytes, which starts after its first byte
+            var start = input;
+            var triple = RunLengthSearch.IndexOfTriple(source[(start + 1)..Math.Min(source.Length, start + 129)]);
+            input = triple < 0 ? Math.Min(source.Length, start + 127) : start + 1 + triple;
+            var length = input - start;
+            if (destination.Length - output < length + 1)
+                return -1;
+
+            destination[output++] = (byte)(sbyte)-length;
+            source.Slice(start, length).CopyTo(destination[output..]);
+            output += length;
+        }
+
+        return output;
+    }
+
+    /// <summary>The byte-at-a-time reference of <see cref="Encode"/>.</summary>
+    /// <param name="source">The bytes.</param>
+    /// <param name="destination">Receives the packets.</param>
+    /// <returns>The number of bytes written, or -1 when the packets do not fit <paramref name="destination"/>.</returns>
+    internal static int EncodeScalar(ReadOnlySpan<byte> source, Span<byte> destination)
     {
         var input = 0;
         var output = 0;

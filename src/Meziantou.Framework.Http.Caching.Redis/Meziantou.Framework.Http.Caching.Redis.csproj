@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.19</Version>
+    <Version>2.0.20</Version>
     <Description>Provide Redis persistence provider for Meziantou.Framework.Http.Caching</Description>
     <PackageTags>http, caching, redis, httpclient</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="StackExchange.Redis" Version="3.4.20" />
+    <PackageReference Include="StackExchange.Redis" Version="3.4.29" />
   </ItemGroup>
 
   <ItemGroup>

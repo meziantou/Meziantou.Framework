@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -228,16 +229,7 @@ internal sealed class PngSampleFormat
 
     /// <summary>Swaps the BGR samples of an Apple CgBI file to <see cref="PixelFormat.Rgb24"/>.</summary>
     private static void ExpandCgbiBgr(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
-    {
-        for (var x = 0; x < width; x++)
-        {
-            var source = scanline.Slice(x * 3, 3);
-            var pixel = destination.Slice(x * 3, 3);
-            pixel[0] = source[2];
-            pixel[1] = source[1];
-            pixel[2] = source[0];
-        }
-    }
+        => PixelConverter.SwapRedAndBlue24(scanline[..(width * 3)], destination);
 
     /// <summary>
     /// Swaps the premultiplied BGRA samples of an Apple CgBI file to <see cref="PixelFormat.Rgba32"/> and un-premultiplies
@@ -331,6 +323,54 @@ internal sealed class PngSampleFormat
             return;
         }
 
+        ExpandRgb8WithKey(scanline, width, destination, _keyRed, _keyGreen, _keyBlue);
+    }
+
+    /// <summary>
+    /// Expands 8-bit RGB samples to <see cref="PixelFormat.Rgba32"/>, the alpha 0 for the pixels of the transparent color of
+    /// a tRNS chunk and 0xFF for the others. With 128-bit hardware vectors, 4 pixels are expanded and compared with the
+    /// color at a time (8 with AVX2); the result equals <see cref="ExpandRgb8WithKeyScalar"/>.
+    /// </summary>
+    internal static void ExpandRgb8WithKey(ReadOnlySpan<byte> scanline, int width, Span<byte> destination, int red, int green, int blue)
+    {
+        var x = 0;
+
+        // A color beyond 8 bits never matches: every pixel is opaque, which the scalar loop gives
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && (red | green | blue) <= byte.MaxValue)
+        {
+            var length = width * 3;
+            ref var input = ref unsafe(MemoryMarshal.GetReference(scanline[..length]));
+            ref var output = ref unsafe(MemoryMarshal.GetReference(destination[..(width * 4)]));
+            var key = (uint)(red | (green << 8) | (blue << 16));
+
+            // The fourth byte of each pixel is read from its first one, then cleared: indices in range are a constant
+            // shuffle on Arm64
+            var order = Vector128.Create((byte)0, 1, 2, 0, 3, 4, 5, 0, 6, 7, 8, 0, 9, 10, 11, 0);
+            if (Avx2.IsSupported)
+            {
+                // 8 pixels per step: the 32-bit groups of bytes 12 to 27 are moved to the upper lane, then each lane is expanded
+                var spread = Vector256.Create(0, 1, 2, 3, 3, 4, 5, 6);
+                var order256 = Vector256.Create(order, order);
+                for (; (3 * x) + Vector256<byte>.Count <= length; x += 8)
+                {
+                    var pixels = Avx2.Shuffle(Avx2.PermuteVar8x32(unsafe(Vector256.LoadUnsafe(ref input, (nuint)(3 * x))).AsInt32(), spread).AsByte(), order256).AsUInt32() & Vector256.Create(0x00FF_FFFFu);
+                    unsafe { (pixels | Vector256.AndNot(Vector256.Create(0xFF00_0000u), Vector256.Equals(pixels, Vector256.Create(key)))).AsByte().StoreUnsafe(ref output, (nuint)(4 * x)); }
+                }
+            }
+
+            for (; (3 * x) + Vector128<byte>.Count <= length; x += 4)
+            {
+                var pixels = Vector128.Shuffle(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(3 * x))), order).AsUInt32() & Vector128.Create(0x00FF_FFFFu);
+                unsafe { (pixels | Vector128.AndNot(Vector128.Create(0xFF00_0000u), Vector128.Equals(pixels, Vector128.Create(key)))).AsByte().StoreUnsafe(ref output, (nuint)(4 * x)); }
+            }
+        }
+
+        ExpandRgb8WithKeyScalar(scanline[(x * 3)..(width * 3)], width - x, destination[(x * 4)..], red, green, blue);
+    }
+
+    /// <summary>The pixel-at-a-time reference of <see cref="ExpandRgb8WithKey"/>.</summary>
+    internal static void ExpandRgb8WithKeyScalar(ReadOnlySpan<byte> scanline, int width, Span<byte> destination, int red, int green, int blue)
+    {
         for (var x = 0; x < width; x++)
         {
             var source = scanline.Slice(x * 3, 3);
@@ -338,7 +378,7 @@ internal sealed class PngSampleFormat
             pixel[0] = source[0];
             pixel[1] = source[1];
             pixel[2] = source[2];
-            pixel[3] = source[0] == _keyRed && source[1] == _keyGreen && source[2] == _keyBlue ? (byte)0 : (byte)0xFF;
+            pixel[3] = source[0] == red && source[1] == green && source[2] == blue ? (byte)0 : (byte)0xFF;
         }
     }
 

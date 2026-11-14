@@ -3,13 +3,14 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>2.0.16</Version>
+    <Version>2.0.18</Version>
     <Description>Generate compilable C# public API stubs from .NET assemblies.</Description>
     <PackageTags>public-api, api-approval, api-diff, reflection, testing</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.PublicApiGenerator.Fuzz" />
+    <InternalsVisibleTo Include="Meziantou.Framework.PublicApiGenerator.Tests" />
   </ItemGroup>
 
 </Project>

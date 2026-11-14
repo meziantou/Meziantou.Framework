@@ -227,19 +227,7 @@ internal sealed class AudioBus
         }
     }
 
-    private static void Add(ReadOnlySpan<float> source, Span<float> destination)
-    {
-        for (var i = 0; i < destination.Length; i++)
-        {
-            destination[i] += source[i];
-        }
-    }
+    private static void Add(ReadOnlySpan<float> source, Span<float> destination) => AudioVectors.Add(destination, source, destination);
 
-    private static void AddScaled(ReadOnlySpan<float> source, float scale, Span<float> destination)
-    {
-        for (var i = 0; i < destination.Length; i++)
-        {
-            destination[i] += source[i] * scale;
-        }
-    }
+    private static void AddScaled(ReadOnlySpan<float> source, float scale, Span<float> destination) => AudioVectors.MultiplyAdd(source, scale, destination, destination);
 }

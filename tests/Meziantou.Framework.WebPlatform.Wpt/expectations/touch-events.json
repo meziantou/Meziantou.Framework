@@ -57,10 +57,7 @@
     "total": 1
   },
   "touch-events/pinch-zoom-change.html": {
-    "total": 1,
-    "failures": {
-      "Pinch-zoom immediately followed by touch-up stability": "FAIL"
-    }
+    "total": 1
   },
   "touch-events/single-tap-when-touchend-listener-use-sync-xhr.html": {
     "total": 1
@@ -70,6 +67,9 @@
   },
   "touch-events/single-touch.html": {
     "total": 227
+  },
+  "touch-events/touch-action-document-crash.html": {
+    "crashtest": "PASS"
   },
   "touch-events/touch-globaleventhandler-interface.html": {
     "total": 3,

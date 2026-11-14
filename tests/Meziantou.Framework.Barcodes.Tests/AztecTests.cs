@@ -126,7 +126,9 @@ public class AztecTests
     [InlineData(4, 31)]
     [InlineData(5, 37)] // 19 + 4 × 5 modules, and 2 lines of the reference grid
     [InlineData(10, 57)]
+    [InlineData(12, 67)] // The outermost lines of the reference grid are 32 modules from the center, on the second module of each side
     [InlineData(15, 79)]
+    [InlineData(27, 131)] // The outermost lines of the reference grid are 64 modules from the center
     [InlineData(32, 151)]
     public void CreateAztec_FullRangeSizes(int layers, int size)
     {
@@ -330,5 +332,110 @@ public class AztecTests
         }
 
         return sb.ToString();
+    }
+
+    [Theory]
+    [InlineData("Hello, World!")]
+    [InlineData("HELLO WORLD")]
+    [InlineData("hello world")]
+    [InlineData("0123456789, 3.14")]
+    [InlineData("Mixed: @\\^_`|~ \u0001\u001b\u007f")]
+    [InlineData("Punct: !\"#$%&'()*+,-./:;<=>?[]{}")]
+    [InlineData("Pairs\r\n. , : end")]
+    [InlineData("aB1 cD2 eF3 MiXeD 9z")]
+    [InlineData("caf\u00E9 cr\u00E8me")]
+    [InlineData("Ελληνικά 漢字 😀")]
+    [InlineData("A")]
+    public void Decode_Text(string text)
+    {
+        text = System.Text.RegularExpressions.Regex.Unescape(text);
+        var result = Barcode2DDecoder.Decode(Barcode2D.CreateAztec(text));
+        Assert.Equal((text, 0), (result.Text, result.CorrectedErrorCount));
+        Assert.Equal(Ascii.IsValid(text) ? null : 26, result.EciAssignmentNumber);
+    }
+
+    [Fact]
+    public void Decode_Binary()
+    {
+        // Binary shifts of 1 to 31 bytes have a 5-bit length, longer ones an 11-bit length
+        foreach (var length in (int[])[1, 31, 32, 62, 63, 100, 1000])
+        {
+            var bytes = Enumerable.Range(0, length).Select(i => (byte)(128 + (i % 128))).ToArray();
+            Assert.Equal(bytes, Barcode2DDecoder.Decode(Barcode2D.CreateAztec(bytes)).Bytes.ToArray());
+        }
+    }
+
+    [Fact]
+    public void Decode_AllSizes()
+    {
+        for (var layers = 1; layers <= 32; layers++)
+        {
+            foreach (var compact in (bool[])[true, false])
+            {
+                if (compact && layers > 4)
+                    continue;
+
+                var options = new AztecOptions { Compact = compact, Layers = layers };
+                var text = "";
+                foreach (var length in (int[])[1, 10, 50, 200, 1000, 3000])
+                {
+                    var candidate = string.Concat(Enumerable.Range(0, length).Select(i => "Aztec 0123456789 abc!"[i % 21]));
+                    try
+                    {
+                        Barcode2D.CreateAztec(candidate, options);
+                        text = candidate;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        break;
+                    }
+                }
+
+                var result = Barcode2DDecoder.Decode(Barcode2D.CreateAztec(text, options));
+                Assert.Equal(text, result.Text);
+            }
+        }
+    }
+
+    [Fact]
+    public void Decode_AnyOrientation()
+    {
+        foreach (var barcode in new[] { Barcode2D.CreateAztec("Compact orientation"), Barcode2D.CreateAztec("Full-range orientation", new AztecOptions { Compact = false }) })
+        {
+            var modules = DataMatrixTests.GetModules(barcode);
+            for (var transform = 0; transform < Internal.MatrixTransforms.Count; transform++)
+            {
+                var text = Barcode2DDecoder.Decode(Internal.MatrixTransforms.Apply(modules, transform), Barcode2DType.Aztec).Text;
+                Assert.EndsWith("orientation", text);
+            }
+        }
+    }
+
+    [Fact]
+    public void Decode_CorrectsErrors()
+    {
+        var barcode = Barcode2D.CreateAztec("Error correction of an Aztec symbol", new AztecOptions { Compact = false, Layers = 4 });
+        var modules = DataMatrixTests.GetModules(barcode);
+
+        // Damage the outer layer, and one bit of the mode message
+        for (var i = 2; i < 12; i++)
+        {
+            modules[0, i] = !modules[0, i];
+        }
+
+        var center = barcode.Height / 2;
+        modules[center - 7, center - 5] = !modules[center - 7, center - 5];
+
+        var result = Barcode2DDecoder.Decode(modules, Barcode2DType.Aztec);
+        Assert.Equal("Error correction of an Aztec symbol", result.Text);
+        Assert.True(result.CorrectedErrorCount > 0);
+    }
+
+    [Fact]
+    public void Decode_InvalidMatrix()
+    {
+        Assert.Throws<FormatException>(() => Barcode2DDecoder.Decode(new bool[16, 16], Barcode2DType.Aztec));
+        Assert.Throws<FormatException>(() => Barcode2DDecoder.Decode(new bool[15, 15], Barcode2DType.Aztec));
+        Assert.Throws<FormatException>(() => Barcode2DDecoder.Decode(new bool[15, 19], Barcode2DType.Aztec));
     }
 }

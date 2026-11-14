@@ -67,7 +67,8 @@ internal ref struct HevcDeblockingFilter
             return;
 
         // The bands are made of pairs of rows of 4x4 luma blocks: the horizontal edges are on the rows of even index
-        var height4 = layout.Sps.PicHeightInLumaSamples >> 2;
+        // A picture decoded for a window holds its first rows only: the edges below them are not filtered
+        var height4 = Math.Min(layout.Sps.PicHeightInLumaSamples, picture.DecodedHeight) >> 2;
         var pairs = (height4 + 1) >> 1;
         var bands = Math.Clamp(workers, 1, pairs);
         if (bands is 1)

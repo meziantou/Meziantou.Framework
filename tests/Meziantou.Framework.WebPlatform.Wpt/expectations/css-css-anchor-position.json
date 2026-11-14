@@ -20,6 +20,9 @@
   "css/css-anchor-position/anchor-animation.html": {
     "total": 1
   },
+  "css/css-anchor-position/anchor-as-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-anchor-position/anchor-center-001.html": {
     "total": 4
   },
@@ -95,11 +98,17 @@
   "css/css-anchor-position/anchor-css-zoom.html": {
     "reftest": "PASS"
   },
+  "css/css-anchor-position/anchor-display-none-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-anchor-position/anchor-fallback-invalidation.html": {
     "total": 1
   },
   "css/css-anchor-position/anchor-fallback-scroll-axis.html": {
     "total": 1
+  },
+  "css/css-anchor-position/anchor-fallback-to-self-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/anchor-fieldset-001.html": {
     "reftest": "PASS"
@@ -115,6 +124,9 @@
   },
   "css/css-anchor-position/anchor-function-chain.html": {
     "total": 5
+  },
+  "css/css-anchor-position/anchor-function-in-calc-number-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/anchor-function-pseudo-element-basic.html": {
     "total": 2
@@ -146,6 +158,12 @@
   "css/css-anchor-position/anchor-in-css-min-max-function.html": {
     "reftest": "PASS"
   },
+  "css/css-anchor-position/anchor-in-multicol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/anchor-in-multicol-inherit-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-anchor-position/anchor-in-popover.html": {
     "total": 2
   },
@@ -163,6 +181,12 @@
   },
   "css/css-anchor-position/anchor-invalid-fallback.html": {
     "total": 39
+  },
+  "css/css-anchor-position/anchor-loop-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/anchor-mathml-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/anchor-name-001.html": {
     "total": 3,
@@ -193,6 +217,9 @@
   },
   "css/css-anchor-position/anchor-name-basics.html": {
     "total": 54
+  },
+  "css/css-anchor-position/anchor-name-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/anchor-name-cross-shadow.html": {
     "total": 2
@@ -232,6 +259,9 @@
   },
   "css/css-anchor-position/anchor-name-shadow-lower-tree.html": {
     "total": 1
+  },
+  "css/css-anchor-position/anchor-name-table-col-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/anchor-parse-invalid.html": {
     "total": 25
@@ -518,6 +548,21 @@
   "css/css-anchor-position/anchor-scroll-cleanup.html": {
     "total": 3
   },
+  "css/css-anchor-position/anchor-scroll-composited-scrolling-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-composited-scrolling-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-composited-scrolling-003-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-composited-scrolling-004-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-composited-scrolling-005-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-anchor-position/anchor-scroll-composited-scrolling-006.html": {
     "reftest": "PASS"
   },
@@ -689,6 +734,9 @@
   "css/css-anchor-position/anchor-size-function-chain.html": {
     "total": 5
   },
+  "css/css-anchor-position/anchor-size-in-flex-basis-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-anchor-position/anchor-size-minmax-001.html": {
     "total": 4
   },
@@ -700,6 +748,9 @@
   },
   "css/css-anchor-position/anchor-size-replaced-001.html": {
     "total": 12
+  },
+  "css/css-anchor-position/anchor-size-simplified-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/anchor-size-writing-modes-001.html": {
     "total": 24
@@ -773,8 +824,50 @@
   "css/css-anchor-position/chained-anchor-scrolled.html": {
     "total": 1
   },
+  "css/css-anchor-position/chrome-1512373-2-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-1512373-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-336164421-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-336322507-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-365594098-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-377324991-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-379758203-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-380321441-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-40286059-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-419501749-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-420329041-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-436621815-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-anchor-position/chrome-443261872.html": {
     "total": 1
+  },
+  "css/css-anchor-position/chrome-445458885-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/chrome-564720399-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/container-queries/anchored-child-transition.html": {
     "total": 2
@@ -830,6 +923,12 @@
   "css/css-anchor-position/container-queries/container-type-anchored-parsing.html": {
     "total": 5
   },
+  "css/css-anchor-position/fallback-no-fit-after-fit-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-anchor-position/grid-anchor-center-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-anchor-position/grid-lanes-position-area-basic.html": {
     "reftest": "PASS"
   },
@@ -839,8 +938,14 @@
   "css/css-anchor-position/idlharness.html": {
     "total": 86
   },
+  "css/css-anchor-position/iframe-anchor-name-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-anchor-position/inherit-height-from-fallback.html": {
     "reftest": "PASS"
+  },
+  "css/css-anchor-position/inline-grid-try-fallbacks-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/last-successful-animation.html": {
     "total": 3
@@ -871,6 +976,9 @@
   },
   "css/css-anchor-position/last-successful-pseudo-element-fallbacks.html": {
     "total": 3
+  },
+  "css/css-anchor-position/long-anchor-chain-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/mixed-dependency-chain.html": {
     "total": 10
@@ -1195,6 +1303,9 @@
   "css/css-anchor-position/position-try-custom-property.html": {
     "total": 2
   },
+  "css/css-anchor-position/position-try-display-none-hang-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-anchor-position/position-try-dynamic.html": {
     "total": 2
   },
@@ -1209,6 +1320,9 @@
   },
   "css/css-anchor-position/position-try-fallbacks-004.html": {
     "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-fallbacks-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/position-try-fallbacks-limit.html": {
     "total": 2
@@ -1233,6 +1347,9 @@
   },
   "css/css-anchor-position/position-try-initial-transition.html": {
     "total": 1
+  },
+  "css/css-anchor-position/position-try-invalid-anchor-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/position-try-order-basic.html": {
     "total": 27
@@ -1414,6 +1531,9 @@
   "css/css-anchor-position/remove-position-try-rules-001.html": {
     "total": 1
   },
+  "css/css-anchor-position/scroll-compensation-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-anchor-position/scroll-to-anchored-fixed-000.html": {
     "reftest": "PASS"
   },
@@ -1443,6 +1563,9 @@
   },
   "css/css-anchor-position/scrollable-containing-block-validity.html": {
     "total": 4
+  },
+  "css/css-anchor-position/self-referencing-invoker-anchor-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/sticky-anchor-position-invalid.html": {
     "reftest": "PASS"
@@ -1557,5 +1680,8 @@
   },
   "css/css-anchor-position/vertical-aligned-table-cell.html": {
     "reftest": "PASS"
+  },
+  "css/css-anchor-position/viewport-overflow-hidden-invisible-anchor-crash.html": {
+    "crashtest": "PASS"
   }
 }

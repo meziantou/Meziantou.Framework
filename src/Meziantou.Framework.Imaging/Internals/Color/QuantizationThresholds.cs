@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -26,6 +28,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// table evaluates the function about 40,000 times (about a millisecond); 16-bit samples would need 65,535 thresholds,
 /// about 4 million evaluations, which is more than the samples of most images, so they keep the function.
 /// </para>
+/// <para>
+/// When no interval holds more than one threshold (the functions of the transfer characteristics), the table also has, for
+/// each interval, its sample at its start and the first threshold above it (<see cref="Intervals"/>): the sample of an
+/// input is then one comparison away from its interval, without a loop, which the vector searches use
+/// (<see cref="Quantize(Vector128{double}, ref double)"/>).
+/// </para>
 /// </remarks>
 internal sealed class QuantizationThresholds
 {
@@ -37,6 +45,11 @@ internal sealed class QuantizationThresholds
     private const int IndexShift = 52 - 7;
     private const int IndexBase = (1023 - 24) << 7;
     private const int IndexCount = 32 << 7;
+
+    // The inputs whose index is the first and the last interval: the inputs of a vector search are clamped to them to
+    // compute their index (2^-24, and the largest double below 2^8)
+    private const double LowestIndexed = 1.0 / (1 << 24);
+    private const double HighestIndexed = 256 - (1.0 / (1L << 45));
 
     // The inputs compared with the function on each side of every threshold
     private const int CheckedNeighbors = 32;
@@ -51,11 +64,22 @@ internal sealed class QuantizationThresholds
     // The sample at the start of each interval of the coarse index (at 0 for the first one)
     private readonly byte[] _starts;
 
-    private QuantizationThresholds(double[] thresholds, byte[] starts)
+    // For each interval of the coarse index, the first threshold above its start and its sample at its start, or null when
+    // an interval holds more than one threshold
+    private readonly double[]? _intervals;
+
+    private QuantizationThresholds(double[] thresholds, byte[] starts, double[]? intervals = null)
     {
         _thresholds = thresholds;
         _starts = starts;
+        _intervals = intervals;
     }
+
+    /// <summary>
+    /// Gets, for each interval of the coarse index, the first threshold above its start and its sample at its start (2
+    /// doubles per interval), or an empty span when an interval holds more than one threshold.
+    /// </summary>
+    internal ReadOnlySpan<double> Intervals => _intervals;
 
     /// <summary>
     /// Gets the table of a function from a cache, creating it the first time: threads that need it at the same time may
@@ -143,8 +167,42 @@ internal sealed class QuantizationThresholds
             starts[i] = (byte)Count(thresholds, i == 0 ? 0 : GetIntervalStart(i), max);
         }
 
-        var table = new QuantizationThresholds(thresholds, starts);
+        var table = new QuantizationThresholds(thresholds, starts, CreateIntervals(thresholds, starts, max));
         return table.Matches(quantize, max) ? table : null;
+    }
+
+    /// <summary>
+    /// Gets the sample of 2 inputs with <see cref="Intervals"/> (not empty), as doubles: the sample at the start of the
+    /// interval of each input, plus one when the input reaches the first threshold above it. The samples are those of
+    /// <see cref="Quantize(double)"/>.
+    /// </summary>
+    /// <param name="value">The inputs.</param>
+    /// <param name="intervals">The first element of <see cref="Intervals"/>.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<double> Quantize(Vector128<double> value, ref double intervals)
+    {
+        // Values up to 0 and values that are not a number have the sample of 0
+        value = Vector128.ConditionalSelect(Vector128.GreaterThan(value, Vector128<double>.Zero), value, Vector128<double>.Zero);
+        var index = Vector128.ShiftRightLogical(Vector128.Min(Vector128.Max(value, Vector128.Create(LowestIndexed)), Vector128.Create(HighestIndexed)).AsUInt64(), IndexShift) - Vector128.Create((ulong)IndexBase);
+        var first = (nint)index.ToScalar() * 2;
+        var second = (nint)index.GetElement(1) * 2;
+        var threshold = Vector128.Create(unsafe(Unsafe.Add(ref intervals, first)), unsafe(Unsafe.Add(ref intervals, second)));
+        var start = Vector128.Create(unsafe(Unsafe.Add(ref intervals, first + 1)), unsafe(Unsafe.Add(ref intervals, second + 1)));
+        return start + (Vector128.GreaterThanOrEqual(value, threshold) & Vector128<double>.One);
+    }
+
+    /// <summary>The <see cref="Quantize(Vector128{double}, ref double)"/> of 4 inputs, with AVX2 gathers.</summary>
+    /// <param name="value">The inputs.</param>
+    /// <param name="intervals">The first element of <see cref="Intervals"/>, pinned.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe Vector256<double> Quantize(Vector256<double> value, double* intervals)
+    {
+        value = Vector256.ConditionalSelect(Vector256.GreaterThan(value, Vector256<double>.Zero), value, Vector256<double>.Zero);
+        var index = (Vector256.ShiftRightLogical(Vector256.Min(Vector256.Max(value, Vector256.Create(LowestIndexed)), Vector256.Create(HighestIndexed)).AsUInt64(), IndexShift) - Vector256.Create((ulong)IndexBase)).AsInt64();
+        var position = index + index;
+        var threshold = unsafe(Avx2.GatherVector256(intervals, position, sizeof(double)));
+        var start = unsafe(Avx2.GatherVector256(intervals + 1, position, sizeof(double)));
+        return start + (Vector256.GreaterThanOrEqual(value, threshold) & Vector256<double>.One);
     }
 
     /// <summary>Gets the sample of an input: the sample of the function the table was created from.</summary>
@@ -173,6 +231,25 @@ internal sealed class QuantizationThresholds
     internal double GetThreshold(int sample) => _thresholds[sample];
 
     private static double GetIntervalStart(int index) => BitConverter.Int64BitsToDouble((long)(index + IndexBase) << IndexShift);
+
+    // The first threshold above the start of each interval and the sample at its start, when no interval holds more than
+    // one threshold: the samples of an interval are then its start and the one after it. The thresholds of an interval
+    // are counted up to the start of the next one, included, and up to infinity for the last one.
+    private static double[]? CreateIntervals(double[] thresholds, byte[] starts, int max)
+    {
+        var intervals = new double[2 * IndexCount];
+        for (var i = 0; i < IndexCount; i++)
+        {
+            var end = i + 1 < IndexCount ? starts[i + 1] : Count(thresholds, double.PositiveInfinity, max);
+            if (end - starts[i] > 1)
+                return null;
+
+            intervals[2 * i] = thresholds[starts[i] + 1];
+            intervals[(2 * i) + 1] = starts[i];
+        }
+
+        return intervals;
+    }
 
     // The number of thresholds up to a value, without the coarse index
     private static int Count(double[] thresholds, double value, int max)

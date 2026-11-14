@@ -116,6 +116,38 @@ public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
         set => SetEventHandler("messageerror", value);
     }
 
+    /// <summary>Gets the Cookie Store API of the service worker (https://cookiestore.spec.whatwg.org/#dom-serviceworkerglobalscope-cookiestore): the script-visible cookies of its script URL.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-serviceworkerglobalscope-cookiestore"/>
+    [IdlMember("cookieStore", "https://cookiestore.spec.whatwg.org/#dom-serviceworkerglobalscope-cookiestore")]
+    public CookieStore CookieStore => field ??= new CookieStore(this);
+
+    /// <summary>Gets or sets the event handler of the <c>cookiechange</c> event (see <see cref="CookieStoreManager"/>).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-serviceworkerglobalscope-oncookiechange"/>
+    [IdlMember("oncookiechange", "https://cookiestore.spec.whatwg.org/#dom-serviceworkerglobalscope-oncookiechange")]
+    public Action<Event>? OnCookieChange
+    {
+        get => GetEventHandler("cookiechange");
+        set => SetEventHandler("cookiechange", value);
+    }
+
+    /// <summary>Gets or sets the event handler of the <c>notificationclick</c> event (see <see cref="Notification.Click()"/>).</summary>
+    /// <seealso href="https://notifications.spec.whatwg.org/#dom-serviceworkerglobalscope-onnotificationclick"/>
+    [IdlMember("onnotificationclick", "https://notifications.spec.whatwg.org/#dom-serviceworkerglobalscope-onnotificationclick")]
+    public Action<Event>? OnNotificationClick
+    {
+        get => GetEventHandler("notificationclick");
+        set => SetEventHandler("notificationclick", value);
+    }
+
+    /// <summary>Gets or sets the event handler of the <c>notificationclose</c> event (see <see cref="Notification.Dismiss"/>).</summary>
+    /// <seealso href="https://notifications.spec.whatwg.org/#dom-serviceworkerglobalscope-onnotificationclose"/>
+    [IdlMember("onnotificationclose", "https://notifications.spec.whatwg.org/#dom-serviceworkerglobalscope-onnotificationclose")]
+    public Action<Event>? OnNotificationClose
+    {
+        get => GetEventHandler("notificationclose");
+        set => SetEventHandler("notificationclose", value);
+    }
+
     /// <summary>
     /// https://w3c.github.io/ServiceWorker/#update-service-worker-extended-events-set, called after an event was dispatched:
     /// an active event is added to the extended events of the service worker until it is no longer active.

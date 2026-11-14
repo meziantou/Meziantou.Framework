@@ -51,6 +51,7 @@ internal ref partial struct HevcSliceCoder
     private readonly int _widthIn4x4;
     private readonly int _picWidthInCtbsY;
     private readonly int _end;
+    private readonly int _ctbEnd;
     private HevcTools _tools;
     private int _ctbAddrInTs;
     private int _ctbAddrInRs;
@@ -105,8 +106,13 @@ internal ref partial struct HevcSliceCoder
     /// <param name="cancellationToken">The token to monitor for cancellation requests, checked at every coding tree unit.</param>
     /// <param name="workers">The memory of the workers that decode the substreams that start at an entry point; <see langword="null"/> to decode them on the calling thread.</param>
     /// <param name="maxWorkers">The largest number of workers.</param>
-    public HevcSliceCoder(HevcPictureLayout layout, HevcSliceSegmentHeader header, HevcPicture picture, HevcPictureState state, HevcCabacDecoder cabac, HevcSliceScratch scratch, HevcRbspBuffer rbsp, HevcReferencePictureLists? references, CancellationToken cancellationToken, HevcSubstreamWorkers? workers = null, int maxWorkers = 1)
+    /// <param name="ctbEnd">
+    /// The address in tile scan of the first coding tree block that is not decoded (<see cref="HevcDecoder.DecodeWindow"/>):
+    /// the decoding of the slice segment stops there, and the rest of its data is not read nor validated.
+    /// </param>
+    public HevcSliceCoder(HevcPictureLayout layout, HevcSliceSegmentHeader header, HevcPicture picture, HevcPictureState state, HevcCabacDecoder cabac, HevcSliceScratch scratch, HevcRbspBuffer rbsp, HevcReferencePictureLists? references, CancellationToken cancellationToken, HevcSubstreamWorkers? workers = null, int maxWorkers = 1, int ctbEnd = int.MaxValue)
     {
+        _ctbEnd = ctbEnd;
         _workers = workers;
         _maxWorkers = maxWorkers;
         _layout = layout;
@@ -213,6 +219,15 @@ internal ref partial struct HevcSliceCoder
             _ctbAddrInTs++;
             if (endOfSliceSegmentFlag)
                 break;
+
+            // A decode window: the coding tree blocks that follow are not decoded
+            if (_ctbAddrInTs >= _ctbEnd)
+            {
+                _state.NextCtbAddrInTs = _ctbAddrInTs;
+                _state.LastQpY = _qpY;
+                _state.Tools = _tools;
+                return;
+            }
 
             if (_ctbAddrInTs >= picSizeInCtbsY)
                 throw HevcErrors.Invalid("a slice segment goes beyond the last coding tree block of the picture.");

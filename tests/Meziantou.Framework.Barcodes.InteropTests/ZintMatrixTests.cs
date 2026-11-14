@@ -211,6 +211,101 @@ public sealed class ZintMatrixTests
         AssertSameModules(expected, qr.Width, qr.Height, (row, column) => qr[row, column]);
     }
 
+    // zint is an independent encoder: its symbols, with the version, the segmentation and the mask that it chooses, must
+    // decode to the data
+    [Theory]
+    [MemberData(nameof(QRCodes))]
+    public async Task ZintQRCode_IsDecoded(QRCodeType type, ErrorCorrectionLevel level, string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var symbology = type switch
+        {
+            QRCodeType.MicroQR => "97",
+            QRCodeType.RMQR => "145",
+            _ => "58",
+        };
+
+        var result = QRCodeDecoder.Decode(await GetZintQRCodeAsync(tools, ["-b", symbology, "--secure=" + GetZintLevel(level)], data));
+
+        Assert.Equal((type, level, data), (result.Type, result.ErrorCorrectionLevel, result.Text));
+    }
+
+    [Theory]
+    [InlineData(26, "héllo wörld")]
+    [InlineData(3, "caf\u00E9")]
+    [InlineData(7, "Кириллица")]
+    [InlineData(20, "漢字のテスト")]
+    [InlineData(28, "繁體字")]
+    public async Task ZintQRCodeWithEci_IsDecoded(int eci, string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+
+        var result = QRCodeDecoder.Decode(await GetZintQRCodeAsync(tools, ["-b", "58", "--eci=" + eci.ToString(CultureInfo.InvariantCulture)], data));
+
+        Assert.Equal(data, result.Text);
+        Assert.Contains(eci, result.Segments.Select(segment => segment.EciAssignmentNumber ?? -1).ToArray());
+    }
+
+    public static TheoryData<Barcode2DType, string, string, string> ZintBarcodes2D() => new()
+    {
+        { Barcode2DType.DataMatrix, "", "Hello", "Hello" },
+        { Barcode2DType.DataMatrix, "", "HELLO WORLD 12345", "HELLO WORLD 12345" },
+        { Barcode2DType.DataMatrix, "", "hello world, lowercase", "hello world, lowercase" },
+        { Barcode2DType.DataMatrix, "", "*ABC>123*XYZ>456*", "*ABC>123*XYZ>456*" },
+        { Barcode2DType.DataMatrix, "", "@ABC^_@DEF^_@GHI", "@ABC^_@DEF^_@GHI" },
+        { Barcode2DType.DataMatrix, "", "01234567890123456789012345678901", "01234567890123456789012345678901" },
+        { Barcode2DType.DataMatrix, "", "héllo wörld", "héllo wörld" },
+        { Barcode2DType.DataMatrix, "--eci=26", "Ελληνικά 漢字", "Ελληνικά 漢字" },
+        { Barcode2DType.DataMatrix, "--square", string.Concat(Enumerable.Repeat("Large Data Matrix symbol 0123456789 ", 30)), string.Concat(Enumerable.Repeat("Large Data Matrix symbol 0123456789 ", 30)) },
+        { Barcode2DType.DataMatrix, "--gs1 --gs1nocheck", "[01]09521234543213[17]250101[10]ABC123[21]XYZ", "(01)09521234543213(17)250101(10)ABC123(21)XYZ" },
+        { Barcode2DType.Pdf417, "", "Hello, World!", "Hello, World!" },
+        { Barcode2DType.Pdf417, "", "Invoice 1234567890123456789 total 99.95", "Invoice 1234567890123456789 total 99.95" },
+        { Barcode2DType.Pdf417, "", "Mixed Text 123 & more ; < > @ [] {}", "Mixed Text 123 & more ; < > @ [] {}" },
+        { Barcode2DType.Pdf417, "", "héllo wörld", "héllo wörld" },
+        { Barcode2DType.Pdf417, "--eci=26", "Ελληνικά 漢字", "Ελληνικά 漢字" },
+        { Barcode2DType.Pdf417, "--cols=12 --secure=6", string.Concat(Enumerable.Repeat("PDF417 0123456789 ", 20)), string.Concat(Enumerable.Repeat("PDF417 0123456789 ", 20)) },
+        { Barcode2DType.Aztec, "", "Hello, World!", "Hello, World!" },
+        { Barcode2DType.Aztec, "", "0123456789, 3.14", "0123456789, 3.14" },
+        { Barcode2DType.Aztec, "", "Aztec ABC abc 123 !? @^_", "Aztec ABC abc 123 !? @^_" },
+        { Barcode2DType.Aztec, "", "héllo wörld", "héllo wörld" },
+        { Barcode2DType.Aztec, "--eci=26", "Ελληνικά 漢字", "Ελληνικά 漢字" },
+        { Barcode2DType.Aztec, "--vers=10", "Full-range Aztec symbol", "Full-range Aztec symbol" },
+        { Barcode2DType.Aztec, "", string.Concat(Enumerable.Repeat("Large Aztec symbol 0123456789 ", 40)), string.Concat(Enumerable.Repeat("Large Aztec symbol 0123456789 ", 40)) },
+    };
+
+    // zint is an independent encoder: its symbols, with the encodation that it chooses, must decode to the data
+    [Theory]
+    [MemberData(nameof(ZintBarcodes2D))]
+    public async Task ZintBarcode2D_IsDecoded(Barcode2DType type, string options, string data, string expected)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        List<string> arguments = ["-b", type switch { Barcode2DType.DataMatrix => "71", Barcode2DType.Pdf417 => "55", _ => "92" }, .. options.Split(' ', StringSplitOptions.RemoveEmptyEntries)];
+
+        // The dump gives the rows, padded to a multiple of 4 modules: the width is the one of the type that fits
+        var rows = await tools.GetZintRowsAsync(arguments, data);
+        var digits = rows[0].Length;
+        var width = Enumerable.Range((4 * digits) - 3, 4).Single(width => type switch
+        {
+            Barcode2DType.DataMatrix => DataMatrixSizes.Contains((rows.Count, width)),
+            Barcode2DType.Pdf417 => (width - 1) % 17 is 0,
+            _ => width == rows.Count,
+        });
+
+        var result = Barcode2DDecoder.Decode(await tools.GetZintMatrixAsync(arguments, data, width), type);
+
+        Assert.Equal(expected, result.Text);
+        Assert.Equal(options.Contains("--gs1", StringComparison.Ordinal), result.IsGs1);
+    }
+
+    private static async Task<bool[,]> GetZintQRCodeAsync(BarcodeTools tools, IEnumerable<string> arguments, string data)
+    {
+        // The dump gives the rows, padded to a multiple of 4 modules: the width of an rMQR code is the size that fits
+        var rows = await tools.GetZintRowsAsync(arguments, data);
+        var digits = rows[0].Length;
+        var width = (rows.Count + 3) / 4 == digits ? rows.Count : RMQRSizes.Select(size => size.Width).Distinct().Single(width => (width + 3) / 4 == digits);
+        return await tools.GetZintMatrixAsync(arguments, data, width);
+    }
+
     [Theory]
     [InlineData(26, "héllo wörld", true)]
     [InlineData(26, "漢字のテスト", true)]
@@ -364,6 +459,49 @@ public sealed class ZintMatrixTests
             var barcode = Barcode.CreateGs1128([.. ParseGs1(zintData)]);
             var zintRow = await tools.GetZintRowsAsync(["-b", "16", "--gs1nocheck"], zintData);
             Assert.HasCount((barcode.Width + 3) / 4, Assert.Single(zintRow), message: zintData);
+        }
+    }
+
+    // zint chooses its own code sets: its symbols must decode to the data
+    [Fact]
+    public async Task ZintCode128_IsDecoded()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var random = new Random(4205);
+        string[] classes = ["0123456789", "\u0000\u0001\t\n\r\u001b\u001f", "ABCXYZ !@_^\\", "abcxyz`{|}~\u007f"];
+        for (var i = 0; i < 100; i++)
+        {
+            var data = new StringBuilder();
+            var length = random.Next(1, 30);
+            while (data.Length < length)
+            {
+                var characters = classes[random.Next(classes.Length)];
+                for (var j = random.Next(1, 7); j > 0; j--)
+                {
+                    data.Append(characters[random.Next(characters.Length)]);
+                }
+            }
+
+            // The digits of the dump are padded with light modules, which are part of the quiet zone
+            var arguments = new[] { "-b", "20", "--esc" };
+            var row = Assert.Single(await tools.GetZintRowsAsync(arguments, EscapeForZint(data.ToString())));
+            var modules = await tools.GetZintMatrixAsync(arguments, EscapeForZint(data.ToString()), row.Length * 4);
+            Assert.Equal(data.ToString(), BarcodeDecoder.Decode(modules).Text);
+        }
+    }
+
+    [Fact]
+    public async Task ZintGs1128_IsDecoded()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var random = new Random(4206);
+        for (var i = 0; i < 100; i++)
+        {
+            var zintData = CreateRandomGs1Data(random);
+            var arguments = new[] { "-b", "16", "--gs1nocheck" };
+            var row = Assert.Single(await tools.GetZintRowsAsync(arguments, zintData));
+            var result = BarcodeDecoder.Decode(await tools.GetZintMatrixAsync(arguments, zintData, row.Length * 4));
+            Assert.Equal((BarcodeType.Gs1128, Barcode.CreateGs1128([.. ParseGs1(zintData)]).Text), (result.Type, result.Text));
         }
     }
 

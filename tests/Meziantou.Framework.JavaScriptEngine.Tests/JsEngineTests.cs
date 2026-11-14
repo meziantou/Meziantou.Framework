@@ -654,6 +654,34 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void ExecutionContextDepth()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var depths = new List<int>();
+        realm.GlobalObject.SetProperty("probe", realm.CreateFunction("probe", 0, (_, _) =>
+        {
+            depths.Add(engine.ExecutionContextDepth);
+            return default;
+        }));
+        Assert.Equal(0, engine.ExecutionContextDepth);
+
+        // A .NET function does not push an execution context: the depth is the one of its caller
+        realm.Execute("probe(); (function f() { probe(); })(); probe.call(null);", "depth.js");
+        Assert.Equal(depths[0] + 1, depths[1]);
+        Assert.Equal(depths[0], depths[2]);
+
+        // The script contexts pushed by the host count
+        using (engine.EnterActiveScriptOrModule(scriptOrModule: null))
+        {
+            Assert.Equal(1, engine.ExecutionContextDepth);
+        }
+
+        Assert.Equal(0, engine.ExecutionContextDepth);
+    }
+
+    [Fact]
     public void ExecutionLimits()
     {
         using (var engine = new JsEngine(new JsEngineOptions { MaxStatements = 100 }))
@@ -2481,6 +2509,30 @@ public sealed class JsEngineTests
         Assert.Equal("user.js", error.Url);
         Assert.Equal(2, error.Line);
         Assert.Equal(7, error.Column);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DisableCompilation()
+    {
+        #region JavaScriptEngine_DisableCompilation
+        // The code of this engine is only interpreted: the hot functions are not compiled to .NET code
+        using var engine = new JsEngine(new JsEngineOptions { EnableCompilation = false });
+        var realm = engine.CreateRealm();
+        var result = realm.Execute("let sum = 0; for (let i = 0; i < 100_000; i++) { sum += i; } sum");
+        Assert.Equal(4_999_950_000, result.AsNumber());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CompilationThreshold()
+    {
+        #region JavaScriptEngine_CompilationThreshold
+        // The functions of this engine are compiled after 100 calls or loop iterations, instead of 1000
+        using var engine = new JsEngine(new JsEngineOptions { CompilationThreshold = 100 });
+        var realm = engine.CreateRealm();
+        var result = realm.Execute("function square(x) { return x * x; } let sum = 0; for (let i = 0; i < 1_000; i++) { sum += square(i); } sum");
+        Assert.Equal(332_833_500, result.AsNumber());
         #endregion
     }
 

@@ -1704,6 +1704,85 @@ public sealed class BrowsingContextTests
         Assert.Equal(1, calls);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RunTask_RunsWithoutTheSynchronizationContextOfTheThreadAndRestoresIt(bool throws)
+    {
+        using var context = new BrowsingContext();
+        var eventLoop = context.EventLoop;
+        var synchronizationContext = new SynchronizationContext();
+        var contexts = new List<SynchronizationContext?>();
+        eventLoop.QueueTask(() =>
+        {
+            contexts.Add(SynchronizationContext.Current);
+            eventLoop.QueueMicrotask(() => contexts.Add(SynchronizationContext.Current));
+            if (throws)
+                throw new InvalidOperationException("task");
+        });
+
+        var originalContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(synchronizationContext);
+        try
+        {
+            if (throws)
+            {
+                Assert.Throws<InvalidOperationException>(() => eventLoop.RunTask());
+            }
+            else
+            {
+                Assert.True(eventLoop.RunTask());
+            }
+
+            Assert.Same(synchronizationContext, SynchronizationContext.Current);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(originalContext);
+        }
+
+        Assert.Equal(throws ? [null] : [null, null], contexts);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PerformMicrotaskCheckpoint_RunsWithoutTheSynchronizationContextOfTheThreadAndRestoresIt(bool throws)
+    {
+        using var context = new BrowsingContext();
+        var eventLoop = context.EventLoop;
+        var synchronizationContext = new SynchronizationContext();
+        var contexts = new List<SynchronizationContext?>();
+        eventLoop.QueueMicrotask(() =>
+        {
+            contexts.Add(SynchronizationContext.Current);
+            if (throws)
+                throw new InvalidOperationException("microtask");
+        });
+
+        var originalContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(synchronizationContext);
+        try
+        {
+            if (throws)
+            {
+                Assert.Throws<InvalidOperationException>(eventLoop.PerformMicrotaskCheckpoint);
+            }
+            else
+            {
+                eventLoop.PerformMicrotaskCheckpoint();
+            }
+
+            Assert.Same(synchronizationContext, SynchronizationContext.Current);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(originalContext);
+        }
+
+        Assert.Equal([null], contexts);
+    }
+
     [Fact]
     public void Dispose_DiscardsThePendingTasksAndDestroysTheDocuments()
     {
@@ -2074,6 +2153,81 @@ public sealed class BrowsingContextTests
         context.Navigate("https://example.com/error");
         context.EventLoop.RunUntilIdle();
         Assert.True(context.Document.IsNetworkErrorDocument);
+    }
+
+    [Fact]
+    public void RequestStorageAccess_GivesTheBlockedUnpartitionedCookiesToACrossSiteIframe()
+    {
+        var cookies = new CookieJar { BlockThirdPartyCookies = true };
+        cookies.SetCookie("https://other.example/", "id=42; Path=/; Secure; SameSite=None");
+        var permissions = new PermissionStore();
+        permissions.SetState("storage-access", PermissionState.Granted);
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<p>frame</p>")));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader, CookieJar = cookies, Permissions = permissions });
+
+        var top = Load(context, "<iframe src='https://other.example/frame.html'></iframe>");
+        var frame = ((HtmlIFrameElement)top.QuerySelector("iframe")!).ContentNavigable!.Document;
+        var frameRequest = loader.Requests.Single(request => request.Url == "https://other.example/frame.html");
+        Assert.Null(frameRequest.GetCookieHeader());
+
+        // The permission is granted, but the request of the frame does not use it
+        Assert.Equal("inactive", HeaderList.Get(frameRequest.Headers, "Sec-Fetch-Storage-Access"));
+        Assert.Equal("", frame.Cookie);
+        Assert.False(RunToCompletion(context, frame.HasStorageAccess()));
+
+        var request = frame.RequestStorageAccess();
+        context.EventLoop.RunUntilIdle();
+        Assert.True(request.IsCompletedSuccessfully);
+        Assert.True(RunToCompletion(context, frame.HasStorageAccess()));
+        Assert.Equal("id=42", frame.Cookie);
+
+        // The top-level document is not affected, and the other frames do not have storage access
+        Assert.True(RunToCompletion(context, top.HasStorageAccess()));
+        static bool RunToCompletion(BrowsingContext context, Task<bool> task)
+        {
+            context.EventLoop.RunUntilIdle();
+            Assert.True(task.IsCompletedSuccessfully);
+            return task.Result;
+        }
+    }
+
+    [Fact]
+    public void RequestStorageAccess_IsRejectedWithoutUserActivationWhenThePermissionIsNotGranted()
+    {
+        var cookies = new CookieJar();
+        cookies.SetThirdPartyCookieAccess("https://example.com/", "https://other.example/", blocked: true);
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<p>frame</p>")));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader, CookieJar = cookies });
+
+        var top = Load(context, "<iframe src='https://other.example/frame.html'></iframe>");
+        var frame = ((HtmlIFrameElement)top.QuerySelector("iframe")!).ContentNavigable!.Document;
+        var request = frame.RequestStorageAccess();
+        context.EventLoop.RunUntilIdle();
+        var exception = Assert.IsType<DomException>(request.Exception?.InnerException);
+        Assert.Equal("NotAllowedError", exception.Name);
+
+        // A document that is not fully active rejects with an InvalidStateError
+        var detached = HtmlDocumentParser.ParseDocument("<p>x</p>");
+        Assert.Equal("InvalidStateError", Assert.IsType<DomException>(detached.RequestStorageAccess().Exception?.InnerException).Name);
+    }
+
+    [Fact]
+    public async Task StorageAccess_CrossSiteIframeHasStorageAccessWhenThirdPartyCookiesAreNotBlocked()
+    {
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<p>frame</p>")));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader, CookieJar = new CookieJar() });
+
+        var top = Load(context, "<iframe src='https://other.example/frame.html'></iframe><iframe src='https://www.example.com/frame.html'></iframe>");
+        Assert.Equal("active", HeaderList.Get(loader.Requests.Single(request => request.Url == "https://other.example/frame.html").Headers, "Sec-Fetch-Storage-Access"));
+
+        // A same-site request does not send the header
+        Assert.Null(HeaderList.Get(loader.Requests.Single(request => request.Url == "https://www.example.com/frame.html").Headers, "Sec-Fetch-Storage-Access"));
+
+        var frame = ((HtmlIFrameElement)top.QuerySelector("iframe")!).ContentNavigable!.Document;
+        var hasStorageAccess = frame.HasStorageAccess();
+        context.EventLoop.RunUntilIdle();
+        Assert.True(hasStorageAccess.IsCompleted);
+        Assert.True(await hasStorageAccess);
     }
 
     private sealed class DelegateDocumentLoader(Func<string, CancellationToken, ValueTask<DocumentResource?>> load) : DocumentLoader

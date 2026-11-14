@@ -2,6 +2,12 @@
   "webmcp/idlharness.https.window.js": {
     "total": 38
   },
+  "webmcp/imperative/abort-signal-after-iframe-removal-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "webmcp/imperative/cancel-reentrancy-crash.https.html": {
+    "crashtest": "PASS"
+  },
   "webmcp/imperative/detached-frame-executeTool.https.html": {
     "total": 1
   },
@@ -53,6 +59,9 @@
   },
   "webmcp/imperative/executeTool-reentrant-cancellation.https.html": {
     "total": 3
+  },
+  "webmcp/imperative/executeTool-same-document-navigation-crash.https.html": {
+    "crashtest": "PASS"
   },
   "webmcp/imperative/executeTool-signal-cross-origin.https.html": {
     "total": 3
@@ -157,6 +166,9 @@
   "webmcp/imperative/register-tool-input-schema-registers-same-name.https.html": {
     "total": 1
   },
+  "webmcp/imperative/register-tool-input-schema-removes-iframe-crash.https.html": {
+    "crashtest": "PASS"
+  },
   "webmcp/imperative/register-tool-title.https.html": {
     "total": 3
   },
@@ -194,6 +206,9 @@
       "Pending executeTool() Promise resolves successfully when the target cross-origin tool is unregistered mid-execution": "FAIL",
       "unregistering both outer and inner imperative tools during re-entrant executeTool() allows in-flight executions to settle": "FAIL"
     }
+  },
+  "webmcp/imperative/wait-for-tools-until-detach-crash.https.html": {
+    "crashtest": "PASS"
   },
   "webmcp/imperative/wait-for-tools-until.https.html": {
     "total": 4

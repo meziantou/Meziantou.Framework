@@ -8,6 +8,9 @@
   "css/css-lists/animations/list-style-image-interpolation.html": {
     "total": 234
   },
+  "css/css-lists/before-after-selectors-on-code-element-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-lists/change-list-descendant-display.html": {
     "reftest": "PASS"
   },
@@ -25,6 +28,9 @@
   },
   "css/css-lists/change-list-style-type-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-lists/container-list-items-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-lists/content-property/marker-text-matches-armenian.html": {
     "reftest": "PASS"
@@ -185,6 +191,9 @@
   "css/css-lists/counters-006.html": {
     "reftest": "PASS"
   },
+  "css/css-lists/counters-container-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-lists/counters-scope-001.html": {
     "reftest": "FAIL"
   },
@@ -196,6 +205,30 @@
   },
   "css/css-lists/counters-scope-004.html": {
     "reftest": "FAIL"
+  },
+  "css/css-lists/crashtests/chrome-bug-1377573.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-lists/crashtests/chrome-counter-in-multicol-details-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-lists/crashtests/chrome-legacy-propagation-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-lists/crashtests/chrome-legacy-propagation-remove-body-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-lists/crashtests/firefox-bug-1715631.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-lists/crashtests/firefox-bug-1930225.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-lists/crashtests/list-item-hidden-until-found-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-lists/crashtests/list-item-marker-list-style-type-change-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-lists/css-lists-no-interpolation.html": {
     "total": 462
@@ -410,6 +443,9 @@
   "css/css-lists/li-with-overflow-hidden-change-list-style-position-001.html": {
     "reftest": "PASS"
   },
+  "css/css-lists/li-without-ul-counter-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-lists/list-and-block-in-inline.html": {
     "reftest": "PASS"
   },
@@ -434,6 +470,9 @@
   "css/css-lists/list-inside-contain.html": {
     "total": 1
   },
+  "css/css-lists/list-item-counter-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-lists/list-item-definition.html": {
     "reftest": "PASS"
   },
@@ -442,6 +481,9 @@
   },
   "css/css-lists/list-marker-alignment.html": {
     "reftest": "PASS"
+  },
+  "css/css-lists/list-marker-containing-control-char-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-lists/list-marker-counter-style-fallback-rtl.html": {
     "reftest": "PASS"
@@ -454,6 +496,9 @@
   },
   "css/css-lists/list-marker-paint-order.html": {
     "reftest": "PASS"
+  },
+  "css/css-lists/list-marker-position-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-lists/list-marker-rtl-string-width.html": {
     "reftest": "PASS"
@@ -523,6 +568,9 @@
   },
   "css/css-lists/list-with-image-display-changed-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-lists/marker-content-incremental-layout-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-lists/marker-counter.html": {
     "reftest": "PASS"
@@ -706,5 +754,8 @@
   },
   "css/css-lists/pseudo-element-remove-update.html": {
     "reftest": "PASS"
+  },
+  "css/css-lists/style-containment-counter-crash.html": {
+    "crashtest": "PASS"
   }
 }

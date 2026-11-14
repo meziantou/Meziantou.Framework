@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -203,7 +204,118 @@ internal sealed class PngOptimizedLayout
     /// </param>
     /// <param name="unpacked">Scratch for one byte per pixel.</param>
     /// <param name="scanline">The scanline, <see cref="GetScanlineLength"/> bytes.</param>
+    /// <remarks>
+    /// The 8-bit samples of contiguous pixels of 8-bit wide rows without a mask are the bytes of the pixels, some of them
+    /// dropped: they are selected by whole vectors. The result is identical to <see cref="WriteSamplesScalar"/>, the reference.
+    /// </remarks>
     public void WriteSamples(ReadOnlySpan<byte> row, int start, int step, int count, ReadOnlySpan<byte> mask, Span<byte> unpacked, Span<byte> scanline)
+    {
+        var done = 0;
+        if (step == 1 && mask.IsEmpty && BitDepth == 8 && !IsWide16 && Palette is null && UseVectors)
+        {
+            var pixels = row.Slice(start * 4, count * 4);
+            switch (ColorType)
+            {
+                case 6:
+                    pixels.CopyTo(scanline);
+                    return;
+
+                case 2:
+                    done = SelectRgb(pixels, scanline);
+                    break;
+
+                case 4:
+                    done = SelectGrayAlpha(pixels, scanline);
+                    break;
+
+                default:
+                    done = SelectGray(pixels, scanline);
+                    break;
+            }
+
+            if (done == count)
+                return;
+        }
+
+        WriteSamplesScalar(row, start + done, step, count - done, mask, unpacked, scanline[(done * Channels)..]);
+    }
+
+    private static bool UseVectors => Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian;
+
+    /// <summary>Writes the RGB bytes of the leading RGBA pixels, four per step (the 4 bytes after them are stored, then overwritten).</summary>
+    /// <returns>The number of pixels written.</returns>
+    private static int SelectRgb(ReadOnlySpan<byte> pixels, Span<byte> scanline)
+    {
+        ref var input = ref unsafe(MemoryMarshal.GetReference(pixels));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(scanline));
+        var count = pixels.Length / 4;
+        var order = Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 15, 15, 15, 15);
+        var x = 0;
+
+        // The 16 bytes stored for 4 pixels must fit the 3 bytes of the pixels left: at least 6 of them
+        for (; x + 6 <= count; x += 4)
+        {
+            unsafe { Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(4 * x)), order).StoreUnsafe(ref output, (nuint)(3 * x)); }
+        }
+
+        return x;
+    }
+
+    /// <summary>Writes the first and the fourth byte of the leading RGBA pixels (gray and alpha), eight per step.</summary>
+    /// <returns>The number of pixels written.</returns>
+    private static int SelectGrayAlpha(ReadOnlySpan<byte> pixels, Span<byte> scanline)
+    {
+        ref var input = ref unsafe(MemoryMarshal.GetReference(pixels));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(scanline));
+        var count = pixels.Length / 4;
+        var x = 0;
+        for (; x + 8 <= count; x += 8)
+        {
+            Vector128<uint> low, high;
+            unsafe
+            {
+                low = Vector128.LoadUnsafe(ref input, (nuint)(4 * x)).AsUInt32();
+                high = Vector128.LoadUnsafe(ref input, (nuint)((4 * x) + 16)).AsUInt32();
+            }
+
+            // The low 16 bits of each pixel become its first and fourth bytes; the narrowing drops the others
+            low = (low & Vector128.Create(0xFFu)) | ((low >>> 16) & Vector128.Create(0xFF00u));
+            high = (high & Vector128.Create(0xFFu)) | ((high >>> 16) & Vector128.Create(0xFF00u));
+            unsafe { Vector128.Narrow(low, high).AsByte().StoreUnsafe(ref output, (nuint)(2 * x)); }
+        }
+
+        return x;
+    }
+
+    /// <summary>Writes the first byte of the leading RGBA pixels (gray), sixteen per step.</summary>
+    /// <returns>The number of pixels written.</returns>
+    private static int SelectGray(ReadOnlySpan<byte> pixels, Span<byte> scanline)
+    {
+        ref var input = ref unsafe(MemoryMarshal.GetReference(pixels));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(scanline));
+        var count = pixels.Length / 4;
+        var x = 0;
+        for (; x + 16 <= count; x += 16)
+        {
+            // Narrowing keeps the low half of each lane: twice, the first byte of each pixel
+            Vector128<uint> p0, p1, p2, p3;
+            unsafe
+            {
+                p0 = Vector128.LoadUnsafe(ref input, (nuint)(4 * x)).AsUInt32();
+                p1 = Vector128.LoadUnsafe(ref input, (nuint)((4 * x) + 16)).AsUInt32();
+                p2 = Vector128.LoadUnsafe(ref input, (nuint)((4 * x) + 32)).AsUInt32();
+                p3 = Vector128.LoadUnsafe(ref input, (nuint)((4 * x) + 48)).AsUInt32();
+            }
+
+            var gray = Vector128.Narrow(Vector128.Narrow(p0, p1), Vector128.Narrow(p2, p3));
+            unsafe { gray.StoreUnsafe(ref output, (nuint)x); }
+        }
+
+        return x;
+    }
+
+    /// <summary>The scalar reference of <see cref="WriteSamples"/>.</summary>
+    internal void WriteSamplesScalar(ReadOnlySpan<byte> row, int start, int step, int count, ReadOnlySpan<byte> mask, Span<byte> unpacked, Span<byte> scanline)
     {
         if (Palette is { } palette)
         {

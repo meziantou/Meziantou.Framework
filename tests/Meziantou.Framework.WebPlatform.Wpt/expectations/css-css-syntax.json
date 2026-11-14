@@ -77,6 +77,15 @@
   "css/css-syntax/charset/xml-stylesheet-page-windows-1251-charset-attribute-windows-1250.xhtml": {
     "total": 1
   },
+  "css/css-syntax/crashtests/atrule-with-escape-character.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-syntax/crashtests/unclosed-content-attr-bracket.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-syntax/crashtests/unclosed-open-brackets.html": {
+    "crashtest": "PASS"
+  },
   "css/css-syntax/custom-property-rule-ambiguity.html": {
     "total": 4
   },

@@ -2,6 +2,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Meziantou.Framework.WebPlatform.WebAudio;
+using Meziantou.Framework.WebPlatform.WebAudio.Rendering;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
@@ -376,6 +377,50 @@ public sealed class WebAudioTests : IDisposable
         }
 
         Assert.Equal(-1, output[356..].IndexOfAnyExcept(0f));
+    }
+
+    [Fact]
+    public void ConvolverNode_WithAShortResponse_ComputesTheConvolution()
+    {
+        // A response of at most 64 frames is convolved in the time domain
+        var context = new OfflineAudioContext(1, 1024, 8000);
+        var response = new AudioBuffer(new AudioBufferOptions { Length = 13, SampleRate = 8000 });
+        var responseSamples = response.GetChannelData(0);
+        for (var i = 0; i < responseSamples.Length; i++)
+        {
+            responseSamples[i] = (i + 1) * (i % 2 == 0 ? 0.05f : -0.03f);
+        }
+
+        var convolver = new ConvolverNode(context, new ConvolverOptions { Buffer = response, DisableNormalization = true });
+        var input = new AudioBuffer(new AudioBufferOptions { Length = 300, SampleRate = 8000 });
+        var inputSamples = input.GetChannelData(0);
+        for (var i = 0; i < inputSamples.Length; i++)
+        {
+            inputSamples[i] = (float)Math.Sin(i / 7.0);
+        }
+
+        var source = new AudioBufferSourceNode(context, new AudioBufferSourceOptions { Buffer = input });
+        source.Connect(convolver).Connect(context.Destination);
+        source.Start();
+
+        var output = Render(context).GetChannelData(0);
+
+        // The input ends at frame 300 and the response at frame 312: the history wraps many times and the tail is silent
+        for (var n = 0; n < output.Length; n++)
+        {
+            var expected = 0.0;
+            for (var k = 0; k < responseSamples.Length; k++)
+            {
+                if (n - k is >= 0 and < 300)
+                {
+                    expected += responseSamples[k] * (double)inputSamples[n - k];
+                }
+            }
+
+            Assert.True(Math.Abs(output[n] - expected) < 1e-6, $"Sample {n}: {output[n]} instead of {expected}");
+        }
+
+        Assert.Equal(-1, output[312..].IndexOfAnyExcept(0f));
     }
 
     [Fact]
@@ -764,5 +809,63 @@ public sealed class WebAudioTests : IDisposable
         Assert.Equal(
             "0.02 0.08 0.32 0.02 0.32,NotSupportedError,object,none,true,{\"underrunDuration\":0,\"underrunEvents\":0,\"totalDuration\":0,\"averageLatency\":0,\"minimumLatency\":0,\"maximumLatency\":0},NotFoundError,error \"\",sinkchange,\"\"",
             Evaluate(document, "log.join()"));
+    }
+
+    [Fact]
+    public void AudioVectors_MatchTheScalarOperations()
+    {
+        for (var length = 0; length <= 40; length++)
+        {
+            var x = new float[length];
+            var y = new float[length];
+            var addend = new float[length];
+            for (var i = 0; i < length; i++)
+            {
+                x[i] = MathF.Sin((i * 1.7f) + length);
+                y[i] = MathF.Cos((i * 0.9f) - length);
+                addend[i] = MathF.Sin(i * 3.1f) / 3;
+            }
+
+            var destination = new float[length + 1];
+            destination[length] = 42;
+            AudioVectors.Multiply(x, 0.3f, destination);
+            for (var i = 0; i < length; i++)
+            {
+                Assert.Equal(x[i] * 0.3f, destination[i]);
+            }
+
+            Assert.Equal(42f, destination[length]);
+
+            AudioVectors.Multiply(x, y, destination);
+            for (var i = 0; i < length; i++)
+            {
+                Assert.Equal(x[i] * y[i], destination[i]);
+            }
+
+            // In place, as the mixing of the buses does
+            var sum = addend.ToArray();
+            AudioVectors.Add(sum, x, sum);
+            for (var i = 0; i < length; i++)
+            {
+                Assert.Equal(addend[i] + x[i], sum[i]);
+            }
+
+            var scaled = addend.ToArray();
+            AudioVectors.MultiplyAdd(x, 0.7f, scaled, scaled);
+            for (var i = 0; i < length; i++)
+            {
+                Assert.Equal((x[i] * 0.7f) + addend[i], scaled[i]);
+            }
+
+            var dx = x.Select(value => (double)value).ToArray();
+            var dy = y.Select(value => (double)value).ToArray();
+            var expected = 0.0;
+            for (var i = 0; i < length; i++)
+            {
+                expected += dx[i] * dy[i];
+            }
+
+            Assert.True(Math.Abs(expected - AudioVectors.Dot(dx, dy)) <= 1e-12, $"length {length}");
+        }
     }
 }

@@ -56,6 +56,9 @@
   "css/css-scroll-anchoring/anonymous-block-box.html": {
     "total": 1
   },
+  "css/css-scroll-anchoring/anonymous-block-children-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-scroll-anchoring/basic.html": {
     "total": 1
   },
@@ -119,6 +122,12 @@
   },
   "css/css-scroll-anchoring/fragment-scrolling-anchors.html": {
     "total": 1
+  },
+  "css/css-scroll-anchoring/fresh-table-col-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-scroll-anchoring/fullscreen-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-scroll-anchoring/heuristic-with-offset-update-from-scroll-event-listener.html": {
     "total": 1
@@ -230,6 +239,12 @@
   },
   "css/css-scroll-anchoring/suppress-for-transform-change.html": {
     "total": 1
+  },
+  "css/css-scroll-anchoring/table-col-and-dead-row-group-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-scroll-anchoring/table-collapsed-borders-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-scroll-anchoring/text-anchor-in-vertical-rl.html": {
     "total": 1

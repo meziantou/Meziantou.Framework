@@ -39,6 +39,10 @@ public sealed class CssMinifyFormatterTests
     // Empty rules
     [InlineData("a { } b { .c { } } @media print { d { } } @supports (display: grid) { } e { color: red }", "e{color:red}")]
     [InlineData("@layer a { } @keyframes k { } @font-face { }", "@layer a{}@keyframes k{}@font-face{}")]
+    // The declarations around a removed rule are parsed as one block: they are merged, as the parser does
+    [InlineData("c { --empty: ; d { } --empty: ; }", "c{--empty: }")]
+    [InlineData("a { color: red !important; margin: 1px; .b { } color: blue; @media print { } margin: 0 }", "a{color:red!important;margin:0px}")]
+    [InlineData("a { @media print { color: red; .b { } color: blue; .c { color: green } color: black } }", "a{@media print{color:blue;& .c{color:green}color:black}}")]
     public void Minify_Theory(string css, string expected)
     {
         Assert.Equal(expected, Minify(css));

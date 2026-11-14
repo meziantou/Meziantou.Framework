@@ -1,4 +1,7 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -210,31 +213,13 @@ internal static class PerceptualHasher
         // width × MaxPixelValue, and each cell at most width × height × MaxPixelValue, so a long does not overflow for any
         // frame the library can hold.
         Span<long> row = stackalloc long[thumbnailWidth];
-        var width = source.Width;
         var height = source.Height;
         var firstRowCell = 0;
         for (var y = 0; y < height; y++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             row.Clear();
-            var sourceRow = source.GetRow(y);
-            var firstColumnCell = 0;
-            for (var x = 0; x < sourceRow.Length; x++)
-            {
-                var value = GetPixelValue(sourceRow[x], whiteBackground);
-                var start = (long)x * thumbnailWidth;
-                var end = start + thumbnailWidth;
-                while ((firstColumnCell + 1L) * width <= start)
-                {
-                    firstColumnCell++;
-                }
-
-                for (var cell = firstColumnCell; (long)cell * width < end; cell++)
-                {
-                    row[cell] += value * GetOverlap(start, end, cell, width);
-                }
-            }
-
+            ReduceRow(source.GetRow(y), whiteBackground, row);
             var rowStart = (long)y * thumbnailHeight;
             var rowEnd = rowStart + thumbnailHeight;
             while ((firstRowCell + 1L) * height <= rowStart)
@@ -254,6 +239,110 @@ internal static class PerceptualHasher
         }
     }
 
+    /// <summary>
+    /// Adds the values of the pixels of a source row to the cells of a thumbnail row (<paramref name="row"/>), each in
+    /// proportion to its overlap with the cell: a source pixel <c>x</c> covers <c>[x × cells, (x + 1) × cells)</c> and a cell
+    /// <c>c</c> covers <c>[c × width, (c + 1) × width)</c>.
+    /// </summary>
+    /// <remarks>
+    /// When the row is at least as wide as the thumbnail, a pixel overlaps at most 2 cells: the pixels inside a cell are
+    /// added with their sum (<see cref="SumPixelValues"/>), then the one across its end, if any, to both cells. The sums are
+    /// exact integers, so they are those of <see cref="ReduceRowScalar"/>.
+    /// </remarks>
+    internal static void ReduceRow(ReadOnlySpan<Rgba32> sourceRow, bool whiteBackground, Span<long> row)
+    {
+        var thumbnailWidth = row.Length;
+        var width = sourceRow.Length;
+        if (width < thumbnailWidth || !Vector128.IsHardwareAccelerated || !BitConverter.IsLittleEndian)
+        {
+            ReduceRowScalar(sourceRow, whiteBackground, row);
+            return;
+        }
+
+        var start = 0;
+        for (var cell = 0; cell < thumbnailWidth; cell++)
+        {
+            var cellEnd = (long)(cell + 1) * width;
+            var end = (int)(cellEnd / thumbnailWidth);
+            row[cell] += thumbnailWidth * SumPixelValues(sourceRow[start..end], whiteBackground);
+            var overlap = cellEnd - ((long)end * thumbnailWidth);
+            if (overlap != 0)
+            {
+                var value = GetPixelValue(sourceRow[end], whiteBackground);
+                row[cell] += value * overlap;
+                row[cell + 1] += value * (thumbnailWidth - overlap);
+                end++;
+            }
+
+            start = end;
+        }
+    }
+
+    /// <summary>The pixel-at-a-time reference of <see cref="ReduceRow"/>.</summary>
+    internal static void ReduceRowScalar(ReadOnlySpan<Rgba32> sourceRow, bool whiteBackground, Span<long> row)
+    {
+        var thumbnailWidth = row.Length;
+        var width = sourceRow.Length;
+        var firstColumnCell = 0;
+        for (var x = 0; x < sourceRow.Length; x++)
+        {
+            var value = GetPixelValue(sourceRow[x], whiteBackground);
+            var start = (long)x * thumbnailWidth;
+            var end = start + thumbnailWidth;
+            while ((firstColumnCell + 1L) * width <= start)
+            {
+                firstColumnCell++;
+            }
+
+            for (var cell = firstColumnCell; (long)cell * width < end; cell++)
+            {
+                row[cell] += value * GetOverlap(start, end, cell, width);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the sum of the values of pixels (<see cref="GetPixelValue"/>). With 128-bit hardware vectors, the products of
+    /// the colors and the alpha of 4 pixels are computed at a time in 16-bit lanes, and their sums per channel, and the sum
+    /// of the alphas, in 32-bit lanes for at most 65,536 pixels: the sum of the values is then the weighted sum of these
+    /// exact sums.
+    /// </summary>
+    private static long SumPixelValues(ReadOnlySpan<Rgba32> pixels, bool whiteBackground)
+    {
+        var sum = 0L;
+        var x = 0;
+        ref var bytes = ref unsafe(MemoryMarshal.GetReference(MemoryMarshal.AsBytes(pixels)));
+        var order = Vector128.Create((ushort)3, 3, 3, 3, 7, 7, 7, 7);
+        var alphaLanes = Vector128.Create(0, 0, 0, ushort.MaxValue, 0, 0, 0, ushort.MaxValue);
+        while (x + 4 <= pixels.Length)
+        {
+            var batchStart = x;
+            var end = Math.Min(pixels.Length, x + 65536);
+            var sums = Vector128<uint>.Zero;
+            for (; x + 4 <= end; x += 4)
+            {
+                // (r a, g a, b a, a) for each pixel
+                var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref bytes, (nuint)(4 * x))));
+                low *= Vector128.ConditionalSelect(alphaLanes, Vector128<ushort>.One, Vector128.Shuffle(low, order));
+                high *= Vector128.ConditionalSelect(alphaLanes, Vector128<ushort>.One, Vector128.Shuffle(high, order));
+                sums += Vector128.WidenLower(low) + Vector128.WidenUpper(low) + Vector128.WidenLower(high) + Vector128.WidenUpper(high);
+            }
+
+            sum += (RedWeight * sums.GetElement(0)) + (GreenWeight * sums.GetElement(1)) + (BlueWeight * sums.GetElement(2));
+            if (whiteBackground)
+            {
+                sum += (RedWeight + GreenWeight + BlueWeight) * 255 * ((255L * (x - batchStart)) - sums.GetElement(3));
+            }
+        }
+
+        for (; x < pixels.Length; x++)
+        {
+            sum += GetPixelValue(pixels[x], whiteBackground);
+        }
+
+        return sum;
+    }
+
     /// <summary>Gets the length of the overlap of the source interval <c>[start, end)</c> with thumbnail cell <paramref name="cell"/>.</summary>
     private static long GetOverlap(long start, long end, int cell, int sourceSize)
     {
@@ -266,6 +355,7 @@ internal static class PerceptualHasher
     /// Computes the luminance of a pixel composited over a black or white background, premultiplied by 255 so that it is
     /// an integer from <c>0</c> to <see cref="MaxPixelValue"/>.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static long GetPixelValue(Rgba32 pixel, bool whiteBackground)
     {
         var luminance = RedWeight * pixel.R + GreenWeight * pixel.G + BlueWeight * pixel.B;

@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Meziantou.Framework.WebPlatform.Compression;
 using Meziantou.Framework.WebPlatform.Infra;
 using Meziantou.Framework.WebPlatform.Urls;
 
@@ -82,6 +83,9 @@ internal static class Fetching
             timing.IsRecorded = true;
             timing.Start = timing.PostRedirectStart = now;
         }
+
+        // https://privacycg.github.io/storage-access/#fetching: whether the request can use the storage access of its client
+        request.StorageAccessEligibility = StorageAccess.DetermineInitialEligibility(request);
 
         return MainFetchAsync(request, recursive: false, cancellationToken);
     }
@@ -380,13 +384,16 @@ internal static class Fetching
             }
         }
 
+        // https://wicg.github.io/signature-based-sri/#verify-signature-assertions: the signatures of the response
+        var signatures = response.IsNetworkError ? null : (IntegritySignatureResult?)IntegritySignatures.Verify(new IntegritySignatureContext(request.CurrentUrl, request.Method, request.SentHeaderList ?? request.HeaderList, internalResponse.Status, internalResponse.HeaderList), GetHttpCacheTime(request));
+
         // Step 19: a response blocked by the content security policies (https://w3c.github.io/webappsec-csp/#should-block-response),
         // due to its MIME type or due to nosniff (https://fetch.spec.whatwg.org/#should-response-to-request-be-blocked-due-to-mime-type?)
         if (!response.IsNetworkError && !request.IsSpeculative)
         {
             // The post-request check of the script directives reports the hash of the scripts (https://w3c.github.io/webappsec-csp/#script-post-request)
             // (not for a response that fails its integrity metadata: browsers do not report it)
-            if (request.Integrity.Length == 0 || SubresourceIntegrity.Matches(response.Body ?? [], response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect, request.Integrity))
+            if (request.Integrity.Length == 0 || SubresourceIntegrity.Matches(response.Body ?? [], response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect, request.Integrity, signatures))
             {
                 ContentSecurityPolicyReportHash.PotentiallyReportHash(request, response);
             }
@@ -398,8 +405,14 @@ internal static class Fetching
         if (!response.IsNetworkError && DocumentResource.IsBlocked(internalResponse.HeaderList, request.Destination))
             return FetchResponse.NetworkError();
 
-        // Step 22: the integrity metadata (https://w3c.github.io/webappsec-subresource-integrity/#does-response-match-metadatalist)
-        if (!response.IsNetworkError && request.Integrity.Length > 0 && !SubresourceIntegrity.Matches(response.Body ?? [], response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect, request.Integrity))
+        // https://wicg.github.io/signature-based-sri/#server-initiated-integrity-checks: a response whose signature is not valid
+        // is a network error
+        if (signatures is { Failed: true })
+            return FetchResponse.NetworkError();
+
+        // Step 22: the integrity metadata (https://w3c.github.io/webappsec-subresource-integrity/#does-response-match-metadatalist),
+        // and the public keys of the signatures (https://wicg.github.io/signature-based-sri/#client-initiated-integrity-checks)
+        if (!response.IsNetworkError && request.Integrity.Length > 0 && !SubresourceIntegrity.Matches(response.Body ?? [], response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect, request.Integrity, signatures))
             return FetchResponse.NetworkError();
 
         // The digests of the Unencoded-Digest header of the response (https://wicg.github.io/signature-based-sri/#verify-unencoded-digest-assertions):
@@ -551,7 +564,7 @@ internal static class Fetching
             // The file: URLs are left to the implementation: the loader gets the resources of the documents (but not the ones
             // of fetch() and XMLHttpRequest), without the HTTP semantics (no credentials, no redirect)
             case "file" when request.Destination != RequestDestination.Empty:
-                return await NetworkFetchAsync(request, [.. request.HeaderList], includeCredentials: false, cancellationToken).ConfigureAwait(false);
+                return await NetworkFetchAsync(request, [.. request.HeaderList], includeCredentials: false, dictionary: null, cancellationToken).ConfigureAwait(false);
 
             default:
                 return FetchResponse.NetworkError();
@@ -643,8 +656,14 @@ internal static class Fetching
 
         // Step 6.3
         var response = await HttpNetworkOrCacheFetchAsync(request, isAuthenticationFetch: false, cancellationToken).ConfigureAwait(false);
+        request.SingleHopCacheMode = null;
         if (response.IsNetworkError)
             return response;
+
+        // https://privacycg.github.io/storage-access-headers/#http-fetch: the response asks to retry the request with the
+        // unpartitioned cookies (Activate-Storage-Access: retry), which the storage-access permission allows
+        if (StorageAccess.PerformRetryCheck(request, request.StorageAccessStatus, response.Internal.HeaderList))
+            return await HttpStorageAccessRetryFetchAsync(request, cancellationToken).ConfigureAwait(false);
 
         // Step 4.4: the CORS check
         if (request.ResponseTainting == FetchResponseTainting.Cors && !CorsCheck(request, response))
@@ -664,6 +683,19 @@ internal static class Fetching
         }
 
         return await ProcessRedirectAsync(request, response, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>https://privacycg.github.io/storage-access-headers/#http-storage-access-retry-fetch</summary>
+    private static async Task<FetchResponse> HttpStorageAccessRetryFetchAsync(FetchRequest request, CancellationToken cancellationToken)
+    {
+        if (request.RedirectCount == MaxRedirects)
+            return FetchResponse.NetworkError();
+
+        request.RedirectCount++;
+        request.UrlList.Add(request.CurrentUrl);
+        request.SingleHopCacheMode = "reload";
+        request.StorageAccessEligibility = StorageAccessEligibility.Eligible;
+        return await MainFetchAsync(request, recursive: true, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>https://fetch.spec.whatwg.org/#cross-origin-resource-policy-check of a response of the request of a client.</summary>
@@ -755,6 +787,9 @@ internal static class Fetching
             }
         }
 
+        // https://privacycg.github.io/storage-access/#http-redirect-fetch: a redirect to another origin is not eligible for storage access
+        StorageAccess.ProcessRedirect(request, locationUrl);
+
         request.UrlList.Add(locationUrl);
 
         // Step 19: the Referrer-Policy header of the redirect
@@ -802,6 +837,10 @@ internal static class Fetching
             headers.Add(new("Referer", referrer));
         }
 
+        // https://privacycg.github.io/storage-access-headers/#set-storage-access: the storage access status of the request
+        // (the Sec-Fetch-Storage-Access header is appended with the Fetch Metadata headers)
+        request.StorageAccessStatus = GetStorageAccessStatus(request);
+
         // Step 8.12: Origin (https://fetch.spec.whatwg.org/#append-a-request-origin-header)
         // https://fetch.spec.whatwg.org/#serializing-a-request-origin: "null" when the request has a redirect-tainted origin
         // (e.g. a POST navigation redirected through another origin)
@@ -810,7 +849,7 @@ internal static class Fetching
         {
             headers.Add(new("Origin", serializedOrigin));
         }
-        else if (request.Method is not ("GET" or "HEAD"))
+        else if (request.Method is not ("GET" or "HEAD") || request.StorageAccessStatus == StorageAccessStatus.Inactive)
         {
             headers.Add(new("Origin", request.Mode == RequestMode.Cors ? serializedOrigin : GetNoCorsOriginHeader(serializedOrigin, request.Origin, request.ReferrerPolicy, request.CurrentUrl)));
         }
@@ -819,6 +858,11 @@ internal static class Fetching
         var metadataOrigin = GetLoaderOrigin(request);
         var metadataOriginRecord = metadataOrigin is not null && request.Client?.Origin is { } clientOrigin && clientOrigin.Serialize() == metadataOrigin ? clientOrigin : null;
         FetchMetadata.AppendHeaders(headers, request.Destination, request.Mode, metadataOrigin, request.UserActivation, request.RedirectChain, metadataOriginRecord);
+        if (request.StorageAccessStatus is { } storageAccessStatus)
+        {
+            FetchHeaders.Delete(headers, "Sec-Fetch-Storage-Access");
+            headers.Add(new("Sec-Fetch-Storage-Access", StorageAccess.Serialize(storageAccessStatus)));
+        }
 
         // Step 8.15: the default User-Agent value, when the browsing contexts have one (BrowsingContextOptions.UserAgent; the
         // loader may add its own otherwise)
@@ -836,7 +880,7 @@ internal static class Fetching
         }
 
         // Steps 8.16 to 8.18: the cache mode
-        var cacheMode = request.CacheMode;
+        var cacheMode = request.SingleHopCacheMode ?? request.CacheMode;
         if (cacheMode == "default" && (FetchHeaders.Contains(headers, "If-Modified-Since") || FetchHeaders.Contains(headers, "If-None-Match") || FetchHeaders.Contains(headers, "If-Unmodified-Since") || FetchHeaders.Contains(headers, "If-Match") || FetchHeaders.Contains(headers, "If-Range")))
         {
             cacheMode = "no-store";
@@ -907,8 +951,19 @@ internal static class Fetching
         // The end of step 8: the client hints (https://wicg.github.io/client-hints-infrastructure/#fetch)
         ClientHints.AppendToRequest(request, headers);
 
+        // https://wicg.github.io/signature-based-sri/#abstract-opdef-append-the-accept-signature-header: the public keys of the
+        // integrity metadata
+        if (request.Integrity.Length > 0 && !FetchHeaders.Contains(headers, "Accept-Signature") && IntegritySignatures.GetAcceptSignature(request.Integrity) is { } acceptSignature)
+        {
+            headers.Add(new("Accept-Signature", acceptSignature));
+        }
+
         // https://w3c.github.io/gpc/#the-sec-gpc-header-field-for-http-requests
         GlobalPrivacyControlOptions.AppendToRequest(request, headers);
+
+        // The headers the response is signed for (a stored response answers these headers; the network fetch below
+        // replaces them with the ones it sends)
+        request.SentHeaderList = headers;
 
         // Steps 9 and 10: the stored response of the HTTP cache, used as is when it is fresh (or with the "force-cache" and
         // "only-if-cached" modes), else validated with the validators of the stored response
@@ -979,19 +1034,38 @@ internal static class Fetching
             return gatewayTimeout;
         }
 
-        var response = await NetworkFetchAsync(request, headers, includeCredentials, cancellationToken).ConfigureAwait(false);
+        // https://www.rfc-editor.org/rfc/rfc9842#section-2.2: the best compression dictionary of the request is announced to
+        // the server. As in the browsers, the headers are added below the HTTP cache: they are not the headers of the stored
+        // request (a response whose Vary header has Available-Dictionary is used whatever the dictionaries).
+        var cachePartition = (cacheKey ?? GetHttpCacheKey(request)) is { } partitionKey ? HttpCache.GetPartition(partitionKey) : null;
+        var dictionary = FindCompressionDictionary(request, cachePartition, headers, now);
+        var networkHeaders = headers;
+        if (dictionary is not null)
+        {
+            networkHeaders = [.. headers, new("Accept-Encoding", CompressionDictionaries.AcceptEncoding), new("Available-Dictionary", CompressionDictionaries.GetAvailableDictionaryValue(dictionary))];
+            if (dictionary.Options.Id.Length > 0)
+            {
+                networkHeaders.Add(new("Dictionary-ID", CompressionDictionaries.GetDictionaryIdValue(dictionary.Options.Id)));
+            }
+        }
+
+        var response = await NetworkFetchAsync(request, networkHeaders, includeCredentials, dictionary, cancellationToken).ConfigureAwait(false);
         if (response.IsNetworkError)
             return response;
 
         // https://w3c.github.io/webappsec-clear-site-data/#fetch-integration: the Clear-Site-Data header clears the data of
         // the origin once the cookies of the response are stored, before the response is stored in the HTTP cache
         // (as in the browsers, the response that clears the cache is not stored either)
-        var clearedCache = ClearSiteData.ProcessResponse(request, response, includeCredentials, (cacheKey ?? GetHttpCacheKey(request)) is { } partitionKey ? HttpCache.GetPartition(partitionKey) : null);
+        var clearedCache = ClearSiteData.ProcessResponse(request, response, includeCredentials, cachePartition);
 
+        var responseTime = GetHttpCacheTime(request);
         if (cache is not null && (!clearedCache || response.Status == 304))
         {
-            response = UpdateHttpCache(request, response, cache, cacheKey!, requestHeaders, includeCredentials, revalidating ? storedResponse : null, now, GetHttpCacheTime(request));
+            response = UpdateHttpCache(request, response, cache, cacheKey!, requestHeaders, includeCredentials, revalidating ? storedResponse : null, now, responseTime);
         }
+
+        // https://www.rfc-editor.org/rfc/rfc9842#section-2.1: the response registers a compression dictionary
+        response = RegisterCompressionDictionary(request, response, cachePartition, now, responseTime);
 
         // https://w3c.github.io/webappsec-clear-site-data/#fetch-integration: the Clear-Site-Data header clears the client hints
         ClientHints.ProcessResponse(request, response);
@@ -1058,7 +1132,7 @@ internal static class Fetching
                 }
 
                 var requestTime = GetHttpCacheTime(request);
-                var response = await NetworkFetchAsync(request, headers, includeCredentials, CancellationToken.None).ConfigureAwait(false);
+                var response = await NetworkFetchAsync(request, headers, includeCredentials, dictionary: null, CancellationToken.None).ConfigureAwait(false);
                 if (!response.IsNetworkError)
                 {
                     // As the response of the network of HttpNetworkOrCacheFetchAsync (the loader stored its cookies, and the
@@ -1223,7 +1297,7 @@ internal static class Fetching
     /// The opening handshake of a WebSocket (<see cref="RequestMode.WebSocket"/>) is sent by <see cref="DocumentLoader.ConnectWebSocketAsync"/>:
     /// the connection of its response is <see cref="FetchResponse.Connection"/>.
     /// </summary>
-    private static async Task<FetchResponse> NetworkFetchAsync(FetchRequest request, List<KeyValuePair<string, string>> headers, bool includeCredentials, CancellationToken cancellationToken)
+    private static async Task<FetchResponse> NetworkFetchAsync(FetchRequest request, List<KeyValuePair<string, string>> headers, bool includeCredentials, CompressionDictionary? dictionary, CancellationToken cancellationToken)
     {
         // The navigable of a navigation, else the environment of the client (a browsing context or a worker), else the
         // browsing context of a keepalive request whose document was unloaded
@@ -1245,6 +1319,8 @@ internal static class Fetching
 
             headers = combinedHeaders;
         }
+
+        request.SentHeaderList = headers;
         var origin = GetLoaderOrigin(request);
         var cookieContext = request.CookieContext;
         var interimResponses = new InterimResponses(request, eventLoop);
@@ -1257,6 +1333,8 @@ internal static class Fetching
             RedirectUrls = request.RedirectChain is { Count: > 1 } redirectChain ? [.. redirectChain.Take(redirectChain.Count - 1).Select(url => url.Serialize())] : [],
             Destination = request.Destination,
             NavigationDestination = request.NavigationDestination,
+            StorageAccessEligibility = request.StorageAccessEligibility,
+            StorageAccessPermissions = GetStorageAccessPermissions(request),
             Mode = request.Mode,
             Initiator = request.Initiator,
             BrowsingContext = request.Navigable ?? request.Client?.BrowsingContext ?? request.KeepaliveBrowsingContext,
@@ -1292,6 +1370,15 @@ internal static class Fetching
         if (request.Timing.IsRecorded)
         {
             request.Timing.FinalNetworkResponseStart = eventLoop.TimeProvider.GetTimestamp();
+        }
+
+        // https://www.rfc-editor.org/rfc/rfc9842#section-4: the body of a response compressed with a dictionary is decoded with
+        // the dictionary announced by the request, as the loader decodes the other content codings (the headers are kept: the
+        // Content-Length is the length of the encoded body). A body that cannot be decoded is an error of the body. As in the
+        // browsers, the body of a request without dictionary is not decoded, as the bodies of the unknown content codings.
+        if (resource is not null && dictionary is not null && !isWebSocket && CanHaveBody(request, resource.StatusCode) && GetDictionaryContentCoding(resource.Headers) is { } dictionaryCoding)
+        {
+            resource = DecodeDictionaryCompressedResource(resource, dictionaryCoding, dictionary);
         }
 
         // A body that arrives over time is interpreted as its bytes arrive by the HTML document of a navigation, by an event
@@ -1430,6 +1517,118 @@ internal static class Fetching
     /// Whether the response of a request can have a body that is read as it arrives: not a redirect, not a null body status
     /// and not the response of a HEAD or CONNECT request (https://fetch.spec.whatwg.org/#main-fetch, step 19).
     /// </summary>
+    /// <summary>
+    /// https://www.rfc-editor.org/rfc/rfc9842#section-2.2: the compression dictionary announced by a request, or null: the
+    /// best dictionary of the partition of the request (see <see cref="CompressionDictionaries.FindBestMatch"/>). A request
+    /// to a URL that is not potentially trustworthy, a cross-origin <c>no-cors</c> request (whose response is opaque), a
+    /// WebSocket handshake and a request whose <c>Accept-Encoding</c> is set (a range request) have no dictionary.
+    /// </summary>
+    private static CompressionDictionary? FindCompressionDictionary(FetchRequest request, string? partition, List<KeyValuePair<string, string>> headers, DateTimeOffset now)
+    {
+        if (partition is null || request.Mode == RequestMode.WebSocket || request.ResponseTainting == FetchResponseTainting.Opaque || FetchHeaders.Contains(headers, "Accept-Encoding")
+            || request.CurrentUrl.Scheme is not ("http" or "https") || !ReferrerPolicies.IsPotentiallyTrustworthy(request.CurrentUrl) || GetDocumentLoader(request) is not { } loader)
+        {
+            return null;
+        }
+
+        var destination = FetchMetadata.GetDestinationName(request.Destination);
+        return CompressionDictionaries.Get(loader).FindBestMatch(partition, request.CurrentUrl, destination == "empty" ? "" : destination, now);
+    }
+
+    /// <summary>
+    /// https://www.rfc-editor.org/rfc/rfc9842#section-2.1: registers the dictionary of a response whose
+    /// <c>Use-As-Dictionary</c> header is valid, once its body is received: the response of a request to a potentially
+    /// trustworthy URL, which is not opaque (a cross-origin <c>no-cors</c> request), with an ok status.
+    /// </summary>
+    private static FetchResponse RegisterCompressionDictionary(FetchRequest request, FetchResponse response, string? partition, DateTimeOffset requestTime, DateTimeOffset responseTime)
+    {
+        if (partition is null || response.Status is < 200 or > 299 || request.ResponseTainting == FetchResponseTainting.Opaque || request.Mode == RequestMode.WebSocket
+            || request.CurrentUrl.Scheme is not ("http" or "https") || !ReferrerPolicies.IsPotentiallyTrustworthy(request.CurrentUrl)
+            || HeaderList.Get(response.HeaderList, "Use-As-Dictionary") is not { } value || GetDocumentLoader(request) is not { } loader
+            || CompressionDictionaries.ParseUseAsDictionary(value, request.CurrentUrl) is not { } options)
+        {
+            return response;
+        }
+
+        var dictionaries = CompressionDictionaries.Get(loader);
+        var url = request.CurrentUrl;
+        var status = response.Status;
+        var headers = response.HeaderList.ToArray();
+        void Register(byte[] content) => dictionaries.Register(partition, url, options, content, status, headers, requestTime, responseTime);
+        if (response.Resource is { RemainingContentBytes: { } remaining } resource)
+        {
+            // The body that arrives over time is registered once it is fully received
+            var first = resource.ContentBytes ?? ReadOnlyMemory<byte>.Empty;
+            var registeredResource = new DocumentResource(first)
+            {
+                StatusCode = resource.StatusCode,
+                StatusText = resource.StatusText,
+                Headers = resource.Headers,
+                Url = resource.Url,
+                RedirectUrls = resource.RedirectUrls,
+                RemainingContentBytes = new HttpCacheBody(first, remaining, Register),
+            };
+            var streamedResponse = FetchResponse.Create(response.Status, response.StatusMessage, response.HeaderList, registeredResource);
+            streamedResponse.UrlList = response.UrlList;
+            return streamedResponse;
+        }
+
+        Register(response.Resource is { } completeResource ? completeResource.ContentBytes?.ToArray() ?? Encoding.UTF8.GetBytes(completeResource.Content ?? "") : response.Body ?? []);
+        return response;
+    }
+
+    /// <summary>The content coding of a response when it is a dictionary content coding (<c>dcb</c> or <c>dcz</c>, https://www.rfc-editor.org/rfc/rfc9842#section-4), else null.</summary>
+    private static string? GetDictionaryContentCoding(IReadOnlyList<KeyValuePair<string, string>> headers)
+    {
+        if (HeaderList.GetDecodeAndSplit(headers, "Content-Encoding") is not [var coding])
+            return null;
+
+        coding = InfraAscii.ToAsciiLowercase(coding.Trim(' ', '\t'));
+        return DictionaryDecompressor.IsDictionaryCoding(coding) ? coding : null;
+    }
+
+    /// <summary>
+    /// The resource whose body is the decoded body of a resource compressed with a dictionary. The body is decoded once it
+    /// is received: it arrives over time, and an error of the decoder is an error of the body.
+    /// </summary>
+    private static DocumentResource DecodeDictionaryCompressedResource(DocumentResource resource, string coding, CompressionDictionary? dictionary)
+    {
+        return new DocumentResource(ReadOnlyMemory<byte>.Empty)
+        {
+            StatusCode = resource.StatusCode,
+            StatusText = resource.StatusText,
+            Headers = resource.Headers,
+            Url = resource.Url,
+            RedirectUrls = resource.RedirectUrls,
+            RemainingContentBytes = DecodeAsync(resource, coding, dictionary),
+        };
+
+        static async IAsyncEnumerable<ReadOnlyMemory<byte>> DecodeAsync(DocumentResource resource, string coding, CompressionDictionary? dictionary, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var body = new ArrayBufferWriter<byte>();
+            body.Write(resource.ContentBytes is { } bytes ? bytes.Span : Encoding.UTF8.GetBytes(resource.Content ?? ""));
+            if (resource.RemainingContentBytes is { } remaining)
+            {
+                await foreach (var chunk in remaining.WithCancellation(cancellationToken).ConfigureAwait(false))
+                {
+                    body.Write(chunk.Span);
+                }
+            }
+
+            byte[] decoded;
+            try
+            {
+                decoded = CompressionDictionaries.Decode(coding, body.WrittenSpan, dictionary);
+            }
+            catch (InvalidDataException ex)
+            {
+                throw new IOException(ex.Message, ex);
+            }
+
+            yield return decoded;
+        }
+    }
+
     private static bool CanHaveBody(FetchRequest request, int status) => status is not (101 or 103 or 204 or 205 or 304 or 301 or 302 or 303 or 307 or 308) && request.Method is not ("HEAD" or "CONNECT");
 
     private static bool HasDuplicateNames(List<KeyValuePair<string, string>> headers)
@@ -1499,6 +1698,31 @@ internal static class Fetching
     /// that is not initiated by a document (e.g. <see cref="BrowsingContext.Navigate(string)"/>), whose <c>Sec-Fetch-Site</c> is <c>none</c>.
     /// </summary>
     private static string? GetLoaderOrigin(FetchRequest request) => request.Client is null && request.Mode == RequestMode.Navigate ? null : request.Origin;
+
+    /// <summary>The permission store of the <c>storage-access</c> permission of a request: the one of its client, or of its navigable.</summary>
+    private static PermissionStore? GetStorageAccessPermissions(FetchRequest request)
+        => (request.Client?.EnvironmentOptions ?? request.Navigable?.Options ?? request.KeepaliveBrowsingContext?.Options)?.EffectivePermissions;
+
+    /// <summary>
+    /// https://privacycg.github.io/storage-access-headers/#request-storage-access-status: the storage access status of a
+    /// request whose credentials mode is "include" and whose current URL is potentially trustworthy, or null when the
+    /// <c>Sec-Fetch-Storage-Access</c> header is not sent.
+    /// </summary>
+    private static StorageAccessStatus? GetStorageAccessStatus(FetchRequest request)
+    {
+        if (request.CredentialsMode != FetchCredentialsMode.Include || !ReferrerPolicies.IsPotentiallyTrustworthy(request.CurrentUrl) || request.IsSpeculative || request.UseIsolatedCredentials)
+            return null;
+
+        var cookieContext = request.CookieContext;
+        var siteForCookies = cookieContext is null ? request.Client?.SiteForCookies : cookieContext.SiteForCookies;
+        var topLevelOrigin = cookieContext is null ? request.Client?.TopLevelOriginForCookies : cookieContext.TopLevelOrigin;
+        var cookieJar = cookieContext is null ? request.Client?.CookieJar : cookieContext.CookieJar;
+        var origin = GetLoaderOrigin(request);
+        var previousUrls = request.RedirectChain is { Count: > 1 } redirectChain ? redirectChain.Take(redirectChain.Count - 1).ToArray() : [];
+        var permissions = GetStorageAccessPermissions(request);
+        var context = CookieContexts.ForRequest(request.NavigationDestination ?? request.Destination, origin is not null && request.TaintedOrigin ? "null" : origin, siteForCookies, topLevelOrigin, request.Method, request.StorageAccessEligibility, permissions, request.CurrentUrl, previousUrls);
+        return StorageAccess.GetStatus(request, siteForCookies is null ? null : context, cookieJar, permissions);
+    }
 
     /// <summary>Disposes the connection of a response that is not used (e.g. the fetch was aborted).</summary>
     private static void DisposeConnection(DocumentResource? resource)

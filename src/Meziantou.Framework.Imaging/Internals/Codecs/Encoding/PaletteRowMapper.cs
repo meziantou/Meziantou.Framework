@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -27,6 +28,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class PaletteRowMapper : IDisposable
 {
     private const int Margin = 2;
+
+    // The largest number of taps of a kernel (Jarvis-Judice-Ninke and Stucki)
+    private const int MaxTaps = 12;
 
     private static readonly Kernel FloydSteinbergKernel = new(16, [(1, 0, 7), (-1, 1, 3), (0, 1, 5), (1, 1, 1)]);
     private static readonly Kernel AtkinsonKernel = new(8, [(1, 0, 1), (2, 0, 1), (-1, 1, 1), (0, 1, 1), (1, 1, 1), (0, 2, 1)]);
@@ -267,8 +271,24 @@ internal sealed class PaletteRowMapper : IDisposable
         var current = errors.Slice(_current * stride, stride);
         var unit = kernel.Divisor * 256;
         var half = kernel.Divisor * 128;
+
+        // A divisor of 2^k divides by an arithmetic shift, which rounds toward negative infinity as FloorDivide does
+        var shift = BitOperations.IsPow2(unit) ? BitOperations.Log2((uint)unit) : -1;
         var palette = quantizer.Palette;
         var taps = kernel.Taps;
+
+        // The position of the first term of each tap of the pixel at offset 0 of a row (the rows of the kernel are a ring)
+        Span<int> targets = stackalloc int[MaxTaps];
+        Span<int> weights = stackalloc int[MaxTaps];
+        for (var i = 0; i < taps.Length; i++)
+        {
+            var (dx, dy, weight) = taps[i];
+            targets[i] = (((_current + dy) % rows) * stride) + (3 * dx);
+            weights[i] = weight;
+        }
+
+        targets = targets[..taps.Length];
+        weights = weights[..taps.Length];
         var lastKey = PaletteQuantizer.TransparentKey;
         var lastIndex = 0;
         for (var x = 0; x < keys.Length; x++)
@@ -288,9 +308,20 @@ internal sealed class PaletteRowMapper : IDisposable
             }
 
             var offset = (x + Margin) * 3;
-            var r = Math.Clamp(((key >> 16) & 0xFF) + FloorDivide(current[offset] + half, unit), 0, 255);
-            var g = Math.Clamp(((key >> 8) & 0xFF) + FloorDivide(current[offset + 1] + half, unit), 0, 255);
-            var b = Math.Clamp((key & 0xFF) + FloorDivide(current[offset + 2] + half, unit), 0, 255);
+            int r, g, b;
+            if (shift >= 0)
+            {
+                r = Math.Clamp(((key >> 16) & 0xFF) + ((current[offset] + half) >> shift), 0, 255);
+                g = Math.Clamp(((key >> 8) & 0xFF) + ((current[offset + 1] + half) >> shift), 0, 255);
+                b = Math.Clamp((key & 0xFF) + ((current[offset + 2] + half) >> shift), 0, 255);
+            }
+            else
+            {
+                r = Math.Clamp(((key >> 16) & 0xFF) + FloorDivide(current[offset] + half, unit), 0, 255);
+                g = Math.Clamp(((key >> 8) & 0xFF) + FloorDivide(current[offset + 1] + half, unit), 0, 255);
+                b = Math.Clamp((key & 0xFF) + FloorDivide(current[offset + 2] + half, unit), 0, 255);
+            }
+
             var color24 = (r << 16) | (g << 8) | b;
             if (color24 != lastKey)
             {
@@ -303,13 +334,13 @@ internal sealed class PaletteRowMapper : IDisposable
             var errorRed = (r - ((color >> 16) & 0xFF)) * _strength;
             var errorGreen = (g - ((color >> 8) & 0xFF)) * _strength;
             var errorBlue = (b - (color & 0xFF)) * _strength;
-            foreach (var (dx, dy, weight) in taps)
+            for (var i = 0; i < targets.Length; i++)
             {
-                var target = errors.Slice(((_current + dy) % rows) * stride, stride);
-                var position = offset + (3 * dx);
-                target[position] += errorRed * weight;
-                target[position + 1] += errorGreen * weight;
-                target[position + 2] += errorBlue * weight;
+                var position = targets[i] + offset;
+                var weight = weights[i];
+                errors[position] += errorRed * weight;
+                errors[position + 1] += errorGreen * weight;
+                errors[position + 2] += errorBlue * weight;
             }
         }
 

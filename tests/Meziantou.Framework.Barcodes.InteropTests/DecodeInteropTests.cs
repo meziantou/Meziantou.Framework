@@ -1023,4 +1023,97 @@ public sealed class DecodeInteropTests
     private static bool IsGs1(BarcodeType type) => type is BarcodeType.Gs1128 or BarcodeType.Gs1DataBar or BarcodeType.Gs1DataBarStacked or BarcodeType.Gs1DataBarStackedOmnidirectional or BarcodeType.Gs1DataBarLimited or BarcodeType.Gs1DataBarExpanded or BarcodeType.Gs1DataBarExpandedStacked;
 
     private static string Escape(string value) => string.Concat(value.Select(c => c < 0x20 || c > 0x7E ? $"\\u{(int)c:X4}" : c.ToString()));
+
+    // zint renders the symbols with its own drawing code: the reader of this library reads them
+    public static TheoryData<string, string, string> ZintQRCodeImages() => new()
+    {
+        { "58", "--scale=1", "Rendered by zint" },
+        { "58", "--scale=0.5", "HELLO 0123456789" },
+        { "58", "--scale=3 --rotate=90", "https://www.meziantou.net" },
+        { "58", "--scale=2 --rotate=180 --secure=4", "Error correction H" },
+        { "58", "--scale=1 --vers=12", "Version 12 with alignment patterns and version information" },
+        { "97", "--scale=2", "12345" },
+        { "97", "--scale=3 --rotate=270", "MICRO" },
+        { "145", "--scale=2", "HELLO RMQR" },
+        { "145", "--scale=1 --rotate=90", "https://www.meziantou.net" },
+    };
+
+    [Theory]
+    [MemberData(nameof(ZintQRCodeImages))]
+    public async Task ZintQRCodeImage_IsRead(string symbology, string options, string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "zint.png";
+        await tools.RenderWithZintAsync(["-b", symbology, "--quietzones", .. options.Split(' ')], data, path);
+        using var image = Image.Load(path);
+
+        var result = Assert.Single(image.ReadQRCodes());
+
+        Assert.Equal(data, result.Text);
+    }
+
+    public static TheoryData<string, string, string> ZintBarcode2DImages() => new()
+    {
+        { "71", "--scale=1", "Data Matrix rendered by zint" },
+        { "71", "--scale=2 --rotate=90", "HELLO 0123456789" },
+        { "71", "--scale=1 --square", string.Concat(Enumerable.Repeat("Large Data Matrix ", 12)) },
+        { "71", "--scale=2 --vers=27", "RECTANGLE 12x26" },
+        { "55", "--scale=1", "PDF417 rendered by zint" },
+        { "55", "--scale=2 --rotate=180 --cols=4", "https://www.meziantou.net" },
+        { "92", "--scale=1", "Aztec rendered by zint" },
+        { "92", "--scale=2 --rotate=270", "HELLO AZTEC 0123456789" },
+        { "92", "--scale=1 --vers=12", string.Concat(Enumerable.Repeat("Full-range Aztec ", 10)) },
+    };
+
+    [Theory]
+    [MemberData(nameof(ZintBarcode2DImages))]
+    public async Task ZintBarcode2DImage_IsRead(string symbology, string options, string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "zint.png";
+        await tools.RenderWithZintAsync(["-b", symbology, "--quietzones", .. options.Split(' ')], data, path);
+        using var image = Image.Load(path);
+
+        var result = Assert.Single(image.ReadBarcodes2D());
+
+        Assert.Equal(data, result.Text);
+    }
+
+    // zint renders the bars and the human-readable text with its own drawing code
+    public static TheoryData<string, string, string, string> ZintBarcodeImages() => new()
+    {
+        { "20", "--scale=1", "SKU-123456", "SKU-123456" },
+        { "20", "--scale=2 --rotate=90", "Hello zint 0123", "Hello zint 0123" },
+        { "8", "--scale=1", "ABC-123", "ABC-123" },
+        { "25", "--scale=1", "Code 93", "Code 93" },
+        { "15", "--scale=1", "590123412345", "5901234123457" },
+        { "15", "--scale=2 --rotate=180", "590123412345+12345", "5901234123457 12345" },
+        { "34", "--scale=1", "03600029145", "036000291452" },
+        { "37", "--scale=2", "0425261", "04252614" },
+        { "18", "--scale=2", "A40156B", "A40156B" },
+        { "3", "--scale=2", "12345678", "12345678" },
+        { "16", "--scale=1 --gs1nocheck", "[01]09521234543213[10]ABC123", "(01)09521234543213(10)ABC123" },
+        { "29", "--scale=2", "0950110153001", "(01)09501101530010" },
+        { "30", "--scale=2", "1501234567890", "(01)15012345678907" },
+        { "79", "--scale=2", "0950110153001", "(01)09501101530010" },
+        { "31", "--scale=1 --gs1nocheck", "[01]98898765432106[3202]012345[15]991231", "(01)98898765432106(3202)012345(15)991231" },
+        { "81", "--scale=1 --gs1nocheck --cols=2", "[01]09501101530003[17]250101[10]ABC123", "(01)09501101530003(17)250101(10)ABC123" },
+    };
+
+    [Theory]
+    [MemberData(nameof(ZintBarcodeImages))]
+    public async Task ZintBarcodeImage_IsRead(string symbology, string options, string data, string expected)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "zint.png";
+        await tools.RenderWithZintAsync(["-b", symbology, "--quietzones", .. options.Split(' ')], data, path);
+        using var image = Image.Load(path);
+
+        var result = Assert.Single(image.ReadBarcodes());
+
+        Assert.Equal(expected, result.Text);
+    }
 }

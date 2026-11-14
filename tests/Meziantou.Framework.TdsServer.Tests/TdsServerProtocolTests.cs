@@ -3711,6 +3711,36 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(18456u, RawTdsConnection.GetErrorNumber(response));
     }
 
+    [Fact]
+    public async Task RawClient_Sspi_LongLengthPastThePayload_IsIgnored()
+    {
+        var receivedTokenLength = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) =>
+            {
+                receivedTokenLength.TrySetResult(context.SspiToken.Length);
+                return ValueTask.FromResult(TdsAuthenticationResult.Fail("No SSPI token"));
+            },
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        using var client = await RawTdsConnection.ConnectAsync(Assert.Single(server.Ports));
+
+        // ibSSPI + cbSSPILong does not fit in an int
+        var login = RawTdsConnection.CreateLogin7(sspi: "negotiate"u8.ToArray());
+        BinaryPrimitives.WriteUInt16LittleEndian(login.AsSpan(78), ushort.MaxValue);
+        BinaryPrimitives.WriteUInt16LittleEndian(login.AsSpan(80), ushort.MaxValue);
+        BinaryPrimitives.WriteInt32LittleEndian(login.AsSpan(90), int.MaxValue);
+        await client.SendMessageAsync(0x10, login);
+
+        var (_, response) = await client.ReadMessageAsync();
+        Assert.Equal(0, await receivedTokenLength.Task.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.Equal(18456u, RawTdsConnection.GetErrorNumber(response));
+    }
+
     private static bool ContainsUtf16(byte[] data, string value) => data.AsSpan().IndexOf(System.Text.Encoding.Unicode.GetBytes(value)) >= 0;
 
     private sealed class DisposableState : IDisposable

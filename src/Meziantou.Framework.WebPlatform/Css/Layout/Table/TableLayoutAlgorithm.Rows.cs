@@ -171,7 +171,12 @@ internal sealed partial class TableLayoutAlgorithm
         var rows = new RowSizing[model.Rows.Count];
         var horizontal = _writingDirection.IsHorizontal;
         var blockIsHorizontal = !horizontal;
-        for (var r = 0; r < rows.Length; r++)
+
+        // https://drafts.csswg.org/css-tables-3/#table-layout-algorithm: "an empty table" (a grid without slot, e.g. rows without
+        // column) is as tall as its computed height: the heights of its rows and row groups do not size it, as in Gecko (WPT
+        // css/css-tables/html5-table-formatting-1.html); they get the height of the table
+        var hasSlots = model.HasSlots;
+        for (var r = 0; r < rows.Length && hasSlots; r++)
         {
             var row = model.Rows[r];
             ref var rowSizing = ref rows[r];
@@ -264,7 +269,7 @@ internal sealed partial class TableLayoutAlgorithm
                 sectionsWithRows++;
             }
 
-            if (section.Box is { } sectionBox)
+            if (section.Box is { } sectionBox && hasSlots)
             {
                 switch (Classify(sectionBox.Style.Layout.Box.GetSize(blockIsHorizontal), out var sectionHeight))
                 {

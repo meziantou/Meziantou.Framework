@@ -55,6 +55,24 @@ namespace Meziantou.Framework.Barcodes
         public static Meziantou.Framework.Barcodes.Barcode2D CreatePdf417(string data, Meziantou.Framework.Barcodes.Pdf417Options? options = null) => throw null;
     }
 
+    public sealed class Barcode2DDecodeResult
+    {
+        public System.ReadOnlyMemory<byte> Bytes { get => throw null; }
+        public int CorrectedErrorCount { get => throw null; }
+        public int? EciAssignmentNumber { get => throw null; }
+        public bool IsGs1 { get => throw null; }
+        public string Text { get => throw null; }
+        public Meziantou.Framework.Barcodes.Barcode2DType Type { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public static class Barcode2DDecoder
+    {
+        public static Meziantou.Framework.Barcodes.Barcode2DDecodeResult Decode(Meziantou.Framework.Barcodes.Barcode2D barcode) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode2DDecodeResult Decode(bool[,] modules, Meziantou.Framework.Barcodes.Barcode2DType type) => throw null;
+        public static bool TryDecode(bool[,] modules, Meziantou.Framework.Barcodes.Barcode2DType type, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Barcodes.Barcode2DDecodeResult? result) => throw null;
+    }
+
     public sealed class Barcode2DPngOptions
     {
         public Meziantou.Framework.Barcodes.Color DarkColor { get => throw null; set { } }
@@ -90,6 +108,25 @@ namespace Meziantou.Framework.Barcodes
         DataMatrix = 0,
         Pdf417 = 1,
         Aztec = 2,
+    }
+
+    public sealed class BarcodeDecodeResult
+    {
+        public long End { get => throw null; }
+        public int FirstScanLine { get => throw null; }
+        public int LastScanLine { get => throw null; }
+        public long Start { get => throw null; }
+        public string Text { get => throw null; }
+        public Meziantou.Framework.Barcodes.BarcodeType Type { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public static class BarcodeDecoder
+    {
+        public static Meziantou.Framework.Barcodes.BarcodeDecodeResult Decode(Meziantou.Framework.Barcodes.Barcode barcode) => throw null;
+        public static Meziantou.Framework.Barcodes.BarcodeDecodeResult Decode(bool[,] modules) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Barcodes.BarcodeDecodeResult> DecodeScanLines(System.Collections.Generic.IReadOnlyList<int[]> scanLines) => throw null;
+        public static bool TryDecode(bool[,] modules, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Barcodes.BarcodeDecodeResult? result) => throw null;
     }
 
     public sealed class BarcodePngOptions
@@ -285,6 +322,28 @@ namespace Meziantou.Framework.Barcodes
         public static void WriteToConsole(this Meziantou.Framework.Barcodes.QRCode qrCode, Meziantou.Framework.Barcodes.QRCodeConsoleOptions options) { }
     }
 
+    public sealed class QRCodeDecodeResult
+    {
+        public int CorrectedErrorCount { get => throw null; }
+        public Meziantou.Framework.Barcodes.ErrorCorrectionLevel ErrorCorrectionLevel { get => throw null; }
+        public bool IsMirrored { get => throw null; }
+        public int? MaskPattern { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Barcodes.QRCodeSegment> Segments { get => throw null; }
+        public Meziantou.Framework.Barcodes.QRCodeStructuredAppend? StructuredAppend { get => throw null; }
+        public string Text { get => throw null; }
+        public Meziantou.Framework.Barcodes.QRCodeType Type { get => throw null; }
+        public int Version { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public static class QRCodeDecoder
+    {
+        public static Meziantou.Framework.Barcodes.QRCodeDecodeResult Decode(Meziantou.Framework.Barcodes.QRCode qrCode) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCodeDecodeResult Decode(bool[,] modules) => throw null;
+        public static string MergeStructuredAppend(System.Collections.Generic.IEnumerable<Meziantou.Framework.Barcodes.QRCodeDecodeResult> results) => throw null;
+        public static bool TryDecode(bool[,] modules, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Barcodes.QRCodeDecodeResult? result) => throw null;
+    }
+
     public sealed class QRCodeOptions
     {
         public const int Utf8EciAssignmentNumber = 26;
@@ -326,7 +385,10 @@ namespace Meziantou.Framework.Barcodes
 
     public sealed class QRCodeSegment
     {
+        public System.ReadOnlyMemory<byte> Bytes { get => throw null; }
+        public int? EciAssignmentNumber { get => throw null; }
         public Meziantou.Framework.Barcodes.QRCodeSegmentMode Mode { get => throw null; }
+        public string? Text { get => throw null; }
         public static Meziantou.Framework.Barcodes.QRCodeSegment CreateAlphanumeric(string text) => throw null;
         public static Meziantou.Framework.Barcodes.QRCodeSegment CreateByte(System.ReadOnlySpan<byte> data) => throw null;
         public static Meziantou.Framework.Barcodes.QRCodeSegment CreateByte(string text) => throw null;

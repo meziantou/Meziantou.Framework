@@ -1,9 +1,6 @@
 {
   "visual-viewport/page-and-offset-in-iframe.html": {
-    "total": 1,
-    "failures": {
-      "VisualViewport page and offset values in iframe": "FAIL"
-    }
+    "total": 1
   },
   "visual-viewport/resize-event-order.html": {
     "harness": "TIMEOUT",
@@ -14,10 +11,7 @@
     }
   },
   "visual-viewport/scroll-event-order.html": {
-    "total": 1,
-    "failures": {
-      "Scroll event ordering": "FAIL"
-    }
+    "total": 1
   },
   "visual-viewport/viewport-no-resize-event-on-overflow-recalc.html": {
     "total": 1

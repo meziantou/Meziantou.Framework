@@ -15,6 +15,41 @@ internal static class Pdf417Patterns
     /// <summary>The stop pattern 711311121, the first module in the most significant bit.</summary>
     public const int StopPattern = 0b11_1111_1010_0010_1001;
 
+    private static readonly Lazy<Dictionary<int, int>> Codewords = new(CreateCodewords);
+
+    /// <summary>Finds the codeword of 17 modules, the first module in the most significant bit.</summary>
+    /// <param name="pattern">The modules.</param>
+    /// <param name="cluster">The cluster of the codeword: 0, 1 or 2 for the clusters 0, 3 and 6 of ISO/IEC 15438.</param>
+    /// <param name="codeword">The value of the codeword, from 0 to 928.</param>
+    /// <returns><see langword="true"/> when the modules are a codeword of one of the clusters.</returns>
+    public static bool TryGetCodeword(int pattern, out int cluster, out int codeword)
+    {
+        if (Codewords.Value.TryGetValue(pattern, out var value))
+        {
+            cluster = value / 929;
+            codeword = value % 929;
+            return true;
+        }
+
+        cluster = -1;
+        codeword = -1;
+        return false;
+    }
+
+    private static Dictionary<int, int> CreateCodewords()
+    {
+        var result = new Dictionary<int, int>(3 * 929);
+        for (var cluster = 0; cluster < 3; cluster++)
+        {
+            for (var codeword = 0; codeword < 929; codeword++)
+            {
+                result[GetPattern(cluster, codeword)] = (cluster * 929) + codeword;
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>Gets the 17 modules of a codeword, the first module in the most significant bit.</summary>
     /// <param name="cluster">The cluster: 0, 1 or 2 for the clusters 0, 3 and 6 of ISO/IEC 15438.</param>
     /// <param name="codeword">The value of the codeword, from 0 to 928.</param>

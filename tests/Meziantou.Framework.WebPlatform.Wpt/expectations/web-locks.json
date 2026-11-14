@@ -66,6 +66,21 @@
   "web-locks/clientids.https.html": {
     "total": 1
   },
+  "web-locks/crashtests/after-worker-termination.https.html": {
+    "crashtest": "PASS"
+  },
+  "web-locks/crashtests/iframe-append-2.https.html": {
+    "crashtest": "PASS"
+  },
+  "web-locks/crashtests/iframe-append.https.html": {
+    "crashtest": "PASS"
+  },
+  "web-locks/crashtests/settle-after-steal.https.html": {
+    "crashtest": "PASS"
+  },
+  "web-locks/crashtests/worker-termination.https.html": {
+    "crashtest": "PASS"
+  },
   "web-locks/frames.https.html": {
     "total": 8
   },

@@ -388,6 +388,9 @@
   "trusted-types/navigate-to-javascript-url-006.sub.html": {
     "total": 1
   },
+  "trusted-types/navigate-to-javascript-url-007-crash.html": {
+    "crashtest": "PASS"
+  },
   "trusted-types/navigate-to-javascript-url-008.html": {
     "total": 1
   },
@@ -519,11 +522,7 @@
     "total": 4
   },
   "trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-001.html": {
-    "total": 15,
-    "failures": {
-      "directive \"require-trusted-types-for 'invalid'%0A%20'script'\" (required-ascii-whitespace)": "FAIL",
-      "directive \"require-trusted-types-for 'invalid'%0D%20'script'\" (required-ascii-whitespace)": "FAIL"
-    }
+    "total": 15
   },
   "trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-002-worker.html": {
     "total": 2
@@ -535,10 +534,7 @@
     "total": 24
   },
   "trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-002.html": {
-    "total": 21,
-    "failures": {
-      "directive \"trusted-type _TTP1_%09_TTP2_%0A%20_TTP3_%0C_TTP4_%0D_TTP5_%20_TTP6_\" (required-ascii-whitespace)": "FAIL"
-    }
+    "total": 21
   },
   "trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-003.html": {
     "total": 6

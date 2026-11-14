@@ -146,19 +146,8 @@ internal sealed class TgaPixelLayout
             {
                 case 15:
                 case 16:
-                    for (var x = 0; x < width; x++)
-                    {
-                        var value = BinaryPrimitives.ReadUInt16LittleEndian(stored[(x * 2)..]);
-                        var target = destination[(x * (hasAlpha ? 4 : 3))..];
-                        target[0] = TgaSamples.Expand5((value >> 10) & 0x1F);
-                        target[1] = TgaSamples.Expand5((value >> 5) & 0x1F);
-                        target[2] = TgaSamples.Expand5(value & 0x1F);
-                        if (hasAlpha)
-                        {
-                            target[3] = (value & 0x8000) != 0 ? byte.MaxValue : (byte)0;
-                        }
-                    }
-
+                    // X1R5G5B5, or A1R5G5B5 with alpha
+                    SixteenBitColors.Expand(stored, width, sixBitGreen: false, hasAlpha, destination);
                     break;
 
                 case 24:

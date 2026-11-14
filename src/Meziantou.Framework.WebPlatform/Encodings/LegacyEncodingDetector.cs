@@ -111,10 +111,10 @@ internal sealed partial class LegacyEncodingDetector
             NonAsciiSeen = true;
             if (start < 2)
             {
-                // As chardetng, the bytes kept from the previous buffers are the context, even when this buffer starts with an
-                // ASCII byte
+                // As chardetng, the bytes kept from the previous buffers complete the context, even when this buffer starts
+                // with an ASCII byte: the context is two bytes, whichever buffers they are in
                 Span<byte> before = [_beforeNonAscii1, _beforeNonAscii2];
-                FeedCandidates(before[(2 - _beforeNonAsciiCount)..], last: false);
+                FeedCandidates(before[(2 - Math.Min(2 - start, _beforeNonAsciiCount))..], last: false);
                 start = 0;
             }
             else

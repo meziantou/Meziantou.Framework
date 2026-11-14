@@ -2,9 +2,9 @@ namespace Meziantou.Framework.Barcodes.Internal.Linear;
 
 internal static class Code93Encoder
 {
-    private const string Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%abcd*";
+    internal const string Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%abcd*";
 
-    private static readonly int[] CharacterEncodings =
+    internal static readonly int[] CharacterEncodings =
     [
         0x114, 0x148, 0x144, 0x142, 0x128, 0x124, 0x122, 0x150, 0x112, 0x10A, // 0-9
         0x1A8, 0x1A4, 0x1A2, 0x194, 0x192, 0x18A, 0x168, 0x164, 0x162, 0x134, // A-J
@@ -46,7 +46,7 @@ internal static class Code93Encoder
         return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Code93, modules, data);
     }
 
-    private static int ComputeChecksumIndex(string data, int maxWeight)
+    internal static int ComputeChecksumIndex(string data, int maxWeight)
     {
         var weight = 1;
         var total = 0;

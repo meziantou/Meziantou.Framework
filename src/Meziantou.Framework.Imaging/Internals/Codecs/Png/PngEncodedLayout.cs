@@ -1,4 +1,6 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Formats;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -95,6 +97,12 @@ internal sealed class PngEncodedLayout
     /// <param name="indexes">One sample per byte, each below <c>2^bitDepth</c>.</param>
     /// <param name="bitDepth">The bits per sample: 1, 2, 4 or 8.</param>
     /// <param name="destination">The scanline; the unused bits of its last byte are zero.</param>
+    /// <remarks>
+    /// The whole bytes of the scanline are packed from the samples read as one little-endian integer: the 2 samples of a
+    /// 4-bit byte by a shift (16 bytes at a time with 128-bit hardware vectors), the 4 samples of a 2-bit byte and the 8
+    /// samples of a 1-bit byte by a multiplication that moves each sample to its bits of the high byte, without carries
+    /// since the samples are below <c>2^bitDepth</c>. The result equals <see cref="PackScalar"/>.
+    /// </remarks>
     public static void Pack(ReadOnlySpan<byte> indexes, int bitDepth, Span<byte> destination)
     {
         if (bitDepth == 8)
@@ -103,6 +111,68 @@ internal sealed class PngEncodedLayout
             return;
         }
 
+        var perByte = 8 / bitDepth;
+        var whole = indexes.Length / perByte;
+        destination = destination[..(whole + (indexes.Length % perByte != 0 ? 1 : 0))];
+        ref var input = ref unsafe(MemoryMarshal.GetReference(indexes));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        var j = 0;
+        if (bitDepth == 4)
+        {
+            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+            {
+                // The low byte of each 16-bit lane: the first sample shifted to the high half, the second one below it
+                for (; j + Vector128<byte>.Count <= whole; j += Vector128<byte>.Count)
+                {
+                    var first = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(2 * j))).AsUInt16();
+                    var second = unsafe(Vector128.LoadUnsafe(ref input, (nuint)((2 * j) + Vector128<byte>.Count))).AsUInt16();
+                    unsafe { Vector128.Narrow((first << 4) | (first >> 8), (second << 4) | (second >> 8)).StoreUnsafe(ref output, (nuint)j); }
+                }
+            }
+
+            for (; j < whole; j++)
+            {
+                var pair = ReadPair(ref input, 2 * j);
+                unsafe { Unsafe.Add(ref output, j) = (byte)((pair << 4) | (pair >> 8)); }
+            }
+        }
+        else if (bitDepth == 2)
+        {
+            for (; j < whole; j++)
+            {
+                unsafe { Unsafe.Add(ref output, j) = (byte)((ReadQuad(ref input, 4 * j) * 0x40100401u) >> 24); }
+            }
+        }
+        else
+        {
+            for (; j < whole; j++)
+            {
+                unsafe { Unsafe.Add(ref output, j) = (byte)((ReadOctet(ref input, 8 * j) * 0x8040201008040201ul) >> 56); }
+            }
+        }
+
+        // The samples of the last byte, which may not fill it
+        if (j < destination.Length)
+        {
+            PackScalar(indexes[(j * perByte)..], bitDepth, destination[j..]);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint ReadPair(ref byte input, int index)
+        => BitConverter.IsLittleEndian ? unsafe(Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref input, index))) : (uint)(unsafe(Unsafe.Add(ref input, index)) | (unsafe(Unsafe.Add(ref input, index + 1)) << 8));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint ReadQuad(ref byte input, int index)
+        => BitConverter.IsLittleEndian ? unsafe(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref input, index))) : System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(unsafe(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref input, index))));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong ReadOctet(ref byte input, int index)
+        => BitConverter.IsLittleEndian ? unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref input, index))) : System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref input, index))));
+
+    /// <summary>The sample-at-a-time reference of <see cref="Pack"/> for 1-, 2- and 4-bit samples.</summary>
+    internal static void PackScalar(ReadOnlySpan<byte> indexes, int bitDepth, Span<byte> destination)
+    {
         // The leftmost pixel is in the high-order bits of a byte (PNG specification, section 7.2)
         destination[..(int)((((long)indexes.Length * bitDepth) + 7) / 8)].Clear();
         for (var i = 0; i < indexes.Length; i++)
@@ -120,15 +190,7 @@ internal sealed class PngEncodedLayout
         switch (PixelFormat)
         {
             case PixelFormat.Bgra32:
-                destination = destination[..source.Length];
-                for (var i = 0; i + 3 < source.Length; i += 4)
-                {
-                    destination[i] = source[i + 2];
-                    destination[i + 1] = source[i + 1];
-                    destination[i + 2] = source[i];
-                    destination[i + 3] = source[i + 3];
-                }
-
+                PixelConverter.SwapRedAndBlue32(source, destination);
                 break;
 
             case PixelFormat.Gray16 or PixelFormat.Rgba64 or PixelFormat.La32 or PixelFormat.Rgb48:

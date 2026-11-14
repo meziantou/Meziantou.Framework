@@ -44,6 +44,8 @@ public sealed partial class CssMinifyFormatter : CssFormatter
 
         internal override bool WritePendingLonghandsAsShorthand => true;
 
+        internal override bool MergeAdjacentDeclarations => true;
+
         protected override bool ShouldWrite(CssRule rule) => !_formatter.RemoveEmptyRules || !IsEmpty(rule);
 
         protected override void WritePrelude(CssRule rule, string prelude)

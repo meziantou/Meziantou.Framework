@@ -262,6 +262,208 @@ public sealed class FontFuzzTests
         return Encoding.Latin1.GetBytes(string.Join(random.Chance(80) ? "\r\n" : random.Pick(["\n", "\r", "\r\n\r\n", "\t\n"]), lines));
     }
 
+    [Fact]
+    public void MutatedSvgGlyphsFailOnlyWithDocumentedErrors()
+    {
+        // The documents of the SVG table of a font, mutated as text (with the tokens of SVG), compressed or not, then laid
+        // out and drawn: the renderer of the SVG glyphs reads untrusted XML, paths, transformations, paints and images.
+        var seeds = SvgSeedDocuments.Select((document, index) => new FuzzSeed("svg/" + index.ToString(CultureInfo.InvariantCulture), Encoding.UTF8.GetBytes(document))).ToList();
+        var spliceSources = seeds.Select(seed => seed.Data).ToList();
+        var random = new FuzzRandom(FuzzSettings.Seed ^ FuzzSeeds.GetGroupSalt("svg-glyphs"));
+        var failures = new Dictionary<string, string>(StringComparer.Ordinal);
+        var outcomes = new Dictionary<string, int>(StringComparer.Ordinal);
+        var stopwatch = Stopwatch.StartNew();
+        var executed = 0;
+        var iterations = Math.Max(FuzzSettings.Iterations / 3, seeds.Count);
+        for (var iteration = -seeds.Count; iteration < iterations; iteration++)
+        {
+            if (FuzzSettings.Duration is { } budget && stopwatch.Elapsed > budget)
+                break;
+
+            var seed = seeds[(iteration + seeds.Count) % seeds.Count];
+            var name = iteration < 0 ? seed.Id : $"{seed.Id} mutation {iteration}";
+            var input = iteration < 0 ? seed.Data : MutateSvgDocument(random, seed.Data, spliceSources);
+            var failure = CheckSvgWithWatchdog(input, out var outcome);
+            executed++;
+            outcomes[outcome] = outcomes.GetValueOrDefault(outcome) + 1;
+            if (iteration < 0 && (failure is not null || outcome != "drawn"))
+            {
+                Assert.Fail($"The SVG document {seed.Id} is not drawn without error: {failure?.Message ?? outcome}");
+            }
+
+            if (failure is null || failures.ContainsKey(failure.Signature))
+                continue;
+
+            var minimized = failure.Signature == "property:hang" ? input : FuzzMinimizer.Minimize(input, failure.Signature, candidate => CheckSvgWithWatchdog(candidate, out _));
+            var path = TestArtifacts.GetDirectory("fuzz-svg-glyphs") / (TestArtifacts.SanitizeFileName(failure.Signature)[..Math.Min(80, TestArtifacts.SanitizeFileName(failure.Signature).Length)] + ".svg");
+            File.WriteAllBytes(path, minimized);
+            failures[failure.Signature] = $"[{failure.Signature}] {name} ({input.Length} bytes, minimized to {minimized.Length} bytes: {path}){Environment.NewLine}{failure.Message}";
+            if (failures.Count >= 4)
+                break;
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(FormattableString.Invariant(
+            $"svg-glyphs: {executed} documents ({seeds.Count} seeds, base seed {FuzzSettings.Seed}) in {stopwatch.Elapsed.TotalSeconds:F1} s; outcomes: {string.Join(", ", outcomes.OrderByDescending(pair => pair.Value).Select(pair => $"{pair.Key}={pair.Value}"))}"));
+
+        if (failures.Count > 0)
+            Assert.Fail($"{failures.Count} distinct fuzz failure(s):{Environment.NewLine}{string.Join(Environment.NewLine + Environment.NewLine, failures.Values)}");
+
+        // The campaign must reach the drawing, not only the rejection of the font.
+        if (FuzzSettings.Duration is null && FuzzSettings.Iterations >= FuzzSettings.DefaultIterations)
+        {
+            Assert.True(outcomes.GetValueOrDefault("drawn") > executed / 2, "Too few mutated SVG glyphs were drawn.");
+        }
+    }
+
+    // The documents of the unit tests, and the features of the renderer: gradients, clips, uses, symbols, strokes, images
+    private static readonly string[] SvgSeedDocuments =
+    [
+        """<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><rect id="half" x="64" y="0" width="384" height="256"/><linearGradient id="fade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000"/><stop offset="100%" style="stop-color: rgb(0, 0, 255)"/></linearGradient></defs><g id="glyph2" fill="red"><rect x="128" y="-768" width="768" height="768"/><rect x="384" y="-512" width="256" height="256" fill="var(--color0, black)"/></g><g id="glyph3" transform="translate(0,-512)"><use xlink:href="#half" fill="var(--color1, yellow)"/><use xlink:href="#half" y="256" style="fill: url(#missing) #00ffff"/></g><path id="glyph4" d="M0 0V-512H512V0Z" fill="url(#fade)"/></svg>""",
+        """<svg xmlns="http://www.w3.org/2000/svg" id="glyph2" viewBox="0 1024 1024 1024" preserveAspectRatio="xMinYMax slice"><clipPath id="left" transform="rotate(10 512 512)"><rect x="0" y="0" width="384" height="4096"/><circle cx="512" cy="512" r="100" clip-rule="evenodd"/></clipPath><rect x="0" y="192" width="768" height="1024" rx="32" fill="#0000ff" clip-path="url(#left)" opacity="0.5"/></svg>""",
+        """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><radialGradient id="r" cx="50%" cy="50%" r="50%" fx="10%" fy="90%" spreadMethod="reflect" gradientTransform="skewX(20) scale(1.5)"><stop offset="0.2" stop-color="gold" stop-opacity="0.5"/><stop offset="0.1" stop-color="navy"/></radialGradient><radialGradient id="r2" xlink:href="#r" gradientUnits="userSpaceOnUse" r="300"/><symbol id="s"><ellipse cx="200" cy="-200" rx="150" ry="80" fill="url(#r2)"/></symbol></defs><g id="glyph2"><use xlink:href="#s" x="10"/><polyline points="0,0 100,-100 200,0 300" fill="none" stroke="url(#r)" stroke-width="40" stroke-dasharray="20 10" stroke-linecap="round" stroke-linejoin="bevel"/><polygon points="0,-800 500,-800 250,-400" fill-rule="evenodd" fill="currentColor" stroke="red" stroke-opacity="0.5" stroke-miterlimit="2"/><line x1="0" y1="0" x2="1000" y2="-1000" stroke="context-stroke"/></g></svg>""",
+        """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="2048" height="1024"><g id="glyph2" transform="matrix(1 0 0.2 1 0 0) translate(0 -800)"><image x="0" y="0" width="500" height="300" preserveAspectRatio="xMidYMid meet" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="/><g id="loop"><use xlink:href="#loop"/><use xlink:href="#glyph2"/></g><text>A</text><switch><rect width="10" height="10"/></switch></g></svg>""",
+    ];
+
+    // The markup of SVG the mutations insert: elements, attributes and values the renderer reads
+    private static readonly string[] SvgTokens =
+    [
+        "<g>", "</g>", "<use href=\"#glyph2\"/>", "<use xlink:href=\"#loop\"/>", "<rect width=\"1e9\" height=\"-1\"/>", "<path d=\"M0 0L1e30 1e30Z\"/>",
+        "transform=\"scale(0)\"", "transform=\"rotate(1e300)\"", "transform=\"skewX(90)\"", "fill=\"url(#r)\"", "stroke-width=\"1e308\"", "opacity=\"NaN\"",
+        "clip-path=\"url(#left)\"", "viewBox=\"0 0 0 0\"", "r=\"-5\"", "offset=\"200%\"", "var(--color99)", "&#x1F600;", "<!DOCTYPE svg [<!ENTITY a \"&a;\">]>", "&a;",
+        "\x1F\x8B\x08",
+    ];
+
+    private static byte[] MutateSvgDocument(FuzzRandom random, byte[] seed, List<byte[]> spliceSources)
+    {
+        if (!random.Chance(50))
+            return FuzzMutator.Mutate(random, seed, spliceSources);
+
+        // A token of SVG inserted at a random place, or the document truncated
+        var text = Encoding.UTF8.GetString(seed);
+        var position = random.Next(text.Length + 1);
+        text = random.Chance(10) ? text[..position] : text.Insert(position, SvgTokens[random.Next(SvgTokens.Length)]);
+        return Encoding.UTF8.GetBytes(text);
+    }
+
+    private static FuzzFailure? CheckSvgWithWatchdog(byte[] input, out string outcome)
+    {
+        var caseOutcome = "?";
+        var task = Task.Run(() =>
+        {
+            var failure = CheckSvg(input, out var checkOutcome);
+            caseOutcome = checkOutcome;
+            return failure;
+        });
+        if (!task.Wait(FuzzSettings.CaseTimeout))
+        {
+            outcome = "hang";
+            return FuzzFailure.Property("hang", $"The SVG glyph was not drawn within {FuzzSettings.CaseTimeout.TotalSeconds} s (infinite loop or unbounded work).");
+        }
+
+        outcome = caseOutcome;
+        return task.Result;
+    }
+
+    private static readonly Lazy<SortedDictionary<uint, byte[]>> SvgBaseTables = new(() =>
+    {
+        var face = Font.Load(File.ReadAllBytes(FixtureRoot.GetDirectory() / "fonts" / "synthetic" / "boxes.ttf")).Face;
+        var tables = new SortedDictionary<uint, byte[]>();
+        foreach (var tag in face.TableTags)
+        {
+            if (face.TryGetTable(tag, out var table))
+            {
+                tables[tag] = table.ToArray();
+            }
+        }
+
+        // Two palettes, for the colors of the palette the documents use
+        tables[FontTags.Cpal] = [0, 0, 0, 2, 0, 2, 0, 4, 0, 0, 0, 16, 0, 0, 0, 2, 255, 0, 0, 255, 0, 255, 0, 128, 0, 0, 255, 255, 255, 255, 255, 0];
+        return tables;
+    });
+
+    // Lays out and draws the glyphs of a font whose SVG table has the document for A, B, C and D (ranges [2, 3] and
+    // [4, 5]), as it is or compressed: only the documented exceptions may escape, and the box of the text is finite.
+    private static FuzzFailure? CheckSvg(byte[] document, out string outcome)
+    {
+        outcome = "?";
+        var compressed = document.Length > 0 && document[0] % 2 == 0 ? Gzip(document) : document;
+        var table = new byte[10 + 2 + 24 + document.Length + compressed.Length];
+        BinaryPrimitives.WriteUInt32BigEndian(table.AsSpan(2), 10);
+        BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(10), 2);
+        BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(12), 2);
+        BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(14), 3);
+        BinaryPrimitives.WriteUInt32BigEndian(table.AsSpan(16), 26);
+        BinaryPrimitives.WriteUInt32BigEndian(table.AsSpan(20), (uint)document.Length);
+        BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(24), 4);
+        BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(26), 5);
+        BinaryPrimitives.WriteUInt32BigEndian(table.AsSpan(28), 26 + (uint)document.Length);
+        BinaryPrimitives.WriteUInt32BigEndian(table.AsSpan(32), (uint)compressed.Length);
+        document.CopyTo(table, 36);
+        compressed.CopyTo(table, 36 + document.Length);
+        var tables = new SortedDictionary<uint, byte[]>(SvgBaseTables.Value) { [FontTags.Svg] = table };
+
+        Font font;
+        try
+        {
+            font = Font.Load(FontSubsetter.WriteSfnt(FontTags.TrueType, tables), Options);
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("svg-load", exception);
+        }
+
+        TextLayout layout;
+        try
+        {
+            layout = TextLayout.Create("ABCD", new TextStyle(font, 11.5) { ColorPaletteIndex = document.Length & 1 }, new TextLayoutOptions { MaxWidth = 60 });
+        }
+        catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+        {
+            outcome = exception.GetType().Name;
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("svg-layout", exception);
+        }
+
+        if (!double.IsFinite(layout.InkBounds.Width) || !double.IsFinite(layout.InkBounds.Height))
+            return FuzzFailure.Property("svg-bounds", $"The layout of SVG glyphs has the ink bounds {layout.InkBounds}.");
+
+        try
+        {
+            using var image = new Image<Rgba32>(64, 48);
+            image.Draw((layout, font, TextBrush), static (canvas, state) =>
+            {
+                canvas.FillText(state.TextBrush, state.layout, new PointD(0.5, 1.25));
+                canvas.Transform(AffineTransform.CreateRotation(30), state, static (canvas, state) => canvas.FillGlyphs(state.TextBrush, state.font, 23, [new PositionedGlyph(2, new PointD(10, 30)), new PositionedGlyph(4, new PointD(30, 30))]));
+            });
+        }
+        catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+        {
+            outcome = exception.GetType().Name;
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("svg-draw", exception);
+        }
+
+        outcome = "drawn";
+        return null;
+    }
+
+    private static byte[] Gzip(byte[] data)
+    {
+        using var output = new MemoryStream();
+        using (var gzip = new System.IO.Compression.GZipStream(output, System.IO.Compression.CompressionLevel.Fastest, leaveOpen: true))
+        {
+            gzip.Write(data);
+        }
+
+        return output.ToArray();
+    }
+
     private static FuzzFailure? CheckAfmWithWatchdog(byte[] input, out string outcome)
     {
         var caseOutcome = "?";

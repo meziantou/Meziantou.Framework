@@ -38,7 +38,7 @@ public static string DescribeFont(string path)
 | Containers | TrueType and OpenType (`.ttf`, `.otf`), collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0, collections included |
 | Outlines | TrueType (`glyf`), CFF and CFF2; fonts without outlines whose glyphs are bitmaps |
 | Variable fonts | Axes, named instances and everything an instance varies: outlines, advances, metrics and the positions of the layout tables |
-| Color glyphs | `COLR` versions 0 and 1 with the palettes of `CPAL`, and glyphs that are images (`sbix` with PNG, JPEG and TIFF images, `CBDT` with PNG images and pixels of 32 bits) |
+| Color glyphs | `COLR` versions 0 and 1 with the palettes of `CPAL`, glyphs described by SVG documents (`SVG `), and glyphs that are images (`sbix` with PNG, JPEG and TIFF images, `CBDT` with PNG images and pixels of 32 bits) |
 | Bitmaps without colors | The strikes of 1, 2, 4 and 8 bits per pixel of `EBDT` (`bdat` in Apple fonts), on request or in a font without outlines (see below) |
 
 A font collection holds several faces in one file. [Font.Load](cref:Meziantou.Framework.Imaging.Typography.Font.Load) gives its first face; [FontCollection.Load](cref:Meziantou.Framework.Imaging.Typography.FontCollection.Load) gives them
@@ -133,6 +133,12 @@ gives the palettes of the font. [FillText](cref:Meziantou.Framework.Imaging.Draw
 - A glyph stored as an image (`sbix`, `CBDT`) is taken from the smallest strike that is at least as large as the
   text, and scaled to the size of the text. The encoded images (PNG, JPEG, TIFF) are decoded with the codecs of the
   library; a glyph made of the images of other glyphs is drawn with them.
+- A glyph described by an SVG document (`SVG `) is drawn at the size of the text. A font that has both `COLR` and `SVG `
+  glyphs is drawn with `COLR`; a document that cannot be read is drawn with the image of the glyph, or its outline.
+  The documents are drawn with the subset of SVG that emoji and color fonts use: the shapes, groups and `use`
+  elements, transformations, fills and strokes, the colors of the palette of the style (`var(--color0, ...)`),
+  linear and radial gradients, clipping paths, opacity, and PNG and JPEG images. `currentColor` is black, whatever
+  the brush of the text. Masks, patterns, filters, markers and `style` elements are not drawn.
 
 ## Bitmap glyphs
 
@@ -202,7 +208,6 @@ library does not support, and [ImageResourceLimitException](cref:Meziantou.Frame
 
 ## What is not supported
 
-- Glyphs in SVG (`SVG ` table): their outlines are drawn instead.
 - PostScript Type 1 fonts and Type 1 charstrings.
 - The hints of CFF outlines, and the variation of the hinting values of TrueType (`cvar`).
 - The metadata and private blocks of WOFF and WOFF2 files. Table checksums are not verified.

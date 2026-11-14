@@ -12,7 +12,8 @@ namespace Meziantou.Framework.Fonts.Fuzz;
 /// and keep the advances and the bounds of the glyphs of its closure. Shaping a text must only throw
 /// <see cref="FontException"/>, give glyph identifiers and clusters that are characters of the text in the order of the
 /// run, and give the same glyphs with the plan a <see cref="ShapingCache"/> keeps. A bitmap glyph must be inside the
-/// font, decode to the pixels of the box it declares, and draw an outline of rectangles of whole pixels.
+/// font, decode to the pixels of the box it declares, and draw an outline of rectangles of whole pixels. The documents
+/// of an <c>SVG </c> table must be in the table, and a compressed one must expand to what was compressed.
 /// </summary>
 public static class FontsFuzzTargets
 {
@@ -100,6 +101,19 @@ public static class FontsFuzzTargets
         "png ", "jpg ", "tiff", "dupe", "\x89PNG\r\n\x1A\n", "IHDR", "\0\x02\0\0", "\0\x03\0\0",
     ];
 
+    // The magic number of a gzip member, and the markup of the documents of the SVG table
+    private static readonly string[] SvgTokens =
+    [
+        "\x1F\x8B\x08", "\x1F\x8B\x08\x00\x00\x00\x00\x00\x00\xFF", "\0\0", "\0\x01", "\xFF\xFF", "\0\0\0\x0A",
+        "<svg", "</svg>", "xmlns=\"http://www.w3.org/2000/svg\"", "id=\"glyph", "<g", "<use", "<path", "<rect", "d=\"", "fill=\"",
+    ];
+
+    private static readonly Lazy<SortedDictionary<uint, byte[]>> SvgBaseTables = new(() =>
+    {
+        var seed = GetFontSeeds().First(seed => seed.Name == "boxes.ttf");
+        return CopyTables(FontLoader.Load(seed.Data.Span, SharedEnvironment)[0]);
+    });
+
     private static readonly string[] ShapingTokens =
     [
         "cmap", "GSUB", "GPOS", "GDEF", "morx", "mort", "kerx", "kern", "feat", "trak", "ankr", "hmtx", "vmtx", "VORG", "maxp",
@@ -122,6 +136,8 @@ public static class FontsFuzzTargets
         new("fonts-shaping", Shaping) { Seeds = GetShapingSeeds, Dictionary = ShapingTokens },
         new("fonts-split-runs", SplitRuns) { Seeds = GetSplitRunsSeeds, Dictionary = SplitRunsTokens },
         new("fonts-bitmaps", Bitmaps) { Seeds = GetBitmapSeeds, Dictionary = BitmapTokens },
+        new("fonts-svg-table", ReadSvgTable) { Seeds = GetSvgTableSeeds, Dictionary = SvgTokens },
+        new("fonts-svg-document", ExpandSvgDocument) { Seeds = GetSvgDocumentSeeds, Dictionary = SvgTokens },
         new("fonts-woff-blocks", WoffBlocks) { Seeds = GetWoffBlocksSeeds, Dictionary = WoffBlocksTokens },
     ];
 
@@ -1363,6 +1379,122 @@ public static class FontsFuzzTargets
             }
         }
     }
+
+    /// <summary>
+    /// Reads an <c>SVG </c> table from the input, in a valid font: the document of each glyph must be in the table, its
+    /// range must contain the glyph, a document that is not compressed must be the bytes of the font, and expanding a
+    /// compressed one must only throw <see cref="FontException"/>.
+    /// </summary>
+    private static void ReadSvgTable(ReadOnlySpan<byte> data)
+    {
+        var tables = new SortedDictionary<uint, byte[]>(SvgBaseTables.Value) { [FontTags.Svg] = data.ToArray() };
+        var face = LoadSingle(FontSubsetter.WriteSfnt(FontTags.TrueType, tables), "The font with the SVG table of the input");
+        if (!face.TryFindTable(FontTags.Svg, out var tableOffset, out var tableLength))
+        {
+            FuzzAssert.False(face.HasSvgGlyphs, "The font has SVG glyphs without SVG table");
+            return;
+        }
+
+        var bytes = face.Data.Bytes;
+        for (var glyphId = -1; glyphId <= face.GlyphCount; glyphId++)
+        {
+            if (!face.TryGetSvgGlyph(glyphId, out var glyph))
+                continue;
+
+            FuzzAssert.True(face.HasSvgGlyphs && (uint)glyphId < (uint)face.GlyphCount, $"The glyph {glyphId} has a document in a font without SVG glyphs");
+            FuzzAssert.True(glyph.GlyphId == glyphId && glyph.FirstGlyphId <= glyphId && glyphId <= glyph.LastGlyphId, $"The glyph {glyphId} is outside the range of its record ({glyph.FirstGlyphId}, {glyph.LastGlyphId})");
+            FuzzAssert.True(glyph.Length > 0 && glyph.Offset >= tableOffset && (long)glyph.Offset + glyph.Length <= (long)tableOffset + tableLength, $"The document of the glyph {glyphId} is outside the table");
+            FuzzAssert.Equal(bytes.Span.Slice(glyph.Offset, glyph.Length) is [0x1F, 0x8B, 0x08, ..], glyph.IsCompressed, $"The document of the glyph {glyphId} is not compressed as its bytes say");
+            try
+            {
+                var document = face.GetSvgDocument(glyph);
+                if (!glyph.IsCompressed)
+                {
+                    FuzzAssert.True(document.Span.SequenceEqual(bytes.Span.Slice(glyph.Offset, glyph.Length)), $"The document of the glyph {glyphId} is not the bytes of the font");
+                }
+
+                FuzzAssert.True(document.Length <= Limits.MaxFontBytes, $"The document of the glyph {glyphId} is larger than the limit");
+            }
+            catch (FontException)
+            {
+                FuzzAssert.True(glyph.IsCompressed, $"The document of the glyph {glyphId} cannot be read, and it is not compressed");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Puts a document from the input in an <c>SVG </c> table twice, as it is and compressed with gzip, for two ranges
+    /// of glyphs: the text of both must be the input.
+    /// </summary>
+    private static void ExpandSvgDocument(ReadOnlySpan<byte> data)
+    {
+        if (data.IsEmpty)
+            return;
+
+        var compressed = Gzip(data);
+        var tables = new SortedDictionary<uint, byte[]>(SvgBaseTables.Value) { [FontTags.Svg] = WriteSvgTable([(1, 1, data.ToArray()), (2, 3, compressed)]) };
+        var face = LoadSingle(FontSubsetter.WriteSfnt(FontTags.TrueType, tables), "The font with the SVG document of the input");
+        FuzzAssert.True(face.HasSvgGlyphs, "The SVG table is left out");
+        FuzzAssert.True(face.TryGetSvgGlyph(1, out var plain), "The glyph 1 has no document");
+        FuzzAssert.True(face.TryGetSvgGlyph(3, out var packed), "The glyph 3 has no document");
+        FuzzAssert.True(packed.IsCompressed && packed.FirstGlyphId == 2 && packed.LastGlyphId == 3, "The compressed document is not found");
+        FuzzAssert.True(face.GetSvgDocument(packed).Span.SequenceEqual(data), "The compressed document does not expand to the input");
+        if (!plain.IsCompressed)
+        {
+            FuzzAssert.True(face.GetSvgDocument(plain).Span.SequenceEqual(data), "The document is not the input");
+        }
+    }
+
+    private static byte[] Gzip(ReadOnlySpan<byte> data)
+    {
+        using var output = new MemoryStream();
+        using (var gzip = new System.IO.Compression.GZipStream(output, System.IO.Compression.CompressionLevel.Fastest, leaveOpen: true))
+        {
+            gzip.Write(data);
+        }
+
+        return output.ToArray();
+    }
+
+    /// <summary>Writes an <c>SVG </c> table: the header, the document records, then the documents.</summary>
+    private static byte[] WriteSvgTable(IReadOnlyList<(int First, int Last, byte[] Document)> records)
+    {
+        var size = 12 + (12 * records.Count) + records.Sum(record => record.Document.Length);
+        var table = new byte[size];
+        BinaryPrimitives.WriteUInt32BigEndian(table.AsSpan(2), 10);
+        BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(10), (ushort)records.Count);
+        var position = 2 + (12 * records.Count);
+        for (var i = 0; i < records.Count; i++)
+        {
+            var entry = table.AsSpan(12 + (12 * i));
+            BinaryPrimitives.WriteUInt16BigEndian(entry, (ushort)records[i].First);
+            BinaryPrimitives.WriteUInt16BigEndian(entry[2..], (ushort)records[i].Last);
+            BinaryPrimitives.WriteUInt32BigEndian(entry[4..], (uint)position);
+            BinaryPrimitives.WriteUInt32BigEndian(entry[8..], (uint)records[i].Document.Length);
+            records[i].Document.CopyTo(table, 10 + position);
+            position += records[i].Document.Length;
+        }
+
+        return table;
+    }
+
+    // The documents of the unit tests: several glyphs in one document, the root as a glyph, a document that is not well-formed
+    private static readonly string[] SvgDocuments =
+    [
+        """<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><rect id="half" x="64" y="0" width="384" height="256"/></defs><g id="glyph2" fill="red"><rect x="128" y="-768" width="768" height="768"/></g><g id="glyph3" transform="translate(0,-512)"><use xlink:href="#half" fill="var(--color1, yellow)"/></g></svg>""",
+        """<svg xmlns="http://www.w3.org/2000/svg" id="glyph1" viewBox="0 1024 1024 1024"><clipPath id="left"><rect x="0" y="0" width="384" height="4096"/></clipPath><rect x="0" y="192" width="768" height="1024" fill="#0000ff" clip-path="url(#left)"/></svg>""",
+        """<svg xmlns="http://www.w3.org/2000/svg"><g id="glyph1">""",
+    ];
+
+    private static IEnumerable<FuzzSeed> GetSvgTableSeeds()
+    {
+        var documents = SvgDocuments.Select(System.Text.Encoding.UTF8.GetBytes).ToArray();
+        yield return new FuzzSeed("svg-boxes", WriteSvgTable([(1, 1, documents[1]), (2, 3, documents[0]), (4, 4, Gzip(documents[1])), (5, 5, documents[2])]));
+        yield return new FuzzSeed("svg-shared", WriteSvgTable([(1, 1, Gzip(documents[0])), (2, 2, documents[2])]));
+    }
+
+    private static IEnumerable<FuzzSeed> GetSvgDocumentSeeds()
+        => SvgDocuments.Select((document, index) => new FuzzSeed("svg-document-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture), System.Text.Encoding.UTF8.GetBytes(document)));
 
     private static IEnumerable<FuzzSeed> GetFontSeeds(string prefix = "Seeds/fonts/")
     {

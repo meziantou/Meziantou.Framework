@@ -1470,6 +1470,15 @@ thin public types over its `FontFace`.
     higher than an outline (`FontRender.ImageShift`): a line of a bitmap font has no outline glyph for that reason.
     The literals of the bitmap glyphs are on `FontSamples.BitmapBoxes` (both table families, every index and image
     format).
+  - An SVG glyph (`SvgGlyphRenderer`, `SvgGlyphDocument`, `SvgValues`) is drawn with the canvas of the library into an
+    image of the pixels it covers at the size of the text (at most 4096 pixels a side, scaled beyond), which becomes a
+    `FillImage` display list like a bitmap glyph: its key in a layout is (font, glyph, palette, size). `COLR` wins over
+    `SVG `, which wins over the bitmaps; a document that cannot be read (not well-formed, no element for the glyph, a
+    malformed compressed document, a value the canvas refuses) gives no glyph, and the next form is drawn. The XML is
+    read without DTD processing nor resolver, every element, attribute, use and character of path data is charged to
+    the `GlyphBudget`, and nothing is drawn beyond an em around the box of the font. Tests: literals on
+    `FontSamples.SvgBoxes` and on documents compared with the same shapes drawn on the canvas (`ColorFontTests`), and
+    `FontFuzzTests.MutatedSvgGlyphsFailOnlyWithDocumentedErrors`.
 - **The layout overloads allocate nothing** once the scratch of the session has grown (`PerformanceContractTests`). The
   overload that takes a string creates a layout and is the documented exception.
 - Tests: literals on the boxes font (rectangles on whole pixels at 16 pixels per em, compared with `FillRectangle`;

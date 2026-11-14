@@ -3536,6 +3536,137 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void Documentation_SvgDocument()
+    {
+        var face = FontLoader.Load(FontSamples.SvgBoxes().Build(), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+
+        #region Fonts_SvgDocument
+        static string? GetSvgDocument(FontFace face, char character)
+        {
+            var glyph = face.MapCodePoint(character);
+            if (!face.TryGetSvgGlyph(glyph, out var svgGlyph))
+                return null; // no SVG description: the glyph is drawn from its outline, or from another color table
+
+            // The text of the document, expanded when the font compresses it. The document can describe several glyphs
+            // (FirstGlyphId to LastGlyphId): the element of this one has the identifier "glyph" + GlyphId.
+            return Encoding.UTF8.GetString(face.GetSvgDocument(svgGlyph).Span);
+        }
+        #endregion
+
+        Assert.Contains("id=\"glyph2\"", GetSvgDocument(face, 'A'), StringComparison.Ordinal);
+        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"glyph4\"", GetSvgDocument(face, 'C'), StringComparison.Ordinal);
+        Assert.Null(GetSvgDocument(face, ' '));
+    }
+
+    [Fact]
+    public void AFontGivesTheSvgDocumentOfAGlyph()
+    {
+        var face = FontLoader.Load(FontSamples.SvgBoxes().Build(), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+        Assert.True(face.HasSvgGlyphs);
+        Assert.True(face.HasColorGlyphs);
+
+        // A and B share a record, and E has a record of its own that refers to the same document.
+        Assert.True(face.TryGetSvgGlyph(FontSamples.SvgA, out var a));
+        Assert.True(face.TryGetSvgGlyph(FontSamples.SvgB, out var b));
+        Assert.True(face.TryGetSvgGlyph(FontSamples.SvgE, out var e));
+        Assert.Equal((FontSamples.SvgA, FontSamples.SvgA, FontSamples.SvgB, false), (a.GlyphId, a.FirstGlyphId, a.LastGlyphId, a.IsCompressed));
+        Assert.Equal((FontSamples.SvgB, a.Offset, a.Length), (b.GlyphId, b.Offset, b.Length));
+        Assert.Equal((FontSamples.SvgE, FontSamples.SvgE, FontSamples.SvgE, a.Offset, a.Length), (e.GlyphId, e.FirstGlyphId, e.LastGlyphId, e.Offset, e.Length));
+
+        // The document of a glyph that is not compressed is the bytes of the font.
+        Assert.Equal(face.Data.Bytes.Slice(a.Offset, a.Length).ToArray(), face.GetSvgDocument(a).ToArray());
+
+        // A compressed document is expanded.
+        Assert.True(face.TryGetSvgGlyph(FontSamples.SvgC, out var c));
+        Assert.True(c.IsCompressed);
+        Assert.Equal([0x1F, 0x8B, 0x08], face.Data.Bytes.Slice(c.Offset, 3).ToArray());
+        Assert.EndsWith("</svg>", Encoding.UTF8.GetString(face.GetSvgDocument(c).Span), StringComparison.Ordinal);
+
+        // The glyphs without a record, and those that are not glyphs of the font.
+        Assert.False(face.TryGetSvgGlyph(0, out _));
+        Assert.False(face.TryGetSvgGlyph(1, out _));
+        Assert.False(face.TryGetSvgGlyph(face.GlyphCount, out _));
+        Assert.False(face.TryGetSvgGlyph(-1, out _));
+        Assert.Throws<ArgumentException>("glyph", () => face.GetSvgDocument(default));
+
+        // A font without the table.
+        var boxes = FontLoader.Load(FontSamples.Boxes().Build(), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+        Assert.False(boxes.HasSvgGlyphs);
+        Assert.False(boxes.TryGetSvgGlyph(1, out _));
+    }
+
+    [Fact]
+    public void AMalformedSvgTableIsLeftOut()
+    {
+        static FontFace Load(byte[] table)
+        {
+            var font = FontSamples.Boxes();
+            font.RawTables["SVG "] = table;
+            return FontLoader.Load(font.Build(), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+        }
+
+        var document = Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\"/>");
+        Assert.True(Load(FontSamples.WriteSvgTable([(1, 1, document), (2, 3, document)])).HasSvgGlyphs);
+
+        // Records that are not sorted, that overlap, whose range is reversed, or whose document is out of the table.
+        Assert.False(Load(FontSamples.WriteSvgTable([(2, 2, document), (1, 1, document)])).HasSvgGlyphs);
+        Assert.False(Load(FontSamples.WriteSvgTable([(1, 2, document), (2, 3, document)])).HasSvgGlyphs);
+        Assert.False(Load(FontSamples.WriteSvgTable([(2, 1, document)])).HasSvgGlyphs);
+        var table = FontSamples.WriteSvgTable([(1, 1, document)]);
+        Assert.False(Load(table[..^1]).HasSvgGlyphs);
+
+        // A version that is not known, and a list without record.
+        table = FontSamples.WriteSvgTable([(1, 1, document)]);
+        table[1] = 1;
+        Assert.False(Load(table).HasSvgGlyphs);
+        Assert.False(Load(FontSamples.WriteSvgTable([])).HasSvgGlyphs);
+    }
+
+    [Fact]
+    public void AMalformedCompressedSvgDocumentIsAnErrorOfTheFont()
+    {
+        static (FontFace Face, SvgGlyph Glyph) Load(byte[] compressed, FontResourceLimits? limits = null)
+        {
+            var font = FontSamples.Boxes();
+            font.RawTables["SVG "] = FontSamples.WriteSvgTable([(1, 1, compressed)]);
+            var face = FontLoader.Load(font.Build(), new PooledFontEnvironment(limits ?? FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+            Assert.True(face.TryGetSvgGlyph(1, out var glyph));
+            Assert.True(glyph.IsCompressed);
+            return (face, glyph);
+        }
+
+        var text = Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\"><rect id=\"glyph1\" width=\"10\" height=\"10\"/></svg>");
+        var compressed = FontSamples.Gzip(text);
+        var (face, glyph) = Load(compressed);
+        Assert.Equal(text, face.GetSvgDocument(glyph).ToArray());
+
+        // A corrupted checksum, a length that does not match, a truncated stream, data after the stream.
+        var corrupted = compressed.ToArray();
+        corrupted[^5] ^= 0xFF;
+        (face, glyph) = Load(corrupted);
+        Assert.Throws<InvalidFontException>(() => face.GetSvgDocument(glyph));
+
+        var longer = compressed.ToArray();
+        BinaryPrimitives.WriteUInt32LittleEndian(longer.AsSpan(longer.Length - 4), (uint)text.Length + 1);
+        (face, glyph) = Load(longer);
+        Assert.Throws<InvalidFontException>(() => face.GetSvgDocument(glyph));
+
+        var shorter = compressed.ToArray();
+        BinaryPrimitives.WriteUInt32LittleEndian(shorter.AsSpan(shorter.Length - 4), (uint)text.Length - 1);
+        (face, glyph) = Load(shorter);
+        Assert.Throws<InvalidFontException>(() => face.GetSvgDocument(glyph));
+
+        (face, glyph) = Load(compressed[..10]);
+        Assert.Throws<InvalidFontException>(() => face.GetSvgDocument(glyph));
+
+        // A declared length beyond the limit of the font is refused before anything is allocated.
+        var huge = compressed.ToArray();
+        BinaryPrimitives.WriteUInt32LittleEndian(huge.AsSpan(huge.Length - 4), 0x7FFFFFFF);
+        (face, glyph) = Load(huge, new FontResourceLimits { MaxFontBytes = 1024 * 1024 });
+        Assert.Equal(FontResourceLimitKind.FontBytes, Assert.Throws<FontResourceLimitException>(() => face.GetSvgDocument(glyph)).Kind);
+    }
+
+    [Fact]
     public void Documentation_VariableFont()
     {
         var path = FixtureRoot.GetDirectory() / "fonts" / "noto-sans-variable" / "NotoSans-Variable.subset.ttf";

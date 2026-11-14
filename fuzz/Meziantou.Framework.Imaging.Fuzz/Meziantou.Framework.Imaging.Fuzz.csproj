@@ -1,10 +1,19 @@
 <Project Sdk="Meziantou.NET.Sdk">
-  <!-- SharpFuzz targets of the processing operations of Meziantou.Framework.Imaging. See fuzz/README.md. -->
+  <!--
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec and the processing operations. The other codecs
+    are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
+  -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The seeds of imaging-radiance: the Radiance HDR files of the golden corpus, valid, invalid, unsupported and over the limits -->
+    <SeedPicture Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\hdr\*.hdr;..\..\tests\Meziantou.Framework.Imaging.Fixtures\invalid\hdr\*.hdr;..\..\tests\Meziantou.Framework.Imaging.Fixtures\limit\hdr\*.hdr" />
+    <EmbeddedResource Include="@(SeedPicture)" LogicalName="Seeds/radiance/%(Filename)%(Extension)" Link="Seeds\radiance\%(Filename)%(Extension)" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />

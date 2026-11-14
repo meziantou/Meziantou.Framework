@@ -130,6 +130,7 @@ public abstract class ImageEncoder
         ImageFormat.Heic => new HeicEncoder(),
         ImageFormat.Jpeg2000 => new Jpeg2000Encoder(),
         ImageFormat.OpenExr => new OpenExrEncoder(),
+        ImageFormat.Radiance => new RadianceEncoder(),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is unknown or not a defined value."),
     };
 

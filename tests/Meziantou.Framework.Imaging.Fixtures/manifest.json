@@ -40238,6 +40238,2688 @@
       }
     },
     {
+      "id": "hdr/extreme-exponents",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/extreme-exponents.hdr",
+        "sha256": "19bddbec49a1902f08da8918c8d4fc09dcadb5bbfa530ddb563a9a9dddf25aae",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 3,
+          "height": 2
+        }
+      },
+      "features": [
+        "hdr.encoding=flat",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Exponents of 1 (subnormal floats) and 255, the exponent 0 (black, whatever the mantissas), a mantissa 0 (half a unit), black. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 3,
+        "height": 2,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/extreme-exponents.frame-0.rgbaf32le.raw",
+                "sha256": "a78993aa4838a3d3fec7d37094764b53f28cd9b7ccfe0ecfa110c3c374d73a48",
+                "layout": "rgbaf32le",
+                "width": 3,
+                "height": 2,
+                "rowBytes": 48,
+                "byteLength": 96,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/ffmpeg-narrow",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/ffmpeg-narrow.hdr",
+        "sha256": "eacf4327c261452c95356a85856b464782f902f6ca59564a8179f49b706a73a7",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildFfmpeg)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check, encoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "ffmpeg -hide_banner -nostdin -loglevel error -y -f rawvideo -pixel_format gbrpf32le -video_size 5x4 -i {pattern}.gbrpf32le -frames:v 1 -c:v hdr -f image2 {output}"
+        ]
+      },
+      "features": [
+        "hdr.encoding=flat",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 5x4 floating-point pattern of high dynamic range written by the Radiance encoder of FFmpeg (flat scanlines). The RGBE pixels the file stores, read as the reference routines of Radiance read them. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 4,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/ffmpeg-narrow.frame-0.rgbaf32le.raw",
+                "sha256": "3eeebe854fc6941519f316cfc1ecca9f8cad58abe86a87909b3d0c8f2119e0a0",
+                "layout": "rgbaf32le",
+                "width": 5,
+                "height": 4,
+                "rowBytes": 80,
+                "byteLength": 320,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/ffmpeg-rle",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/ffmpeg-rle.hdr",
+        "sha256": "116e16ca9174a376c7dcbdca871a2226f96d7a072a6a6384586c6583a382d588",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildFfmpeg)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check, encoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "ffmpeg -hide_banner -nostdin -loglevel error -y -f rawvideo -pixel_format gbrpf32le -video_size 23x17 -i {pattern}.gbrpf32le -frames:v 1 -c:v hdr -f image2 {output}"
+        ]
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 23x17 floating-point pattern of high dynamic range written by the Radiance encoder of FFmpeg (new scanlines). The RGBE pixels the file stores, read as the reference routines of Radiance read them. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 17,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/ffmpeg-rle.frame-0.rgbaf32le.raw",
+                "sha256": "32727469365b0ee81f2e356e71f9c3a3737e790ab0aba150fb5b0e211b5aba7b",
+                "layout": "rgbaf32le",
+                "width": 23,
+                "height": 17,
+                "rowBytes": 368,
+                "byteLength": 6256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/flat",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/flat.hdr",
+        "sha256": "07e229cafe8de8b53319a8d4ed6af2a41af912ed4449b9eb494fa7c22e7dd73e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=flat",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 13x9 RGBE pattern of high dynamic range, flat scanlines, in the standard orientation. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/flat.frame-0.rgbaf32le.raw",
+                "sha256": "c40ac34598f1269a979edf74e4d4ff382b1e5759c45e463b44026db3c95cf1d0",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/header-unreadable-variables",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/header-unreadable-variables.hdr",
+        "sha256": "7d0be7b4e210e0e5b3b4792ccefbc4009f68ef7f9f096ae0649757395dc6a6f5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 8
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=-Y+X",
+        "hdr.unreadableVariables"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Variables whose values cannot be read: PIXASPECT=inf (as FFmpeg writes it), an EXPOSURE that is not a number and one of 0, a COLORCORR of two terms, a negative GAMMA, PRIMARIES of seven values and of two equal primaries. They are skipped. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 8,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/header-unreadable-variables.frame-0.rgbaf32le.raw",
+                "sha256": "6b6122279c74814beb905d8dcd9ce8018e86370d1655caefb5c4e8c9d036e084",
+                "layout": "rgbaf32le",
+                "width": 9,
+                "height": 8,
+                "rowBytes": 144,
+                "byteLength": 1152,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/header-variables",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/header-variables.hdr",
+        "sha256": "3dbc89ef5bc06e657bb73514a8b44fa2b9cde863d1ccccd7bd23ce0e023f5ad0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 8
+        }
+      },
+      "features": [
+        "hdr.colorCorrection",
+        "hdr.commands",
+        "hdr.encoding=new-rle",
+        "hdr.exposure",
+        "hdr.gamma",
+        "hdr.pixelAspect",
+        "hdr.scanOrder=-Y+X",
+        "hdr.software",
+        "hdr.view"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Commands, a comment, two EXPOSURE lines (their product is 5), COLORCORR, PIXASPECT, GAMMA, VIEW, SOFTWARE and another variable: reported, never applied. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 8,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/header-variables.frame-0.rgbaf32le.raw",
+                "sha256": "6b6122279c74814beb905d8dcd9ce8018e86370d1655caefb5c4e8c9d036e084",
+                "layout": "rgbaf32le",
+                "width": 9,
+                "height": 8,
+                "rowBytes": 144,
+                "byteLength": 1152,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/mixed-encodings",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/mixed-encodings.hdr",
+        "sha256": "6084aaf694554e42da68aab9d6151a4105f09dc8b4d00f3f68390a1b050d3ee1",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 12,
+          "height": 6
+        }
+      },
+      "features": [
+        "hdr.encoding=flat",
+        "hdr.encoding=new-rle",
+        "hdr.encoding=old-rle",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Six scanlines of 12 pixels: flat, new, flat, old (a row of equal pixels), new and flat scanlines. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 12,
+        "height": 6,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/mixed-encodings.frame-0.rgbaf32le.raw",
+                "sha256": "b5ef72dc5ec3711c2024b017b5348c7445ef845d8ba375b662cc242e91359258",
+                "layout": "rgbaf32le",
+                "width": 12,
+                "height": 6,
+                "rowBytes": 192,
+                "byteLength": 1152,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/new-rle",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/new-rle.hdr",
+        "sha256": "92323d31f3a90bb64ed1c9f7972bffd46417bcc9472b209e7869bc749d6c945e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 13x9 RGBE pattern of high dynamic range, new run-length encoded scanlines, in the standard orientation. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/new-rle.frame-0.rgbaf32le.raw",
+                "sha256": "c40ac34598f1269a979edf74e4d4ff382b1e5759c45e463b44026db3c95cf1d0",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/new-rle-long-runs",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/new-rle-long-runs.hdr",
+        "sha256": "01755cd08b4571c381c42807458c19df030d74bf81f4d8433dd12ff049564342",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 300,
+          "height": 2
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Two scanlines of 300 pixels, new encoding: runs longer than 127 bytes take several codes, literals of up to 128 bytes. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 300,
+        "height": 2,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/new-rle-long-runs.frame-0.rgbaf32le.raw",
+                "sha256": "b3fa26bf568db0b385a1d26c1ddea37342b3a948f7bc2c30a0c291854e571bb1",
+                "layout": "rgbaf32le",
+                "width": 300,
+                "height": 2,
+                "rowBytes": 4800,
+                "byteLength": 9600,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/old-rle",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/old-rle.hdr",
+        "sha256": "ce6ebde3b8e0fd3342f694328cba7375f9f514b01ef349b5b5b5ee7750d7585a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=flat",
+        "hdr.encoding=old-rle",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 13x9 RGBE pattern of high dynamic range, old run-length encoded scanlines, in the standard orientation. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/old-rle.frame-0.rgbaf32le.raw",
+                "sha256": "c40ac34598f1269a979edf74e4d4ff382b1e5759c45e463b44026db3c95cf1d0",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/old-rle-long-runs",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/old-rle-long-runs.hdr",
+        "sha256": "5a70e7175fb9dea6c7a5530e8aa34b51feaffac95015cc0490223b482bcd3268",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 300,
+          "height": 2
+        }
+      },
+      "features": [
+        "hdr.encoding=old-rle",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Two scanlines of 300 pixels, old encoding: runs of 289 repetitions, whose count takes two repetition pixels (the low byte first). A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 300,
+        "height": 2,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/old-rle-long-runs.frame-0.rgbaf32le.raw",
+                "sha256": "b3fa26bf568db0b385a1d26c1ddea37342b3a948f7bc2c30a0c291854e571bb1",
+                "layout": "rgbaf32le",
+                "width": 300,
+                "height": 2,
+                "rowBytes": 4800,
+                "byteLength": 9600,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/one-pixel",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/one-pixel.hdr",
+        "sha256": "638ffeeb65c0b7fdaa5144b40ecc112c0cf81c9154f5b3f319f9ea5df84669df",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 1,
+          "height": 1
+        }
+      },
+      "features": [
+        "hdr.encoding=flat",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "One pixel. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 1,
+        "height": 1,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/one-pixel.frame-0.rgbaf32le.raw",
+                "sha256": "b1322aa6ca62db2b9258a3e1031af1d85ec35e64f47d3e0695b66bf2bc4ffa34",
+                "layout": "rgbaf32le",
+                "width": 1,
+                "height": 1,
+                "rowBytes": 16,
+                "byteLength": 16,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/orientation-minus-x-minus-y",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/orientation-minus-x-minus-y.hdr",
+        "sha256": "95911e862863d508d8da2c3457b9369ace4f8fe53e4bbd3073825b3ed698f6d1",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=-X-Y"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The 13x9 pattern stored in the order '-X -Y' (columns, new run-length encoded): the picture is in the standard orientation. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not read scanlines that are columns (the resolution string gives the X axis first): it reads rows of the width of the picture, and 326 of the 351 samples differ from the scanlines of the file."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/orientation-minus-x-minus-y.frame-0.rgbaf32le.raw",
+                "sha256": "8af931299f78cbe389618330fe9b78eefde4fb73cadb99577019c2e234336667",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/orientation-minus-x-plus-y",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/orientation-minus-x-plus-y.hdr",
+        "sha256": "83b13c9dd2afba99e748ce3682f087ce514d5c167b5063e251fdbc25f5a9a59a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=-X+Y"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The 13x9 pattern stored in the order '-X +Y' (columns, new run-length encoded): the picture is in the standard orientation. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not read scanlines that are columns (the resolution string gives the X axis first): it reads rows of the width of the picture, and 335 of the 351 samples differ from the scanlines of the file."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/orientation-minus-x-plus-y.frame-0.rgbaf32le.raw",
+                "sha256": "8af931299f78cbe389618330fe9b78eefde4fb73cadb99577019c2e234336667",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/orientation-minus-y-minus-x",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/orientation-minus-y-minus-x.hdr",
+        "sha256": "779b11ce86a34c1a302d1d9fcbf4ed367705b4fc3cdb172dfab3a1ab58b9f482",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=flat",
+        "hdr.scanOrder=-Y-X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The 13x9 pattern stored in the order '-Y -X' (rows, flat): the picture is in the standard orientation. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit. FFmpeg ignores the orientation of the resolution string: it gives the scanlines in file order, as rows."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/orientation-minus-y-minus-x.frame-0.rgbaf32le.raw",
+                "sha256": "8af931299f78cbe389618330fe9b78eefde4fb73cadb99577019c2e234336667",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/orientation-minus-y-minus-x-rle",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/orientation-minus-y-minus-x-rle.hdr",
+        "sha256": "984c643a54857d56f9ed4e8311bd587d7faf19d2da8114cbb172acf88a03b207",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=-Y-X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The 13x9 pattern stored in the order '-Y -X', new encoding. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit. FFmpeg ignores the orientation of the resolution string: it gives the scanlines in file order, as rows."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/orientation-minus-y-minus-x-rle.frame-0.rgbaf32le.raw",
+                "sha256": "8af931299f78cbe389618330fe9b78eefde4fb73cadb99577019c2e234336667",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/orientation-plus-x-minus-y",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/orientation-plus-x-minus-y.hdr",
+        "sha256": "0645dfcc1f056baa1ad0b6b6003d3796ac35ce2f52b76b1ca351ea0e97bc3f78",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=+X-Y"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The 13x9 pattern stored in the order '+X -Y' (columns, new run-length encoded): the picture is in the standard orientation. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not read scanlines that are columns (the resolution string gives the X axis first): it reads rows of the width of the picture, and 328 of the 351 samples differ from the scanlines of the file."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/orientation-plus-x-minus-y.frame-0.rgbaf32le.raw",
+                "sha256": "8af931299f78cbe389618330fe9b78eefde4fb73cadb99577019c2e234336667",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/orientation-plus-x-plus-y",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/orientation-plus-x-plus-y.hdr",
+        "sha256": "bc1877118909bb7cd37ef348a010813d14321c009d104caa5901ef0a6ff5bf3d",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=+X+Y"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The 13x9 pattern stored in the order '+X +Y' (columns, new run-length encoded): the picture is in the standard orientation. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not read scanlines that are columns (the resolution string gives the X axis first): it reads rows of the width of the picture, and 329 of the 351 samples differ from the scanlines of the file."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/orientation-plus-x-plus-y.frame-0.rgbaf32le.raw",
+                "sha256": "8af931299f78cbe389618330fe9b78eefde4fb73cadb99577019c2e234336667",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/orientation-plus-y-minus-x",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/orientation-plus-y-minus-x.hdr",
+        "sha256": "7ad89829ff5a3d3963009c1a15ae63410ac8e65ee852d32719a8aecde0ff68e9",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=flat",
+        "hdr.scanOrder=+Y-X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The 13x9 pattern stored in the order '+Y -X' (rows, flat): the picture is in the standard orientation. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit. FFmpeg ignores the orientation of the resolution string: it gives the scanlines in file order, as rows."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/orientation-plus-y-minus-x.frame-0.rgbaf32le.raw",
+                "sha256": "8af931299f78cbe389618330fe9b78eefde4fb73cadb99577019c2e234336667",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/orientation-plus-y-minus-x-rle",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/orientation-plus-y-minus-x-rle.hdr",
+        "sha256": "063b8d5ea84751e25e348b18d58a80c03a291c6123c50f1d8cbad6909084719f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=+Y-X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The 13x9 pattern stored in the order '+Y -X', new encoding. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit. FFmpeg ignores the orientation of the resolution string: it gives the scanlines in file order, as rows."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/orientation-plus-y-minus-x-rle.frame-0.rgbaf32le.raw",
+                "sha256": "8af931299f78cbe389618330fe9b78eefde4fb73cadb99577019c2e234336667",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/orientation-plus-y-plus-x",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/orientation-plus-y-plus-x.hdr",
+        "sha256": "8e39d33b09b39cf7ad7b01afcf039342a80df7c69d78c972a1e0053027126dde",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=flat",
+        "hdr.scanOrder=+Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The 13x9 pattern stored in the order '+Y +X' (rows, flat): the picture is in the standard orientation. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit. FFmpeg ignores the orientation of the resolution string: it gives the scanlines in file order, as rows."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/orientation-plus-y-plus-x.frame-0.rgbaf32le.raw",
+                "sha256": "8af931299f78cbe389618330fe9b78eefde4fb73cadb99577019c2e234336667",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/orientation-plus-y-plus-x-rle",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/orientation-plus-y-plus-x-rle.hdr",
+        "sha256": "063726a09dfc3193fadb1bd85b69b06f96139347bf655c28a699cf2db434e193",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=+Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The 13x9 pattern stored in the order '+Y +X', new encoding. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit. FFmpeg ignores the orientation of the resolution string: it gives the scanlines in file order, as rows."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/orientation-plus-y-plus-x-rle.frame-0.rgbaf32le.raw",
+                "sha256": "8af931299f78cbe389618330fe9b78eefde4fb73cadb99577019c2e234336667",
+                "layout": "rgbaf32le",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 208,
+                "byteLength": 1872,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/primaries-bt2020",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/primaries-bt2020.hdr",
+        "sha256": "d852f33aa339175277e09e8f626057c60f1e14e869d6e41a4f9bc85fbe63f2f4",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 8
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.primaries",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The PRIMARIES 0.708 0.292 0.170 0.797 0.131 0.046 0.3127 0.3290. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 8,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 8,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/primaries-bt2020.frame-0.rgbaf32le.raw",
+                "sha256": "6b6122279c74814beb905d8dcd9ce8018e86370d1655caefb5c4e8c9d036e084",
+                "layout": "rgbaf32le",
+                "width": 9,
+                "height": 8,
+                "rowBytes": 144,
+                "byteLength": 1152,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/primaries-bt709",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/primaries-bt709.hdr",
+        "sha256": "352e3ee2ea87c2cb893765a83acb5f5dc31c0068e59e119f0f3807d89a75aa15",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 8
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.primaries",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The PRIMARIES 0.6400 0.3300 0.3000 0.6000 0.1500 0.0600 0.3127 0.3290. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 8,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/primaries-bt709.frame-0.rgbaf32le.raw",
+                "sha256": "6b6122279c74814beb905d8dcd9ce8018e86370d1655caefb5c4e8c9d036e084",
+                "layout": "rgbaf32le",
+                "width": 9,
+                "height": 8,
+                "rowBytes": 144,
+                "byteLength": 1152,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/primaries-display-p3",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/primaries-display-p3.hdr",
+        "sha256": "8eb5433a87a9360441c97ef2f9dfcd0a047b6fd829af243407ee6068231be5f3",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 8
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.primaries",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The PRIMARIES 0.680 0.320 0.265 0.690 0.150 0.060 0.3127 0.3290. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 8,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 12,
+          "transferCharacteristics": 8,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/primaries-display-p3.frame-0.rgbaf32le.raw",
+                "sha256": "6b6122279c74814beb905d8dcd9ce8018e86370d1655caefb5c4e8c9d036e084",
+                "layout": "rgbaf32le",
+                "width": 9,
+                "height": 8,
+                "rowBytes": 144,
+                "byteLength": 1152,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/primaries-standard",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/primaries-standard.hdr",
+        "sha256": "6f7d3fa5f8d7e7fc762458b2e37d2c92b971cd39f8568aedd91fb52522c3d34f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 8
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.primaries",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The PRIMARIES 0.640 0.330 0.290 0.600 0.150 0.060 0.333 0.333. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 8,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/primaries-standard.frame-0.rgbaf32le.raw",
+                "sha256": "6b6122279c74814beb905d8dcd9ce8018e86370d1655caefb5c4e8c9d036e084",
+                "layout": "rgbaf32le",
+                "width": 9,
+                "height": 8,
+                "rowBytes": 144,
+                "byteLength": 1152,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "hdr/signature-rgbe",
+      "kind": "valid",
+      "format": "hdr",
+      "input": {
+        "path": "hdr/signature-rgbe.hdr",
+        "sha256": "a617dafb046cdddb625e73bc9b1b230df5b5871b93ff05ac5302a7a5c2e90126",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 8
+        }
+      },
+      "features": [
+        "hdr.encoding=new-rle",
+        "hdr.scanOrder=-Y+X"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The identifier '#?RGBE' and no FORMAT line: RGBE pixels. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceRadiance (test harness: an independent reader of the Radiance file format documentation)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg reads a mantissa m as the bottom of its interval, m × 2^(e - 136), where Radiance reads its middle: every sample is the reference minus half a unit of its exponent (0 for the exponent 0), bit for bit."
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 8,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "hdr/signature-rgbe.frame-0.rgbaf32le.raw",
+                "sha256": "6b6122279c74814beb905d8dcd9ce8018e86370d1655caefb5c4e8c9d036e084",
+                "layout": "rgbaf32le",
+                "width": 9,
+                "height": 8,
+                "rowBytes": 144,
+                "byteLength": 1152,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
       "id": "heic/alpha-420-picture",
       "kind": "valid",
       "format": "heic",
@@ -62878,6 +65560,456 @@
         "format": "Gif"
       },
       "notes": "Byte 0x2A after the first image is neither an extension, an image nor the trailer."
+    },
+    {
+      "id": "invalid/hdr/format-other",
+      "kind": "unsupported",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/format-other.hdr",
+        "sha256": "35d91773a387c2ebc6e6881def296fa31640596a05f1cf5e9f6ab00d85c6cb7d",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildUnsupported)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Radiance",
+        "feature": "Pixel format 32-bit_rle_hsr"
+      },
+      "notes": "A FORMAT other than RGBE and XYZE."
+    },
+    {
+      "id": "invalid/hdr/old-rle-repetition-first",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/old-rle-repetition-first.hdr",
+        "sha256": "51ec5e95282137060f3d91c38550a1091accb9f8199578b3b05e514f56462dbd",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "The scanline starts with a repetition: there is no previous pixel."
+    },
+    {
+      "id": "invalid/hdr/old-rle-repetition-past-end",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/old-rle-repetition-past-end.hdr",
+        "sha256": "45e700f238e864e636a904ca36cb97f5b06301ea5d49619a6e52454445e0fcc0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "A repetition of 8 pixels after the second pixel of a scanline of 9. pvalue reads the file: Radiance does not check that a repetition ends in its scanline."
+    },
+    {
+      "id": "invalid/hdr/resolution-lowercase",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/resolution-lowercase.hdr",
+        "sha256": "f936a63ece5c6f934f6c50e11a7a092f41f057055914313a5d15722e046c9c89",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "Lowercase axes."
+    },
+    {
+      "id": "invalid/hdr/resolution-one-axis",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/resolution-one-axis.hdr",
+        "sha256": "8a4d9b9f58beb03099410ff8646fcc6accf9d2e854489f179d8cc4a7928d4131",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "A resolution string of one axis."
+    },
+    {
+      "id": "invalid/hdr/resolution-same-axis",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/resolution-same-axis.hdr",
+        "sha256": "7de0bc2effb61c75837379bb3be615aec9f25207cdc5e9e436fc6044a3492391",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "A resolution string whose two axes are Y."
+    },
+    {
+      "id": "invalid/hdr/resolution-zero",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/resolution-zero.hdr",
+        "sha256": "eaec21a1d1eb38630eea10ccaf2e8199a659e301f44360832579e1a108ecf9ec",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "A height of 0."
+    },
+    {
+      "id": "invalid/hdr/rle-code-zero",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/rle-code-zero.hdr",
+        "sha256": "384a4f65cdd25cafb32c18dcfc8ad5f7fe5f1db131d6c449bf944d978f111e00",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "A code 0. pvalue reads the file: Radiance reads a code 0 as an empty literal, which the documentation does not define (a literal has 1 to 128 bytes)."
+    },
+    {
+      "id": "invalid/hdr/rle-length",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/rle-length.hdr",
+        "sha256": "cae6dda75cd879031d4a8daf89ec30948d73e0785db5d6d7a0865c5288e7a44c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "The marker of the second scanline declares 10 pixels; the scanlines have 9."
+    },
+    {
+      "id": "invalid/hdr/rle-literal-past-end",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/rle-literal-past-end.hdr",
+        "sha256": "cb7489b9e887b805f8d836b7c1090da92015dd2b8a772671eba223f90c747db3",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "A literal of 10 bytes in a scanline of 9 pixels."
+    },
+    {
+      "id": "invalid/hdr/rle-run-past-end",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/rle-run-past-end.hdr",
+        "sha256": "7332d4e8389b3a82cca04fd124f77754cf41705a94c5e5650b662130a7068b12",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "A run of 10 bytes in a scanline of 9 pixels."
+    },
+    {
+      "id": "invalid/hdr/truncated-header",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/truncated-header.hdr",
+        "sha256": "04b2d9856b6e77a7335e733c4b588ead0c1de487368b86ea494fb423de172ab3",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "The file ends in its information header."
+    },
+    {
+      "id": "invalid/hdr/truncated-resolution",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/truncated-resolution.hdr",
+        "sha256": "9bc92c9e1f0941ba5487dd358dfc4bc84ad21471800b355bd54a5ed117fae797",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "The file ends in its resolution string."
+    },
+    {
+      "id": "invalid/hdr/truncated-scanline",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/truncated-scanline.hdr",
+        "sha256": "689f6091538e7046caddd50a90b07bb989a7415c695cecac6b75edb9a846a824",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "The last scanline is cut."
+    },
+    {
+      "id": "invalid/hdr/truncated-scanlines",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/truncated-scanlines.hdr",
+        "sha256": "e6da890b76b8e85c9686676a4f35ff3c185950291651d0d05fc948037024dcae",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "The file ends after the marker of the first scanline."
+    },
+    {
+      "id": "invalid/hdr/two-formats",
+      "kind": "invalid",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/two-formats.hdr",
+        "sha256": "5968ac16d720c5cbf800f16d7ae3d8733e66b291f0d66fc37e271d71e3e7cfc2",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Radiance"
+      },
+      "notes": "Two FORMAT lines. pvalue reads the file: Radiance does not check that the header has at most one FORMAT line, which the documentation requires."
+    },
+    {
+      "id": "invalid/hdr/xyze",
+      "kind": "unsupported",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/xyze.hdr",
+        "sha256": "ddcd5e4d4eef8493be9187a66e719e9f232bc3de27b514131213bc1dd598b9d9",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildUnsupported)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Radiance",
+        "feature": "XYZE samples"
+      },
+      "notes": "CIE XYZ samples: identified, and rejected by a load, since no pixel format holds them and converting them to RGB is a color conversion."
+    },
+    {
+      "id": "invalid/hdr/xyze-columns",
+      "kind": "unsupported",
+      "format": "hdr",
+      "input": {
+        "path": "invalid/hdr/xyze-columns.hdr",
+        "sha256": "3d4ed1f34b5e155a27f9669cb5316965db168fb3fac8d1b3c86f2a342904bf73",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildUnsupported)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Radiance",
+        "feature": "XYZE samples"
+      },
+      "notes": "CIE XYZ samples stored in columns, flat."
     },
     {
       "id": "invalid/heic/alpha-different-size",
@@ -95153,6 +98285,64 @@
         }
       },
       "notes": "Reuses gif/disposal-transparency (4 full-canvas 4x4 displayed frames, 64 pixels, partial rectangles) with MaxTotalPixels = 63: displayed frames are charged with the full canvas when produced, so only decoding reaches the limit."
+    },
+    {
+      "id": "limit/hdr/frame-pixels-over-limit",
+      "kind": "limit",
+      "format": "hdr",
+      "input": {
+        "path": "limit/hdr/frame-pixels-over-limit.hdr",
+        "sha256": "8e4ee008dadcdacbad4a675745853a7c255c7d2a0cacd4de36a79e9cef26c778",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildLimits)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "ImageResourceLimitException",
+        "limitKind": "FramePixels"
+      },
+      "decodeOptions": {
+        "limits": {
+          "MaxFramePixels": 116
+        }
+      },
+      "notes": "The image has 117 pixels."
+    },
+    {
+      "id": "limit/hdr/metadata-bytes-over-limit",
+      "kind": "limit",
+      "format": "hdr",
+      "input": {
+        "path": "limit/hdr/metadata-bytes-over-limit.hdr",
+        "sha256": "514d779767bb08bdf6aa2e6ce7075984db616ce34de3c3efc576c047bc08239d",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildLimits)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "ImageResourceLimitException",
+        "limitKind": "MetadataBytes"
+      },
+      "decodeOptions": {
+        "limits": {
+          "MaxMetadataBytes": 1024
+        }
+      },
+      "notes": "The information header is more than 1,024 bytes."
     },
     {
       "id": "limit/heic/clap-picture-over-limit",

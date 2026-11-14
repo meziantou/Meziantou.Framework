@@ -279,8 +279,8 @@ internal sealed class MetadataWritePlan
         CicpColorDescription? storedCicp;
         if (capabilities.LinearOnly)
         {
-            // OpenEXR samples are linear light, described by the chromaticities of their primaries: the label of any other
-            // samples would change their meaning
+            // OpenEXR and Radiance HDR samples are linear light, described by the chromaticities of their primaries: the
+            // label of any other samples would change their meaning
             transferFunction = ColorTransferFunction.Linear;
             storedCicp = null;
             if (metadata.Cicp is { } exrCicp)
@@ -291,12 +291,12 @@ internal sealed class MetadataWritePlan
                 }
                 else
                 {
-                    context.Unsupported("CICP color description other than linear BT.709, BT.2020 or P3 primaries (OpenEXR stores linear-light samples)");
+                    context.Unsupported($"CICP color description other than linear BT.709, BT.2020 or P3 primaries ({ImageFormatNames.Get(format)} stores linear-light samples)");
                 }
             }
             else if (metadata.TransferFunction != ColorTransferFunction.Linear && metadata.IccProfile is null)
             {
-                context.Unsupported("sRGB transfer function (OpenEXR stores linear-light samples: sRGB-encoded samples would be read as linear light)");
+                context.Unsupported($"sRGB transfer function ({ImageFormatNames.Get(format)} stores linear-light samples: sRGB-encoded samples would be read as linear light)");
             }
         }
         else
@@ -455,6 +455,7 @@ internal sealed class MetadataWritePlan
 
         // OpenEXR stores linear light only, with the chromaticities of its primaries (BT.709 without the attribute)
         private static readonly FormatCapabilities OpenExr = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, linearOnly: true);
+        private static readonly FormatCapabilities Radiance = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, linearOnly: true);
 
         private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false, bool cicpWithoutIcc = false, bool impliesLinearTransfer = false, bool linearOnly = false)
         {
@@ -567,6 +568,7 @@ internal sealed class MetadataWritePlan
             ImageFormat.JpegXl => JpegXl,
             ImageFormat.Jpeg2000 => Jp2,
             ImageFormat.OpenExr => OpenExr,
+            ImageFormat.Radiance => Radiance,
             _ => None,
         };
 

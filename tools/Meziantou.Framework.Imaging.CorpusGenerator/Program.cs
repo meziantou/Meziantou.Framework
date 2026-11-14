@@ -39,6 +39,9 @@ const string Usage = """
         exr           OpenEXR fixtures: every compression, sample type, tiles and levels, windows, line orders and
                       chromaticities, malformed, unsupported and over-limit files (exr-from-raw and exr-to-raw, built with
                       OpenEXR, and the ffmpeg of the pinned meziantou/prebuilt release; the sample images of OpenEXR)
+        hdr           Radiance HDR fixtures: flat, old and new run-length encoded scanlines, the eight orientations,
+                      header variables and primaries, XYZE, malformed and over-limit files (assembled from the
+                      specification, and the ffmpeg of the pinned meziantou/prebuilt release; any OS)
         icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
         icc-builtin   the source of the CMYK profile provided by the library, transcribed from the committed corpus
                       (no tool; any OS)
@@ -176,6 +179,8 @@ try
             return Jp2Corpus.Run(options);
         case "exr":
             return ExrCorpus.Run(options);
+        case "hdr":
+            return RadianceCorpus.Run(options);
         case "icc":
             if (iccProfiles is null)
             {

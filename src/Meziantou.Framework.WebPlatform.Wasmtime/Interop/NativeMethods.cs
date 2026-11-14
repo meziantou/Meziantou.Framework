@@ -393,6 +393,24 @@ internal static unsafe partial class NativeMethods
     public static partial nint wasmtime_memory_grow(nint context, WasmtimeIndexedExtern* memory, ulong delta, ulong* previousSize);
 
     [LibraryImport(LibraryName)]
+    public static partial nint wasmtime_sharedmemory_clone(nint memory);
+
+    [LibraryImport(LibraryName)]
+    public static partial void wasmtime_sharedmemory_delete(nint memory);
+
+    [LibraryImport(LibraryName)]
+    public static partial nint wasmtime_sharedmemory_type(nint memory);
+
+    [LibraryImport(LibraryName)]
+    public static partial byte* wasmtime_sharedmemory_data(nint memory);
+
+    [LibraryImport(LibraryName)]
+    public static partial ulong wasmtime_sharedmemory_size(nint memory);
+
+    [LibraryImport(LibraryName)]
+    public static partial nint wasmtime_sharedmemory_grow(nint memory, ulong delta, ulong* previousSize);
+
+    [LibraryImport(LibraryName)]
     public static partial nint wasmtime_table_new(nint context, nint type, WasmtimeVal* init, WasmtimeIndexedExtern* result);
 
     [LibraryImport(LibraryName)]

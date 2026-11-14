@@ -462,6 +462,9 @@ internal static class AtomicsBuiltins
         if (typedArray.ViewedArrayBuffer.SharedBlock is not { } block)
             return 0;
 
+        if (block.Waiters is { } waiters)
+            return waiters.Notify(byteIndexInBuffer, c >= int.MaxValue ? int.MaxValue : (int)c);
+
         using (AtomicsWaiterList.Enter())
         {
             return AtomicsWaiterList.NotifyWaiters(block, byteIndexInBuffer, c);
@@ -486,6 +489,9 @@ internal static class AtomicsBuiltins
 
         var size = typedArray.ElementSize;
         var capability = isAsync ? PromiseCapability.CreateIntrinsic(realm) : null;
+        if (block.Waiters is { } externalWaiters)
+            return DoExternalWait(realm, externalWaiters, typedArray, byteIndexInBuffer, value, timeout, capability);
+
         AtomicsWaiter waiter;
         using (AtomicsWaiterList.Enter())
         {
@@ -620,6 +626,78 @@ internal static class AtomicsBuiltins
 
             if (canceled)
                 engine.ThrowTermination(JsTerminationReason.Canceled, "The execution was canceled");
+        }
+
+        return notified ? "ok" : "timed-out";
+    }
+
+    /// <summary>
+    /// DoWait on a block whose waiters are the waiters of another runtime (<see cref="JsSharedDataBlock.Waiters"/>): the
+    /// value is checked, then the waiter is added to the external waiters. A blocking wait is bounded by the limits of the
+    /// running entry, as <see cref="SuspendThisAgent"/>: the timeout of the wait is at most the time left to the entry, and
+    /// the cancellation tokens of the engine and of the execution scopes stop it.
+    /// </summary>
+    private static JsValue DoExternalWait(JsRealm realm, JsSharedDataBlockWaiters waiters, JsTypedArray typedArray, int byteIndexInBuffer, long value, double timeout, PromiseCapability? capability)
+    {
+        var engine = realm.Engine;
+        var size = typedArray.ElementSize;
+        var current = LoadFromBuffer(typedArray.ViewedArrayBuffer, byteIndexInBuffer, size);
+        var currentValue = size == 8 ? unchecked((long)current) : unchecked((int)current);
+        if (currentValue != value)
+            return capability is not null ? CreateWaitAsyncResult(realm, isAsync: false, "not-equal") : (JsValue)"not-equal";
+
+        if (timeout == 0)
+            return capability is not null ? CreateWaitAsyncResult(realm, isAsync: false, "timed-out") : (JsValue)"timed-out";
+
+        TimeSpan? duration = double.IsPositiveInfinity(timeout) ? null : ToTimeSpan(timeout);
+        if (capability is not null)
+        {
+            engine.IncrementPendingAtomicsWaitAsync();
+            bool added;
+            try
+            {
+                // The promise is resolved on the thread of the agent (EnqueueResolveInAgentJob)
+                added = waiters.WaitAsync(byteIndexInBuffer, value, size, duration, notified => engine.EnqueueAtomicsWaitAsyncResolution(ResolveWaitAsync, capability, notified ? "ok" : "timed-out", realm), engine.AtomicsLifetimeToken);
+            }
+            catch
+            {
+                engine.DecrementPendingAtomicsWaitAsync();
+                throw;
+            }
+
+            if (!added)
+            {
+                engine.DecrementPendingAtomicsWaitAsync();
+                ThrowHelper.ThrowRangeError("Too many asynchronous waiters");
+            }
+
+            return CreateWaitAsyncResult(realm, isAsync: true, capability.Promise);
+        }
+
+        if (engine.GetRemainingTime() is { } remaining)
+        {
+            // The wait ends after the deadline of the entry, so that the check that follows detects it
+            remaining = (remaining < TimeSpan.Zero ? TimeSpan.Zero : remaining) + TimeSpan.FromMilliseconds(1);
+            duration = duration is { } requested && requested < remaining ? requested : remaining;
+        }
+
+        bool notified;
+        using (var cancellation = engine.CreateInterruptCancellationTokenSource())
+        {
+            try
+            {
+                notified = waiters.Wait(byteIndexInBuffer, value, size, duration, cancellation.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                notified = false;
+            }
+        }
+
+        if (!notified)
+        {
+            // The wait stopped because of a limit of the entry (its timeout, a cancellation token)
+            engine.CheckInterrupt();
         }
 
         return notified ? "ok" : "timed-out";

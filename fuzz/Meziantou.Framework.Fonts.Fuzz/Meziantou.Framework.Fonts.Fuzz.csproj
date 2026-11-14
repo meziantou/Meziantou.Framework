@@ -1,5 +1,5 @@
 <Project Sdk="Meziantou.NET.Sdk">
-  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter, the cvar table, the hints of CFF outlines, the subsetter and the shaper). See fuzz/README.md. -->
+  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter, the cvar table, the hints of CFF outlines, the subsetter, the shaper and the blocks of WOFF files). See fuzz/README.md. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>

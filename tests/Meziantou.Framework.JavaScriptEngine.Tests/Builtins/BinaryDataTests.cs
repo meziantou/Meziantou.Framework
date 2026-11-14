@@ -293,6 +293,42 @@ public sealed class BinaryDataTests
     }
 
     [Fact]
+    public void SharedDataBlock_WaitersOfAnotherRuntime()
+    {
+        #region JsSharedDataBlock_Waiters
+        // Atomics.wait, Atomics.waitAsync and Atomics.notify use the waiters of the runtime that shares the memory
+        var block = JsSharedDataBlock.TryCreate(16, maxByteLength: 32)!;
+        var waiters = new RecordingWaiters();
+        block.Waiters = waiters;
+
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("sab", realm.CreateSharedArrayBuffer(block));
+        }
+
+        realm.Execute("""
+            const i32 = new Int32Array(sab);
+            i32[1] = 5;
+            var results = [Atomics.notify(i32, 1), Atomics.notify(i32, 2, 3), Atomics.wait(i32, 1, 5, 20), Atomics.wait(i32, 1, 6), Atomics.wait(i32, 1, 5, 0), Atomics.wait(new BigInt64Array(sab), 1, 0n)];
+            const { async, value } = Atomics.waitAsync(i32, 3, 0, 100);
+            value.then(result => results.push(async, result));
+            """);
+        engine.RunJobs();
+
+        Assert.Equal("2,2,ok,not-equal,timed-out,ok,true,ok", realm.Evaluate("results.join()").ToString());
+        Assert.Equal(["notify 4 2147483647", "notify 8 3", "wait 4 5 4 20", "wait 8 0 8 -", "waitAsync 12 0 4 100"], waiters.Calls);
+        #endregion
+
+        waiters.RefuseAsyncWaits = true;
+        Assert.Equal("RangeError", realm.Evaluate("try { Atomics.waitAsync(i32, 3, 0); 'no error' } catch (e) { e.name }").ToString());
+        Assert.False(waiters.LastAsyncWaitToken.IsCancellationRequested);
+        engine.Dispose();
+        Assert.True(waiters.LastAsyncWaitToken.IsCancellationRequested);
+    }
+
+    [Fact]
     public void SharedDataBlock_GetReferenceChecksTheWholeRange()
     {
         var block = JsSharedDataBlock.TryCreate(16, maxByteLength: 32)!;
@@ -1023,3 +1059,39 @@ public sealed class BinaryDataTests
         context.AssertThrows(ErrorType.SyntaxError, () => Call(New(context, "Uint8Array", 4), "setFromHex", "01zz"));
     }
 }
+
+#region JsSharedDataBlock_WaitersClass
+// The waiters of another runtime that shares the memory of a block: here, they record the calls and notify every waiter at once
+internal sealed class RecordingWaiters : JsSharedDataBlockWaiters
+{
+    public List<string> Calls { get; } = [];
+
+    public override int Notify(int byteIndex, int count)
+    {
+        Calls.Add($"notify {byteIndex} {count}");
+        return Math.Min(count, 2);
+    }
+
+    public override bool Wait(int byteIndex, long expectedValue, int size, TimeSpan? timeout, CancellationToken cancellationToken)
+    {
+        Calls.Add($"wait {byteIndex} {expectedValue} {size} {(timeout is { } duration ? duration.TotalMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture) : "-")}");
+        return true;
+    }
+
+    public override bool WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed, CancellationToken cancellationToken)
+    {
+        Calls.Add($"waitAsync {byteIndex} {expectedValue} {size} {timeout?.TotalMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+        if (RefuseAsyncWaits)
+            return false; // Atomics.waitAsync throws a RangeError
+
+        // The token is canceled when the engine is disposed
+        LastAsyncWaitToken = cancellationToken;
+        completed(true);
+        return true;
+    }
+
+    public bool RefuseAsyncWaits { get; set; }
+
+    public CancellationToken LastAsyncWaitToken { get; private set; }
+}
+#endregion

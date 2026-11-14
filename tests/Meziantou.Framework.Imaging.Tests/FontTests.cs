@@ -1613,6 +1613,122 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void TheMetadataAndPrivateDataOfAWoffFileAreKept()
+    {
+        var sfnt = FontSamples.Boxes().Build();
+        var metadata = "\uFEFF<?xml version=\"1.0\" encoding=\"UTF-8\"?><metadata version=\"1.0\"><vendor name=\"Meziantou é\"/></metadata>"u8.ToArray();
+        byte[] privateData = [1, 2, 3, 4, 5];
+        var expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><metadata version=\"1.0\"><vendor name=\"Meziantou é\"/></metadata>";
+
+        foreach (var file in (byte[][])[
+            FontBuilder.WriteWoff(sfnt, metadata: metadata, privateData: privateData),
+            FontWoff2Writer.WriteContainer(0x00010000, FontWoff2Writer.CreateTables(FontSamples.Boxes(), new FontWoff2Options()), metadata, privateData),
+        ])
+        {
+            var data = Font.Load(file).Face.Data;
+            Assert.Equal(expected, data.GetWoffMetadata());
+            Assert.Equal(privateData, data.GetWoffPrivateData().ToArray());
+            AssertSameFont(Font.Load(sfnt), Font.Load(file), sameGlyphBytes: false);
+        }
+
+        // Only one of the blocks.
+        var onlyPrivate = Font.Load(FontBuilder.WriteWoff(sfnt, privateData: privateData)).Face.Data;
+        Assert.Null(onlyPrivate.GetWoffMetadata());
+        Assert.Equal(privateData, onlyPrivate.GetWoffPrivateData().ToArray());
+        var onlyMetadata = Font.Load(FontWoff2Writer.WriteContainer(0x00010000, FontWoff2Writer.CreateTables(FontSamples.Boxes(), new FontWoff2Options()), metadata)).Face.Data;
+        Assert.Equal(expected, onlyMetadata.GetWoffMetadata());
+        Assert.True(onlyMetadata.GetWoffPrivateData().IsEmpty);
+
+        // A font that is not in a container, or a container without the blocks.
+        foreach (var file in (byte[][])[sfnt, FontBuilder.WriteWoff(sfnt), FontWoff2Writer.Write(FontSamples.Boxes())])
+        {
+            var data = Font.Load(file).Face.Data;
+            Assert.Null(data.GetWoffMetadata());
+            Assert.True(data.GetWoffPrivateData().IsEmpty);
+        }
+    }
+
+    [Fact]
+    public void AMalformedMetadataBlockOfAWoffFileIsReportedWhenItIsRead()
+    {
+        var sfnt = FontSamples.Boxes().Build();
+        var metadata = "<metadata version=\"1.0\"/>"u8.ToArray();
+        var woff = FontBuilder.WriteWoff(sfnt, metadata: metadata, privateData: [9, 9]);
+        var metadataOffset = (int)BinaryPrimitives.ReadUInt32BigEndian(woff.AsSpan(24));
+        var metadataLength = (int)BinaryPrimitives.ReadUInt32BigEndian(woff.AsSpan(28));
+
+        byte[] Edit(byte[] source, Action<byte[]> edit)
+        {
+            var copy = (byte[])source.Clone();
+            edit(copy);
+            return copy;
+        }
+
+        // The font loads: the blocks are not needed to use it.
+        static void AssertInvalidMetadata(byte[] file, string expectedMessage)
+        {
+            var data = Font.Load(file).Face.Data;
+            var exception = Assert.Throws<InvalidFontException>(() => data.GetWoffMetadata());
+            Assert.Contains(expectedMessage, exception.Message);
+        }
+
+        AssertInvalidMetadata(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(32), (uint)metadata.Length + 1)), "less than its declared length");
+        AssertInvalidMetadata(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(32), (uint)metadata.Length - 1)), "more than its declared length");
+        AssertInvalidMetadata(Edit(woff, data => data[metadataOffset + metadataLength - 1] ^= 0x01), "compressed data");
+        AssertInvalidMetadata(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(28), (uint)metadataLength - 4)), "truncated or corrupted");
+        AssertInvalidMetadata(Edit(woff, data => data.AsSpan(metadataOffset, metadataLength).Fill(0xAA)), "malformed compressed data");
+        AssertInvalidMetadata(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(24), (uint)data.Length)), "outside the file");
+        AssertInvalidMetadata(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(32), 0)), "empty document");
+
+        var outsidePrivate = Font.Load(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(40), (uint)data.Length))).Face.Data;
+        Assert.Contains("private data block", Assert.Throws<InvalidFontException>(() => outsidePrivate.GetWoffPrivateData()).Message);
+
+        // WOFF2: the blocks must follow the compressed tables, so only their content can be malformed.
+        var woff2 = FontWoff2Writer.WriteContainer(0x00010000, FontWoff2Writer.CreateTables(FontSamples.Boxes(), new FontWoff2Options()), metadata);
+        AssertInvalidMetadata(Edit(woff2, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(36), (uint)metadata.Length + 1)), "less than its declared length");
+        AssertInvalidMetadata(Edit(woff2, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(36), (uint)metadata.Length - 1)), "more than its declared length");
+        var woff2Offset = (int)BinaryPrimitives.ReadUInt32BigEndian(woff2.AsSpan(28));
+        var woff2Length = (int)BinaryPrimitives.ReadUInt32BigEndian(woff2.AsSpan(32));
+        AssertInvalidMetadata(Edit(woff2, data => data.AsSpan(woff2Offset, woff2Length).Fill(0xFF)), "malformed compressed data");
+
+        // The document is bounded by the limit of the bytes a font keeps, and expanded in temporary storage.
+        var limited = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxFontBytes = sfnt.Length + 64 } } };
+        var huge = Font.Load(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(32), (uint)sfnt.Length + 65)), limited).Face.Data;
+        var limitException = Assert.Throws<FontResourceLimitException>(() => huge.GetWoffMetadata());
+        Assert.Equal(FontResourceLimitKind.FontBytes, limitException.Kind);
+
+        var smallScope = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = metadata.Length - 1 } } };
+        var scoped = Font.Load(woff, smallScope).Face.Data;
+        // The buffer is rented from the environment of the font: here an allocation scope of Imaging, which throws its own exception.
+        var scopeException = Assert.Throws<ImageResourceLimitException>(() => scoped.GetWoffMetadata());
+        Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, scopeException.Kind);
+    }
+
+    [Fact]
+    public void TheBlocksOfAWoffFileCountWithTheFontAgainstItsLimit()
+    {
+        var sfnt = FontSamples.Boxes().Build();
+        byte[] privateData = new byte[1000];
+        static FontLoadOptions Options(long fontBytes) => new() { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxFontBytes = fontBytes } } };
+
+        // WOFF: the font is exactly the original one; the private data is kept next to it.
+        var woff = FontBuilder.WriteWoff(sfnt, privateData: privateData);
+        Assert.HasCount(1000, Font.Load(woff, Options(sfnt.Length + 1000)).Face.Data.GetWoffPrivateData().ToArray());
+        var exception = Assert.Throws<ImageResourceLimitException>(() => Font.Load(woff, Options(sfnt.Length + 999)));
+        Assert.Equal(ImageResourceLimitKind.FontBytes, exception.Kind);
+        Assert.Equal(sfnt.Length + 1000, exception.Requested);
+
+        // WOFF2: the rebuilt font has its glyphs padded to four bytes.
+        var tables = FontWoff2Writer.CreateTables(FontSamples.Boxes(), new FontWoff2Options());
+        var rebuiltLength = Font.Load(FontWoff2Writer.WriteContainer(0x00010000, tables)).Face.Data.RawBytes.Length;
+        var woff2 = FontWoff2Writer.WriteContainer(0x00010000, tables, privateData: privateData);
+        Assert.HasCount(1000, Font.Load(woff2, Options(rebuiltLength + 1000)).Face.Data.GetWoffPrivateData().ToArray());
+        exception = Assert.Throws<ImageResourceLimitException>(() => Font.Load(woff2, Options(rebuiltLength + 999)));
+        Assert.Equal(ImageResourceLimitKind.FontBytes, exception.Kind);
+        Assert.Equal(rebuiltLength + 1000, exception.Requested);
+    }
+
+    [Fact]
     public void AMalformedWoffFileIsRejected()
     {
         var woff = FontBuilder.WriteWoff(FontSamples.Boxes().Build());
@@ -3568,6 +3684,29 @@ public sealed class FontTests
         var exception = Assert.Throws<FontResourceLimitException>(() => FontLoader.Load(new byte[4096], new PooledFontEnvironment(limits, 1024 * 1024)));
         Assert.Equal(FontResourceLimitKind.EncodedBytes, exception.Kind);
         #endregion
+    }
+
+    [Fact]
+    public void Documentation_WoffMetadata()
+    {
+        #region Fonts_WoffMetadata
+        static (string? Metadata, ReadOnlyMemory<byte> PrivateData) ReadWoffBlocks(byte[] woff)
+        {
+            var environment = new PooledFontEnvironment(FontResourceLimits.Default, maxLiveAllocationBytes: 64 * 1024 * 1024);
+            var face = FontLoader.Load(woff, environment)[0];
+
+            // The XML document of the metadata block, or null when the file has none
+            var metadata = face.Data.GetWoffMetadata();
+
+            // The private data block, empty when the file has none
+            var privateData = face.Data.GetWoffPrivateData();
+            return (metadata, privateData);
+        }
+        #endregion
+
+        var (metadata, privateData) = ReadWoffBlocks(FontBuilder.WriteWoff(FontSamples.Boxes().Build(), metadata: "<metadata version=\"1.0\"><vendor name=\"Meziantou\"/></metadata>"u8.ToArray(), privateData: [42]));
+        Assert.Equal("<metadata version=\"1.0\"><vendor name=\"Meziantou\"/></metadata>", metadata);
+        Assert.Equal((byte)42, privateData.Span[0]);
     }
 
     [Fact]

@@ -35,6 +35,17 @@ app.MapGet("/client", () => Html("Client", """
       });
     </script>
     """));
+app.MapGet("/secure", (HttpContext context) =>
+{
+    // The policy blocks the inline script; the script of the application copies a text
+    context.Response.Headers.ContentSecurityPolicy = "script-src 'self'";
+    return Html("Secure", """
+        <button id="copy">Copy</button>
+        <script>document.title = 'Inline';</script>
+        <script src="/secure.js"></script>
+        """);
+});
+app.MapGet("/secure.js", () => Results.Text("document.getElementById('copy').addEventListener('click', () => navigator.clipboard.writeText('Copied text'));", "text/javascript"));
 
 app.Run();
 

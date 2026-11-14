@@ -282,7 +282,9 @@ namespace Meziantou.AspNetCore.Testing
     public abstract class TestPage : Meziantou.AspNetCore.Testing.LocatorScope, System.IAsyncDisposable, System.IDisposable
     {
         public Meziantou.Framework.WebPlatform.Dom.BrowsingContext BrowsingContext { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.SystemClipboard Clipboard { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> ConsoleMessages { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ContentSecurityPolicyViolationReport> ContentSecurityPolicyViolations { get => throw null; }
         public System.TimeSpan DefaultTimeout { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Document Document { get => throw null; }
         public Meziantou.AspNetCore.Testing.PageInput Input { get => throw null; }
@@ -316,6 +318,7 @@ namespace Meziantou.AspNetCore.Testing
 
     public sealed class TestPageSettings
     {
+        public Meziantou.Framework.WebPlatform.Dom.SystemClipboard? Clipboard { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar? CookieJar { get => throw null; init { } }
         public System.TimeSpan DefaultTimeout { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentLoader? DocumentLoader { get => throw null; init { } }
@@ -328,6 +331,7 @@ namespace Meziantou.AspNetCore.Testing
     public sealed class WebAppBrowser : System.IAsyncDisposable, System.IDisposable
     {
         public System.Uri BaseAddress { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.SystemClipboard Clipboard { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar Cookies { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.AspNetCore.Testing.BrowserPage> Pages { get => throw null; }
         public WebAppBrowser(System.Uri baseAddress, Meziantou.Framework.WebPlatform.Dom.DocumentLoader loader, Meziantou.AspNetCore.Testing.WebAppBrowserOptions? options = null) { }

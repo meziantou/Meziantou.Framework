@@ -15,6 +15,12 @@ public sealed class TestPageSettings
     /// <summary>Gets the cookies of the page, or null for no cookie. Pages that share a jar share their cookies.</summary>
     public CookieJar? CookieJar { get; init; }
 
+    /// <summary>
+    /// Gets the system clipboard of the page: the data of the copy and cut actions and of <c>navigator.clipboard</c>, or null
+    /// for a clipboard of its own. Pages that share a clipboard share what they copy.
+    /// </summary>
+    public SystemClipboard? Clipboard { get; init; }
+
     /// <summary>Gets the engine that runs the scripts of the page, or null to run no script. The page disposes it.</summary>
     public ScriptEngine? ScriptEngine { get; init; }
 

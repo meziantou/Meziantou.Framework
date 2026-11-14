@@ -1,5 +1,3 @@
-using System.Buffers;
-
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>One face of a font file: its table directory and what its fixed-size tables declare.</summary>
@@ -1536,7 +1534,7 @@ public sealed class FontFace
     /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
     public void DecodeOutline(int glyphId, double size, OutlineSink sink, GlyphScratch scratch, ref GlyphBudget budget)
     {
-        if (!TryDecodeMonochromeBitmap(glyphId, size, sink, ref budget))
+        if (!TryDecodeMonochromeBitmap(glyphId, size, sink, scratch, ref budget))
         {
             DecodeOutline(glyphId, sink, scratch, ref budget);
         }
@@ -1548,7 +1546,7 @@ public sealed class FontFace
     /// outlines.
     /// </summary>
     /// <returns><see langword="true"/> when the glyph is drawn with a bitmap.</returns>
-    internal bool TryDecodeMonochromeBitmap(int glyphId, double size, OutlineSink sink, ref GlyphBudget budget)
+    internal bool TryDecodeMonochromeBitmap(int glyphId, double size, OutlineSink sink, GlyphScratch scratch, ref GlyphBudget budget)
     {
         if (!_useMonochromeBitmaps || (uint)glyphId >= (uint)GlyphCount || !TryGetMonochromeBitmap(glyphId, size, isExactSize: !_isBitmapOnly, out var bitmap) || bitmap.BitDepth != 1)
             return false;
@@ -1562,27 +1560,28 @@ public sealed class FontFace
         if (_eblc!.TryEmitBits(locations, bits, bitmap, unitsPerPixelX, unitsPerPixelY, sink, ref budget))
             return true;
 
-        // A glyph made of other glyphs: its pixels are composed in its box first, then emitted as runs.
-        var length = bitmap.Width * bitmap.Height * 4;
-        var pixels = ArrayPool<byte>.Shared.Rent(length);
+        // A glyph made of other glyphs: its pixels are composed in its box first, in the working storage of the
+        // outlines, then emitted as runs.
+        var length = bitmap.Width * bitmap.Height;
+        var start = scratch.RentWork(length);
         try
         {
-            var span = pixels.AsSpan(0, length);
-            span.Clear();
-            _eblc.Decode(locations, bits, bitmap, span, ref budget);
+            _eblc.DecodeCoverage(locations, bits, bitmap, scratch.Work.Slice(start, length), ref budget);
+            var coverage = scratch.Work.Slice(start, length);
             for (var row = 0; row < bitmap.Height; row++)
             {
                 budget.Charge(1);
+                var pixels = coverage.Slice(row * bitmap.Width, bitmap.Width);
                 for (var column = 0; column < bitmap.Width;)
                 {
-                    if (span[(((row * bitmap.Width) + column) * 4) + 3] == 0)
+                    if (pixels[column] == 0)
                     {
                         column++;
                         continue;
                     }
 
                     var end = column + 1;
-                    while (end < bitmap.Width && span[(((row * bitmap.Width) + end) * 4) + 3] != 0)
+                    while (end < bitmap.Width && pixels[end] != 0)
                     {
                         end++;
                     }
@@ -1595,7 +1594,7 @@ public sealed class FontFace
         }
         finally
         {
-            ArrayPool<byte>.Shared.Return(pixels);
+            scratch.ReturnWork(start);
         }
 
         return true;

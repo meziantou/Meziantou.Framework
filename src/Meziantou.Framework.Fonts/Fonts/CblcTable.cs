@@ -163,9 +163,22 @@ internal sealed class CblcTable
     /// <param name="pixels">The pixels of the box of the glyph, row by row from the top.</param>
     /// <param name="budget">The budget of the glyph: a row of pixels and a component cost one operation each.</param>
     public void Decode(ReadOnlySpan<byte> locations, ReadOnlySpan<byte> data, in BitmapGlyph glyph, Span<byte> pixels, ref GlyphBudget budget)
-        => Draw(locations, data, glyph.Strike, glyph.GlyphId, pixels, glyph.Width, glyph.Height, 0, 0, 0, ref budget);
+        => Draw(locations, data, glyph.Strike, glyph.GlyphId, pixels, coverage: default, glyph.Width, glyph.Height, 0, 0, 0, ref budget);
 
-    private void Draw(ReadOnlySpan<byte> locations, ReadOnlySpan<byte> data, int strike, int glyphId, Span<byte> pixels, int width, int height, int x, int y, int depth, ref GlyphBudget budget)
+    /// <summary>
+    /// Decodes the coverage of the pixels of a mask (<see cref="BitmapGlyphFormat.Mask"/>), with the glyphs it is made
+    /// of: a number from 0 to 1 per pixel. The coverage must be zero.
+    /// </summary>
+    /// <param name="locations">The location table.</param>
+    /// <param name="data">The data table.</param>
+    /// <param name="glyph">The glyph, from <see cref="TryGetGlyph"/>.</param>
+    /// <param name="coverage">The coverage of the pixels of the box of the glyph, row by row from the top.</param>
+    /// <param name="budget">The budget of the glyph: a row of pixels and a component cost one operation each.</param>
+    public void DecodeCoverage(ReadOnlySpan<byte> locations, ReadOnlySpan<byte> data, in BitmapGlyph glyph, Span<double> coverage, ref GlyphBudget budget)
+        => Draw(locations, data, glyph.Strike, glyph.GlyphId, pixels: default, coverage, glyph.Width, glyph.Height, 0, 0, 0, ref budget);
+
+    /// <summary>Draws a glyph in the pixels of a box, or in its coverage when <paramref name="pixels"/> is empty.</summary>
+    private void Draw(ReadOnlySpan<byte> locations, ReadOnlySpan<byte> data, int strike, int glyphId, Span<byte> pixels, Span<double> coverage, int width, int height, int x, int y, int depth, ref GlyphBudget budget)
     {
         budget.Charge(1);
 
@@ -182,19 +195,19 @@ internal sealed class CblcTable
                 for (var i = 0; i < image.ComponentCount; i++)
                 {
                     var component = image.Data.Slice(image.HeaderLength + 2 + (i * 4), 4);
-                    Draw(locations, data, strike, FontBinary.UInt16(component, 0), pixels, width, height, x + FontBinary.Int8(component, 2), y + FontBinary.Int8(component, 3), depth + 1, ref budget);
+                    Draw(locations, data, strike, FontBinary.UInt16(component, 0), pixels, coverage, width, height, x + FontBinary.Int8(component, 2), y + FontBinary.Int8(component, 3), depth + 1, ref budget);
                 }
 
                 break;
 
             case ImageKind.Pixels:
-                DrawPixels(image, pixels, width, height, x, y, ref budget);
+                DrawPixels(image, pixels, coverage, width, height, x, y, ref budget);
                 break;
         }
     }
 
     /// <summary>Draws the pixels of a glyph over the pixels of a box, with its top left corner at a place of the box: what is outside the box is left out.</summary>
-    private static void DrawPixels(in ImageData image, Span<byte> pixels, int width, int height, int x, int y, ref GlyphBudget budget)
+    private static void DrawPixels(in ImageData image, Span<byte> pixels, Span<double> coverage, int width, int height, int x, int y, ref GlyphBudget budget)
     {
         var bits = image.Data[image.HeaderLength..];
         var depth = image.BitDepth;
@@ -213,8 +226,16 @@ internal sealed class CblcTable
                 if ((uint)targetX >= (uint)width)
                     continue;
 
-                var target = pixels.Slice(((targetY * width) + targetX) * 4, 4);
                 var index = (row * rowBits) + (column * depth);
+                if (pixels.IsEmpty)
+                {
+                    // The components of a glyph cover its pixels together; colors are opaque.
+                    var value = depth == 32 ? bits[(int)(index >> 3) + 3] / 255.0 : (double)ReadBits(bits, index, depth) / maximum;
+                    coverage[(targetY * width) + targetX] = Math.Max(coverage[(targetY * width) + targetX], value);
+                    continue;
+                }
+
+                var target = pixels.Slice(((targetY * width) + targetX) * 4, 4);
                 if (depth == 32)
                 {
                     // Blue, green, red and opacity, multiplied by it: drawn over what is there.
@@ -229,8 +250,7 @@ internal sealed class CblcTable
                 {
                     // A coverage: the components of a glyph cover its pixels together.
                     var value = ReadBits(bits, index, depth);
-                    var coverage = (byte)(((value * 255) + (maximum / 2)) / maximum);
-                    target[3] = Math.Max(target[3], coverage);
+                    target[3] = Math.Max(target[3], (byte)(((value * 255) + (maximum / 2)) / maximum));
                 }
             }
         }
@@ -393,12 +413,10 @@ internal sealed class CblcTable
         var left = FontBinary.Int8(metrics, 2);
         var top = FontBinary.Int8(metrics, 3);
         var componentCount = 0;
-        long length = 4;
         switch (kind)
         {
             case ImageKind.Pixels:
-                length = (GetRowBits(width, bitDepth, isByteAligned) * height + 7) / 8;
-                if (length > glyphData.Length - header)
+                if (((GetRowBits(width, bitDepth, isByteAligned) * height) + 7) / 8 > glyphData.Length - header)
                     throw FontErrors.InvalidTable(_dataTag, "has a bitmap that is longer than the data of its glyph.");
 
                 break;

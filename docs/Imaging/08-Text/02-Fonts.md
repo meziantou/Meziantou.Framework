@@ -143,8 +143,9 @@ strike; at other sizes, the outline is drawn.
 
 - A bitmap of one bit per pixel is drawn as the squares of its pixels: it is an outline, that [StrokeText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeText),
   [TextLayout.ToPath](cref:Meziantou.Framework.Imaging.Typography.TextLayout.ToPath) and the bounds of a layout use.
-- A bitmap of 2, 4 or 8 bits per pixel gives the coverage of its pixels: it is drawn with the brush of the text, like
-  an image whose opacity is the coverage.
+- A bitmap of 2, 4 or 8 bits per pixel gives the coverage of its pixels: it is drawn like a color glyph that takes
+  the color of the text. A solid or gradient brush gives its colors; with an image, pattern, path gradient or mesh
+  gradient brush, the glyph is black, as the parts of a `COLR` glyph that take the color of the text.
 
 A font without outlines, whose glyphs are only bitmaps (`EBDT`, `bdat`, `CBDT` or `sbix`), is loaded like any other
 font and draws its bitmaps at every size, without the option: each glyph is taken from the smallest strike that is at

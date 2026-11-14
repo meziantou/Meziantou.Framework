@@ -137,7 +137,8 @@ internal static class FontBitmapWriter
     private static (byte[] Locations, byte[] Data) WriteBitmaps(IReadOnlyList<FontBitmapStrike> strikes, bool isMonochrome)
     {
         // The data table: its version, then the data of each glyph of each strike. A strike has an index subtable per
-        // image format of its glyphs, in the order of their first glyph.
+        // run of glyphs of one image format, in the order of the glyphs, so that the ranges of its subtables do not
+        // overlap: a reader looks for a glyph in the first subtable whose range has it.
         var data = new FontWriter();
         data.UInt16(isMonochrome ? 2 : 3);
         data.UInt16(0);
@@ -145,13 +146,19 @@ internal static class FontBitmapWriter
         foreach (var strike in strikes)
         {
             var subtables = new List<(int First, int Last, byte[] Subtable)>();
-            var groups = strike.Glyphs
-                .GroupBy(glyph => glyph.ImageFormat ?? strike.ImageFormat)
-                .OrderBy(group => group.Min(glyph => glyph.GlyphId));
-            foreach (var group in groups)
+            var sorted = strike.Glyphs.OrderBy(glyph => glyph.GlyphId).ToList();
+            for (var first = 0; first < sorted.Count;)
             {
-                var glyphs = group.OrderBy(glyph => glyph.GlyphId).ToList();
-                subtables.Add((glyphs[0].GlyphId, glyphs[^1].GlyphId, WriteSubtable(data, strike, group.Key, glyphs)));
+                var imageFormat = sorted[first].ImageFormat ?? strike.ImageFormat;
+                var end = first + 1;
+                while (end < sorted.Count && (sorted[end].ImageFormat ?? strike.ImageFormat) == imageFormat)
+                {
+                    end++;
+                }
+
+                var glyphs = sorted[first..end];
+                subtables.Add((glyphs[0].GlyphId, glyphs[^1].GlyphId, WriteSubtable(data, strike, imageFormat, glyphs)));
+                first = end;
             }
 
             strikeSubtables.Add(subtables);

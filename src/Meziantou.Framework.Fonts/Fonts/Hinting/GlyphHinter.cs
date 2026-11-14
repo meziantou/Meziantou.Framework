@@ -104,7 +104,7 @@ public sealed class GlyphHinter : IDisposable
         ArgumentNullException.ThrowIfNull(sink);
         ArgumentNullException.ThrowIfNull(scratch);
         var advance = _face.GetAdvanceWidth(glyphId) / _unitsPerPixel;
-        if ((uint)glyphId >= (uint)_face.GlyphCount || _face.TryDecodeMonochromeBitmap(glyphId, Size, sink, ref budget))
+        if ((uint)glyphId >= (uint)_face.GlyphCount || _face.TryDecodeMonochromeBitmap(glyphId, Size, sink, scratch, ref budget))
             return Hinting == GlyphHinting.Full ? Math.Round(advance, MidpointRounding.AwayFromZero) : advance;
 
         switch (Hinting)

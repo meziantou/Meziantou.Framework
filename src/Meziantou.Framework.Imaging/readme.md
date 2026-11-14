@@ -3096,10 +3096,10 @@ public static string? DescribeInstalledFont(string familyName)
 | | Supported |
 | --- | --- |
 | Containers | TrueType and OpenType files (`.ttf`, `.otf`), font collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0 (with the transformed glyph, location and horizontal metrics tables, and collections); detected from the content, never from the extension |
-| Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points), CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) and CFF version 2 (`CFF2`) |
+| Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points), CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) and CFF version 2 (`CFF2`); fonts without outlines whose glyphs are bitmaps (`EBDT`, `bdat`, `CBDT`, `sbix`; `bhed` instead of `head`) |
 | Variable fonts | The axes and the named instances (`fvar`), the mapping of the axes (`avar` versions 1 and 2), and what an instance varies: TrueType outlines (`gvar`), CFF2 outlines (the `blend` operator), advances (`HVAR`, or the phantom points of the glyphs), metrics (`MVAR`), the positions and anchors of `GPOS` (the variation store of `GDEF`) and the features a font replaces in a part of its variation space (feature variations, `rvrn`) |
-| Color glyphs | The layers of version 0 of the `COLR` table and the paints of its version 1 (solid colors, linear, radial and sweep gradients, transformations, clips, clip boxes, the 28 composition modes, and their variations in a variable font), with the palettes of the `CPAL` table; glyphs that are images, in the `sbix` table (PNG, JPEG and TIFF) and in the `CBLC` and `CBDT` tables (PNG; index subtables of formats 1 to 5, images of formats 17, 18 and 19) |
-| Bitmaps without colors | On request (`FontLoadOptions.UseEmbeddedBitmaps`): the strikes of one bit per pixel of the `EBLC` and `EBDT` tables (index subtables of formats 1 to 5, images of formats 1, 2, 5, 6 and 7), drawn at the size they are made for |
+| Color glyphs | The layers of version 0 of the `COLR` table and the paints of its version 1 (solid colors, linear, radial and sweep gradients, transformations, clips, clip boxes, the 28 composition modes, and their variations in a variable font), with the palettes of the `CPAL` table; glyphs that are images, in the `sbix` table (PNG, JPEG and TIFF) and in the `CBLC` and `CBDT` tables (index subtables of formats 1 to 5; PNG images of formats 17, 18 and 19, pixels of 32 bits of formats 1, 2, 5, 6 and 7, glyphs made of other glyphs of formats 8 and 9) |
+| Bitmaps without colors | On request (`FontLoadOptions.UseEmbeddedBitmaps`), or in a font without outlines: the strikes of 1, 2, 4 and 8 bits per pixel of the `EBLC` and `EBDT` tables (`bloc` and `bdat` in Apple fonts; index subtables of formats 1 to 5, images of formats 1, 2, 5, 6 and 7, and glyphs made of other glyphs of formats 8 and 9) |
 | Character maps | Unicode subtables of formats 0, 4, 6, 12 and 13, variation sequences (format 14), and the Macintosh Roman subtable for ASCII when a font has no Unicode one |
 | Names | The typographic family and subfamily when the font has them, the legacy ones otherwise; Windows and Unicode platform names, then Macintosh Roman |
 | Metrics | In font units (`Font.Metrics`) or scaled to a size in pixels (`Font.GetMetrics`): ascent, descent, line gap, cap height, x-height, underline and strikethrough. The ascent, descent and line gap come from the table the font designates (`hhea`, or the typographic values of `OS/2` when the font sets `USE_TYPO_METRICS` or has an empty `hhea`). For vertical lines, the advance height and the vertical origin of each glyph (`vhea`, `vmtx`, `VORG`, and their variation in `VVAR`), or, in a font without them, an advance of the ascent and the descent with the glyph centered in it. The baselines of each script (`BASE`, with the variations of its version 1.1), which place the text that is on its side in a vertical line |
@@ -3162,7 +3162,9 @@ public static void DrawWeights(string variableFontPath, string outputPath)
     `TextLayout.ToPath` use the outline the font gives to the glyph itself, which can be empty.
   - A glyph the font gives as an image (`sbix`, `CBDT`) is taken from the smallest strike that is at least as large
     as the size of the text, or from the largest one. Its image is decoded when the layout is created, with the
-    decoder of its format (PNG, or in an `sbix` table JPEG or TIFF) and the limits of the library; data that is not
+    decoder of its format (PNG, or in an `sbix` table JPEG or TIFF) and the limits of the library, or by the font
+    reader for the pixels that are not encoded and the glyphs made of other glyphs; `Font.DecodeBitmapGlyph` gives
+    the image of a glyph at the size of its strike; data that is not
     in the format the font gives for it is an error. The image is scaled down to the size of the text with the default filter of
     `Resize`; an image smaller than the text is enlarged when it is drawn, by bilinear interpolation. At the size of
     its strike, at a whole position, the pixels of the image are the pixels drawn. A glyph that has both paints and
@@ -3202,10 +3204,14 @@ public static void DrawWeights(string variableFontPath, string outputPath)
   strike of one bit per pixel. Each pixel of a bitmap is then a square of the outline of the glyph: the text is
   filled, stroked, measured and placed on a path like any other, with any brush, and a glyph drawn at a whole
   position has exactly the pixels of its bitmap. At another size, and for a glyph the strike does not have, the
-  outline is drawn. The advances stay those of the outlines. Strikes of several bits per pixel, and glyphs made of
-  other glyphs (image formats 8 and 9), are not used.
-- **Not supported**: the variation of the hinting values (`cvar`), glyphs in SVG (`SVG `: their outlines are drawn), fonts
-  without outlines (bitmap-only fonts), PostScript Type 1 fonts, Type 1
+  outline is drawn. The advances stay those of the outlines. A glyph made of other glyphs (image formats 8 and 9)
+  has their pixels at their offsets. A strike of 2, 4 or 8 bits per pixel gives the coverage of each pixel: the glyph
+  is drawn like a color glyph that takes the color of the text (a solid color or a gradient; the text is black with
+  the other brushes, as for the parts of a `COLR` glyph that take the text color). A font without outlines, whose
+  glyphs are only bitmaps, is drawn with them at every size, without the option: from the smallest strike that is at
+  least as large as the text, or from the largest one, scaled.
+- **Not supported**: the variation of the hinting values (`cvar`), glyphs in SVG (`SVG `: their outlines are drawn),
+  PostScript Type 1 fonts, Type 1
   charstrings and the deprecated `seac` form of `endchar` in a CFF table, the font matrix of a CFF table (the units of
   the `head` table are used), and the hints of CFF outlines (TrueType instructions are run with
   `TextLayoutOptions.Hinting = Full`, see [Text](#text)). A WOFF or WOFF2 file is expanded in

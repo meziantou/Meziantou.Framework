@@ -474,6 +474,32 @@ public partial class Element : Node
     /// </summary>
     internal void AppendAttribute(string localName, string? @namespace, string? prefix, string value, Attr? node = null)
     {
+        AddAttributeSlot(localName, @namespace, prefix, value, node);
+        HandleAttributeChanges(localName, @namespace, oldValue: null, value);
+    }
+
+    /// <summary>
+    /// Appends an attribute of an element that a parser creates (https://html.spec.whatwg.org/multipage/parsing.html#create-an-element-for-the-token),
+    /// which is not connected yet: the change of its styles is not recorded for each attribute, <see cref="EndParsedAttributes"/>
+    /// increments the version of the DOM once.
+    /// </summary>
+    internal void AppendParsedAttribute(string localName, string? @namespace, string? prefix, string value)
+    {
+        AddAttributeSlot(localName, @namespace, prefix, value, node: null);
+        HandleAttributeChanges(localName, @namespace, oldValue: null, value, parsed: true);
+    }
+
+    /// <summary>Ends the attributes appended by <see cref="AppendParsedAttribute"/>.</summary>
+    internal void EndParsedAttributes()
+    {
+        if (_attributeCount > 0 && !IsConnected)
+        {
+            NodeDocument.OnParsedAttributesAppended();
+        }
+    }
+
+    private void AddAttributeSlot(string localName, string? @namespace, string? prefix, string value, Attr? node)
+    {
         if (_attributes is null)
         {
             _attributes = new AttributeSlot[1];
@@ -488,8 +514,6 @@ public partial class Element : Node
         {
             node.OwnerElement = this;
         }
-
-        HandleAttributeChanges(localName, @namespace, oldValue: null, value);
     }
 
     /// <summary>Allocates the storage of the attributes of an element created by a parser, which knows their number.</summary>
@@ -659,7 +683,7 @@ public partial class Element : Node
     }
 
     /// <summary>https://dom.spec.whatwg.org/#handle-attribute-changes</summary>
-    private void HandleAttributeChanges(string localName, string? @namespace, string? oldValue, string? newValue)
+    private void HandleAttributeChanges(string localName, string? @namespace, string? oldValue, string? newValue, bool parsed = false)
     {
         using var scope = CEReactionsScope.Enter();
         QueueMutationRecordIfObserved("attributes", this, localName, @namespace, oldValue);
@@ -695,7 +719,11 @@ public partial class Element : Node
             NodeDocument.ProcessInternalResourceLinks(this);
         }
 
-        NodeDocument.OnAttributeChangedForStyles(this, localName, @namespace, oldValue, newValue);
+        // The styles of an element created by a parser are not computed before it is inserted (see EndParsedAttributes)
+        if (!parsed || IsConnected)
+        {
+            NodeDocument.OnAttributeChangedForStyles(this, localName, @namespace, oldValue, newValue);
+        }
     }
 
     /// <summary>The attribute change steps (https://dom.spec.whatwg.org/#concept-element-attributes-change-ext).</summary>
@@ -709,87 +737,118 @@ public partial class Element : Node
             Html.Reflection.OnAttributeChanged(this, localName);
         }
 
-        if (localName == "style" && value is not null && !NodeDocument.InlineStylesDeclareAnimations
-            && (value.Contains("animation", StringComparison.OrdinalIgnoreCase) || value.Contains("transition", StringComparison.OrdinalIgnoreCase)))
+        // A single dispatch on the name: the steps run for each attribute that a parser appends
+        switch (localName)
         {
-            // The CSS animations and transitions of the document are updated at each frame
-            NodeDocument.InlineStylesDeclareAnimations = true;
+            case "style":
+                StyleAttributeChangeSteps(value);
+                break;
+
+            case "containertiming":
+                if (value is not null && this is HtmlElement)
+                {
+                    // https://w3c.github.io/container-timing/: the element is a container root
+                    NodeDocument.OnContainerTimingRootRegistered();
+                }
+
+                break;
+
+            case "nonce":
+                if (this is HtmlElement or SvgElement or MathMLElement)
+                {
+                    // https://html.spec.whatwg.org/multipage/urls-and-fetching.html#nonce-attributes
+                    CryptographicNonce = value ?? "";
+                }
+
+                break;
+
+            case "id":
+                IdAttributeChangeSteps(value);
+                break;
+
+            case "slot":
+                if (Slots.ShouldUpdateName(oldValue, value))
+                {
+                    // https://dom.spec.whatwg.org/#slotable-name
+                    var data = GetOrCreateSlottable();
+                    data.Name = value ?? "";
+                    if (data.AssignedSlot is { } assignedSlot)
+                    {
+                        Slots.AssignSlottables(assignedSlot);
+                    }
+
+                    Slots.AssignASlot(this);
+                }
+
+                break;
+
+            default:
+                if (localName.StartsWith("on", StringComparison.Ordinal) && IsEventHandlerContentAttribute(localName))
+                {
+                    OnEventHandlerContentAttributeChanged(localName[2..], value);
+                }
+
+                break;
+        }
+    }
+
+    private void StyleAttributeChangeSteps(string? value)
+    {
+        if (value is not null)
+        {
+            var document = NodeDocument;
+            if (!document.InlineStylesDeclareAnimations && (value.Contains("animation", StringComparison.OrdinalIgnoreCase) || value.Contains("transition", StringComparison.OrdinalIgnoreCase)))
+            {
+                // The CSS animations and transitions of the document are updated at each frame
+                document.InlineStylesDeclareAnimations = true;
+            }
+
+            if (!document.InlineStylesDeclareContentVisibility && (value.Contains("content-visibility", StringComparison.OrdinalIgnoreCase) || value.Contains("contain-intrinsic", StringComparison.OrdinalIgnoreCase)))
+            {
+                // The document is laid out by the rendering steps (see StyleEngine.MayHaveContentVisibility)
+                document.InlineStylesDeclareContentVisibility = true;
+            }
+
+            if (!document.InlineStylesDeclarePositionTryFallbacks && value.Contains("position-try", StringComparison.OrdinalIgnoreCase))
+            {
+                // The document is laid out by the rendering steps (see StyleEngine.MayHavePositionTryFallbacks)
+                document.InlineStylesDeclarePositionTryFallbacks = true;
+            }
+
+            if (!document.InlineStylesDeclareScrollSnapType && value.Contains("scroll-snap-type", StringComparison.OrdinalIgnoreCase))
+            {
+                // The document is laid out by the rendering steps (see StyleEngine.MayHaveScrollSnapContainers)
+                document.InlineStylesDeclareScrollSnapType = true;
+            }
         }
 
-        if (localName == "style" && value is not null && !NodeDocument.InlineStylesDeclareContentVisibility && (value.Contains("content-visibility", StringComparison.OrdinalIgnoreCase) || value.Contains("contain-intrinsic", StringComparison.OrdinalIgnoreCase)))
-        {
-            // The document is laid out by the rendering steps (see StyleEngine.MayHaveContentVisibility)
-            NodeDocument.InlineStylesDeclareContentVisibility = true;
-        }
-
-        if (localName == "style" && value is not null && !NodeDocument.InlineStylesDeclarePositionTryFallbacks && value.Contains("position-try", StringComparison.OrdinalIgnoreCase))
-        {
-            // The document is laid out by the rendering steps (see StyleEngine.MayHavePositionTryFallbacks)
-            NodeDocument.InlineStylesDeclarePositionTryFallbacks = true;
-        }
-
-        if (localName == "style" && value is not null && !NodeDocument.InlineStylesDeclareScrollSnapType && value.Contains("scroll-snap-type", StringComparison.OrdinalIgnoreCase))
-        {
-            // The document is laid out by the rendering steps (see StyleEngine.MayHaveScrollSnapContainers)
-            NodeDocument.InlineStylesDeclareScrollSnapType = true;
-        }
-
-        if (localName == "style" && this is HtmlElement or SvgElement or MathMLElement && (value is not null || RareDataOrNull is ElementRareData { BlockedStyleAttribute: not null }))
+        if (this is HtmlElement or SvgElement or MathMLElement && (value is not null || RareDataOrNull is ElementRareData { BlockedStyleAttribute: not null }))
         {
             CheckStyleAttribute(value);
         }
+    }
 
-        if (localName == "containertiming" && value is not null && this is HtmlElement)
+    /// <summary>https://dom.spec.whatwg.org/#ref-for-concept-element-attributes-change-ext</summary>
+    private void IdAttributeChangeSteps(string? value)
+    {
+        var newId = string.IsNullOrEmpty(value) ? null : value;
+        if (!string.Equals(_id, newId, StringComparison.Ordinal) && ParentNode is not null && NodeDocument.HasIdMaps && IdMap.GetForRoot(GetRoot()) is { } idMap)
         {
-            // https://w3c.github.io/container-timing/: the element is a container root
-            NodeDocument.OnContainerTimingRootRegistered();
-        }
-
-        if (localName == "nonce" && this is HtmlElement or SvgElement or MathMLElement)
-        {
-            // https://html.spec.whatwg.org/multipage/urls-and-fetching.html#nonce-attributes
-            CryptographicNonce = value ?? "";
-        }
-
-        if (localName.StartsWith("on", StringComparison.Ordinal) && IsEventHandlerContentAttribute(localName))
-        {
-            OnEventHandlerContentAttributeChanged(localName[2..], value);
-        }
-
-        if (localName == "id")
-        {
-            // https://dom.spec.whatwg.org/#ref-for-concept-element-attributes-change-ext
-            var newId = string.IsNullOrEmpty(value) ? null : value;
-            if (!string.Equals(_id, newId, StringComparison.Ordinal) && ParentNode is not null && NodeDocument.HasIdMaps && IdMap.GetForRoot(GetRoot()) is { } idMap)
+            if (_id is not null)
             {
-                if (_id is not null)
-                {
-                    idMap.Remove(_id, this);
-                }
-
-                if (newId is not null)
-                {
-                    idMap.Add(newId, this);
-                }
+                idMap.Remove(_id, this);
             }
 
-            _id = newId;
-            if (IsConnected && NodeDocument.HasFormAttributeCustomElements)
+            if (newId is not null)
             {
-                NodeDocument.OnIdChangedForFormAttributeCustomElements();
+                idMap.Add(newId, this);
             }
         }
-        else if (localName == "slot" && Slots.ShouldUpdateName(oldValue, value))
-        {
-            // https://dom.spec.whatwg.org/#slotable-name
-            var data = GetOrCreateSlottable();
-            data.Name = value ?? "";
-            if (data.AssignedSlot is { } assignedSlot)
-            {
-                Slots.AssignSlottables(assignedSlot);
-            }
 
-            Slots.AssignASlot(this);
+        _id = newId;
+        if (IsConnected && NodeDocument.HasFormAttributeCustomElements)
+        {
+            NodeDocument.OnIdChangedForFormAttributeCustomElements();
         }
     }
 

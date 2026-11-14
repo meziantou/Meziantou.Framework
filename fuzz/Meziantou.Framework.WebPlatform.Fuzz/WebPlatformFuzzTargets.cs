@@ -3,6 +3,8 @@ using System.Xml;
 using Meziantou.Framework.Fuzzing;
 using CssApi = Meziantou.Framework.WebPlatform.Css.Om.Css;
 using DomUrl = Meziantou.Framework.WebPlatform.Dom.Url;
+using TagId = Meziantou.Framework.WebPlatform.Html.TagId;
+using TagNames = Meziantou.Framework.WebPlatform.Html.TagNames;
 using Meziantou.Framework.WebPlatform.Css.Fonts;
 using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Css.Syntax;
@@ -155,6 +157,7 @@ public static partial class WebPlatformFuzzTargets
     public static void Html(string input)
     {
         var document = HtmlDocumentParser.ParseDocument(input);
+        CheckParsedNodes(document);
         var html = document.DocumentElement?.OuterHtml ?? "";
         _ = document.ToHtml(new HtmlPrettyFormatter());
         _ = document.ToHtml(new HtmlMinifyFormatter());
@@ -195,6 +198,46 @@ public static partial class WebPlatformFuzzTargets
         {
             var element = context == "svg" ? document.CreateElementNS("http://www.w3.org/2000/svg", "svg") : document.CreateElement(context);
             _ = parser.ParseFragment(input, element).ChildNodes.Length;
+        }
+
+        // The tag id of each element is the one of a linear search of the well-known names (the parser looks up the name in a
+        // hash table, from the token, the string or the characters), and the child text content of each node is the
+        // concatenation of the data of its Text children (the parser does not copy the data of a single child)
+        static void CheckParsedNodes(Document document)
+        {
+            var nodes = new Stack<Node>();
+            nodes.Push(document);
+            while (nodes.TryPop(out var node))
+            {
+                if (node is Element element)
+                {
+                    var expected = (TagId)Math.Max(0, Array.IndexOf(TagNames.Names, element.LocalName, 1));
+                    if (element.NamespaceUri is "http://www.w3.org/1999/xhtml" or "http://www.w3.org/1998/Math/MathML")
+                    {
+                        FuzzAssert.Equal(expected, element.TagId, $"The tag id of the element {FuzzAssert.Format(element.LocalName)}");
+                    }
+
+                    FuzzAssert.Equal(expected, TagNames.GetTagId(new string(element.LocalName)), $"The tag id of the string {FuzzAssert.Format(element.LocalName)}");
+                    FuzzAssert.Equal(expected, TagNames.GetTagId(element.LocalName.AsSpan()), $"The tag id of the characters {FuzzAssert.Format(element.LocalName)}");
+                }
+
+                var text = new System.Text.StringBuilder();
+                for (var child = node.FirstChild; child is not null; child = child.NextSibling)
+                {
+                    if (child is Text childText)
+                    {
+                        text.Append(childText.Data);
+                    }
+
+                    nodes.Push(child);
+                }
+
+                FuzzAssert.Equal(text.ToString(), node.GetChildTextContent(), "The child text content");
+                if (node is HtmlTemplateElement template)
+                {
+                    nodes.Push(template.Content);
+                }
+            }
         }
 
         // Removes the leading line feeds of the pre, listing and textarea elements, and returns false when a script

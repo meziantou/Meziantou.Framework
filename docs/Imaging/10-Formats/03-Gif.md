@@ -14,7 +14,7 @@ and 16-bit samples, and the encoder needs no other setting to do it.
 | Files | GIF87a and GIF89a, global and local palettes, interlacing | GIF89a, one local palette per frame, optional interlacing |
 | Animations | Composited into full frames with exact durations (hundredths of a second) and the play count | Full frames, durations to the hundredth of a second, play count |
 | Transparency | The transparent color; cleared areas are transparent black | One transparent color: alpha is thresholded or flattened, never partial |
-| Metadata | Comments, XMP and ICC profile | Comments only |
+| Metadata | Comments, XMP and ICC profile | Comments, XMP and RGB ICC profile |
 
 Every GIF loads as [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32). A frame whose colors fit its palette is written exactly; the others are reduced with the
 deterministic quantizer of [Quantize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Quantize).
@@ -55,8 +55,9 @@ public static void SaveGif(string inputPath, string gifPath, string flattenedGif
   others become opaque. Antialiased edges then look jagged on a background of another color.
 - With [GifAlphaMode.Flatten](cref:Meziantou.Framework.Imaging.Formats.GifAlphaMode.Flatten), every pixel is composited over [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.BackgroundColor), and the GIF is opaque. Without
   [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.BackgroundColor), saving throws an `ArgumentException`.
-- GIF only stores `Comment` text entries. An ICC profile, EXIF, XMP or a resolution follow [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which
-  rejects them by default: the example discards them.
+- GIF stores `Comment` text entries, an RGB ICC profile and an XMP packet (in the application extensions that
+  ImageMagick and exiftool write and read). EXIF, a resolution, a gray profile or an XMP packet with a NUL character
+  follow [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by default: the example discards them.
 
 ## Options
 

@@ -107,9 +107,13 @@ public sealed class MetadataWritePlanTests
     public void GifRejectsUnsupportedMetadataInStrictModeAndDropsItOtherwise()
     {
         AssertUnsupported(new ImageMetadata { Orientation = ExifOrientation.BottomRight }, ImageFormat.Gif, "EXIF orientation other than TopLeft");
-        AssertUnsupported(new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB "))) }, ImageFormat.Gif, "ICC color profile");
         AssertUnsupported(new ImageMetadata { ExifProfile = new ExifProfile(new MetadataBlob(ExifTiff.CreateMinimal(ExifOrientation.TopLeft))) }, ImageFormat.Gif, "EXIF profile");
-        AssertUnsupported(new ImageMetadata { XmpProfile = new XmpProfile(new MetadataBlob("<x/>"u8)) }, ImageFormat.Gif, "XMP packet");
+        AssertUnsupported(new ImageMetadata { XmpProfile = new XmpProfile(new MetadataBlob("<x>\0</x>"u8)) }, ImageFormat.Gif, "XMP packet with a NUL character (a GIF stores the packet as it is)");
+
+        // An RGB profile and an XMP packet are stored (application extensions); GIF samples are RGB, also for gray pixels
+        var rgb = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB ")));
+        Assert.Same(rgb, MetadataWritePlan.Create(new ImageMetadata { IccProfile = rgb }, ImageFormat.Gif, MetadataHandling.Strict, Canvas, PixelFormat.Gray8).IccProfile);
+        AssertUnsupported(new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("GRAY"))) }, ImageFormat.Gif, "ICC color profile declaring the Gray color space for Rgb24 pixels", PixelFormat.Gray8);
         AssertUnsupported(new ImageMetadata { Resolution = new ImageResolution(72, 72) }, ImageFormat.Gif, "resolution");
         AssertUnsupported(WithText(new ImageTextEntry("Title", "t")), ImageFormat.Gif, "text entry 'Title'");
         AssertUnsupported(WithText(new ImageTextEntry(ImageTextEntry.CommentKeyword, "c", "en")), ImageFormat.Jpeg, "text entry 'Comment'");
@@ -125,7 +129,8 @@ public sealed class MetadataWritePlanTests
         var gif = MetadataWritePlan.Create(metadata, ImageFormat.Gif, MetadataHandling.DiscardUnsupported, Canvas);
         Assert.Equal([comment], gif.TextEntries);
         Assert.Null(gif.Exif);
-        Assert.Null(gif.IccProfile);
+        Assert.Same(metadata.IccProfile, gif.IccProfile);
+        Assert.Same(metadata.XmpProfile, gif.XmpProfile);
     }
 
     [Theory]
@@ -209,7 +214,7 @@ public sealed class MetadataWritePlanTests
 
         // A format that cannot store the payload never validates it: discarding wins
         var unsupported = new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(new byte[200])) };
-        Assert.Null(MetadataWritePlan.Create(unsupported, ImageFormat.Gif, MetadataHandling.DiscardUnsupported, Canvas).IccProfile);
+        Assert.Null(MetadataWritePlan.Create(unsupported, ImageFormat.Qoi, MetadataHandling.DiscardUnsupported, Canvas).IccProfile);
     }
 
     [Fact]
@@ -485,13 +490,13 @@ public sealed class MetadataWritePlanTests
         image.Save(new MemoryStream(), new JpegEncoder());
     }
 
-    private static void AssertUnsupported(ImageMetadata metadata, ImageFormat format, string feature)
+    private static void AssertUnsupported(ImageMetadata metadata, ImageFormat format, string feature, PixelFormat? pixelFormat = null)
     {
-        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => MetadataWritePlan.Create(metadata, format, MetadataHandling.Strict, Canvas));
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => MetadataWritePlan.Create(metadata, format, MetadataHandling.Strict, Canvas, pixelFormat));
         Assert.Equal(format, exception.Format);
         Assert.Equal("Metadata: " + feature, exception.Feature);
         Assert.Contains("DiscardUnsupported", exception.Message, StringComparison.Ordinal);
-        _ = MetadataWritePlan.Create(metadata, format, MetadataHandling.DiscardUnsupported, Canvas); // never throws for unsupported items
+        _ = MetadataWritePlan.Create(metadata, format, MetadataHandling.DiscardUnsupported, Canvas, pixelFormat); // never throws for unsupported items
     }
 
     private static ImageMetadata WithText(ImageTextEntry entry)

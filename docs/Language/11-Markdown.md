@@ -293,12 +293,30 @@ Assert.Equal("<p>See <a href=\"#getting-started-1\">Getting started</a>.</p>", M
 ```
 <!-- endref -->
 
+- [CustomContainers](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.CustomContainers): blocks between a
+  fence of three colons or more, `:::name arguments`, and a fence as long, are a
+  [MarkdownCustomContainerSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownCustomContainerSyntax), rendered as
+  `<div class="name">`. The closing fence closes the container and its blocks, even a code block. Text between `::` is a
+  [MarkdownEmphasisExtraSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownEmphasisExtraSyntax) of style
+  `CustomContainer`, rendered as `<span>`.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_CustomContainers;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.CustomContainers };
+var tree = MarkdownSyntaxTree.ParseText(":::warning Read this\nThis is ::important::.\n:::\n", options);
+
+var container = Assert.IsType<MarkdownCustomContainerSyntax>(tree.GetRoot().Blocks.Single());
+Assert.Equal("warning", container.Name);
+Assert.Equal("Read this", container.Arguments);
+Assert.Equal("<div class=\"warning\"><p>This is <span>important</span>.</p>\n</div>\n", MarkdownHtmlRenderer.ToHtml(tree));
+```
+<!-- endref -->
+
 [DisableHtml](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.DisableHtml) reads HTML as text: the
 renderer escapes it, and autolinks such as `<https://example.com>` are still links.
 
 ## Limitations of the prototype
 
-- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no definition lists, custom containers,
-  grid tables, emoji, SmartyPants...
+- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no definition lists, grid tables, emoji, SmartyPants...
 - Inserting and removing blocks parses the whole text again.
 - Parsing allocates more and is slower than [Meziantou.Framework.Markdown](../Markdown/01-Introduction.md).

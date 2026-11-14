@@ -254,7 +254,7 @@ internal sealed class BlockParser
 
     private static bool CanContain(SyntaxKind parent, SyntaxKind child) => parent switch
     {
-        SyntaxKind.Document or SyntaxKind.BlockQuote or SyntaxKind.ListItem or SyntaxKind.FootnoteDefinition => child != SyntaxKind.ListItem,
+        SyntaxKind.Document or SyntaxKind.BlockQuote or SyntaxKind.ListItem or SyntaxKind.FootnoteDefinition or SyntaxKind.CustomContainer => child != SyntaxKind.ListItem,
         SyntaxKind.List => child == SyntaxKind.ListItem,
         _ => false,
     };
@@ -263,7 +263,7 @@ internal sealed class BlockParser
 
     // Whether the line can start a block of an extension: a delimiter row under a paragraph, a row of a table, or the task
     // list item marker after the marker of a list item
-    private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || (c == '[' && IsFootnoteContainer(container)) || container.Kind switch
+    private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || (c == ':' && HasExtension(MarkdownExtensions.CustomContainers)) || (c == '[' && IsFootnoteContainer(container)) || container.Kind switch
     {
         SyntaxKind.Paragraph => HasExtension(MarkdownExtensions.Tables) && c is '|' or ':',
         SyntaxKind.Table => true,
@@ -357,6 +357,38 @@ internal sealed class BlockParser
 
                 return 0;
 
+            case SyntaxKind.CustomContainer:
+                // As in Markdig: a fence of colons as long as the opening one closes the container and its blocks, even in a code
+                // block. The indentation of the other lines is kept.
+                if (_indent <= 3 && Peek(_nextNonspace) == ':')
+                {
+                    var end = _nextNonspace;
+                    while (end < _lineEnd && _text[end] == ':')
+                    {
+                        end++;
+                    }
+
+                    var rest = end;
+                    while (rest < _lineEnd && Scanners.IsSpaceOrTab(_text[rest]))
+                    {
+                        rest++;
+                    }
+
+                    if (end - _nextNonspace >= block.FenceLength && rest == _lineEnd)
+                    {
+                        while (_tip != block)
+                        {
+                            Finalize(_tip);
+                        }
+
+                        block.Trailing.Add(BuildElement.Token(SyntaxKind.CustomContainerFenceToken, _nextNonspace, end));
+                        Finalize(block);
+                        return 2;
+                    }
+                }
+
+                return 0;
+
             case SyntaxKind.IndentedCodeBlock:
                 if (_indent >= CodeIndent)
                 {
@@ -431,6 +463,12 @@ internal sealed class BlockParser
     private int TryStart(Block container)
     {
         var c = Peek(_nextNonspace);
+
+        // Custom container, which Markdig tries first: its opening fence is the whole line
+        if (!_indented && c == ':' && HasExtension(MarkdownExtensions.CustomContainers) && TryStartCustomContainer())
+        {
+            return 2;
+        }
 
         // Footnote definition: [^label]: at the level of the document, which the rest of the line is the content of
         if (!_indented && c == '[' && IsFootnoteContainer(container) && ScanFootnoteLabel(_nextNonspace) is > 0 and var labelEnd)
@@ -890,6 +928,74 @@ internal sealed class BlockParser
         }
 
         _skipAddLine = true;
+        return true;
+    }
+
+    // A fence of three colons or more, then a name, which is the class of the container, and arguments
+    private bool TryStartCustomContainer()
+    {
+        var position = _nextNonspace;
+        while (position < _lineEnd && _text[position] == ':')
+        {
+            position++;
+        }
+
+        var length = position - _nextNonspace;
+        if (length < 3)
+        {
+            return false;
+        }
+
+        var lineEnd = _lineEnd;
+        var attributes = ParseBlockAttributes(position, ref lineEnd);
+        CloseUnmatchedBlocks();
+        var block = AddChild(SyntaxKind.CustomContainer);
+        block.FenceLength = length;
+        AdvanceNextNonspace();
+        block.Leading.Add(BuildElement.Token(SyntaxKind.CustomContainerFenceToken, _offset, position));
+
+        // The name is the first word, and the arguments are the rest of the line, without the whitespace around them
+        var nameStart = position;
+        while (nameStart < lineEnd && Scanners.IsSpaceOrTab(_text[nameStart]))
+        {
+            nameStart++;
+        }
+
+        var nameEnd = nameStart;
+        while (nameEnd < lineEnd && !Scanners.IsSpaceOrTab(_text[nameEnd]))
+        {
+            nameEnd++;
+        }
+
+        if (nameEnd > nameStart)
+        {
+            block.Leading.Add(BuildElement.Token(SyntaxKind.InfoStringToken, nameStart, nameEnd));
+        }
+
+        var argumentsStart = nameEnd;
+        var argumentsEnd = lineEnd;
+        while (argumentsStart < argumentsEnd && Scanners.IsSpaceOrTab(_text[argumentsStart]))
+        {
+            argumentsStart++;
+        }
+
+        while (argumentsEnd > argumentsStart && Scanners.IsSpaceOrTab(_text[argumentsEnd - 1]))
+        {
+            argumentsEnd--;
+        }
+
+        if (argumentsEnd > argumentsStart)
+        {
+            block.Leading.Add(BuildElement.Token(SyntaxKind.CustomContainerArgumentsToken, argumentsStart, argumentsEnd));
+        }
+
+        if (attributes is not null)
+        {
+            block.Leading.Add(attributes);
+        }
+
+        // The rest of the line is the fence: no block starts after it
+        AdvanceOffset(_lineEnd - _offset, columns: false);
         return true;
     }
 

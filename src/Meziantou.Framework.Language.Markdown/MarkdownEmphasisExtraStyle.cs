@@ -14,4 +14,7 @@ public enum MarkdownEmphasisExtraStyle
 
     /// <summary>Marked text, between <c>==</c>.</summary>
     Marked,
+
+    /// <summary>The text of an inline custom container, between <c>::</c>, rendered as <c>&lt;span&gt;</c>.</summary>
+    CustomContainer,
 }

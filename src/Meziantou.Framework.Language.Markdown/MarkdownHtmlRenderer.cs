@@ -65,6 +65,9 @@ public static class MarkdownHtmlRenderer
         private readonly bool _diagrams = options.Extensions.HasFlag(MarkdownExtensions.Diagrams);
         private readonly bool _autoIdentifiers = options.Extensions.HasFlag(MarkdownExtensions.AutoIdentifiers);
 
+        // Whether the next block is the first of a custom container
+        private bool _firstInContainer;
+
         // In a cell of a table, a pipe escaped by a backslash is a pipe, even in a code span or a link destination
         private bool _inTableCell;
 
@@ -166,8 +169,22 @@ public static class MarkdownHtmlRenderer
             }
         }
 
+        // Before a block that Markdig starts on a new line only when it is not the first block of a custom container, which is
+        // written just after the <div>: a paragraph, a heading, a thematic break, HTML
+        private void CrUnlessFirstInContainer()
+        {
+            if (_firstInContainer)
+            {
+                _firstInContainer = false;
+                return;
+            }
+
+            Cr();
+        }
+
         private void Cr()
         {
+            _firstInContainer = false;
             if (_output.Length > 0 && _output[^1] != '\n')
             {
                 _output.Append('\n');
@@ -192,11 +209,21 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownParagraphSyntax paragraph:
                 {
-                    // The paragraphs of a tight list have no <p>
-                    var tight = paragraph.Parent is MarkdownListItemSyntax { Parent: MarkdownListSyntax { IsTight: true } };
-                    if (!tight)
+                    // The paragraphs of a tight list have no <p>, as the ones of its custom containers in Markdig
+                    var parent = paragraph.Parent;
+                    while (parent is MarkdownCustomContainerSyntax)
                     {
-                        Cr();
+                        parent = parent.Parent;
+                    }
+
+                    var tight = parent is MarkdownListItemSyntax { Parent: MarkdownListSyntax { IsTight: true } };
+                    if (tight)
+                    {
+                        _firstInContainer = false;
+                    }
+                    else
+                    {
+                        CrUnlessFirstInContainer();
                         _output.Append("<p");
                         AppendAttributes(paragraph);
                         _output.Append('>');
@@ -224,7 +251,7 @@ public static class MarkdownHtmlRenderer
                 }
 
                 case MarkdownHeadingSyntax heading:
-                    Cr();
+                    CrUnlessFirstInContainer();
                     _output.Append("<h").Append(heading.Level);
                     AppendAttributes(heading, id: _autoIdentifiers ? heading.Identifier : null);
                     _output.Append('>');
@@ -234,7 +261,7 @@ public static class MarkdownHtmlRenderer
                     break;
 
                 case MarkdownThematicBreakSyntax:
-                    Cr();
+                    CrUnlessFirstInContainer();
                     _output.Append("<hr");
                     AppendAttributes(block);
                     _output.Append(" />");
@@ -253,6 +280,19 @@ public static class MarkdownHtmlRenderer
 
                     WriteBlocks(alert.Blocks);
                     Cr();
+                    _output.Append("</div>");
+                    Cr();
+                    break;
+
+                case MarkdownCustomContainerSyntax container:
+                    // Markdig writes the first block just after the <div>, and the </div> just after the last block
+                    Cr();
+                    _output.Append("<div");
+                    AppendAttributes(container, trailingClasses: container.Name is { Length: > 0 } name ? name : null);
+                    _output.Append('>');
+                    _firstInContainer = true;
+                    WriteBlocks(container.Blocks);
+                    _firstInContainer = false;
                     _output.Append("</div>");
                     Cr();
                     break;
@@ -328,7 +368,7 @@ public static class MarkdownHtmlRenderer
                     break;
 
                 case MarkdownHtmlBlockSyntax html:
-                    Cr();
+                    CrUnlessFirstInContainer();
                     AppendHtml(html.Html);
                     Cr();
                     break;
@@ -541,6 +581,7 @@ public static class MarkdownHtmlRenderer
                         MarkdownEmphasisExtraStyle.Subscript => "sub",
                         MarkdownEmphasisExtraStyle.Superscript => "sup",
                         MarkdownEmphasisExtraStyle.Inserted => "ins",
+                        MarkdownEmphasisExtraStyle.CustomContainer => "span",
                         _ => "mark",
                     };
 

@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Meziantou.Framework.Language.Markdown;
 
-/// <summary>An extra emphasis: subscript (<c>~text~</c>), superscript (<c>^text^</c>), inserted (<c>++text++</c>) or marked text (<c>==text==</c>).</summary>
+/// <summary>An extra emphasis: subscript (<c>~text~</c>), superscript (<c>^text^</c>), inserted (<c>++text++</c>), marked text (<c>==text==</c>) or an inline custom container (<c>::text::</c>).</summary>
 public sealed class MarkdownEmphasisExtraSyntax : MarkdownInlineSyntax
 {
     internal MarkdownEmphasisExtraSyntax(GreenNode green, SyntaxNode? parent, int position)
@@ -17,6 +17,7 @@ public sealed class MarkdownEmphasisExtraSyntax : MarkdownInlineSyntax
         SyntaxKind.Subscript => MarkdownEmphasisExtraStyle.Subscript,
         SyntaxKind.Superscript => MarkdownEmphasisExtraStyle.Superscript,
         SyntaxKind.Inserted => MarkdownEmphasisExtraStyle.Inserted,
+        SyntaxKind.CustomContainerInline => MarkdownEmphasisExtraStyle.CustomContainer,
         _ => MarkdownEmphasisExtraStyle.Marked,
     };
 

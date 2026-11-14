@@ -49,14 +49,16 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
     private bool ComputeIsTight()
     {
         var items = Items;
-        if (HasBlankLineBetween(items))
+        var quoteDepth = Ancestors().Count(ancestor => ancestor is MarkdownBlockQuoteSyntax);
+        if (HasBlankLineBetween(items, quoteDepth))
         {
             return false;
         }
 
-        foreach (var item in items)
+        for (var i = 0; i < items.Count; i++)
         {
-            if (HasBlankLineBetween(item.Blocks))
+            var item = items[i];
+            if (HasBlankLineBetween(item.Blocks, quoteDepth) || HasBlankLineInCustomContainers(item.Blocks, quoteDepth, lastIsExempt: i == items.Count - 1))
             {
                 return false;
             }
@@ -65,29 +67,73 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
         return true;
     }
 
-    // A line between the nodes that has nothing but the markers of the containers of the list is blank. The marker of a
-    // block quote in the list is not: the line is a line of the quote.
-    private bool HasBlankLineBetween<T>(IReadOnlyList<T> nodes)
-        where T : MarkdownSyntaxNode
+    // As in Markdig, a blank line in a custom container of an item, between its fences and its blocks, makes the list loose. Markdig
+    // counts it after the container, at the level of the item, and ignores the blank lines at the end of the last item: the
+    // blank lines of the last block of the last item do not count.
+    private static bool HasBlankLineInCustomContainers(IReadOnlyList<MarkdownBlockSyntax> blocks, int quoteDepth, bool lastIsExempt)
     {
-        if (nodes.Count < 2)
+        for (var index = 0; index < blocks.Count; index++)
         {
-            return false;
+            if (blocks[index] is not MarkdownCustomContainerSyntax container)
+            {
+                continue;
+            }
+
+            var exempt = lastIsExempt && index == blocks.Count - 1;
+            var children = container.Blocks;
+            var openingLineEnd = container.OpeningFenceToken;
+            foreach (var child in container.ChildNodesAndTokens())
+            {
+                if (child.AsNode() is MarkdownBlockSyntax)
+                {
+                    break;
+                }
+
+                openingLineEnd = child.IsToken ? child.AsToken() : child.AsNode()!.GetLastToken();
+            }
+
+            var closing = container.ClosingFenceToken;
+            if (exempt)
+            {
+                continue;
+            }
+
+            if (children.Count == 0
+                ? closing.RawKind != 0 && IsBlankLineBetween(openingLineEnd, closing, quoteDepth)
+                : IsBlankLineBetween(openingLineEnd, children[0].GetFirstToken(), quoteDepth) || HasBlankLineBetween(children, quoteDepth) || (closing.RawKind != 0 && IsBlankLineBetween(children[^1].GetLastToken(), closing, quoteDepth)) || HasBlankLineInCustomContainers(children, quoteDepth, lastIsExempt: false))
+            {
+                return true;
+            }
         }
 
-        var quoteDepth = Ancestors().Count(ancestor => ancestor is MarkdownBlockQuoteSyntax);
+        return false;
+    }
+
+    private static bool HasBlankLineBetween<T>(IReadOnlyList<T> nodes, int quoteDepth)
+        where T : MarkdownSyntaxNode
+    {
         for (var i = 1; i < nodes.Count; i++)
         {
-            // The text between two siblings is trivia: the end of the line of the first one, unless its last token ends the line, such
-            // as a line of code, and the lines before the second
-            var last = nodes[i - 1].GetLastToken();
-            var gap = (last.TrailingTrivia.ToFullString() + nodes[i].GetFirstToken().LeadingTrivia.ToFullString()).ReplaceLineEndings("\n").Split('\n');
-            for (var j = last.Text is [.., '\n' or '\r'] ? 0 : 1; j < gap.Length - 1; j++)
+            if (IsBlankLineBetween(nodes[i - 1].GetLastToken(), nodes[i].GetFirstToken(), quoteDepth))
             {
-                if (gap[j].Count(c => c == '>') <= quoteDepth)
-                {
-                    return true;
-                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // A line between the tokens that has nothing but the markers of the containers of the list is blank. The marker of a block
+    // quote in the list is not: the line is a line of the quote. The text between the tokens is trivia: the end of the line of the
+    // first one, unless it ends the line, such as a line of code, and the lines before the second.
+    private static bool IsBlankLineBetween(SyntaxToken last, SyntaxToken first, int quoteDepth)
+    {
+        var gap = (last.TrailingTrivia.ToFullString() + first.LeadingTrivia.ToFullString()).ReplaceLineEndings("\n").Split('\n');
+        for (var j = last.Text is [.., '\n' or '\r'] ? 0 : 1; j < gap.Length - 1; j++)
+        {
+            if (gap[j].Count(c => c == '>') <= quoteDepth)
+            {
+                return true;
             }
         }
 

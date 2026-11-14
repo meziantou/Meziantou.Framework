@@ -19,6 +19,7 @@ internal sealed class InlineParser
     private readonly bool _marked;
     private readonly bool _mathematics;
     private readonly bool _genericAttributes;
+    private readonly bool _customContainers;
 
     // Whether attributes are valid from each position of the subject, computed at the first {
     private byte[]? _attributesOutcomes;
@@ -50,6 +51,7 @@ internal sealed class InlineParser
         _marked = extensions.HasFlag(MarkdownExtensions.Marked);
         _mathematics = extensions.HasFlag(MarkdownExtensions.Mathematics);
         _genericAttributes = extensions.HasFlag(MarkdownExtensions.GenericAttributes);
+        _customContainers = extensions.HasFlag(MarkdownExtensions.CustomContainers);
         _autolinks = extensions.HasFlag(MarkdownExtensions.Autolinks);
     }
 
@@ -268,8 +270,17 @@ internal sealed class InlineParser
                 }
 
                 break;
-            case ':' when _autolinks:
-                if (!ParseUrlAutolink())
+            case ':' when _autolinks || _customContainers:
+                if (_autolinks && ParseUrlAutolink())
+                {
+                    break;
+                }
+
+                if (_customContainers)
+                {
+                    HandleDelimiter(c);
+                }
+                else
                 {
                     AppendText(_pos, _pos + 1);
                     _pos++;
@@ -336,7 +347,7 @@ internal sealed class InlineParser
         '=' => _marked,
         '$' => _mathematics,
         '{' => _genericAttributes,
-        ':' => _autolinks,
+        ':' => _autolinks || _customContainers,
         'w' => _autolinks && _pos + 3 < _end && _text[_pos + 1] == 'w' && _text[_pos + 2] == 'w' && _text[_pos + 3] == '.',
         _ => false,
     };
@@ -932,11 +943,11 @@ internal sealed class InlineParser
 
     private static bool IsMathPunctuation(char c) => c == '\0' || (c <= 127 ? char.IsAsciiLetterOrDigit(c) is false && c > ' ' && c != '\x7f' : char.IsPunctuation(c) || char.IsSymbol(c));
 
-    // The extra emphasis of Markdig: ~ when subscript is on, ^, ++ and ==
+    // The extra emphasis of Markdig: ~ when subscript is on, ^, ++, == and the :: of custom containers
     private bool IsExtraEmphasis(char c) => c switch
     {
         '~' => _subscript,
-        '^' or '+' or '=' => true,
+        '^' or '+' or '=' or ':' => true,
         _ => false,
     };
 
@@ -944,7 +955,7 @@ internal sealed class InlineParser
     {
         '~' when _subscript => 1,
         '~' => 2,
-        '+' or '=' => 2,
+        '+' or '=' or ':' => 2,
         _ => 1,
     };
 
@@ -1402,6 +1413,7 @@ internal sealed class InlineParser
                 '^' => SyntaxKind.Superscript,
                 '+' => SyntaxKind.Inserted,
                 '=' => SyntaxKind.Marked,
+                ':' => SyntaxKind.CustomContainerInline,
                 _ => use == 1 ? SyntaxKind.Emphasis : SyntaxKind.StrongEmphasis,
             };
             var delimiterKind = kind == SyntaxKind.Strikethrough ? SyntaxKind.StrikethroughDelimiterToken : SyntaxKind.EmphasisDelimiterToken;
@@ -1663,7 +1675,7 @@ internal sealed class InlineParser
             {
                 LinkEmailAddresses(run);
                 run.Clear();
-                if (child.Kind is SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis or SyntaxKind.Strikethrough or SyntaxKind.Subscript or SyntaxKind.Superscript or SyntaxKind.Inserted or SyntaxKind.Marked or SyntaxKind.Image)
+                if (child.Kind is SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis or SyntaxKind.Strikethrough or SyntaxKind.Subscript or SyntaxKind.Superscript or SyntaxKind.Inserted or SyntaxKind.Marked or SyntaxKind.CustomContainerInline or SyntaxKind.Image)
                 {
                     LinkEmailAddresses(child);
                 }

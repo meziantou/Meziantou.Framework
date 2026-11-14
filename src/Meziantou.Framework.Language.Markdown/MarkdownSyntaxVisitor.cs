@@ -71,6 +71,9 @@ public abstract class MarkdownSyntaxVisitor
     /// <summary>Visits a <see cref="MarkdownAlertSyntax"/>.</summary>
     public virtual void VisitMarkdownAlert(MarkdownAlertSyntax node) => DefaultVisit(node);
 
+    /// <summary>Visits a <see cref="MarkdownCustomContainerSyntax"/>.</summary>
+    public virtual void VisitMarkdownCustomContainer(MarkdownCustomContainerSyntax node) => DefaultVisit(node);
+
     /// <summary>Visits a <see cref="MarkdownAbbreviationDefinitionSyntax"/>.</summary>
     public virtual void VisitMarkdownAbbreviationDefinition(MarkdownAbbreviationDefinitionSyntax node) => DefaultVisit(node);
 
@@ -167,6 +170,9 @@ public abstract class MarkdownSyntaxVisitor<TResult>
 
     /// <summary>Visits a <see cref="MarkdownAlertSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownAlert(MarkdownAlertSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownCustomContainerSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownCustomContainer(MarkdownCustomContainerSyntax node) => DefaultVisit(node);
 
     /// <summary>Visits a <see cref="MarkdownAbbreviationDefinitionSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownAbbreviationDefinition(MarkdownAbbreviationDefinitionSyntax node) => DefaultVisit(node);

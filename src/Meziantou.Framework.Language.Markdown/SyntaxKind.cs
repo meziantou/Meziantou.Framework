@@ -68,6 +68,8 @@ public enum SyntaxKind
     AttributesToken,
     AttributesTrailingTextToken,
     ExtendedAutolinkToken,
+    CustomContainerFenceToken,
+    CustomContainerArgumentsToken,
 
     // Blocks
     Document,
@@ -92,6 +94,7 @@ public enum SyntaxKind
     Alert,
     AbbreviationDefinition,
     FootnoteDefinition,
+    CustomContainer,
 
     // Inlines
     Emphasis,
@@ -111,4 +114,5 @@ public enum SyntaxKind
     Abbreviation,
     FootnoteReference,
     GenericAttributes,
+    CustomContainerInline,
 }

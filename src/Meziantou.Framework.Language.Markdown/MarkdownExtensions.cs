@@ -61,6 +61,9 @@ public enum MarkdownExtensions
     /// <summary>Auto-identifiers: the renderer gives each heading an <c>id</c> made from its text, and a reference link whose label is the text of a heading links to it, as configured by <see cref="MarkdownParseOptions.AutoIdentifierOptions"/>.</summary>
     AutoIdentifiers = 1 << 17,
 
+    /// <summary>Custom containers: blocks between <c>:::name</c> and <c>:::</c> lines, rendered as <c>&lt;div class="name"&gt;</c>, and text between <c>::</c>, rendered as <c>&lt;span&gt;</c>.</summary>
+    CustomContainers = 1 << 18,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

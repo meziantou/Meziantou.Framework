@@ -562,6 +562,59 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void ReadmeExample_CustomContainers()
+    {
+        #region MarkdownSyntaxTree_CustomContainers
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.CustomContainers };
+        var tree = MarkdownSyntaxTree.ParseText(":::warning Read this\nThis is ::important::.\n:::\n", options);
+
+        var container = Assert.IsType<MarkdownCustomContainerSyntax>(tree.GetRoot().Blocks.Single());
+        Assert.Equal("warning", container.Name);
+        Assert.Equal("Read this", container.Arguments);
+        Assert.Equal("<div class=\"warning\"><p>This is <span>important</span>.</p>\n</div>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("::::outer\n:::inner\nx\n:::\n::::\n", "<div class=\"outer\">\n<div class=\"inner\"><p>x</p>\n</div>\n</div>\n")]
+    [InlineData(":::a\n:::b\nx\n:::\n:::\n", "<div class=\"a\">\n<div class=\"b\"><p>x</p>\n</div>\n</div>\n<div></div>\n")]
+    [InlineData(":::note\n```\n:::\n```\n", "<div class=\"note\">\n<pre><code></code></pre>\n</div>\n<pre><code></code></pre>\n")]
+    [InlineData(":::x\n# H\n---\n:::\n", "<div class=\"x\"><h1>H</h1>\n<hr />\n</div>\n")]
+    [InlineData(":::x\n- a\n:::\n", "<div class=\"x\">\n<ul>\n<li>a</li>\n</ul>\n</div>\n")]
+    [InlineData("   :::x\n   y\n   :::\n", "<div class=\"x\"><p>y</p>\n</div>\n")]
+    [InlineData("    :::x\n", "<pre><code>:::x\n</code></pre>\n")]
+    [InlineData("para\n:::x\ny\n", "<p>para</p>\n<div class=\"x\"><p>y</p>\n</div>\n")]
+    [InlineData(":::a&amp;b\\* args\n", "<div class=\"a&amp;b*\"></div>\n")]
+    [InlineData("::\nx\n", "<p>::\nx</p>\n")]
+    [InlineData("- :::x\n  a\n\n  b\n  :::\n- c\n", "<li>\n<div class=\"x\"><p>a</p>\n<p>b</p>\n</div>\n</li>\n<li>\n<p>c</p>\n</li>")]
+    [InlineData("- :::x\n  a\n\n  b\n  :::\n", "<li>\n<div class=\"x\">ab</div>\n</li>")]
+    [InlineData("- :::x\n  - a\n\n    b\n  :::\n- c\n", "<li>c</li>")]
+    [InlineData("std::vector::push_back ::*a*::\n", "<p>std<span>vector</span>push_back <span><em>a</em></span></p>\n")]
+    [InlineData("::a::{.k} :::b:::\n", "<p><span class=\"k\">a</span> :<span>b</span>:</p>\n")]
+    public void RendersCustomContainers(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.CustomContainers | MarkdownExtensions.GenericAttributes });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CustomContainerHasItsFences()
+    {
+        var root = MarkdownSyntaxTree.ParseText("> ::::tip {.x}\n> # a\n> ::::\n\n:::open\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.CustomContainers | MarkdownExtensions.GenericAttributes }).GetRoot();
+        var containers = root.DescendantNodes().OfType<MarkdownCustomContainerSyntax>().ToList();
+
+        Assert.Equal("::::", containers[0].OpeningFenceToken.Text);
+        Assert.Equal("::::", containers[0].ClosingFenceToken.Text);
+        Assert.Equal("tip", containers[0].Name);
+        Assert.Equal("", containers[0].Arguments);
+        Assert.IsType<MarkdownHeadingSyntax>(containers[0].Blocks.Single());
+        Assert.Equal(0, containers[1].ClosingFenceToken.RawKind);
+        Assert.Empty(containers[1].Blocks);
+    }
+
+    [Fact]
     public void AlertHasItsKind()
     {
         var alert = Assert.IsType<MarkdownAlertSyntax>(MarkdownSyntaxTree.ParseText("> [!Warning]  \n> Be *careful*\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts }).GetRoot().Blocks.Single());

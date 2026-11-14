@@ -3638,7 +3638,7 @@ public sealed class ProcessingTests
 
         Assert.Equal(new Size(4, 3), image.Size);
         Assert.Equal(2, image.Frames.Count);
-        Assert.All(image.Frames, frame => Assert.Equal(new Rgba32(1, 2, 3, 4), ((ImageFrame<Rgba32>)frame)[3, 2]));
+        Assert.All(Enumerable.Range(0, image.Frames.Count), i => Assert.Equal(new Rgba32(1, 2, 3, 4), image.Frames[i][3, 2]));
         Assert.Equal(liveStorages, image.Owner.LiveStorageCount);
 
         // The new frames and the working copies are charged with the old ones

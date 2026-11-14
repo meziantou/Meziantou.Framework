@@ -4983,7 +4983,7 @@ public sealed class DocumentationExampleTests : IDisposable
         ExtensibilityExamples.UpscalePixelArt(image, 3);
 
         Assert.Equal(new Size(6, 3), image.Size);
-        Assert.All(image.Frames, frame => Assert.Equal(new Rgb24(200, 100, 0), ((ImageFrame<Rgb24>)frame)[3, 2]));
+        Assert.All(Enumerable.Range(0, image.Frames.Count), i => Assert.Equal(new Rgb24(200, 100, 0), image.Frames[i][3, 2]));
         Assert.Equal(new Rgb24(10, 20, 30), image.Frames[1][2, 2]);
         Assert.Equal(new Point(3, 0), image.Frames[1].Metadata.Hotspot);
     }

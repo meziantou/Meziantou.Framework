@@ -1,6 +1,7 @@
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -556,5 +557,84 @@ public sealed class FontVariationTests
         Assert.Equal(new Gray8(255), image.Frames[0][2, baseline - 2]);
         Assert.Equal(new Gray8(153), image.Frames[0][11, baseline - 2]);
         Assert.Equal(new Gray8(0), image.Frames[0][1, baseline - 2]);
+    }
+
+    [Fact]
+    public void TheControlValuesOfAnInstanceVary()
+    {
+        // One axis and four control values. The first tuple variation is at the end of the axis, with the private
+        // points 1 and 3 and the deltas 10 and -20; the second one adds 4 to every value in a region from 0 to 1 that
+        // peaks at 0.5. At 0.5: half of the first one and all of the second one; at 0.25, a quarter and a half.
+        byte[] privatePoints = [0, 1, 0, 0, 0, 2, 0, 24, 0, 7, 0xA0, 0, 0x40, 0, 0, 5, 0xC0, 0, 0x20, 0, 0, 0, 0x40, 0, 2, 1, 1, 2, 1, 10, 0xEC, 3, 4, 4, 4, 4];
+        Assert.Equal([4.0, 9, 4, -6], GetControlValueDeltas(privatePoints, 0x2000));
+        Assert.Equal([0.0, 10, 0, -20], GetControlValueDeltas(privatePoints, 0x4000));
+        Assert.Equal([2.0, 4.5, 2, -3], GetControlValueDeltas(privatePoints, 0x1000));
+        Assert.Equal([0.0, 0, 0, 0], GetControlValueDeltas(privatePoints, 0));
+        Assert.Equal([0.0, 0, 0, 0], GetControlValueDeltas(privatePoints, -0x4000));
+
+        // The second variation with the points the table shares: 0 and 2.
+        byte[] sharedPoints = [0, 1, 0, 0, 0x80, 2, 0, 24, 0, 7, 0xA0, 0, 0x40, 0, 0, 3, 0xC0, 0, 0x20, 0, 0, 0, 0x40, 0, 2, 1, 0, 2, 2, 1, 1, 2, 1, 10, 0xEC, 1, 4, 4];
+        Assert.Equal([4.0, 5, 4, -10], GetControlValueDeltas(sharedPoints, 0x2000));
+
+        // The table has no shared tuples: a variation must give its peak. A table of another version is ignored.
+        var withoutPeak = (byte[])privatePoints.Clone();
+        withoutPeak[10] = 0x20;
+        Assert.Throws<InvalidFontException>(() => GetControlValueDeltas(withoutPeak, 0x2000));
+        var otherVersion = (byte[])privatePoints.Clone();
+        otherVersion[1] = 2;
+        Assert.Equal([0.0, 0, 0, 0], GetControlValueDeltas(otherVersion, 0x2000));
+
+        static double[] GetControlValueDeltas(byte[] table, int coordinate)
+        {
+            var sums = new double[4];
+            var budget = new GlyphBudget(FontResourceLimits.Default);
+            CvarTable.AddDeltas(table, 1, [coordinate], sums, ref budget);
+            return sums;
+        }
+    }
+
+    [Fact]
+    public void AnInstanceIsHintedWithItsInstructions()
+    {
+        // The variable font of the hinting suite: the instance is hinted with the TrueType instructions, from its own
+        // points and control values, which the default instance does not have.
+        var root = FixtureRoot.GetDirectory() / "font-suites" / "truetype-hinting";
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 16 * 1024 * 1024);
+        var face = FontLoader.Load(File.ReadAllBytes(root / "DroidSans-Variable.ttf"), environment)[0];
+        var bold = face.WithCoordinates([900 << 16, 100 << 16]);
+        using var scratch = new GlyphScratch(environment.CreateAllocator("test"));
+        using var regular = GlyphHinter.Create(face, 20, GlyphHinting.Full, scratch, environment.CreateAllocator("hinter"));
+        using var hinted = GlyphHinter.Create(bold, 20, GlyphHinting.Full, scratch, environment.CreateAllocator("hinter"));
+        Assert.Equal(GlyphHinting.Full, hinted.Hinting);
+        var glyph = face.MapCodePoint('m');
+        var budget = new GlyphBudget(FontResourceLimits.Default);
+        var regularAdvance = regular.DecodeOutline(glyph, new NullOutlineSink(), scratch, ref budget);
+        budget = new GlyphBudget(FontResourceLimits.Default);
+        var boldAdvance = hinted.DecodeOutline(glyph, new NullOutlineSink(), scratch, ref budget);
+        Assert.Equal(Math.Floor(boldAdvance), boldAdvance);
+        Assert.True(boldAdvance > regularAdvance, $"{boldAdvance} > {regularAdvance}");
+    }
+
+    private sealed class NullOutlineSink : OutlineSink
+    {
+        public override void MoveTo(double x, double y)
+        {
+        }
+
+        public override void LineTo(double x, double y)
+        {
+        }
+
+        public override void QuadraticTo(double controlX, double controlY, double x, double y)
+        {
+        }
+
+        public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y)
+        {
+        }
+
+        public override void Close()
+        {
+        }
     }
 }

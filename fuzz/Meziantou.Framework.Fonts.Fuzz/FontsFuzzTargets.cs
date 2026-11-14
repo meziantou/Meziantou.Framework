@@ -97,19 +97,45 @@ public static class FontsFuzzTargets
         "latn", "arab", "DFLT", "dflt", "TRK ", "\0\0", "\0\x01", "\xFF\xFF",
     ];
 
+    // The tokens of the tuple variation store: the version of the table, the flags of the tuple variations (embedded
+    // peak, intermediate region, private points, shared points), the ends of an axis, and the control bytes of the runs
+    // of packed point numbers and deltas
+    private static readonly string[] TupleVariationTokens =
+    [
+        "\x00\x01\x00\x00", "\x80\x00", "\xA0\x00", "\xC0\x00", "\xE0\x00", "\x40\x00", "\xC0\x00", "\x20\x00",
+        "\x00", "\x80", "\x40", "\x7F", "\xBF",
+    ];
+
+    /// <summary>The <c>cvar</c> tables of the unit tests (one axis, four control values).</summary>
+    private static readonly (string Name, byte[] Table)[] ControlValueVariationTables =
+    [
+        // Private points 1 and 3 with deltas 10 and -20 at the end of the axis; every value +4 in a region from 0 to 1 peaking at 0.5
+        ("private-points", [0, 1, 0, 0, 0, 2, 0, 24, 0, 7, 0xA0, 0, 0x40, 0, 0, 5, 0xC0, 0, 0x20, 0, 0, 0, 0x40, 0, 2, 1, 1, 2, 1, 10, 0xEC, 3, 4, 4, 4, 4]),
+
+        // The same with the shared points 0 and 2 for the second variation
+        ("shared-points", [0, 1, 0, 0, 0x80, 2, 0, 24, 0, 7, 0xA0, 0, 0x40, 0, 0, 3, 0xC0, 0, 0x20, 0, 0, 0, 0x40, 0, 2, 1, 0, 2, 2, 1, 1, 2, 1, 10, 0xEC, 1, 4, 4]),
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("fonts-hinting", Hinting) { Seeds = GetHintingSeeds },
         new("fonts-hinting-bytecode", HintingBytecode) { Seeds = GetBytecodeSeeds },
+        new("fonts-cvar", ControlValueVariations) { Seeds = GetControlValueVariationSeeds, Dictionary = TupleVariationTokens },
         new("fonts-subset", Subset) { Seeds = () => GetFontSeeds().Select((seed, index) => seed with { Data = (byte[])[(byte)index, (byte)(index * 13), .. seed.Data.Span] }) },
         new("fonts-shaping", Shaping) { Seeds = GetShapingSeeds, Dictionary = ShapingTokens },
         new("fonts-split-runs", SplitRuns) { Seeds = GetSplitRunsSeeds, Dictionary = SplitRunsTokens },
     ];
 
-    /// <summary>Hints the glyphs of a font file: option bytes give the hinting mode and the size.</summary>
+    /// <summary>
+    /// Hints the glyphs of a font file: option bytes give the hinting mode, an instance of a variable font (the
+    /// quotient of the first byte by 3, two bits per axis: the default, the minimum, the maximum or the middle of the
+    /// default and the maximum) and the size.
+    /// </summary>
     private static void Hinting(ReadOnlySpan<byte> data)
     {
-        var mode = (GlyphHinting)(FuzzInput.ReadByte(ref data) % 3);
+        var options = FuzzInput.ReadByte(ref data);
+        var mode = (GlyphHinting)(options % 3);
+        var instance = options / 3;
         var size = ReadSize(FuzzInput.ReadByte(ref data));
         FontFace[] faces;
         try
@@ -124,7 +150,71 @@ public static class FontsFuzzTargets
         foreach (var face in faces.Take(2))
         {
             CheckHinting(face, size, mode, GetHintedGlyphs(face));
+            if (instance != 0 && face.Axes.Length > 0)
+            {
+                CheckHinting(face.WithCoordinates(GetInstanceCoordinates(face, instance)), size, mode, GetHintedGlyphs(face));
+            }
         }
+    }
+
+    private static int[] GetInstanceCoordinates(FontFace face, int selector)
+    {
+        var coordinates = new int[face.Axes.Length];
+        for (var i = 0; i < coordinates.Length; i++)
+        {
+            var axis = face.Axes[i];
+            coordinates[i] = ((selector >> (2 * (i % 4))) & 3) switch
+            {
+                0 => axis.Default,
+                1 => axis.Minimum,
+                2 => axis.Maximum,
+                _ => (int)(((long)axis.Default + axis.Maximum) / 2),
+            };
+        }
+
+        return coordinates;
+    }
+
+    /// <summary>
+    /// Reads a <c>cvar</c> table: option bytes give the number of axes (1 to 4), the number of control values, and the
+    /// normalized coordinates of the instance (16 bits each), then come the bytes of the table. The sums of the deltas
+    /// must be finite, and none at the default instance, where every region has a scalar of zero.
+    /// </summary>
+    private static void ControlValueVariations(ReadOnlySpan<byte> data)
+    {
+        var axisCount = (FuzzInput.ReadByte(ref data) % 4) + 1;
+        var controlValueCount = FuzzInput.ReadByte(ref data) * 4;
+        var coordinates = new int[axisCount];
+        for (var i = 0; i < axisCount; i++)
+        {
+            var value = (short)((FuzzInput.ReadByte(ref data) << 8) | FuzzInput.ReadByte(ref data));
+            coordinates[i] = Math.Clamp((int)value, -FontInstance.TableOne, FontInstance.TableOne);
+        }
+
+        var sums = new double[controlValueCount];
+        var budget = new GlyphBudget(Limits);
+        try
+        {
+            CvarTable.AddDeltas(data, axisCount, coordinates, sums, ref budget);
+        }
+        catch (InvalidFontException)
+        {
+            return;
+        }
+        catch (FontResourceLimitException)
+        {
+            return;
+        }
+
+        foreach (var sum in sums)
+        {
+            FuzzAssert.True(double.IsFinite(sum), $"A control value has the delta {sum}");
+        }
+
+        var atDefault = new double[controlValueCount];
+        budget = new GlyphBudget(Limits);
+        CvarTable.AddDeltas(data, axisCount, new int[axisCount], atDefault, ref budget);
+        FuzzAssert.True(atDefault.All(sum => sum == 0), "The default instance has deltas");
     }
 
     /// <summary>
@@ -953,6 +1043,42 @@ public static class FontsFuzzTargets
                 byte[] prefix = [(byte)mode, (byte)(index++ * 11)];
                 yield return new FuzzSeed($"{mode}-{seed.Name}", (byte[])[.. prefix, .. seed.Data.Span]);
             }
+
+            // An instance of a variable font too: the first axis at its maximum, the second one at its minimum
+            byte[] instance = [(byte)((int)GlyphHinting.Full + (3 * 6)), (byte)(index++ * 11)];
+            yield return new FuzzSeed($"Full-instance-{seed.Name}", (byte[])[.. instance, .. seed.Data.Span]);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetControlValueVariationSeeds()
+    {
+        // The tables of the variable fonts of the seeds, at instances of their axes, and tables built by hand
+        var index = 0;
+        foreach (var seed in GetFontSeeds())
+        {
+            FontFace face;
+            try
+            {
+                face = FontLoader.Load(seed.Data.Span, SharedEnvironment)[0];
+            }
+            catch (FontException)
+            {
+                continue;
+            }
+
+            if (!face.TryGetTable(FontTags.Cvar, out var cvar) || !face.TryGetTable(Cvt, out var cvt))
+                continue;
+
+            foreach (var coordinates in new[] { (FontInstance.TableOne, 0), (-FontInstance.TableOne, FontInstance.TableOne / 2), (FontInstance.TableOne / 3, FontInstance.TableOne) })
+            {
+                byte[] prefix = [(byte)(face.Axes.Length - 1), (byte)((cvt.Length / 2 + 3) / 4), (byte)(coordinates.Item1 >> 8), (byte)coordinates.Item1, (byte)(coordinates.Item2 >> 8), (byte)coordinates.Item2];
+                yield return new FuzzSeed($"{seed.Name}-{index++}", (byte[])[.. prefix, .. cvar.Span]);
+            }
+        }
+
+        foreach (var (name, table) in ControlValueVariationTables)
+        {
+            yield return new FuzzSeed(name, (byte[])[0, 1, 0x20, 0x00, .. table]);
         }
     }
 

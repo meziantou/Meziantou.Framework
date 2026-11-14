@@ -140381,12 +140381,12 @@
       "provenance": {
         "origin": "external",
         "license": "Apache-2.0",
-        "author": "Google Inc. and Christian Robertson (Droid Sans, Open Sans, Roboto), subset by hb-subset; expectations from FreeType 2.13.2",
+        "author": "Google Inc. and Christian Robertson (Droid Sans, Open Sans, Roboto), subset by hb-subset, made variable by fontTools; expectations from FreeType 2.13.2",
         "source": "https://github.com/google/fonts (apache/droidsans, apache/opensans and apache/roboto at the commits of font-suites/truetype-hinting/README.md)"
       },
-      "fileCount": 7,
-      "sha256": "8125166b30a0f8e6ecd603f38a67afad6b3d0e254c2e4d8038d11effa20e6abf",
-      "description": "Three fonts hinted by hand with TrueType instructions, subset to Basic Latin, and the advance and the hinted points FreeType gives for each glyph at ten sizes with its version 40 interpreter for black and white pixels."
+      "fileCount": 11,
+      "sha256": "5fc088e71f2fd072798f155c7dcc666983da8097f9d682bd46071668f7ac12d6",
+      "description": "Three fonts hinted by hand with TrueType instructions, subset to Basic Latin, two variable fonts made of them (gvar and cvar), and the advance and the hinted points FreeType gives for each glyph at ten sizes (five sizes and four instances for the variable fonts) with its version 40 interpreter for black and white pixels."
     }
   ],
   "hevcVectors": {

@@ -47,6 +47,33 @@ public sealed class ComponentParameterCollectionBuilder<TComponent>
         return this;
     }
 
+    /// <summary>
+    /// Sets an <see cref="EventCallback"/> parameter to an asynchronous callback. The component awaits its task, so the
+    /// host waits until the callback completes (an <c>async</c> lambda selects this overload, not the <see cref="Action"/> one).
+    /// </summary>
+    /// <param name="parameter">The property of the parameter (<c>c => c.OnClick</c>).</param>
+    /// <param name="callback">The callback.</param>
+    /// <returns>The builder.</returns>
+    public ComponentParameterCollectionBuilder<TComponent> Add(Expression<Func<TComponent, EventCallback>> parameter, Func<Task> callback)
+    {
+        _parameters[GetParameterName(parameter)] = new EventCallback(receiver: null, callback);
+        return this;
+    }
+
+    /// <summary>
+    /// Sets an <see cref="EventCallback{TValue}"/> parameter to an asynchronous callback. The component awaits its task, so
+    /// the host waits until the callback completes.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the argument of the callback.</typeparam>
+    /// <param name="parameter">The property of the parameter (<c>c => c.ValueChanged</c>).</param>
+    /// <param name="callback">The callback.</param>
+    /// <returns>The builder.</returns>
+    public ComponentParameterCollectionBuilder<TComponent> Add<TValue>(Expression<Func<TComponent, EventCallback<TValue>>> parameter, Func<TValue, Task> callback)
+    {
+        _parameters[GetParameterName(parameter)] = new EventCallback<TValue>(receiver: null, callback);
+        return this;
+    }
+
     /// <summary>Sets a <see cref="RenderFragment"/> parameter from markup.</summary>
     /// <param name="parameter">The property of the parameter (<c>c => c.ChildContent</c>).</param>
     /// <param name="markup">The HTML of the fragment.</param>

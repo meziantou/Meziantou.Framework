@@ -319,6 +319,30 @@ public sealed class ComponentTestHostTests
     }
 
     [Fact]
+    public async Task EventCallbacks_AsyncCallbacksAreAwaited()
+    {
+        await using var host = new ComponentTestHost();
+        var events = new List<string>();
+        var button = await host.RenderAsync<SaveButton>(parameters => parameters
+            .Add(c => c.OnSaving, async () =>
+            {
+                await Task.Delay(20);
+                events.Add("saving");
+            })
+            .Add(c => c.OnSave, async (string value) =>
+            {
+                await Task.Delay(20);
+                events.Add("save " + value);
+            }));
+
+        // The click waits for the event handler, which awaits the tasks of the callbacks
+        await button.GetByRole("button", "Save").ClickAsync();
+
+        Assert.Equal(["saving", "save data"], events);
+        Assert.Equal("Saved", button.GetByRole("status").TextContent);
+    }
+
+    [Fact]
     public async Task Services_AreInjected()
     {
         await using var host = new ComponentTestHost();

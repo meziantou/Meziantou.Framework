@@ -223,6 +223,29 @@ public sealed class DataGridTests
     }
 
     [Fact]
+    public async Task Interactive_ColumnsAddedBeforeColumnsWithUnchangedParametersAreAtTheirPosition()
+    {
+        // The columns with only a title do not render again: the grid cannot place a new column among them from the
+        // columns that render, so it renders the columns again
+        await using var host = new ComponentTestHost();
+        var grid = await host.RenderAsync<GridConditionalTitleColumnsPage>(parameters => parameters.Add(c => c.Items, [new Person(1, "Ada", 36)]));
+        Assert.Equal(["A", "B"], grid.FindAll("th").Select(th => th.TextContent));
+
+        await grid.SetParametersAsync(parameters => parameters.Add(c => c.ShowFirst, true));
+        Assert.Equal(["First", "A", "B"], grid.FindAll("th").Select(th => th.TextContent));
+
+        await grid.SetParametersAsync(parameters => parameters.Add(c => c.ShowMiddle, true));
+        Assert.Equal(["First", "A", "Middle", "B"], grid.FindAll("th").Select(th => th.TextContent));
+
+        await grid.SetParametersAsync(parameters => parameters.Add(c => c.ShowFirst, false));
+        Assert.Equal(["A", "Middle", "B"], grid.FindAll("th").Select(th => th.TextContent));
+
+        await grid.SetParametersAsync(parameters => parameters.Add(c => c.ShowFirst, true).Add(c => c.ShowMiddle, false));
+        Assert.Equal(["First", "A", "B"], grid.FindAll("th").Select(th => th.TextContent));
+        Assert.Equal(["", "", ""], grid.FindAll("td").Select(cell => cell.TextContent));
+    }
+
+    [Fact]
     public async Task Interactive_ExposesATableToAssistiveTechnologies()
     {
         await using var host = new ComponentTestHost();

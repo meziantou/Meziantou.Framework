@@ -23,12 +23,12 @@ public sealed class BrowserPage : TestPage
         return NavigateAndWaitAsync(() => BrowsingContext.Navigate(absoluteUrl), cancellationToken);
     }
 
-    /// <summary>Goes back in the history, and waits until the page is loaded.</summary>
+    /// <summary>Goes back in the history, and waits until the page is loaded. Does nothing at the first entry of the history.</summary>
     /// <param name="cancellationToken">A token to cancel the wait.</param>
     /// <returns>A task completed once the page is loaded.</returns>
     public Task GoBackAsync(CancellationToken cancellationToken = default) => NavigateAndWaitAsync(() => BrowsingContext.Window.History.Back(), cancellationToken);
 
-    /// <summary>Goes forward in the history, and waits until the page is loaded.</summary>
+    /// <summary>Goes forward in the history, and waits until the page is loaded. Does nothing at the last entry of the history.</summary>
     /// <param name="cancellationToken">A token to cancel the wait.</param>
     /// <returns>A task completed once the page is loaded.</returns>
     public Task GoForwardAsync(CancellationToken cancellationToken = default) => NavigateAndWaitAsync(() => BrowsingContext.Window.History.Forward(), cancellationToken);
@@ -60,15 +60,14 @@ public sealed class BrowserPage : TestPage
 
     private async Task NavigateAndWaitAsync(Action navigate, CancellationToken cancellationToken)
     {
-        var previousDocument = Document;
-        var previousUrl = Url;
         using (EnterEventLoop())
         {
             navigate();
         }
 
-        // A navigation creates a new document; a traversal of the history may stay in the same document (pushState)
-        await WaitForAsync(() => (Document != previousDocument || Url != previousUrl) && Document.ReadyState == Framework.WebPlatform.Dom.DocumentReadyState.Complete, timeout: null, cancellationToken).ConfigureAwait(false);
+        // The event loop runs the traversals of the history before the condition is evaluated. A navigation is ongoing
+        // until its document is active; a traversal may stay in the same document (pushState), or do nothing (no entry).
+        await WaitForAsync(() => !BrowsingContext.IsNavigating && Document.ReadyState == Framework.WebPlatform.Dom.DocumentReadyState.Complete, timeout: null, cancellationToken).ConfigureAwait(false);
         await WaitForIdleAsync(timeout: null, cancellationToken).ConfigureAwait(false);
     }
 }

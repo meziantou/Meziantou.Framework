@@ -92,14 +92,20 @@ internal static class ElementStates
         return !readOnly && !IsDisabled(element);
     }
 
-    /// <summary>Gets whether the element can be filled: a text field, a text area or an editable element.</summary>
+    /// <summary>Gets whether the element can be filled: a text field, a field whose value is set (a date...), a text area or an editable element.</summary>
     public static bool CanBeFilled(Element element) => element switch
     {
-        HtmlInputElement input => input.Type is not ("checkbox" or "radio" or "file" or "button" or "submit" or "reset" or "image" or "hidden" or "range" or "color"),
+        HtmlInputElement input => IsTextInput(input) || IsValueInput(input),
         HtmlTextAreaElement => true,
         HtmlElement { IsContentEditable: true } => true,
         _ => false,
     };
+
+    /// <summary>Gets whether the text of the input is typed with the keyboard.</summary>
+    public static bool IsTextInput(HtmlInputElement input) => input.Type is "text" or "email" or "number" or "password" or "search" or "tel" or "url";
+
+    /// <summary>Gets whether the value of the input is set, as Playwright does: the keyboard cannot type in a date, a time, a color or a range.</summary>
+    public static bool IsValueInput(HtmlInputElement input) => input.Type is "date" or "datetime-local" or "month" or "time" or "week" or "color" or "range";
 
     /// <summary>Gets whether the element has the focus, including in a shadow root.</summary>
     public static bool IsFocused(Element element)

@@ -43,7 +43,7 @@ Assert.Equal("""<input id="name" name="Person.Name" class="modified valid" value
 | `DragAndDropAsync` | The HTML drag and drop of an element on another one |
 | `FocusAsync` | Focuses the element |
 | `TypeAsync`, `PressAsync` | Focuses the element, then the keys of a US keyboard |
-| `FillAsync`, `ClearAsync` | Replaces the text of a field, then leaves it (the `change` event of `@bind`) |
+| `FillAsync`, `ClearAsync` | Replaces the text of a field, then leaves it (the `change` event of `@bind`). The keyboard cannot type in a `date`, `time`, `datetime-local`, `month`, `week`, `color` or `range` input: their value is set, then `input` and `change` fire, as in Playwright |
 | `CheckAsync`, `UncheckAsync`, `SetCheckedAsync` | Clicks a check box or a radio button when needed |
 | `SelectOptionAsync` | Selects options of a `select` element by value or by label, then fires `input` and `change` |
 

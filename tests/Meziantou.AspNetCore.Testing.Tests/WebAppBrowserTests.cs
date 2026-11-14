@@ -67,6 +67,32 @@ public sealed class WebAppBrowserTests
     }
 
     [Fact]
+    public async Task HistoryActionsThatStayOnTheSameDocumentOrDoNothingComplete()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { DefaultTimeout = TimeSpan.FromSeconds(2) });
+        var page = await browser.OpenAsync("/");
+
+        // There is no next entry: the action does nothing, and does not wait for a navigation
+        await page.GoForwardAsync();
+        Assert.Equal("http://localhost/", page.Url);
+
+        // Two entries of the same document with the same URL
+        var document = page.Document;
+        page.BrowsingContext.Window.History.PushState("state", "");
+        await page.GoBackAsync();
+        Assert.Same(document, page.Document);
+        await page.GoForwardAsync();
+        Assert.Same(document, page.Document);
+        Assert.Equal("http://localhost/", page.Url);
+
+        // A navigation to another document still waits for it
+        await page.GoToAsync("/sign-in");
+        await page.GoBackAsync();
+        await Expect(page).ToHaveTitleAsync("Home");
+    }
+
+    [Fact]
     public async Task ScriptsFetchFromTheApplication()
     {
         await using var factory = new WebApplicationFactory<Program>();

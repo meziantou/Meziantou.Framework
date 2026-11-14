@@ -47,16 +47,26 @@
         builder.AddComponentParameter(2, nameof(CascadingValue<DataGrid<TRowData>>.Value), this);
         builder.AddComponentParameter(3, nameof(CascadingValue<DataGrid<TRowData>>.ChildContent), (RenderFragment)(content =>
         {
-            // The columns register themselves while they render, in the order of ChildContent. Collecting them again on
-            // each render keeps that order when a column is removed and added back (for instance with @if). The table
-            // renders after them, in a child component.
-            StartCollectingColumns();
-            content.AddContent(0, ChildContent);
-            content.OpenComponent<DeferredContent>(1);
-            content.AddComponentParameter(2, nameof(DeferredContent.ChildContent), (RenderFragment)RenderTable);
+            // The columns and the table are in a component keyed by a generation: a new generation recreates the columns,
+            // so they all render again, in the order of ChildContent
+            content.OpenComponent<DeferredContent>(0);
+            content.SetKey(columnsGeneration);
+            content.AddComponentParameter(1, nameof(DeferredContent.ChildContent), (RenderFragment)RenderColumnsAndTable);
             content.CloseComponent();
         }));
         builder.CloseComponent();
+    }
+
+    private void RenderColumnsAndTable(RenderTreeBuilder content)
+    {
+        // The columns register themselves while they render, in the order of ChildContent. Collecting them again on
+        // each render keeps that order when a column is removed and added back (for instance with @if). The table
+        // renders after them, in a child component.
+        StartCollectingColumns();
+        content.AddContent(0, ChildContent);
+        content.OpenComponent<DeferredContent>(1);
+        content.AddComponentParameter(2, nameof(DeferredContent.ChildContent), (RenderFragment)RenderTable);
+        content.CloseComponent();
     }
 
     private void RenderTable(RenderTreeBuilder __builder)
@@ -99,6 +109,7 @@
     private readonly List<DataGridColumn<TRowData>> liveColumns = new List<DataGridColumn<TRowData>>();
     private List<DataGridColumn<TRowData>> previousColumns = new List<DataGridColumn<TRowData>>();
     private bool collectingColumns;
+    private int columnsGeneration;
 
     private void StartCollectingColumns()
     {
@@ -113,11 +124,15 @@
 
         // A column whose parameters did not change (for instance a Title only) does not render again: it keeps the
         // position it had after the column that preceded it
+        var hasNewColumn = columns.Exists(column => !previousColumns.Contains(column));
+        var hasSkippedColumn = false;
         for (var i = 0; i < previousColumns.Count; i++)
         {
             var column = previousColumns[i];
             if (columns.Contains(column) || !liveColumns.Contains(column))
                 continue;
+
+            hasSkippedColumn = true;
 
             var insertAt = 0;
             for (var j = i - 1; j >= 0; j--)
@@ -131,6 +146,14 @@
             }
 
             columns.Insert(insertAt, column);
+        }
+
+        // The position of a new column among the columns that did not render is unknown (a column shown by @if before
+        // them): render the grid again with new columns, which all render in the order of ChildContent
+        if (hasNewColumn && hasSkippedColumn)
+        {
+            columnsGeneration++;
+            StateHasChanged();
         }
     }
 

@@ -258,7 +258,7 @@ public sealed class LocatorTests
         Assert.Equal("The element <input> cannot receive the input: it is not editable", readOnly.Message);
 
         var notAField = await Assert.ThrowsAsync<ElementNotInteractableException>(() => page.GetByText("Text").FillAsync("text"));
-        Assert.Equal("The element <p> is not an <input>, a <textarea> or a [contenteditable] element", notAField.Message);
+        Assert.Equal("The element <p> is not a text field, a date, time, color or range <input>, a <textarea> or a [contenteditable] element", notAField.Message);
 
         var missingOption = await Assert.ThrowsAsync<ElementNotInteractableException>(() => page.GetByLabel("Color").SelectOptionAsync("Blue"));
         Assert.Equal("The element <select> cannot receive the input: it has no option whose value or label is \"Blue\"", missingOption.Message);
@@ -316,6 +316,26 @@ public sealed class LocatorTests
         await page.GetByLabel("Comment").ClearAsync();
         await Expect(page.GetByLabel("Comment")).ToBeEmptyAsync();
         await Expect(page.GetByLabel("Comment")).ToBeEditableAsync();
+    }
+
+    [Fact]
+    public async Task Locator_FillSetsTheValueOfDateTimeAndRangeInputs()
+    {
+        await using var host = new ComponentTestHost();
+        var form = await host.RenderAsync<DateForm>();
+
+        // The keyboard cannot type in these inputs: the value is set, then the input and change events update @bind
+        await form.GetByLabel("Birth date").FillAsync("1815-12-10");
+        await form.GetByLabel("Alarm").FillAsync("07:30:00");
+        await form.GetByLabel("Volume").FillAsync("7");
+        await Expect(form.Locator("#result")).ToHaveTextAsync("1815-12-10 07:30 7");
+        await Expect(form.GetByLabel("Birth date")).ToHaveValueAsync("1815-12-10");
+
+        await form.GetByLabel("Birth date").ClearAsync();
+        await Expect(form.Locator("#result")).ToHaveTextAsync("07:30 7");
+
+        var exception = await Assert.ThrowsAsync<ElementNotInteractableException>(() => form.GetByLabel("Birth date").FillAsync("not a date"));
+        Assert.Equal("The value \"not a date\" is not a valid value for the input <input> of type \"date\"", exception.Message);
     }
 
     [Fact]

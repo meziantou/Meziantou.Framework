@@ -1,0 +1,11 @@
+@using System.Globalization
+<input type="date" aria-label="Birth date" @bind="_birthDate" />
+<input type="time" aria-label="Alarm" @bind="_alarm" />
+<input type="range" aria-label="Volume" min="0" max="10" @bind="_volume" />
+<p id="result">@_birthDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) @_alarm?.ToString("HH:mm", CultureInfo.InvariantCulture) @_volume</p>
+
+@code {
+    private DateOnly? _birthDate;
+    private TimeOnly? _alarm;
+    private int _volume;
+}

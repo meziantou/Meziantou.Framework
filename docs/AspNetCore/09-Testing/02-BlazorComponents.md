@@ -36,6 +36,9 @@ Assert.Equal("""
   [locators](03-Locators.md) search the elements of the component, and the actions wait until the element is actionable.
   `Find` returns the DOM element of WebPlatform that matches a CSS selector now.
 - Each action waits until the components are idle again.
+- [ComponentParameterCollectionBuilder](cref:Meziantou.AspNetCore.Testing.Components.ComponentParameterCollectionBuilder{TComponent})
+  sets the parameters, with their names checked by the compiler. An `EventCallback` parameter takes an `Action` or an
+  `async` lambda: the component awaits the task of an `async` lambda, so the actions wait until it completes.
 
 ## Services
 

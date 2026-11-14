@@ -276,6 +276,12 @@ public sealed class PageInput
         await RunAsync(input =>
         {
             Focus(element);
+            if (element is HtmlInputElement valueField && ElementStates.IsValueInput(valueField))
+            {
+                SetValue(valueField, text.Trim());
+                return;
+            }
+
             switch (element)
             {
                 case HtmlInputElement field:
@@ -360,6 +366,21 @@ public sealed class PageInput
         }
     }
 
+    /// <summary>
+    /// Sets the value of an input that the keyboard cannot edit (a date, a time, a color or a range), fires the
+    /// <c>input</c> and <c>change</c> events, then leaves the field, as Playwright does.
+    /// </summary>
+    private static void SetValue(HtmlInputElement field, string value)
+    {
+        field.Value = value;
+        if (!string.Equals(field.Value, value, StringComparison.Ordinal))
+            throw new ElementNotInteractableException($"The value \"{value}\" is not a valid value for the input {ActionTarget.DescribeElement(field)} of type \"{field.Type}\"");
+
+        field.DispatchEvent(new Event("input", new EventInit { Bubbles = true, Composed = true }));
+        field.DispatchEvent(new Event("change", new EventInit { Bubbles = true }));
+        field.Blur();
+    }
+
     private static void Press(UserInput input, string key, string[] modifiers)
     {
         foreach (var modifier in modifiers)
@@ -430,7 +451,7 @@ public sealed class PageInput
                     return false;
 
                 if (checks.HasFlag(Actionability.Editable) && !ElementStates.CanBeFilled(ElementStates.RetargetToControl(element)))
-                    throw new ElementNotInteractableException($"The element {ActionTarget.DescribeElement(element)} is not an <input>, a <textarea> or a [contenteditable] element");
+                    throw new ElementNotInteractableException($"The element {ActionTarget.DescribeElement(element)} is not a text field, a date, time, color or range <input>, a <textarea> or a [contenteditable] element");
 
                 if (options is not null && ElementStates.RetargetToControl(element) is not HtmlSelectElement)
                     throw new ElementNotInteractableException($"The element {ActionTarget.DescribeElement(element)} is not a <select> element");

@@ -372,9 +372,11 @@ namespace Meziantou.AspNetCore.Testing.Components
     public sealed class ComponentParameterCollectionBuilder<TComponent> where TComponent : Microsoft.AspNetCore.Components.IComponent
     {
         public Meziantou.AspNetCore.Testing.Components.ComponentParameterCollectionBuilder<TComponent> Add(System.Linq.Expressions.Expression<System.Func<TComponent, Microsoft.AspNetCore.Components.EventCallback>> parameter, System.Action callback) => throw null;
+        public Meziantou.AspNetCore.Testing.Components.ComponentParameterCollectionBuilder<TComponent> Add(System.Linq.Expressions.Expression<System.Func<TComponent, Microsoft.AspNetCore.Components.EventCallback>> parameter, System.Func<System.Threading.Tasks.Task> callback) => throw null;
         public Meziantou.AspNetCore.Testing.Components.ComponentParameterCollectionBuilder<TComponent> Add(System.Linq.Expressions.Expression<System.Func<TComponent, Microsoft.AspNetCore.Components.RenderFragment?>> parameter, string markup) => throw null;
         public Meziantou.AspNetCore.Testing.Components.ComponentParameterCollectionBuilder<TComponent> Add(string name, object? value) => throw null;
         public Meziantou.AspNetCore.Testing.Components.ComponentParameterCollectionBuilder<TComponent> Add<TValue>(System.Linq.Expressions.Expression<System.Func<TComponent, Microsoft.AspNetCore.Components.EventCallback<TValue>>> parameter, System.Action<TValue> callback) => throw null;
+        public Meziantou.AspNetCore.Testing.Components.ComponentParameterCollectionBuilder<TComponent> Add<TValue>(System.Linq.Expressions.Expression<System.Func<TComponent, Microsoft.AspNetCore.Components.EventCallback<TValue>>> parameter, System.Func<TValue, System.Threading.Tasks.Task> callback) => throw null;
         public Meziantou.AspNetCore.Testing.Components.ComponentParameterCollectionBuilder<TComponent> Add<TValue>(System.Linq.Expressions.Expression<System.Func<TComponent, TValue>> parameter, TValue value) => throw null;
         public Meziantou.AspNetCore.Testing.Components.ComponentParameterCollectionBuilder<TComponent> AddChildContent(Microsoft.AspNetCore.Components.RenderFragment childContent) => throw null;
         public Meziantou.AspNetCore.Testing.Components.ComponentParameterCollectionBuilder<TComponent> AddChildContent(string markup) => throw null;

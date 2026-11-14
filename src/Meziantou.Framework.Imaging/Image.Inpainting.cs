@@ -19,15 +19,32 @@ public abstract partial class Image
             return;
 
         using var inpainter = new Inpainter(Owner.Scope, _size, mask, options.Radius);
-        ApplyProcessorFrames<RgbaFloat, InpaintingProcessor>(new InpaintingProcessor(inpainter), Operation, cancellationToken);
+        ApplyProcessorFrames<RgbaFloat, InpaintingProcessor>(new InpaintingProcessor(inpainter, mask), Operation, cancellationToken);
     }
 
     /// <summary>Fills the mask of each frame; the pixels do not move, so a cursor hotspot stays where it is.</summary>
-    private sealed class InpaintingProcessor(Inpainter inpainter) : IImageProcessor<RgbaFloat>
+    private sealed class InpaintingProcessor(Inpainter inpainter, PixelMask mask) : IImageProcessor<RgbaFloat>, INativePixelCopier
     {
         public Size GetOutputSize(Size size) => size;
 
         public void Process(int frameIndex, PixelRowSource<RgbaFloat> source, PixelAccessor<RgbaFloat> destination, CancellationToken cancellationToken)
             => inpainter.Apply(source, destination, cancellationToken);
+
+        // The pixels outside the mask keep their stored bytes
+        public void CopyNativePixels(scoped in PixelLease source, scoped in PixelLease destination, int bytesPerPixel)
+        {
+            for (var y = 0; y < source.Height; y++)
+            {
+                var from = source.GetRowBytes(y);
+                var to = destination.GetRowBytes(y);
+                for (var x = 0; x < source.Width; x++)
+                {
+                    if (!mask.Get((y * source.Width) + x))
+                    {
+                        from.Slice(x * bytesPerPixel, bytesPerPixel).CopyTo(to[(x * bytesPerPixel)..]);
+                    }
+                }
+            }
+        }
     }
 }

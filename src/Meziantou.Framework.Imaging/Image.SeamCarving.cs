@@ -66,8 +66,12 @@ public abstract partial class Image
     }
 
     /// <summary>Applies a seam carving plan to each frame.</summary>
-    private sealed class SeamCarvingProcessor(SeamCarver carver) : IImageProcessor<RgbaFloat>
+    private sealed class SeamCarvingProcessor(SeamCarver carver) : IImageProcessor<RgbaFloat>, INativePixelCopier
     {
+        // The pixels that are only moved keep their stored bytes
+        public void CopyNativePixels(scoped in PixelLease source, scoped in PixelLease destination, int bytesPerPixel)
+            => carver.CopyMovedPixels(source, destination, bytesPerPixel);
+
         public Size GetOutputSize(Size size) => carver.TargetSize;
 
         public void Process(int frameIndex, PixelRowSource<RgbaFloat> source, PixelAccessor<RgbaFloat> destination, CancellationToken cancellationToken)

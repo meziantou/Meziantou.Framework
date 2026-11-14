@@ -2490,6 +2490,25 @@ public sealed class ResizeTests
     }
 
     [Fact]
+    public void SeamCarvingKeepsTheStoredBytesOfTheMovedPixels()
+    {
+        // Halves that are not numbers keep their payloads when they are moved: the seam is column 3, the end of the line
+        using var image = new Image<RgbaHalf>(4, 1);
+        ushort[] green = [0x2400, 0x2C00, 0xFD0A, 0x7E01];
+        for (var x = 0; x < 4; x++)
+        {
+            image.Frames[0][x, 0] = new RgbaHalf((Half)0.5f, BitConverter.UInt16BitsToHalf(green[x]), (Half)0.5f, Half.One);
+        }
+
+        var before = new byte[32];
+        image.Frames[0].CopyPixelBytesTo(before);
+        image.SeamCarve(3, 1, cancellationToken: Ct);
+        var after = new byte[24];
+        image.Frames[0].CopyPixelBytesTo(after);
+        Assert.Equal(before.AsSpan(0, 24).ToArray(), after);
+    }
+
+    [Fact]
     public void PixelMasksHoldOneBitPerPixel()
     {
         var mask = new PixelMask(70, 3);

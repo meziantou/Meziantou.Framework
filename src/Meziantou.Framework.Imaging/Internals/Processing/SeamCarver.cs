@@ -111,6 +111,53 @@ internal sealed class SeamCarver : IDisposable
         }
     }
 
+    /// <summary>
+    /// Copies the stored bytes of the pixels of the result that are pixels of the source moved by every step (not blended),
+    /// through the working buffers as maps of source indices.
+    /// </summary>
+    public void CopyMovedPixels(scoped in PixelLease source, scoped in PixelLease destination, int bytesPerPixel)
+    {
+        // The first working buffer holds RgbaFloat pixels: 16 bytes, room for the indices of the two maps
+        var current = unsafe(MemoryMarshal.Cast<byte, int>(_first!.Span))[..(int)_largestPixelCount];
+        var next = unsafe(MemoryMarshal.Cast<byte, int>(_second!.Span))[..(int)_largestPixelCount];
+        var width = SourceSize.Width;
+        var height = SourceSize.Height;
+        for (var i = 0; i < width * height; i++)
+        {
+            current[i] = i;
+        }
+
+        foreach (var step in _steps)
+        {
+            step.MapIndices(current, next, width);
+            if (step.Horizontal)
+            {
+                height = step.OutputLength;
+            }
+            else
+            {
+                width = step.OutputLength;
+            }
+
+            var swap = current;
+            current = next;
+            next = swap;
+        }
+
+        for (var y = 0; y < height; y++)
+        {
+            var to = destination.GetRowBytes(y);
+            for (var x = 0; x < width; x++)
+            {
+                var origin = current[(y * width) + x];
+                if (origin >= 0)
+                {
+                    source.GetRowBytes(origin / SourceSize.Width).Slice(origin % SourceSize.Width * bytesPerPixel, bytesPerPixel).CopyTo(to[(x * bytesPerPixel)..]);
+                }
+            }
+        }
+    }
+
     /// <summary>Gets where a pixel of the source lands in the result.</summary>
     public bool TryMapPoint(Point source, out Point destination)
     {
@@ -723,6 +770,24 @@ internal sealed class SeamCarver : IDisposable
                     }
 
                     destination[to] = first == second ? source[from] : Blend(source[from], source[other]);
+                }
+            }
+        }
+
+        /// <summary>Applies the step to a map of source pixel indices: a copied pixel keeps its index, a blended one gets -1.</summary>
+        public void MapIndices(ReadOnlySpan<int> source, Span<int> destination, int width)
+        {
+            var map = Map;
+            var outputWidth = Horizontal ? width : OutputLength;
+            for (var line = 0; line < LineCount; line++)
+            {
+                for (var i = 0; i < OutputLength; i++)
+                {
+                    var first = map[2 * ((line * OutputLength) + i)];
+                    var second = map[(2 * ((line * OutputLength) + i)) + 1];
+                    var from = Horizontal ? (first * width) + line : (line * width) + first;
+                    var to = Horizontal ? (i * outputWidth) + line : (line * outputWidth) + i;
+                    destination[to] = first == second ? source[from] : -1;
                 }
             }
         }

@@ -737,6 +737,23 @@ public sealed class SmoothingTests
     }
 
     [Fact]
+    public void InpaintingKeepsTheStoredBytesOutsideTheMask()
+    {
+        // A half that is not a number keeps its payload: the pixels outside the mask are copied, not converted
+        using var image = new Image<RgbaHalf>(3, 1, new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)0.75f, Half.One));
+        var nan = BitConverter.UInt16BitsToHalf(0xFD0A);
+        image.Frames[0][0, 0] = new RgbaHalf((Half)0.25f, nan, (Half)0.75f, Half.One);
+        var before = new byte[24];
+        image.Frames[0].CopyPixelBytesTo(before);
+        var mask = new PixelMask(3, 1);
+        mask[2, 0] = true;
+        image.Inpaint(mask, cancellationToken: Ct);
+        var after = new byte[24];
+        image.Frames[0].CopyPixelBytesTo(after);
+        Assert.Equal(before.AsSpan(0, 16).ToArray(), after.AsSpan(0, 16).ToArray());
+    }
+
+    [Fact]
     public void InpaintingIsPremultipliedByAlpha()
     {
         // An opaque red pixel and transparent pixels around a hole: the color of the transparent pixels does not count, so

@@ -77,7 +77,23 @@ public abstract partial class Image
             {
                 StoreWorkingRow(working, destinationCopy.GetRowBytes(y), format, destination.GetRowBytes(y));
             }
+
+            if (processor is INativePixelCopier copier)
+            {
+                copier.CopyNativePixels(source, destination, PixelFormats.GetBytesPerPixel(format));
+            }
         }
+    }
+
+    /// <summary>
+    /// A built-in processor that knows which pixels of the result are pixels of the source moved or kept as they are: after
+    /// the result is stored from a working format, their stored bytes are copied, so that the conversions never change
+    /// them (the payload of a not-a-number half, for instance).
+    /// </summary>
+    internal interface INativePixelCopier
+    {
+        /// <summary>Copies the bytes of the pixels of the source that the result keeps as they are.</summary>
+        void CopyNativePixels(scoped in PixelLease source, scoped in PixelLease destination, int bytesPerPixel);
     }
 
     /// <summary>The working storages of a processor whose pixel type is not the pixel format of the image, and the index of the frame being processed.</summary>

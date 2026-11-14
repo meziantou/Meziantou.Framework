@@ -11,4 +11,8 @@ public sealed record MarkdownParseOptions
 
     /// <summary>Gets the extensions to parse.</summary>
     public MarkdownExtensions Extensions { get; init; }
+
+    /// <summary>Gets a value indicating whether HTML is text: no HTML block or inline HTML is recognized, and the renderer escapes it.</summary>
+    /// <remarks>Autolinks, such as <c>&lt;https://example.com&gt;</c>, are still links.</remarks>
+    public bool DisableHtml { get; init; }
 }

@@ -25,10 +25,20 @@ internal static class MarkdownFuzzTargets
         "ftp://", "@", "a@b.c", ".", "_", "(", "&hl;", "<title>", "</style>", "<xmp/>", "<scripT", "\v", "\f",
     ];
 
+    private static readonly string[] ExtensionTokens =
+    [
+        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020",
+    ];
+
+    // Every extension: a text of odd length has HTML disabled
+    private static readonly MarkdownParseOptions AllExtensions = new() { Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension) };
+    private static readonly MarkdownParseOptions AllExtensionsWithoutHtml = AllExtensions with { DisableHtml = true };
+
     public static IReadOnlyList<FuzzTarget> Targets { get; } =
     [
         new("language-markdown", data => Parse(data, MarkdownParseOptions.Default)) { Seeds = GetSeeds, Dictionary = Tokens },
         new("language-markdown-gfm", data => Parse(data, MarkdownParseOptions.GitHubFlavored)) { Seeds = GetGfmSeeds, Dictionary = GfmTokens },
+        new("language-markdown-extensions", data => Parse(data, data.Length % 2 == 0 ? AllExtensions : AllExtensionsWithoutHtml)) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
     ];
 
     private static void Parse(ReadOnlySpan<byte> data, MarkdownParseOptions options)
@@ -129,6 +139,18 @@ internal static class MarkdownFuzzTargets
 
     // The examples of the CommonMark specification and of the extensions of GitHub Flavored Markdown
     private static IEnumerable<FuzzSeed> GetGfmSeeds() => GetSeeds("markdown.CommonMark.md", "commonmark").Concat(GetSeeds("markdown.GfmExtensions.md", "gfm"));
+
+    // The examples of the GFM extensions and of the extensions of the 1.x library
+    private static IEnumerable<FuzzSeed> GetExtensionSeeds()
+    {
+        var seeds = GetGfmSeeds();
+        foreach (var name in typeof(MarkdownFuzzTargets).Assembly.GetManifestResourceNames().Where(name => name.StartsWith("markdown.extensions.", StringComparison.Ordinal)).Order(StringComparer.Ordinal))
+        {
+            seeds = seeds.Concat(GetSeeds(name, name["markdown.extensions.".Length..^".md".Length]));
+        }
+
+        return seeds;
+    }
 
     private static IEnumerable<FuzzSeed> GetSeeds(string resourceName, string prefix)
     {

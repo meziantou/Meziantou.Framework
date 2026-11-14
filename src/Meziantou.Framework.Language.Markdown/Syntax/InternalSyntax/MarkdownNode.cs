@@ -71,6 +71,7 @@ internal sealed class MarkdownNode : GreenNode
             SyntaxKind.TableCell => new Markdown.MarkdownTableCellSyntax(this, parent, position),
             SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis => new Markdown.MarkdownEmphasisSyntax(this, parent, position),
             SyntaxKind.Strikethrough => new Markdown.MarkdownStrikethroughSyntax(this, parent, position),
+            SyntaxKind.Subscript or SyntaxKind.Superscript or SyntaxKind.Inserted or SyntaxKind.Marked => new Markdown.MarkdownEmphasisExtraSyntax(this, parent, position),
             SyntaxKind.CodeSpan => new Markdown.MarkdownCodeSpanSyntax(this, parent, position),
             SyntaxKind.Link or SyntaxKind.Image => new Markdown.MarkdownLinkSyntax(this, parent, position),
             SyntaxKind.Autolink or SyntaxKind.ExtendedAutolink => new Markdown.MarkdownAutolinkSyntax(this, parent, position),

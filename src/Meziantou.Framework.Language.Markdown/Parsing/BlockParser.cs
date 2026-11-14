@@ -11,6 +11,7 @@ internal sealed class BlockParser
 
     private readonly string _text;
     private readonly MarkdownExtensions _extensions;
+    private readonly bool _disableHtml;
     private readonly List<TriviaSpan> _triviaSpans = [];
 
     // The lines of all the leaf blocks: a block has a range of them. Only the last open leaf block gets lines, so its lines
@@ -40,22 +41,23 @@ internal sealed class BlockParser
     private bool _indented;
     private bool _blank;
 
-    private BlockParser(string text, MarkdownExtensions extensions)
+    private BlockParser(string text, MarkdownParseOptions options)
     {
         _text = text;
-        _extensions = extensions;
+        _extensions = options.Extensions;
+        _disableHtml = options.DisableHtml;
 
         // A block has at most every line of the text
         _lines = new List<Line>(text.AsSpan().Count('\n') + 1);
         _tip = _document;
         _oldTip = _document;
         _lastMatchedContainer = _document;
-        _inlineParser = new InlineParser(_references, extensions);
+        _inlineParser = new InlineParser(_references, options);
     }
 
-    public static (BuildNode Document, List<TriviaSpan> TriviaSpans) Parse(string text, MarkdownExtensions extensions)
+    public static (BuildNode Document, List<TriviaSpan> TriviaSpans) Parse(string text, MarkdownParseOptions options)
     {
-        var parser = new BlockParser(text, extensions);
+        var parser = new BlockParser(text, options);
         var position = 0;
         while (position < text.Length)
         {
@@ -353,7 +355,7 @@ internal sealed class BlockParser
         }
 
         // HTML block
-        if (!_indented && c == '<')
+        if (!_indented && c == '<' && !_disableHtml)
         {
             var interruptsParagraph = container.Kind == SyntaxKind.Paragraph || (!_allClosed && !_blank && _tip.Kind == SyntaxKind.Paragraph);
             var type = Scanners.GetHtmlBlockStart(_text[_nextNonspace.._lineEnd], interruptsParagraph);

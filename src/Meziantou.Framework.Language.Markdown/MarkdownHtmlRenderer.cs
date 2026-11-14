@@ -19,16 +19,17 @@ public static class MarkdownHtmlRenderer
     {
         ArgumentNullException.ThrowIfNull(tree);
 
-        var writer = new Writer(tree.GetText().Length, tree.Options.Extensions.HasFlag(MarkdownExtensions.TagFilter));
+        var writer = new Writer(tree.GetText().Length, tree.Options);
         writer.WriteBlocks(tree.GetRoot().Blocks);
         return writer.ToString();
     }
 
-    private sealed class Writer(int sourceLength, bool tagFilter)
+    private sealed class Writer(int sourceLength, MarkdownParseOptions options)
     {
         // The HTML is about as long as the Markdown
         private readonly StringBuilder _output = new(sourceLength + 16);
-        private readonly bool _tagFilter = tagFilter;
+        private readonly bool _tagFilter = options.Extensions.HasFlag(MarkdownExtensions.TagFilter);
+        private readonly bool _hardLineBreaks = options.Extensions.HasFlag(MarkdownExtensions.HardLineBreaks);
 
         // In a cell of a table, a pipe escaped by a backslash is a pipe, even in a code span or a link destination
         private bool _inTableCell;
@@ -260,10 +261,10 @@ public static class MarkdownHtmlRenderer
                 case SyntaxKind.EntityToken:
                     AppendEscaped(HtmlEntities.Decode(token.Text));
                     break;
-                case SyntaxKind.LineEndingToken:
+                case SyntaxKind.LineEndingToken when !_hardLineBreaks:
                     _output.Append('\n');
                     break;
-                case SyntaxKind.HardLineBreakToken:
+                case SyntaxKind.HardLineBreakToken or SyntaxKind.LineEndingToken:
                     _output.Append("<br />\n");
                     break;
             }
@@ -287,6 +288,22 @@ public static class MarkdownHtmlRenderer
                     WriteInlines(strikethrough.Inlines);
                     _output.Append("</del>");
                     break;
+
+                case MarkdownEmphasisExtraSyntax extra:
+                {
+                    var tag = extra.Style switch
+                    {
+                        MarkdownEmphasisExtraStyle.Subscript => "sub",
+                        MarkdownEmphasisExtraStyle.Superscript => "sup",
+                        MarkdownEmphasisExtraStyle.Inserted => "ins",
+                        _ => "mark",
+                    };
+
+                    _output.Append('<').Append(tag).Append('>');
+                    WriteInlines(extra.Inlines);
+                    _output.Append("</").Append(tag).Append('>');
+                    break;
+                }
 
                 case MarkdownCodeSpanSyntax code:
                     _output.Append("<code>");

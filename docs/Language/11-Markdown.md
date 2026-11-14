@@ -222,8 +222,23 @@ differences: a task list item marker is recognized in any container, such as a b
 and the delimiters between the tildes of a strikethrough are text, as they are in an emphasis, so that the constructs
 never overlap.
 
+## Other extensions
+
+The other flags of [MarkdownExtensions](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions) enable the
+extensions of `Meziantou.Framework.Markdown`, which this parser is meant to replace:
+
+- [EmphasisExtras](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.EmphasisExtras): subscript (`H~2~O`),
+  superscript (`2^10^`), inserted (`++text++`) and marked text (`==text==`), and strikethrough (`~~text~~`). They are
+  [MarkdownEmphasisExtraSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownEmphasisExtraSyntax) nodes. When
+  subscript is enabled, a single `~` is a subscript rather than a strikethrough.
+- [HardLineBreaks](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.HardLineBreaks): the line breaks of a
+  paragraph are rendered as `<br />`.
+
+[DisableHtml](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.DisableHtml) reads HTML as text: the
+renderer escapes it, and autolinks such as `<https://example.com>` are still links.
+
 ## Limitations of the prototype
 
-- Only CommonMark and the extensions of GitHub Flavored Markdown: no footnotes, front matter, math...
+- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no footnotes, front matter, math...
 - Inserting and removing blocks parses the whole text again.
 - Parsing allocates more and is slower than [Meziantou.Framework.Markdown](../Markdown/01-Introduction.md).

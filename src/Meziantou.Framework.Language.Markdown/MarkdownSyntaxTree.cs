@@ -62,7 +62,7 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
         ArgumentNullException.ThrowIfNull(text);
 
         options ??= MarkdownParseOptions.Default;
-        var green = MarkdownParser.Parse(text.ToString(), options.Extensions);
+        var green = MarkdownParser.Parse(text.ToString(), options);
         return new MarkdownSyntaxTree(text, options, (MarkdownDocumentSyntax)green.CreateRed(parent: null, position: 0), path);
     }
 

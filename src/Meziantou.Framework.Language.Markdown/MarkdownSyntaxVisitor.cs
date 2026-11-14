@@ -56,6 +56,9 @@ public abstract class MarkdownSyntaxVisitor
     /// <summary>Visits a <see cref="MarkdownStrikethroughSyntax"/>.</summary>
     public virtual void VisitMarkdownStrikethrough(MarkdownStrikethroughSyntax node) => DefaultVisit(node);
 
+    /// <summary>Visits a <see cref="MarkdownEmphasisExtraSyntax"/>.</summary>
+    public virtual void VisitMarkdownEmphasisExtra(MarkdownEmphasisExtraSyntax node) => DefaultVisit(node);
+
     /// <summary>Visits a <see cref="MarkdownCodeSpanSyntax"/>.</summary>
     public virtual void VisitMarkdownCodeSpan(MarkdownCodeSpanSyntax node) => DefaultVisit(node);
 
@@ -122,6 +125,9 @@ public abstract class MarkdownSyntaxVisitor<TResult>
 
     /// <summary>Visits a <see cref="MarkdownStrikethroughSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownStrikethrough(MarkdownStrikethroughSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownEmphasisExtraSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownEmphasisExtra(MarkdownEmphasisExtraSyntax node) => DefaultVisit(node);
 
     /// <summary>Visits a <see cref="MarkdownCodeSpanSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownCodeSpan(MarkdownCodeSpanSyntax node) => DefaultVisit(node);

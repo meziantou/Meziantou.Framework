@@ -13,7 +13,12 @@ internal sealed class InlineParser
 
     private readonly Dictionary<string, bool> _references;
     private readonly bool _strikethrough;
+    private readonly bool _subscript;
+    private readonly bool _superscript;
+    private readonly bool _inserted;
+    private readonly bool _marked;
     private readonly bool _autolinks;
+    private readonly bool _disableHtml;
     private Subject _subject = null!;
     private string _text = "";
     private int _pos;
@@ -26,10 +31,16 @@ internal sealed class InlineParser
     private Delimiter? _delimiters;
     private Bracket? _brackets;
 
-    public InlineParser(Dictionary<string, bool> references, MarkdownExtensions extensions)
+    public InlineParser(Dictionary<string, bool> references, MarkdownParseOptions options)
     {
+        var extensions = options.Extensions;
+        _disableHtml = options.DisableHtml;
         _references = references;
         _strikethrough = extensions.HasFlag(MarkdownExtensions.Strikethrough);
+        _subscript = extensions.HasFlag(MarkdownExtensions.Subscript);
+        _superscript = extensions.HasFlag(MarkdownExtensions.Superscript);
+        _inserted = extensions.HasFlag(MarkdownExtensions.Inserted);
+        _marked = extensions.HasFlag(MarkdownExtensions.Marked);
         _autolinks = extensions.HasFlag(MarkdownExtensions.Autolinks);
     }
 
@@ -201,7 +212,16 @@ internal sealed class InlineParser
             case '*' or '_':
                 HandleDelimiter(c);
                 break;
-            case '~' when _strikethrough:
+            case '~' when _strikethrough || _subscript:
+                HandleDelimiter(c);
+                break;
+            case '^' when _superscript:
+                HandleDelimiter(c);
+                break;
+            case '+' when _inserted:
+                HandleDelimiter(c);
+                break;
+            case '=' when _marked:
                 HandleDelimiter(c);
                 break;
             case 'w' when _autolinks:
@@ -239,7 +259,7 @@ internal sealed class InlineParser
                 ParseCloseBracket();
                 break;
             case '<':
-                if (!ParseAutolink() && !ParseHtmlTag())
+                if (!ParseAutolink() && (_disableHtml || !ParseHtmlTag()))
                 {
                     AppendText(_pos, _pos + 1);
                     _pos++;
@@ -274,7 +294,10 @@ internal sealed class InlineParser
     // The characters where a construct of an extension can start: a tilde, the colon of a URL, the start of www.
     private bool IsExtensionCharacter(char c) => c switch
     {
-        '~' => _strikethrough,
+        '~' => _strikethrough || _subscript,
+        '^' => _superscript,
+        '+' => _inserted,
+        '=' => _marked,
         ':' => _autolinks,
         'w' => _autolinks && _pos + 3 < _end && _text[_pos + 1] == 'w' && _text[_pos + 2] == 'w' && _text[_pos + 3] == '.',
         _ => false,
@@ -443,21 +466,23 @@ internal sealed class InlineParser
 
         var count = _pos - start;
 
-        // A run of more than two tildes is text
-        if (c == '~' && count > 2)
+        // A run of more than two tildes is text in GFM. A run shorter than its emphasis needs is text: ++ and == need two.
+        var extra = IsExtraEmphasis(c);
+        if ((c == '~' && !_subscript && count > 2) || (extra && count < GetMinimumCount(c)))
         {
             AppendText(start, _pos);
             return;
         }
 
-        var before = start == 0 ? new Rune('\n') : GetRuneBefore(start);
-        var after = _pos >= _end ? new Rune('\n') : GetRuneAt(_pos);
+        // The extra emphasis read an entity as the character it stands for, and some punctuation as text: 10^-18^
+        var before = start == 0 ? new Rune('\n') : extra && _root.LastChild is { Kind: SyntaxKind.EntityToken } entity && entity.End == start ? GetLastRune(HtmlEntities.Decode(_text[entity.Start..entity.End])) : GetRuneBefore(start);
+        var after = _pos >= _end ? new Rune('\n') : extra && Match(Scanners.EntityRegex()) is > 0 and var entityLength ? GetFirstRune(HtmlEntities.Decode(_text.Substring(_pos, entityLength))) : GetRuneAt(_pos);
         var afterIsWhitespace = Scanners.IsUnicodeWhitespace(after);
-        var afterIsPunctuation = Scanners.IsUnicodePunctuation(after);
+        var afterIsPunctuation = Scanners.IsUnicodePunctuation(after) && !(extra && IsPunctuationException(after));
         var beforeIsWhitespace = Scanners.IsUnicodeWhitespace(before);
         var beforeIsPunctuation = Scanners.IsUnicodePunctuation(before);
         var leftFlanking = !afterIsWhitespace && (!afterIsPunctuation || beforeIsWhitespace || beforeIsPunctuation);
-        var rightFlanking = !beforeIsWhitespace && (!beforeIsPunctuation || afterIsWhitespace || afterIsPunctuation);
+        var rightFlanking = !beforeIsWhitespace && (!(beforeIsPunctuation && !(extra && IsPunctuationException(before))) || afterIsWhitespace || Scanners.IsUnicodePunctuation(after));
         bool canOpen;
         bool canClose;
         if (c == '_')
@@ -483,6 +508,35 @@ internal sealed class InlineParser
             _delimiters = delimiter;
         }
     }
+
+    // The extra emphasis of Markdig: ~ when subscript is on, ^, ++ and ==
+    private bool IsExtraEmphasis(char c) => c switch
+    {
+        '~' => _subscript,
+        '^' or '+' or '=' => true,
+        _ => false,
+    };
+
+    private int GetMinimumCount(char c) => c switch
+    {
+        '~' when _subscript => 1,
+        '~' => 2,
+        '+' or '=' => 2,
+        _ => 1,
+    };
+
+    private int GetMaximumCount(char c) => c switch
+    {
+        '~' => _strikethrough ? 2 : 1,
+        '^' => 1,
+        _ => 2,
+    };
+
+    private static bool IsPunctuationException(Rune rune) => rune.Value is '\u2212' or '-' or '+' or '\u2020' or '\u2021';
+
+    private static Rune GetFirstRune(string text) => Rune.DecodeFromUtf16(text, out var rune, out _) == System.Buffers.OperationStatus.Done ? rune : Rune.ReplacementChar;
+
+    private static Rune GetLastRune(string text) => Rune.DecodeLastFromUtf16(text, out var rune, out _) == System.Buffers.OperationStatus.Done ? rune : Rune.ReplacementChar;
 
     private Rune GetRuneBefore(int index)
     {
@@ -841,6 +895,16 @@ internal sealed class InlineParser
                 continue;
             }
 
+            // What is left of a run after a match can be too short for its emphasis: it is text
+            var extra = IsExtraEmphasis(closer.Character);
+            if (extra && closer.Count < GetMinimumCount(closer.Character))
+            {
+                var next = closer.Next;
+                RemoveDelimiter(closer);
+                closer = next;
+                continue;
+            }
+
             var bottomIndex = (closer.Character, (closer.CanOpen ? 3 : 0) + (closer.OriginalCount % 3));
             var bottom = openersBottom.GetValueOrDefault(bottomIndex, stackBottom);
             var opener = closer.Previous;
@@ -848,7 +912,7 @@ internal sealed class InlineParser
             while (opener is not null && opener != stackBottom && opener != bottom)
             {
                 var oddMatch = (closer.CanOpen || opener.CanClose) && closer.OriginalCount % 3 != 0 && (opener.OriginalCount + closer.OriginalCount) % 3 == 0;
-                if (opener.Character == closer.Character && opener.CanOpen && !oddMatch)
+                if (opener.Character == closer.Character && opener.CanOpen && !oddMatch && (!extra || opener.Count >= GetMinimumCount(opener.Character)))
                 {
                     openerFound = true;
                     break;
@@ -873,7 +937,7 @@ internal sealed class InlineParser
             }
 
             // A strikethrough is between runs of the same length: other runs of tildes are text
-            var tilde = closer.Character == '~';
+            var tilde = closer.Character == '~' && !extra;
             if (tilde && opener!.Count != closer.Count)
             {
                 closer = closer.Next;
@@ -882,15 +946,25 @@ internal sealed class InlineParser
                 continue;
             }
 
-            var use = tilde ? closer.Count : closer.Count >= 2 && opener!.Count >= 2 ? 2 : 1;
+            var use = tilde ? closer.Count
+                : extra ? Math.Min(Math.Min(opener!.Count, closer.Count), GetMaximumCount(closer.Character))
+                : closer.Count >= 2 && opener!.Count >= 2 ? 2 : 1;
             var openerNode = opener!.Node;
             var closerNode = closer.Node;
             opener.Count -= use;
             closer.Count -= use;
 
             // The delimiters used are the ones next to the content: the end of the opener and the start of the closer
-            var kind = tilde ? SyntaxKind.Strikethrough : use == 1 ? SyntaxKind.Emphasis : SyntaxKind.StrongEmphasis;
-            var delimiterKind = tilde ? SyntaxKind.StrikethroughDelimiterToken : SyntaxKind.EmphasisDelimiterToken;
+            var kind = closer.Character switch
+            {
+                '~' when tilde || use == 2 => SyntaxKind.Strikethrough,
+                '~' => SyntaxKind.Subscript,
+                '^' => SyntaxKind.Superscript,
+                '+' => SyntaxKind.Inserted,
+                '=' => SyntaxKind.Marked,
+                _ => use == 1 ? SyntaxKind.Emphasis : SyntaxKind.StrongEmphasis,
+            };
+            var delimiterKind = kind == SyntaxKind.Strikethrough ? SyntaxKind.StrikethroughDelimiterToken : SyntaxKind.EmphasisDelimiterToken;
             var emphasis = NewNode(kind, openerNode.End - use, closerNode.Start + use);
             emphasis.Append(NewNode(delimiterKind, openerNode.End - use, openerNode.End));
             openerNode.End -= use;
@@ -1149,7 +1223,7 @@ internal sealed class InlineParser
             {
                 LinkEmailAddresses(run);
                 run.Clear();
-                if (child.Kind is SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis or SyntaxKind.Strikethrough or SyntaxKind.Image)
+                if (child.Kind is SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis or SyntaxKind.Strikethrough or SyntaxKind.Subscript or SyntaxKind.Superscript or SyntaxKind.Inserted or SyntaxKind.Marked or SyntaxKind.Image)
                 {
                     LinkEmailAddresses(child);
                 }

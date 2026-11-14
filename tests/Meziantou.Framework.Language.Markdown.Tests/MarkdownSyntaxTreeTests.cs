@@ -218,6 +218,45 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
     }
 
+    [Theory]
+    [InlineData(MarkdownExtensions.EmphasisExtras, "~a~ ~~b~~ ~~~c~~~\n", "<p><sub>a</sub> <del>b</del> <sub><del>c</del></sub></p>\n")]
+    [InlineData(MarkdownExtensions.Strikethrough, "~a~ ~~b~~ ~~~c~~~\n", "<p><del>a</del> <del>b</del> ~~~c~~~</p>\n")]
+    [InlineData(MarkdownExtensions.Subscript, "~a~ ~~b~~\n", "<p><sub>a</sub> <sub><sub>b</sub></sub></p>\n")]
+    [InlineData(MarkdownExtensions.EmphasisExtras, "+a+ ++b++ +++c+++ ==d== =e=\n", "<p>+a+ <ins>b</ins> +<ins>c</ins>+ <mark>d</mark> =e=</p>\n")]
+    // The punctuation that the extra emphasis reads as text is punctuation for * and _, as CommonMark says
+    [InlineData(MarkdownExtensions.EmphasisExtras, "x^-1^ x^a b^ a*-b*\n", "<p>x<sup>-1</sup> x<sup>a b</sup> a*-b*</p>\n")]
+    [InlineData(MarkdownExtensions.EmphasisExtras, "^*a*^ *^a^*\n", "<p><sup><em>a</em></sup> <em><sup>a</sup></em></p>\n")]
+    [InlineData(MarkdownExtensions.HardLineBreaks, "a\nb\\\nc\n", "<p>a<br />\nb<br />\nc</p>\n")]
+    public void RendersTheHtmlOfTheExtensions(MarkdownExtensions extensions, string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = extensions });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Theory]
+    [InlineData("<div>\na\n</div>\n", "<p>&lt;div&gt;\na\n&lt;/div&gt;</p>\n")]
+    [InlineData("<b>a</b> <https://a.b> <!-- c -->\n", "<p>&lt;b&gt;a&lt;/b&gt; <a href=\"https://a.b\">https://a.b</a> &lt;!-- c --&gt;</p>\n")]
+    public void DisableHtmlRendersHtmlAsText(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { DisableHtml = true });
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+        Assert.DoesNotContain(tree.GetRoot().DescendantNodes(), node => node is MarkdownHtmlBlockSyntax or MarkdownRawHtmlSyntax);
+    }
+
+    [Fact]
+    public void EmphasisExtraHasItsStyle()
+    {
+        var styles = MarkdownSyntaxTree.ParseText("~a~ ^b^ ++c++ ==d==\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.EmphasisExtras })
+            .GetRoot().DescendantNodes().OfType<MarkdownEmphasisExtraSyntax>().ToList();
+
+        Assert.Equal([MarkdownEmphasisExtraStyle.Subscript, MarkdownEmphasisExtraStyle.Superscript, MarkdownEmphasisExtraStyle.Inserted, MarkdownEmphasisExtraStyle.Marked], styles.Select(style => style.Style).ToArray());
+        Assert.Equal("++", styles[2].OpeningDelimiterToken.Text);
+        Assert.Equal("d", styles[3].GetPlainText());
+    }
+
     [Fact]
     public void PipesOfATableAreTokensOfItsRows()
     {

@@ -40,10 +40,13 @@ public sealed class ExtensionSpecTests
     ];
 
     // The extensions that the parser supports, by the name the specifications give them
-    private static readonly Dictionary<string, MarkdownExtensions> SupportedExtensions = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, Func<MarkdownParseOptions, MarkdownParseOptions>> SupportedExtensions = new(StringComparer.Ordinal)
     {
-        ["gfm-pipetables"] = MarkdownExtensions.Tables,
-        ["tasklists"] = MarkdownExtensions.TaskLists,
+        ["gfm-pipetables"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Tables },
+        ["tasklists"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.TaskLists },
+        ["hardlinebreak"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.HardLineBreaks },
+        ["nohtml"] = options => options with { DisableHtml = true },
+        ["emphasisextras"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.EmphasisExtras },
     };
 
     public static TheoryData<string, int, string> SupportedExamples()
@@ -51,7 +54,7 @@ public sealed class ExtensionSpecTests
         var data = new TheoryData<string, int, string>();
         foreach (var (file, extensions) in Specifications)
         {
-            var examples = CommonMarkSpec.Load(Path.Combine("Extensions", file));
+            var examples = LoadExamples(file);
             foreach (var group in extensions.Split('|'))
             {
                 if (GetOptions(group) is null)
@@ -73,27 +76,31 @@ public sealed class ExtensionSpecTests
     [MemberData(nameof(SupportedExamples))]
     public void RendersTheHtmlOfTheExtensionSpecifications(string file, int number, string extensions)
     {
-        var example = CommonMarkSpec.Load(Path.Combine("Extensions", file))[number - 1];
+        var example = LoadExamples(file)[number - 1];
         var tree = MarkdownSyntaxTree.ParseText(example.Markdown, GetOptions(extensions));
 
         Assert.Equal(example.Markdown, tree.GetRoot().ToFullString());
         Assert.Equal(Compact(example.Html), Compact(MarkdownHtmlRenderer.ToHtml(tree)), $"{file}, example {number} ({example.Section}), with {extensions}");
     }
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, List<CommonMarkSpec.Example>> LoadedExamples = new(StringComparer.Ordinal);
+
+    private static List<CommonMarkSpec.Example> LoadExamples(string file) => LoadedExamples.GetOrAdd(file, static file => CommonMarkSpec.Load(Path.Combine("Extensions", file)));
+
     private static MarkdownParseOptions? GetOptions(string group)
     {
-        var extensions = MarkdownExtensions.None;
+        var options = MarkdownParseOptions.Default;
         foreach (var name in group.Split('+'))
         {
-            if (!SupportedExtensions.TryGetValue(name, out var extension))
+            if (!SupportedExtensions.TryGetValue(name, out var configure))
             {
                 return null;
             }
 
-            extensions |= extension;
+            options = configure(options);
         }
 
-        return new MarkdownParseOptions { Extensions = extensions };
+        return options;
     }
 
     // The whitespace around the content of a list item is not significant, as in the tests of the 1.x library

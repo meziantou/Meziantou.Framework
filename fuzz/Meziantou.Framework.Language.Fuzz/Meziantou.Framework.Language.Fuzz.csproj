@@ -13,6 +13,7 @@
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Language.Toml.Tests\files\toml-test\cases.json" LogicalName="toml-test.cases.json" Link="Seeds\toml-test.cases.json" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Markdown.Tests\Specs\CommonMark.md" LogicalName="markdown.CommonMark.md" Link="Seeds\markdown\CommonMark.md" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Language.Markdown.Tests\Specs\GfmExtensions.md" LogicalName="markdown.GfmExtensions.md" Link="Seeds\markdown\GfmExtensions.md" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Language.Markdown.Tests\Specs\Extensions\*.md" Exclude="..\..\tests\Meziantou.Framework.Language.Markdown.Tests\Specs\Extensions\readme.md" LogicalName="markdown.extensions.%(Filename).md" Link="Seeds\markdown\extensions\%(Filename).md" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Language.Regex.Tests\Corpus\NetValid.txt" LogicalName="regex.NetValid.txt" Link="Seeds\regex\NetValid.txt" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Language.Regex.Tests\Corpus\NetInvalid.txt" LogicalName="regex.NetInvalid.txt" Link="Seeds\regex\NetInvalid.txt" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Language.Regex.Tests\Corpus\JavaScriptConformance.jsonl" LogicalName="regex.JavaScriptConformance.jsonl" Link="Seeds\regex\JavaScriptConformance.jsonl" />

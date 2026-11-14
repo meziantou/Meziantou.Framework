@@ -54,6 +54,20 @@ public sealed class CommonMarkSpecTests
         }
     }
 
+    // The extensions whose syntax no CommonMark example uses, as the extensions of the "advanced" set of the 1.x library
+    [Theory]
+    [MemberData(nameof(CommonMarkSpec.ExampleNumbers), MemberType = typeof(CommonMarkSpec))]
+    public void ExtensionsThatKeepCommonMarkKeepTheHtmlOfTheSpecification(int number)
+    {
+        var example = CommonMarkSpec.Get(number);
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.EmphasisExtras };
+
+        var tree = MarkdownSyntaxTree.ParseText(example.Markdown, options);
+
+        Assert.Equal(example.Markdown, tree.GetRoot().ToFullString());
+        Assert.Equal(example.Html, MarkdownHtmlRenderer.ToHtml(tree), $"Example {number} ({example.Section})");
+    }
+
     [Theory]
     [MemberData(nameof(CommonMarkSpec.GfmExampleNumbers), MemberType = typeof(CommonMarkSpec))]
     public void TreeReproducesTheTextOfTheGfmExtensions(int number)

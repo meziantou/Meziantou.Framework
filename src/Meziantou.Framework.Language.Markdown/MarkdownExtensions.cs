@@ -22,6 +22,24 @@ public enum MarkdownExtensions
     /// <summary>The tag filter of GitHub Flavored Markdown: the HTML renderer escapes the tags that change how the rest of the page is read, such as <c>&lt;script&gt;</c>.</summary>
     TagFilter = 1 << 4,
 
+    /// <summary>The line breaks of a paragraph are rendered as hard line breaks (<c>&lt;br /&gt;</c>).</summary>
+    HardLineBreaks = 1 << 5,
+
+    /// <summary>Subscript: text between single tildes (<c>H~2~O</c>), rendered as <c>&lt;sub&gt;</c>. With it, <c>~~</c> is a strikethrough when <see cref="Strikethrough"/> is set, and two tildes are no longer read as the GFM strikethrough is.</summary>
+    Subscript = 1 << 6,
+
+    /// <summary>Superscript: text between carets (<c>2^10^</c>), rendered as <c>&lt;sup&gt;</c>.</summary>
+    Superscript = 1 << 7,
+
+    /// <summary>Inserted text, between <c>++</c>, rendered as <c>&lt;ins&gt;</c>.</summary>
+    Inserted = 1 << 8,
+
+    /// <summary>Marked text, between <c>==</c>, rendered as <c>&lt;mark&gt;</c>.</summary>
+    Marked = 1 << 9,
+
+    /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
+    EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
+
     /// <summary>The extensions of GitHub Flavored Markdown.</summary>
     GitHubFlavored = Tables | Strikethrough | TaskLists | Autolinks | TagFilter,
 }

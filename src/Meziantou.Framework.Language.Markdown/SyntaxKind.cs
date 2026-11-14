@@ -85,4 +85,8 @@ public enum SyntaxKind
     RawHtml,
     Strikethrough,
     ExtendedAutolink,
+    Subscript,
+    Superscript,
+    Inserted,
+    Marked,
 }

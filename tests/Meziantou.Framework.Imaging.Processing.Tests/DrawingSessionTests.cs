@@ -578,7 +578,7 @@ public sealed class DrawingSessionTests
 
     private static readonly string[] ParallelSceneNames =
     [
-        "solid", "translucent", "aliased", "evenodd-star", "curves", "wide-stroke", "dashed-stroke", "clipped", "rectangle-clip",
+        "solid", "whole-pixel-rectangle", "translucent", "aliased", "evenodd-star", "curves", "wide-stroke", "dashed-stroke", "clipped", "rectangle-clip",
         "opacity-layer", "bounded-layer", "source-mode", "xor-mode", "multiply-blend", "horizontal-gradient", "vertical-gradient",
         "rotated-gradient", "radial-gradient", "sweep-gradient", "path-gradient", "dithered-gradient", "brush-opacity",
         "image", "scaled-image", "reduced-image", "bicubic-image", "image-brush", "pattern", "projected-image", "linear-light", "clear",
@@ -906,6 +906,10 @@ public sealed class DrawingSessionTests
         {
             case "solid":
                 canvas.FillRectangle(new SolidBrush(new Rgba32(30, 60, 90)), new RectangleD(0.25, 0.75, width - 0.5, height - 1.5));
+                break;
+            case "whole-pixel-rectangle":
+                // Not swept: every row is the same run of full coverage (CoverageRasterizer.TryGetWholePixelRectangle)
+                canvas.FillRectangle(new SolidBrush(new Rgba32(30, 60, 90)), new RectangleD(-3, 2, width - 1, height - 5));
                 break;
             case "translucent":
                 canvas.FillEllipse(translucent, center, width * 0.47, height * 0.46);

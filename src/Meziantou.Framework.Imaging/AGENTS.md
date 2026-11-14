@@ -1067,7 +1067,11 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   `CoverageRasterizer`, `DrawingKernels` and `GradientEvaluator`: change it only with them and the tests.
   - Coverage is the exact area of the pixel inside the shape (the union of overlapping contours), in 1/65536 steps,
     ties upward. The rasterizer is a sweep line with lazily recorded boundaries; its row scratch is sized up front from
-    the largest number of edges on one row.
+    the largest number of edges on one row. Two vertical edges of opposite directions on whole columns and between the
+    same whole rows (a rectangle of whole pixels: `FillRectangle`, `Fill` and `Clear` of the canvas) are not swept:
+    every row is the same run of full coverage (`TryGetWholePixelRectangle`), which `IsFullyCovered` hands to the
+    kernels so that they do not search it (`DrawingSource.IsFullyCovered`).
+    `DrawingFuzzTests.WholePixelRectanglesPaintLikeTheirPolygons` compares it with the sweep of the same rectangle.
   - Compositing is exact integer source-over (`ulong`), the generalization of `AnimationCompositor.BlendOver8/16` to a
     fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules). A floating-point frame is
     composited by `FloatDrawingKernels` instead (the same formulas in double precision, not rounded to a grid).

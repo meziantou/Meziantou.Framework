@@ -65,6 +65,13 @@ internal readonly ref struct DrawingSource
     /// </summary>
     public LinearLightCurves? Curves { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether every coverage of the run is <see cref="CoverageRasterizer.FullCoverage"/>: the
+    /// kernels may then skip looking for the pixels covered entirely. Set for a single color only; <see langword="false"/>
+    /// says nothing about the coverages.
+    /// </summary>
+    public bool IsFullyCovered { get; init; }
+
     /// <summary>Gets a value indicating whether the paint is combined with the pixels in linear light.</summary>
     public bool IsLinearLight => Transfer != 0 || Curves is not null;
 

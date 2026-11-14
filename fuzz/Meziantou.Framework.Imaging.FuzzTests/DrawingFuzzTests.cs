@@ -99,6 +99,127 @@ public sealed class DrawingFuzzTests
         Assert.StartsWith("frame 1 differs", CheckInvariants(PixelFormat.Rgba32, static (canvas, frame) => canvas.FillRectangle(new SolidBrush(new Rgba32(1, 2, 3)), new Rectangle(frame, 0, 1, 1)), out _), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void WholePixelRectanglesPaintLikeTheirPolygons()
+    {
+        // A rectangle of whole pixels is not swept (CoverageRasterizer.TryGetWholePixelRectangle): the same rectangle as a
+        // polygon with one more corner on its left side is (the left side is never dropped, unlike a right side beyond the
+        // canvas), and must paint the same pixels, whatever the paint, the operator, the clip, the transformation, the
+        // antialiasing and the number of workers
+        var random = new FuzzRandom(FuzzSettings.Seed ^ 0x52656374616E676CUL);
+        var stopwatch = Stopwatch.StartNew();
+        var iterations = Math.Max(FuzzSettings.Iterations / 10, 1);
+        var failures = new List<string>();
+        var executed = 0;
+        for (var iteration = 0; iteration < iterations && failures.Count < 4; iteration++)
+        {
+            if (FuzzSettings.Duration is { } budget && stopwatch.Elapsed > budget)
+                break;
+
+            var caseSeed = random.NextUInt64();
+            executed++;
+            var failure = CheckWholePixelRectangle(caseSeed);
+            if (failure is not null)
+            {
+                failures.Add($"case seed {caseSeed}: {failure}");
+            }
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(FormattableString.Invariant($"whole-pixel rectangles: {executed} cases (base seed {FuzzSettings.Seed}) in {stopwatch.Elapsed.TotalSeconds:F1} s"));
+        if (failures.Count > 0)
+            Assert.Fail($"{failures.Count} fuzz failure(s):{Environment.NewLine}{string.Join(Environment.NewLine + Environment.NewLine, failures)}");
+    }
+
+    private static string? CheckWholePixelRectangle(ulong seed)
+    {
+        var random = new FuzzRandom(seed);
+        var format = DrawableFormats[random.Next(DrawableFormats.Length)];
+        var erases = random.Chance(33);
+
+        // Large enough, sometimes, for the rows to be composited by several workers
+        var isLarge = random.Chance(15);
+        var width = isLarge ? random.Next(380, 520) : random.Next(1, 40);
+        var height = isLarge ? random.Next(300, 400) : random.Next(1, 40);
+        var configuration = new ImageConfiguration { MaxDegreeOfParallelism = random.Chance(50) ? 1 : random.Next(2, 5) };
+        using var sprite = DrawingTestSupport.CreateRandom(DrawableFormats[random.Next(DrawableFormats.Length)], random.Next(1, 9), random.Next(1, 9), random.Next);
+        using var source = DrawingTestSupport.CreateRandom(format, width, height, random.Next);
+        var samples = DrawingTestSupport.ReadSamples(source.Frames[0]);
+        using var rectangle = DrawingTestSupport.Create(format, width, height, configuration);
+        using var polygon = DrawingTestSupport.Create(format, width, height, configuration);
+        DrawingTestSupport.WriteSamples(rectangle.Frames[0], samples);
+        DrawingTestSupport.WriteSamples(polygon.Frames[0], samples);
+        var context = new FuzzContext(sprite.Frames[0], erases);
+        var drawSeed = random.NextUInt64();
+        try
+        {
+            rectangle.Draw(canvas => Draw(canvas, new FuzzRandom(drawSeed), context, asPolygon: false));
+            polygon.Draw(canvas => Draw(canvas, new FuzzRandom(drawSeed), context, asPolygon: true));
+        }
+        catch (UnsupportedImageFeatureException exception) when (PixelFormats.IsFloatingPoint(format) && exception.Feature == DrawingKernels.OutOfRangeColorFeature)
+        {
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return $"exception: {exception}";
+        }
+
+        return DrawingTestSupport.ReadSamples(rectangle.Frames[0]).AsSpan().SequenceEqual(DrawingTestSupport.ReadSamples(polygon.Frames[0])) ? null : $"the rectangle and the polygon differ on {format} {width}x{height}";
+
+        static void Draw(DrawingCanvas canvas, FuzzRandom random, FuzzContext context, bool asPolygon)
+        {
+            var left = random.Next(-5, canvas.Width + 5);
+            var top = random.Next(-5, canvas.Height + 5);
+            var right = left + random.Next(0, canvas.Width + 5);
+            var bottom = top + random.Next(0, canvas.Height + 5);
+            var brush = CreateBrush(random, canvas, context);
+            var antialiasing = !random.Chance(30);
+            var clip = random.Next(3) switch
+            {
+                0 => (RectangleD?)CreateRectangle(random, canvas),
+                1 => CreateWholeRectangle(random, canvas),
+                _ => null,
+            };
+            var translation = random.Chance(30) ? AffineTransform.CreateTranslation(random.Next(-4, 5), random.Next(-4, 5)) : (AffineTransform?)null;
+            canvas.Antialiasing(antialiasing, canvas =>
+            {
+                if (clip is { } bounds)
+                {
+                    canvas.Clip(bounds, canvas => Fill(canvas));
+                }
+                else
+                {
+                    Fill(canvas);
+                }
+            });
+
+            void Fill(DrawingCanvas canvas)
+            {
+                if (translation is { } transform)
+                {
+                    canvas.Transform(transform, canvas => FillShape(canvas));
+                }
+                else
+                {
+                    FillShape(canvas);
+                }
+            }
+
+            void FillShape(DrawingCanvas canvas)
+            {
+                if (asPolygon)
+                {
+                    // One more corner, halfway up the left side (a whole or a half pixel, exact either way)
+                    canvas.FillPolygon(brush, [new PointD(left, top), new PointD(right, top), new PointD(right, bottom), new PointD(left, bottom), new PointD(left, (top + bottom) / 2.0)]);
+                }
+                else
+                {
+                    canvas.FillRectangle(brush, new RectangleD(left, top, right - left, bottom - top));
+                }
+            }
+        }
+    }
+
     private static string? RunWithWatchdog(ulong seed, out bool changed)
     {
         var caseChanged = false;

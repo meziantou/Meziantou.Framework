@@ -204,5 +204,4 @@ library does not support, and [ImageResourceLimitException](cref:Meziantou.Frame
 
 - Glyphs in SVG (`SVG ` table): their outlines are drawn instead.
 - PostScript Type 1 fonts and Type 1 charstrings.
-- The hints of CFF outlines, and the variation of the hinting values of TrueType (`cvar`).
 - The metadata and private blocks of WOFF and WOFF2 files. Table checksums are not verified.

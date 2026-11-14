@@ -128,7 +128,8 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
 ## Hinting
 
 `GlyphHinter` (`Fonts/Hinting/`) decodes outlines fitted to the pixel grid of a size: `LightHinter` (vertical only,
-no instructions, any outline format) and `TrueTypeHinter` with `TrueTypeInterpreter` (the TrueType instructions).
+no instructions, any outline format), `TrueTypeHinter` with `TrueTypeInterpreter` (the TrueType instructions) and
+`CffHinter` (the hints of CFF and CFF2 outlines).
 
 - Written from the OpenType specification ("TrueType Instructions", "Instructing TrueType Glyphs") and the Apple
   TrueType Reference Manual. FreeType is the oracle (version 40 interpreter, `FT_LOAD_TARGET_MONO`): the corpus suite
@@ -151,6 +152,20 @@ no instructions, any outline format) and `TrueTypeHinter` with `TrueTypeInterpre
   the phantom points is rounded before the instructions; a vector set from a line is truncated toward zero; a
   composite glyph rounds only the vertical offset of a component (`ROUND_XY_TO_GRID`), and nothing when the control
   value program turned the instructions off (`INSTCTRL`). GETINFO reports version 40, no grayscale and no ClearType.
+- **Instances of variable fonts** are hinted from their own points and control values (`gvar`, `CvarTable`). What
+  makes them those of FreeType, found with the two variable fonts of the suite (made by `truetype_hinting.py`): a
+  varied point is scaled from its position rounded to 1/64 of a unit, its position in font units (the original
+  distances) rounded to a whole unit, the offsets of the components too; a control value is scaled from its varied
+  value rounded to 1/64 of a unit; the phantom points round halves upward. FreeType keeps normalized coordinates in
+  16.16 and applies `hdmx` to every instance: the suite uses instances exact in 2.14 and fonts without `hdmx`, and the
+  library follows the specification. 11 points differ by 1/64 of a pixel (`KnownDivergences` of the test).
+- **CFF hints.** `CffCharstringInterpreter` gives the stems and the masks of a charstring to a sink that implements
+  `ICffHintSink`; `CffTable.GetHintValues` reads the private DICT of a glyph (`CffHintValues`, blended for an instance
+  of CFF2: `CffDictReader` evaluates the blends only for this reader). `CffHinter` builds a hint map per mask from the
+  horizontal stems and the blue zones, and maps the vertical coordinates (vertical only, as the CFF engine of FreeType;
+  the vertical stems are not used). It is written from TN #5177 and the Type 1 font format; the stems, masks and
+  values are compared with fontTools (`FontTests`), the hinted outlines with literals, not with FreeType. A ghost hint
+  of width -21 is a bottom edge at `edge + width`, of width -20 a top edge at `edge` (the CJK fonts of the corpus).
 - Remaining differences, found with fonts that cannot be committed (Arial, Verdana, Georgia, Times New Roman,
   Courier New of macOS) and with Noto Sans hinted by ttfautohint: one or two 1/64 pixel differences on a few glyphs of
   each font (fewer than 1 % of the glyphs), and about a third of the glyphs of Noto Sans at 7, 8, 20, 24 and 32 pixels

@@ -104,6 +104,9 @@ public sealed class FontFace
     private readonly FontFace _default;
     private FontInstance? _instance;
 
+    // Whether the MVAR table of an instance moves its ascender or its descender.
+    private bool _variesLineExtents;
+
     internal FontFace(FontData data, long directoryOffset)
     {
         _default = this;
@@ -587,6 +590,13 @@ public sealed class FontFace
     /// with TrueType outlines and without <c>HVAR</c> table, whose advance is the one of the phantom points of a glyph.
     /// </summary>
     public bool VariesAdvancesWithOutlines => _instance is not null && _hvarStore == 0 && _gvar is not null;
+
+    /// <summary>
+    /// Gets a value indicating whether the vertical metrics of an instance of a variable font are varied by a table of
+    /// their own: <c>VVAR</c> for the advance heights of <c>vmtx</c>; for a font without vertical metrics, <c>MVAR</c>
+    /// when it moves the ascender or the descender (its other records leave them as they are).
+    /// </summary>
+    internal bool VariesVerticalMetrics => _instance is not null && (HasVerticalMetrics ? _vvarStore != 0 : _variesLineExtents);
 
     /// <summary>Gets the advance width of a glyph, in font units.</summary>
     /// <remarks>
@@ -1371,11 +1381,13 @@ public sealed class FontFace
                 case FontTags.MetricAscender:
                     TypoAscender += delta;
                     HorizontalAscender += delta;
+                    _variesLineExtents = true;
                     break;
 
                 case FontTags.MetricDescender:
                     TypoDescender += delta;
                     HorizontalDescender += delta;
+                    _variesLineExtents = true;
                     break;
 
                 case FontTags.MetricLineGap:
@@ -1518,6 +1530,13 @@ public sealed class FontFace
                 break;
         }
     }
+
+    /// <summary>
+    /// Gets the hinting values of the private DICT a glyph of a font with CFF or CFF2 outlines uses (for an instance,
+    /// blended), or <see langword="null"/> for a font with other outlines.
+    /// </summary>
+    /// <exception cref="InvalidFontException">The private DICT is malformed.</exception>
+    internal CffHintValues? GetCffHintValues(int glyphId) => _cff?.GetHintValues(Data.RawBytes.AsSpan(_cffOffset, _cffLength), glyphId, _instance is null ? default : _instance.OutlineScalars);
 
     /// <summary>
     /// Decodes the outline of a glyph as it is drawn at a size: the outline of the glyph, or the squares of the pixels of

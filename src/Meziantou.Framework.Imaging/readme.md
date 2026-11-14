@@ -3356,12 +3356,10 @@ public static void DrawWeights(string variableFontPath, string outputPath)
   bitmap), after the outlines of the text. A font without outlines, whose
   glyphs are only bitmaps, is drawn with them at every size, without the option: from the smallest strike that is at
   least as large as the text, or from the largest one, scaled.
-- **Not supported**: the variation of the hinting values (`cvar`), glyphs in SVG (`SVG `: their outlines are drawn),
-  PostScript Type 1 fonts, Type 1
-  charstrings and the deprecated `seac` form of `endchar` in a CFF table, the font matrix of a CFF table (the units of
-  the `head` table are used), and the hints of CFF outlines (TrueType instructions are run with
-  `TextLayoutOptions.Hinting = Full`, see [Text](#text)). A WOFF or WOFF2 file is expanded in
-  memory; its metadata and private blocks are not read. Table checksums are not verified.
+- **Not supported**: glyphs in SVG (`SVG `: their outlines are drawn), PostScript Type 1 fonts, Type 1 charstrings and
+  the deprecated `seac` form of `endchar` in a CFF table, and the font matrix of a CFF table (the units of the `head`
+  table are used). The hints of the fonts are used with `TextLayoutOptions.Hinting = Full` (see [Text](#text)). A WOFF
+  or WOFF2 file is expanded in memory; its metadata and private blocks are not read. Table checksums are not verified.
 
 ### Text
 
@@ -3919,10 +3917,13 @@ of their characters and were not compared with a font.
     (`FT_LOAD_TARGET_MONO`) as the reference: on the fonts of the corpus (Droid Sans, Open Sans and Roboto, hinted by
     hand), every point of every glyph at sizes 9 to 16, 20 and 24 is where FreeType puts it. The advances are those of
     the hinted glyphs, whole pixels, plus what the positioning of the text adds, rounded; each glyph starts on a whole
-    pixel. A font without instructions (CFF outlines, or neither a font program nor a control value program), an
-    instance of a variable font (the variations of the control values, `cvar`, are not applied) and a font whose
-    programs break a rule of the specification are hinted as with `Light`; a glyph whose instructions break one is
-    drawn unhinted. The programs are untrusted: every instruction is charged to `MaxGlyphComplexity` (a program that
+    pixel. An instance of a variable font is hinted with its own points and control values (`gvar` and `cvar`; the
+    variable fonts of the corpus match FreeType too, but for 11 points by 1/64 of a pixel). CFF and CFF2 outlines are
+    fitted along the vertical axis with their hints: the horizontal stem hints of each glyph, with the hint masks
+    that replace them, and the alignment zones of the private DICT (`BlueValues`, `OtherBlues`, `BlueScale`,
+    `BlueShift`, `BlueFuzz`); their advances are rounded to whole pixels. TrueType outlines without instructions
+    (neither a font program nor a control value program) and a font whose programs break a rule of the specification
+    are hinted as with `Light`; a glyph whose instructions break one is drawn unhinted. The programs are untrusted: every instruction is charged to `MaxGlyphComplexity` (a program that
     loops forever is an `ImageResourceLimitException`), the calls are nested at most 64 deep, and the stack, the
     storage, the functions and the twilight zone are sized from `maxp` and charged to `MaxLiveAllocationBytes`.
 

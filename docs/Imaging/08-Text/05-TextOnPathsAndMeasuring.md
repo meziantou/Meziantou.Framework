@@ -212,7 +212,7 @@ public static void DrawSmallLabel(string fontPath, string outputPath)
 | --- | --- |
 | [None](cref:Meziantou.Framework.Imaging.Typography.TextHinting.None) (the default) | The outlines are scaled exactly and placed at fractions of a pixel |
 | [Light](cref:Meziantou.Framework.Imaging.Typography.TextHinting.Light) | The outlines move along the vertical axis only: the baseline, the x-height and the cap height fall on whole pixels, and horizontal stems get a whole number of pixels. Works with every font |
-| [Full](cref:Meziantou.Framework.Imaging.Typography.TextHinting.Full) | The TrueType instructions of the font fit the outlines along both axes; the advances are whole pixels. A font without instructions, or an instance of a variable font, is hinted as with [Light](cref:Meziantou.Framework.Imaging.Typography.TextHinting.Light) |
+| [Full](cref:Meziantou.Framework.Imaging.Typography.TextHinting.Full) | The hints of the font fit the outlines: the TrueType instructions along both axes (an instance of a variable font with its own control values), the stem hints and alignment zones of CFF outlines along the vertical axis; the advances are whole pixels. TrueType outlines without instructions are hinted as with [Light](cref:Meziantou.Framework.Imaging.Typography.TextHinting.Light) |
 
 - The grid is the pixel grid of the layout: draw it at a whole-pixel origin, without a transformation that scales or
   rotates the canvas.

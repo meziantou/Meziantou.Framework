@@ -1,0 +1,23 @@
+<DataGrid TRowData="Person" Items="Items">
+    @if (ShowFirst)
+    {
+        <DataGridColumn TRowData="Person" Title="First" />
+    }
+    <DataGridColumn TRowData="Person" Title="A" />
+    @if (ShowMiddle)
+    {
+        <DataGridColumn TRowData="Person" Title="Middle" />
+    }
+    <DataGridColumn TRowData="Person" Title="B" />
+</DataGrid>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<Person> Items { get; set; } = [];
+
+    [Parameter]
+    public bool ShowFirst { get; set; }
+
+    [Parameter]
+    public bool ShowMiddle { get; set; }
+}

@@ -1244,6 +1244,18 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_DeprecationReportBody(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.DeprecationReportBody value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "anticipatedRemoval", r.ToJs((object?)value.AnticipatedRemoval));
+        r.SetMember(result, "columnNumber", (value.ColumnNumber.HasValue ? r.FromNumber((double)value.ColumnNumber.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.Id is not null) r.SetMember(result, "id", r.FromString(value.Id));
+        r.SetMember(result, "lineNumber", (value.LineNumber.HasValue ? r.FromNumber((double)value.LineNumber.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.Message is not null) r.SetMember(result, "message", r.FromString(value.Message));
+        r.SetMember(result, "sourceFile", r.FromString(value.SourceFile));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_DeviceMotionEventAccelerationInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAccelerationInit value)
     {
         var result = r.CreateObject();
@@ -1867,6 +1879,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "scrollMargin", r.FromString(value.ScrollMargin));
         r.SetMember(result, "threshold", r.ToJs((object?)value.Threshold));
         r.SetMember(result, "trackVisibility", r.FromBoolean(value.TrackVisibility));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_InterventionReportBody(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.InterventionReportBody value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "columnNumber", (value.ColumnNumber.HasValue ? r.FromNumber((double)value.ColumnNumber.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.Id is not null) r.SetMember(result, "id", r.FromString(value.Id));
+        r.SetMember(result, "lineNumber", (value.LineNumber.HasValue ? r.FromNumber((double)value.LineNumber.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.Message is not null) r.SetMember(result, "message", r.FromString(value.Message));
+        r.SetMember(result, "sourceFile", r.FromString(value.SourceFile));
         return result;
     }
 

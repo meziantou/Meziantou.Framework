@@ -1294,7 +1294,7 @@ public sealed class TextLayout
                 // A glyph the font draws with its own colors: its display list is built once, which validates what it
                 // refers to, and its box replaces the box of its outline. A glyph that is an image depends on the size
                 // it is drawn at.
-                if (face.HasColorGlyphs)
+                if (face.HasColorGlyphs || face.HasBitmapGlyphs)
                 {
                     var isPainted = face.IsColorGlyph(_glyphs[i]);
                     var svg = default(SvgGlyph);

@@ -29,8 +29,8 @@ color conversion, and bounded-memory streaming.
 - HEIC decoding and encoding with a fully managed HEVC (H.265) decoder and a fully managed HEVC encoder: the photos of
   phones and cameras (grids, rotation, alpha, 10 bits), image sequences with reordered pictures, lossless and lossy
   output, 8 to 12 bits
-- `ImageCollection` for the images that are not animation frames: TIFF document pages and icon/cursor representations,
-  read and written one entry at a time
+- `ImageCollection` for the images that are not animation frames: TIFF document pages, icon/cursor representations and
+  the images of a Netpbm concatenation, read one entry at a time (TIFF and ICO/CUR are also written that way)
 - Animation-aware model: every frame is a full-canvas displayed image with exact rational timing and, for cursors, a
   hotspot that follows its pixel through geometry operations
 - Fourteen integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`, the gray-with-alpha
@@ -39,7 +39,7 @@ color conversion, and bounded-memory streaming.
   `RgbaHalf`) for scene-referred and high dynamic range data, and two CMYK ones (`Cmyk32`, `Cmyk64`) that keep the inks
   of print images
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
-  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, homography estimation (least squares and RANSAC), document deskew, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions and resizing (seam carving), inpainting, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians, Canny), Hough line and corner detection (Harris, Shi-Tomasi, FAST), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -348,6 +348,11 @@ or icon sizes by accident.
   icon, and report the number of entries in `ImageInfo.CollectionEntryCount`. `ImageCollection.SelectBySize` chooses a
   representation explicitly: the smallest one at least as large as the request, else the largest (ties by bit depth, then
   container order). Nothing is resized.
+- A Netpbm file may concatenate images of any variant: `ImageCollection.Load` gives them as pages, located when it loads
+  (the raster of a binary image is skipped by its length, a plain raster is scanned), with the white space between and
+  after them skipped as Netpbm does and any other byte rejected (`InvalidImageContentException`). `Image.Load`,
+  `Image.Identify` and `Image.OpenReader` read the first image only and report no entry count; `ImageCollection.Save`
+  does not write Netpbm.
 - `ImageCollection.Save` and `SaveAsync` write pages with `TiffEncoder` and representations with `IcoEncoder`; entries
   are materialized one at a time, and path destinations are published atomically (a failure or a cancellation leaves no
   partial file). `SaveAsync` writes with asynchronous I/O and decodes the entries synchronously between the writes.
@@ -529,7 +534,8 @@ scratch, charged to `MaxLiveAllocationBytes`, so a limit that fits one worker ma
 
 
 
-- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `Pad`, `ExtendCanvas`, `Rotate`, `Skew`, `Transform` and `AutoOrient` apply to every
+- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `SeamCarve`, `Pad`, `ExtendCanvas`, `Rotate`, `Deskew`, `Skew`,
+  `Transform`, `AutoOrient`, `Inpaint` and `ApplyProcessor` apply to every
   frame and the poster in one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
   (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, cursor hotspots and
   metadata unchanged.
@@ -776,7 +782,11 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 ### Processing
 
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
-`Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `Pad` (a border of a given
+`Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `SeamCarve` (a
+content-aware resize, see [Content-aware resize](#content-aware-resize)), `Inpaint` (a mask filled from the pixels
+around it, see [Inpainting](#inpainting)), `Deskew` and `EstimateSkew` (see the perspective correction below),
+`DetectLines` and `DetectCorners` (analyses of one frame, see
+[Lines and corners](#lines-and-corners)), `Pad` (a border of a given
 width on each side), `ExtendCanvas` (a larger canvas, with the image at one of nine anchors), `Rotate` (exact 90/180/270
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
@@ -1031,6 +1041,40 @@ of `ProjectiveTransform.CreateFromQuadrilateral`, sampled as `Transform` samples
 longer of the top and bottom edges by the longer of the left and right edges, rounded, as a scanner app gives it. The
 filter, background color and working space come from the `TransformOptions` (their canvas settings are not used).
 
+**Homography estimation**. `ProjectiveTransform.EstimateHomography(source, destination)` fits the homography that maps
+each source point onto its destination point (at least four pairs, no three of four points on a line) with the
+normalized direct linear transformation (Hartley and Zisserman, algorithm 4.2: centered and scaled points, the
+eigenvector of the smallest eigenvalue of `AᵀA` by the cyclic Jacobi method), scaled so that `W` is 1 at the centroid of
+the source points; degenerate points throw `ArgumentException`. `EstimateHomographyRobust(source, destination, options)`
+runs RANSAC (Fischler and Bolles, 1981): `HomographyRansacOptions.Iterations` samples of four pairs (1,000) drawn by a
+xorshift generator seeded by `Seed`, scored by their inliers within `Threshold` (3 pixels; ties by the sum of squared
+errors, then the earlier sample), refitted on the inliers; the `HomographyEstimate` gives the `Transform`, the
+`Inliers`, their count and their root mean square error. Both are deterministic and feed `Transform` (with
+`TransformCanvasMode.Explicit`, the canvas has the coordinates of the destination points).
+
+**Deskew**. `ImageFrame.EstimateSkew(options)` returns the angle of the lines of text of a document, in degrees, positive
+when they go down to the right, by projection profiles (Postl 1986, Baird 1987): the luma composited over white, split
+by the threshold of Otsu into paper and ink (the smaller class, so light text on dark paper works), the ink counted
+along the lines of every multiple of 0.5 degree up to `SkewEstimationOptions.MaxAngle` (15) then of `Precision` (0.05)
+near the best one, and the angle of the largest sum of squared counts wins (integer scores, ties to the angle nearest to
+0; a frame without contrast gives 0). `Image.Deskew(options, transformOptions)` estimates the skew of the first frame and
+rotates every frame by its opposite (`Rotate`, by default on a canvas of the same size with an opaque white background),
+transactionally, and returns the angle.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_Deskew;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static double StraightenScan(string inputPath, string outputPath)
+{
+    using var scan = Image.Load(inputPath);
+
+    // The angle of the lines of text is estimated, and the page rotated back; the corners it uncovers are white
+    var skew = scan.Deskew(new SkewEstimationOptions { MaxAngle = 10 });
+    scan.Save(outputPath);
+    return skew;
+}
+```
+<!-- endref -->
+
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_CorrectPerspective;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static Size StraightenDocument(string inputPath, string outputPath, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft)
@@ -1280,6 +1324,108 @@ public static void ApplyColorFilters(string photoPath, string iconPath, string o
     });
 
     photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Content-aware resize
+
+`SeamCarve(width, height, options)` resizes every frame and the poster by seam carving (Avidan and Shamir, 2007): it
+removes, or duplicates, the connected paths of one pixel per row (vertical seams, for the width) or per column
+(horizontal seams, for the height) whose removal brings together the least different pixels, the forward energy of
+Rubinstein, Shamir and Avidan (2008) on the Rec. 709 luma premultiplied by alpha and on the alpha, at the storage
+precision. The width changes first, then the height. An enlargement duplicates the seams a reduction would remove, at
+most half of the current size at a time, each new pixel blended from the seam pixel and its neighbor (premultiplied by
+alpha, in single precision); the other pixels keep their stored values. The seams are computed once from the energies of
+every frame and the poster, so an animation stays aligned, and a cursor hotspot follows its pixel (the operation fails
+when a seam removes it). `SeamCarvingOptions.ProtectedRegion` and `RemovedRegion` are `PixelMask`s of the size of the
+image: a seam is compared by the protected pixels minus the pixels to remove it crosses, then by its energy. Costs are
+integers and ties go to the straight path, then the left, then the right, and to the leftmost seam, so the result is the
+same on every platform. The time is the number of seams times the number of pixels and frames; the working memory
+(about 8 bytes per pixel and frame, 13 per pixel for the search, and two working frames) is charged to the image, and
+the operation is transactional.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_SeamCarve;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ResizeToBanner(string inputPath, string outputPath, Rectangle face)
+{
+    using var image = Image.Load(inputPath);
+
+    // Half as wide: the seams of least detail are removed, and never through the face while another seam remains
+    var protectedRegion = new PixelMask(image.Size);
+    protectedRegion.Fill(face);
+    image.SeamCarve(image.Width / 2, image.Height, new SeamCarvingOptions { ProtectedRegion = protectedRegion });
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Inpainting
+
+`Inpaint(mask, options)` fills the pixels of a `PixelMask` (the size of the image, at least one pixel left out) of every
+frame and the poster from the pixels around them, with the fast marching method of Telea (2004): the pixels of the mask
+are filled in the order of their distance to its boundary (the eikonal equation on the pixel grid, with a heap ordered
+by distance then pixel index), each one the weighted mean of the first-order extrapolations `I(q) + ∇I(q) · (p - q)` of
+the known or filled pixels within `InpaintingOptions.Radius` (1 to 64, default 5), weighted by their alignment with
+the direction of the front, the inverse square of their distance and their difference of distance to the boundary.
+Colors are filled premultiplied by alpha, in double precision, each channel clamped to the range of the pixels it comes
+from; the pixels outside the mask keep their stored values. The result is the same on every platform. It suits thin
+and small regions (scratches, text, small objects) and blurs the texture of large ones, which it does not reconstruct.
+The working memory (17 bytes per pixel, a working copy of a frame and the new frames) is charged to the image, and the
+operation is transactional. `PixelMask.FromFrame` reads a mask from the light pixels of a frame (luma times alpha at
+least half, alpha for `A8`).
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_Inpaint;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void RemoveScratches(string photoPath, string maskPath, string outputPath)
+{
+    using var photo = Image.Load(photoPath);
+
+    // The mask is painted in white on black, at the size of the photo
+    PixelMask mask;
+    using (var maskImage = Image.Load(maskPath))
+    {
+        mask = PixelMask.FromFrame(maskImage.Frames[0]);
+    }
+
+    // The pixels of the mask are filled from the pixels around them; a larger radius gives smoother fills
+    photo.Inpaint(mask, new InpaintingOptions { Radius = 4 });
+    photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Lines and corners
+
+`ImageFrame.DetectLines(options)` returns the straight lines of a frame by the Hough transform (Duda and Hart, 1972): the
+Canny edges of the frame (`HoughLineOptions.EdgeOptions`) vote, at their pixel index, for the lines `ρ = x cos θ + y sin
+θ` at the angles `θ` from 0 to 180 degrees by `AngleStep` within 30 degrees of the sector of their gradient (O'Gorman
+and Clowes, 1976; sines and cosines that do not depend on the platform) and the distances rounded to `DistanceStep`; a line is a peak of the votes, with at least `MinVotes` (a quarter of the smaller side by
+default; among equal votes, the smaller sum of rounding residuals of the votes wins), the lines are sorted by votes
+(ties by residuals, angle, then distance), and of two lines within both `MinAngleSeparation` and `MinDistanceSeparation` (5 degrees and 5 pixels) the
+first is kept, up to `MaxLines` (32). A `HoughLine` (`Angle`, `Distance` in the coordinates of the pixel centers,
+`Votes`, `Slope`) is infinite. `ImageFrame.DetectCorners(options)` returns the corners of the luma premultiplied by
+alpha, by `CornerDetectionMethod.Harris` (`det(M) - k trace(M)²` of the structure tensor of the Sobel gradients in a
+Gaussian window of `Sigma`, `HarrisK` 0.04), `ShiTomasi` (its smaller eigenvalue) or `Fast` (FAST-9 of Rosten and
+Drummond: 9 contiguous pixels of the circle of 16 brighter or darker than the center by `FastThreshold`); a corner is a
+local maximum above `ResponseThreshold` times the strongest response (or a FAST corner), and the strongest are kept at
+least `MinDistance` apart, up to `MaxCorners`, sorted by response, then row, then column. Both are deterministic, read
+one frame without changing it, and charge their working memory to the image.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_DetectLines;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static IReadOnlyList<HoughLine> FindStraightLines(string inputPath)
+{
+    using var photo = Image.Load(inputPath);
+
+    // The 8 strongest lines of the first frame: x cos(Angle) + y sin(Angle) = Distance, in pixels
+    var lines = photo.Frames[0].DetectLines(new HoughLineOptions { MaxLines = 8 });
+    foreach (var line in lines)
+    {
+        Console.WriteLine($"{line.Slope:F1} degrees from horizontal, {line.Votes} edge pixels");
+    }
+
+    return lines;
 }
 ```
 <!-- endref -->
@@ -3096,10 +3242,10 @@ public static string? DescribeInstalledFont(string familyName)
 | | Supported |
 | --- | --- |
 | Containers | TrueType and OpenType files (`.ttf`, `.otf`), font collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0 (with the transformed glyph, location and horizontal metrics tables, and collections); detected from the content, never from the extension |
-| Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points), CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) and CFF version 2 (`CFF2`) |
+| Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points), CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) and CFF version 2 (`CFF2`); fonts without outlines whose glyphs are bitmaps (`EBDT`, `bdat`, `CBDT`, `sbix`; `bhed` instead of `head`) |
 | Variable fonts | The axes and the named instances (`fvar`), the mapping of the axes (`avar` versions 1 and 2), and what an instance varies: TrueType outlines (`gvar`), CFF2 outlines (the `blend` operator), advances (`HVAR`, or the phantom points of the glyphs), metrics (`MVAR`), the positions and anchors of `GPOS` (the variation store of `GDEF`) and the features a font replaces in a part of its variation space (feature variations, `rvrn`) |
-| Color glyphs | The layers of version 0 of the `COLR` table and the paints of its version 1 (solid colors, linear, radial and sweep gradients, transformations, clips, clip boxes, the 28 composition modes, and their variations in a variable font), with the palettes of the `CPAL` table; the glyphs of the `SVG ` table (a subset of SVG, see below); glyphs that are images, in the `sbix` table (PNG, JPEG and TIFF) and in the `CBLC` and `CBDT` tables (PNG; index subtables of formats 1 to 5, images of formats 17, 18 and 19) |
-| Bitmaps without colors | On request (`FontLoadOptions.UseEmbeddedBitmaps`): the strikes of one bit per pixel of the `EBLC` and `EBDT` tables (index subtables of formats 1 to 5, images of formats 1, 2, 5, 6 and 7), drawn at the size they are made for |
+| Color glyphs | The layers of version 0 of the `COLR` table and the paints of its version 1 (solid colors, linear, radial and sweep gradients, transformations, clips, clip boxes, the 28 composition modes, and their variations in a variable font), with the palettes of the `CPAL` table; the glyphs of the `SVG ` table (a subset of SVG, see below); glyphs that are images, in the `sbix` table (PNG, JPEG and TIFF) and in the `CBLC` and `CBDT` tables (index subtables of formats 1 to 5; PNG images of formats 17, 18 and 19, pixels of 32 bits of formats 1, 2, 5, 6 and 7, glyphs made of other glyphs of formats 8 and 9) |
+| Bitmaps without colors | On request (`FontLoadOptions.UseEmbeddedBitmaps`), or in a font without outlines: the strikes of 1, 2, 4 and 8 bits per pixel of the `EBLC` and `EBDT` tables (`bloc` and `bdat` in Apple fonts; index subtables of formats 1 to 5, images of formats 1, 2, 5, 6 and 7, and glyphs made of other glyphs of formats 8 and 9) |
 | Character maps | Unicode subtables of formats 0, 4, 6, 12 and 13, variation sequences (format 14), and the Macintosh Roman subtable for ASCII when a font has no Unicode one |
 | Names | The typographic family and subfamily when the font has them, the legacy ones otherwise; Windows and Unicode platform names, then Macintosh Roman |
 | Metrics | In font units (`Font.Metrics`) or scaled to a size in pixels (`Font.GetMetrics`): ascent, descent, line gap, cap height, x-height, underline and strikethrough. The ascent, descent and line gap come from the table the font designates (`hhea`, or the typographic values of `OS/2` when the font sets `USE_TYPO_METRICS` or has an empty `hhea`). For vertical lines, the advance height and the vertical origin of each glyph (`vhea`, `vmtx`, `VORG`, and their variation in `VVAR`), or, in a font without them, an advance of the ascent and the descent with the glyph centered in it. The baselines of each script (`BASE`, with the variations of its version 1.1), which place the text that is on its side in a vertical line |
@@ -3162,7 +3308,9 @@ public static void DrawWeights(string variableFontPath, string outputPath)
     `TextLayout.ToPath` use the outline the font gives to the glyph itself, which can be empty.
   - A glyph the font gives as an image (`sbix`, `CBDT`) is taken from the smallest strike that is at least as large
     as the size of the text, or from the largest one. Its image is decoded when the layout is created, with the
-    decoder of its format (PNG, or in an `sbix` table JPEG or TIFF) and the limits of the library; data that is not
+    decoder of its format (PNG, or in an `sbix` table JPEG or TIFF) and the limits of the library, or by the font
+    reader for the pixels that are not encoded and the glyphs made of other glyphs; `Font.DecodeBitmapGlyph` gives
+    the image of a glyph at the size of its strike; data that is not
     in the format the font gives for it is an error. The image is scaled down to the size of the text with the default filter of
     `Resize`; an image smaller than the text is enlarged when it is drawn, by bilinear interpolation. At the size of
     its strike, at a whole position, the pixels of the image are the pixels drawn. A glyph that has both paints and
@@ -3211,10 +3359,13 @@ public static void DrawWeights(string variableFontPath, string outputPath)
   strike of one bit per pixel. Each pixel of a bitmap is then a square of the outline of the glyph: the text is
   filled, stroked, measured and placed on a path like any other, with any brush, and a glyph drawn at a whole
   position has exactly the pixels of its bitmap. At another size, and for a glyph the strike does not have, the
-  outline is drawn. The advances stay those of the outlines. Strikes of several bits per pixel, and glyphs made of
-  other glyphs (image formats 8 and 9), are not used.
-- **Not supported**: the variation of the hinting values (`cvar`), fonts
-  without outlines (bitmap-only fonts), PostScript Type 1 fonts, Type 1
+  outline is drawn. The advances stay those of the outlines. A glyph made of other glyphs (image formats 8 and 9)
+  has their pixels at their offsets. A strike of 2, 4 or 8 bits per pixel gives the coverage of each pixel: the glyph
+  is painted with the brush of the text, any brush, through that coverage (interpolated between the pixels of the
+  bitmap), after the outlines of the text. A font without outlines, whose
+  glyphs are only bitmaps, is drawn with them at every size, without the option: from the smallest strike that is at
+  least as large as the text, or from the largest one, scaled.
+- **Not supported**: the variation of the hinting values (`cvar`), PostScript Type 1 fonts, Type 1
   charstrings and the deprecated `seac` form of `endchar` in a CFF table, the font matrix of a CFF table (the units of
   the `head` table are used), and the hints of CFF outlines (TrueType instructions are run with
   `TextLayoutOptions.Hinting = Full`, see [Text](#text)). A WOFF or WOFF2 file is expanded in
@@ -3950,9 +4101,9 @@ content light level, the mastering display color volume and text entries.
 
 | Metadata | PNG | GIF | JPEG | WebP | QOI | BMP | TGA | PNM |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ICC profile | `iCCP` | not stored | APP2 (up to 255 segments) | `ICCP` (RGB profiles) | not stored | not stored | not stored | not stored |
+| ICC profile | `iCCP` | `ICCRGBG1012` application extension (RGB profiles) | APP2 (up to 255 segments) | `ICCP` (RGB profiles) | not stored | not stored | not stored | not stored |
 | EXIF and orientation | `eXIf` | not stored (orientation must be `TopLeft`) | APP1 (at most 65,527 bytes) | `EXIF` | not stored (orientation must be `TopLeft`) | not stored (orientation must be `TopLeft`) | not stored (orientation must be `TopLeft`) | not stored (orientation must be `TopLeft`) |
-| XMP | `iTXt` `XML:com.adobe.xmp` | not stored | APP1, standard XMP only (at most 65,504 bytes, no extended XMP) | `XMP ` | not stored | not stored | not stored | not stored |
+| XMP | `iTXt` `XML:com.adobe.xmp` | `XMP DataXMP` application extension | APP1, standard XMP only (at most 65,504 bytes, no extended XMP) | `XMP ` | not stored | not stored | not stored | not stored |
 | Text | `tEXt`/`zTXt`/`iTXt` | Comment extension (`Comment` entries, Latin-1) | COM (`Comment` entries, Latin-1, at most 65,533 characters) | not stored | not stored | not stored | not stored | not stored |
 | CICP color description, light levels, mastering display | `cICP` (without ICC profile), `cLLI`, `mDCV` (with `cICP`) | not stored | not stored | not stored | not stored | not stored | not stored | not stored |
 | Resolution | `pHYs` (pixels per meter) | not stored | JFIF density | not stored | not stored | `biXPelsPerMeter`/`biYPelsPerMeter` | not stored | not stored |
@@ -4790,10 +4941,55 @@ public static Image LoadLeniently(string path)
   the poster, by bands of rows on up to `MaxDegreeOfParallelism` workers. The rows are the pixel type of the image,
   `Rgba64` (integer formats) or `RgbaFloat` (any format), converted without loss; storing them back clips the
   floating-point samples an integer format cannot hold.
+- **Custom processors.** `ApplyProcessor` (`IImageProcessor<TPixel>`) replaces every frame and the poster with a frame
+  of the size the processor returns, computed from the whole frame before the operation, transactionally like the
+  built-in geometry operations: a failure, a limit or a cancellation leaves the image unchanged. The frames are in the
+  pixel type of the image, `Rgba64` or `RgbaFloat`, with the conversions of the pixel operations; `TryMapPoint` moves
+  the cursor hotspots (see the example below).
 - **Wrapped memory.** `Image.WrapMemory` creates an image over a `Memory<byte>` or a pointer, with a stride and a pixel
   format, without copying it (see the ownership table).
 - **Buffer pool.** `ImageBufferPool.MaxRetainedBytes` bounds the bytes the process-wide pool keeps for reuse (32 MiB by
   default, 0 disables retention, lowering it releases buffers); `ImageBufferPool.Trim` releases them all.
+
+A custom processor that changes the size of every frame:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ExtensibilityExamples.cs;region=Imaging_Processor;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void UpscalePixelArt(Image image, int factor)
+{
+    // Every frame and the poster are computed before they replace the old ones: a failure leaves the image unchanged
+    image.ApplyProcessor<Rgba64, PixelArtUpscaler>(new PixelArtUpscaler(factor));
+}
+
+/// <summary>Repeats every pixel in a square of factor x factor pixels.</summary>
+public readonly struct PixelArtUpscaler(int factor) : IImageProcessor<Rgba64>
+{
+    // Called once, before anything is allocated: the canvas limits apply to the result
+    public Size GetOutputSize(Size size) => new(checked(size.Width * factor), checked(size.Height * factor));
+
+    public void Process(int frameIndex, PixelRowSource<Rgba64> source, PixelAccessor<Rgba64> destination, CancellationToken cancellationToken)
+    {
+        for (var y = 0; y < destination.Height; y++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var sourceRow = source.GetRow(y / factor);
+            var row = destination.GetRowSpan(y);
+            for (var x = 0; x < row.Length; x++)
+            {
+                row[x] = sourceRow[x / factor];
+            }
+        }
+    }
+
+    // The hotspot of a cursor stays on the top-left pixel of its square
+    public bool TryMapPoint(Point source, Size sourceSize, Size destinationSize, out Point destination)
+    {
+        destination = new Point(source.X * factor, source.Y * factor);
+        return true;
+    }
+}
+```
+<!-- endref -->
 
 ## Format reference
 
@@ -4958,10 +5154,12 @@ loads with the pixel format of its layout, as with `MinimumSize`.
 | Transparency and disposal | Full-canvas displayed frames from one compositor (partial rectangles clipped to the screen, the transparent index keeps the canvas); the canvas and disposal 2 are transparent black (the background color index is never painted); disposal 3 restores (first image: clears); undefined 4 is "restore previous", 5–7 "none" | Recomputed from the displayed frames: every frame covers the canvas with disposal 2, so pixels that become transparent never show the previous frame; with `OptimizeFrames`, the region that changes, its unchanged pixels transparent, and the disposal 1, 2 or 3 of the previous frame that gives the smallest region (see below); alpha thresholded (default 128) or flattened onto an explicit background, never partial |
 | Dithering | — | `Quantization.Dithering`: every `DitheringMode` (error diffusion and ordered), deterministic integer arithmetic, quantized frames only. `GifEncoder.Dithering` and `GifDithering` are obsolete aliases |
 | Loop extension (NETSCAPE2.0, ANIMEXTS1.0) | `L` repetitions → `TotalPlays = L + 1`, `0` → infinite, none → one play; the last extension wins; exact hundredth-second delays | NETSCAPE2.0 with `TotalPlays - 1` repetitions (none for one play, at most 65,536 plays); delays to the nearest hundredth (ties up) or exact (`RequireExact`), beyond 655.35 s rejected, never clamped |
-| Comment extension | `Comment` text entries, Latin-1 (readers see those before the first image) | `Comment` entries only, Latin-1, any length; ICC, EXIF, XMP and resolution follow `MetadataHandling` |
+| Comment extension | `Comment` text entries, Latin-1 (readers see those before the first image) | `Comment` entries only, Latin-1, any length; EXIF and resolution follow `MetadataHandling` |
 | Plain-text extension | Not supported (`UnsupportedImageFeatureException`); skipped without its text in [lenient decoding](#lenient-decoding) | — |
 | Trailer and block introducers | A missing trailer and a byte that does not start a block are `InvalidImageContentException`; [lenient decoding](#lenient-decoding) accepts a missing trailer and `0x00` bytes before the end | Always written |
-| Other application extensions (XMP, ICC...) | Skipped | — |
+| XMP application extension (`XMP DataXMP`) | The XMP packet (XMP Specification Part 3): the bytes stored as they are, followed by the 257-byte magic trailer, which is required (`InvalidImageContentException` without it); the first one wins, and readers see one that precedes the first image | Written before the first image, after the color table and the loop extension: the packet as it is and the magic trailer; a packet with a NUL character (which would end the data sub-blocks) follows `MetadataHandling` |
+| ICC application extension (`ICCRGBG1012`) | The ICC profile, from its data sub-blocks joined (ImageMagick writes it before the first image; exiftool reads it); the first one wins, a profile that is not an RGB one is not adopted, and one after the first image labels the image of an eager load only | Written before the first image, in 255-byte data sub-blocks; an RGB profile only (GIF samples are RGB, also for gray pixels): another one follows `MetadataHandling` |
+| Other application extensions | Skipped | — |
 
 `GifEncoder.OptimizeFrames` writes the frames of an animation after the first one as the region of the pixels that differ
 from the canvas they are drawn on (compared after the alpha reduction, before the color reduction), its unchanged pixels
@@ -5231,9 +5429,9 @@ public static void SaveIndexedBmp(string inputPath, string outputPath)
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
 | DIB headers | `BITMAPINFOHEADER` and the V2, V3, V4 and V5 headers; the OS/2 1.x `BITMAPCOREHEADER` (12 bytes, 16-bit dimensions, three-byte palette entries, a palette that may end early at `bfOffBits`) and the OS/2 2.x `BITMAPCOREHEADER2` (16 to 64 bytes: the fields a short header leaves out are zero; the lengths 40, 52 and 56 are read as Windows headers). Other lengths and inconsistent headers are `InvalidImageContentException` | `BITMAPINFOHEADER`, or `BITMAPV4HEADER` (`LCS_sRGB`) for 32-bit output, or `BITMAPV5HEADER` (`PROFILE_EMBEDDED`) when an ICC profile is written; OS/2 headers are never written |
-| Layouts | 1/4/8-bit indexed (partial palettes, indexes outside the palette rejected), 16-bit (5-5-5), 24-bit BGR, 32-bit BGRX; 2-bit (Windows CE) is not supported | `BmpPixelLayout`: 24-bit `BI_RGB` or 32-bit `BI_BITFIELDS` by default (`Auto`); `Indexed1`, `Indexed4`, `Indexed8` (the palette stores only the colors used, `biClrUsed`); `Bgr565` (`BI_BITFIELDS`) and `Bgr555` (`BI_RGB`), which need `AllowBitDepthReduction` |
+| Layouts | 1/2/4/8-bit indexed (2 bits is the four-color layout of Windows CE, which Apple ImageIO reads and FFmpeg, ImageMagick and Pillow reject; partial palettes, indexes outside the palette rejected), 16-bit (5-5-5), 24-bit BGR, 32-bit BGRX | `BmpPixelLayout`: 24-bit `BI_RGB` or 32-bit `BI_BITFIELDS` by default (`Auto`); `Indexed1`, `Indexed4`, `Indexed8` (the palette stores only the colors used, `biClrUsed`); `Bgr565` (`BI_BITFIELDS`) and `Bgr555` (`BI_RGB`), which need `AllowBitDepthReduction` |
 | Indexed output | | Exact when the image has at most `min(Quantization.MaxColors, 2^bits)` colors, or only colors of `Quantization.Palette` (whose entries that are not opaque are composited over `BackgroundColor`); otherwise `UnsupportedImageFeatureException` unless `AllowColorReduction`, which builds a deterministic median-cut palette (or takes the fixed one) and maps each pixel to its nearest entry, with the optional `Quantization.Dithering` (from the top row down, whatever the row order). `BmpEncoder.MaxColors`, `BmpEncoder.Dithering` and `BmpDithering` are obsolete aliases. Needs one byte per pixel of working memory |
-| Bit fields (`BI_BITFIELDS`, `BI_ALPHABITFIELDS`) | 16 and 32 bits, contiguous masks of 1 to 8 bits, expanded with `round(value * 255 / (2^n - 1))`; channels wider than 8 bits (10-10-10-2) are not supported | Explicit BGRA masks for 32-bit output, 5-6-5 masks after the header for `Bgr565`; samples are reduced with `round(value * (2^n - 1) / 255)` |
+| Bit fields (`BI_BITFIELDS`, `BI_ALPHABITFIELDS`) | 16 and 32 bits, contiguous masks, expanded with `round(value * 255 / (2^n - 1))`. A layout with a channel wider than 8 bits (10-10-10-2) loads as `Rgb48`, or `Rgba64` with an alpha mask, every channel expanded with `round(value * 65535 / (2^n - 1))`, so the largest value of a channel is its full value (ImageMagick and Apple ImageIO left-justify the samples instead: a 10-bit 1023 is 65472 for them, and a 2-bit alpha of 3 is 0.75); such a layout is not supported in an icon payload, which decodes to `Rgba32` | Explicit BGRA masks for 32-bit output, 5-6-5 masks after the header for `Bgr565`; samples are reduced with `round(value * (2^n - 1) / 255)` |
 | Alpha | Only a declared alpha mask is transparency: the fourth byte of a 32-bit `BI_RGB` payload is unspecified padding, so such a file loads as opaque `Rgb24` | `BmpPixelLayout.Auto` writes 32-bit with an explicit alpha mask for pixel formats with alpha; every other layout discards alpha and needs `BackgroundColor` as soon as a pixel is not opaque |
 | Rows | Padded to four bytes, bottom-up or top-down; bytes after the last row are not read | Padded to four bytes, bottom-up by default (read from the frame in reverse, no seeking) or top-down (`BmpRowOrder.TopDown`, a negative `biHeight`) |
 | Compression | `BI_RLE8`, `BI_RLE4` and the OS/2 2.x `BCA_RLE24`: encoded runs, absolute runs, deltas, end of line and end of bitmap. The pixels a stream skips are palette index 0 (black for RLE24), never transparency. The stream is read strictly: a run past the end of its row, a delta outside the canvas, data after the last row, a missing end-of-bitmap marker, a bit count that does not match and top-down rows are `InvalidImageContentException`; bytes after the end-of-bitmap marker are not read. Embedded JPEG/PNG payloads and OS/2 Huffman 1D are `UnsupportedImageFeatureException` | `BmpCompression.RunLength`: `BI_RLE8` for `Indexed8`, `BI_RLE4` for `Indexed4` (bottom-up only; any other combination is an `ArgumentException`). Lossless; every pixel is stored (no delta), runs never cross a row, and the declared sizes are exact without seeking. It can be larger than uncompressed output |
@@ -5270,8 +5468,9 @@ is therefore a valid TGA 1.0 file with the same pixels: truncation is only detec
 ### Netpbm: PBM, PGM, PPM and PAM
 
 `MAXVAL` up to 255 gives 8-bit samples, above it 16-bit, normalized with
-`round(value * targetMax / MAXVAL)`. Only the first image of a concatenation is read, and it is never reported as an
-animation.
+`round(value * targetMax / MAXVAL)`. `Image.Load` reads the first image of a concatenation, and never reports an
+animation; `ImageCollection.Load` gives every image of the concatenation as a page (see
+[Pages and representations](#pages-and-representations)).
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
@@ -5369,7 +5568,7 @@ the offsets of the strips or tiles it describes.
 
 L\*a\*b\* pages that store the lightness only, `ITULab` and 16-bit `ICCLab` data, transparency-mask data,
 subsampled or JPEG-compressed YCbCr data in separate planes, the lossless process and 12-bit samples of old-style JPEG,
-the reversed fill order for other data than bilevel, other sample widths (signed samples of 32 bits, 64-bit
+the reversed fill order of JPEG and JPEG 2000 datastreams, other sample widths (signed samples of 32 bits, 64-bit
 floating-point samples), signed or floating-point palette, CMYK and YCbCr data, floating-point `WhiteIsZero` data, signed
 or floating-point samples compressed with JPEG or JPEG 2000, horizontal differencing of floating-point samples and the
 floating-point predictor of integer samples, samples of different formats in one pixel, more than one extra sample,
@@ -5386,7 +5585,7 @@ hotspot of a cursor on its frame.
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
 | Directory | Checked payload offsets and lengths, reserved fields validated, count bounded by `MaxFrames` | One entry per representation; payloads are encoded in memory first, so no seeking is needed |
-| Geometry | The payload is authoritative (a directory byte cannot express more than 256, and 0 means 256); a contradicting non-zero directory dimension is rejected | At most 256 pixels per side |
+| Geometry | The payload is authoritative (a directory byte cannot express more than 256, and 0 means 256); a contradicting non-zero directory dimension is rejected. A PNG payload can be larger than 256 pixels per side next to a 0 byte; a DIB payload has at most 256 | At most 256 pixels per side |
 | PNG payloads | Decoded by the PNG codec; an animated PNG payload is rejected | A still PNG without metadata (`IconPayloadFormat.Png`, or `Auto` above 64 pixels per side or for 16-bit pixels) |
 | DIB payloads | The icon rules, not the BMP ones: the stored height is doubled (color rows plus the 1-bit AND mask), bottom-up rows, 1/4/8/16/24/32-bit layouts, palettes, bit-field masks; Windows headers and uncompressed rows only (run-length encoding and OS/2 headers are rejected); every DIB-backed representation decodes to `Rgba32` | 32-bit `BI_RGB` with straight alpha and an all-zero AND mask (`IconPayloadFormat.Dib`, or `Auto` up to 64 pixels per side); 8-bit samples only, so `Dib` rejects `Rgba64` and `Gray16` pixels instead of narrowing them |
 | AND mask and alpha | A 32-bit `BI_RGB` payload stores alpha in its fourth byte, unless that channel is entirely zero, in which case the AND mask decides transparency | The alpha channel carries the transparency |
@@ -5942,23 +6141,23 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | --- | --- |
 | JPEG decoding | JPEG-LS mapping tables, sample precisions other than 8 and 12 bits in a frame that is not lossless, heights defined by DNL, other component counts than 1, 3 or 4, non-integral sampling ratios: `UnsupportedImageFeatureException` (also from `Identify`). CMYK/YCCK (four components): loaded as CMYK pixels by a typed load, or with `CmykConversion` (an ICC conversion to RGB; `UnsupportedImageFeatureException` for an untyped load without it, and for a file without CMYK profile when no profile is assumed). Region decoding: not available |
 | JPEG encoding | CMYK only as 8-bit Huffman-coded baseline, no hierarchical or JPEG-LS output, no RGB except for lossless output, no point transform for lossless output; the progression of the progressive process is fixed. Optimized Huffman tables (`OptimizeHuffmanTables`), 12-bit and arithmetic-coded output keep the coefficients of the whole image in memory. One frame: animated images and posters are rejected (save one with `Frames[i].Save`); alpha requires `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction`; a gain map (`GainMap`) requires 8-bit Huffman-coded output |
-| GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException` (skipped without their text in [lenient decoding](#lenient-decoding)); other unknown extensions (XMP and ICC application extensions included) are skipped; the background color index is never painted (cleared areas are transparent black) |
-| GIF encoding | Lossy by design: at most 256 colors per frame (deterministic quantization, optional dithering), one transparent index (alpha thresholded or flattened, never partial); a local color table per frame, also with a shared palette (no global color table); full-canvas frames unless `OptimizeFrames` (no merging of equal frames, no reordering of frames); comments only (no ICC, EXIF, XMP or resolution); at most 65,535 pixels per side, 655.35 s per frame and 65,536 plays |
+| GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException` (skipped without their text in [lenient decoding](#lenient-decoding)); the XMP and ICC application extensions are read as metadata and other unknown extensions are skipped; the background color index is never painted (cleared areas are transparent black) |
+| GIF encoding | Lossy by design: at most 256 colors per frame (deterministic quantization, optional dithering), one transparent index (alpha thresholded or flattened, never partial); a local color table per frame, also with a shared palette (no global color table); full-canvas frames unless `OptimizeFrames` (no merging of equal frames, no reordering of frames); comments, an RGB ICC profile and an XMP packet (no EXIF or resolution); at most 65,535 pixels per side, 655.35 s per frame and 65,536 plays |
 | WebP decoding | VP8 interframes and frames that are not shown (never produced by WebP encoders): `UnsupportedImageFeatureException`; the `ANIM` background color is a hint and is never painted (disposed areas are transparent black); metadata of simple-layout files and text/resolution do not exist in WebP |
 | WebP encoding | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); lossy output is 4:2:0 and not pixel-exact; animations are full-canvas frames unless `OptimizeFrames` (one compression for every frame: no per-frame choice of lossy or lossless) and need a seekable destination (no spooling to non-seekable streams); at most 16,383 (lossy) or 16,384 (lossless) pixels per side, 16,777,215 ms per frame, 65,535 plays and 4 GiB per file |
 | QOI | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); one still image; no metadata; the colorspace field is a label (no linear-to-sRGB conversion exists) |
-| BMP | Decoding: no embedded JPEG/PNG payloads, no OS/2 Huffman 1D, no 2-bit depth, no channel wider than 8 bits, no linked ICC profile; OS/2 bitmap arrays (`BA`) are not recognized; a 40-byte header is always a Windows header (an OS/2 2.x header of that length with Huffman 1D or RLE24 is read as `BI_BITFIELDS` or `BI_JPEG`); run-length streams are read strictly (nothing is clamped, the end-of-bitmap marker is required). Encoding: one still image; Windows headers only; run-length output for 4-bit and 8-bit indexed layouts only, bottom-up; indexed output needs one byte per pixel of working memory; no alpha below 32 bits (no 1-5-5-5 output); the resolution and an RGB ICC profile are the only metadata; the file must fit the 32-bit `bfSize` field |
+| BMP | Decoding: no embedded JPEG/PNG payloads, no OS/2 Huffman 1D, no linked ICC profile; OS/2 bitmap arrays (`BA`) are not recognized; a 40-byte header is always a Windows header (an OS/2 2.x header of that length with Huffman 1D or RLE24 is read as `BI_BITFIELDS` or `BI_JPEG`); run-length streams are read strictly (nothing is clamped, the end-of-bitmap marker is required). Encoding: one still image; Windows headers only; run-length output for 4-bit and 8-bit indexed layouts only, bottom-up; indexed output needs one byte per pixel of working memory; no alpha below 32 bits (no 1-5-5-5 output); the resolution and an RGB ICC profile are the only metadata; the file must fit the 32-bit `bfSize` field |
 | TGA | Decoding: 16-bit grayscale is always an 8-bit gray sample and an attribute byte, so a file that stores a 16-bit luminance is not read as one; premultiplied alpha (attributes type 4) is rejected and no other attributes type changes the decoded representation (an alpha channel the extension area calls absent or undefined is still decoded when the image descriptor declares it); the other fields of the extension area and the developer area are not interpreted; the input is read to its end and the bytes after the image data are buffered; truncation is only detected before the end of the image data. Encoding: true-color and grayscale only, bottom-up, one still image, at most 65,535 pixels per side; no color map, no 15/16-bit output, no metadata |
-| Netpbm | Decoding: only the first image of a concatenation is read; tuple types other than the standard grayscale, RGB and alpha forms are rejected; the header is bounded at 65,536 bytes; truncation of a plain raster is not detectable. Encoding: one image, no metadata; the variant follows the pixel format, and a portable bitmap (`P1`/`P4`) is only written on request, from pixels that are exactly black or white (no threshold, no dithering); plain output and portable bitmaps have no alpha (PAM has no plain form) |
-| TIFF | Decoding: the lossless process of old-style JPEG compression (6), the ITU L\*a\*b\* and transparency-mask photometric interpretations, L\*a\*b\* pages of the lightness only, subsampled or JPEG-compressed YCbCr data in separate planes, the reversed fill order for other data than bilevel, sample widths other than 1, 2, 4, 8 and 16 bits (8 and 16 for RGB and CMYK, 8 for YCbCr, at most 8 for palette indexes; with JPEG compression, any width from 8 to 16 bits; signed samples of 8 or 16 bits and floating-point samples of 16, 24 or 32 bits, gray and RGB only, without JPEG or JPEG 2000 compression; no 64-bit floating-point samples), JPEG compression of samples of less than 8 bits, more than one extra sample, associated (premultiplied) or unspecified extra samples, alpha next to palette, YCbCr or packed grayscale samples, the uncompressed mode of the CCITT compressions, the LZW bit order of TIFF 5.0 drafts, and JPEG-compressed YCbCr data that is not the full-range BT.601 data of JFIF, and JPEG 2000 compression of samples that are not 8 or 16 bits wide, of palette indexes, of YCbCr data or with a predictor are all rejected with `UnsupportedImageFeatureException`; a CMYK page with alpha is loaded only with `CmykConversion`, and L\*a\*b\* pages only with `CieLabConversion`. Compressed data is never repaired (a damaged fax row is an error, not a white row). Subsampled chroma of pages that are not JPEG-compressed is replicated. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), chunky samples only (no separate planes), horizontal differencing only with Deflate or LZW, no tiles with JPEG compression, CMYK with the lossless compressions only, no signed samples, no half-precision or 24-bit floating-point samples (`RgbaHalf` pixels are written as 32-bit floats), no thresholding and no color reduction (the bilevel and palette layouts store a page exactly or reject it; 16-bit palette colors that are all multiples of 256 without being all multiples of 257 are rejected, since readers take them for 8-bit colors), Group 3 in one dimension only, one strip per JPEG page (at most 65,535 pixels per side, 8-bit samples, opaque pixels), a seekable destination required |
-| ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants an icon payload cannot use (run-length encoding, embedded codecs, OS/2 headers) are rejected. Encoding: 32-bit DIB or still PNG payloads only (16-bit pixels need a PNG payload: `IconPayloadFormat.Dib` is rejected for them), at most 256 pixels per side, no metadata; an icon cannot store a hotspot |
+| Netpbm | Decoding: `Image.Load` reads the first image of a concatenation (`ImageCollection.Load` reads them all); tuple types other than the standard grayscale, RGB and alpha forms are rejected; the header is bounded at 65,536 bytes; truncation of a plain raster is not detectable. Encoding: one image, no metadata; the variant follows the pixel format, and a portable bitmap (`P1`/`P4`) is only written on request, from pixels that are exactly black or white (no threshold, no dithering); plain output and portable bitmaps have no alpha (PAM has no plain form) |
+| TIFF | Decoding: the lossless process of old-style JPEG compression (6), the ITU L\*a\*b\* and transparency-mask photometric interpretations, L\*a\*b\* pages of the lightness only, subsampled or JPEG-compressed YCbCr data in separate planes, the reversed fill order of JPEG and JPEG 2000 compressed data, sample widths other than 1, 2, 4, 8 and 16 bits (8 and 16 for RGB and CMYK, 8 for YCbCr, at most 8 for palette indexes; with JPEG compression, any width from 8 to 16 bits; signed samples of 8 or 16 bits and floating-point samples of 16, 24 or 32 bits, gray and RGB only, without JPEG or JPEG 2000 compression; no 64-bit floating-point samples), JPEG compression of samples of less than 8 bits, more than one extra sample, associated (premultiplied) or unspecified extra samples, alpha next to palette, YCbCr or packed grayscale samples, the uncompressed mode of the CCITT compressions, the LZW bit order of TIFF 5.0 drafts, and JPEG-compressed YCbCr data that is not the full-range BT.601 data of JFIF, and JPEG 2000 compression of samples that are not 8 or 16 bits wide, of palette indexes, of YCbCr data or with a predictor are all rejected with `UnsupportedImageFeatureException`; a CMYK page with alpha is loaded only with `CmykConversion`, and L\*a\*b\* pages only with `CieLabConversion`. Compressed data is never repaired (a damaged fax row is an error, not a white row). Subsampled chroma of pages that are not JPEG-compressed is replicated. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), chunky samples only (no separate planes), horizontal differencing only with Deflate or LZW, no tiles with JPEG compression, CMYK with the lossless compressions only, no signed samples, no half-precision or 24-bit floating-point samples (`RgbaHalf` pixels are written as 32-bit floats), no thresholding and no color reduction (the bilevel and palette layouts store a page exactly or reject it; 16-bit palette colors that are all multiples of 256 without being all multiples of 257 are rejected, since readers take them for 8-bit colors), Group 3 in one dimension only, one strip per JPEG page (at most 65,535 pixels per side, 8-bit samples, opaque pixels), a seekable destination required |
+| ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a DIB representation larger than 256 pixels per side and the DIB variants an icon payload cannot use (run-length encoding, embedded codecs, OS/2 headers) are rejected. Encoding: 32-bit DIB or still PNG payloads only (16-bit pixels need a PNG payload: `IconPayloadFormat.Dib` is rejected for them), at most 256 pixels per side, no metadata; an icon cannot store a hotspot |
 | ANI | Decoding: raw bitmap frames (no icon flag), a frame without a representation of the canvas size and everything the ICO/CUR decoder rejects are `UnsupportedImageFeatureException`; the geometry fields and the sequence flag of the header are not used (the payloads and the `seq ` chunk are authoritative); an ICC profile or text inside a PNG frame is not retained; `Image.OpenReader` does not read it. Encoding: one representation per frame, at most 256 pixels per side, whole jiffies, an infinite play count only, a title and an author as the only metadata, a seekable destination, at most 4 GiB per file |
 | PNG/APNG | Default output follows the pixel format, including RGB 16-bit and gray+alpha 8/16-bit; grayscale below 8 bits requires `PngOptimization.MinimumSize`, APNG delta rectangles `PngEncoder.OptimizeFrames` or `MinimumSize`. Palettes are selected by `PngPixelLayout.Indexed` or `MinimumSize`, exact unless `AllowColorReduction` (a sequential writer fixes its palette from the first image; later frames must fit it, or are mapped to it with `AllowColorReduction`). Unknown critical chunks are rejected; unknown ancillary chunks that are not safe to copy are only written with `WriteUnsafeToCopyChunks`; Apple CgBI files are decoded with the precision their premultiplied colors keep (lossy for low alpha values) and never written |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based), device-link and abstract profiles in sequences of profiles: no version 5 (iccMAX) or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); CMYK pixels (`Cmyk32`, `Cmyk64`) are only read and written by JPEG and TIFF, and only moved (crop, flip, quarter turns, orientation) by the processing operations; the untyped load of a CMYK file needs `CmykConversionOptions`; CMYK JPEG output is baseline only; gamut mapping is per-channel clipping or a chroma reduction in Oklab, never a perceptual compression of in-gamut colors |
 | Drawing | Coverages computed on one thread (large shapes are composited by several workers); under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range); on a floating-point canvas, paints have 16-bit colors in [0, 1], layers, patterns, filters, shadows, blurs, masks and groups are drawn on images of 16-bit samples (what is drawn in them is clipped to [0, 1]), and what reads the canvas back (a backdrop layer, a backdrop blur, a group that is not isolated) or draws a floating-point image combines it through 16-bit colors, so its samples must be in [0, 1] (others are rejected with an `UnsupportedImageFeatureException`, never clipped) and are quantized to 1/65535 |
 | Floating-point pixels | `RgbaFloat` and `RgbaHalf` only (no floating-point grayscale format); OpenEXR and TIFF are the formats that decode to them and store them (the other encoders reduce them to `Rgba64` with `ImageEncoder.FloatingPointConversion`); HDR samples of the integer formats are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping |
-| Processing | No custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; histograms, equalization and auto-levels work on the encoded samples (floating-point samples are binned to 65,536 levels from 0 to 1), and CLAHE does not pad a frame whose size is not a multiple of the tile grid (its tiles divide it as evenly as possible) |
+| Processing | `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; histograms, equalization and auto-levels work on the encoded samples (floating-point samples are binned to 65,536 levels from 0 to 1), and CLAHE does not pad a frame whose size is not a multiple of the tile grid (its tiles divide it as evenly as possible) |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Two refinements of the motion search were measured the same way, on the bytes of the predicted images of its sequences at 256x192 and at equal quality (qualities 35 to 90), and left out: the motion vectors are refined to a quarter of a sample and compared by the sum of the absolute differences of their prediction. Comparing them by the absolute values of the Hadamard transform of the differences (SATD) went from 1.4% smaller to 0.8% larger depending on the sequence and the effort (2, 5 and 9; 0.1% larger on average); motion vectors in eighths of a sample (`allow_high_precision_mv`) were, at the efforts 5 and 9, 0.2 to 0.8% smaller on the motions by fractions of a sample (`drift`, `glide`) but 0.1 to 1.8% larger on the others (`pan`, `cut`, `zoom`), since every coded vector pays for the bit of its eighth. Each one also took about 15% more encoding time at effort 5. Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas (a chroma delta was measured: it only trades luma for chroma, -1.3% at equal luma PSNR for +1.1% at equal RGB PSNR with +6, the reverse with -6), quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: more than eight nested derivations, an image built from images of several color descriptions, an overlay whose sRGB fill color shows on an image that is not an sRGB one, an alpha plane of an overlay or of a grid of derived images, a derived image with more than 1,024 input images, an image built from more than 16,384 images (an image counts once for each derivation that uses it, since it is decoded for each), an alpha plane that is not presented as its derived color image, movie fragments that do not follow each other, have composition time offsets, precede their `moov` box or follow their samples, an edit list that selects a part of a fragmented sequence, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits out of order or overlapping), an alpha track with another edit list than its color track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: the images that are not the primary item (`AuxiliaryImageCollection` lists the thumbnails, auxiliary images and gain maps of the primary item), a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |
 | HEIC encoding | One slice per picture, without tiles: a picture is coded by one worker, and only the pictures of the tiles of a grid (`GridTileSize`) are coded concurrently. Only the large still images have wavefront streams, which decoders decode concurrently; the pictures of a sequence and the tiles of a grid have none. An image of a sequence is a P picture predicted from the previous image only: no B pictures, no second reference, no bi-prediction, no weighted prediction, no long-term reference, no scene change detection. Not used: intra coding blocks of 64x64 samples, PCM blocks, scaling lists, quantizer changes inside a picture (no adaptive quantization, no rate control: `Quality` is a quantizer, not a size), rate-distortion optimized quantization, searched deblocking offsets, and the tools of the range extensions (lossless output is the plain transform bypass of version 1, which every HEVC decoder reads: residual DPCM and cross-component prediction would make it smaller). No screen content tools: a lossless screenshot is larger than its PNG. An image is one picture unless `GridTileSize` asks for a grid. No premultiplied alpha, no `pasp`, mastering display or content light level box, no orientation for an image sequence, and the decoded picture hash is not written. An image of an odd size with subsampled chroma relies on the clean aperture of the file: libheif ignores the one of a sequence and shows one more column or row, which repeats the last one, and FFmpeg reports the even size of the coded pictures (its command-line tool then crops them to an even size). The readers upsample subsampled chroma each in their own way: the edges of a 4:2:0 or 4:2:2 image differ visibly from one reader to another, as they do for the files of any HEVC encoder. FFmpeg 9 decodes 12-bit lossy output of the coarsest quantizers (`Quality` 0 to 2) to other pictures than libde265, the HM reference decoder and this library, which agree. libheif reports the edit list of a sequence that plays once as unsupported, and plays it once. An image sequence of one image cannot store animation settings. An image sequence needs a seekable destination and its frame count |

@@ -1,0 +1,12 @@
+<button id="covered" style="position: absolute; left: 0; top: 0; width: 100px; height: 40px" @onclick="() => _clicked = true">Covered</button>
+@if (_showOverlay)
+{
+    <div id="overlay" style="position: absolute; left: 0; top: 0; width: 300px; height: 300px; background: rgba(0, 0, 0, 0.5)" @onclick="() => _showOverlay = false"></div>
+}
+
+@code {
+    private bool _showOverlay = true;
+    private bool _clicked;
+
+    public bool Clicked => _clicked;
+}

@@ -1,0 +1,32 @@
+<EditForm Model="Person" OnValidSubmit="() => Submitted = true">
+    <DataAnnotationsValidator />
+    <label for="name">Name</label>
+    <InputText id="name" @bind-Value="Person.Name" />
+    <ValidationMessage For="() => Person.Name" />
+    <label for="subscribe">Subscribe</label>
+    <InputCheckbox id="subscribe" @bind-Value="Person.Subscribe" />
+    <label for="country">Country</label>
+    <InputSelect id="country" @bind-Value="Person.Country">
+        <option value="">Choose</option>
+        <option value="fr">France</option>
+        <option value="us">United States</option>
+    </InputSelect>
+    <button type="submit">Save</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public PersonModel Person { get; set; } = new();
+
+    public bool Submitted { get; private set; }
+
+    public sealed class PersonModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string? Name { get; set; }
+
+        public bool Subscribe { get; set; }
+
+        public string? Country { get; set; }
+    }
+}

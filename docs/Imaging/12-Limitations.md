@@ -35,7 +35,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 | QOI | 8-bit RGB(A) only, one still image, no metadata. |
 | BMP | No embedded JPEG/PNG payloads, no linked ICC profile; one still image is written. |
 | TGA | No premultiplied alpha; true-color and grayscale output only, no metadata. |
-| Netpbm | Only the first image of a concatenation is read; no metadata. |
+| Netpbm | [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) reads the first image of a concatenation ([ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) reads them all); no metadata. |
 | TIFF | Subsampled YCbCr data in separate planes, ITU L\*a\*b\*, lightness-only L\*a\*b\* and some extra-sample layouts are not read; L\*a\*b\* pages need a color conversion. Writing uses chunky samples (no separate planes), one page per [Save](cref:Meziantou.Framework.Imaging.Image.Save) (use [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) for documents) and a seekable destination. |
 | ICO / CUR | At most 256 pixels per side; 32-bit DIB or PNG representations are written. |
 | ANI | One representation per frame; always loops; needs a seekable destination. |

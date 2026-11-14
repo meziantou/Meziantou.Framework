@@ -1,0 +1,18 @@
+<EditForm Model="Model" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <GenericForm TModel="FormModel" Model="Model" ModelChanged="OnModelChanged" EditorClass="editor" />
+    <button type="submit">Save</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public FormModel Model { get; set; } = new();
+
+    public int SubmitCount { get; private set; }
+
+    public int ChangeCount { get; private set; }
+
+    private void OnValidSubmit() => SubmitCount++;
+
+    private void OnModelChanged(FormModel model) => ChangeCount++;
+}

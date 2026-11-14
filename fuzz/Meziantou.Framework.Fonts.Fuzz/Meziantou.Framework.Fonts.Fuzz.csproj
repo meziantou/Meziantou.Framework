@@ -1,5 +1,5 @@
 <Project Sdk="Meziantou.NET.Sdk">
-  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter, the subsetter, the shaper, the blocks of WOFF files and the SVG table). See fuzz/README.md. -->
+  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter, the subsetter, the shaper, the bitmap glyphs, the blocks of WOFF files and the SVG table). See fuzz/README.md. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
@@ -24,6 +24,13 @@
     <ShapingSeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\aat-*.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\arabic-forms.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\thai-forms.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\thai-forms.mac.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\languages.ttf" />
     <ShapingSeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\font-suites\aots\fonts\gsub*.otf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\font-suites\aots\fonts\gpos*.otf" />
     <EmbeddedResource Include="@(ShapingSeedFont)" LogicalName="Seeds/shaping/%(Filename)%(Extension)" Link="Seeds\shaping\%(Filename)%(Extension)" />
+
+    <!-- The seeds of the bitmap target only: the fonts of the fixtures whose glyphs are images (sbix, CBDT); monochrome-boxes.ttf (EBDT) is a seed of every target -->
+    <BitmapSeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\bitmap-boxes.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\color-bitmaps.ttf" />
+    <EmbeddedResource Include="@(BitmapSeedFont)" LogicalName="Seeds/bitmaps/%(Filename)%(Extension)" Link="Seeds\bitmaps\%(Filename)%(Extension)" />
+
+    <!-- The writer of the bitmap tables of the unit tests, which makes the seeds of the other formats -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontBitmapWriter.cs;..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontBitmapStrike.cs;..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontBitmapGlyph.cs;..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontWriter.cs" Link="Shared\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

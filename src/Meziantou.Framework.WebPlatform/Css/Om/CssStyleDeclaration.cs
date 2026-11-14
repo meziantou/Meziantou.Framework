@@ -626,8 +626,6 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         return CssShorthands.ParseValue(name, values, originalText);
     }
 
-    private static string TrimWhitespace(ReadOnlySpan<char> value) => value.Trim(" \t\n").ToString();
-
     /// <summary>
     /// The descriptors of @counter-style whose grammar does not express all the constraints
     /// (https://drafts.csswg.org/css-counter-styles/#counter-style-range): the lower bound of a range is not higher than its
@@ -1161,34 +1159,39 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             return;
 
         var name = NormalizePropertyName(declaration.Name);
-        var originalText = declaration.Value.Count == 0 ? "" : TrimWhitespace(source.AsSpan(declaration.Value[0].Start..Math.Min(declaration.Value[^1].End, source.Length)));
+        var text = declaration.Value.Count == 0 ? default : source.AsSpan(declaration.Value[0].Start..Math.Min(declaration.Value[^1].End, source.Length)).Trim(" \t\n");
+        string? originalText = null;
         var endOfFile = declaration.Value.Count > 0 && declaration.Value[^1].End >= source.Length;
         if (endOfFile)
         {
-            originalText = FixupEndOfFile(originalText, declaration.Value[^1], source, closeBlocks: CssPropertyRegistry.IsCustomProperty(name));
+            originalText = FixupEndOfFile(text.ToString(), declaration.Value[^1], source, closeBlocks: CssPropertyRegistry.IsCustomProperty(name));
+            text = originalText;
         }
 
         // An empty custom property (e.g. --x: ;) is valid (https://drafts.csswg.org/css-variables/#defining-variables): its
         // value is serialized as a space, like the browsers
-        if (originalText.Length == 0 && CssPropertyRegistry.IsCustomProperty(name))
+        if (text.Length == 0 && CssPropertyRegistry.IsCustomProperty(name))
         {
             originalText = " ";
+            text = originalText;
         }
 
         // The parsed value only depends on the text of the value: the declarations repeated in the style sheets and the style
-        // attributes (e.g. display: none) are parsed once
+        // attributes (e.g. display: none) are parsed once. The text is only allocated when the value is not cached.
         List<CssLonghandValue>? longhands;
-        if (!endOfFile && originalText.Length <= ParsedValueCache.MaxTextLength)
+        if (!endOfFile && text.Length <= ParsedValueCache.MaxTextLength)
         {
             var cache = ParsedValueCache.Declarations;
-            if (!cache.TryGetValue(atRule, name, originalText, out longhands))
+            if (!cache.TryGetValue(atRule, name, text, out longhands))
             {
+                originalText ??= text.ToString();
                 longhands = ParseValue(atRule, name, declaration.Value, originalText, source);
                 cache.Add(atRule, name, originalText, longhands);
             }
         }
         else
         {
+            originalText ??= text.ToString();
             longhands = ParseValue(atRule, name, declaration.Value, originalText, source);
         }
 

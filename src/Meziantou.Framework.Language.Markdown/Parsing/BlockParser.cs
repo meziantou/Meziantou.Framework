@@ -12,6 +12,10 @@ internal sealed class BlockParser
     private readonly string _text;
     private readonly MarkdownExtensions _extensions;
     private readonly List<TriviaSpan> _triviaSpans = [];
+
+    // The lines of all the leaf blocks: a block has a range of them. Only the last open leaf block gets lines, so its lines
+    // are always the last ones.
+    private readonly List<Line> _lines;
     private readonly Dictionary<string, bool> _references = new(StringComparer.Ordinal);
     private readonly InlineParser _inlineParser;
     private readonly Block _document = new(SyntaxKind.Document, parent: null);
@@ -40,6 +44,9 @@ internal sealed class BlockParser
     {
         _text = text;
         _extensions = extensions;
+
+        // A block has at most every line of the text
+        _lines = new List<Line>(text.AsSpan().Count('\n') + 1);
         _tip = _document;
         _oldTip = _document;
         _lastMatchedContainer = _document;
@@ -74,7 +81,9 @@ internal sealed class BlockParser
         }
 
         parser.Finalize(parser._document);
-        return ((BuildNode)parser.Convert(parser._document)[0], parser._triviaSpans);
+        var document = new List<BuildElement>(1);
+        parser.Convert(parser._document, document);
+        return (document[0].Node!, parser._triviaSpans);
     }
 
     private char Peek(int index) => index < _lineEnd ? _text[index] : '\0';
@@ -265,7 +274,7 @@ internal sealed class BlockParser
 
                     if (length >= block.FenceLength && rest == _lineEnd)
                     {
-                        block.Trailing.Add(new BuildToken(SyntaxKind.CodeFenceToken, _nextNonspace, end, 0));
+                        block.Trailing.Add(BuildElement.Token(SyntaxKind.CodeFenceToken, _nextNonspace, end));
                         Finalize(block);
                         return 2;
                     }
@@ -327,7 +336,7 @@ internal sealed class BlockParser
             }
 
             CloseUnmatchedBlocks();
-            AddChild(SyntaxKind.BlockQuote).Leading.Add(new BuildToken(SyntaxKind.BlockQuoteMarkerToken, marker, marker + 1, 0));
+            AddChild(SyntaxKind.BlockQuote).Leading.Add(BuildElement.Token(SyntaxKind.BlockQuoteMarkerToken, marker, marker + 1));
             return 1;
         }
 
@@ -364,7 +373,7 @@ internal sealed class BlockParser
             if (!container.IsEmpty)
             {
                 container.Kind = SyntaxKind.SetextHeading;
-                container.Trailing.Add(new BuildToken(SyntaxKind.SetextHeadingUnderlineToken, _nextNonspace, underlineEnd, 0));
+                container.Trailing.Add(BuildElement.Token(SyntaxKind.SetextHeadingUnderlineToken, _nextNonspace, underlineEnd));
                 _offset = _lineEnd;
                 return 2;
             }
@@ -375,7 +384,7 @@ internal sealed class BlockParser
         {
             CloseUnmatchedBlocks();
             var block = AddChild(SyntaxKind.ThematicBreak);
-            block.Leading.Add(new BuildToken(SyntaxKind.ThematicBreakToken, _nextNonspace, breakEnd, 0));
+            block.Leading.Add(BuildElement.Token(SyntaxKind.ThematicBreakToken, _nextNonspace, breakEnd));
             _offset = _lineEnd;
             return 2;
         }
@@ -391,7 +400,7 @@ internal sealed class BlockParser
 
             var item = AddChild(SyntaxKind.ListItem);
             item.ListData = data;
-            item.Leading.Add(new BuildToken(SyntaxKind.ListMarkerToken, data.MarkerStart, data.MarkerEnd, 0));
+            item.Leading.Add(BuildElement.Token(SyntaxKind.ListMarkerToken, data.MarkerStart, data.MarkerEnd));
             _itemOpenedOnLine = item;
             return 1;
         }
@@ -419,7 +428,7 @@ internal sealed class BlockParser
         // A row of a table
         if (container.Kind == SyntaxKind.Table && !_blank)
         {
-            container.Lines.Add(new Line(_nextNonspace, _lineEnd, _eolEnd, 0));
+            AddLine(container, new Line(_nextNonspace, _lineEnd, _eolEnd, 0));
             _offset = _lineEnd;
             return 2;
         }
@@ -427,7 +436,7 @@ internal sealed class BlockParser
         // Task list item: [ ], [x] or [X] at the start of the first paragraph of a list item, on the line of its marker
         if (HasExtension(MarkdownExtensions.TaskLists) && container == _itemOpenedOnLine && IsTaskListItemMarker())
         {
-            container.Leading.Add(new BuildToken(SyntaxKind.TaskListItemMarkerToken, _nextNonspace, _nextNonspace + 3, 0));
+            container.Leading.Add(BuildElement.Token(SyntaxKind.TaskListItemMarkerToken, _nextNonspace, _nextNonspace + 3));
             AdvanceNextNonspace();
             AdvanceOffset(3, columns: false);
             FindNextNonspace();
@@ -466,7 +475,7 @@ internal sealed class BlockParser
 
         // The header row must have as many cells as the delimiter row. A paragraph that fails is never a table: its next lines
         // are not tried again.
-        var header = paragraph.Lines[^1];
+        var header = _lines[paragraph.LineStart + paragraph.LineCount - 1];
         if (TableScanner.ScanRow(_text, header.Start, header.End, cells: null, pipes: null) != columns)
         {
             paragraph.TableVisited = true;
@@ -476,19 +485,19 @@ internal sealed class BlockParser
         CloseUnmatchedBlocks();
 
         // The lines before the header row are a paragraph
-        if (paragraph.Lines.Count > 1)
+        if (paragraph.LineCount > 1)
         {
             var parent = paragraph.Parent!;
-            var before = new Block(SyntaxKind.Paragraph, parent) { Open = false };
-            before.Lines.AddRange(paragraph.Lines.GetRange(0, paragraph.Lines.Count - 1));
+            var before = new Block(SyntaxKind.Paragraph, parent) { Open = false, LineStart = paragraph.LineStart, LineCount = paragraph.LineCount - 1 };
             parent.Children.Insert(parent.Children.Count - 1, before);
             ParseDefinitions(before);
         }
 
+        // The header row is the last line of the paragraph, so the delimiter row is next to it
         paragraph.Kind = SyntaxKind.Table;
-        paragraph.Lines.Clear();
-        paragraph.Lines.Add(header);
-        paragraph.Lines.Add(new Line(_nextNonspace, _lineEnd, _eolEnd, 0));
+        paragraph.LineStart += paragraph.LineCount - 1;
+        paragraph.LineCount = 1;
+        AddLine(paragraph, new Line(_nextNonspace, _lineEnd, _eolEnd, 0));
         _offset = _lineEnd;
         return true;
     }
@@ -518,7 +527,7 @@ internal sealed class BlockParser
         AdvanceOffset(afterSpaces - _offset, columns: false);
         CloseUnmatchedBlocks();
         var block = AddChild(SyntaxKind.AtxHeading);
-        block.Leading.Add(new BuildToken(SyntaxKind.AtxHeadingMarkerToken, markerStart, position, 0));
+        block.Leading.Add(BuildElement.Token(SyntaxKind.AtxHeadingMarkerToken, markerStart, position));
 
         // The closing sequence is a run of '#' at the end, after a space, or alone
         var end = _lineEnd;
@@ -536,7 +545,7 @@ internal sealed class BlockParser
         var contentEnd = end;
         if (hashStart < end && (hashStart == _offset || Scanners.IsSpaceOrTab(_text[hashStart - 1])))
         {
-            block.Trailing.Add(new BuildToken(SyntaxKind.AtxHeadingClosingSequenceToken, hashStart, end, 0));
+            block.Trailing.Add(BuildElement.Token(SyntaxKind.AtxHeadingClosingSequenceToken, hashStart, end));
             contentEnd = hashStart;
             while (contentEnd > _offset && Scanners.IsSpaceOrTab(_text[contentEnd - 1]))
             {
@@ -544,7 +553,7 @@ internal sealed class BlockParser
             }
         }
 
-        block.Lines.Add(new Line(_offset, contentEnd, contentEnd, 0));
+        AddLine(block, new Line(_offset, contentEnd, contentEnd, 0));
         _offset = _lineEnd;
         return true;
     }
@@ -569,7 +578,7 @@ internal sealed class BlockParser
         block.FenceLength = length;
         block.FenceOffset = _indent;
         AdvanceNextNonspace();
-        block.Leading.Add(new BuildToken(SyntaxKind.CodeFenceToken, _offset, position, 0));
+        block.Leading.Add(BuildElement.Token(SyntaxKind.CodeFenceToken, _offset, position));
         AdvanceOffset(length, columns: false);
 
         // The info string is the rest of the line, without the whitespace around it
@@ -587,7 +596,7 @@ internal sealed class BlockParser
 
         if (infoEnd > infoStart)
         {
-            block.Leading.Add(new BuildToken(SyntaxKind.InfoStringToken, infoStart, infoEnd, 0));
+            block.Leading.Add(BuildElement.Token(SyntaxKind.InfoStringToken, infoStart, infoEnd));
         }
 
         _skipAddLine = true;
@@ -746,8 +755,25 @@ internal sealed class BlockParser
             virtualSpaces = 4 - (_column % 4);
         }
 
-        _tip.Lines.Add(new Line(start, _lineEnd, _eolEnd, virtualSpaces));
+        AddLine(_tip, new Line(start, _lineEnd, _eolEnd, virtualSpaces));
     }
+
+    private void AddLine(Block block, Line line)
+    {
+        if (block.LineCount == 0)
+        {
+            block.LineStart = _lines.Count;
+        }
+        else if (block.LineStart + block.LineCount != _lines.Count)
+        {
+            throw new InvalidOperationException($"The lines of the {block.Kind} are not the last ones.");
+        }
+
+        _lines.Add(line);
+        block.LineCount++;
+    }
+
+    private ReadOnlySpan<Line> GetLines(Block block) => System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_lines).Slice(block.LineStart, block.LineCount);
 
     private Block AddChild(SyntaxKind kind)
     {
@@ -788,9 +814,9 @@ internal sealed class BlockParser
 
             case SyntaxKind.IndentedCodeBlock:
                 // The blank lines at the end are not part of the code
-                while (block.Lines.Count > 0 && block.Lines[^1] is var line && _text.AsSpan(line.Start, line.End - line.Start).Trim(" \t").IsEmpty)
+                while (block.LineCount > 0 && _lines[block.LineStart + block.LineCount - 1] is var line && _text.AsSpan(line.Start, line.End - line.Start).Trim(" \t").IsEmpty)
                 {
-                    block.Lines.RemoveAt(block.Lines.Count - 1);
+                    block.LineCount--;
                 }
 
                 break;
@@ -802,7 +828,7 @@ internal sealed class BlockParser
     // The link reference definitions at the start of a paragraph are blocks of their own
     private void ParseDefinitions(Block paragraph)
     {
-        var subject = Subject.FromLines(_text, paragraph.Lines);
+        var subject = Subject.FromLines(_text, GetLines(paragraph));
         var position = paragraph.ContentStart;
         while (position < subject.Length && subject.Text[position] == '[')
         {
@@ -821,65 +847,79 @@ internal sealed class BlockParser
         paragraph.IsEmpty = subject.Text.AsSpan(position).Trim(" \t\n").IsEmpty;
     }
 
-    private List<BuildElement> Convert(Block block)
+    private void Convert(Block block, List<BuildElement> output)
     {
-        var result = new List<BuildElement>();
         switch (block.Kind)
         {
             case SyntaxKind.Paragraph or SyntaxKind.SetextHeading:
-                result.AddRange(block.Definitions);
+                if (block.DefinitionsOrNull is { } definitions)
+                {
+                    foreach (var definition in definitions)
+                    {
+                        output.Add(definition);
+                    }
+                }
+
                 if (block.Kind == SyntaxKind.SetextHeading || !block.IsEmpty)
                 {
                     var node = new BuildNode(block.Kind);
-                    node.Children.AddRange(_inlineParser.Parse(block.Subject!, block.ContentStart));
-                    node.Children.AddRange(block.Trailing);
-                    result.Add(node);
+                    _inlineParser.Parse(block.Subject!, block.ContentStart, node.Children);
+                    AddTokens(node, block.TrailingOrNull);
+                    output.Add(node);
                 }
 
-                return result;
+                return;
 
             case SyntaxKind.AtxHeading:
             {
                 var node = new BuildNode(block.Kind);
-                node.Children.AddRange(block.Leading);
-                node.Children.AddRange(_inlineParser.Parse(Subject.FromLines(_text, block.Lines), 0));
-                node.Children.AddRange(block.Trailing);
-                result.Add(node);
-                return result;
+                AddTokens(node, block.LeadingOrNull);
+                _inlineParser.Parse(Subject.FromLines(_text, GetLines(block)), 0, node.Children);
+                AddTokens(node, block.TrailingOrNull);
+                output.Add(node);
+                return;
             }
 
             case SyntaxKind.Table:
-                result.Add(ConvertTable(block));
-                return result;
+                output.Add(ConvertTable(block));
+                return;
 
             case SyntaxKind.FencedCodeBlock or SyntaxKind.IndentedCodeBlock or SyntaxKind.HtmlBlock:
             {
-                var node = new BuildNode(block.Kind);
-                node.Children.AddRange(block.Leading);
+                var node = new BuildNode(block.Kind, block.TokenCount + block.LineCount);
+                AddTokens(node, block.LeadingOrNull);
                 var kind = block.Kind == SyntaxKind.HtmlBlock ? SyntaxKind.HtmlLineToken : SyntaxKind.CodeLineToken;
-                foreach (var line in block.Lines)
+                foreach (var line in GetLines(block))
                 {
                     node.AddLineToken(kind, line.Start, line.EolEnd, line.VirtualSpaces);
                 }
 
-                node.Children.AddRange(block.Trailing);
-                result.Add(node);
-                return result;
+                AddTokens(node, block.TrailingOrNull);
+                output.Add(node);
+                return;
             }
 
             default:
             {
-                var node = new BuildNode(block.Kind);
-                node.Children.AddRange(block.Leading);
+                var node = new BuildNode(block.Kind, block.TokenCount + block.Children.Count);
+                AddTokens(node, block.LeadingOrNull);
                 foreach (var child in block.Children)
                 {
-                    node.Children.AddRange(Convert(child));
+                    Convert(child, node.Children);
                 }
 
-                node.Children.AddRange(block.Trailing);
-                result.Add(node);
-                return result;
+                AddTokens(node, block.TrailingOrNull);
+                output.Add(node);
+                return;
             }
+        }
+    }
+
+    private static void AddTokens(BuildNode node, List<BuildElement>? tokens)
+    {
+        if (tokens is not null)
+        {
+            node.Children.AddRange(tokens);
         }
     }
 
@@ -890,9 +930,9 @@ internal sealed class BlockParser
         var node = new BuildNode(SyntaxKind.Table);
         var cells = new List<(int Start, int End)>();
         var pipes = new List<int>();
-        for (var i = 0; i < table.Lines.Count; i++)
+        for (var i = 0; i < table.LineCount; i++)
         {
-            var line = table.Lines[i];
+            var line = _lines[table.LineStart + i];
             cells.Clear();
             pipes.Clear();
             var row = new BuildNode(i switch
@@ -930,7 +970,7 @@ internal sealed class BlockParser
                     var cell = new BuildNode(SyntaxKind.TableCell);
                     if (end > start)
                     {
-                        cell.Children.AddRange(_inlineParser.Parse(Subject.FromTableCell(_text, start, end), 0));
+                        _inlineParser.Parse(Subject.FromTableCell(_text, start, end), 0, cell.Children);
                     }
 
                     row.Children.Add(cell);
@@ -1032,12 +1072,21 @@ internal sealed class BlockParser
 
         public bool Open { get; set; } = true;
 
-        // The tokens of the block before and after its children or its lines
-        public List<BuildToken> Leading { get; } = [];
+        // The tokens of the block before and after its children or its lines, created when the block has some
+        public List<BuildElement> Leading => LeadingOrNull ??= new(2);
 
-        public List<BuildToken> Trailing { get; } = [];
+        public List<BuildElement> Trailing => TrailingOrNull ??= new(1);
 
-        public List<Line> Lines { get; } = [];
+        public List<BuildElement>? LeadingOrNull { get; private set; }
+
+        public List<BuildElement>? TrailingOrNull { get; private set; }
+
+        public int TokenCount => (LeadingOrNull?.Count ?? 0) + (TrailingOrNull?.Count ?? 0);
+
+        // The range of the lines of a leaf block in the lines of the parser
+        public int LineStart { get; set; }
+
+        public int LineCount { get; set; }
 
         public ListData? ListData { get; set; }
 
@@ -1053,7 +1102,9 @@ internal sealed class BlockParser
         public bool TableVisited { get; set; }
 
         // A paragraph: its link reference definitions, then its inlines from ContentStart in its subject
-        public List<BuildNode> Definitions { get; } = [];
+        public List<BuildNode> Definitions => DefinitionsOrNull ??= [];
+
+        public List<BuildNode>? DefinitionsOrNull { get; private set; }
 
         public int ContentStart { get; set; }
 

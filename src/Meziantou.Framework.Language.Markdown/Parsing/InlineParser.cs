@@ -19,6 +19,10 @@ internal sealed class InlineParser
     private int _pos;
     private int _end;
     private InlineNode _root = null!;
+
+    // The nodes of the inlines, reused from one leaf block to the next
+    private readonly List<InlineNode> _nodes = [];
+    private int _usedNodes;
     private Delimiter? _delimiters;
     private Bracket? _brackets;
 
@@ -30,7 +34,7 @@ internal sealed class InlineParser
     }
 
     /// <summary>Parses the inlines of the subject from <paramref name="start"/>, without the whitespace around them.</summary>
-    public List<BuildElement> Parse(Subject subject, int start)
+    public void Parse(Subject subject, int start, List<BuildElement> output)
     {
         _subject = subject;
         _text = subject.Text;
@@ -46,7 +50,8 @@ internal sealed class InlineParser
             _pos++;
         }
 
-        _root = new InlineNode(SyntaxKind.Paragraph, _pos, _pos);
+        _usedNodes = 0;
+        _root = NewNode(SyntaxKind.Paragraph, _pos, _pos);
         _delimiters = null;
         _brackets = null;
         while (_pos < _end)
@@ -60,13 +65,11 @@ internal sealed class InlineParser
             LinkEmailAddresses(_root);
         }
 
-        var result = new List<BuildElement>();
-        foreach (var child in _root.Children())
+        output.EnsureCapacity(output.Count + CountChildren(_root) + 1);
+        for (var child = _root.FirstChild; child is not null; child = child.Next)
         {
-            AddBuildElements(child, result);
+            AddBuildElements(child, output);
         }
-
-        return result;
     }
 
     // Parses a link reference definition at the start of the subject. Returns where it ends, or -1 when there is none.
@@ -297,11 +300,11 @@ internal sealed class InlineParser
 
         if (newline - spacesStart >= 2)
         {
-            _root.Append(new InlineNode(SyntaxKind.HardLineBreakToken, spacesStart, newline + 1));
+            _root.Append(NewNode(SyntaxKind.HardLineBreakToken, spacesStart, newline + 1));
         }
         else
         {
-            _root.Append(new InlineNode(SyntaxKind.LineEndingToken, newline, newline + 1));
+            _root.Append(NewNode(SyntaxKind.LineEndingToken, newline, newline + 1));
         }
 
         // The spaces at the start of the next line are not text either
@@ -318,7 +321,7 @@ internal sealed class InlineParser
         if (PeekIs('\n'))
         {
             _pos++;
-            _root.Append(new InlineNode(SyntaxKind.HardLineBreakToken, start, _pos));
+            _root.Append(NewNode(SyntaxKind.HardLineBreakToken, start, _pos));
             while (_pos < _end && _text[_pos] == ' ')
             {
                 _pos++;
@@ -327,7 +330,7 @@ internal sealed class InlineParser
         else if (_pos < _end && Scanners.IsEscapable(_text[_pos]))
         {
             _pos++;
-            _root.Append(new InlineNode(SyntaxKind.EscapedCharacterToken, start, _pos));
+            _root.Append(NewNode(SyntaxKind.EscapedCharacterToken, start, _pos));
         }
         else
         {
@@ -362,10 +365,10 @@ internal sealed class InlineParser
 
             if (position - runStart == tickCount)
             {
-                var code = new InlineNode(SyntaxKind.CodeSpan, start, position);
-                code.Append(new InlineNode(SyntaxKind.BacktickStringToken, start, afterOpenTicks));
+                var code = NewNode(SyntaxKind.CodeSpan, start, position);
+                code.Append(NewNode(SyntaxKind.BacktickStringToken, start, afterOpenTicks));
                 AppendLines(code, SyntaxKind.CodeTextToken, afterOpenTicks, runStart);
-                code.Append(new InlineNode(SyntaxKind.BacktickStringToken, runStart, position));
+                code.Append(NewNode(SyntaxKind.BacktickStringToken, runStart, position));
                 _root.Append(code);
                 _pos = position;
                 return;
@@ -389,8 +392,8 @@ internal sealed class InlineParser
             return false;
         }
 
-        var link = new InlineNode(SyntaxKind.Autolink, _pos, _pos + length);
-        link.Append(new InlineNode(SyntaxKind.AutolinkToken, _pos, _pos + length));
+        var link = NewNode(SyntaxKind.Autolink, _pos, _pos + length);
+        link.Append(NewNode(SyntaxKind.AutolinkToken, _pos, _pos + length));
         _root.Append(link);
         _pos += length;
         return true;
@@ -404,7 +407,7 @@ internal sealed class InlineParser
             return false;
         }
 
-        var html = new InlineNode(SyntaxKind.RawHtml, _pos, _pos + length);
+        var html = NewNode(SyntaxKind.RawHtml, _pos, _pos + length);
         AppendLines(html, SyntaxKind.HtmlTagToken, _pos, _pos + length);
         _root.Append(html);
         _pos += length;
@@ -419,7 +422,7 @@ internal sealed class InlineParser
             return false;
         }
 
-        _root.Append(new InlineNode(SyntaxKind.EntityToken, _pos, _pos + length));
+        _root.Append(NewNode(SyntaxKind.EntityToken, _pos, _pos + length));
         _pos += length;
         return true;
     }
@@ -505,7 +508,7 @@ internal sealed class InlineParser
     {
         var start = _pos;
         _pos += image ? 2 : 1;
-        var node = new InlineNode(image ? SyntaxKind.ExclamationOpenBracketToken : SyntaxKind.OpenBracketToken, start, _pos);
+        var node = NewNode(image ? SyntaxKind.ExclamationOpenBracketToken : SyntaxKind.OpenBracketToken, start, _pos);
         _root.Append(node);
         if (_brackets is not null)
         {
@@ -561,10 +564,10 @@ internal sealed class InlineParser
 
                 if (PeekIs(')'))
                 {
-                    suffix.Add(new InlineNode(SyntaxKind.OpenParenthesisToken, openParenthesis, openParenthesis + 1));
+                    suffix.Add(NewNode(SyntaxKind.OpenParenthesisToken, openParenthesis, openParenthesis + 1));
                     if (destinationEnd > destinationStart)
                     {
-                        suffix.Add(new InlineNode(SyntaxKind.LinkDestinationToken, destinationStart, destinationEnd));
+                        suffix.Add(NewNode(SyntaxKind.LinkDestinationToken, destinationStart, destinationEnd));
                     }
 
                     if (titleStart >= 0)
@@ -572,7 +575,7 @@ internal sealed class InlineParser
                         AddLineNodes(suffix, SyntaxKind.LinkTitleToken, titleStart, titleEnd);
                     }
 
-                    suffix.Add(new InlineNode(SyntaxKind.CloseParenthesisToken, _pos, _pos + 1));
+                    suffix.Add(NewNode(SyntaxKind.CloseParenthesisToken, _pos, _pos + 1));
                     _pos++;
                     matched = true;
                 }
@@ -610,13 +613,13 @@ internal sealed class InlineParser
                 matched = true;
                 if (labelLength >= 2)
                 {
-                    suffix.Add(new InlineNode(SyntaxKind.OpenBracketToken, beforeLabel, beforeLabel + 1));
+                    suffix.Add(NewNode(SyntaxKind.OpenBracketToken, beforeLabel, beforeLabel + 1));
                     if (labelLength > 2)
                     {
                         AddLineNodes(suffix, SyntaxKind.LinkLabelToken, beforeLabel + 1, beforeLabel + labelLength - 1);
                     }
 
-                    suffix.Add(new InlineNode(SyntaxKind.CloseBracketToken, beforeLabel + labelLength - 1, beforeLabel + labelLength));
+                    suffix.Add(NewNode(SyntaxKind.CloseBracketToken, beforeLabel + labelLength - 1, beforeLabel + labelLength));
                     _pos = beforeLabel + labelLength;
                 }
             }
@@ -631,7 +634,7 @@ internal sealed class InlineParser
             return;
         }
 
-        var link = new InlineNode(opener.Image ? SyntaxKind.Image : SyntaxKind.Link, opener.Node.Start, _pos);
+        var link = NewNode(opener.Image ? SyntaxKind.Image : SyntaxKind.Link, opener.Node.Start, _pos);
         var current = opener.Node.Next;
         while (current is not null)
         {
@@ -648,7 +651,7 @@ internal sealed class InlineParser
         // The opening bracket is the first token of the link
         opener.Node.Unlink();
         link.Prepend(opener.Node);
-        link.Append(new InlineNode(SyntaxKind.CloseBracketToken, closeStart, closeStart + 1));
+        link.Append(NewNode(SyntaxKind.CloseBracketToken, closeStart, closeStart + 1));
         foreach (var node in suffix)
         {
             link.Append(node);
@@ -781,7 +784,7 @@ internal sealed class InlineParser
 
     private InlineNode AppendText(int start, int end)
     {
-        var node = new InlineNode(SyntaxKind.TextToken, start, end);
+        var node = NewNode(SyntaxKind.TextToken, start, end);
         _root.Append(node);
         return node;
     }
@@ -805,17 +808,22 @@ internal sealed class InlineParser
         {
             if (_text[i] == '\n')
             {
-                nodes.Add(new InlineNode(kind, lineStart, i));
-                nodes.Add(new InlineNode(SyntaxKind.LineEndingToken, i, i + 1));
+                nodes.Add(NewNode(kind, lineStart, i));
+                nodes.Add(NewNode(SyntaxKind.LineEndingToken, i, i + 1));
                 lineStart = i + 1;
             }
         }
 
-        nodes.Add(new InlineNode(kind, lineStart, end));
+        nodes.Add(NewNode(kind, lineStart, end));
     }
 
     private void ProcessEmphasis(Delimiter? stackBottom)
     {
+        if (_delimiters == stackBottom)
+        {
+            return;
+        }
+
         // The lowest delimiter that can open for a closer, by character, whether the closer can open, and length modulo 3
         var openersBottom = new Dictionary<(char, int), Delimiter?>();
 
@@ -883,8 +891,8 @@ internal sealed class InlineParser
             // The delimiters used are the ones next to the content: the end of the opener and the start of the closer
             var kind = tilde ? SyntaxKind.Strikethrough : use == 1 ? SyntaxKind.Emphasis : SyntaxKind.StrongEmphasis;
             var delimiterKind = tilde ? SyntaxKind.StrikethroughDelimiterToken : SyntaxKind.EmphasisDelimiterToken;
-            var emphasis = new InlineNode(kind, openerNode.End - use, closerNode.Start + use);
-            emphasis.Append(new InlineNode(delimiterKind, openerNode.End - use, openerNode.End));
+            var emphasis = NewNode(kind, openerNode.End - use, closerNode.Start + use);
+            emphasis.Append(NewNode(delimiterKind, openerNode.End - use, openerNode.End));
             openerNode.End -= use;
             var current = openerNode.Next;
             while (current is not null && current != closerNode)
@@ -895,7 +903,7 @@ internal sealed class InlineParser
                 current = next;
             }
 
-            emphasis.Append(new InlineNode(delimiterKind, closerNode.Start, closerNode.Start + use));
+            emphasis.Append(NewNode(delimiterKind, closerNode.Start, closerNode.Start + use));
             closerNode.Start += use;
             openerNode.InsertAfter(emphasis);
 
@@ -1002,8 +1010,8 @@ internal sealed class InlineParser
 
     private void AppendAutolink(int start, int end)
     {
-        var link = new InlineNode(SyntaxKind.ExtendedAutolink, start, end);
-        link.Append(new InlineNode(SyntaxKind.ExtendedAutolinkToken, start, end));
+        var link = NewNode(SyntaxKind.ExtendedAutolink, start, end);
+        link.Append(NewNode(SyntaxKind.ExtendedAutolinkToken, start, end));
         _root.Append(link);
         _pos = end;
     }
@@ -1156,7 +1164,7 @@ internal sealed class InlineParser
     private void LinkEmailAddresses(List<InlineNode> run)
     {
         // An address has an @, which an entity can be too
-        if (!run.Exists(token => token.Kind == SyntaxKind.EntityToken || _text.AsSpan(token.Start, token.End - token.Start).Contains('@')))
+        if (!MayContainAt(run))
         {
             return;
         }
@@ -1226,12 +1234,12 @@ internal sealed class InlineParser
                 {
                     if (link is null)
                     {
-                        link = new InlineNode(SyntaxKind.ExtendedAutolink, matches[matchIndex].Start, matches[matchIndex].End);
+                        link = NewNode(SyntaxKind.ExtendedAutolink, matches[matchIndex].Start, matches[matchIndex].End);
                         nodes.Add(link);
                     }
 
                     var end = Math.Min(token.End, matches[matchIndex].End);
-                    link.Append(new InlineNode(token.Kind, position, end));
+                    link.Append(NewNode(token.Kind, position, end));
                     position = end;
                     if (position >= matches[matchIndex].End)
                     {
@@ -1242,7 +1250,7 @@ internal sealed class InlineParser
                 else
                 {
                     var end = matchIndex < matches.Count ? Math.Min(token.End, matches[matchIndex].Start) : token.End;
-                    nodes.Add(new InlineNode(token.Kind, position, end));
+                    nodes.Add(NewNode(token.Kind, position, end));
                     position = end;
                 }
             }
@@ -1259,6 +1267,19 @@ internal sealed class InlineParser
         {
             token.Unlink();
         }
+    }
+
+    private bool MayContainAt(List<InlineNode> run)
+    {
+        foreach (var token in run)
+        {
+            if (token.Kind == SyntaxKind.EntityToken || _text.AsSpan(token.Start, token.End - token.Start).Contains('@'))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // The email addresses of a text, as cmark-gfm finds them: letters, digits, ., +, - and _ before an @, and segments of letters,
@@ -1365,19 +1386,40 @@ internal sealed class InlineParser
         {
             if (node.End > node.Start)
             {
-                result.Add(new BuildToken(node.Kind, _subject.ToSourceStart(node.Start), _subject.ToSourceEnd(node.End), 0));
+                result.Add(BuildElement.Token(node.Kind, _subject.ToSourceStart(node.Start), _subject.ToSourceEnd(node.End)));
             }
 
             return;
         }
 
-        var buildNode = new BuildNode(node.Kind);
-        foreach (var child in node.Children())
+        var buildNode = new BuildNode(node.Kind, CountChildren(node));
+        for (var child = node.FirstChild; child is not null; child = child.Next)
         {
             AddBuildElements(child, buildNode.Children);
         }
 
         result.Add(buildNode);
+    }
+
+    private static int CountChildren(InlineNode node)
+    {
+        var count = 0;
+        for (var child = node.FirstChild; child is not null; child = child.Next)
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    private InlineNode NewNode(SyntaxKind kind, int start, int end)
+    {
+        if (_usedNodes == _nodes.Count)
+        {
+            _nodes.Add(new InlineNode());
+        }
+
+        return _nodes[_usedNodes++].Reset(kind, start, end);
     }
 
     // Adds the tokens of a range of the subject, split at the line breaks

@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 using Meziantou.Framework.Language.Markdown.Parsing;
@@ -13,14 +14,19 @@ public static class MarkdownHtmlRenderer
     {
         ArgumentNullException.ThrowIfNull(tree);
 
-        var writer = new Writer(tree.GetRoot(), tree.Options.Extensions.HasFlag(MarkdownExtensions.TagFilter));
+        var writer = new Writer(tree.GetRoot(), tree.GetText().Text, tree.Options.Extensions.HasFlag(MarkdownExtensions.TagFilter));
         writer.WriteBlocks(tree.GetRoot());
         return writer.ToString();
     }
 
+    private static readonly SearchValues<char> EscapedCharacters = SearchValues.Create("&<>\"\0");
+
+    // The characters a URL keeps as they are: a % is kept only before two hexadecimal digits, so it is not one of them
+    private static readonly SearchValues<char> UriSafeCharacters = SearchValues.Create("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;/?:@&=+$,-_.!~*'()#");
+
     private sealed class Writer
     {
-        private readonly StringBuilder _output = new();
+        private readonly StringBuilder _output;
         private readonly Dictionary<string, (string Destination, string? Title)> _references = new(StringComparer.Ordinal);
         private readonly string _source;
 
@@ -34,9 +40,11 @@ public static class MarkdownHtmlRenderer
         // The checkbox of a task list item, which its first paragraph starts with
         private string? _pendingCheckbox;
 
-        public Writer(MarkdownSyntaxNode document, bool tagFilter)
+        public Writer(MarkdownSyntaxNode document, string source, bool tagFilter)
         {
-            _source = document.ToFullString();
+            // The HTML is about as long as the Markdown
+            _output = new StringBuilder(source.Length + 16);
+            _source = source;
             _tagFilter = tagFilter;
 
             // The first definition of a label wins
@@ -216,8 +224,27 @@ public static class MarkdownHtmlRenderer
                 case SyntaxKind.HtmlBlock:
                 {
                     Cr();
-                    var lines = block.ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.HtmlLineToken).Select(token => TrimLineEnding(token.Text)).ToList();
-                    AppendHtml(string.Join('\n', lines));
+                    // The lines joined by line breaks: a line is written once the next one is known
+                    string? previous = null;
+                    foreach (var token in block.ChildTokens())
+                    {
+                        if (token.RawKind == (int)SyntaxKind.HtmlLineToken)
+                        {
+                            if (previous is not null)
+                            {
+                                AppendHtml(TrimLineEnding(previous), followedByLineBreak: true);
+                                _output.Append('\n');
+                            }
+
+                            previous = token.Text;
+                        }
+                    }
+
+                    if (previous is not null)
+                    {
+                        AppendHtml(TrimLineEnding(previous), followedByLineBreak: false);
+                    }
+
                     Cr();
                     break;
                 }
@@ -304,7 +331,7 @@ public static class MarkdownHtmlRenderer
             return text;
         }
 
-        private static string TrimLineEnding(string text) => text.TrimEnd('\r', '\n').Replace('\0', '�');
+        private static ReadOnlySpan<char> TrimLineEnding(string text) => text.AsSpan().TrimEnd("\r\n");
 
         private static int GetHeadingLevel(MarkdownSyntaxNode heading)
         {
@@ -413,7 +440,7 @@ public static class MarkdownHtmlRenderer
                     AppendEscaped(GetText(token));
                     break;
                 case SyntaxKind.EscapedCharacterToken:
-                    AppendEscaped(GetText(token)[1..]);
+                    AppendEscaped(GetText(token).AsSpan(1));
                     break;
                 case SyntaxKind.EntityToken:
                     AppendEscaped(DecodeEntity(token.Text));
@@ -500,7 +527,7 @@ public static class MarkdownHtmlRenderer
                         html.Append(token.RawKind == (int)SyntaxKind.LineEndingToken ? "\n" : GetText(token));
                     }
 
-                    AppendHtml(html.ToString());
+                    AppendHtml(html.ToString(), followedByLineBreak: false);
                     break;
                 }
 
@@ -554,6 +581,7 @@ public static class MarkdownHtmlRenderer
 
         private Writer(Writer parent)
         {
+            _output = new StringBuilder();
             _source = parent._source;
             _references = parent._references;
             _tightLists = parent._tightLists;
@@ -715,6 +743,11 @@ public static class MarkdownHtmlRenderer
         // Removes the backslash escapes and decodes the entities
         private static string Unescape(string text)
         {
+            if (!text.AsSpan().ContainsAny('\\', '&'))
+            {
+                return text;
+            }
+
             var builder = new StringBuilder(text.Length);
             for (var i = 0; i < text.Length; i++)
             {
@@ -743,6 +776,11 @@ public static class MarkdownHtmlRenderer
         // Percent-encodes the characters that cannot be in a URL, as the reference implementation does
         private static string NormalizeUri(string uri)
         {
+            if (!uri.AsSpan().ContainsAnyExcept(UriSafeCharacters))
+            {
+                return uri;
+            }
+
             var builder = new StringBuilder(uri.Length);
             Span<byte> bytes = stackalloc byte[4];
             for (var i = 0; i < uri.Length; i++)
@@ -779,21 +817,33 @@ public static class MarkdownHtmlRenderer
         }
 
         // Raw HTML, where the tag filter of GFM escapes the tags that change how the rest of the page is read
-        private void AppendHtml(string html)
+        private void AppendHtml(ReadOnlySpan<char> html, bool followedByLineBreak)
         {
-            if (!_tagFilter)
+            while (!html.IsEmpty)
             {
-                _output.Append(html);
-                return;
-            }
+                var index = html.IndexOfAny(_tagFilter ? "<\0" : "\0");
+                if (index < 0)
+                {
+                    _output.Append(html);
+                    return;
+                }
 
-            for (var i = 0; i < html.Length; i++)
-            {
-                _output.Append(html[i] == '<' && IsDisallowedTag(html.AsSpan(i)) ? "&lt;" : html[i]);
+                _output.Append(html[..index]);
+                if (html[index] == '\0')
+                {
+                    _output.Append('\uFFFD');
+                }
+                else
+                {
+                    _output.Append(IsDisallowedTag(html[index..], followedByLineBreak) ? "&lt;" : "<");
+                }
+
+                html = html[(index + 1)..];
             }
         }
 
-        private static bool IsDisallowedTag(ReadOnlySpan<char> tag)
+        // A line break after the text of a line of an HTML block ends the tag name as whitespace does
+        private static bool IsDisallowedTag(ReadOnlySpan<char> tag, bool followedByLineBreak)
         {
             var name = tag[1..];
             if (name.StartsWith('/'))
@@ -803,6 +853,11 @@ public static class MarkdownHtmlRenderer
 
             foreach (var disallowed in (ReadOnlySpan<string>)["title", "textarea", "style", "xmp", "iframe", "noembed", "noframes", "script", "plaintext"])
             {
+                if (name.Length == disallowed.Length && followedByLineBreak && name.Equals(disallowed, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
                 if (name.Length > disallowed.Length && name.StartsWith(disallowed, StringComparison.OrdinalIgnoreCase))
                 {
                     var next = name[disallowed.Length..];
@@ -816,31 +871,27 @@ public static class MarkdownHtmlRenderer
             return false;
         }
 
-        private void AppendEscaped(string text)
+        private void AppendEscaped(ReadOnlySpan<char> text)
         {
-            foreach (var c in text)
+            while (!text.IsEmpty)
             {
-                switch (c)
+                var index = text.IndexOfAny(EscapedCharacters);
+                if (index < 0)
                 {
-                    case '&':
-                        _output.Append("&amp;");
-                        break;
-                    case '<':
-                        _output.Append("&lt;");
-                        break;
-                    case '>':
-                        _output.Append("&gt;");
-                        break;
-                    case '"':
-                        _output.Append("&quot;");
-                        break;
-                    case '\0':
-                        _output.Append('�');
-                        break;
-                    default:
-                        _output.Append(c);
-                        break;
+                    _output.Append(text);
+                    return;
                 }
+
+                _output.Append(text[..index]);
+                _output.Append(text[index] switch
+                {
+                    '&' => "&amp;",
+                    '<' => "&lt;",
+                    '>' => "&gt;",
+                    '"' => "&quot;",
+                    _ => "\uFFFD",
+                });
+                text = text[(index + 1)..];
             }
         }
     }

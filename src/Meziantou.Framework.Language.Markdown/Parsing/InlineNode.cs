@@ -1,13 +1,14 @@
 namespace Meziantou.Framework.Language.Markdown.Parsing;
 
 /// <summary>An inline being parsed: a token, a range of the subject, or a construct with children.</summary>
-internal sealed class InlineNode(SyntaxKind kind, int start, int end)
+/// <remarks>The parser reuses the nodes from one leaf block to the next: they are only needed until its tokens are found.</remarks>
+internal sealed class InlineNode
 {
-    public SyntaxKind Kind { get; } = kind;
+    public SyntaxKind Kind { get; private set; }
 
-    public int Start { get; set; } = start;
+    public int Start { get; set; }
 
-    public int End { get; set; } = end;
+    public int End { get; set; }
 
     public bool IsToken => Kind < SyntaxKind.Document;
 
@@ -20,6 +21,19 @@ internal sealed class InlineNode(SyntaxKind kind, int start, int end)
     public InlineNode? FirstChild { get; private set; }
 
     public InlineNode? LastChild { get; private set; }
+
+    public InlineNode Reset(SyntaxKind kind, int start, int end)
+    {
+        Kind = kind;
+        Start = start;
+        End = end;
+        Parent = null;
+        Previous = null;
+        Next = null;
+        FirstChild = null;
+        LastChild = null;
+        return this;
+    }
 
     public void Append(InlineNode child)
     {
@@ -101,13 +115,5 @@ internal sealed class InlineNode(SyntaxKind kind, int start, int end)
         Parent = null;
         Previous = null;
         Next = null;
-    }
-
-    public IEnumerable<InlineNode> Children()
-    {
-        for (var child = FirstChild; child is not null; child = child.Next)
-        {
-            yield return child;
-        }
     }
 }

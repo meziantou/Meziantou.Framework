@@ -1,4 +1,5 @@
-using System.Text;
+using System.Buffers;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Language.Markdown.Parsing;
 
@@ -7,54 +8,86 @@ namespace Meziantou.Framework.Language.Markdown.Parsing;
 /// indentation that are between them in the source. Each character knows where it is in the source, so the tokens found in
 /// the subject are ranges of the source.
 /// </summary>
+/// <remarks>
+/// The positions are kept by segment, a run of characters that are consecutive in the source: a line, or the line ending
+/// between two lines. Most subjects have a few of them.
+/// </remarks>
 internal sealed class Subject
 {
-    private Subject(string text, int[] sourceStart, int[] sourceEnd)
+    private readonly Segment[] _segments;
+
+    // Where a subject without characters is in the source
+    private readonly int _emptyPosition;
+
+    // The segment of the last position asked for: the tokens are asked for in the order of the text
+    private int _lastSegment;
+
+    private Subject(string text, Segment[] segments, int emptyPosition)
     {
         Text = text;
-        SourceStart = sourceStart;
-        SourceEnd = sourceEnd;
+        _segments = segments;
+        _emptyPosition = emptyPosition;
     }
 
     public string Text { get; }
 
-    // Where each character starts and ends in the source: a line break is the whole line ending (\r\n)
-    public int[] SourceStart { get; }
-
-    public int[] SourceEnd { get; }
-
     public int Length => Text.Length;
 
-    public static Subject FromLines(string source, IReadOnlyList<Line> lines)
+    public static Subject FromLines(string source, ReadOnlySpan<Line> lines)
     {
-        var length = lines.Count - 1;
+        var length = lines.Length - 1;
+        var segmentCount = 0;
         foreach (var line in lines)
         {
             length += line.End - line.Start;
+            segmentCount += line.End > line.Start ? 2 : 1;
         }
 
-        var builder = new StringBuilder(length);
-        var starts = new List<int>(length);
-        var ends = new List<int>(length);
-        for (var i = 0; i < lines.Count; i++)
+        var segments = new Segment[Math.Max(segmentCount - 1, 0)];
+        var segmentIndex = 0;
+        var subjectIndex = 0;
+        for (var i = 0; i < lines.Length; i++)
         {
             var line = lines[i];
-            for (var j = line.Start; j < line.End; j++)
+            if (line.End > line.Start)
             {
-                builder.Append(source[j]);
-                starts.Add(j);
-                ends.Add(j + 1);
+                segments[segmentIndex++] = new Segment(subjectIndex, line.Start, line.End - line.Start, StartAdjust: 0, EndAdjust: 0);
+                subjectIndex += line.End - line.Start;
             }
 
-            if (i < lines.Count - 1)
+            // The line break is the whole line ending of the source: \r\n is one character of the subject
+            if (i < lines.Length - 1)
             {
-                builder.Append('\n');
-                starts.Add(line.End);
-                ends.Add(line.EolEnd);
+                segments[segmentIndex++] = new Segment(subjectIndex, line.End, 1, StartAdjust: 0, EndAdjust: line.EolEnd - line.End - 1);
+                subjectIndex++;
             }
         }
 
-        return new Subject(builder.ToString(), [.. starts], [.. ends]);
+        string text;
+        if (lines.Length == 1)
+        {
+            text = source.Substring(lines[0].Start, lines[0].End - lines[0].Start);
+        }
+        else
+        {
+            var buffer = ArrayPool<char>.Shared.Rent(Math.Max(length, 0));
+            var position = 0;
+            for (var i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                source.AsSpan(line.Start, line.End - line.Start).CopyTo(buffer.AsSpan(position));
+                position += line.End - line.Start;
+                if (i < lines.Length - 1)
+                {
+                    buffer[position++] = '\n';
+                }
+            }
+
+            text = new string(buffer, 0, position);
+            ArrayPool<char>.Shared.Return(buffer);
+        }
+
+        return new Subject(text, segmentIndex == segments.Length ? segments : segments[..segmentIndex], lines.IsEmpty ? 0 : lines[0].Start);
     }
 
     /// <summary>
@@ -63,26 +96,93 @@ internal sealed class Subject
     /// </summary>
     public static Subject FromTableCell(string source, int start, int end)
     {
-        var builder = new StringBuilder(end - start);
-        var starts = new List<int>(end - start);
-        var ends = new List<int>(end - start);
-        for (var i = start; i < end; i++)
+        var content = source.AsSpan(start, end - start);
+        if (!content.Contains("\\|", StringComparison.Ordinal))
         {
-            var sourceStart = i;
-            if (source[i] == '\\' && i + 1 < end && source[i + 1] == '|')
-            {
-                i++;
-            }
-
-            builder.Append(source[i]);
-            starts.Add(sourceStart);
-            ends.Add(i + 1);
+            return new Subject(content.ToString(), [new Segment(0, start, end - start, StartAdjust: 0, EndAdjust: 0)], start);
         }
 
-        return new Subject(builder.ToString(), [.. starts], [.. ends]);
+        var text = new char[end - start];
+        var segments = new List<Segment>();
+        var length = 0;
+        var segmentStart = start;
+        var startAdjust = 0;
+        for (var i = start; i < end; i++)
+        {
+            if (source[i] == '\\' && i + 1 < end && source[i + 1] == '|')
+            {
+                // The pipe starts a segment, which starts at the backslash
+                if (i > segmentStart)
+                {
+                    segments.Add(new Segment(length - (i - segmentStart), segmentStart, i - segmentStart, startAdjust, EndAdjust: 0));
+                }
+
+                i++;
+                segmentStart = i;
+                startAdjust = 1;
+            }
+
+            text[length++] = source[i];
+        }
+
+        segments.Add(new Segment(length - (end - segmentStart), segmentStart, end - segmentStart, startAdjust, EndAdjust: 0));
+        return new Subject(new string(text, 0, length), [.. segments], start);
     }
 
-    public int ToSourceStart(int index) => index < SourceStart.Length ? SourceStart[index] : SourceEnd[^1];
+    /// <summary>Where the character at <paramref name="index"/> starts in the source, or where the subject ends.</summary>
+    public int ToSourceStart(int index)
+    {
+        if (index >= Length)
+        {
+            return Length == 0 ? _emptyPosition : ToSourceEnd(Length);
+        }
 
-    public int ToSourceEnd(int endIndex) => endIndex == 0 ? SourceStart[0] : SourceEnd[endIndex - 1];
+        var segment = FindSegment(index);
+        return segment.SourceStart + (index - segment.SubjectStart) - (index == segment.SubjectStart ? segment.StartAdjust : 0);
+    }
+
+    /// <summary>Where the character before <paramref name="endIndex"/> ends in the source.</summary>
+    public int ToSourceEnd(int endIndex)
+    {
+        if (endIndex == 0)
+        {
+            return ToSourceStart(0);
+        }
+
+        var index = endIndex - 1;
+        var segment = FindSegment(index);
+        return segment.SourceStart + (index - segment.SubjectStart) + 1 + (index == segment.SubjectStart + segment.Length - 1 ? segment.EndAdjust : 0);
+    }
+
+    private Segment FindSegment(int index)
+    {
+        var last = _segments[_lastSegment];
+        if (index >= last.SubjectStart && index < last.SubjectStart + last.Length)
+        {
+            return last;
+        }
+
+        var low = 0;
+        var high = _segments.Length - 1;
+        while (low < high)
+        {
+            var middle = low + ((high - low + 1) / 2);
+            if (_segments[middle].SubjectStart <= index)
+            {
+                low = middle;
+            }
+            else
+            {
+                high = middle - 1;
+            }
+        }
+
+        _lastSegment = low;
+        return _segments[low];
+    }
+
+    /// <param name="StartAdjust">How many characters of the source before the first character belong to it: the backslash of an escaped pipe.</param>
+    /// <param name="EndAdjust">How many characters of the source after the last character belong to it: the \n of a \r\n.</param>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct Segment(int SubjectStart, int SourceStart, int Length, int StartAdjust, int EndAdjust);
 }

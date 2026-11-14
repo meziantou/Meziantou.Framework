@@ -5,19 +5,17 @@ namespace Meziantou.Framework.Language;
 /// <summary>Represents immutable source text with line information and text-change application helpers.</summary>
 public sealed class SourceText
 {
-    private readonly TextLine[] _lines;
-    private readonly ReadOnlyCollection<TextLine> _linesView;
+    // The lines are built the first time they are asked for: parsing a text does not need them, and they copy the text
+    private LineTable? _lines;
 
     private SourceText(string text)
     {
         Text = text;
-        _lines = BuildLines(text);
-        _linesView = new ReadOnlyCollection<TextLine>(_lines);
     }
 
     public string Text { get; }
     public int Length => Text.Length;
-    public IReadOnlyList<TextLine> Lines => _linesView;
+    public IReadOnlyList<TextLine> Lines => GetLines().View;
 
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public static SourceText From(string text)
@@ -62,11 +60,12 @@ public sealed class SourceText
         // instead. Testing against End would put the second half of a CRLF on the following line. The answer is
         // therefore the last line that starts at or before the position.
         var low = 0;
-        var high = _lines.Length - 1;
+        var lines = GetLines().Lines;
+        var high = lines.Length - 1;
         while (low < high)
         {
             var middle = low + ((high - low + 1) / 2);
-            if (_lines[middle].Start <= position)
+            if (lines[middle].Start <= position)
             {
                 low = middle;
             }
@@ -76,7 +75,7 @@ public sealed class SourceText
             }
         }
 
-        return _lines[low];
+        return lines[low];
     }
 
     /// <summary>Returns the characters covered by <paramref name="span"/>.</summary>
@@ -141,6 +140,9 @@ public sealed class SourceText
 
     public override string ToString() => Text;
 
+    // Two threads may both build the lines: they build the same ones, and either result can be kept
+    private LineTable GetLines() => _lines ??= new LineTable(BuildLines(Text));
+
     private static TextLine[] BuildLines(string text)
     {
         if (text.Length == 0)
@@ -177,5 +179,12 @@ public sealed class SourceText
             return index + 1 < text.Length && text[index + 1] == '\n' ? 2 : 1;
 
         return current == '\n' ? 1 : 0;
+    }
+
+    private sealed class LineTable(TextLine[] lines)
+    {
+        public TextLine[] Lines { get; } = lines;
+
+        public ReadOnlyCollection<TextLine> View { get; } = new(lines);
     }
 }

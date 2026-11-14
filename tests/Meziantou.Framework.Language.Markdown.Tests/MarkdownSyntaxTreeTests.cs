@@ -163,6 +163,7 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("2) ````\n\t", "<ol start=\"2\">\n<li>\n<pre><code>\n</code></pre>\n</li>\n</ol>\n")]
     [InlineData("[a](\t<b)c>)\n", "<p><a href=\"b)c\">a</a></p>\n")]
     [InlineData("[a](<')~>)\n", "<p><a href=\"')~\">a</a></p>\n")]
+    [InlineData("<div>a\0\r\nb</div>\r\n", "<div>a\uFFFD\nb</div>\n")]
     public void RendersHtml(string text, string expected)
     {
         Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text)));
@@ -193,6 +194,8 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("*a@b.com* a\\_b@c.com\n", "<p><em><a href=\"mailto:a@b.com\">a@b.com</a></em> <a href=\"mailto:a_b@c.com\">a_b@c.com</a></p>\n")]
     [InlineData("a@b.c1 a@b@c.d\n", "<p>a@b.c1 a@<a href=\"mailto:b@c.d\">b@c.d</a></p>\n")]
     [InlineData("<title>a</title>\n", "&lt;title>a&lt;/title>\n")]
+    [InlineData("<div>\n<script\nx\n", "<div>\n&lt;script\nx\n")]
+    [InlineData("<div>\n<script\n", "<div>\n<script\n")]
     [InlineData("a <xmp/> <xmpx> <scripT\n/>\n", "<p>a &lt;xmp/> <xmpx> &lt;scripT\n/></p>\n")]
     public void RendersGitHubFlavoredHtml(string text, string expected)
     {

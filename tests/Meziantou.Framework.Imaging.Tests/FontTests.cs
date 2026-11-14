@@ -3897,6 +3897,10 @@ public sealed class FontTests
         Assert.Equal((2, 500), (face.GlyphCount, face.GetAdvanceWidth(1)));
         var exception = Assert.Throws<FontResourceLimitException>(() => FontLoader.LoadType1(data, metrics: null, new PooledFontEnvironment(new FontResourceLimits { MaxGlyphComplexity = 1000 }, 1024 * 1024)));
         Assert.Equal(FontResourceLimitKind.GlyphComplexity, exception.Kind);
+
+        // The largest complexity removes the limit: the budget of the font does not wrap around
+        face = FontLoader.LoadType1(data, metrics: null, new PooledFontEnvironment(new FontResourceLimits { MaxGlyphComplexity = long.MaxValue }, 1024 * 1024));
+        Assert.Equal(2, face.GlyphCount);
         Assert.Equal(FontResourceLimitKind.EncodedBytes, Assert.Throws<FontResourceLimitException>(() => FontLoader.LoadType1(data, metrics: null, new PooledFontEnvironment(new FontResourceLimits { MaxEncodedBytes = 100 }, 1024 * 1024))).Kind);
         Assert.Equal(FontResourceLimitKind.FontBytes, Assert.Throws<FontResourceLimitException>(() => FontLoader.Load(data, new PooledFontEnvironment(new FontResourceLimits { MaxFontBytes = data.Length }, 1024 * 1024))).Kind);
 

@@ -88,7 +88,10 @@ internal static class Type1FontConverter
         var bounds = new (double XMin, double YMin, double XMax, double YMax)?[glyphs.Count];
         var converter = new Type1CharstringConverter(font, glyphsByName, matrix);
         var writer = new Type2CharstringWriter(output);
-        var fontBudget = new GlyphBudget(new FontResourceLimits { MaxGlyphComplexity = limits.MaxGlyphComplexity + (64L * data.Length) });
+        // Saturated: a limit of long.MaxValue removes the limit, it must not wrap to a negative budget
+        var perFile = 64L * data.Length;
+        var fontComplexity = limits.MaxGlyphComplexity > long.MaxValue - perFile ? long.MaxValue : limits.MaxGlyphComplexity + perFile;
+        var fontBudget = new GlyphBudget(new FontResourceLimits { MaxGlyphComplexity = fontComplexity });
         for (var glyph = 0; glyph < glyphs.Count; glyph++)
         {
             offsets[glyph] = output.Length;

@@ -68,6 +68,10 @@ internal static class FuzzSeeds
         {
             seeds.AddRange(FuzzGeneratedSeeds.GetSmoothedRecompressedJpegSeeds());
         }
+        else if (group is "gif")
+        {
+            seeds.Add(CreateGifWithXmpAndIcc(seeds.First(seed => seed.Id.StartsWith("gif/", StringComparison.Ordinal)).Data));
+        }
         else if (group is "bmp")
         {
             seeds.Add(new FuzzSeed("bmp/generated-2-bit", CreateTwoBitBmp()));
@@ -85,6 +89,33 @@ internal static class FuzzSeeds
             throw new InvalidOperationException($"The fuzz seed group '{group}' has no corpus input.");
 
         return seeds;
+    }
+
+    /// <summary>
+    /// A GIF of the corpus with an ICC application extension (<c>ICCRGBG1012</c>, an RGB profile in 255-byte sub-blocks) and
+    /// an XMP one (<c>XMP DataXMP</c>, the packet stored as it is and its 257-byte magic trailer) before its first block.
+    /// </summary>
+    private static FuzzSeed CreateGifWithXmpAndIcc(byte[] gif)
+    {
+        var globalTable = (gif[10] & 0x80) != 0 ? 3 * (2 << (gif[10] & 0x07)) : 0;
+        var position = 13 + globalTable;
+        var profile = Tests.IccTestProfiles.Rgb(Tests.IccTestProfiles.SrgbColorants, Tests.IccTestProfiles.SrgbCurve()).Data.ToArray();
+        var extensions = new List<byte>([0x21, 0xFF, 11, .. "ICCRGBG1012"u8]);
+        foreach (var chunk in profile.Chunk(255))
+        {
+            extensions.Add((byte)chunk.Length);
+            extensions.AddRange(chunk);
+        }
+
+        extensions.Add(0);
+        extensions.AddRange([0x21, 0xFF, 11, .. "XMP DataXMP"u8, .. "<?xpacket begin='' id='W5M0MpCehiHzreSzNTczkc9d'?><x:xmpmeta xmlns:x='adobe:ns:meta/'/><?xpacket end='w'?>"u8, 0x01]);
+        for (var value = 255; value >= 0; value--)
+        {
+            extensions.Add((byte)value);
+        }
+
+        extensions.Add(0);
+        return new FuzzSeed("gif/generated-xmp-and-icc", [.. gif.AsSpan(0, position), .. extensions, .. gif.AsSpan(position)]);
     }
 
     /// <summary>A 5x2 BMP of 2 bits per pixel (Windows CE) with a palette of four entries.</summary>

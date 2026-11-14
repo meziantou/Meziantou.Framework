@@ -17,7 +17,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>Decode: like a full scan, but image data goes to a <see cref="GifDecodeObserver"/>, which charges frames itself and may stop early.</description></item>
 /// </list>
 /// A GIF is animated when it has several images or a loop extension. Plain-text extensions (which require text rendering)
-/// are <see cref="UnsupportedImageFeatureException"/>; other unknown extensions and application extensions are skipped.
+/// are <see cref="UnsupportedImageFeatureException"/>; the XMP (<c>XMP DataXMP</c>) and ICC (<c>ICCRGBG1012</c>) application
+/// extensions are adopted as metadata (the first of each kind), and other unknown extensions and application extensions are skipped.
 /// An empty logical screen, an unknown block, an invalid Graphic Control Extension or LZW code size, a missing image, and
 /// truncation (including a missing trailer) are <see cref="InvalidImageContentException"/>. Comment extensions become
 /// <c>Comment</c> text entries (Latin-1).
@@ -31,6 +32,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class GifStructureParser : ImageParser<ImageInfo>
 {
     private const int HeaderLength = 13;
+    private const int XmpTrailerLength = 257;
+
+    private static ReadOnlySpan<byte> XmpApplication => "XMP DataXMP"u8;
+
+    private static ReadOnlySpan<byte> IccApplication => "ICCRGBG1012"u8;
 
     private readonly ImageCodecContext _context;
     private readonly StructureWalk _walk;
@@ -41,6 +47,7 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
     private BlockKind _block;
     private int _subBlockIndex;
     private List<byte[]>? _comment;
+    private List<byte[]>? _profile;
     private bool _loopExtensionPending;
     private GifGraphicControl? _pendingControl;
     private bool _headerReported;
@@ -81,6 +88,8 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
         Comment,
         Application,
         LoopApplication,
+        Xmp,
+        IccProfile,
         Unknown,
         ImageData,
     }
@@ -401,7 +410,28 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
                     _block = BlockKind.LoopApplication;
                     _loopExtensionPending = true;
                 }
+                else if (data.SequenceEqual(XmpApplication))
+                {
+                    _block = BlockKind.Xmp;
+                    _profile = [];
+                }
+                else if (data.SequenceEqual(IccApplication))
+                {
+                    _block = BlockKind.IccProfile;
+                    _profile = [];
+                }
 
+                break;
+
+            case BlockKind.Xmp:
+                // The packet is stored as it is: the length bytes of the sub-blocks are bytes of the packet too
+                _metadata.Charge(data.Length + 1);
+                _profile!.Add([(byte)data.Length, .. data]);
+                break;
+
+            case BlockKind.IccProfile:
+                _metadata.Charge(data.Length);
+                _profile!.Add(data.ToArray());
                 break;
 
             case BlockKind.LoopApplication when _loopExtensionPending && data.Length >= 3 && data[0] == 1:
@@ -426,15 +456,7 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
             case BlockKind.Comment:
                 if (_comment is not null)
                 {
-                    var length = _comment.Sum(part => part.Length);
-                    var bytes = new byte[length];
-                    var offset = 0;
-                    foreach (var part in _comment)
-                    {
-                        part.CopyTo(bytes, offset);
-                        offset += part.Length;
-                    }
-
+                    var bytes = Concatenate(_comment);
                     _comment = null;
                     _metadata.AddText(ImageTextEntry.CommentKeyword, Encoding.Latin1.GetString(bytes));
                 }
@@ -445,9 +467,58 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
 
                 return true;
 
+            case BlockKind.Xmp:
+                AdoptXmp(Concatenate(_profile!));
+                _profile = null;
+                return true;
+
+            case BlockKind.IccProfile:
+                // A GIF stores RGB colors: a profile of another color space cannot label them and is not adopted
+                var profile = Concatenate(_profile!);
+                _profile = null;
+                if (profile.Length > 0)
+                {
+                    _metadata.TryAdoptIccProfile(profile, grayscaleSamples: false);
+                }
+
+                return true;
+
             default:
                 return true;
         }
+    }
+
+    /// <summary>
+    /// Adopts the packet of an XMP application extension (XMP Specification Part 3, 1.1.2): the bytes of the packet, then a
+    /// trailer of 257 bytes (<c>0x01</c>, then <c>0xFF</c> down to <c>0x00</c>) that brings any reader that walks the bytes
+    /// as data sub-blocks to the block terminator.
+    /// </summary>
+    private void AdoptXmp(byte[] data)
+    {
+        var start = data.Length - XmpTrailerLength;
+        if (start < 0 || data[start] != 0x01)
+            throw Invalid("The GIF XMP application extension does not end with the magic trailer of the XMP specification.");
+
+        for (var i = 1; i < XmpTrailerLength; i++)
+        {
+            if (data[start + i] != (byte)(256 - i))
+                throw Invalid("The GIF XMP application extension does not end with the magic trailer of the XMP specification.");
+        }
+
+        _metadata.TryAdoptXmp(data.AsSpan(0, start), alreadyCharged: true);
+    }
+
+    private static byte[] Concatenate(List<byte[]> parts)
+    {
+        var bytes = new byte[parts.Sum(part => part.Length)];
+        var offset = 0;
+        foreach (var part in parts)
+        {
+            part.CopyTo(bytes, offset);
+            offset += part.Length;
+        }
+
+        return bytes;
     }
 
     private void OnTrailer()

@@ -119,6 +119,38 @@ internal static partial class Scanners
     public static bool IsUnicodePunctuation(Rune rune) => Rune.GetUnicodeCategory(rune) is UnicodeCategory.ConnectorPunctuation or UnicodeCategory.DashPunctuation or UnicodeCategory.OpenPunctuation or UnicodeCategory.ClosePunctuation or UnicodeCategory.InitialQuotePunctuation or UnicodeCategory.FinalQuotePunctuation or UnicodeCategory.OtherPunctuation or UnicodeCategory.MathSymbol or UnicodeCategory.CurrencySymbol or UnicodeCategory.ModifierSymbol or UnicodeCategory.OtherSymbol;
 
     /// <summary>Normalizes a link label for matching: the whitespace is collapsed and the case is folded.</summary>
+    /// <summary>The label of an abbreviation, as Markdig reads it: without its escapes and the whitespace around it, and with one space for each run of whitespace.</summary>
+    public static string NormalizeAbbreviationLabel(ReadOnlySpan<char> label)
+    {
+        var builder = new StringBuilder(label.Length);
+        var pendingSpace = false;
+        for (var i = 0; i < label.Length; i++)
+        {
+            var c = label[i];
+            if (c is ' ' or '\t' or '\n' or '\r' or '\v' or '\f')
+            {
+                pendingSpace = builder.Length > 0;
+                continue;
+            }
+
+            if (pendingSpace)
+            {
+                builder.Append(' ');
+                pendingSpace = false;
+            }
+
+            if (c == '\\' && i + 1 < label.Length && IsEscapable(label[i + 1]))
+            {
+                i++;
+                c = label[i];
+            }
+
+            builder.Append(c);
+        }
+
+        return builder.ToString();
+    }
+
     public static string NormalizeLabel(string label)
     {
         var builder = new StringBuilder(label.Length);

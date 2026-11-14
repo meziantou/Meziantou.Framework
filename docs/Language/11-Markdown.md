@@ -239,6 +239,13 @@ extensions of `Meziantou.Framework.Markdown`, which this parser is meant to repl
   does not write. Its `Yaml` property gives the YAML.
 - [Mathematics](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Mathematics): inline math between `$` or
   `$$`, and math blocks between `$$` lines, rendered for MathJax or KaTeX as `\(...\)` and `\[...\]`.
+- [Abbreviations](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Abbreviations): `*[HTML]: Hypertext
+  Markup Language` defines an abbreviation, a
+  [MarkdownAbbreviationDefinitionSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownAbbreviationDefinitionSyntax)
+  that the renderer does not write, and each word of the text that is the abbreviation is a
+  [MarkdownAbbreviationSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownAbbreviationSyntax), rendered as
+  `<abbr title="Hypertext Markup Language">HTML</abbr>`. The titles that the abbreviations add are limited to the length
+  of the text, and to at least 100,000 characters, so that a short text cannot render as a huge one.
 - [Alerts](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Alerts): the alerts of GitHub, a block quote
   whose first line is `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]` or `[!CAUTION]`, which is a
   [MarkdownAlertSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownAlertSyntax). Only the block quotes of the

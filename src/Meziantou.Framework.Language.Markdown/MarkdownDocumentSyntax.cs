@@ -13,6 +13,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
 
     private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
     private Dictionary<string, MarkdownLinkReferenceDefinitionSyntax>? _definitions;
+    private Dictionary<string, MarkdownAbbreviationDefinitionSyntax>? _abbreviations;
 
     /// <summary>Gets the blocks of the document, in the order of the text.</summary>
     public IReadOnlyList<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
@@ -21,7 +22,27 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     public SyntaxToken EndOfFileToken => GetToken(SyntaxKind.EndOfFileToken);
 
     /// <summary>Gets the link reference definitions of the document, in the order of the text.</summary>
-    public IEnumerable<MarkdownLinkReferenceDefinitionSyntax> LinkReferenceDefinitions => DescendantNodes(node => node is MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownListSyntax or MarkdownListItemSyntax).OfType<MarkdownLinkReferenceDefinitionSyntax>();
+    public IEnumerable<MarkdownLinkReferenceDefinitionSyntax> LinkReferenceDefinitions => DescendantNodes(node => node is MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownAlertSyntax or MarkdownListSyntax or MarkdownListItemSyntax).OfType<MarkdownLinkReferenceDefinitionSyntax>();
+
+    /// <summary>Finds the definition of an abbreviation: the last one with the same label, compared as the text writes it.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="label"/> is <see langword="null"/>.</exception>
+    public MarkdownAbbreviationDefinitionSyntax? GetAbbreviationDefinition(string label)
+    {
+        ArgumentNullException.ThrowIfNull(label);
+
+        if (_abbreviations is null)
+        {
+            var abbreviations = new Dictionary<string, MarkdownAbbreviationDefinitionSyntax>(StringComparer.Ordinal);
+            foreach (var definition in DescendantNodes(node => node is MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownAlertSyntax or MarkdownListSyntax or MarkdownListItemSyntax).OfType<MarkdownAbbreviationDefinitionSyntax>())
+            {
+                abbreviations[definition.Label] = definition;
+            }
+
+            _abbreviations = abbreviations;
+        }
+
+        return _abbreviations.GetValueOrDefault(label);
+    }
 
     /// <summary>Finds the definition of a link label: the first one with the same label, compared as CommonMark does.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="label"/> is <see langword="null"/>.</exception>

@@ -286,6 +286,36 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
     }
 
+    // The occurrences are found in the literals of Markdig: an escaped character starts one, and a run of delimiters ends one
+    [Theory]
+    [InlineData("*[A  B]: x\n\nA B and A  B\n", "<p><abbr title=\"x\">A B</abbr> and A  B</p>\n")]
+    [InlineData("*[a\\]b]: x\n\na]b a\\]b\n", "<p><abbr title=\"x\">a]b</abbr> a]b</p>\n")]
+    [InlineData("*[*A]: x\n\n\\*A and A\n", "<p><abbr title=\"x\">*A</abbr> and A</p>\n")]
+    [InlineData("*[A]: x\n\n\\*A &amp;A *A* _A b*A !A wA\n", "<p>*A &amp;<abbr title=\"x\">A</abbr> <em><abbr title=\"x\">A</abbr></em> _<abbr title=\"x\">A</abbr> b*<abbr title=\"x\">A</abbr> !A wA</p>\n")]
+    [InlineData("*[A]: x\n\n[A](u) ![A](u) `A` A, A.b A.\n", "<p><a href=\"u\"><abbr title=\"x\">A</abbr></a> <img src=\"u\" alt=\"A\" /> <code>A</code> <abbr title=\"x\">A</abbr>, A.b <abbr title=\"x\">A</abbr>.</p>\n")]
+    [InlineData("*[A]: x\n*[A]: y\n\nA\n", "<p><abbr title=\"y\">A</abbr></p>\n")]
+    [InlineData("*[A]: \u00A0x\u00A0 \n\nA\n", "<p><abbr title=\"\u00A0x\u00A0\">A</abbr></p>\n")]
+    public void RendersAbbreviations(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Abbreviations });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
+    public void AbbreviationsCannotExpandTheTextBeyondItsLimit()
+    {
+        // The titles that the abbreviations write are limited to the length of the text, and to at least 100,000 characters
+        var text = "*[A]: " + new string('x', 1000) + "\n\n" + string.Concat(Enumerable.Repeat("A ", 200)) + "\n";
+
+        var abbreviations = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Abbreviations }).GetRoot().DescendantNodes().OfType<MarkdownAbbreviationSyntax>().ToList();
+
+        Assert.HasCount(100, abbreviations);
+        Assert.Equal("A", abbreviations[0].Label);
+        Assert.HasCount(1000, abbreviations[0].Definition!.Title);
+    }
+
     [Fact]
     public void AlertHasItsKind()
     {

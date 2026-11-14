@@ -10,6 +10,9 @@ internal sealed class InlineNode
 
     public int End { get; set; }
 
+    // A text token that is a run of emphasis delimiters, which Markdig keeps apart from the text around it
+    public bool IsDelimiterRun { get; set; }
+
     public bool IsToken => Kind < SyntaxKind.Document;
 
     public InlineNode? Parent { get; private set; }
@@ -27,6 +30,7 @@ internal sealed class InlineNode
         Kind = kind;
         Start = start;
         End = end;
+        IsDelimiterRun = false;
         Parent = null;
         Previous = null;
         Next = null;

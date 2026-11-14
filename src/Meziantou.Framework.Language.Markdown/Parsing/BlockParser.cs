@@ -59,7 +59,7 @@ internal sealed class BlockParser
         _tip = _document;
         _oldTip = _document;
         _lastMatchedContainer = _document;
-        _inlineParser = new InlineParser(_references, options);
+        _inlineParser = new InlineParser(_references, options) { MaximumAbbreviationExpansion = Math.Max(100_000, text.Length) };
     }
 
     public static (BuildNode Document, List<TriviaSpan> TriviaSpans) Parse(string text, MarkdownParseOptions options)
@@ -469,6 +469,12 @@ internal sealed class BlockParser
             return 1;
         }
 
+        // Abbreviation definition: *[label]: text
+        if (!_indented && c == '*' && HasExtension(MarkdownExtensions.Abbreviations) && TryStartAbbreviationDefinition())
+        {
+            return 2;
+        }
+
         // Indented code block
         if (_indented && _tip.Kind != SyntaxKind.Paragraph && !_blank)
         {
@@ -509,6 +515,63 @@ internal sealed class BlockParser
         }
 
         return 0;
+    }
+
+    // The label is between brackets, at most 999 characters with escaped brackets, and the text is the rest of the line. A
+    // later definition of a label replaces the earlier one, as in Markdig.
+    private bool TryStartAbbreviationDefinition()
+    {
+        var position = _nextNonspace + 1;
+        if (Peek(position) != '[')
+        {
+            return false;
+        }
+
+        var labelStart = position + 1;
+        var labelEnd = labelStart;
+        while (labelEnd < _lineEnd && _text[labelEnd] != ']' && labelEnd - labelStart < 1000)
+        {
+            if (_text[labelEnd] == '[')
+            {
+                return false;
+            }
+
+            labelEnd += _text[labelEnd] == '\\' && labelEnd + 1 < _lineEnd ? 2 : 1;
+        }
+
+        if (labelEnd >= _lineEnd || _text[labelEnd] != ']' || Peek(labelEnd + 1) != ':' || _text.AsSpan(labelStart, labelEnd - labelStart).IsWhiteSpace())
+        {
+            return false;
+        }
+
+        var textStart = labelEnd + 2;
+        var textEnd = _lineEnd;
+        // The text is trimmed of ASCII whitespace, as Markdig trims it
+        while (textStart < textEnd && _text[textStart] is ' ' or '\t' or '\v' or '\f')
+        {
+            textStart++;
+        }
+
+        while (textEnd > textStart && _text[textEnd - 1] is ' ' or '\t' or '\v' or '\f')
+        {
+            textEnd--;
+        }
+
+        CloseUnmatchedBlocks();
+        var block = AddChild(SyntaxKind.AbbreviationDefinition);
+        block.Leading.Add(BuildElement.Token(SyntaxKind.AsteriskToken, _nextNonspace, _nextNonspace + 1));
+        block.Leading.Add(BuildElement.Token(SyntaxKind.OpenBracketToken, labelStart - 1, labelStart));
+        block.Leading.Add(BuildElement.Token(SyntaxKind.AbbreviationLabelToken, labelStart, labelEnd));
+        block.Leading.Add(BuildElement.Token(SyntaxKind.CloseBracketToken, labelEnd, labelEnd + 1));
+        block.Leading.Add(BuildElement.Token(SyntaxKind.ColonToken, labelEnd + 1, labelEnd + 2));
+        if (textEnd > textStart)
+        {
+            block.Leading.Add(BuildElement.Token(SyntaxKind.AbbreviationTextToken, textStart, textEnd));
+        }
+
+        _inlineParser.Abbreviations[Scanners.NormalizeAbbreviationLabel(_text.AsSpan(labelStart, labelEnd - labelStart))] = textEnd - textStart;
+        _offset = _lineEnd;
+        return true;
     }
 
     private bool IsTaskListItemMarker()

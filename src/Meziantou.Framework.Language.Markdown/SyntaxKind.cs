@@ -61,6 +61,9 @@ public enum SyntaxKind
     MathDelimiterToken,
     MathTextToken,
     AlertKindToken,
+    AsteriskToken,
+    AbbreviationLabelToken,
+    AbbreviationTextToken,
     ExtendedAutolinkToken,
 
     // Blocks
@@ -84,6 +87,7 @@ public enum SyntaxKind
     FrontMatter,
     MathBlock,
     Alert,
+    AbbreviationDefinition,
 
     // Inlines
     Emphasis,
@@ -100,4 +104,5 @@ public enum SyntaxKind
     Inserted,
     Marked,
     MathInline,
+    Abbreviation,
 }

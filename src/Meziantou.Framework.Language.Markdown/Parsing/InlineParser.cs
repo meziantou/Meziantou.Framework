@@ -18,6 +18,7 @@ internal sealed class InlineParser
     private readonly bool _inserted;
     private readonly bool _marked;
     private readonly bool _mathematics;
+    private long _abbreviationExpansion;
     private readonly bool _autolinks;
     private readonly bool _disableHtml;
     private Subject _subject = null!;
@@ -76,6 +77,11 @@ internal sealed class InlineParser
         if (_autolinks)
         {
             LinkEmailAddresses(_root);
+        }
+
+        if (Abbreviations.Count > 0)
+        {
+            MarkAbbreviations(_root);
         }
 
         output.EnsureCapacity(output.Count + CountChildren(_root) + 1);
@@ -510,6 +516,7 @@ internal sealed class InlineParser
         var node = AppendText(start, _pos);
         if (canOpen || canClose)
         {
+            node.IsDelimiterRun = true;
             var delimiter = new Delimiter(c, count, node, canOpen, canClose) { Previous = _delimiters };
             if (_delimiters is not null)
             {
@@ -519,6 +526,157 @@ internal sealed class InlineParser
             _delimiters = delimiter;
         }
     }
+
+    /// <summary>Gets the labels of the abbreviations of the document, with the length of their title, which the block parser adds as it reads their definitions.</summary>
+    public Dictionary<string, int> Abbreviations { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Gets or sets how many characters the abbreviations can add to the document, so that a short text cannot render as a huge one.</summary>
+    public long MaximumAbbreviationExpansion { get; set; }
+
+    // The abbreviations of the text, as Markdig finds them once the inlines are parsed, in each of its literals: a run of text
+    // tokens, which an escaped character can start. The longest label is found at the start of a literal or after whitespace,
+    // and must be followed by whitespace, or by ASCII punctuation up to whitespace or the end of the literal.
+    private void MarkAbbreviations(InlineNode container)
+    {
+        var run = new List<InlineNode>();
+        var child = container.FirstChild;
+        while (child is not null)
+        {
+            if (IsLiteral(child))
+            {
+                run.Clear();
+                run.Add(child);
+                while (run[^1].Next is { Kind: SyntaxKind.TextToken, IsDelimiterRun: false } next && next.Start == run[^1].End)
+                {
+                    run.Add(next);
+                }
+
+                child = run[^1].Next;
+                if (!MarkAbbreviationsInLiteral(run))
+                {
+                    return;
+                }
+
+                continue;
+            }
+
+            if (!child.IsToken && child.Kind is not (SyntaxKind.CodeSpan or SyntaxKind.Autolink or SyntaxKind.ExtendedAutolink or SyntaxKind.RawHtml or SyntaxKind.MathInline or SyntaxKind.Abbreviation))
+            {
+                MarkAbbreviations(child);
+            }
+
+            child = child.Next;
+        }
+    }
+
+    private static bool IsLiteral(InlineNode node) => node.Kind == SyntaxKind.EscapedCharacterToken || (node.Kind == SyntaxKind.TextToken && !node.IsDelimiterRun);
+
+    private bool MarkAbbreviationsInLiteral(List<InlineNode> run)
+    {
+        // The content of the literal, where an escaped character is the character, and where each character is in the subject
+        var content = new System.Text.StringBuilder();
+        var positions = new List<int>();
+        foreach (var token in run)
+        {
+            for (var position = token.Kind == SyntaxKind.EscapedCharacterToken ? token.End - 1 : token.Start; position < token.End; position++)
+            {
+                content.Append(_text[position]);
+                positions.Add(position);
+            }
+        }
+
+        var text = content.ToString();
+        var after = run[^1].End < _text.Length ? _text[run[^1].End] : '\0';
+        var ranges = new List<(int Start, int End)>();
+        var start = 0;
+        for (var i = 0; i < text.Length; i++)
+        {
+            // An abbreviation starts at the start of the literal or after whitespace
+            if (i != start)
+            {
+                var whitespace = i - 1;
+                while (whitespace < text.Length && !IsAbbreviationWhitespace(text[whitespace]))
+                {
+                    whitespace++;
+                }
+
+                if (whitespace >= text.Length - 1)
+                {
+                    break;
+                }
+
+                i = whitespace + 1;
+            }
+
+            var (length, titleLength) = MatchLongestAbbreviation(text, i);
+            if (length == 0 || !IsValidAbbreviationEnding(text, i + length, after))
+            {
+                continue;
+            }
+
+            // Each abbreviation writes its title
+            if (_abbreviationExpansion + titleLength > MaximumAbbreviationExpansion)
+            {
+                if (ranges.Count > 0)
+                {
+                    WrapRanges(run, ranges, SyntaxKind.Abbreviation);
+                }
+
+                return false;
+            }
+
+            _abbreviationExpansion += titleLength;
+
+            // The escaped character at the start of the literal starts at its backslash
+            var rangeStart = i == 0 && run[0].Kind == SyntaxKind.EscapedCharacterToken ? run[0].Start : positions[i];
+            ranges.Add((rangeStart, positions[i + length - 1] + 1));
+            start = i + length;
+            i = start - 1;
+        }
+
+        if (ranges.Count > 0)
+        {
+            WrapRanges(run, ranges, SyntaxKind.Abbreviation);
+        }
+
+        return true;
+    }
+
+    private (int Length, int TitleLength) MatchLongestAbbreviation(string text, int start)
+    {
+        (int Length, int TitleLength) longest = default;
+        foreach (var (label, titleLength) in Abbreviations)
+        {
+            if (label.Length > longest.Length && text.AsSpan(start).StartsWith(label, StringComparison.Ordinal))
+            {
+                longest = (label.Length, titleLength);
+            }
+        }
+
+        return longest;
+    }
+
+    // After the abbreviation, ASCII punctuation up to whitespace, the end of the text, or the character after the literal
+    private static bool IsValidAbbreviationEnding(string text, int index, char after)
+    {
+        for (; index <= text.Length; index++)
+        {
+            var c = index < text.Length ? text[index] : after;
+            if (IsAbbreviationWhitespace(c))
+            {
+                break;
+            }
+
+            if (c != '\0' && !(c is (>= '!' and <= '/') or (>= ':' and <= '@') or (>= '[' and <= '`') or (>= '{' and <= '~')))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsAbbreviationWhitespace(char c) => c is ' ' or '\t' or '\n' or '\v' or '\f' or '\r';
 
     // Inline math between $ or $$, as Markdig reads it: the opening is after whitespace or punctuation, the closing has at
     // least as many $ and is before whitespace or punctuation, and spaces after the opening need spaces before the closing.
@@ -1438,38 +1596,49 @@ internal sealed class InlineParser
             return;
         }
 
-        // The tokens of the run again, split at the edges of the links
+        WrapRanges(run, matches, SyntaxKind.ExtendedAutolink);
+    }
+
+    // Replaces the tokens of a run by the same tokens split at the edges of the ranges, the ones in a range being the children
+    // of a node of the kind
+    private void WrapRanges(List<InlineNode> run, List<(int Start, int End)> ranges, SyntaxKind kind)
+    {
         var nodes = new List<InlineNode>();
-        var matchIndex = 0;
-        InlineNode? link = null;
+        var rangeIndex = 0;
+        InlineNode? wrapper = null;
         foreach (var token in run)
         {
             var position = token.Start;
             while (position < token.End)
             {
-                if (matchIndex < matches.Count && position >= matches[matchIndex].Start)
+                InlineNode piece;
+                if (rangeIndex < ranges.Count && position >= ranges[rangeIndex].Start)
                 {
-                    if (link is null)
+                    if (wrapper is null)
                     {
-                        link = NewNode(SyntaxKind.ExtendedAutolink, matches[matchIndex].Start, matches[matchIndex].End);
-                        nodes.Add(link);
+                        wrapper = NewNode(kind, ranges[rangeIndex].Start, ranges[rangeIndex].End);
+                        nodes.Add(wrapper);
                     }
 
-                    var end = Math.Min(token.End, matches[matchIndex].End);
-                    link.Append(NewNode(token.Kind, position, end));
+                    var end = Math.Min(token.End, ranges[rangeIndex].End);
+                    piece = NewNode(token.Kind, position, end);
+                    wrapper.Append(piece);
                     position = end;
-                    if (position >= matches[matchIndex].End)
+                    if (position >= ranges[rangeIndex].End)
                     {
-                        matchIndex++;
-                        link = null;
+                        rangeIndex++;
+                        wrapper = null;
                     }
                 }
                 else
                 {
-                    var end = matchIndex < matches.Count ? Math.Min(token.End, matches[matchIndex].Start) : token.End;
-                    nodes.Add(NewNode(token.Kind, position, end));
+                    var end = rangeIndex < ranges.Count ? Math.Min(token.End, ranges[rangeIndex].Start) : token.End;
+                    piece = NewNode(token.Kind, position, end);
+                    nodes.Add(piece);
                     position = end;
                 }
+
+                piece.IsDelimiterRun = token.IsDelimiterRun;
             }
         }
 

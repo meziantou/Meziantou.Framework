@@ -49,6 +49,9 @@ public enum MarkdownExtensions
     /// <summary>The alerts of GitHub: a block quote whose first line is <c>[!NOTE]</c>, <c>[!TIP]</c>, <c>[!IMPORTANT]</c>, <c>[!WARNING]</c> or <c>[!CAUTION]</c>.</summary>
     Alerts = 1 << 13,
 
+    /// <summary>Abbreviations: <c>*[HTML]: Hypertext Markup Language</c> defines an abbreviation, and the words of the text that are an abbreviation are rendered as <c>&lt;abbr&gt;</c>.</summary>
+    Abbreviations = 1 << 14,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

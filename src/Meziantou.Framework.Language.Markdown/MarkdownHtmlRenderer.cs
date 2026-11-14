@@ -370,6 +370,22 @@ public static class MarkdownHtmlRenderer
                     AppendHtml(html.Html);
                     break;
 
+                case MarkdownAbbreviationSyntax abbreviation:
+                    if (abbreviation.Definition is { } definition)
+                    {
+                        _output.Append("<abbr title=\"");
+                        AppendEscaped(definition.Title);
+                        _output.Append("\">");
+                        AppendEscaped(abbreviation.Label);
+                        _output.Append("</abbr>");
+                    }
+                    else
+                    {
+                        AppendEscaped(abbreviation.Label);
+                    }
+
+                    break;
+
                 case MarkdownMathInlineSyntax math:
                     _output.Append("<span class=\"math\">\\(");
                     AppendEscaped(math.Math);

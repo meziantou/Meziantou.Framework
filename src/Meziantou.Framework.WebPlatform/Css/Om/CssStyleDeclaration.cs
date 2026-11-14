@@ -1159,12 +1159,14 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             return;
 
         var name = NormalizePropertyName(declaration.Name);
-        var text = declaration.Value.Count == 0 ? default : source.AsSpan(declaration.Value[0].Start..Math.Min(declaration.Value[^1].End, source.Length)).Trim(" \t\n");
+        // The list of the component values is only created when the value is parsed
+        var values = declaration.ValueSpan;
+        var text = values.IsEmpty ? default : source.AsSpan(values[0].Start..Math.Min(values[^1].End, source.Length)).Trim(" \t\n");
         string? originalText = null;
-        var endOfFile = declaration.Value.Count > 0 && declaration.Value[^1].End >= source.Length;
+        var endOfFile = !values.IsEmpty && values[^1].End >= source.Length;
         if (endOfFile)
         {
-            originalText = FixupEndOfFile(text.ToString(), declaration.Value[^1], source, closeBlocks: CssPropertyRegistry.IsCustomProperty(name));
+            originalText = FixupEndOfFile(text.ToString(), values[^1], source, closeBlocks: CssPropertyRegistry.IsCustomProperty(name));
             text = originalText;
         }
 

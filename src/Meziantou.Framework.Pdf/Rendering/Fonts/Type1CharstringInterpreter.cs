@@ -236,7 +236,11 @@ internal sealed class Type1CharstringInterpreter(Type1FontProgram program, Outli
         }
     }
 
-    /// <summary>An accented character (Type 1 Font Format, appendix 3): the base character, then the accent moved by (adx - asb, ady).</summary>
+    /// <summary>
+    /// An accented character (Type 1 Font Format, 6.4 and appendix 3): the base character, then the accent moved by
+    /// (adx - asb + sbx, ady), where sbx is the side bearing of the accented character: the left side bearing point of
+    /// the accent is at adx from the one of the accented character, which is where FreeType draws it.
+    /// </summary>
     private void Seac(double asb, double adx, double ady, int baseCode, int accentCode)
     {
         if (_composing)
@@ -252,7 +256,7 @@ internal sealed class Type1CharstringInterpreter(Type1FontProgram program, Outli
 
         if (accentName is not null && program.GetCharstring(accentName) is { } accentCharstring)
         {
-            RunComponent(accentCharstring, adx - asb, ady);
+            RunComponent(accentCharstring, adx - asb + SideBearingX, ady);
         }
 
         _ended = true;

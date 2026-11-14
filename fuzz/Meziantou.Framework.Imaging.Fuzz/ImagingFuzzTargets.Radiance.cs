@@ -57,7 +57,9 @@ public static partial class ImagingFuzzTargets
 
             foreach (var compression in Enum.GetValues<RadianceCompression>())
             {
-                var encoder = new RadianceEncoder { Compression = compression };
+                // A picture with other primaries is labeled with an ICC profile, which the format cannot store: the round trip is
+                // about the pixels
+                var encoder = new RadianceEncoder { Compression = compression, MetadataHandling = MetadataHandling.Strip };
                 var first = Save(image, encoder);
                 using var decoded = Image.Load<RgbaFloat>(first);
                 FuzzAssert.Equal(image.Size, decoded.Size, "The size of the encoded image");

@@ -542,20 +542,11 @@ internal static class RadianceCorpus
         var count = majorIsX ? picture.Width : picture.Height;
         var length = majorIsX ? picture.Height : picture.Width;
         var check = new Obj { ["decoder"] = $"{c.Tools.FfmpegLabel} (libavcodec hdr decoder)" };
-        byte[] frame;
-        try
-        {
-            (var frames, var command) = CommonCorpus.FfmpegDecode(c.Tools, path, "gbrpf32le", length, count, 12, animated: false);
-            frame = frames[0];
-            check["command"] = CommonCorpus.Display(command, c.Tools, [(path.Value, "{input}")]);
-        }
-        catch (ToolException error)
-        {
-            check["result"] = "differs";
-            check["excludedFromTolerance"] = true;
-            check["notes"] = "FFmpeg failed to decode the input: " + error.Message.Split('\n')[0];
-            return check;
-        }
+
+        // FFmpeg decodes every valid fixture: a failure stops the generation instead of being recorded as a difference
+        (var frames, var command) = CommonCorpus.FfmpegDecode(c.Tools, path, "gbrpf32le", length, count, 12, animated: false);
+        var frame = frames[0];
+        check["command"] = CommonCorpus.Display(command, c.Tools, [(path.Value, "{input}")]);
 
         // The scanlines in file order, as FFmpeg gives them
         var scanlines = RadianceFileBuilder.GetScanlines(picture.Width, picture.Height, picture.Rgbe.Span, picture.ScanOrder);

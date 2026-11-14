@@ -58,6 +58,9 @@ public enum MarkdownExtensions
     /// <summary>The generic attributes of Markdig: <c>{#id .class name=value}</c> after an inline or in a block sets the HTML attributes of its element.</summary>
     GenericAttributes = 1 << 16,
 
+    /// <summary>Auto-identifiers: the renderer gives each heading an <c>id</c> made from its text, and a reference link whose label is the text of a heading links to it, as configured by <see cref="MarkdownParseOptions.AutoIdentifierOptions"/>.</summary>
+    AutoIdentifiers = 1 << 17,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

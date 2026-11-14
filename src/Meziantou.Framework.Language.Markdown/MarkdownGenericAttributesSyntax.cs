@@ -28,7 +28,7 @@ public sealed class MarkdownGenericAttributesSyntax : MarkdownInlineSyntax
     /// As in Markdig: attributes after an inline that is not text, such as a link, a code span or an emphasis, are for it;
     /// attributes after text are for the block. The attributes of the first line of a heading or of a fenced block are for the
     /// block. A paragraph of attributes only gives its last ones to the next block, when there is one. Attributes after a line
-    /// break are for none.
+    /// break are for none, except in a heading, whose line breaks Markdig reads as text.
     /// </remarks>
     public MarkdownSyntaxNode? Target
     {
@@ -76,23 +76,112 @@ public sealed class MarkdownGenericAttributesSyntax : MarkdownInlineSyntax
             return parent;
         }
 
+        // Markdig gives the attributes after an opening delimiter to the delimiter, which the emphasis replaces
+        if (previous.IsToken && parent is MarkdownEmphasisSyntax or MarkdownStrikethroughSyntax or MarkdownEmphasisExtraSyntax && parent.ChildNodesAndTokens()[0] == previous)
+        {
+            return null;
+        }
+
         if (mark is not 2 && previous.AsNode() is MarkdownInlineSyntax inline)
         {
             return inline;
         }
 
-        if (previous.IsToken && previous.AsToken().RawKind is (int)SyntaxKind.LineEndingToken or (int)SyntaxKind.HardLineBreakToken)
+        // Markdig reads the line endings of a heading as text
+        var block = FirstAncestorOrSelf<MarkdownSyntaxNode>(node => node is MarkdownBlockSyntax or MarkdownTableCellSyntax);
+        if (previous.IsToken && previous.AsToken().RawKind is (int)SyntaxKind.LineEndingToken or (int)SyntaxKind.HardLineBreakToken && block is not MarkdownHeadingSyntax)
         {
             return null;
         }
 
-        var block = FirstAncestorOrSelf<MarkdownSyntaxNode>(node => node is MarkdownBlockSyntax or MarkdownTableCellSyntax);
         if (lastOfAttributesParagraph && block is MarkdownParagraphSyntax paragraph && getNextBlock(paragraph) is { } next)
         {
             return next;
         }
 
         return block;
+    }
+
+    /// <summary>
+    /// Finds the target of every attributes of the document, in one pass over the children of each node. Returns the block after
+    /// each paragraph of attributes only, which its last attributes are for.
+    /// </summary>
+    /// <remarks>
+    /// The attributes are given in the order Markdig applies them: the ones of the first line of the blocks, which it reads with the
+    /// blocks, then the others in the order of the text.
+    /// </remarks>
+    internal static Dictionary<MarkdownParagraphSyntax, MarkdownBlockSyntax> FindTargets(MarkdownDocumentSyntax document, Action<MarkdownGenericAttributesSyntax, MarkdownSyntaxNode> onTarget)
+    {
+        var nextBlocks = new Dictionary<MarkdownParagraphSyntax, MarkdownBlockSyntax>();
+        foreach (var container in document.DescendantNodesAndSelf(MarkdownDocumentSyntax.IsBlockContainer))
+        {
+            MarkdownParagraphSyntax? attributesParagraph = null;
+            foreach (var child in container.ChildNodes())
+            {
+                if (child is not MarkdownBlockSyntax block)
+                {
+                    continue;
+                }
+
+                if (attributesParagraph is not null)
+                {
+                    nextBlocks[attributesParagraph] = block;
+                }
+
+                attributesParagraph = block is MarkdownParagraphSyntax paragraph && IsAttributesOnly(paragraph) ? paragraph : null;
+            }
+        }
+
+        List<(MarkdownGenericAttributesSyntax Attributes, MarkdownSyntaxNode Target)>? inlineTargets = null;
+        foreach (var node in document.DescendantNodesAndSelf())
+        {
+            SyntaxNodeOrToken previous = default;
+            var attributesParagraph = node is MarkdownParagraphSyntax paragraph && nextBlocks.ContainsKey(paragraph);
+            var children = node.ChildNodesAndTokens();
+            var count = children.Count;
+            var index = 0;
+            foreach (var child in children)
+            {
+                index++;
+                if (child.AsNode() is not MarkdownGenericAttributesSyntax attributes)
+                {
+                    previous = child;
+                    continue;
+                }
+
+                if (attributes.GetTarget(previous, attributesParagraph && index == count, nextBlocks.GetValueOrDefault) is { } target)
+                {
+                    if (attributes.IsBlockLine)
+                    {
+                        onTarget(attributes, target);
+                    }
+                    else
+                    {
+                        (inlineTargets ??= []).Add((attributes, target));
+                    }
+                }
+            }
+        }
+
+        foreach (var (attributes, target) in inlineTargets ?? [])
+        {
+            onTarget(attributes, target);
+        }
+
+        return nextBlocks;
+    }
+
+    private static bool IsAttributesOnly(MarkdownParagraphSyntax paragraph)
+    {
+        foreach (var child in paragraph.ChildNodesAndTokens())
+        {
+            if (child.AsNode() is not MarkdownGenericAttributesSyntax)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // The block after the block in its parent, found by its position: the children of a node are in the order of the text

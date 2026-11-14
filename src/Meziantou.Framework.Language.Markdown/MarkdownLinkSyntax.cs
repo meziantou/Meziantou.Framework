@@ -51,9 +51,17 @@ public sealed class MarkdownLinkSyntax : MarkdownInlineSyntax
     /// <summary>Gets the definition that a reference link refers to, or <see langword="null"/>.</summary>
     public MarkdownLinkReferenceDefinitionSyntax? Definition => Label is { } label ? FirstAncestorOrSelf<MarkdownDocumentSyntax>()?.GetLinkReferenceDefinition(label) : null;
 
+    /// <summary>Gets the heading that a reference link without definition links to with <see cref="MarkdownExtensions.AutoIdentifiers"/>, or <see langword="null"/>.</summary>
+    public MarkdownHeadingSyntax? Heading => Label is { } label && Definition is null ? FirstAncestorOrSelf<MarkdownDocumentSyntax>()?.GetHeading(label) : null;
+
     /// <summary>Gets the destination, without its angle brackets, escapes and entities: the one of the definition for a reference link.</summary>
-    /// <remarks>It is empty when a reference link has no definition, which an edit can cause.</remarks>
-    public string Destination => LinkKind == MarkdownLinkKind.Inline ? ReadDestination(this, DestinationToken) : Definition?.Destination ?? "";
+    /// <remarks>
+    /// A reference link to a <see cref="Heading"/> has <c>#</c> and the identifier of the heading as destination. It is empty when a
+    /// reference link has no definition, which an edit can cause.
+    /// </remarks>
+    public string Destination => LinkKind == MarkdownLinkKind.Inline
+        ? ReadDestination(this, DestinationToken)
+        : Definition?.Destination ?? (Heading is { } heading ? MarkdownText.Unescape("#" + heading.Identifier) : "");
 
     /// <summary>Gets the title, without its quotes, escapes and entities, or <see langword="null"/> when there is none.</summary>
     public string? Title => LinkKind == MarkdownLinkKind.Inline ? ReadTitle(GetTokensText(SyntaxKind.LinkTitleToken)) : Definition?.Title;

@@ -1,3 +1,6 @@
+using Meziantou.Framework.Language.Markdown.Parsing;
+using Meziantou.Xunit;
+
 namespace Meziantou.Framework.Language.Markdown.Tests;
 
 public sealed class MarkdownSyntaxTreeTests
@@ -365,6 +368,13 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a{#x .b lang=de}{#y .c lang=en lang=fr}\n", "<p id=\"y\" class=\"b c\" lang=\"de\">a</p>\n")]
     [InlineData("a{#y .c lang=en lang=fr}\n", "<p id=\"y\" class=\"c\" lang=\"en\" lang=\"fr\">a</p>\n")]
     [InlineData("$$ {.e}\nx\n$$\n", "<div class=\"math e\">")]
+    [InlineData("a\n{#t}\n", "<p>a</p>\n")]
+    [InlineData("Title\n{#t}\n---\n", "<h2 id=\"t\">Title\n</h2>\n")]
+    [InlineData("a {#t}{#u}\n", "<p id=\"u\">a</p>\n")]
+    [InlineData("*b* {#a}{#b}\n", "<p id=\"b\"><em>b</em></p>\n")]
+    [InlineData("*{#a}b* **{#c}d**\n", "<p><em>b</em> <strong>d</strong></p>\n")]
+    [InlineData("{#p .p}\n# H {#own .c}\n", "<h1 id=\"p\" class=\"c p\">H</h1>\n")]
+    [InlineData("{#p}\n```{#own}\nx\n```\n", "<pre><code id=\"p\">x\n</code></pre>\n")]
     public void RendersGenericAttributes(string text, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.Mathematics });
@@ -393,6 +403,162 @@ public sealed class MarkdownSyntaxTreeTests
         var html = MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { AttributeFilter = name => name.StartsWith("data-", StringComparison.Ordinal) });
 
         Assert.Equal("<p id=\"i\" data-x=\"1\">a</p>\n", html);
+    }
+
+    [Fact]
+    public void ReadmeExample_AutoIdentifiers()
+    {
+        #region MarkdownSyntaxTree_AutoIdentifiers
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers };
+        var tree = MarkdownSyntaxTree.ParseText("# Getting started\n\nSee [Getting started].\n\n# Getting started\n", options);
+
+        // The second heading with the same text gets a suffix, and the link without definition links to the last heading
+        var headings = tree.GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().ToList();
+        Assert.Equal("getting-started", headings[0].Identifier);
+        Assert.Equal("getting-started-1", headings[1].Identifier);
+        Assert.Equal("<p>See <a href=\"#getting-started-1\">Getting started</a>.</p>", MarkdownHtmlRenderer.ToHtml(tree).Split('\n')[1]);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("# a *b* `c` [d](u) ![e](i) <x>f</x> &amp; g\\_\n", "a-b-c-d-e-f-g")]
+    [InlineData("# 1.0 & ^ % *\n# 1.0 & ^ % *\n", "section,section-1")]
+    [InlineData("# a\n# a-1\n# a\n# a\n", "a,a-1,a-2,a-3")]
+    [InlineData("# a {#x}\n# a\n", "x,a")]
+    [InlineData("{#p}\n# a {#x}\n", "p")]
+    [InlineData("Title\n{#t}\n---\n", "t")]
+    [InlineData("# $x$ y[^1] *[A]\n\n[^1]: # z\n\n# w\n", "y-a,z,w")]
+    [InlineData("> # Quoted\n- # Listed\n", "quoted,listed")]
+    public void HeadingsHaveIdentifiers(string text, string expected)
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers | MarkdownExtensions.GenericAttributes | MarkdownExtensions.Mathematics | MarkdownExtensions.Footnotes | MarkdownExtensions.Abbreviations };
+        var root = MarkdownSyntaxTree.ParseText(text, options).GetRoot();
+
+        Assert.Equal(expected, string.Join(',', root.DescendantNodes().OfType<MarkdownHeadingSyntax>().Select(heading => heading.Identifier)));
+    }
+
+    [Theory]
+    [InlineData(MarkdownAutoIdentifierOptions.Default, "# Ærø Café\n[Ærø Café]\n", "<h1 id=\"aeroe-cafe\">Ærø Café</h1>\n<p><a href=\"#aeroe-cafe\">Ærø Café</a></p>\n")]
+    [InlineData(MarkdownAutoIdentifierOptions.None, "# Ærø Café\n[Ærø Café]\n", "<h1 id=\"ærø-café\">Ærø Café</h1>\n<p>[Ærø Café]</p>\n")]
+    [InlineData(MarkdownAutoIdentifierOptions.GitHub | MarkdownAutoIdentifierOptions.AutoLink, "# 3. Ærø\n[3. Ærø]\n", "<h1 id=\"3-ærø\">3. Ærø</h1>\n<p><a href=\"#3-%C3%A6r%C3%B8\">3. Ærø</a></p>\n")]
+    public void AutoIdentifierOptionsChooseTheIdentifiers(MarkdownAutoIdentifierOptions autoIdentifierOptions, string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers, AutoIdentifierOptions = autoIdentifierOptions });
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Theory]
+    [InlineData("[Heading]\n# Heading\n", "<p><a href=\"#heading\">Heading</a></p>")]
+    [InlineData("[text][Heading]\n# Heading\n", "<p><a href=\"#heading\">text</a></p>")]
+    [InlineData("![alt][Heading]\n# Heading\n", "<p><img src=\"#heading\" alt=\"alt\" /></p>")]
+    [InlineData("[Heading]\n# Heading\n[heading]: /url\n", "<p><a href=\"/url\">Heading</a></p>")]
+    [InlineData("[outer [Heading]](/u)\n# Heading\n", "<p><a href=\"/u\">outer [Heading]</a></p>")]
+    [InlineData("[]\n#\n", "<p>[]</p>")]
+    [InlineData("[x y]\n\nx {.c} y\n===\n", "<p><a href=\"#x-y\">x y</a></p>")]
+    [InlineData("[x]\n# x {#i}\n", "<p><a href=\"#i\">x</a></p>")]
+    [InlineData("[Line one]\n\nLine one\nline two\n===\n", "<p><a href=\"#line-one-line-two\">Line one</a></p>")]
+    public void ReferenceLinksLinkToHeadings(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers | MarkdownExtensions.GenericAttributes });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.StartsWith(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LinkToAHeadingHasTheHeading()
+    {
+        var root = MarkdownSyntaxTree.ParseText("[Intro]\n\n## Intro\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers }).GetRoot();
+        var link = root.DescendantNodes().OfType<MarkdownLinkSyntax>().Single();
+
+        Assert.Null(link.Definition);
+        Assert.Same(root.Blocks[1], link.Heading);
+        Assert.Equal("#intro", link.Destination);
+        Assert.Null(link.Title);
+    }
+
+    [Fact]
+    public void HeadingHasNoIdentifierWithoutTheExtension()
+    {
+        var heading = Assert.IsType<MarkdownHeadingSyntax>(MarkdownSyntaxTree.ParseText("# a\n").GetRoot().Blocks.Single());
+
+        Assert.Null(heading.Identifier);
+    }
+
+    [Theory]
+    [InlineData("Header identifiers in HTML", "header-identifiers-in-html")]
+    [InlineData("* Dogs*?--in *my* house?", "dogs-in-my-house")]
+    [InlineData("[HTML], [S5], or [RTF]?", "html-s5-or-rtf")]
+    [InlineData("3. Applications", "applications")]
+    [InlineData("33", "")]
+    [InlineData("zeilenumbrüche", "zeilenumbrüche")]
+    [InlineData("Straße", "straße")]
+    [InlineData("Íslandsbanki", "íslandsbanki")]
+    [InlineData("一二三四五", "一二三四五")]
+    [InlineData("一,-b", "一-b")]
+    [InlineData("-æ5el", "æ5el")]
+    [InlineData("-frø-", "frø")]
+    [InlineData("-fr-ø", "fr-ø")]
+    [InlineData("b#r", "br")]
+    [InlineData("b%r", "br")]
+    [InlineData("b{r", "br")]
+    [InlineData(@"b\r", "br")]
+    [InlineData("Requirement 😀", "requirement")]
+    public void IdentifierKeepsLetters(string text, string expected)
+    {
+        Assert.Equal(expected, HeadingIdentifier.Create(text, MarkdownAutoIdentifierOptions.None));
+    }
+
+    [Theory]
+    [InlineData("a c", "a-c")]
+    [InlineData("a,c", "ac")]
+    [InlineData("a--", "a")]
+    [InlineData("a..d", "a.d")]
+    [InlineData("a  d", "a-d")]
+    [InlineData("-bc", "bc")]
+    [InlineData("a-.-", "a")]
+    [InlineData("bΘr", "br")]
+    [InlineData("四五", "")]
+    [InlineData("bár", "bar")]
+    [InlineData("àrrivé", "arrive")]
+    [InlineData("Straße", "strasse")]
+    [InlineData("Ærø", "aeroe")]
+    [InlineData("Þór Ðað", "thor-dad")]
+    [InlineData("äöüÄÖÜåÅ", "aouaouaa")]
+    [InlineData("1,-b", "b")]
+    [InlineData("b1,-", "b1")]
+    [InlineData("пристаням_стремятся_", "")]
+    public void IdentifierOnlyHasAscii(string text, string expected)
+    {
+        Assert.Equal(expected, HeadingIdentifier.Create(text, MarkdownAutoIdentifierOptions.AllowOnlyAscii));
+    }
+
+    [Theory]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    [InlineData("schön", "schon")]
+    [InlineData("grüßen", "grussen")]
+    [InlineData("Íslandsbanki", "islandsbanki")]
+    public void IdentifierOnlyHasAsciiWithoutTheAccentsOfDecomposedLetters(string text, string expected)
+    {
+        Assert.Equal(expected, HeadingIdentifier.Create(text, MarkdownAutoIdentifierOptions.AllowOnlyAscii));
+    }
+
+    [Theory]
+    [InlineData("* Dogs*?--in *my* house?", "-dogs--in-my-house")]
+    [InlineData("3. Applications", "3-applications")]
+    [InlineData("33", "33")]
+    public void IdentifierIsMadeAsGitHubMakesIt(string text, string expected)
+    {
+        Assert.Equal(expected, HeadingIdentifier.Create(text, MarkdownAutoIdentifierOptions.GitHub));
+    }
+
+    [Fact]
+    public void IdentifierIgnoresInvalidCodePoints()
+    {
+        // Built in code: the strings of InlineData go through UTF-8, which replaces a lone surrogate
+        Assert.Equal("ab-c", HeadingIdentifier.Create("a\uFFFEb c", MarkdownAutoIdentifierOptions.AllowOnlyAscii));
+        Assert.Equal("ab-c", HeadingIdentifier.Create("a\uD800b c\uFDD0", MarkdownAutoIdentifierOptions.AllowOnlyAscii));
     }
 
     [Fact]

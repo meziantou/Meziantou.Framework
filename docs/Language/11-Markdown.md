@@ -270,11 +270,35 @@ extensions of `Meziantou.Framework.Markdown`, which this parser is meant to repl
 - [Diagrams](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Diagrams): a code block of `mermaid` is
   rendered as `<pre class="mermaid">`, and one of `nomnoml` as `<div class="nomnoml">`, for their scripts to draw.
 
+- [AutoIdentifiers](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.AutoIdentifiers): each heading gets an
+  `id` made from its text,
+  [MarkdownHeadingSyntax.Identifier](cref:Meziantou.Framework.Language.Markdown.MarkdownHeadingSyntax.Identifier), unless
+  its generic attributes give one. Headings with the same text get a suffix: `-1`, `-2`... A reference link without
+  definition whose label is the first line of a heading, such as `[Getting started]`, links to it:
+  [MarkdownLinkSyntax.Heading](cref:Meziantou.Framework.Language.Markdown.MarkdownLinkSyntax.Heading) gives the heading.
+  [AutoIdentifierOptions](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.AutoIdentifierOptions) chooses
+  whether these links are made, whether the identifier only has ASCII characters (`Ærø` becomes `aeroe`), and whether it
+  is made as GitHub makes it.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_AutoIdentifiers;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers };
+var tree = MarkdownSyntaxTree.ParseText("# Getting started\n\nSee [Getting started].\n\n# Getting started\n", options);
+
+// The second heading with the same text gets a suffix, and the link without definition links to the last heading
+var headings = tree.GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().ToList();
+Assert.Equal("getting-started", headings[0].Identifier);
+Assert.Equal("getting-started-1", headings[1].Identifier);
+Assert.Equal("<p>See <a href=\"#getting-started-1\">Getting started</a>.</p>", MarkdownHtmlRenderer.ToHtml(tree).Split('\n')[1]);
+```
+<!-- endref -->
+
 [DisableHtml](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.DisableHtml) reads HTML as text: the
 renderer escapes it, and autolinks such as `<https://example.com>` are still links.
 
 ## Limitations of the prototype
 
-- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no footnotes, front matter, math...
+- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no definition lists, custom containers,
+  grid tables, emoji, SmartyPants...
 - Inserting and removing blocks parses the whole text again.
 - Parsing allocates more and is slower than [Meziantou.Framework.Markdown](../Markdown/01-Introduction.md).

@@ -90,6 +90,11 @@ internal sealed class BlockParser
         }
 
         parser.Finalize(parser._document);
+        if (parser.HasExtension(MarkdownExtensions.AutoIdentifiers) && options.AutoIdentifierOptions.HasFlag(MarkdownAutoIdentifierOptions.AutoLink))
+        {
+            parser.AddHeadingLabels(parser._document);
+        }
+
         var document = new List<BuildElement>(1);
         parser.Convert(parser._document, document);
         return (document[0].Node!, parser._triviaSpans);
@@ -1108,6 +1113,46 @@ internal sealed class BlockParser
         }
 
         _tip = block.Parent ?? _document;
+    }
+
+    // With auto-identifiers, a reference link whose label is the first line of a heading links to it, as in Markdig
+    private void AddHeadingLabels(Block block)
+    {
+        foreach (var child in block.Children)
+        {
+            switch (child.Kind)
+            {
+                case SyntaxKind.AtxHeading:
+                    if (GetLines(child) is [var line, ..])
+                    {
+                        AddHeadingLabel(_text, line.Start, line.End);
+                    }
+
+                    break;
+
+                case SyntaxKind.SetextHeading:
+                {
+                    var text = child.Subject!.Text;
+                    var end = text.IndexOf('\n', child.ContentStart, StringComparison.Ordinal);
+                    AddHeadingLabel(text, child.ContentStart, end < 0 ? text.Length : end);
+                    break;
+                }
+
+                default:
+                    AddHeadingLabels(child);
+                    break;
+            }
+        }
+    }
+
+    private void AddHeadingLabel(string text, int start, int end)
+    {
+        var label = HasExtension(MarkdownExtensions.GenericAttributes) ? HeadingIdentifier.GetLabelWithoutAttributes(text, start, end) : text[start..end];
+        // A label has a character that is not whitespace
+        if (Scanners.NormalizeLabel(label) is { Length: > 0 } normalized)
+        {
+            _inlineParser.HeadingLabels.Add(normalized);
+        }
     }
 
     // The link reference definitions at the start of a paragraph are blocks of their own

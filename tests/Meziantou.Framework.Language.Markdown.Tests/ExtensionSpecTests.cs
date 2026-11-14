@@ -54,6 +54,7 @@ public sealed class ExtensionSpecTests
         ["abbreviations"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Abbreviations },
         ["footnotes"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Footnotes },
         ["attributes"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.GenericAttributes },
+        ["autoidentifiers"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.AutoIdentifiers },
     };
 
     public static TheoryData<string, int, string> SupportedExamples()

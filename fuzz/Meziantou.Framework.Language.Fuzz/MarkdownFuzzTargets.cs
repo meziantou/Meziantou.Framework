@@ -27,12 +27,12 @@ internal static class MarkdownFuzzTargets
 
     private static readonly string[] ExtensionTokens =
     [
-        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020", "$", "$$", "$$\n", "\\$", "---\n", "...\n", "```mermaid\n", "```nomnoml\n", "> [!NOTE]\n", "[!TIP]", "[!x]  \n", "*[A]: ", "*[A B]: x\n", "A ", "[^1]", "[^1]: ", "\n    ", "[^a]:\n", "{", "}", "{#a}", "{.b}", "{c=d}", "{e=\"f\"}", "{g}\n",
+        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020", "$", "$$", "$$\n", "\\$", "---\n", "...\n", "```mermaid\n", "```nomnoml\n", "> [!NOTE]\n", "[!TIP]", "[!x]  \n", "*[A]: ", "*[A B]: x\n", "A ", "[^1]", "[^1]: ", "\n    ", "[^a]:\n", "{", "}", "{#a}", "{.b}", "{c=d}", "{e=\"f\"}", "{g}\n", "# a\n", "[a]", "a\n===\n", "\u00E9", "\u00DF", "\u00C6",
     ];
 
-    // Every extension: a text of odd length has HTML disabled
+    // Every extension: a text of odd length has HTML disabled, and identifiers made as GitHub makes them
     private static readonly MarkdownParseOptions AllExtensions = new() { Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension) };
-    private static readonly MarkdownParseOptions AllExtensionsWithoutHtml = AllExtensions with { DisableHtml = true };
+    private static readonly MarkdownParseOptions AllExtensionsWithoutHtml = AllExtensions with { DisableHtml = true, AutoIdentifierOptions = MarkdownAutoIdentifierOptions.GitHub | MarkdownAutoIdentifierOptions.AutoLink };
 
     public static IReadOnlyList<FuzzTarget> Targets { get; } =
     [
@@ -73,6 +73,11 @@ internal static class MarkdownFuzzTargets
             {
                 case MarkdownHeadingSyntax heading:
                     FuzzAssert.True(heading.Level is >= 1 and <= 6, $"The heading at {heading.Span} has the level {heading.Level}: {FuzzAssert.Format(text)}");
+                    if (tree.Options.Extensions.HasFlag(MarkdownExtensions.AutoIdentifiers))
+                    {
+                        FuzzAssert.True(heading.Identifier is { Length: > 0 }, $"The heading at {heading.Span} has no identifier: {FuzzAssert.Format(text)}");
+                    }
+
                     break;
                 case MarkdownListSyntax list:
                     _ = (list.IsTight, list.StartNumber, list.MarkerCharacter);
@@ -99,7 +104,13 @@ internal static class MarkdownFuzzTargets
                     break;
                 case MarkdownLinkSyntax link:
                     _ = (link.LinkKind, link.Destination, link.Title, link.Label);
-                    FuzzAssert.True(link.LinkKind == MarkdownLinkKind.Inline || link.Definition is not null, $"The reference link at {link.Span} has no definition: {FuzzAssert.Format(text)}");
+                    _ = link.Heading;
+                    FuzzAssert.True(link.LinkKind == MarkdownLinkKind.Inline || link.Definition is not null || link.Heading is not null, $"The reference link at {link.Span} has no definition and no heading: {FuzzAssert.Format(text)}");
+                    if (link.LinkKind != MarkdownLinkKind.Inline && link.Definition is null)
+                    {
+                        FuzzAssert.True(link.Destination.StartsWith('#', StringComparison.Ordinal), $"The link to a heading at {link.Span} has the destination {FuzzAssert.Format(link.Destination)}: {FuzzAssert.Format(text)}");
+                    }
+
                     break;
                 case MarkdownAutolinkSyntax autolink:
                     _ = (autolink.Destination, autolink.IsEmail);

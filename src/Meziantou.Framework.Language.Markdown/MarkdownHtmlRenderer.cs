@@ -63,6 +63,7 @@ public static class MarkdownHtmlRenderer
         private readonly bool _tagFilter = options.Extensions.HasFlag(MarkdownExtensions.TagFilter);
         private readonly bool _hardLineBreaks = options.Extensions.HasFlag(MarkdownExtensions.HardLineBreaks);
         private readonly bool _diagrams = options.Extensions.HasFlag(MarkdownExtensions.Diagrams);
+        private readonly bool _autoIdentifiers = options.Extensions.HasFlag(MarkdownExtensions.AutoIdentifiers);
 
         // In a cell of a table, a pipe escaped by a backslash is a pipe, even in a code span or a link destination
         private bool _inTableCell;
@@ -81,64 +82,7 @@ public static class MarkdownHtmlRenderer
         public void CollectAttributes(MarkdownDocumentSyntax document)
         {
             _attributes = [];
-            _nextBlocks = [];
-
-            // The block after each paragraph of attributes only, which its last attributes are for
-            foreach (var container in document.DescendantNodesAndSelf(MarkdownDocumentSyntax.IsBlockContainer))
-            {
-                MarkdownParagraphSyntax? attributesParagraph = null;
-                foreach (var child in container.ChildNodes())
-                {
-                    if (child is not MarkdownBlockSyntax block)
-                    {
-                        continue;
-                    }
-
-                    if (attributesParagraph is not null)
-                    {
-                        _nextBlocks[attributesParagraph] = block;
-                    }
-
-                    attributesParagraph = block is MarkdownParagraphSyntax paragraph && IsAttributesOnly(paragraph) ? paragraph : null;
-                }
-            }
-
-            // The targets of the attributes of each node, found in one pass over its children
-            foreach (var node in document.DescendantNodesAndSelf())
-            {
-                SyntaxNodeOrToken previous = default;
-                var attributesParagraph = node is MarkdownParagraphSyntax paragraph && _nextBlocks.ContainsKey(paragraph);
-                var children = node.ChildNodesAndTokens();
-                var count = children.Count;
-                var index = 0;
-                foreach (var child in children)
-                {
-                    index++;
-                    if (child.AsNode() is not MarkdownGenericAttributesSyntax attributes)
-                    {
-                        previous = child;
-                        continue;
-                    }
-
-                    if (attributes.GetTarget(previous, attributesParagraph && index == count, _nextBlocks.GetValueOrDefault) is { } target)
-                    {
-                        Merge(attributes, target);
-                    }
-                }
-            }
-        }
-
-        private static bool IsAttributesOnly(MarkdownParagraphSyntax paragraph)
-        {
-            foreach (var child in paragraph.ChildNodesAndTokens())
-            {
-                if (child.AsNode() is not MarkdownGenericAttributesSyntax)
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            _nextBlocks = MarkdownGenericAttributesSyntax.FindTargets(document, Merge);
         }
 
         private void Merge(MarkdownGenericAttributesSyntax attributes, SyntaxNode target)
@@ -176,11 +120,12 @@ public static class MarkdownHtmlRenderer
 
         // The generic attributes of the element of the node: its id, the classes of the element and the ones of the attributes, and
         // the other attributes
-        private void AppendAttributes(SyntaxNode node, string? leadingClasses = null, string? trailingClasses = null)
+        private void AppendAttributes(SyntaxNode node, string? leadingClasses = null, string? trailingClasses = null, string? id = null)
         {
             ParsedAttributes? attributes = null;
             _ = _attributes?.TryGetValue(node, out attributes);
-            if (attributes?.Id is { } id)
+            id ??= attributes?.Id;
+            if (id is not null)
             {
                 _output.Append(" id=\"");
                 AppendEscaped(id);
@@ -263,7 +208,7 @@ public static class MarkdownHtmlRenderer
                         _pendingCheckbox = null;
                     }
 
-                    WriteInlines(paragraph.Inlines);
+                    WriteInlines(paragraph.Inlines, keepTrailingLineBreak: paragraph == _backLinksParagraph);
                     if (paragraph == _backLinksParagraph)
                     {
                         _output.Append(_backLinks);
@@ -281,9 +226,9 @@ public static class MarkdownHtmlRenderer
                 case MarkdownHeadingSyntax heading:
                     Cr();
                     _output.Append("<h").Append(heading.Level);
-                    AppendAttributes(heading);
+                    AppendAttributes(heading, id: _autoIdentifiers ? heading.Identifier : null);
                     _output.Append('>');
-                    WriteInlines(heading.Inlines);
+                    WriteInlines(heading.Inlines, keepTrailingLineBreak: true);
                     _output.Append("</h").Append(heading.Level).Append('>');
                     Cr();
                     break;
@@ -509,13 +454,31 @@ public static class MarkdownHtmlRenderer
             _output.Append("</tr>\n");
         }
 
-        private void WriteInlines(IEnumerable<SyntaxNodeOrToken> inlines)
+        private void WriteInlines(IEnumerable<SyntaxNodeOrToken> inlines, bool keepTrailingLineBreak = false)
         {
+            // As in Markdig, a line break that only attributes follow ends the text, and is not written. In a heading, Markdig reads
+            // the line endings as text, and the back links of a footnote come after the line break.
+            SyntaxToken pendingLineBreak = default;
             foreach (var child in inlines)
             {
+                if (child.AsNode() is MarkdownGenericAttributesSyntax)
+                {
+                    continue;
+                }
+
+                if (pendingLineBreak.RawKind != 0)
+                {
+                    WriteToken(pendingLineBreak);
+                    pendingLineBreak = default;
+                }
+
                 if (child.AsNode() is MarkdownInlineSyntax inline)
                 {
                     WriteInline(inline);
+                }
+                else if (_attributes is not null && !keepTrailingLineBreak && child.AsToken().RawKind is (int)SyntaxKind.LineEndingToken or (int)SyntaxKind.HardLineBreakToken)
+                {
+                    pendingLineBreak = child.AsToken();
                 }
                 else
                 {

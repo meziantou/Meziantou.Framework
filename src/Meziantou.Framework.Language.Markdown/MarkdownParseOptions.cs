@@ -12,6 +12,9 @@ public sealed record MarkdownParseOptions
     /// <summary>Gets the extensions to parse.</summary>
     public MarkdownExtensions Extensions { get; init; }
 
+    /// <summary>Gets how <see cref="MarkdownExtensions.AutoIdentifiers"/> makes the identifiers of the headings.</summary>
+    public MarkdownAutoIdentifierOptions AutoIdentifierOptions { get; init; } = MarkdownAutoIdentifierOptions.Default;
+
     /// <summary>Gets a value indicating whether a block quote in a container, such as a list item, can be an alert. By default, only the block quotes of the document are.</summary>
     public bool AllowNestedAlerts { get; init; }
 

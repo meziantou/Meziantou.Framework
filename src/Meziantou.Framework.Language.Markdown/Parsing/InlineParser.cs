@@ -551,6 +551,9 @@ internal sealed class InlineParser
     /// <summary>Gets the normalized labels of the footnotes of the document, which the block parser adds as it reads their definitions.</summary>
     public HashSet<string> Footnotes { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>Gets the normalized labels of the headings, which a reference link without definition links to with auto-identifiers.</summary>
+    public HashSet<string> HeadingLabels { get; } = new(StringComparer.Ordinal);
+
     /// <summary>Gets the labels of the abbreviations of the document, with the length of their title, which the block parser adds as it reads their definitions.</summary>
     public Dictionary<string, int> Abbreviations { get; } = new(StringComparer.Ordinal);
 
@@ -870,10 +873,11 @@ internal sealed class InlineParser
             return false;
         }
 
+        // The text before attributes that end the text, and before the attributes before them, ends with no whitespace
         var afterText = false;
         if (_text.AsSpan(end, _end - end).IndexOfAnyExcept(" \t\n\v\f\r") < 0)
         {
-            while (_root.LastChild is { Kind: SyntaxKind.TextToken, IsDelimiterRun: false } text)
+            while (GetLastNonAttributes(_root) is { Kind: SyntaxKind.TextToken, IsDelimiterRun: false } text)
             {
                 afterText = true;
                 while (text.End > text.Start && _text[text.End - 1] is ' ' or '\t' or '\v' or '\f')
@@ -886,13 +890,22 @@ internal sealed class InlineParser
                     break;
                 }
 
+                // The attributes after the whitespace were after text: they are for the block
+                for (var next = text.Next; next is not null; next = next.Next)
+                {
+                    if (next.FirstChild is { Value: 0 } token)
+                    {
+                        token.Value = 2;
+                    }
+                }
+
                 text.Unlink();
             }
         }
 
         var attributes = NewNode(SyntaxKind.GenericAttributes, _pos, end);
         AppendLines(attributes, SyntaxKind.AttributesToken, _pos, end);
-        if (afterText && attributes.FirstChild is { } first && (_root.LastChild is not { Kind: SyntaxKind.TextToken } || _root.LastChild.End < _pos))
+        if (afterText && attributes.FirstChild is { } first && (GetLastNonAttributes(_root) is not { Kind: SyntaxKind.TextToken } last || last.End < _pos))
         {
             // The whitespace before them was text: they are for the block
             first.Value = 2;
@@ -901,6 +914,17 @@ internal sealed class InlineParser
         _root.Append(attributes);
         _pos = end;
         return true;
+    }
+
+    private static InlineNode? GetLastNonAttributes(InlineNode parent)
+    {
+        var node = parent.LastChild;
+        while (node is { Kind: SyntaxKind.GenericAttributes })
+        {
+            node = node.Previous;
+        }
+
+        return node;
     }
 
     // As Markdig: the end of the text is whitespace, and an ASCII punctuation character or a Unicode one is punctuation
@@ -1064,7 +1088,7 @@ internal sealed class InlineParser
 
             // A label of a footnote makes a reference to the footnote, as in Markdig, an image included
             var normalized = label is null ? null : Scanners.NormalizeLabel(label);
-            if (normalized is not null && (_references.ContainsKey(normalized) || (footnote = Footnotes.Contains(normalized))))
+            if (normalized is not null && (_references.ContainsKey(normalized) || (footnote = Footnotes.Contains(normalized)) || (HeadingLabels.Contains(normalized) && !HasActiveBracket(opener.Previous))))
             {
                 matched = true;
                 if (labelLength >= 2)
@@ -1127,6 +1151,20 @@ internal sealed class InlineParser
     }
 
     private void RemoveBracket() => _brackets = _brackets?.Previous;
+
+    // As in Markdig, a heading is not linked to inside a bracket that can still be a link or an image, as in [text [Heading]](url)
+    private static bool HasActiveBracket(Bracket? bracket)
+    {
+        for (; bracket is not null; bracket = bracket.Previous)
+        {
+            if (bracket.Active)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     // Optional spaces or tabs, including up to one line ending
     private void SkipSpacesAndNewline()

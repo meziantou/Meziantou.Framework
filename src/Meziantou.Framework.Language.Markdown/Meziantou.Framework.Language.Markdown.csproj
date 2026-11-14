@@ -1,6 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Language.Markdown</RootNamespace>
     <Description>A prototype of a Roslyn-style immutable CommonMark syntax tree that keeps every character of the text it was parsed from.</Description>

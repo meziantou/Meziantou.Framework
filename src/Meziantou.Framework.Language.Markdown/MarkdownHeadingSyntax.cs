@@ -1,4 +1,6 @@
+using System.Text;
 using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Language.Markdown.Parsing;
 
 namespace Meziantou.Framework.Language.Markdown;
 
@@ -39,7 +41,76 @@ public sealed class MarkdownHeadingSyntax : MarkdownBlockSyntax
     /// <summary>Gets the inlines of the heading, without its markers.</summary>
     public IEnumerable<SyntaxNodeOrToken> Inlines => ChildNodesAndTokens().Where(child => !child.IsToken || child.AsToken().RawKind is not ((int)SyntaxKind.AtxHeadingMarkerToken or (int)SyntaxKind.AtxHeadingClosingSequenceToken or (int)SyntaxKind.SetextHeadingUnderlineToken));
 
+    /// <summary>Gets the identifier of the heading, which the HTML renderer writes as its <c>id</c>, or <see langword="null"/> when it has none.</summary>
+    /// <remarks>
+    /// It is the id of its generic attributes, or, with <see cref="MarkdownExtensions.AutoIdentifiers"/>, an identifier made from its
+    /// text: <c>## Getting started</c> is <c>getting-started</c>. The identifiers made from the same text are made unique by a
+    /// suffix: the second <c>## Getting started</c> is <c>getting-started-1</c>.
+    /// </remarks>
+    public string? Identifier => FirstAncestorOrSelf<MarkdownDocumentSyntax>()?.GetHeadingIdentifier(this);
+
     public override string GetPlainText() => GetPlainText(Inlines);
+
+    // The text that the identifier is made from: Markdig renders the inlines as text, without the ones of the extensions that its text
+    // renderer cannot render, such as math and footnote references. The abbreviations are text then, as Markdig finds them later.
+    internal string GetIdentifierText()
+    {
+        var builder = new StringBuilder();
+        AppendIdentifierText(Inlines, builder);
+        return builder.ToString();
+    }
+
+    private void AppendIdentifierText(IEnumerable<SyntaxNodeOrToken> children, StringBuilder builder)
+    {
+        foreach (var child in children)
+        {
+            switch (child.AsNode())
+            {
+                case MarkdownEmphasisSyntax emphasis:
+                    AppendIdentifierText(emphasis.Inlines, builder);
+                    break;
+                case MarkdownStrikethroughSyntax strikethrough:
+                    AppendIdentifierText(strikethrough.Inlines, builder);
+                    break;
+                case MarkdownEmphasisExtraSyntax extra:
+                    AppendIdentifierText(extra.Inlines, builder);
+                    break;
+                case MarkdownLinkSyntax link:
+                    AppendIdentifierText(link.Text, builder);
+                    break;
+                case MarkdownCodeSpanSyntax or MarkdownAutolinkSyntax or MarkdownAbbreviationSyntax:
+                    ((MarkdownInlineSyntax)child.AsNode()!).AppendPlainText(builder);
+                    break;
+                case null:
+                    AppendPlainText([child], builder);
+                    break;
+            }
+        }
+    }
+
+    // The text of the first line, which a reference link links to the heading with: Markdig reads it from the source, without the
+    // generic attributes
+    internal string GetFirstLineLabel(MarkdownParseOptions options)
+    {
+        var builder = new StringBuilder();
+        foreach (var child in Inlines)
+        {
+            if (child.AsNode() is MarkdownGenericAttributesSyntax { IsBlockLine: true } || (child.IsToken && child.AsToken().RawKind == (int)SyntaxKind.AttributesTrailingTextToken))
+            {
+                continue;
+            }
+
+            // The trivia before the heading, such as a blank line, is not part of its first line
+            var text = child.ToFullString();
+            builder.Append(builder.Length == 0 ? text.AsSpan(child.Span.Start - child.FullSpan.Start) : text);
+        }
+
+        // Attributes can end with the line ending
+        var firstLine = builder.ToString();
+        var lineEnd = firstLine.AsSpan().IndexOfAny('\r', '\n');
+        var label = lineEnd < 0 ? firstLine : firstLine[..lineEnd];
+        return options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes) ? HeadingIdentifier.GetLabelWithoutAttributes(label, 0, label.Length) : label;
+    }
 
     public override void Accept(MarkdownSyntaxVisitor visitor)
     {

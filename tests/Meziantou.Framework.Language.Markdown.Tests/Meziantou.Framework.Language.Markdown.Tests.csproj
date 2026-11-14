@@ -1,6 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Language.Markdown.Tests</RootNamespace>
   </PropertyGroup>

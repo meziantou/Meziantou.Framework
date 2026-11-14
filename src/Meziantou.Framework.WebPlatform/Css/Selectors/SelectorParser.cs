@@ -132,6 +132,9 @@ internal sealed class SelectorParser
     // The lists the selectors are built in, shared by the nested selectors (e.g. the arguments of :is()): each one uses the end
     // of the lists, and removes its items before returning. As the lists are used as stacks, the parsers of the same thread
     // share them, so that a parser (there is one per style rule) does not allocate and grow its own lists.
+    /// <summary>The capacity above which a buffer is not kept after a parse.</summary>
+    private const int MaxBufferCapacity = 256;
+
     [ThreadStatic]
     private static List<ComplexSelector>? s_complexBuffer;
 
@@ -283,6 +286,38 @@ internal sealed class SelectorParser
         finally
         {
             _listDepth--;
+            if (_listDepth == 0)
+            {
+                ReleaseLargeBuffers();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Drops the shared buffers that grew large (e.g. a selector of thousands of classes), so the memory of a thread does not
+    /// depend on the largest selector it parsed. A parser that still uses one keeps its reference, so the buffers are only
+    /// no longer shared with the next parsers.
+    /// </summary>
+    private static void ReleaseLargeBuffers()
+    {
+        if (s_complexBuffer is { Capacity: > MaxBufferCapacity })
+        {
+            s_complexBuffer = null;
+        }
+
+        if (s_compoundBuffer is { Capacity: > MaxBufferCapacity })
+        {
+            s_compoundBuffer = null;
+        }
+
+        if (s_combinatorBuffer is { Capacity: > MaxBufferCapacity })
+        {
+            s_combinatorBuffer = null;
+        }
+
+        if (s_simpleBuffer is { Capacity: > MaxBufferCapacity })
+        {
+            s_simpleBuffer = null;
         }
     }
 

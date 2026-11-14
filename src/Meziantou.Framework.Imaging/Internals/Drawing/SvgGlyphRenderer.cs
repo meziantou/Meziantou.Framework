@@ -224,6 +224,18 @@ internal static class SvgGlyphRenderer
 
         public void Charge(long count) => _budget.Charge(count);
 
+        /// <summary>Reads a transformation list, charged to the budget before it is read: an element is read on each visit.</summary>
+        private AffineTransform ParseTransform(string? text)
+        {
+            // The shortest transformation, "scale(1)", has eight characters.
+            if (text is not null)
+            {
+                _budget.Charge(1 + (text.Length / 8));
+            }
+
+            return SvgValues.ParseTransform(text);
+        }
+
         /// <summary>Gets the width of the viewport of the document in its user units, the reference of the horizontal percentages.</summary>
         public double ViewportWidth { get; private set; } = face.UnitsPerEm;
 
@@ -359,7 +371,7 @@ internal static class SvgGlyphRenderer
                 return;
 
             var style = parentStyle.Inherit(element, this);
-            var transform = SvgValues.ParseTransform(element.GetAttribute("transform")).Then(parentTransform);
+            var transform = ParseTransform(element.GetAttribute("transform")).Then(parentTransform);
             switch (element.Name)
             {
                 case "g":
@@ -463,7 +475,7 @@ internal static class SvgGlyphRenderer
                 return;
 
             // The transformation of the symbol moves its viewport and its content together.
-            var symbolTransform = SvgValues.ParseTransform(symbol.GetAttribute("transform")).Then(transform);
+            var symbolTransform = ParseTransform(symbol.GetAttribute("transform")).Then(transform);
             var contentTransform = symbolTransform;
             var viewportWidth = width;
             var viewportHeight = height;
@@ -738,7 +750,7 @@ internal static class SvgGlyphRenderer
             double Reference(string attribute) => isUserSpace ? GetReference(attribute) : 1;
             double Coordinate(string attribute, double defaultValue) => SvgValues.TryParseLength(Get(attribute, isGeometry: true), Reference(attribute), out var value) ? value : defaultValue;
 
-            var brushTransform = SvgValues.ParseTransform(Get("gradientTransform", isGeometry: false)).Then(unitsTransform);
+            var brushTransform = ParseTransform(Get("gradientTransform", isGeometry: false)).Then(unitsTransform);
             var spread = Get("spreadMethod", isGeometry: false) switch
             {
                 "reflect" => GradientSpreadMode.Reflect,
@@ -826,7 +838,7 @@ internal static class SvgGlyphRenderer
             if (clipPath.GetAttribute("clipPathUnits") is "objectBoundingBox")
                 return true;
 
-            var clipTransform = SvgValues.ParseTransform(clipPath.GetAttribute("transform")).Then(transform);
+            var clipTransform = ParseTransform(clipPath.GetAttribute("transform")).Then(transform);
             var shapes = 0;
             long segments = 0;
             foreach (var child in clipPath.Children)
@@ -847,14 +859,14 @@ internal static class SvgGlyphRenderer
 
                     var x = GetLength(child, "x");
                     var y = GetLength(child, "y");
-                    childTransform = AffineTransform.CreateTranslation(x, y).Then(SvgValues.ParseTransform(child.GetAttribute("transform")).Then(clipTransform));
+                    childTransform = AffineTransform.CreateTranslation(x, y).Then(ParseTransform(child.GetAttribute("transform")).Then(clipTransform));
                     element = target;
                 }
 
                 if (!IsShape(element.Name) || element.GetAttribute("visibility") is "hidden" or "collapse" || CreatePath(element) is not { } path)
                     continue;
 
-                path = path.Transform(SvgValues.ParseTransform(element.GetAttribute("transform")).Then(childTransform));
+                path = path.Transform(ParseTransform(element.GetAttribute("transform")).Then(childTransform));
                 shapes++;
 
                 // A union rebuilds the shapes before it: it is charged for all of their segments.

@@ -1085,12 +1085,14 @@ public sealed class ColorFontTests
         Assert.Throws<ImageResourceLimitException>(() => TextLayout.Create("A", limited, 16));
         Assert.NotEqual(Draw(20, 20, _ => { }), Draw(20, 20, canvas => canvas.FillText(Black, "A", FontTestSupport.Load(font), 16, new PointD(0, 0))));
 
-        // The data of an image and the points of a polygon are charged to the complexity of the glyph before they are read.
+        // The data of an image, the points of a polygon and a transformation list are charged to the complexity of the glyph
+        // before they are read.
         var options = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxGlyphComplexity = 10_000 } } };
         foreach (var element in new[]
         {
             "<image width='256' height='256' href='data:image/png;base64," + new string('A', 100_000) + "'/>",
             "<polygon points='" + string.Concat(Enumerable.Repeat("1 ", 50_000)) + "'/>",
+            "<rect width='1' height='1' transform='" + string.Concat(Enumerable.Repeat("scale(1)", 20_000)) + "'/>",
         })
         {
             font.RawTables["SVG "] = FontSamples.WriteSvgTable([(FontSamples.BoxA, FontSamples.BoxA, System.Text.Encoding.UTF8.GetBytes(

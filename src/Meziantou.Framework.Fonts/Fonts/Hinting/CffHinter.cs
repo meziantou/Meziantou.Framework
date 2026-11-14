@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>
@@ -86,7 +88,11 @@ internal sealed class CffHinter
 
         // Each hint map reads every stem of the glyph: the work is charged before it is done.
         var coordinates = scratch.Work[_recorder.Start..];
-        budget.Charge(_recorder.Commands.Count + _recorder.Stems.Count + ((long)_recorder.Masks.Count * _recorder.Stems.Count));
+        // Each hint map reads every stem of the glyph, and each coordinate is mapped by a search of the edges of its
+        // map: the work is charged before it is done.
+        var coordinateCount = scratch.Work.Length - _recorder.Start;
+        var searchCost = 1 + BitOperations.Log2((uint)_recorder.Stems.Count + 1);
+        budget.Charge(_recorder.Commands.Count + _recorder.Stems.Count + ((long)_recorder.Masks.Count * _recorder.Stems.Count) + ((long)coordinateCount * searchCost));
         BuildMaps();
         Emit(coordinates, sink);
     }
@@ -234,7 +240,10 @@ internal sealed class CffHinter
         _constraints.Add((edge * _scale, double.IsNaN(aligned) ? Math.Round(edge * _scale, MidpointRounding.AwayFromZero) : aligned, double.IsNaN(aligned) ? 1 : 2));
     }
 
-    /// <summary>Maps a vertical coordinate, in font units, with a hint map.</summary>
+    /// <summary>
+    /// Maps a vertical coordinate, in font units, with a hint map: a binary search of the edges, whose cost is charged
+    /// with the coordinates (<see cref="Decode"/>).
+    /// </summary>
     private double MapY(int map, double y)
     {
         var (start, count) = _maps[map];
@@ -246,19 +255,30 @@ internal sealed class CffHinter
         if (pixels <= first.Original)
             return (pixels + first.Hinted - first.Original) / _scale;
 
-        for (var i = start + 1; i < start + count; i++)
+        var last = _mapConstraints[start + count - 1];
+        if (pixels > last.Original)
+            return (pixels + last.Hinted - last.Original) / _scale;
+
+        // The first edge at or above the coordinate: the one before it is below.
+        var low = start + 1;
+        var high = start + count - 1;
+        while (low < high)
         {
-            var next = _mapConstraints[i];
-            if (pixels <= next.Original)
+            var middle = (low + high) >>> 1;
+            if (_mapConstraints[middle].Original < pixels)
             {
-                var previous = _mapConstraints[i - 1];
-                var t = (pixels - previous.Original) / (next.Original - previous.Original);
-                return (previous.Hinted + ((next.Hinted - previous.Hinted) * t)) / _scale;
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
             }
         }
 
-        var last = _mapConstraints[start + count - 1];
-        return (pixels + last.Hinted - last.Original) / _scale;
+        var next = _mapConstraints[low];
+        var previous = _mapConstraints[low - 1];
+        var t = (pixels - previous.Original) / (next.Original - previous.Original);
+        return (previous.Hinted + ((next.Hinted - previous.Hinted) * t)) / _scale;
     }
 
     private void Emit(Span<double> coordinates, OutlineSink sink)

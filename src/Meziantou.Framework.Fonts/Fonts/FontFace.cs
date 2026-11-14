@@ -576,6 +576,13 @@ public sealed class FontFace
     /// </summary>
     public bool VariesAdvancesWithOutlines => _instance is not null && _hvarStore == 0 && _gvar is not null;
 
+    /// <summary>
+    /// Gets a value indicating whether the vertical metrics of an instance of a variable font are varied by a table of
+    /// their own: <c>VVAR</c> for the advance heights of <c>vmtx</c>, <c>MVAR</c> for the line metrics of a font without
+    /// vertical metrics.
+    /// </summary>
+    internal bool VariesVerticalMetrics => _instance is not null && (HasVerticalMetrics ? _vvarStore != 0 : _mvarLength > 0);
+
     /// <summary>Gets the advance width of a glyph, in font units.</summary>
     /// <remarks>
     /// In an instance of a variable font, the advance of the default instance varies by the delta of the <c>HVAR</c>

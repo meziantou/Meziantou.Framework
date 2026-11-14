@@ -227,6 +227,81 @@ public sealed class ReportingTests : IDisposable
     }
 
     [Fact]
+    public void Deprecation_SynchronousXhr_IsReportedOncePerDocument()
+    {
+        var document = Load("""
+            <script>
+            new ReportingObserver(reports => {
+              for (const report of reports)
+                document.title += [report.type, report.body.id, report.body.anticipatedRemoval, report.body.message.startsWith("Synchronous XMLHttpRequest"), report.body.sourceFile, typeof report.body.lineNumber].join("|") + ";";
+            }).observe();
+            for (let i = 0; i < 2; i++) {
+              const xhr = new XMLHttpRequest();
+              xhr.open("GET", "/data", false);
+              xhr.send();
+            }
+            new XMLHttpRequest().open("GET", "/data");
+            </script>
+            """, [new("Reporting-Endpoints", "default=\"/reports\"")]);
+
+        Assert.Equal("deprecation|XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload||true|https://example.com/|number;", document.Title);
+
+        // The report is sent to the default endpoint
+        var request = Assert.Single(_requests, r => r.Destination == RequestDestination.Report);
+        Assert.Equal("https://example.com/reports", request.Url);
+        using var json = JsonDocument.Parse(request.Body!.Value);
+        var report = Assert.Single(json.RootElement.EnumerateArray());
+        Assert.Equal("deprecation", report.GetProperty("type").GetString());
+        Assert.Equal("XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload", report.GetProperty("body").GetProperty("id").GetString());
+        Assert.Equal(JsonValueKind.Null, report.GetProperty("body").GetProperty("anticipatedRemoval").ValueKind);
+        Assert.Equal(JsonValueKind.Number, report.GetProperty("body").GetProperty("lineNumber").ValueKind);
+    }
+
+    [Fact]
+    public void Intervention_PreventDefaultInADefaultPassiveListener_IsReported()
+    {
+        var document = Load("""
+            <div id="target"></div>
+            <script>
+            new ReportingObserver(reports => {
+              for (const report of reports)
+                document.title += report.type + "|" + report.body.id + "|" + (report.body.sourceFile !== null) + ";";
+            }).observe();
+            const results = [];
+            // Passive because the window treats the wheel listeners as passive: an intervention
+            addEventListener("wheel", e => { e.preventDefault(); results.push("window:" + e.defaultPrevented); }, { once: true });
+            dispatchEvent(new WheelEvent("wheel", { cancelable: true }));
+            // Passive because of the option of the listener, or not passive: no intervention
+            target.addEventListener("wheel", e => { e.preventDefault(); results.push("passive:" + e.defaultPrevented); }, { passive: true, once: true });
+            target.dispatchEvent(new WheelEvent("wheel", { cancelable: true }));
+            document.body.addEventListener("touchstart", e => { e.preventDefault(); results.push("active:" + e.defaultPrevented); }, { passive: false });
+            document.body.dispatchEvent(new Event("touchstart", { cancelable: true }));
+            // An event that is not cancelable: no intervention
+            addEventListener("touchmove", e => e.preventDefault());
+            dispatchEvent(new Event("touchmove"));
+            document.body.dataset.results = results.join(",");
+            </script>
+            """, []);
+
+        Assert.Equal("window:false,passive:false,active:true", document.Body!.GetAttribute("data-results"));
+        Assert.Equal("intervention|PreventDefaultPassive|true;", document.Title);
+        Assert.DoesNotContain(_requests, r => r.Destination == RequestDestination.Report);
+    }
+
+    [Fact]
+    public void Intervention_ReportBody_Json()
+    {
+        var document = Load("<p>", []);
+        document.RelevantWindow!.ReportIntervention("Id", "Message");
+        _contexts.EventLoop.RunUntilIdle();
+
+        var report = Assert.Single(document.RelevantWindow!.GetReportBuffer());
+        Assert.Equal("intervention", report.Type);
+        Assert.Equal("""{"id":"Id","message":"Message","sourceFile":null,"lineNumber":null,"columnNumber":null}""", report.Body!.ToJson());
+        Assert.Equal("""{"id":"Id","anticipatedRemoval":"2027-01-02T03:04:05.000Z","message":"Message","sourceFile":null,"lineNumber":null,"columnNumber":null}""", new DeprecationReportBody { Id = "Id", Message = "Message", AnticipatedRemoval = new DateTime(2027, 1, 2, 3, 4, 5, DateTimeKind.Utc) }.ToJson());
+    }
+
+    [Fact]
     public void CspHash_ReportsTheHashOfTheScripts()
     {
         var document = Load("""

@@ -362,7 +362,7 @@ The targets are `_self` (the default), `_parent`, `_top` and the names of the br
 attribute, `window.name`) of the browsing context group; `_blank` and the unknown names open a new auxiliary browsing
 context (see [Auxiliary browsing contexts](#auxiliary-browsing-contexts)), without opener for `_blank` unless
 `rel=opener` (and never with `rel=noopener` or `rel=noreferrer`). The hyperlinks with a `download` attribute are not
-followed (downloads are not supported).
+followed: their resource is fetched and given to `BrowsingContextOptions.DownloadStarted` (nothing is fetched without it).
 
 The navigations are recorded in the history of the visited links when the browsing context has one
 (`BrowsingContextOptions.VisitedLinks`; none by default): see [Visited links](computed-style.md#visited-links).
@@ -798,8 +798,8 @@ of its parent document until the new document is loaded; a reload or a traversal
 - The body of a document is displayed whatever its status (e.g. a 404 page). A script or a style sheet whose
   status is not in the 200-299 range is a network error, as is a script whose MIME type is an audio, image or video type,
   or `text/csv`. A response whose status is 204 or 205, whose
-  `Content-Disposition` is `attachment`, or whose computed MIME type is `application/octet-stream` (a download, which is
-  not saved), does not create a document: the navigation ends and the active document stays. The computed MIME type of a
+  `Content-Disposition` is `attachment`, or whose computed MIME type is `application/octet-stream` (a download, given to
+  `BrowsingContextOptions.DownloadStarted`), does not create a document: the navigation ends and the active document stays. The computed MIME type of a
   navigation (https://mimesniff.spec.whatwg.org/#mime-type-sniffing-algorithm) is sniffed from the bytes when the
   `Content-Type` gives no MIME type, and a `Content-Type` of `text/plain` as Apache sends it (`text/plain`,
   `text/plain; charset=ISO-8859-1`, `text/plain; charset=iso-8859-1` or `text/plain; charset=UTF-8`, the
@@ -1888,8 +1888,13 @@ of the embedder policy, the `coop` reports of the opener policy, the `permission
   counted, and nothing is retried. The reports whose destination names no endpoint are only observed.
 - The `coop` reports of the opener policies are described in [Auxiliary browsing contexts](#auxiliary-browsing-contexts) (the `Cross-Origin-Opener-Policy`
   header); the reports of the navigations are delivered without document, so they are not observed.
-- No `deprecation` or `intervention` report is generated (no feature of the library is deprecated), nor are the reports
-  of the Crash Reporting API (`crashReport`). The `permissions-policy-violation` reports are
+- As in Chromium, a window generates a `deprecation` report (`DeprecationReportBody`, `Window.ReportDeprecation`) the
+  first time it uses a deprecated feature: a synchronous `XMLHttpRequest` (`open()` with `async` false), and an
+  `intervention` report (`InterventionReportBody`, `Window.ReportIntervention`) for each `preventDefault()` call on a
+  cancelable event in a listener that is passive because of the default passive value of its target
+  (https://dom.spec.whatwg.org/#default-passive-value; `EventListenerEntry.PassiveByDefault`). Both are sent to the
+  `default` endpoint, with the location of the running script; the identifiers and messages are the ones of Chromium.
+  The reports of the Crash Reporting API (`crashReport`) are not generated. The `permissions-policy-violation` reports are
   described in [Permissions Policy](#permissions-policy).
 
 ## Permissions Policy
@@ -2264,7 +2269,7 @@ exposes the session history entries of the browsing context that are same origin
 - The `navigate` event is fired at the navigation API object of the document for the navigations initiated by a same
   origin-domain document (hyperlinks, forms, `location`, `window.open()` targets, `navigation.navigate()`), the fragment
   navigations, `history.pushState()`/`replaceState()`, the reloads, the traversals and the hyperlinks with a `download`
-  attribute (nothing is downloaded). Its listeners can cancel the navigation, or intercept it
+  attribute (canceling it cancels the download). Its listeners can cancel the navigation, or intercept it
   (`event.intercept({ precommitHandler, handler })`) to convert it into a same-document navigation; the handlers' promises
   settle the `finished` promise and fire `navigatesuccess` or `navigateerror`, and `navigation.transition` describes the
   ongoing intercepted navigation. A new navigation, `window.stop()` or the removal of the iframe aborts the ongoing one

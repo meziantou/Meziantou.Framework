@@ -4481,6 +4481,16 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void UpdateInkTrailStartPoint(Meziantou.Framework.WebPlatform.Dom.PointerEvent @event, Meziantou.Framework.WebPlatform.Dom.InkTrailStyle style) { }
     }
 
+    public sealed class DeprecationReportBody : Meziantou.Framework.WebPlatform.Dom.ReportBody
+    {
+        public System.DateTime? AnticipatedRemoval { get => throw null; init { } }
+        public int? ColumnNumber { get => throw null; init { } }
+        public string Id { get => throw null; init { } }
+        public int? LineNumber { get => throw null; init { } }
+        public string Message { get => throw null; init { } }
+        public string? SourceFile { get => throw null; init { } }
+    }
+
     public sealed class DeviceDescriptor : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor>
     {
         public double DevicePixelRatio { get => throw null; init { } }
@@ -8387,6 +8397,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string ScrollMargin { get => throw null; set { } }
         public object? Threshold { get => throw null; set { } }
         public bool TrackVisibility { get => throw null; set { } }
+    }
+
+    public sealed class InterventionReportBody : Meziantou.Framework.WebPlatform.Dom.ReportBody
+    {
+        public int? ColumnNumber { get => throw null; init { } }
+        public string Id { get => throw null; init { } }
+        public int? LineNumber { get => throw null; init { } }
+        public string Message { get => throw null; init { } }
+        public string? SourceFile { get => throw null; init { } }
     }
 
     public sealed class IntrinsicSizesResultOptions

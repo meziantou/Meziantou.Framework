@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="StackExchange.Redis" Version="3.4.20" />
+    <PackageReference Include="StackExchange.Redis" Version="3.4.29" />
   </ItemGroup>
 
   <ItemGroup>

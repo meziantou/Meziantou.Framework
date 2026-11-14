@@ -1,36 +1,40 @@
 ---
 title: Getting started
-description: Install the package, generate a QR code and a barcode, and save them as PNG files.
+description: Install the packages, generate a QR code and a barcode, and save them as PNG files.
 ---
 
 ## Install the package
 
-Add the `Meziantou.Framework.Barcodes` package to a project:
+Add the `Meziantou.Framework.Barcodes` package to a project, and `Meziantou.Framework.Imaging.Barcodes` to save the
+codes as PNG files or other images:
 
 <InstallNuGetPackage Id="Meziantou.Framework.Barcodes" />
+<InstallNuGetPackage Id="Meziantou.Framework.Imaging.Barcodes" />
 
-The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.Barcodes;`.
+The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.Barcodes;`,
+`using Meziantou.Framework.VectorGraphics;` for the colors, and `using Meziantou.Framework.Imaging.Barcodes;` for the
+images.
 
 ## Generate a QR code
 
-[QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) encodes a text in the smallest QR code that holds it, and [ToPng](cref:Meziantou.Framework.Barcodes.QRCodePngRenderer.ToPng) renders it as the bytes of a PNG
-file:
+[QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) encodes a text in the smallest QR code that holds it, and [ToImage](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageRenderer.ToImage) renders it as an image,
+to save as a PNG file:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_GettingStarted;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var qrCode = QRCode.Create("https://www.meziantou.net");
 
-// The bytes of a PNG file, to save with File.WriteAllBytes("qrcode.png", png)
-var png = qrCode.ToPng(new QRCodePngOptions { ModuleSize = 4 });
+// ToImage comes from Meziantou.Framework.Imaging.Barcodes: save the image as PNG with image.Save("qrcode.png")
+using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 4 });
 ```
 <!-- endref -->
 
 ![A black and white QR code that encodes the address of a website](images/GettingStartedQRCode.png)
 
-- [ModuleSize](cref:Meziantou.Framework.Barcodes.QRCodePngOptions.ModuleSize) is the size of a module, the small square of a QR code, in pixels. It is 10 by default.
+- [ModuleSize](cref:Meziantou.Framework.Barcodes.QRCodeRenderOptions.ModuleSize) is the size of a module, the small square of a QR code, in pixels. It is 10 by default.
 - The image includes the quiet zone, the light margin a scanner needs around the code: 4 modules by default.
-- [ToPng](cref:Meziantou.Framework.Barcodes.QRCodePngRenderer.ToPng) is an extension method; [WriteToPng](cref:Meziantou.Framework.Barcodes.QRCodePngRenderer.WriteToPng) writes to a stream, and [ToSvg](cref:Meziantou.Framework.Barcodes.QRCodeSvgRenderer.ToSvg) gives an SVG document. See
-  [SVG and PNG](06-SvgAndPng.md).
+- The same options give an SVG document with [ToSvg](cref:Meziantou.Framework.Barcodes.QRCodeRenderer.ToSvg), which needs only `Meziantou.Framework.Barcodes`,
+  or a PDF document. See [SVG, images and PDF](06-SvgImagesAndPdf.md).
 
 ## Generate a barcode
 
@@ -40,15 +44,15 @@ The `Barcode.Create*` methods create linear barcodes, one method per symbology:
 ```csharp
 var barcode = Barcode.CreateCode128("SKU-123456");
 
-// The bytes of a PNG file, to save with File.WriteAllBytes("barcode.png", png)
-var png = barcode.ToPng(new BarcodePngOptions { ModuleHeight = 60 });
+// ToImage comes from Meziantou.Framework.Imaging.Barcodes: save the image as PNG with image.Save("barcode.png")
+using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60 });
 ```
 <!-- endref -->
 
 ![A Code 128 barcode](images/GettingStartedBarcode.png)
 
-The PNG renderer draws the bars only. To print the text under them, use the image renderer of
-`Meziantou.Framework.Imaging.Barcodes` with a font: see [Images](08-Images.md).
+To print the human-readable text under the bars, set [Text](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.Text): see
+[Print the text under a barcode](06-SvgImagesAndPdf.md#print-the-text-under-a-barcode).
 
 ## Next steps
 

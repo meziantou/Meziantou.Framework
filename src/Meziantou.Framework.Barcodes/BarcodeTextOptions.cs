@@ -1,0 +1,27 @@
+using Meziantou.Framework.VectorGraphics;
+
+namespace Meziantou.Framework.Barcodes;
+
+/// <summary>
+/// The style of the human-readable text (<see cref="Barcode.Text"/>) printed under the bars of a barcode
+/// (<see cref="BarcodeRenderOptions.Text"/>).
+/// </summary>
+/// <remarks>
+/// The text is measured with the metrics of <see cref="Fonts"/>, and the fonts become the fonts of the scene
+/// (<see cref="Scene.Fonts"/>), so the SVG, image and PDF renderers draw it with the fonts that measured it. Set
+/// <see cref="SvgRenderOptions.EmbedFonts"/> to embed the font in an SVG document.
+/// </remarks>
+public sealed class BarcodeTextOptions
+{
+    /// <summary>Gets or sets the fonts of the text. Default is <see cref="BarcodeFonts.OcrB"/>, the font usually printed under EAN and UPC barcodes.</summary>
+    public SceneFontCollection Fonts { get; set; } = BarcodeFonts.OcrB;
+
+    /// <summary>Gets or sets the size of the font, in units per em. Default is 14.</summary>
+    public double FontSize { get; set; } = 14;
+
+    /// <summary>Gets or sets the paint of the text. Default is <see langword="null"/>: the text is painted with <see cref="BarcodeRenderOptions.DarkPaint"/>.</summary>
+    public ScenePaint? Paint { get; set; }
+
+    /// <summary>Gets or sets the space between the bottom of the bars and the top of the text. Default is 2.</summary>
+    public double Spacing { get; set; } = 2;
+}

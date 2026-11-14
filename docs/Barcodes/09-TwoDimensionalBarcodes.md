@@ -145,32 +145,33 @@ With the default error correction, the largest symbol holds 3,832 digits, 3,067 
 
 ## Render
 
-[Barcode2D](cref:Meziantou.Framework.Barcodes.Barcode2D) has its own renderers, with square modules: `ToSvg` gives an SVG document, `ToPng` and `WriteToPng`
-a PNG file:
+[Barcode2D](cref:Meziantou.Framework.Barcodes.Barcode2D) is rendered like a QR code, with square modules: `ToSvg` gives an SVG document, `ToImage` of
+`Meziantou.Framework.Imaging.Barcodes` an image to save as PNG, and `CreateScene` the drawing for a PDF document (see
+[SVG, images and PDF](06-SvgImagesAndPdf.md)):
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/DataMatrixTests.cs;region=Barcode2D_Render;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var barcode = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
 
 // SVG: a viewBox of (22 + 2 × 2) × 4 units, a rectangle of the light color and a path of the dark modules
-var svg = barcode.ToSvg(new Barcode2DSvgOptions { ModuleSize = 4, QuietZoneModules = 2 });
-Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 104 104\">", svg);
+var svg = barcode.ToSvg(new Barcode2DRenderOptions { ModuleSize = 4, QuietZoneModules = 2 });
+Assert.Contains("viewBox=\"0 0 104 104\"", svg);
 
-// PNG: the bytes of a file, to save with File.WriteAllBytes("datamatrix.png", png)
-var png = barcode.ToPng(new Barcode2DPngOptions
+// An image (Meziantou.Framework.Imaging.Barcodes), to save as PNG with image.Save("datamatrix.png")
+using var image = barcode.ToImage(new Barcode2DRenderOptions
 {
     ModuleSize = 6,
     QuietZoneModules = 2,
-    DarkColor = Color.FromRgb(0x1f, 0x29, 0x37),
-    LightColor = Color.White,
+    DarkPaint = new SceneColor(0x1f, 0x29, 0x37),
+    LightPaint = SceneColor.White,
 });
-Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], png[..8]);
+Assert.Equal((156, 156), (image.Width, image.Height));
 ```
 <!-- endref -->
 
-- [ModuleSize](cref:Meziantou.Framework.Barcodes.Barcode2DPngOptions.ModuleSize) is 4 by default.
-- [QuietZoneModules](cref:Meziantou.Framework.Barcodes.Barcode2DPngOptions.QuietZoneModules) is 2 by default: the minimum of PDF417, and more than Data Matrix (1) and Aztec (0)
+- [ModuleSize](cref:Meziantou.Framework.Barcodes.Barcode2DRenderOptions.ModuleSize) is 4 by default.
+- [QuietZoneModules](cref:Meziantou.Framework.Barcodes.Barcode2DRenderOptions.QuietZoneModules) is 2 by default: the minimum of PDF417, and more than Data Matrix (1) and Aztec (0)
   need.
 
-`Meziantou.Framework.Imaging.Barcodes` renders them as images and draws them on a canvas, like QR codes: see
-[Images](08-Images.md).
+`Meziantou.Framework.Imaging.Barcodes` also draws them on a canvas, like QR codes: see [Images](08-Images.md). The
+terminal renderer writes them as text: see [Terminal output](07-TerminalOutput.md).

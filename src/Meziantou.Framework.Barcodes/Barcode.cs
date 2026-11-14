@@ -38,8 +38,8 @@ public sealed class Barcode
 
     /// <summary>Gets whether the barcode is a stacked symbol: several rows of bars, whose heights are part of the symbol.</summary>
     /// <remarks>
-    /// A linear barcode has one row, as high as the renderer draws it (<see cref="BarcodeSvgOptions.ModuleHeight"/>,
-    /// <see cref="BarcodePngOptions.ModuleHeight"/>). A stacked barcode, such as <see cref="BarcodeType.Gs1DataBarStacked"/>,
+    /// A linear barcode has one row, as high as the renderer draws it (<see cref="BarcodeRenderOptions.ModuleHeight"/>,
+    /// <see cref="ConsoleRenderOptions.BarHeight"/>). A stacked barcode, such as <see cref="BarcodeType.Gs1DataBarStacked"/>,
     /// has one row per module of height: a row of bars 5 modules high is 5 identical rows, and the renderers draw each row
     /// as high as a module is wide.
     /// </remarks>

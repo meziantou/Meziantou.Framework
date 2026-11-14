@@ -183,7 +183,7 @@ public sealed class ZintMatrixTests
         var type = qr.Type;
         await using var directory = TemporaryDirectory.Create();
         var path = directory.FullPath / "qrcode.png";
-        await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+        await File.WriteAllBytesAsync(path, qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 4 }), XunitCancellationToken);
         var decoded = Assert.Single(await tools.ReadWithZXingAsync([path]));
         Assert.Equal(data, decoded.Text);
         Assert.Equal(level.ToString(), decoded.ErrorCorrectionLevel);
@@ -324,7 +324,7 @@ public sealed class ZintMatrixTests
 
         await using var directory = TemporaryDirectory.Create();
         var path = directory.FullPath / "qrcode.png";
-        await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+        await File.WriteAllBytesAsync(path, qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 4 }), XunitCancellationToken);
         var decoded = Assert.Single(await tools.ReadWithZXingAsync([path]));
         Assert.True(decoded.HasEci);
         Assert.NotNull(decoded.DataMask);

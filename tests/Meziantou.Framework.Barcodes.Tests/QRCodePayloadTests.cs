@@ -1,3 +1,5 @@
+using Meziantou.Framework.Imaging.Barcodes;
+
 namespace Meziantou.Framework.Barcodes.Tests;
 
 public class QRCodePayloadTests
@@ -65,10 +67,10 @@ public class QRCodePayloadTests
         var qrCode = QRCode.Create(payload, ErrorCorrectionLevel.Q);
 
         // A phone that scans it offers to join the network
-        var png = qrCode.ToPng(new QRCodePngOptions { ModuleSize = 4 });
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 4 });
         #endregion
 
-        DocumentationImages.AssertPng("WifiQRCode", png);
+        DocumentationImages.AssertPng("WifiQRCode", PngRendering.Encode(image));
     }
 
     [Fact]

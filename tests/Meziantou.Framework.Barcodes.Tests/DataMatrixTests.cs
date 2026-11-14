@@ -1,5 +1,6 @@
 using Meziantou.Framework.Barcodes.Internal;
 using Meziantou.Framework.Barcodes.Internal.DataMatrix;
+using Meziantou.Framework.Imaging.Barcodes;
 using Meziantou.Framework.InlineSnapshotTesting;
 
 namespace Meziantou.Framework.Barcodes.Tests;
@@ -68,29 +69,29 @@ public class DataMatrixTests
         var barcode = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
 
         // SVG: a viewBox of (22 + 2 × 2) × 4 units, a rectangle of the light color and a path of the dark modules
-        var svg = barcode.ToSvg(new Barcode2DSvgOptions { ModuleSize = 4, QuietZoneModules = 2 });
-        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 104 104\">", svg);
+        var svg = barcode.ToSvg(new Barcode2DRenderOptions { ModuleSize = 4, QuietZoneModules = 2 });
+        Assert.Contains("viewBox=\"0 0 104 104\"", svg);
 
-        // PNG: the bytes of a file, to save with File.WriteAllBytes("datamatrix.png", png)
-        var png = barcode.ToPng(new Barcode2DPngOptions
+        // An image (Meziantou.Framework.Imaging.Barcodes), to save as PNG with image.Save("datamatrix.png")
+        using var image = barcode.ToImage(new Barcode2DRenderOptions
         {
             ModuleSize = 6,
             QuietZoneModules = 2,
-            DarkColor = Color.FromRgb(0x1f, 0x29, 0x37),
-            LightColor = Color.White,
+            DarkPaint = new SceneColor(0x1f, 0x29, 0x37),
+            LightPaint = SceneColor.White,
         });
-        Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], png[..8]);
+        Assert.Equal((156, 156), (image.Width, image.Height));
         #endregion
     }
 
     [Fact]
     public void DocumentationImages_Barcode2D()
     {
-        var options = new Barcode2DPngOptions { ModuleSize = 6, QuietZoneModules = 2 };
+        var options = new Barcode2DRenderOptions { ModuleSize = 6, QuietZoneModules = 2 };
         DocumentationImages.AssertPng("DataMatrix", Barcode2D.CreateDataMatrix("https://www.meziantou.net").ToPng(options));
         DocumentationImages.AssertPng("DataMatrixRectangle", Barcode2D.CreateDataMatrix("ABC-12345", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }).ToPng(options));
         DocumentationImages.AssertPng("Aztec", Barcode2D.CreateAztec("https://www.meziantou.net").ToPng(options));
-        DocumentationImages.AssertPng("Pdf417", Barcode2D.CreatePdf417("https://www.meziantou.net").ToPng(new Barcode2DPngOptions { ModuleSize = 2, QuietZoneModules = 2 }));
+        DocumentationImages.AssertPng("Pdf417", Barcode2D.CreatePdf417("https://www.meziantou.net").ToPng(new Barcode2DRenderOptions { ModuleSize = 2, QuietZoneModules = 2 }));
     }
 
     [Fact]
@@ -293,16 +294,17 @@ public class DataMatrixTests
     public void ToSvg_MergesTheRunsOfARow()
     {
         var code = Barcode2D.CreateDataMatrix("123456");
-        var svg = code.ToSvg(new Barcode2DSvgOptions { ModuleSize = 1, QuietZoneModules = 1 });
-        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 12 12\"><rect width=\"12\" height=\"12\" fill=\"#ffffff\"/><path fill=\"#000000\" d=\"M1 1h1v1h-1z", svg);
-        Assert.EndsWith("M1 10h10v1h-10z\"/></svg>", svg);
+        var svg = code.ToSvg(new Barcode2DRenderOptions { ModuleSize = 1, QuietZoneModules = 1 });
+        Assert.Contains("viewBox=\"0 0 12 12\"", svg);
+        Assert.Contains("<path d=\"M1,1 L2,1 L2,2 L1,2 Z", svg);
+        Assert.Contains("M1,10 L11,10 L11,11 L1,11 Z\" fill=\"#000000\"/>", svg);
     }
 
     [Fact]
     public void ToPng_HasTheSizeOfTheSymbolAndQuietZone()
     {
         var code = Barcode2D.CreateDataMatrix("123456");
-        var png = code.ToPng(new Barcode2DPngOptions { ModuleSize = 3, QuietZoneModules = 2 });
+        var png = code.ToPng(new Barcode2DRenderOptions { ModuleSize = 3, QuietZoneModules = 2 });
         Assert.Equal([0x89, 0x50, 0x4E, 0x47], png[..4]);
         Assert.Equal(42, System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(16)));
         Assert.Equal(42, System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(20)));

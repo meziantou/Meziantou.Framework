@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    Generates the OCR-A and OCR-B fonts of Meziantou.Framework.Imaging.Barcodes (src/Meziantou.Framework.Imaging.Barcodes/Fonts)
+    Generates the OCR-A and OCR-B fonts of Meziantou.Framework.Barcodes (src/Meziantou.Framework.Barcodes/Fonts)
     from their centerlines, transcribed from ANSI X3.17-1981 (OCR-A) and ANSI X3.49-1975 (OCR-B). See readme.md.
     Single target framework so that `dotnet run` needs no framework argument.
   -->

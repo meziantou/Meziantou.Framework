@@ -401,7 +401,7 @@ internal static class QRDecodeFuzzTargets
     {
         foreach (var (name, qr) in new[] { ("standard", QRCode.Create("HELLO")), ("micro", QRCode.CreateMicroQR("12345")), ("rmqr", QRCode.CreateRMQR("HELLO")) })
         {
-            using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 2, QuietZoneModules = 2 });
+            using var image = qr.ToImage(new QRCodeRenderOptions { ModuleSize = 2, QuietZoneModules = 2 });
             yield return CreateImageSeed($"image-{name}", image);
         }
     }
@@ -448,7 +448,7 @@ internal static class QRDecodeFuzzTargets
         if (qr.Width * qr.Height > 80 * 80)
             return;
 
-        using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 3 + (flags % 4) });
+        using var image = qr.ToImage(new QRCodeRenderOptions { ModuleSize = 3 + (flags % 4) });
         if ((flags & 0x30) is not 0)
         {
             image.Rotate((flags >> 4 & 3) switch { 1 => RotateMode.Rotate90, 2 => RotateMode.Rotate180, _ => RotateMode.Rotate270 });
@@ -463,7 +463,7 @@ internal static class QRDecodeFuzzTargets
     {
         foreach (var (name, barcode) in new[] { ("datamatrix", Barcode2D.CreateDataMatrix("HELLO")), ("pdf417", Barcode2D.CreatePdf417("HELLO", new Pdf417Options { Columns = 1, RowHeight = 2 })), ("aztec", Barcode2D.CreateAztec("HELLO")) })
         {
-            using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 2, QuietZoneModules = 2 });
+            using var image = barcode.ToImage(new Barcode2DRenderOptions { ModuleSize = 2, QuietZoneModules = 2 });
             yield return CreateImageSeed($"image-2d-{name}", image);
         }
     }
@@ -510,7 +510,7 @@ internal static class QRDecodeFuzzTargets
         if (barcode.Width * barcode.Height > 100 * 100)
             return;
 
-        using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 3 + (flags % 4) });
+        using var image = barcode.ToImage(new Barcode2DRenderOptions { ModuleSize = 3 + (flags % 4) });
         if ((flags & 0x30) is not 0)
         {
             image.Rotate((flags >> 4 & 3) switch { 1 => RotateMode.Rotate90, 2 => RotateMode.Rotate180, _ => RotateMode.Rotate270 });
@@ -525,7 +525,7 @@ internal static class QRDecodeFuzzTargets
     {
         foreach (var (name, barcode) in new[] { ("ean13", Barcode.CreateEan13("590123412345")), ("code128", Barcode.CreateCode128("AB12")), ("databar", Barcode.CreateGs1DataBarLimited("1501234567890")) })
         {
-            using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 1, ModuleHeight = 8, QuietZoneModules = 4 });
+            using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 8, QuietZoneModules = 4 });
             yield return CreateImageSeed($"image-linear-{name}", image);
         }
     }
@@ -567,7 +567,7 @@ internal static class QRDecodeFuzzTargets
         if (barcode.Width > 400)
             return;
 
-        using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 2 + (flags % 3), ModuleHeight = 40 });
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 2 + (flags % 3), ModuleHeight = 40 });
         if ((flags & 0x30) is not 0)
         {
             image.Rotate((flags >> 4 & 3) switch { 1 => RotateMode.Rotate90, 2 => RotateMode.Rotate180, _ => RotateMode.Rotate270 });

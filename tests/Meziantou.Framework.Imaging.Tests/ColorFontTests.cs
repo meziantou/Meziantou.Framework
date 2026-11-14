@@ -868,13 +868,8 @@ public sealed class ColorFontTests
         // The shapes, the transformations, the strokes and the groups of a document, each compared with the drawing of the
         // same shape on the canvas at 16 pixels per em (a unit is 1/64 pixel, the baseline of the glyph at 13). The glyph
         // is an image composited onto the canvas: a pixel an edge crosses can differ by one step of rounding.
-        static byte[] DrawSvg(string content)
-        {
-            var font = FontSamples.Boxes();
-            font.RawTables["SVG "] = FontSamples.WriteSvgTable([(FontSamples.BoxA, FontSamples.BoxA, System.Text.Encoding.UTF8.GetBytes(
-                "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><g id=\"glyph" + FontSamples.BoxA.ToString(CultureInfo.InvariantCulture) + "\" transform=\"translate(0,-832)\">" + content + "</g></svg>"))]);
-            return Draw(20, 20, canvas => canvas.FillText(Black, "A", FontTestSupport.Load(font), 16, new PointD(0, 0)));
-        }
+        static byte[] DrawSvg(string content) => DrawSvgDocument(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><g id=\"glyph" + FontSamples.BoxA.ToString(CultureInfo.InvariantCulture) + "\" transform=\"translate(0,-832)\">" + content + "</g></svg>");
 
         void Check(string content, DrawingAction expected, int tolerance = 0) => AssertClose(Draw(20, 20, expected), DrawSvg(content), tolerance);
 
@@ -898,6 +893,72 @@ public sealed class ColorFontTests
 
         // A use element that refers to itself, or to its ancestor, draws nothing more.
         Check("<g id='loop'><rect x='128' y='64' width='256' height='256' fill='red'/><use xlink:href='#loop' x='256'/></g>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 4)));
+
+        // A symbol has its own opacity.
+        Check("<defs><symbol id='s' opacity='0.5'><rect x='128' y='64' width='256' height='512' fill='red'/></symbol></defs><use xlink:href='#s'/>", canvas => canvas.FillRectangle(new Rgba32(255, 0, 0, 128), new RectangleD(2, 1, 4, 8)), tolerance: 1);
+
+        // Each child of a clipping path has its own clip rule: the hole of the even-odd square stays open.
+        Check(
+            "<clipPath id='c'><rect x='128' y='64' width='128' height='512'/><path clip-rule='evenodd' d='M384 64h512v512h-512z M512 192h256v256h-256z'/></clipPath><rect width='1024' height='1024' fill='red' clip-path='url(#c)'/>",
+            canvas =>
+            {
+                canvas.FillRectangle(Red, new RectangleD(2, 1, 2, 8));
+                canvas.Fill(new SolidBrush(Red), VectorPath.ParseSvgPathData("M6 1h8v8h-8z M8 3h4v4h-4z"), FillRule.EvenOdd);
+            },
+            tolerance: 1);
+
+        // A paint has a few fallbacks; a longer chain is not valid, and the fill is inherited.
+        Check("<rect x='128' y='64' width='256' height='512' fill='var(--a, var(--b, url(#none) red))'/>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 8)));
+        Check("<rect x='128' y='64' width='256' height='512' fill='" + string.Concat(Enumerable.Repeat("var(--a, ", 5000)) + "red" + new string(')', 5000) + "'/>", canvas => canvas.FillRectangle(Black, new RectangleD(2, 1, 4, 8)));
+        Check("<rect x='128' y='64' width='256' height='512' fill='" + string.Concat(Enumerable.Repeat("url(#none) ", 5000)) + "red'/>", canvas => canvas.FillRectangle(Black, new RectangleD(2, 1, 4, 8)));
+
+        // The elements nested too deep are not drawn, and do not exhaust the stack.
+        Check(string.Concat(Enumerable.Repeat("<g>", 20_000)) + "<rect x='128' y='64' width='256' height='512' fill='red'/>" + string.Concat(Enumerable.Repeat("</g>", 20_000)), _ => { });
+        Check("<g><g><rect x='128' y='64' width='256' height='512' fill='red'/></g></g>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 8)));
+
+        // The coordinates of a gradient in user space take units.
+        AssertClose(
+            DrawSvg("<linearGradient id='g' gradientUnits='userSpaceOnUse' x1='128' x2='640'><stop stop-color='red'/><stop offset='1' stop-color='blue'/></linearGradient><rect x='128' y='64' width='512' height='512' fill='url(#g)'/>"),
+            DrawSvg("<linearGradient id='g' gradientUnits='userSpaceOnUse' x1='128px' x2='640px'><stop stop-color='red'/><stop offset='1' stop-color='blue'/></linearGradient><rect x='128' y='64' width='512' height='512' fill='url(#g)'/>"),
+            tolerance: 0);
+    }
+
+    [Fact]
+    public void TheRootOfAnSvgDocumentPlacesItsGlyph()
+    {
+        var glyph = FontSamples.BoxA.ToString(CultureInfo.InvariantCulture);
+
+        // A viewBox of half an em fitted into the em square: the percentages are of the viewBox.
+        var actual = DrawSvgDocument("<svg xmlns='http://www.w3.org/2000/svg' id='glyph" + glyph + "' viewBox='0 -416 512 512'><rect x='12.5%' y='-800' width='25%' height='50%' fill='red'/></svg>");
+        AssertClose(Draw(20, 20, canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 8))), actual, tolerance: 0);
+
+        // Without viewBox, a user unit is a font unit, and the percentages are of the width and height of the root.
+        actual = DrawSvgDocument("<svg xmlns='http://www.w3.org/2000/svg' id='glyph" + glyph + "' width='512' height='1024'><rect x='25%' y='-768' width='50%' height='50%' fill='red'/></svg>");
+        AssertClose(Draw(20, 20, canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 8))), actual, tolerance: 0);
+
+        // A root that is not displayed draws nothing, not even the outline of the glyph.
+        actual = DrawSvgDocument("<svg xmlns='http://www.w3.org/2000/svg' id='glyph" + glyph + "' display='none'><rect y='-768' width='512' height='512' fill='red'/></svg>");
+        Assert.Equal(Draw(20, 20, _ => { }), actual);
+    }
+
+    [Fact]
+    public void AnSvgGlyphIsDrawnUnderTheLimitsOfTheFont()
+    {
+        // The image of the glyph is allocated under the limits of the configuration the font was loaded with.
+        var font = FontSamples.Boxes();
+        font.RawTables["SVG "] = FontSamples.WriteSvgTable([(FontSamples.BoxA, FontSamples.BoxA, System.Text.Encoding.UTF8.GetBytes(
+            "<svg xmlns='http://www.w3.org/2000/svg'><rect id='glyph" + FontSamples.BoxA.ToString(CultureInfo.InvariantCulture) + "' y='-768' width='1024' height='768' fill='red'/></svg>"))]);
+        var limited = FontTestSupport.Load(font, new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxFramePixels = 16 } } });
+        Assert.Throws<ImageResourceLimitException>(() => TextLayout.Create("A", limited, 16));
+        Assert.NotEqual(Draw(20, 20, _ => { }), Draw(20, 20, canvas => canvas.FillText(Black, "A", FontTestSupport.Load(font), 16, new PointD(0, 0))));
+    }
+
+    /// <summary>Draws A at 16 pixels per em with a font whose SVG table has one document for A.</summary>
+    private static byte[] DrawSvgDocument(string document)
+    {
+        var font = FontSamples.Boxes();
+        font.RawTables["SVG "] = FontSamples.WriteSvgTable([(FontSamples.BoxA, FontSamples.BoxA, System.Text.Encoding.UTF8.GetBytes(document))]);
+        return Draw(20, 20, canvas => canvas.FillText(Black, "A", FontTestSupport.Load(font), 16, new PointD(0, 0)));
     }
 
     private static void AssertColor(double red, double green, double blue, Rgba32 actual)

@@ -8,8 +8,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// OpenType specification, "SVG - Scalable vector graphics table". The element of the glyph is drawn as a <c>use</c>
 /// element of a new document would draw it: without the styles and the transformations of its ancestors, with the
-/// transformation of the <c>viewBox</c>, <c>width</c> and <c>height</c> of the root element (its viewport is the em
-/// square, and is never clipped). A unit of the document is a font unit, and its y axis goes down from the baseline.
+/// transformation of the <c>viewBox</c> of the root element, fitted into its viewport: the em square, or the
+/// <c>width</c> and <c>height</c> of the root in font units, never clipped. Without <c>viewBox</c>, a unit of the
+/// document is a font unit. The y axis goes down from the baseline. The elements nested deeper than 64 levels (through
+/// <c>use</c> elements too) and the paints with more than 16 fallbacks are not drawn.
 /// </para>
 /// <para>
 /// The subset is what the glyphs of the fonts use, and what the specification requires: the shapes (<c>path</c>,
@@ -34,8 +36,9 @@ internal static class SvgGlyphRenderer
     private const int MaxImageSide = 4096;
     private const long MaxImagePixels = 16L * 1024 * 1024;
 
-    // How deep the use elements and the references of gradients can nest
-    private const int MaxDepth = 32;
+    // How deep the elements, the use elements and the references of gradients can nest, and how many fallbacks a paint can have
+    private const int MaxDepth = 64;
+    private const int MaxPaintFallbacks = 16;
 
     /// <summary>Draws the SVG glyph of a font at a size, and makes the display list that draws its image.</summary>
     /// <param name="face">The font.</param>
@@ -103,7 +106,7 @@ internal static class SvgGlyphRenderer
         }
 
         var transform = AffineTransform.CreateScale(scale, scale).Then(AffineTransform.CreateTranslation(-left, -top));
-        using var image = new Image<Rgba32>(width, height, new Rgba32(0, 0, 0, 0));
+        using var image = new Image<Rgba32>(width, height, new Rgba32(0, 0, 0, 0), ImageFontEnvironment.GetConfiguration(face));
         image.Draw((ops, transform), (canvas, state) => canvas.Transform(state.transform, state.ops, Draw));
         var data = new byte[width * height * 4];
         image.Frames[0].CopyPixelBytesTo(data);
@@ -215,8 +218,14 @@ internal static class SvgGlyphRenderer
 
         public GlyphBudget Budget => _budget;
 
-        /// <summary>Gets the size of the viewport of the document, the em square: the reference of the percentages.</summary>
-        public double Viewport => face.UnitsPerEm;
+        /// <summary>Gets the width of the viewport of the document in its user units, the reference of the horizontal percentages.</summary>
+        public double ViewportWidth { get; private set; } = face.UnitsPerEm;
+
+        /// <summary>Gets the height of the viewport of the document in its user units, the reference of the vertical percentages.</summary>
+        public double ViewportHeight { get; private set; } = face.UnitsPerEm;
+
+        /// <summary>Gets the reference of the other percentages (radii, stroke widths): the normalized diagonal of the viewport.</summary>
+        public double Viewport => Math.Sqrt(((ViewportWidth * ViewportWidth) + (ViewportHeight * ViewportHeight)) / 2);
 
         public List<Op> Build(SvgElement element)
         {
@@ -227,6 +236,9 @@ internal static class SvgGlyphRenderer
             // The root element is the glyph: its content is drawn, with its own styles. Else the element is drawn alone.
             if (ReferenceEquals(element, root))
             {
+                if (root.GetAttribute("display") is "none")
+                    return ops;
+
                 var style = Style.Initial.Inherit(root, this);
                 AddGroup(root, style, transform, ops, depth: 0, (builder, element, style, transform, ops, depth) => builder.AddChildren(element, style, transform, ops, depth));
             }
@@ -249,19 +261,35 @@ internal static class SvgGlyphRenderer
         }
 
         /// <summary>
-        /// The transformation of the viewport of the root element: the em square, unless <c>width</c> and
-        /// <c>height</c> give another size, which a <c>viewBox</c> is fitted into (<c>preserveAspectRatio</c>).
+        /// The transformation of the viewport of the root element, in font units: the em square, unless <c>width</c>
+        /// and <c>height</c> give another size, which a <c>viewBox</c> is fitted into (<c>preserveAspectRatio</c>).
+        /// Without <c>viewBox</c>, a user unit is a font unit, and the viewport is the reference of the percentages.
         /// </summary>
         private AffineTransform GetViewportTransform(SvgElement root)
         {
-            var width = SvgValues.TryParseLength(root.GetAttribute("width"), Viewport, out var w) && w > 0 ? w : Viewport;
-            var height = SvgValues.TryParseLength(root.GetAttribute("height"), Viewport, out var h) && h > 0 ? h : Viewport;
+            double em = face.UnitsPerEm;
+            var width = SvgValues.TryParseLength(root.GetAttribute("width"), em, out var w) && w > 0 ? w : em;
+            var height = SvgValues.TryParseLength(root.GetAttribute("height"), em, out var h) && h > 0 ? h : em;
             var viewBox = SvgValues.ParseNumberList(root.GetAttribute("viewBox"));
             if (viewBox.Count != 4 || !(viewBox[2] > 0) || !(viewBox[3] > 0))
-                return AffineTransform.CreateScale(width / Viewport, height / Viewport);
+            {
+                ViewportWidth = width;
+                ViewportHeight = height;
+                return AffineTransform.Identity;
+            }
 
+            ViewportWidth = viewBox[2];
+            ViewportHeight = viewBox[3];
             return FitViewBox(viewBox[0], viewBox[1], viewBox[2], viewBox[3], width, height, root.GetAttribute("preserveAspectRatio"));
         }
+
+        /// <summary>Gets the reference of the percentages of an attribute: the width of the viewport for a horizontal length, its height for a vertical one.</summary>
+        public double GetReference(string attribute) => attribute switch
+        {
+            "x" or "width" or "cx" or "rx" or "x1" or "x2" or "fx" => ViewportWidth,
+            "y" or "height" or "cy" or "ry" or "y1" or "y2" or "fy" => ViewportHeight,
+            _ => Viewport,
+        };
 
         /// <summary>Fits a box into a viewport, as <c>preserveAspectRatio</c> says (<c>none</c>, or <c>meet</c> or <c>slice</c> with an alignment).</summary>
         private static AffineTransform FitViewBox(double x, double y, double width, double height, double viewportWidth, double viewportHeight, string? preserveAspectRatio)
@@ -298,14 +326,16 @@ internal static class SvgGlyphRenderer
         {
             foreach (var child in element.Children)
             {
-                AddElement(child, style, transform, ops, depth);
+                AddElement(child, style, transform, ops, depth + 1);
             }
         }
 
+        // The elements nested deeper than the limit (in the document or through use elements) are not drawn: the walk
+        // is recursive, and the budget alone would allow more levels than the stack holds.
         private void AddElement(SvgElement element, Style parentStyle, AffineTransform parentTransform, List<Op> ops, int depth)
         {
             _budget.Charge(1);
-            if (element.IsForeign || element.GetAttribute("display") is "none")
+            if (depth >= MaxDepth || element.IsForeign || element.GetAttribute("display") is "none")
                 return;
 
             var style = parentStyle.Inherit(element, this);
@@ -374,17 +404,17 @@ internal static class SvgGlyphRenderer
 
             try
             {
-                var x = SvgValues.TryParseLength(element.GetAttribute("x"), Viewport, out var valueX) ? valueX : 0;
-                var y = SvgValues.TryParseLength(element.GetAttribute("y"), Viewport, out var valueY) ? valueY : 0;
+                var x = GetLength(element, "x");
+                var y = GetLength(element, "y");
                 var translated = AffineTransform.CreateTranslation(x, y).Then(transform);
                 AddGroup(element, style, translated, ops, depth, (builder, _, style, transform, ops, depth) =>
                 {
-                    // A symbol is drawn only through a use element, as a group.
+                    // A symbol is drawn only through a use element, as a group with its own opacity and clipping path.
                     if (target.Name == "symbol")
                     {
-                        if (target.GetAttribute("display") is not "none")
+                        if (target.GetAttribute("display") is not "none" && depth + 1 < MaxDepth)
                         {
-                            builder.AddChildren(target, style.Inherit(target, builder), SvgValues.ParseTransform(target.GetAttribute("transform")).Then(transform), ops, depth + 1);
+                            builder.AddGroup(target, style.Inherit(target, builder), SvgValues.ParseTransform(target.GetAttribute("transform")).Then(transform), ops, depth + 1, (builder, element, style, transform, ops, depth) => builder.AddChildren(element, style, transform, ops, depth));
                         }
                     }
                     else
@@ -459,8 +489,8 @@ internal static class SvgGlyphRenderer
                         return null;
 
                     // SVG 1.1, "The rect element": a missing radius is the other one, and both are at most half the side.
-                    var hasRx = SvgValues.TryParseLength(element.GetAttribute("rx"), Viewport, out var rx) && rx >= 0;
-                    var hasRy = SvgValues.TryParseLength(element.GetAttribute("ry"), Viewport, out var ry) && ry >= 0;
+                    var hasRx = SvgValues.TryParseLength(element.GetAttribute("rx"), ViewportWidth, out var rx) && rx >= 0;
+                    var hasRy = SvgValues.TryParseLength(element.GetAttribute("ry"), ViewportHeight, out var ry) && ry >= 0;
                     if (!hasRx)
                     {
                         rx = hasRy ? ry : 0;
@@ -514,7 +544,7 @@ internal static class SvgGlyphRenderer
             }
         }
 
-        private double GetLength(SvgElement element, string attribute) => SvgValues.TryParseLength(element.GetAttribute(attribute), Viewport, out var value) ? value : 0;
+        private double GetLength(SvgElement element, string attribute) => SvgValues.TryParseLength(element.GetAttribute(attribute), GetReference(attribute), out var value) ? value : 0;
 
         /// <summary>Adds an image element: an image of a format the library reads, in a <c>data:</c> URL.</summary>
         private void AddImage(SvgElement element, Style style, AffineTransform transform, List<Op> ops)
@@ -545,11 +575,12 @@ internal static class SvgGlyphRenderer
             {
                 image = Image.Load<Rgba32>(bytes.AsSpan(), new ImageDecodeOptions { Configuration = ImageFontEnvironment.GetConfiguration(face), FrameLimit = 1 });
             }
-            catch (Exception exception) when (exception is InvalidImageContentException or UnknownImageFormatException or UnsupportedImageFeatureException or ImageResourceLimitException)
+            catch (Exception exception) when (exception is InvalidImageContentException or UnknownImageFormatException or UnsupportedImageFeatureException)
             {
                 return;
             }
 
+            // An image beyond the limits of the configuration is an error, not an image left out (the decoder throws it).
             _images.Add(image);
             var x = GetLength(element, "x");
             var y = GetLength(element, "y");
@@ -615,7 +646,7 @@ internal static class SvgGlyphRenderer
             // The coordinates are fractions of the box of the shape, unless the gradient is in user space.
             var isBoundingBox = Get("gradientUnits", isGeometry: false) is not "userSpaceOnUse";
             var unitsTransform = AffineTransform.Identity;
-            var reference = Viewport;
+            var isUserSpace = !isBoundingBox;
             if (isBoundingBox)
             {
                 var box = path.GetTightBounds();
@@ -623,10 +654,11 @@ internal static class SvgGlyphRenderer
                     return null;
 
                 unitsTransform = new AffineTransform(box.Width, 0, 0, box.Height, box.X, box.Y);
-                reference = 1;
             }
 
-            double Coordinate(string attribute, double defaultValue) => SvgValues.TryParseNumberOrPercentage(Get(attribute, isGeometry: true), reference, out var value) ? value : defaultValue;
+            // A percentage is a fraction of the box of the shape, or of the viewport in user space.
+            double Reference(string attribute) => isUserSpace ? GetReference(attribute) : 1;
+            double Coordinate(string attribute, double defaultValue) => SvgValues.TryParseLength(Get(attribute, isGeometry: true), Reference(attribute), out var value) ? value : defaultValue;
 
             var brushTransform = SvgValues.ParseTransform(Get("gradientTransform", isGeometry: false)).Then(unitsTransform);
             var spread = Get("spreadMethod", isGeometry: false) switch
@@ -639,9 +671,9 @@ internal static class SvgGlyphRenderer
             var stopArray = CollectionsMarshal.AsSpan(stops);
             if (isRadial)
             {
-                var cx = Coordinate("cx", 0.5 * reference);
-                var cy = Coordinate("cy", 0.5 * reference);
-                var r = Coordinate("r", 0.5 * reference);
+                var cx = Coordinate("cx", 0.5 * Reference("cx"));
+                var cy = Coordinate("cy", 0.5 * Reference("cy"));
+                var r = Coordinate("r", 0.5 * Reference("r"));
                 var fx = Coordinate("fx", cx);
                 var fy = Coordinate("fy", cy);
                 if (r < 0)
@@ -668,7 +700,7 @@ internal static class SvgGlyphRenderer
 
             var x1 = Coordinate("x1", 0);
             var y1 = Coordinate("y1", 0);
-            var x2 = Coordinate("x2", reference);
+            var x2 = Coordinate("x2", Reference("x2"));
             var y2 = Coordinate("y2", 0);
             if (x1 == x2 && y1 == y2)
                 return new SolidBrush(stops[^1].Color);
@@ -748,7 +780,7 @@ internal static class SvgGlyphRenderer
                 }
                 else
                 {
-                    result = result.Combine(path, PathCombineMode.Union, clipRule);
+                    result = result.Combine(path, PathCombineMode.Union, clipRule, rule is "evenodd" ? FillRule.EvenOdd : FillRule.NonZero);
                     clipRule = FillRule.NonZero;
                 }
             }
@@ -766,41 +798,56 @@ internal static class SvgGlyphRenderer
             if (text is null)
                 return inherited;
 
+            // The fallbacks are read in a loop, at most MaxPaintFallbacks of them, each one charged to the budget.
+            _budget.Charge(1 + (text.Length / 64));
             var value = text.AsSpan().Trim();
-            if (value.SequenceEqual("none"))
-                return Paint.None;
-
-            if (value.SequenceEqual("inherit"))
-                return inherited;
-
-            // The context paints (deprecated) are the color of the text, like currentColor.
-            if (value.Equals("currentColor", StringComparison.OrdinalIgnoreCase) || value.SequenceEqual("context-fill") || value.SequenceEqual("context-stroke"))
-                return currentColor;
-
-            if (value.StartsWith("url(", StringComparison.OrdinalIgnoreCase))
+            for (var fallbacks = 0; fallbacks <= MaxPaintFallbacks; fallbacks++)
             {
-                var element = document.GetElementByUrl(value, out var fallback);
-                if (element is { IsForeign: false, Name: "linearGradient" or "radialGradient" })
-                    return new Paint(PaintKind.Gradient, 0, 0, 0, 1, element);
+                if (value.SequenceEqual("none"))
+                    return Paint.None;
 
-                return fallback.IsEmpty ? Paint.None : ParsePaint(fallback.ToString(), inherited, currentColor);
-            }
+                if (value.SequenceEqual("inherit"))
+                    return inherited;
 
-            if (value.StartsWith("var(", StringComparison.OrdinalIgnoreCase) && value is [.., ')'])
-            {
-                var arguments = value[4..^1];
-                var comma = arguments.IndexOf(',');
-                var name = (comma < 0 ? arguments : arguments[..comma]).Trim();
-                if (name.StartsWith("--color", StringComparison.Ordinal) && int.TryParse(name[7..], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var entry)
-                    && face.TryGetPaletteColor(palette, entry, out var red, out var green, out var blue, out var alpha))
+                // The context paints (deprecated) are the color of the text, like currentColor.
+                if (value.Equals("currentColor", StringComparison.OrdinalIgnoreCase) || value.SequenceEqual("context-fill") || value.SequenceEqual("context-stroke"))
+                    return currentColor;
+
+                if (value.StartsWith("url(", StringComparison.OrdinalIgnoreCase))
                 {
-                    return new Paint(PaintKind.Color, red / 255.0, green / 255.0, blue / 255.0, alpha / 255.0, Gradient: null);
+                    var element = document.GetElementByUrl(value, out var fallback);
+                    if (element is { IsForeign: false, Name: "linearGradient" or "radialGradient" })
+                        return new Paint(PaintKind.Gradient, 0, 0, 0, 1, element);
+
+                    if (fallback.IsEmpty)
+                        return Paint.None;
+
+                    value = fallback;
+                    continue;
                 }
 
-                return comma < 0 ? inherited : ParsePaint(arguments[(comma + 1)..].ToString(), inherited, currentColor);
+                if (value.StartsWith("var(", StringComparison.OrdinalIgnoreCase) && value is [.., ')'])
+                {
+                    var arguments = value[4..^1];
+                    var comma = arguments.IndexOf(',');
+                    var name = (comma < 0 ? arguments : arguments[..comma]).Trim();
+                    if (name.StartsWith("--color", StringComparison.Ordinal) && int.TryParse(name[7..], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var entry)
+                        && face.TryGetPaletteColor(palette, entry, out var red, out var green, out var blue, out var alpha))
+                    {
+                        return new Paint(PaintKind.Color, red / 255.0, green / 255.0, blue / 255.0, alpha / 255.0, Gradient: null);
+                    }
+
+                    if (comma < 0)
+                        return inherited;
+
+                    value = arguments[(comma + 1)..].Trim();
+                    continue;
+                }
+
+                return SvgValues.TryParseColor(value, out var r, out var g, out var b) ? new Paint(PaintKind.Color, r, g, b, 1, Gradient: null) : inherited;
             }
 
-            return SvgValues.TryParseColor(value, out var r, out var g, out var b) ? new Paint(PaintKind.Color, r, g, b, 1, Gradient: null) : inherited;
+            return inherited;
         }
     }
 

@@ -169,10 +169,11 @@ internal sealed class GreenBuilder
                     runEnd++;
                 }
             }
-            else if (c is ' ' or '\t')
+            else if (c is ' ' or '\t' or '\v' or '\f')
             {
+                // A vertical tab or a form feed is whitespace around the cells of a table
                 kind = SyntaxKind.WhitespaceTrivia;
-                while (runEnd < nextSpanStart && _text[runEnd] is ' ' or '\t')
+                while (runEnd < nextSpanStart && _text[runEnd] is ' ' or '\t' or '\v' or '\f')
                 {
                     runEnd++;
                 }
@@ -181,7 +182,7 @@ internal sealed class GreenBuilder
             {
                 // Text that no construct reads, which the parser should not leave: kept so that the tree has every character
                 kind = SyntaxKind.SkippedTextTrivia;
-                while (runEnd < nextSpanStart && _text[runEnd] is not (' ' or '\t' or '\r' or '\n'))
+                while (runEnd < nextSpanStart && _text[runEnd] is not (' ' or '\t' or '\v' or '\f' or '\r' or '\n'))
                 {
                     runEnd++;
                 }

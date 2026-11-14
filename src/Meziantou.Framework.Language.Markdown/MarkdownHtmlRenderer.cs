@@ -13,7 +13,7 @@ public static class MarkdownHtmlRenderer
     {
         ArgumentNullException.ThrowIfNull(tree);
 
-        var writer = new Writer(tree.GetRoot());
+        var writer = new Writer(tree.GetRoot(), tree.Options.Extensions.HasFlag(MarkdownExtensions.TagFilter));
         writer.WriteBlocks(tree.GetRoot());
         return writer.ToString();
     }
@@ -26,10 +26,18 @@ public static class MarkdownHtmlRenderer
 
         // Whether each list is tight, which every paragraph of the list asks
         private readonly Dictionary<SyntaxNode, bool> _tightLists = [];
+        private readonly bool _tagFilter;
 
-        public Writer(MarkdownSyntaxNode document)
+        // In a cell of a table, a pipe escaped by a backslash is a pipe, even in a code span or a link destination
+        private bool _inTableCell;
+
+        // The checkbox of a task list item, which its first paragraph starts with
+        private string? _pendingCheckbox;
+
+        public Writer(MarkdownSyntaxNode document, bool tagFilter)
         {
             _source = document.ToFullString();
+            _tagFilter = tagFilter;
 
             // The first definition of a label wins
             foreach (var node in document.DescendantNodes().OfType<MarkdownSyntaxNode>())
@@ -65,6 +73,25 @@ public static class MarkdownHtmlRenderer
             switch (block.Kind())
             {
                 case SyntaxKind.Paragraph:
+                    if (_pendingCheckbox is not null)
+                    {
+                        // The paragraph is the first block of a task list item
+                        if (IsTight((MarkdownSyntaxNode)block.Parent!.Parent!))
+                        {
+                            WriteCheckbox();
+                            WriteInlines(block);
+                            return;
+                        }
+
+                        Cr();
+                        _output.Append("<p>");
+                        WriteCheckbox();
+                        WriteInlines(block);
+                        _output.Append("</p>");
+                        Cr();
+                        break;
+                    }
+
                     if (block.Parent?.Parent is { } list && list.Kind() == SyntaxKind.List && IsTight(list))
                     {
                         WriteInlines(block);
@@ -76,6 +103,10 @@ public static class MarkdownHtmlRenderer
                     WriteInlines(block);
                     _output.Append("</p>");
                     Cr();
+                    break;
+
+                case SyntaxKind.Table:
+                    WriteTable(block);
                     break;
 
                 case SyntaxKind.AtxHeading or SyntaxKind.SetextHeading:
@@ -130,6 +161,15 @@ public static class MarkdownHtmlRenderer
 
                 case SyntaxKind.ListItem:
                     _output.Append("<li>");
+                    if (block.ChildTokens().FirstOrDefault(token => token.RawKind == (int)SyntaxKind.TaskListItemMarkerToken) is { RawKind: not 0 } task)
+                    {
+                        _pendingCheckbox = task.Text[1] == ' ' ? "<input disabled=\"\" type=\"checkbox\"> " : "<input checked=\"\" disabled=\"\" type=\"checkbox\"> ";
+                        if (block.ChildNodes().FirstOrDefault() is not MarkdownSyntaxNode { } first || first.Kind() != SyntaxKind.Paragraph)
+                        {
+                            WriteCheckbox();
+                        }
+                    }
+
                     WriteBlocks(block);
                     _output.Append("</li>");
                     Cr();
@@ -177,21 +217,82 @@ public static class MarkdownHtmlRenderer
                 {
                     Cr();
                     var lines = block.ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.HtmlLineToken).Select(token => TrimLineEnding(token.Text)).ToList();
-                    _output.Append(string.Join('\n', lines));
+                    AppendHtml(string.Join('\n', lines));
                     Cr();
                     break;
                 }
             }
         }
 
+        private void WriteCheckbox()
+        {
+            _output.Append(_pendingCheckbox);
+            _pendingCheckbox = null;
+        }
+
+        // A table: the cells of the header row, then the cells of the other rows, as many as the header row has
+        private void WriteTable(MarkdownSyntaxNode table)
+        {
+            var rows = table.ChildNodes().Cast<MarkdownSyntaxNode>().ToList();
+            var alignments = rows[1].ChildTokens()
+                .Where(token => token.RawKind == (int)SyntaxKind.TableDelimiterToken)
+                .Select(token => (token.Text[0] == ':', token.Text[^1] == ':') switch
+                {
+                    (true, true) => " align=\"center\"",
+                    (true, false) => " align=\"left\"",
+                    (false, true) => " align=\"right\"",
+                    _ => "",
+                })
+                .ToList();
+
+            Cr();
+            _output.Append("<table>\n<thead>\n");
+            WriteTableRow(rows[0], "th", alignments);
+            _output.Append("</thead>\n");
+            if (rows.Count > 2)
+            {
+                _output.Append("<tbody>\n");
+                for (var i = 2; i < rows.Count; i++)
+                {
+                    WriteTableRow(rows[i], "td", alignments);
+                }
+
+                _output.Append("</tbody>\n");
+            }
+
+            _output.Append("</table>\n");
+        }
+
+        private void WriteTableRow(MarkdownSyntaxNode row, string tag, List<string> alignments)
+        {
+            _output.Append("<tr>\n");
+            var cells = row.ChildNodes().Cast<MarkdownSyntaxNode>().ToList();
+            for (var i = 0; i < alignments.Count; i++)
+            {
+                _output.Append('<').Append(tag).Append(alignments[i]).Append('>');
+                if (i < cells.Count)
+                {
+                    _inTableCell = true;
+                    WriteInlines(cells[i]);
+                    _inTableCell = false;
+                }
+
+                _output.Append("</").Append(tag).Append(">\n");
+            }
+
+            _output.Append("</tr>\n");
+        }
+
+        private string GetText(SyntaxToken token) => _inTableCell ? token.Text.Replace("\\|", "|", StringComparison.Ordinal) : token.Text;
+
         // The line endings of a code span are spaces, and one space is removed on each side unless the code is only spaces
-        private static string GetCodeSpanText(MarkdownSyntaxNode codeSpan)
+        private string GetCodeSpanText(MarkdownSyntaxNode codeSpan)
         {
             var content = new StringBuilder();
             var tokens = codeSpan.ChildTokens().ToList();
             for (var i = 1; i < tokens.Count - 1; i++)
             {
-                content.Append(tokens[i].RawKind == (int)SyntaxKind.LineEndingToken ? " " : tokens[i].Text);
+                content.Append(tokens[i].RawKind == (int)SyntaxKind.LineEndingToken ? " " : GetText(tokens[i]));
             }
 
             var text = content.ToString();
@@ -308,11 +409,11 @@ public static class MarkdownHtmlRenderer
         {
             switch ((SyntaxKind)token.RawKind)
             {
-                case SyntaxKind.TextToken or SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken or SyntaxKind.CloseBracketToken:
-                    AppendEscaped(token.Text);
+                case SyntaxKind.TextToken or SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken or SyntaxKind.CloseBracketToken or SyntaxKind.ExtendedAutolinkToken:
+                    AppendEscaped(GetText(token));
                     break;
                 case SyntaxKind.EscapedCharacterToken:
-                    AppendEscaped(token.Text[1..]);
+                    AppendEscaped(GetText(token)[1..]);
                     break;
                 case SyntaxKind.EntityToken:
                     AppendEscaped(DecodeEntity(token.Text));
@@ -330,9 +431,15 @@ public static class MarkdownHtmlRenderer
         {
             switch (node.Kind())
             {
-                case SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis:
+                case SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis or SyntaxKind.Strikethrough:
                 {
-                    var tag = node.Kind() == SyntaxKind.Emphasis ? "em" : "strong";
+                    var tag = node.Kind() switch
+                    {
+                        SyntaxKind.Emphasis => "em",
+                        SyntaxKind.StrongEmphasis => "strong",
+                        _ => "del",
+                    };
+
                     _output.Append('<').Append(tag).Append('>');
                     foreach (var child in node.ChildNodesAndTokens())
                     {
@@ -340,7 +447,7 @@ public static class MarkdownHtmlRenderer
                         {
                             WriteInline(inner);
                         }
-                        else if (child.AsToken().RawKind != (int)SyntaxKind.EmphasisDelimiterToken)
+                        else if (child.AsToken().RawKind is not ((int)SyntaxKind.EmphasisDelimiterToken or (int)SyntaxKind.StrikethroughDelimiterToken))
                         {
                             WriteToken(child.AsToken());
                         }
@@ -356,9 +463,26 @@ public static class MarkdownHtmlRenderer
                     _output.Append("</code>");
                     break;
 
+                case SyntaxKind.ExtendedAutolink:
+                {
+                    // A www. address gets the http scheme, and an email address the mailto scheme
+                    var plain = new Writer(this);
+                    plain.WritePlainText(node.ChildNodesAndTokens());
+                    var text = plain._output.ToString();
+                    var destination = node.ChildTokens().First().RawKind == (int)SyntaxKind.ExtendedAutolinkToken
+                        ? (text.StartsWith("www.", StringComparison.Ordinal) ? "http://" + text : text)
+                        : "mailto:" + text;
+                    _output.Append("<a href=\"");
+                    AppendEscaped(NormalizeUri(destination));
+                    _output.Append("\">");
+                    AppendEscaped(text);
+                    _output.Append("</a>");
+                    break;
+                }
+
                 case SyntaxKind.Autolink:
                 {
-                    var text = node.ChildTokens().First().Text[1..^1];
+                    var text = GetText(node.ChildTokens().First())[1..^1];
                     var destination = text.Contains('@', StringComparison.Ordinal) && !text.Contains(':', StringComparison.Ordinal) ? "mailto:" + text : text;
                     _output.Append("<a href=\"");
                     AppendEscaped(NormalizeUri(destination));
@@ -369,12 +493,16 @@ public static class MarkdownHtmlRenderer
                 }
 
                 case SyntaxKind.RawHtml:
+                {
+                    var html = new StringBuilder();
                     foreach (var token in node.ChildTokens())
                     {
-                        _output.Append(token.RawKind == (int)SyntaxKind.LineEndingToken ? "\n" : token.Text);
+                        html.Append(token.RawKind == (int)SyntaxKind.LineEndingToken ? "\n" : GetText(token));
                     }
 
+                    AppendHtml(html.ToString());
                     break;
+                }
 
                 case SyntaxKind.Link or SyntaxKind.Image:
                     WriteLink(node);
@@ -429,6 +557,8 @@ public static class MarkdownHtmlRenderer
             _source = parent._source;
             _references = parent._references;
             _tightLists = parent._tightLists;
+            _tagFilter = parent._tagFilter;
+            _inTableCell = parent._inTableCell;
         }
 
         // The text of an image description: its inlines without their markup
@@ -452,12 +582,16 @@ public static class MarkdownHtmlRenderer
                             _output.Append(GetCodeSpanText(node));
                             break;
 
-                        case SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis:
-                            WritePlainText(node.ChildNodesAndTokens().Where(item => !(item.IsToken && item.AsToken().RawKind == (int)SyntaxKind.EmphasisDelimiterToken)));
+                        case SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis or SyntaxKind.Strikethrough:
+                            WritePlainText(node.ChildNodesAndTokens().Where(item => !(item.IsToken && item.AsToken().RawKind is (int)SyntaxKind.EmphasisDelimiterToken or (int)SyntaxKind.StrikethroughDelimiterToken)));
+                            break;
+
+                        case SyntaxKind.ExtendedAutolink:
+                            WritePlainText(node.ChildNodesAndTokens());
                             break;
 
                         case SyntaxKind.Autolink:
-                            _output.Append(node.ChildTokens().First().Text[1..^1]);
+                            _output.Append(GetText(node.ChildTokens().First())[1..^1]);
                             break;
 
                         case SyntaxKind.RawHtml:
@@ -469,11 +603,11 @@ public static class MarkdownHtmlRenderer
                     var token = child.AsToken();
                     switch ((SyntaxKind)token.RawKind)
                     {
-                        case SyntaxKind.TextToken or SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken or SyntaxKind.CloseBracketToken:
-                            _output.Append(token.Text);
+                        case SyntaxKind.TextToken or SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken or SyntaxKind.CloseBracketToken or SyntaxKind.ExtendedAutolinkToken:
+                            _output.Append(GetText(token));
                             break;
                         case SyntaxKind.EscapedCharacterToken:
-                            _output.Append(token.Text[1..]);
+                            _output.Append(GetText(token)[1..]);
                             break;
                         case SyntaxKind.EntityToken:
                             _output.Append(DecodeEntity(token.Text));
@@ -526,22 +660,22 @@ public static class MarkdownHtmlRenderer
             return _references.TryGetValue(Scanners.NormalizeLabel(label), out var reference) ? reference : ("", null);
         }
 
-        private static void AppendTokensText(SyntaxNodeOrToken element, StringBuilder builder)
+        private void AppendTokensText(SyntaxNodeOrToken element, StringBuilder builder)
         {
             if (element.AsNode() is { } node)
             {
                 foreach (var token in node.DescendantTokens())
                 {
-                    builder.Append(token.Text);
+                    builder.Append(GetText(token));
                 }
             }
             else
             {
-                builder.Append(element.AsToken().Text);
+                builder.Append(GetText(element.AsToken()));
             }
         }
 
-        private static string GetTokensText(MarkdownSyntaxNode node, SyntaxKind kind)
+        private string GetTokensText(MarkdownSyntaxNode node, SyntaxKind kind)
         {
             var builder = new StringBuilder();
             var tokens = node.ChildTokens().ToList();
@@ -549,7 +683,7 @@ public static class MarkdownHtmlRenderer
             {
                 if (tokens[i].RawKind == (int)kind)
                 {
-                    builder.Append(tokens[i].Text);
+                    builder.Append(GetText(tokens[i]));
                 }
                 else if (tokens[i].RawKind == (int)SyntaxKind.LineEndingToken && i > 0 && tokens[i - 1].RawKind == (int)kind)
                 {
@@ -560,9 +694,10 @@ public static class MarkdownHtmlRenderer
             return builder.ToString();
         }
 
-        private static string GetDestination(MarkdownSyntaxNode node)
+        private string GetDestination(MarkdownSyntaxNode node)
         {
-            var destination = node.ChildTokens().FirstOrDefault(token => token.RawKind == (int)SyntaxKind.LinkDestinationToken).Text ?? "";
+            var token = node.ChildTokens().FirstOrDefault(token => token.RawKind == (int)SyntaxKind.LinkDestinationToken);
+            var destination = token.RawKind == 0 ? "" : GetText(token);
             if (destination.StartsWith('<', StringComparison.Ordinal) && destination.EndsWith('>', StringComparison.Ordinal))
             {
                 destination = destination[1..^1];
@@ -571,7 +706,7 @@ public static class MarkdownHtmlRenderer
             return Unescape(destination);
         }
 
-        private static string? GetTitle(MarkdownSyntaxNode node)
+        private string? GetTitle(MarkdownSyntaxNode node)
         {
             var title = GetTokensText(node, SyntaxKind.LinkTitleToken);
             return title.Length < 2 ? null : Unescape(title[1..^1]);
@@ -603,23 +738,7 @@ public static class MarkdownHtmlRenderer
             return builder.ToString();
         }
 
-        private static string DecodeEntity(string entity)
-        {
-            if (entity.StartsWith("&#", StringComparison.Ordinal))
-            {
-                var isHex = entity[2] is 'x' or 'X';
-                var digits = entity.AsSpan(isHex ? 3 : 2, entity.Length - (isHex ? 4 : 3));
-                if (!int.TryParse(digits, isHex ? NumberStyles.HexNumber : NumberStyles.None, CultureInfo.InvariantCulture, out var codePoint) || codePoint == 0 || !Rune.IsValid(codePoint))
-                {
-                    return "�";
-                }
-
-                return char.ConvertFromUtf32(codePoint);
-            }
-
-            // An entity that HTML does not define is text
-            return HtmlEntities.Entities.TryGetValue(entity[1..^1], out var value) ? value : entity;
-        }
+        private static string DecodeEntity(string entity) => HtmlEntities.Decode(entity);
 
         // Percent-encodes the characters that cannot be in a URL, as the reference implementation does
         private static string NormalizeUri(string uri)
@@ -657,6 +776,44 @@ public static class MarkdownHtmlRenderer
             }
 
             return builder.ToString();
+        }
+
+        // Raw HTML, where the tag filter of GFM escapes the tags that change how the rest of the page is read
+        private void AppendHtml(string html)
+        {
+            if (!_tagFilter)
+            {
+                _output.Append(html);
+                return;
+            }
+
+            for (var i = 0; i < html.Length; i++)
+            {
+                _output.Append(html[i] == '<' && IsDisallowedTag(html.AsSpan(i)) ? "&lt;" : html[i]);
+            }
+        }
+
+        private static bool IsDisallowedTag(ReadOnlySpan<char> tag)
+        {
+            var name = tag[1..];
+            if (name.StartsWith('/'))
+            {
+                name = name[1..];
+            }
+
+            foreach (var disallowed in (ReadOnlySpan<string>)["title", "textarea", "style", "xmp", "iframe", "noembed", "noframes", "script", "plaintext"])
+            {
+                if (name.Length > disallowed.Length && name.StartsWith(disallowed, StringComparison.OrdinalIgnoreCase))
+                {
+                    var next = name[disallowed.Length..];
+                    if (next[0] is ' ' or '\t' or '\n' or '\v' or '\f' or '\r' or '>' || next.StartsWith("/>", StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private void AppendEscaped(string text)

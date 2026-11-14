@@ -12,6 +12,7 @@
   <ItemGroup>
     <!-- The examples of the CommonMark specification, shared with the tests of Meziantou.Framework.Markdown -->
     <None Include="../Meziantou.Framework.Markdown.Tests/Specs/CommonMark.md" Link="Specs/CommonMark.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Specs/GfmExtensions.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

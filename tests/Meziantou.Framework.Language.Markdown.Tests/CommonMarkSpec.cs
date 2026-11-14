@@ -1,18 +1,32 @@
 namespace Meziantou.Framework.Language.Markdown.Tests;
 
-/// <summary>The examples of the CommonMark specification: a Markdown document and the HTML it renders as.</summary>
+/// <summary>
+/// The examples of the CommonMark specification, and of the extensions of GitHub Flavored Markdown: a Markdown document
+/// and the HTML it renders as.
+/// </summary>
 internal static class CommonMarkSpec
 {
     private const string Fence = "````````````````````````````````";
 
-    private static readonly Lazy<IReadOnlyList<Example>> LazyExamples = new(Load);
+    private static readonly Lazy<IReadOnlyList<Example>> LazyExamples = new(() => Load("CommonMark.md"));
+    private static readonly Lazy<IReadOnlyList<Example>> LazyGfmExamples = new(() => Load("GfmExtensions.md"));
 
     public static IReadOnlyList<Example> Examples => LazyExamples.Value;
 
-    public static TheoryData<int> ExampleNumbers()
+    public static IReadOnlyList<Example> GfmExamples => LazyGfmExamples.Value;
+
+    public static TheoryData<int> ExampleNumbers() => GetNumbers(Examples);
+
+    public static TheoryData<int> GfmExampleNumbers() => GetNumbers(GfmExamples);
+
+    public static Example Get(int number) => Examples[number - 1];
+
+    public static Example GetGfm(int number) => GfmExamples[number - 1];
+
+    private static TheoryData<int> GetNumbers(IReadOnlyList<Example> examples)
     {
         var data = new TheoryData<int>();
-        foreach (var example in Examples)
+        foreach (var example in examples)
         {
             data.Add(example.Number);
         }
@@ -20,11 +34,9 @@ internal static class CommonMarkSpec
         return data;
     }
 
-    public static Example Get(int number) => Examples[number - 1];
-
-    private static List<Example> Load()
+    private static List<Example> Load(string fileName)
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "Specs", "CommonMark.md");
+        var path = Path.Combine(AppContext.BaseDirectory, "Specs", fileName);
         var lines = File.ReadAllText(path).ReplaceLineEndings("\n").Split('\n');
         var examples = new List<Example>();
         var section = "";

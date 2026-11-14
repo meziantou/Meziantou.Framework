@@ -10,6 +10,7 @@ internal sealed class BlockParser
     private const int CodeIndent = 4;
 
     private readonly string _text;
+    private readonly MarkdownExtensions _extensions;
     private readonly List<TriviaSpan> _triviaSpans = [];
     private readonly Dictionary<string, bool> _references = new(StringComparer.Ordinal);
     private readonly InlineParser _inlineParser;
@@ -19,6 +20,9 @@ internal sealed class BlockParser
     private Block _lastMatchedContainer;
     private bool _allClosed = true;
     private bool _skipAddLine;
+
+    // The list item that the current line opened, which a task list item marker can follow
+    private Block? _itemOpenedOnLine;
 
     // The state of the current line: positions are indexes in the text
     private int _lineEnd;
@@ -32,18 +36,19 @@ internal sealed class BlockParser
     private bool _indented;
     private bool _blank;
 
-    private BlockParser(string text)
+    private BlockParser(string text, MarkdownExtensions extensions)
     {
         _text = text;
+        _extensions = extensions;
         _tip = _document;
         _oldTip = _document;
         _lastMatchedContainer = _document;
-        _inlineParser = new InlineParser(_references);
+        _inlineParser = new InlineParser(_references, extensions);
     }
 
-    public static (BuildNode Document, List<TriviaSpan> TriviaSpans) Parse(string text)
+    public static (BuildNode Document, List<TriviaSpan> TriviaSpans) Parse(string text, MarkdownExtensions extensions)
     {
-        var parser = new BlockParser(text);
+        var parser = new BlockParser(text, extensions);
         var position = 0;
         while (position < text.Length)
         {
@@ -84,6 +89,7 @@ internal sealed class BlockParser
         _partiallyConsumedTab = false;
         _lineEnd = lineEnd;
         _eolEnd = eolEnd;
+        _itemOpenedOnLine = null;
 
         // The open blocks that the line continues
         var allMatched = true;
@@ -115,7 +121,7 @@ internal sealed class BlockParser
         while (!matchedLeaf)
         {
             FindNextNonspace();
-            if (!_indented && !IsMaybeSpecial(Peek(_nextNonspace)))
+            if (!_indented && !IsMaybeSpecial(Peek(_nextNonspace)) && !IsMaybeExtension(container, Peek(_nextNonspace)))
             {
                 AdvanceNextNonspace();
                 break;
@@ -176,6 +182,18 @@ internal sealed class BlockParser
     };
 
     private static bool IsMaybeSpecial(char c) => c is '#' or '`' or '~' or '*' or '+' or '_' or '=' or '<' or '>' or '-' or (>= '0' and <= '9');
+
+    // Whether the line can start a block of an extension: a delimiter row under a paragraph, a row of a table, or the task
+    // list item marker after the marker of a list item
+    private bool IsMaybeExtension(Block container, char c) => container.Kind switch
+    {
+        SyntaxKind.Paragraph => HasExtension(MarkdownExtensions.Tables) && c is '|' or ':',
+        SyntaxKind.Table => true,
+        SyntaxKind.ListItem => HasExtension(MarkdownExtensions.TaskLists) && c == '[' && container == _itemOpenedOnLine,
+        _ => false,
+    };
+
+    private bool HasExtension(MarkdownExtensions extension) => _extensions.HasFlag(extension);
 
     // 0: the line continues the block, 1: it does not, 2: it ends the block and nothing else is on it
     private int Continue(Block block)
@@ -283,6 +301,10 @@ internal sealed class BlockParser
             case SyntaxKind.Paragraph:
                 return _blank ? 1 : 0;
 
+            case SyntaxKind.Table:
+                // A row has at least one cell: a line with only a pipe ends the table
+                return _blank || TableScanner.ScanRow(_text, _nextNonspace, _lineEnd, cells: null, pipes: null) == 0 ? 1 : 0;
+
             default:
                 return 1;
         }
@@ -370,6 +392,7 @@ internal sealed class BlockParser
             var item = AddChild(SyntaxKind.ListItem);
             item.ListData = data;
             item.Leading.Add(new BuildToken(SyntaxKind.ListMarkerToken, data.MarkerStart, data.MarkerEnd, 0));
+            _itemOpenedOnLine = item;
             return 1;
         }
 
@@ -382,7 +405,92 @@ internal sealed class BlockParser
             return 2;
         }
 
+        if (_indented)
+        {
+            return 0;
+        }
+
+        // Table: a delimiter row under the last line of a paragraph, which is the header row
+        if (HasExtension(MarkdownExtensions.Tables) && container.Kind == SyntaxKind.Paragraph && !container.TableVisited && TryStartTable(container))
+        {
+            return 2;
+        }
+
+        // A row of a table
+        if (container.Kind == SyntaxKind.Table && !_blank)
+        {
+            container.Lines.Add(new Line(_nextNonspace, _lineEnd, _eolEnd, 0));
+            _offset = _lineEnd;
+            return 2;
+        }
+
+        // Task list item: [ ], [x] or [X] at the start of the first paragraph of a list item, on the line of its marker
+        if (HasExtension(MarkdownExtensions.TaskLists) && container == _itemOpenedOnLine && IsTaskListItemMarker())
+        {
+            container.Leading.Add(new BuildToken(SyntaxKind.TaskListItemMarkerToken, _nextNonspace, _nextNonspace + 3, 0));
+            AdvanceNextNonspace();
+            AdvanceOffset(3, columns: false);
+            FindNextNonspace();
+            _itemOpenedOnLine = null;
+            return 0;
+        }
+
         return 0;
+    }
+
+    private bool IsTaskListItemMarker()
+    {
+        var position = _nextNonspace;
+        if (position + 3 >= _lineEnd || _text[position] != '[' || _text[position + 1] is not (' ' or 'x' or 'X') || _text[position + 2] != ']' || !Scanners.IsSpaceOrTab(_text[position + 3]))
+        {
+            return false;
+        }
+
+        // The marker is followed by the content of the paragraph
+        position += 3;
+        while (position < _lineEnd && Scanners.IsSpaceOrTab(_text[position]))
+        {
+            position++;
+        }
+
+        return position < _lineEnd;
+    }
+
+    private bool TryStartTable(Block paragraph)
+    {
+        var columns = TableScanner.ScanDelimiterRow(_text, _nextNonspace, _lineEnd, cells: null, pipes: null);
+        if (columns == 0)
+        {
+            return false;
+        }
+
+        // The header row must have as many cells as the delimiter row. A paragraph that fails is never a table: its next lines
+        // are not tried again.
+        var header = paragraph.Lines[^1];
+        if (TableScanner.ScanRow(_text, header.Start, header.End, cells: null, pipes: null) != columns)
+        {
+            paragraph.TableVisited = true;
+            return false;
+        }
+
+        CloseUnmatchedBlocks();
+
+        // The lines before the header row are a paragraph
+        if (paragraph.Lines.Count > 1)
+        {
+            var parent = paragraph.Parent!;
+            var before = new Block(SyntaxKind.Paragraph, parent) { Open = false };
+            before.Lines.AddRange(paragraph.Lines.GetRange(0, paragraph.Lines.Count - 1));
+            parent.Children.Insert(parent.Children.Count - 1, before);
+            ParseDefinitions(before);
+        }
+
+        paragraph.Kind = SyntaxKind.Table;
+        paragraph.Lines.Clear();
+        paragraph.Lines.Add(header);
+        paragraph.Lines.Add(new Line(_nextNonspace, _lineEnd, _eolEnd, 0));
+        _offset = _lineEnd;
+        return true;
     }
 
     private bool TryStartAtxHeading()
@@ -740,6 +848,10 @@ internal sealed class BlockParser
                 return result;
             }
 
+            case SyntaxKind.Table:
+                result.Add(ConvertTable(block));
+                return result;
+
             case SyntaxKind.FencedCodeBlock or SyntaxKind.IndentedCodeBlock or SyntaxKind.HtmlBlock:
             {
                 var node = new BuildNode(block.Kind);
@@ -769,6 +881,71 @@ internal sealed class BlockParser
                 return result;
             }
         }
+    }
+
+    // A table: its header row, its delimiter row, and its other rows. The pipes are tokens of the rows, and the content of a
+    // cell is its inlines.
+    private BuildNode ConvertTable(Block table)
+    {
+        var node = new BuildNode(SyntaxKind.Table);
+        var cells = new List<(int Start, int End)>();
+        var pipes = new List<int>();
+        for (var i = 0; i < table.Lines.Count; i++)
+        {
+            var line = table.Lines[i];
+            cells.Clear();
+            pipes.Clear();
+            var row = new BuildNode(i switch
+            {
+                0 => SyntaxKind.TableHeaderRow,
+                1 => SyntaxKind.TableDelimiterRow,
+                _ => SyntaxKind.TableRow,
+            });
+
+            if (i == 1)
+            {
+                TableScanner.ScanDelimiterRow(_text, line.Start, line.End, cells, pipes);
+            }
+            else
+            {
+                TableScanner.ScanRow(_text, line.Start, line.End, cells, pipes);
+            }
+
+            // The pipes and the cells, in the order of the text
+            var pipeIndex = 0;
+            foreach (var (start, end) in cells)
+            {
+                while (pipeIndex < pipes.Count && pipes[pipeIndex] < start)
+                {
+                    row.AddToken(SyntaxKind.PipeToken, pipes[pipeIndex], pipes[pipeIndex] + 1);
+                    pipeIndex++;
+                }
+
+                if (i == 1)
+                {
+                    row.AddToken(SyntaxKind.TableDelimiterToken, start, end);
+                }
+                else
+                {
+                    var cell = new BuildNode(SyntaxKind.TableCell);
+                    if (end > start)
+                    {
+                        cell.Children.AddRange(_inlineParser.Parse(Subject.FromTableCell(_text, start, end), 0));
+                    }
+
+                    row.Children.Add(cell);
+                }
+            }
+
+            for (; pipeIndex < pipes.Count; pipeIndex++)
+            {
+                row.AddToken(SyntaxKind.PipeToken, pipes[pipeIndex], pipes[pipeIndex] + 1);
+            }
+
+            node.Children.Add(row);
+        }
+
+        return node;
     }
 
     private void FindNextNonspace()
@@ -871,6 +1048,9 @@ internal sealed class BlockParser
         public int FenceOffset { get; set; }
 
         public int HtmlBlockType { get; set; }
+
+        // A paragraph whose last line was not the header row of a table: GFM tries a paragraph once
+        public bool TableVisited { get; set; }
 
         // A paragraph: its link reference definitions, then its inlines from ContentStart in its subject
         public List<BuildNode> Definitions { get; } = [];

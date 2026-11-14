@@ -57,6 +57,31 @@ internal sealed class Subject
         return new Subject(builder.ToString(), [.. starts], [.. ends]);
     }
 
+    /// <summary>
+    /// The content of a cell of a table, where a pipe escaped by a backslash is a pipe: GFM removes the backslash before it
+    /// parses the inlines, even in a code span. The pipe starts at its backslash in the source, so that the tokens cover it.
+    /// </summary>
+    public static Subject FromTableCell(string source, int start, int end)
+    {
+        var builder = new StringBuilder(end - start);
+        var starts = new List<int>(end - start);
+        var ends = new List<int>(end - start);
+        for (var i = start; i < end; i++)
+        {
+            var sourceStart = i;
+            if (source[i] == '\\' && i + 1 < end && source[i + 1] == '|')
+            {
+                i++;
+            }
+
+            builder.Append(source[i]);
+            starts.Add(sourceStart);
+            ends.Add(i + 1);
+        }
+
+        return new Subject(builder.ToString(), [.. starts], [.. ends]);
+    }
+
     public int ToSourceStart(int index) => index < SourceStart.Length ? SourceStart[index] : SourceEnd[^1];
 
     public int ToSourceEnd(int endIndex) => endIndex == 0 ? SourceStart[0] : SourceEnd[endIndex - 1];

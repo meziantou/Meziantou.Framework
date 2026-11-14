@@ -12,6 +12,8 @@ internal sealed class InlineParser
     private const int MaximumLinkDestinationParentheses = 32;
 
     private readonly Dictionary<string, bool> _references;
+    private readonly bool _strikethrough;
+    private readonly bool _autolinks;
     private Subject _subject = null!;
     private string _text = "";
     private int _pos;
@@ -20,7 +22,12 @@ internal sealed class InlineParser
     private Delimiter? _delimiters;
     private Bracket? _brackets;
 
-    public InlineParser(Dictionary<string, bool> references) => _references = references;
+    public InlineParser(Dictionary<string, bool> references, MarkdownExtensions extensions)
+    {
+        _references = references;
+        _strikethrough = extensions.HasFlag(MarkdownExtensions.Strikethrough);
+        _autolinks = extensions.HasFlag(MarkdownExtensions.Autolinks);
+    }
 
     /// <summary>Parses the inlines of the subject from <paramref name="start"/>, without the whitespace around them.</summary>
     public List<BuildElement> Parse(Subject subject, int start)
@@ -48,6 +55,11 @@ internal sealed class InlineParser
         }
 
         ProcessEmphasis(stackBottom: null);
+        if (_autolinks)
+        {
+            LinkEmailAddresses(_root);
+        }
+
         var result = new List<BuildElement>();
         foreach (var child in _root.Children())
         {
@@ -186,6 +198,25 @@ internal sealed class InlineParser
             case '*' or '_':
                 HandleDelimiter(c);
                 break;
+            case '~' when _strikethrough:
+                HandleDelimiter(c);
+                break;
+            case 'w' when _autolinks:
+                if (!ParseWwwAutolink())
+                {
+                    AppendText(_pos, _pos + 1);
+                    _pos++;
+                }
+
+                break;
+            case ':' when _autolinks:
+                if (!ParseUrlAutolink())
+                {
+                    AppendText(_pos, _pos + 1);
+                    _pos++;
+                }
+
+                break;
             case '[':
                 ParseOpenBracket(image: false);
                 break;
@@ -229,13 +260,22 @@ internal sealed class InlineParser
     private void ParseString()
     {
         var start = _pos;
-        while (_pos < _end && _text[_pos] is not ('\n' or '\\' or '`' or '*' or '_' or '[' or ']' or '!' or '<' or '&'))
+        while (_pos < _end && _text[_pos] is not ('\n' or '\\' or '`' or '*' or '_' or '[' or ']' or '!' or '<' or '&') && !IsExtensionCharacter(_text[_pos]))
         {
             _pos++;
         }
 
         AppendText(start, _pos);
     }
+
+    // The characters where a construct of an extension can start: a tilde, the colon of a URL, the start of www.
+    private bool IsExtensionCharacter(char c) => c switch
+    {
+        '~' => _strikethrough,
+        ':' => _autolinks,
+        'w' => _autolinks && _pos + 3 < _end && _text[_pos + 1] == 'w' && _text[_pos + 2] == 'w' && _text[_pos + 3] == '.',
+        _ => false,
+    };
 
     private void ParseNewline()
     {
@@ -399,6 +439,14 @@ internal sealed class InlineParser
         }
 
         var count = _pos - start;
+
+        // A run of more than two tildes is text
+        if (c == '~' && count > 2)
+        {
+            AppendText(start, _pos);
+            return;
+        }
+
         var before = start == 0 ? new Rune('\n') : GetRuneBefore(start);
         var after = _pos >= _end ? new Rune('\n') : GetRuneAt(_pos);
         var afterIsWhitespace = Scanners.IsUnicodeWhitespace(after);
@@ -816,15 +864,27 @@ internal sealed class InlineParser
                 continue;
             }
 
-            var use = closer.Count >= 2 && opener!.Count >= 2 ? 2 : 1;
+            // A strikethrough is between runs of the same length: other runs of tildes are text
+            var tilde = closer.Character == '~';
+            if (tilde && opener!.Count != closer.Count)
+            {
+                closer = closer.Next;
+                RemoveDelimiter(oldCloser);
+                RemoveDelimiter(opener);
+                continue;
+            }
+
+            var use = tilde ? closer.Count : closer.Count >= 2 && opener!.Count >= 2 ? 2 : 1;
             var openerNode = opener!.Node;
             var closerNode = closer.Node;
             opener.Count -= use;
             closer.Count -= use;
 
             // The delimiters used are the ones next to the content: the end of the opener and the start of the closer
-            var emphasis = new InlineNode(use == 1 ? SyntaxKind.Emphasis : SyntaxKind.StrongEmphasis, openerNode.End - use, closerNode.Start + use);
-            emphasis.Append(new InlineNode(SyntaxKind.EmphasisDelimiterToken, openerNode.End - use, openerNode.End));
+            var kind = tilde ? SyntaxKind.Strikethrough : use == 1 ? SyntaxKind.Emphasis : SyntaxKind.StrongEmphasis;
+            var delimiterKind = tilde ? SyntaxKind.StrikethroughDelimiterToken : SyntaxKind.EmphasisDelimiterToken;
+            var emphasis = new InlineNode(kind, openerNode.End - use, closerNode.Start + use);
+            emphasis.Append(new InlineNode(delimiterKind, openerNode.End - use, openerNode.End));
             openerNode.End -= use;
             var current = openerNode.Next;
             while (current is not null && current != closerNode)
@@ -835,7 +895,7 @@ internal sealed class InlineParser
                 current = next;
             }
 
-            emphasis.Append(new InlineNode(SyntaxKind.EmphasisDelimiterToken, closerNode.Start, closerNode.Start + use));
+            emphasis.Append(new InlineNode(delimiterKind, closerNode.Start, closerNode.Start + use));
             closerNode.Start += use;
             openerNode.InsertAfter(emphasis);
 
@@ -867,6 +927,419 @@ internal sealed class InlineParser
         {
             RemoveDelimiter(_delimiters);
         }
+    }
+
+    // An extended www autolink: www. and a domain, after the start of the text, whitespace, or one of *, _, ~ and (
+    private bool ParseWwwAutolink()
+    {
+        if (_brackets is not null || (_pos > 0 && _text[_pos - 1] is not ('*' or '_' or '~' or '(') && !IsSpace(_text[_pos - 1])))
+        {
+            return false;
+        }
+
+        if (_end - _pos < 4 || !_text.AsSpan(_pos).StartsWith("www.", StringComparison.Ordinal) || CheckDomain(_pos, _end - _pos, allowShort: false) == 0)
+        {
+            return false;
+        }
+
+        var length = AutolinkEnd(_pos, _pos);
+        if (length == 0)
+        {
+            return false;
+        }
+
+        AppendAutolink(_pos, _pos + length);
+        return true;
+    }
+
+    // An extended URL autolink: http://, https:// or ftp://, and a domain. The scheme is already text, which the link takes back.
+    private bool ParseUrlAutolink()
+    {
+        if (_brackets is not null || _end - _pos < 4 || _text[_pos + 1] != '/' || _text[_pos + 2] != '/' || _root.LastChild is not { Kind: SyntaxKind.TextToken } scheme || scheme.End != _pos)
+        {
+            return false;
+        }
+
+        var start = _pos;
+        while (start > scheme.Start && char.IsAsciiLetter(_text[start - 1]))
+        {
+            start--;
+        }
+
+        if (!IsSafeScheme(start) || CheckDomain(_pos + 3, _end - _pos - 3, allowShort: true) == 0)
+        {
+            return false;
+        }
+
+        var length = AutolinkEnd(_pos, _pos + 3);
+        if (length == 0)
+        {
+            return false;
+        }
+
+        scheme.End = start;
+        if (scheme.End == scheme.Start)
+        {
+            scheme.Unlink();
+        }
+
+        AppendAutolink(start, _pos + length);
+        return true;
+    }
+
+    private bool IsSafeScheme(int start)
+    {
+        foreach (var scheme in (ReadOnlySpan<string>)["http://", "https://", "ftp://"])
+        {
+            if (_end - start > scheme.Length && _text.AsSpan(start, scheme.Length).Equals(scheme, StringComparison.OrdinalIgnoreCase) && char.IsAsciiLetterOrDigit(_text[start + scheme.Length]))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void AppendAutolink(int start, int end)
+    {
+        var link = new InlineNode(SyntaxKind.ExtendedAutolink, start, end);
+        link.Append(new InlineNode(SyntaxKind.ExtendedAutolinkToken, start, end));
+        _root.Append(link);
+        _pos = end;
+    }
+
+    // The length of the link that starts at data: up to whitespace or <, without the punctuation at its end. Returns 0 when nothing
+    // is left.
+    private int AutolinkEnd(int data, int from)
+    {
+        var end = from;
+        while (end < _end && !IsSpace(_text[end]) && _text[end] != '<')
+        {
+            end++;
+        }
+
+        return TrimAutolink(_text, data, end - data);
+    }
+
+    // Whether the text at data is a domain: segments of characters that are not whitespace or punctuation, or are - or _, separated
+    // by dots, with no _ in the last two segments. The first character is not read, and neither is the last one of the
+    // paragraph, as in cmark-gfm.
+    private int CheckDomain(int data, int size, bool allowShort)
+    {
+        var dots = 0;
+        var underscoresBefore = 0;
+        var underscores = 0;
+        int i;
+        for (i = 1; i < size - 1; i++)
+        {
+            if (_text[data + i] == '\\' && i < size - 2)
+            {
+                i++;
+            }
+
+            var c = _text[data + i];
+            if (c == '_')
+            {
+                underscores++;
+            }
+            else if (c == '.')
+            {
+                underscoresBefore = underscores;
+                underscores = 0;
+                dots++;
+            }
+            else if (c != '-' && !IsHostCharacter(c))
+            {
+                break;
+            }
+        }
+
+        if (underscoresBefore > 0 || underscores > 0)
+        {
+            return 0;
+        }
+
+        return allowShort || dots > 0 ? i : 0;
+    }
+
+    // cmark-gfm reads the domain byte by byte in UTF-8, so it stops after the first byte of a character that is not ASCII
+    private static bool IsHostCharacter(char c) => c < 0x80 && !IsSpace(c) && !(c is (>= '!' and <= '/') or (>= ':' and <= '@') or (>= '[' and <= '`') or (>= '{' and <= '~'));
+
+    private static bool IsSpace(char c) => c is ' ' or '\t' or '\n' or '\v' or '\f' or '\r';
+
+    // Removes the punctuation at the end of a link: ?, !, ., ,, :, *, _, ~, a ) that is not matched, and an entity reference.
+    // Returns the new length.
+    private static int TrimAutolink(string text, int data, int length)
+    {
+        var opening = 0;
+        var closing = 0;
+        for (var i = 0; i < length; i++)
+        {
+            if (text[data + i] == '(')
+            {
+                opening++;
+            }
+            else if (text[data + i] == ')')
+            {
+                closing++;
+            }
+        }
+
+        while (length > 0)
+        {
+            switch (text[data + length - 1])
+            {
+                case ')':
+                    if (closing <= opening)
+                    {
+                        return length;
+                    }
+
+                    closing--;
+                    length--;
+                    break;
+
+                case '?' or '!' or '.' or ',' or ':' or '*' or '_' or '~':
+                    length--;
+                    break;
+
+                case ';':
+                {
+                    // &name; at the end looks like an entity reference
+                    var start = length - 2;
+                    while (start > 0 && char.IsAsciiLetterOrDigit(text[data + start]))
+                    {
+                        start--;
+                    }
+
+                    length = start < length - 2 && text[data + start] == '&' ? start : length - 1;
+                    break;
+                }
+
+                default:
+                    return length;
+            }
+        }
+
+        return length;
+    }
+
+    // The email addresses of the text become extended autolinks, as cmark-gfm does once the inlines are parsed: a run of text,
+    // escaped characters and entities is read as the text it renders as.
+    private void LinkEmailAddresses(InlineNode container)
+    {
+        var run = new List<InlineNode>();
+        var child = container.FirstChild;
+        while (child is not null)
+        {
+            var next = child.Next;
+            if (child.Kind is SyntaxKind.TextToken or SyntaxKind.EscapedCharacterToken or SyntaxKind.EntityToken)
+            {
+                run.Add(child);
+            }
+            else
+            {
+                LinkEmailAddresses(run);
+                run.Clear();
+                if (child.Kind is SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis or SyntaxKind.Strikethrough or SyntaxKind.Image)
+                {
+                    LinkEmailAddresses(child);
+                }
+            }
+
+            child = next;
+        }
+
+        LinkEmailAddresses(run);
+    }
+
+    private void LinkEmailAddresses(List<InlineNode> run)
+    {
+        // An address has an @, which an entity can be too
+        if (!run.Exists(token => token.Kind == SyntaxKind.EntityToken || _text.AsSpan(token.Start, token.End - token.Start).Contains('@')))
+        {
+            return;
+        }
+
+        // The rendered text of the run, and for each of its characters, the token it comes from and its position in a text token
+        var text = new StringBuilder();
+        var origins = new List<(int Token, int Position)>();
+        for (var i = 0; i < run.Count; i++)
+        {
+            var token = run[i];
+            switch (token.Kind)
+            {
+                case SyntaxKind.TextToken:
+                    for (var position = token.Start; position < token.End; position++)
+                    {
+                        text.Append(_text[position]);
+                        origins.Add((i, position));
+                    }
+
+                    break;
+
+                case SyntaxKind.EscapedCharacterToken:
+                    text.Append(_text[token.End - 1]);
+                    origins.Add((i, -1));
+                    break;
+
+                default:
+                    foreach (var c in HtmlEntities.Decode(_text[token.Start..token.End]))
+                    {
+                        text.Append(c);
+                        origins.Add((i, -1));
+                    }
+
+                    break;
+            }
+        }
+
+        var matches = new List<(int Start, int End)>();
+        foreach (var (start, end) in FindEmailAddresses(text.ToString()))
+        {
+            // A link starts and ends at the edges of the tokens, or in a text token
+            var first = origins[start];
+            var last = origins[end - 1];
+            var startsAtEdge = first.Position >= 0 || start == 0 || origins[start - 1].Token != first.Token;
+            var endsAtEdge = last.Position >= 0 || end == origins.Count || origins[end].Token != last.Token;
+            if (startsAtEdge && endsAtEdge)
+            {
+                matches.Add((first.Position >= 0 ? first.Position : run[first.Token].Start, last.Position >= 0 ? last.Position + 1 : run[last.Token].End));
+            }
+        }
+
+        if (matches.Count == 0)
+        {
+            return;
+        }
+
+        // The tokens of the run again, split at the edges of the links
+        var nodes = new List<InlineNode>();
+        var matchIndex = 0;
+        InlineNode? link = null;
+        foreach (var token in run)
+        {
+            var position = token.Start;
+            while (position < token.End)
+            {
+                if (matchIndex < matches.Count && position >= matches[matchIndex].Start)
+                {
+                    if (link is null)
+                    {
+                        link = new InlineNode(SyntaxKind.ExtendedAutolink, matches[matchIndex].Start, matches[matchIndex].End);
+                        nodes.Add(link);
+                    }
+
+                    var end = Math.Min(token.End, matches[matchIndex].End);
+                    link.Append(new InlineNode(token.Kind, position, end));
+                    position = end;
+                    if (position >= matches[matchIndex].End)
+                    {
+                        matchIndex++;
+                        link = null;
+                    }
+                }
+                else
+                {
+                    var end = matchIndex < matches.Count ? Math.Min(token.End, matches[matchIndex].Start) : token.End;
+                    nodes.Add(new InlineNode(token.Kind, position, end));
+                    position = end;
+                }
+            }
+        }
+
+        var anchor = run[0];
+        foreach (var node in nodes)
+        {
+            anchor.InsertAfter(node);
+            anchor = node;
+        }
+
+        foreach (var token in run)
+        {
+            token.Unlink();
+        }
+    }
+
+    // The email addresses of a text, as cmark-gfm finds them: letters, digits, ., +, - and _ before an @, and segments of letters,
+    // digits, - and _ separated by dots after it, which end with a letter
+    private static List<(int Start, int End)> FindEmailAddresses(string text)
+    {
+        var result = new List<(int Start, int End)>();
+        var lower = 0;
+        var at = text.IndexOf('@', StringComparison.Ordinal);
+        while (at >= 0)
+        {
+            var start = at;
+            while (start > lower && (char.IsAsciiLetterOrDigit(text[start - 1]) || text[start - 1] is '.' or '+' or '-' or '_'))
+            {
+                start--;
+            }
+
+            if (start == at)
+            {
+                lower = at + 1;
+                at = text.IndexOf('@', lower, StringComparison.Ordinal);
+                continue;
+            }
+
+            var length = 1;
+            var dots = 0;
+            var nextAt = -1;
+            for (; at + length < text.Length; length++)
+            {
+                var c = text[at + length];
+                if (char.IsAsciiLetterOrDigit(c))
+                {
+                    continue;
+                }
+
+                if (c == '@')
+                {
+                    nextAt = at + length;
+                    break;
+                }
+
+                if (c == '.' && at + length + 1 < text.Length && char.IsAsciiLetterOrDigit(text[at + length + 1]))
+                {
+                    dots++;
+                }
+                else if (c is not ('-' or '_'))
+                {
+                    break;
+                }
+            }
+
+            // Another @: the address is the one before it, if any
+            if (nextAt >= 0)
+            {
+                lower = at + 1;
+                at = nextAt;
+                continue;
+            }
+
+            var lastCharacter = text[at + length - 1];
+            if (length < 2 || dots == 0 || (!char.IsAsciiLetter(lastCharacter) && lastCharacter != '.'))
+            {
+                lower = at + length;
+                at = text.IndexOf('@', lower, StringComparison.Ordinal);
+                continue;
+            }
+
+            length = TrimAutolink(text, at, length);
+            if (length == 0)
+            {
+                lower = at + 1;
+                at = text.IndexOf('@', lower, StringComparison.Ordinal);
+                continue;
+            }
+
+            result.Add((start, at + length));
+            lower = at + length;
+            at = text.IndexOf('@', lower, StringComparison.Ordinal);
+        }
+
+        return result;
     }
 
     private void RemoveDelimiter(Delimiter delimiter)

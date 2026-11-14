@@ -49,6 +49,13 @@ public enum SyntaxKind
     AutolinkToken,
     HtmlTagToken,
 
+    // Tokens of the extensions
+    StrikethroughDelimiterToken,
+    PipeToken,
+    TableDelimiterToken,
+    TaskListItemMarkerToken,
+    ExtendedAutolinkToken,
+
     // Blocks
     Document,
     BlockQuote,
@@ -62,6 +69,11 @@ public enum SyntaxKind
     HtmlBlock,
     Paragraph,
     LinkReferenceDefinition,
+    Table,
+    TableHeaderRow,
+    TableDelimiterRow,
+    TableRow,
+    TableCell,
 
     // Inlines
     Emphasis,
@@ -71,4 +83,6 @@ public enum SyntaxKind
     Image,
     Autolink,
     RawHtml,
+    Strikethrough,
+    ExtendedAutolink,
 }

@@ -1,8 +1,8 @@
 # Meziantou.Framework.Language.Markdown
 
-A prototype of a CommonMark parser built on `Meziantou.Framework.Language`: the tree keeps every character of the text
-it was parsed from, so a document is written back exactly, and an edit only changes the text of what it replaces. It is
-not published yet.
+A prototype of a CommonMark and GitHub Flavored Markdown parser built on `Meziantou.Framework.Language`: the tree keeps
+every character of the text it was parsed from, so a document is written back exactly, and an edit only changes the text
+of what it replaces. It is not published yet.
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_Overview;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.WebPlatform.Css.Syntax;
 
 /// <summary>A rule or a declaration produced by the parser.</summary>
@@ -31,13 +33,22 @@ internal sealed class CssQualifiedRule(List<CssComponentValue> prelude, CssSimpl
 }
 
 /// <summary>https://drafts.csswg.org/css-syntax-3/#declaration</summary>
-internal sealed class CssDeclaration(string name) : CssSyntaxNode
+/// <remarks>
+/// The value is a range of the component values the declaration was consumed from, which must not be modified: its list is
+/// only created when it is used, as the value of a declaration is often found in <see cref="Values.ParsedValueCache"/>.
+/// </remarks>
+internal sealed class CssDeclaration(string name, List<CssComponentValue> values, int start, int count, bool important) : CssSyntaxNode
 {
+    private List<CssComponentValue>? _value;
+
     public string Name { get; } = name;
 
-    public List<CssComponentValue> Value { get; } = [];
+    public List<CssComponentValue> Value => _value ??= values.GetRange(start, count);
 
-    public bool Important { get; set; }
+    /// <summary>The component values of <see cref="Value"/>, without creating its list.</summary>
+    public ReadOnlySpan<CssComponentValue> ValueSpan => _value is null ? CollectionsMarshal.AsSpan(values).Slice(start, count) : CollectionsMarshal.AsSpan(_value);
+
+    public bool Important { get; } = important;
 }
 
 /// <summary>
@@ -47,6 +58,9 @@ internal sealed class CssDeclaration(string name) : CssSyntaxNode
 internal sealed class CssComponentValueStream(List<CssComponentValue> values)
 {
     private int _index;
+
+    /// <summary>The component values of the stream.</summary>
+    public List<CssComponentValue> Values => values;
 
     public bool IsEmpty => _index >= values.Count;
 
@@ -281,7 +295,6 @@ internal static partial class CssParser
         }
 
         input.Discard();
-        var declaration = new CssDeclaration(name.Value);
         input.DiscardWhitespace();
         if (!input.NextIs(CssTokenType.Colon))
         {
@@ -291,52 +304,44 @@ internal static partial class CssParser
 
         input.Discard();
         input.DiscardWhitespace();
-
-        // The values are counted first, so that the list is allocated once with its final size
         var start = input.Mark();
         while (input.Next is not null && !input.NextIs(CssTokenType.Semicolon) && !(nested && input.NextIs(CssTokenType.RightCurlyBracket)))
         {
             input.Discard();
         }
 
-        var end = input.Mark();
-        input.Restore(start);
-        declaration.Value.Capacity = end - start;
-        while (input.Mark() < end)
-        {
-            declaration.Value.Add(input.Consume());
-        }
+        var value = CollectionsMarshal.AsSpan(input.Values)[start..input.Mark()];
 
         // !important
-        var last = LastNonWhitespace(declaration.Value, declaration.Value.Count);
-        if (last >= 0 && declaration.Value[last] is CssPreservedToken { Type: CssTokenType.Ident } important && Infra.InfraAscii.EqualsIgnoreAsciiCase(important.Value, "important"))
+        var important = false;
+        var last = LastNonWhitespace(value, value.Length);
+        if (last >= 0 && value[last] is CssPreservedToken { Type: CssTokenType.Ident } importantToken && Infra.InfraAscii.EqualsIgnoreAsciiCase(importantToken.Value, "important"))
         {
-            var bang = LastNonWhitespace(declaration.Value, last);
-            if (bang >= 0 && declaration.Value[bang] is CssPreservedToken bangToken && bangToken.IsDelim('!'))
+            var bang = LastNonWhitespace(value, last);
+            if (bang >= 0 && value[bang] is CssPreservedToken bangToken && bangToken.IsDelim('!'))
             {
-                declaration.Value.RemoveRange(bang, declaration.Value.Count - bang);
-                declaration.Important = true;
+                value = value[..bang];
+                important = true;
             }
         }
 
-        while (declaration.Value.Count > 0 && declaration.Value[^1] is CssPreservedToken { Type: CssTokenType.Whitespace })
-        {
-            declaration.Value.RemoveAt(declaration.Value.Count - 1);
-        }
+        value = value[..(LastNonWhitespace(value, value.Length) + 1)];
 
         // A {}-block is only allowed as the whole value of custom properties and of properties that accept it. Like the
         // browsers, the initial-value descriptor of @property, which accepts any <declaration-value>, is a custom property value.
-        if (!declaration.Name.StartsWith("--", StringComparison.Ordinal) && !Infra.InfraAscii.EqualsIgnoreAsciiCase(declaration.Name, "initial-value"))
+        if (value.Length != 1 && !name.Value.StartsWith("--", StringComparison.Ordinal) && !Infra.InfraAscii.EqualsIgnoreAsciiCase(name.Value, "initial-value"))
         {
-            var hasBlock = declaration.Value.Exists(v => v is CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket });
-            if (hasBlock && !(declaration.Value.Count == 1))
-                return null;
+            foreach (var item in value)
+            {
+                if (item is CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket })
+                    return null;
+            }
         }
 
-        return declaration;
+        return new CssDeclaration(name.Value, input.Values, start, value.Length, important);
     }
 
-    private static int LastNonWhitespace(List<CssComponentValue> values, int end)
+    private static int LastNonWhitespace(ReadOnlySpan<CssComponentValue> values, int end)
     {
         for (var i = end - 1; i >= 0; i--)
         {

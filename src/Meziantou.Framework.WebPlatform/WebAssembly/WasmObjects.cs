@@ -70,15 +70,45 @@ internal abstract class WasmFunction : WasmExtern
     public abstract void Invoke(ReadOnlySpan<WasmValue> arguments, Span<WasmValue> results);
 }
 
-/// <summary>A memory (a memory address). The bytes of a memory that is not shared are a .NET array, replaced when the memory grows.</summary>
+/// <summary>
+/// A memory (a memory address). The bytes of a memory that is not shared are a .NET array, replaced when the memory grows.
+/// The bytes of a shared memory are a shared data block of the script engine (<see cref="SharedBytes"/>), which never
+/// moves: a shared memory can be used by any agent (its methods can be called from any thread).
+/// </summary>
 internal abstract class WasmMemory : WasmExtern
 {
     public override WasmExternKind Kind => WasmExternKind.Memory;
 
     public abstract WasmMemoryType Type { get; }
 
-    /// <summary>The bytes of the memory (the length is the size of the memory).</summary>
+    /// <summary>The bytes of a memory that is not shared (the length is the size of the memory).</summary>
+    /// <exception cref="NotSupportedException">The memory is shared.</exception>
     public abstract byte[] Data { get; }
+
+    /// <summary>The bytes of a shared memory, or null for a memory that is not shared.</summary>
+    public virtual WasmSharedMemoryBytes? SharedBytes => null;
+
+    /// <summary>
+    /// Notifies the waiters of an address of a shared memory (<c>memory.atomic.notify</c>), from any thread, and returns the
+    /// number of waiters notified.
+    /// </summary>
+    /// <exception cref="WasmTrapException">The address is out of bounds or not aligned.</exception>
+    /// <exception cref="NotSupportedException">The memory is not shared.</exception>
+    public virtual uint AtomicNotify(ulong address, uint count) => throw new NotSupportedException("The memory is not shared");
+
+    /// <summary>
+    /// Blocks the calling thread until the waiter of an address of a shared memory is notified or the timeout elapses
+    /// (<c>memory.atomic.wait32</c> and <c>memory.atomic.wait64</c>), when the address contains <paramref name="expected"/>.
+    /// It can be called from any thread.
+    /// </summary>
+    /// <param name="address">The address: a multiple of <paramref name="size"/>.</param>
+    /// <param name="expected">The expected value (the low 32 bits for a 32-bit wait).</param>
+    /// <param name="size">The size of the value in bytes: 4 or 8.</param>
+    /// <param name="timeout">The maximum duration of the wait, or null to wait until notified.</param>
+    /// <param name="waiting">Called on the calling thread right before it starts waiting, or null.</param>
+    /// <exception cref="WasmTrapException">The address is out of bounds or not aligned.</exception>
+    /// <exception cref="NotSupportedException">The memory is not shared.</exception>
+    public virtual WasmWaitResult AtomicWait(ulong address, long expected, int size, TimeSpan? timeout, Action? waiting = null) => throw new NotSupportedException("The memory is not shared");
 
     /// <summary>The size of the memory in pages.</summary>
     public abstract ulong Size { get; }
@@ -94,6 +124,42 @@ internal abstract class WasmMemory : WasmExtern
     public Action<WasmMemory>? DataChanged { get; set; }
 
     protected void OnDataChanged() => DataChanged?.Invoke(this);
+}
+
+/// <summary>The result of <see cref="WasmMemory.AtomicWait"/>: the values of <c>memory.atomic.wait32</c>.</summary>
+internal enum WasmWaitResult
+{
+    Ok = 0,
+    NotEqual = 1,
+    TimedOut = 2,
+}
+
+/// <summary>
+/// The bytes of a shared memory: a growable shared data block of the script engine (the memory of the
+/// <c>SharedArrayBuffer</c> objects of the memory), allocated once for its capacity and pinned, so that its address never
+/// changes. The memory grows within the capacity. Created by <see cref="IWasmHost.CreateSharedMemoryBytes"/>.
+/// </summary>
+internal sealed class WasmSharedMemoryBytes(object dataBlock, nint address, ulong capacity, Func<ulong> getByteLength, Func<ulong, bool> tryGrow)
+{
+    private int _waitersInstalled;
+
+    /// <summary>The shared data block of the script engine (see <c>IJsAdapter.GetSharedDataBlock</c>).</summary>
+    public object DataBlock { get; } = dataBlock;
+
+    /// <summary>The address of the first byte, which never changes.</summary>
+    public nint Address { get; } = address;
+
+    /// <summary>The number of bytes the memory can grow to.</summary>
+    public ulong Capacity { get; } = capacity;
+
+    /// <summary>The current size of the memory in bytes.</summary>
+    public ulong ByteLength => getByteLength();
+
+    /// <summary>Grows the bytes to <paramref name="newByteLength"/> (the new bytes are zeroed): false when it is less than the current length or greater than the capacity.</summary>
+    public bool TryGrow(ulong newByteLength) => tryGrow(newByteLength);
+
+    /// <summary>Returns true the first time it is called: the waiters of the data block are installed once.</summary>
+    public bool TryBeginInstallWaiters() => Interlocked.Exchange(ref _waitersInstalled, 1) == 0;
 }
 
 /// <summary>A table (a table address).</summary>

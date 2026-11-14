@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.WebPlatform.WebAssembly;
 
 namespace Meziantou.Framework.WebPlatform.Wasmtime;
@@ -58,7 +59,7 @@ internal static class WasmtimeModules
     public static byte[] CreateMemoryModule(WasmMemoryType type)
     {
         var memory = new List<byte> { 0x01 }; // one memory
-        memory.Add((byte)((type.Is64 ? 0x04 : 0x00) | (type.Maximum.HasValue ? 0x01 : 0x00)));
+        memory.Add((byte)((type.Is64 ? 0x04 : 0x00) | (type.Shared ? 0x02 : 0x00) | (type.Maximum.HasValue ? 0x01 : 0x00)));
         WriteU64(memory, type.Minimum);
         if (type.Maximum is { } maximum)
         {
@@ -69,6 +70,25 @@ internal static class WasmtimeModules
         AddSection(module, 0x05, memory);
         AddSection(module, 0x07, [0x01, 0x01, (byte)'m', 0x02, 0x00]); // export "m" (memory 0)
         return [.. module];
+    }
+
+    /// <summary>
+    /// Returns a module that imports a shared memory (<c>"" "m"</c>) whose maximum size is <paramref name="maximum"/> pages,
+    /// and exports the atomic wait and notify instructions of the memory: <c>notify(address, count)</c>,
+    /// <c>wait32(address, expected, timeout)</c> and <c>wait64(address, expected, timeout)</c> (a timeout in nanoseconds,
+    /// negative to wait until notified).
+    /// </summary>
+    public static byte[] CreateAtomicsModule(ulong? maximum, bool is64)
+    {
+        var address = is64 ? "i64" : "i32";
+        var limits = string.Create(CultureInfo.InvariantCulture, $"{(is64 ? "i64 " : "")}0 {maximum ?? 0}");
+        return WasmtimeRuntime.WatToWasm($$"""
+            (module
+              (import "" "m" (memory {{limits}} shared))
+              (func (export "notify") (param {{address}} i32) (result i32) (memory.atomic.notify (local.get 0) (local.get 1)))
+              (func (export "wait32") (param {{address}} i32 i64) (result i32) (memory.atomic.wait32 (local.get 0) (local.get 1) (local.get 2)))
+              (func (export "wait64") (param {{address}} i64 i64) (result i32) (memory.atomic.wait64 (local.get 0) (local.get 1) (local.get 2))))
+            """);
     }
 
     private static void AddSection(List<byte> module, byte id, List<byte> contents)

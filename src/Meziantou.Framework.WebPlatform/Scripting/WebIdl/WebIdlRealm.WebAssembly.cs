@@ -26,7 +26,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     internal WebAssemblyRuntime? WebAssemblyRuntime => GlobalScope.Options.WebAssemblyRuntime;
 
     /// <summary>The WebAssembly state of the agent: its store and its object caches.</summary>
-    internal WebAssemblyAgentState<TValue> WebAssemblyState => Agent.WebAssemblyState ??= new(WebAssemblyRuntime!.CreateStore(new WebAssemblyHost(Agent.Host)));
+    internal WebAssemblyAgentState<TValue> WebAssemblyState => Agent.WebAssemblyState ??= new(WebAssemblyRuntime!.CreateStore(new WebAssemblyHost(Agent.Host, CreateWasmSharedMemoryBytes)));
 
     /// <summary>Defines the WebAssembly namespace in the global object ([Exposed=*]).</summary>
     private void DefineWebAssemblyGlobal()
@@ -576,15 +576,52 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     // Memories
     // ----------------------------------------------------------------------------------------------------------------
 
-    /// <summary>https://webassembly.github.io/spec/js-api/#initialize-a-memory-object: the buffer of the memory, refreshed when the memory grows.</summary>
-    private void InitializeWasmMemoryObject(WebAssemblyMemoryObject memoryObject)
+    /// <summary>
+    /// https://webassembly.github.io/spec/js-api/#initialize-a-memory-object: the buffer of the memory, refreshed when the
+    /// memory grows. The data block of a shared memory gets the waiters of the memory, before the scripts get a buffer of it.
+    /// </summary>
+    internal void InitializeWasmMemoryObject(WebAssemblyMemoryObject memoryObject)
     {
-        if (memoryObject.BufferObject is not null || memoryObject.Memory is not { } memory)
+        if (memoryObject.BufferObject is not null)
             return;
 
+        var memory = memoryObject.Memory;
         memoryObject.Realm = this;
+        if (memory.SharedBytes is { } sharedBytes)
+        {
+            if (sharedBytes.TryBeginInstallWaiters())
+            {
+                Adapter.SetSharedDataBlockWaiters(sharedBytes.DataBlock, new WasmSharedMemoryWaiters(memory));
+            }
+
+            memoryObject.BufferObject = CreateWasmSharedMemoryBuffer(memoryObject, resizable: false);
+            return;
+        }
+
         memoryObject.BufferObject = CreateWasmMemoryBuffer(memory.Data);
         memory.DataChanged = _ => RefreshWasmMemoryBuffer(memoryObject);
+    }
+
+    /// <summary>
+    /// The bytes of a shared memory (<see cref="IWasmHost.CreateSharedMemoryBytes"/>): a growable shared data block of the
+    /// script engine, allocated for the capacity of the memory, which the <c>SharedArrayBuffer</c> objects of the memory share.
+    /// </summary>
+    private WasmSharedMemoryBytes CreateWasmSharedMemoryBytes(ulong byteLength, ulong capacity)
+    {
+        var adapter = Adapter;
+        if (capacity > int.MaxValue || byteLength > capacity || adapter.CreateGrowableSharedDataBlock((int)byteLength, (int)capacity) is not { } dataBlock)
+            throw new WasmAllocationException("The shared memory cannot be allocated");
+
+        var address = adapter.GetSharedDataBlockAddress(dataBlock);
+        if (address == 0)
+            throw new WasmAllocationException("The script engine cannot share the bytes of a shared memory");
+
+        return new WasmSharedMemoryBytes(
+            dataBlock,
+            address,
+            capacity,
+            () => (ulong)adapter.GetSharedDataBlockByteLength(dataBlock),
+            newByteLength => newByteLength <= capacity && adapter.GrowSharedDataBlockTo(dataBlock, (int)newByteLength));
     }
 
     /// <summary>https://webassembly.github.io/spec/js-api/#create-a-fixed-length-memory-buffer</summary>
@@ -600,7 +637,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// </summary>
     private TValue CreateWasmResizableMemoryBuffer(WebAssemblyMemoryObject memoryObject)
     {
-        var memory = memoryObject.Memory!;
+        var memory = memoryObject.Memory;
         var maxByteLength = GetWasmMemoryMaxByteLength(memoryObject);
         return Adapter.RunInRealm(EngineRealm, () => Adapter.CreateResizableArrayBufferWithData(memory.Data, maxByteLength, MemoryDetachKey, (_, newByteLength) => ResizeWasmMemoryBuffer(memoryObject, newByteLength)))
             ?? throw CreateTypeError("The script engine cannot create a resizable ArrayBuffer of the bytes of a memory");
@@ -678,7 +715,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         if (memoryObject.IsBufferResizable && memoryObject.BufferObject is TValue resizableBuffer)
         {
-            Adapter.SetArrayBufferData(resizableBuffer, memoryObject.Memory!.Data);
+            Adapter.SetArrayBufferData(resizableBuffer, memoryObject.Memory.Data);
             return;
         }
 
@@ -687,35 +724,27 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             Adapter.DetachArrayBuffer(buffer);
         }
 
-        memoryObject.BufferObject = CreateWasmMemoryBuffer(memoryObject.Memory!.Data);
+        memoryObject.BufferObject = CreateWasmMemoryBuffer(memoryObject.Memory.Data);
     }
 
     /// <summary>https://webassembly.github.io/spec/js-api/#dom-memory-grow: grows the memory and returns its previous size in pages.</summary>
+    /// <remarks>
+    /// The agents that share a memory can grow it concurrently: mem_grow on a shared memory grows it by the delta and returns
+    /// its previous size atomically, so that no requested page is lost.
+    /// </remarks>
     internal ulong GrowWasmMemory(WebAssemblyMemoryObject memoryObject, ulong delta)
     {
-        if (memoryObject.Memory is { } memory)
+        var memory = memoryObject.Memory;
+        var previousBuffer = memoryObject.BufferObject;
+        var previousSize = WasmCall(() => memory.Grow(delta));
+
+        // https://webassembly.github.io/spec/js-api/#grow-the-memory-buffer: the buffer is refreshed, even when the memory did not move
+        if (ReferenceEquals(previousBuffer, memoryObject.BufferObject))
         {
-            var previousBuffer = memoryObject.BufferObject;
-            var previousSize = WasmCall(() => memory.Grow(delta));
-
-            // https://webassembly.github.io/spec/js-api/#grow-the-memory-buffer: the buffer is refreshed, even when the memory did not move
-            if (ReferenceEquals(previousBuffer, memoryObject.BufferObject))
-            {
-                RefreshWasmMemoryBuffer(memoryObject);
-            }
-
-            return previousSize;
+            RefreshWasmMemoryBuffer(memoryObject);
         }
 
-        // The agents that share the memory can grow it concurrently: the block grows by the delta and returns its previous
-        // size atomically (mem_grow on a shared memory is atomic), so that no requested page is lost
-        var dataBlock = memoryObject.SharedDataBlock!;
-        var maxByteLength = memoryObject.Maximum!.Value * WasmPageSize;
-        if (delta > maxByteLength / WasmPageSize || !Adapter.GrowSharedDataBlock(dataBlock, (int)(delta * WasmPageSize), out var previousByteLength))
-            throw CreateRangeError("The memory cannot grow");
-
-        RefreshWasmMemoryBuffer(memoryObject);
-        return (ulong)previousByteLength / WasmPageSize;
+        return previousSize;
     }
 
     /// <summary>
@@ -727,20 +756,37 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if ((ulong)newByteLength % WasmPageSize != 0)
             throw CreateRangeError("The buffer of a memory can only grow by a multiple of the page size");
 
-        if (memoryObject.SharedDataBlock is { } dataBlock)
+        if (memoryObject.Memory.SharedBytes is { } sharedBytes)
         {
             // https://webassembly.github.io/threads/js-api/#sec-hostgrowsharedarraybuffer: the agents that share the memory can
-            // grow it concurrently, so the block grows to the new length atomically (a delta computed from a length read
-            // before would grow it twice). As for SharedArrayBuffer.prototype.grow, a racing grow to the same length succeeds,
-            // and a grow to a smaller length throws (https://tc39.es/ecma262/#sec-hostgrowsharedarraybuffer).
-            if (!Adapter.GrowSharedDataBlockTo(dataBlock, newByteLength))
-                throw CreateRangeError("The memory cannot grow");
+            // grow it concurrently, so the memory grows to the new length (a delta computed from a length read before would
+            // grow it twice): the growths of the buffers are serialized by the bytes of the memory. As for
+            // SharedArrayBuffer.prototype.grow, a racing grow to the same length succeeds, and a grow to a smaller length
+            // throws (https://tc39.es/ecma262/#sec-hostgrowsharedarraybuffer).
+            lock (sharedBytes)
+            {
+                var currentByteLength = sharedBytes.ByteLength;
+                if ((ulong)newByteLength < currentByteLength)
+                    throw CreateRangeError("The memory cannot grow");
+
+                if ((ulong)newByteLength > currentByteLength)
+                {
+                    try
+                    {
+                        memoryObject.Memory.Grow(((ulong)newByteLength - currentByteLength) / WasmPageSize);
+                    }
+                    catch (WasmAllocationException)
+                    {
+                        throw CreateRangeError("The memory cannot grow");
+                    }
+                }
+            }
 
             RefreshWasmMemoryBuffer(memoryObject);
             return;
         }
 
-        var byteLength = (ulong)memoryObject.Memory!.Data.Length;
+        var byteLength = (ulong)memoryObject.Memory.Data.Length;
         if ((ulong)newByteLength < byteLength)
             throw CreateRangeError("The buffer of a memory can only grow by a multiple of the page size");
 
@@ -767,7 +813,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         else
         {
             Adapter.DetachArrayBuffer((TValue)memoryObject.BufferObject!);
-            memoryObject.BufferObject = CreateWasmMemoryBuffer(memoryObject.Memory!.Data);
+            memoryObject.BufferObject = CreateWasmMemoryBuffer(memoryObject.Memory.Data);
         }
 
         memoryObject.IsBufferResizable = false;

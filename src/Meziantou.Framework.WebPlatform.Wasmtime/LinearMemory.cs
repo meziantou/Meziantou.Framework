@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.WebPlatform.Wasmtime.Interop;
+using Meziantou.Framework.WebPlatform.WebAssembly;
 
 namespace Meziantou.Framework.WebPlatform.Wasmtime;
 
@@ -51,6 +52,9 @@ internal sealed unsafe class LinearMemory
         try
         {
             var limits = (LinearMemoryLimits)GCHandle.FromIntPtr(env).Target!;
+            if (NativeMethods.wasmtime_memorytype_isshared(type))
+                return SharedLinearMemory.Create(limits, (ulong)minimum, (ulong)maximum, result);
+
             var maximumByteSize = Math.Min((ulong)maximum, (ulong)limits.MaxMemorySize);
             if ((ulong)minimum > maximumByteSize)
                 return NativeErrors.CreateError($"The memory cannot be larger than {limits.MaxMemorySize} bytes");
@@ -147,4 +151,113 @@ internal sealed unsafe class LinearMemory
     /// <summary>The finalizer of the memory creator: it frees the handle of its limits.</summary>
     [UnmanagedCallersOnly]
     internal static void FreeLimits(nint env) => GCHandle.FromIntPtr(env).Free();
+}
+
+/// <summary>
+/// The bytes of a shared memory: a growable shared data block of the script engine (<see cref="WasmSharedMemoryBytes"/>),
+/// created by the host of the store that creates the memory. It is allocated for the maximum size of the memory (limited
+/// by <see cref="WasmtimeRuntimeOptions.MaxMemorySize"/>) and never moves, as Wasmtime requires for a shared memory.
+/// </summary>
+/// <remarks>
+/// A shared memory can outlive the store that created it (the other stores that import it, the <c>wasmtime_sharedmemory_t</c>
+/// references): the native memory references the object by a strong handle, freed when Wasmtime deletes the memory.
+/// </remarks>
+internal sealed unsafe class SharedLinearMemory
+{
+    private const ulong PageSize = 65536;
+
+    // The shared memories by address (the bytes never move), to find the bytes of a wasmtime_sharedmemory_t
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<nint, SharedLinearMemory> Memories = new();
+
+    private SharedLinearMemory(WasmSharedMemoryBytes bytes)
+    {
+        Bytes = bytes;
+    }
+
+    public WasmSharedMemoryBytes Bytes { get; }
+
+    /// <summary>The wrapper of the memory (see <see cref="WasmtimeRuntime.GetSharedMemory"/>): weak, so that it does not keep the native memory alive.</summary>
+    public WeakReference<WasmtimeSharedMemory>? Wrapper { get; set; }
+
+    /// <summary>Returns the shared memory whose bytes start at <paramref name="address"/>, or null.</summary>
+    public static SharedLinearMemory? Find(nint address) => Memories.TryGetValue(address, out var memory) ? memory : null;
+
+    /// <summary>The <c>wasmtime_new_memory_callback_t</c> of a shared memory.</summary>
+    internal static nint Create(LinearMemoryLimits limits, ulong minimum, ulong maximum, WasmtimeLinearMemory* result)
+    {
+        // The data blocks of the script engines are .NET arrays: the capacity is a whole number of pages
+        var capacity = Math.Min(Math.Min(maximum, (ulong)limits.MaxMemorySize), (ulong)Array.MaxLength) / PageSize * PageSize;
+        if (minimum > capacity)
+            return NativeErrors.CreateError($"The shared memory cannot be larger than {capacity} bytes");
+
+        if (LinearMemory.s_creatingStore is not { } store)
+            return NativeErrors.CreateError("A shared memory can only be created by a store");
+
+        WasmSharedMemoryBytes bytes;
+        try
+        {
+            bytes = store.CreateSharedMemoryBytes(minimum, capacity);
+        }
+        catch (Exception ex)
+        {
+            // The exception of the host (e.g. a RangeError, or the memory limit of the script engine) is thrown by the operation of the store
+            store.SetPendingException(ex);
+            return NativeErrors.CreateError(ex.Message);
+        }
+
+        var memory = new SharedLinearMemory(bytes);
+        Memories[memory.Bytes.Address] = memory;
+        result->Env = GCHandle.ToIntPtr(GCHandle.Alloc(memory));
+        result->GetMemory = &GetMemory;
+        result->GrowMemory = &GrowMemory;
+        result->Finalizer = &Free;
+        return 0;
+    }
+
+    /// <summary><c>wasmtime_memory_get_callback_t</c>: the capacity is the size of the data block, so the memory never moves.</summary>
+    [UnmanagedCallersOnly]
+    private static byte* GetMemory(nint env, nuint* byteSize, nuint* byteCapacity)
+    {
+        try
+        {
+            var bytes = ((SharedLinearMemory)GCHandle.FromIntPtr(env).Target!).Bytes;
+            *byteSize = (nuint)bytes.ByteLength;
+            *byteCapacity = (nuint)bytes.Capacity;
+            return (byte*)bytes.Address;
+        }
+        catch
+        {
+            // An exception must not cross the native frames
+            *byteSize = 0;
+            *byteCapacity = 0;
+            return null;
+        }
+    }
+
+    /// <summary><c>wasmtime_memory_grow_callback_t</c>: the data block grows in place (memory.grow returns -1 beyond its capacity).</summary>
+    [UnmanagedCallersOnly]
+    private static nint GrowMemory(nint env, nuint newSize)
+    {
+        try
+        {
+            var bytes = ((SharedLinearMemory)GCHandle.FromIntPtr(env).Target!).Bytes;
+            return bytes.TryGrow((ulong)newSize) ? 0 : NativeErrors.CreateError("The shared memory cannot grow");
+        }
+        catch (Exception ex)
+        {
+            return NativeErrors.CreateError(ex.Message);
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    private static void Free(nint env)
+    {
+        var handle = GCHandle.FromIntPtr(env);
+        if (handle.Target is SharedLinearMemory memory)
+        {
+            Memories.TryRemove(new KeyValuePair<nint, SharedLinearMemory>(memory.Bytes.Address, memory));
+        }
+
+        handle.Free();
+    }
 }

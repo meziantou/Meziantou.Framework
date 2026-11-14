@@ -82,3 +82,77 @@ growable block: it keeps its length when the block grows. [CreateGrowableSharedA
 [TryGrowBy](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.TryGrowBy) adds a number of bytes to the block
 and returns its previous length in one atomic step: when several engines grow the same block at the same time, each one
 adds its own bytes, as the `grow(delta)` of a shared `WebAssembly.Memory` does.
+
+### Share memory with another runtime
+
+[JsSharedDataBlock.Address](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.Address) is the address of the first byte of a block, which never changes: the block is
+allocated for its maximum byte length and pinned, so native code can read and write it while the block is alive (e.g.
+the shared memory of a WebAssembly runtime).
+
+When that runtime has its own waiters, set [Waiters](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.Waiters) before the scripts get a buffer of the block:
+`Atomics.wait`, `Atomics.waitAsync` and `Atomics.notify` then call your [JsSharedDataBlockWaiters](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlockWaiters) instead of the
+waiter lists of the engines, so that the waiters of both runtimes notify each other:
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/Builtins/BinaryDataTests.cs;region=JsSharedDataBlock_WaitersClass;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The waiters of another runtime that shares the memory of a block: here, they record the calls and notify every waiter at once
+internal sealed class RecordingWaiters : JsSharedDataBlockWaiters
+{
+    public List<string> Calls { get; } = [];
+
+    public override int Notify(int byteIndex, int count)
+    {
+        Calls.Add($"notify {byteIndex} {count}");
+        return Math.Min(count, 2);
+    }
+
+    public override bool Wait(int byteIndex, long expectedValue, int size, TimeSpan? timeout, CancellationToken cancellationToken)
+    {
+        Calls.Add($"wait {byteIndex} {expectedValue} {size} {(timeout is { } duration ? duration.TotalMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture) : "-")}");
+        return true;
+    }
+
+    public override void WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed)
+    {
+        Calls.Add($"waitAsync {byteIndex} {expectedValue} {size} {timeout?.TotalMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+        completed(true);
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/Builtins/BinaryDataTests.cs;region=JsSharedDataBlock_Waiters;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Atomics.wait, Atomics.waitAsync and Atomics.notify use the waiters of the runtime that shares the memory
+var block = JsSharedDataBlock.TryCreate(16, maxByteLength: 32)!;
+var waiters = new RecordingWaiters();
+block.Waiters = waiters;
+
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+using (engine.Enter())
+{
+    realm.GlobalObject.SetProperty("sab", realm.CreateSharedArrayBuffer(block));
+}
+
+realm.Execute("""
+    const i32 = new Int32Array(sab);
+    i32[1] = 5;
+    var results = [Atomics.notify(i32, 1), Atomics.notify(i32, 2, 3), Atomics.wait(i32, 1, 5, 20), Atomics.wait(i32, 1, 6), Atomics.wait(i32, 1, 5, 0), Atomics.wait(new BigInt64Array(sab), 1, 0n)];
+    const { async, value } = Atomics.waitAsync(i32, 3, 0, 100);
+    value.then(result => results.push(async, result));
+    """);
+engine.RunJobs();
+
+Assert.Equal("2,2,ok,not-equal,timed-out,ok,true,ok", realm.Evaluate("results.join()").ToString());
+Assert.Equal(["notify 4 2147483647", "notify 8 3", "wait 4 5 4 20", "wait 8 0 8 -", "waitAsync 12 0 4 100"], waiters.Calls);
+```
+<!-- endref -->
+
+- The engine checks the value of the location before it calls `Wait` or `WaitAsync`: a value that differs returns
+  `"not-equal"`, and a timeout of 0 returns `"timed-out"`, without a call. When another agent changes the value before
+  your waiter is added, complete the wait as a notification.
+- `Wait` blocks the thread of the script. Its timeout is at most the time left to the running entry, and the
+  cancellation token is canceled with the tokens of the engine and of the execution scopes: stop waiting when it is.
+- `WaitAsync` returns once the waiter is added (a notification that follows must reach it), and calls `completed` once,
+  from any thread: the promise of `Atomics.waitAsync` is resolved on the thread of the engine.

@@ -670,9 +670,11 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public sealed class JsSharedDataBlock
     {
+        public nint Address { get => throw null; }
         public int ByteLength { get => throw null; }
         public bool IsGrowable { get => throw null; }
         public int? MaxByteLength { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsSharedDataBlockWaiters? Waiters { get => throw null; set { } }
         public System.Memory<byte> GetMemory() => throw null;
         public ref byte GetReference(int byteIndex) => throw null;
         public ref byte GetReference(int byteIndex, int byteCount) => throw null;
@@ -680,6 +682,13 @@ namespace Meziantou.Framework.JavaScriptEngine
         public static Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock? TryCreate(int byteLength, int? maxByteLength) => throw null;
         public bool TryGrow(int newByteLength) => throw null;
         public bool TryGrowBy(int deltaByteLength, out int previousByteLength) => throw null;
+    }
+
+    public abstract class JsSharedDataBlockWaiters
+    {
+        public abstract int Notify(int byteIndex, int count);
+        public abstract bool Wait(int byteIndex, long expectedValue, int size, System.TimeSpan? timeout, System.Threading.CancellationToken cancellationToken);
+        public abstract void WaitAsync(int byteIndex, long expectedValue, int size, System.TimeSpan? timeout, System.Action<bool> completed);
     }
 
     public readonly struct JsSourceLocation : System.IEquatable<Meziantou.Framework.JavaScriptEngine.JsSourceLocation>

@@ -162,10 +162,12 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
                 if (maximum is null)
                     throw r.CreateTypeError("A shared memory must have a maximum");
 
-                return CreateSharedMemory(r, initial, maximum.Value, is64);
+                // The bytes of a shared memory are the memory of SharedArrayBuffer objects
+                if (r.SharedArrayBufferConstructor is null)
+                    throw r.CreateRangeError("The shared memory cannot be allocated");
             }
 
-            var memory = r.WasmCall(() => r.WebAssemblyState.Store.CreateMemory(new WasmMemoryType(initial, maximum, is64, shared: false)));
+            var memory = r.WasmCall(() => r.WebAssemblyState.Store.CreateMemory(new WasmMemoryType(initial, maximum, is64, shared)));
             var memoryObject = new WebAssemblyMemoryObject(memory);
             r.RegisterWasmObject(memoryObject);
             return memoryObject;
@@ -192,26 +194,6 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
     {
         var address = r.GetDictionaryMember(descriptor, "address");
         return !r.Adapter.IsUndefined(address) && r.ToEnumerationValue(address, "AddressType", ["i32", "i64"]) == "i64";
-    }
-
-    /// <summary>
-    /// A shared memory: a growable shared data block of the script engine (the runtimes do not support the shared memories),
-    /// whose buffer is a fixed-length <c>SharedArrayBuffer</c>.
-    /// </summary>
-    private static WebAssemblyMemoryObject CreateSharedMemory(WebIdlRealm<TAdapter, TValue> r, ulong initial, ulong maximum, bool is64)
-    {
-        if (r.SharedArrayBufferConstructor is not { } constructor || maximum * 65536 > (ulong)Array.MaxLength)
-            throw r.CreateRangeError("The shared memory cannot be allocated");
-
-        var options = r.CreateObject();
-        r.SetMember(options, "maxByteLength", r.Adapter.FromNumber(maximum * 65536));
-        var buffer = r.Adapter.RunInRealm(r.EngineRealm, () => r.Adapter.Construct(constructor, [r.Adapter.FromNumber(initial * 65536), options], constructor));
-        if (r.Adapter.GetSharedDataBlock(buffer) is not { } dataBlock)
-            throw r.CreateRangeError("The shared memory cannot be allocated");
-
-        var memoryObject = new WebAssemblyMemoryObject(dataBlock, maximum, is64);
-        memoryObject.BufferObject = r.CreateWasmSharedMemoryBuffer(memoryObject, resizable: false);
-        return memoryObject;
     }
 
     // ----------------------------------------------------------------------------------------------------------------

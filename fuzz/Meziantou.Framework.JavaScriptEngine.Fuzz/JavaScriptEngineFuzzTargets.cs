@@ -77,6 +77,7 @@ public static partial class JavaScriptEngineFuzzTargets
         new("javascript-source-map-mappings", SourceMapMappings) { Seeds = GetSourceMapMappingsSeeds },
         new("javascript-binding", Binding) { Seeds = GetBindingSeeds, Dictionary = BindingTokens },
         new("javascript-compiled-code", CompiledCode) { Seeds = GetCompiledCodeSeeds, Dictionary = Tokens },
+        new("javascript-atomics-waiters", AtomicsWaiters) { Seeds = GetAtomicsWaitersSeeds, Dictionary = [.. Tokens, .. AtomicsWaitersTokens] },
     ];
 
     private static void Parse(ReadOnlySpan<byte> data)

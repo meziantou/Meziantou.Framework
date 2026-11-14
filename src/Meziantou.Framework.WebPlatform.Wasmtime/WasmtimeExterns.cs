@@ -58,6 +58,81 @@ internal sealed class WasmtimeMemory : WasmMemory
     internal void RaiseDataChanged() => OnDataChanged();
 }
 
+/// <summary>
+/// A shared memory (<c>wasmtime_sharedmemory_t</c>): it is not bound to a store, so it can be imported by the modules of
+/// any agent, and its methods can be called from any thread. Its bytes are the data block of <see cref="SharedLinearMemory"/>.
+/// </summary>
+internal sealed class WasmtimeSharedMemory(WasmtimeRuntime runtime, SharedMemoryHandle handle, WasmSharedMemoryBytes bytes, WasmMemoryType type) : WasmMemory
+{
+    public WasmtimeRuntime Runtime { get; } = runtime;
+
+    public SharedMemoryHandle Handle { get; } = handle;
+
+    public override WasmMemoryType Type { get; } = type;
+
+    public override byte[] Data => throw new NotSupportedException("The bytes of a shared memory are a shared data block");
+
+    public override WasmSharedMemoryBytes SharedBytes { get; } = bytes;
+
+    public override ulong Size
+    {
+        get
+        {
+            using var memory = new SafeHandleLease(Handle);
+            return NativeMethods.wasmtime_sharedmemory_size(memory.Value);
+        }
+    }
+
+    public override unsafe ulong Grow(ulong delta)
+    {
+        using var memory = new SafeHandleLease(Handle);
+        ulong previousSize;
+        var error = NativeMethods.wasmtime_sharedmemory_grow(memory.Value, delta, &previousSize);
+        if (error != 0)
+            throw new WasmAllocationException(NativeErrors.TakeErrorMessage(error));
+
+        return previousSize;
+    }
+
+    /// <summary>Grows the memory to exactly <paramref name="newSize"/> pages: a concurrent growth makes the growth fail, and it starts again.</summary>
+    public override unsafe ulong GrowTo(ulong newSize)
+    {
+        using var memory = new SafeHandleLease(Handle);
+        while (true)
+        {
+            var size = NativeMethods.wasmtime_sharedmemory_size(memory.Value);
+            if (size >= newSize)
+                return size;
+
+            ulong previousSize;
+            nint error;
+            bool raced;
+            SharedLinearMemory.BeginExactGrowth(newSize * WasmPageSize);
+            try
+            {
+                error = NativeMethods.wasmtime_sharedmemory_grow(memory.Value, newSize - size, &previousSize);
+            }
+            finally
+            {
+                raced = SharedLinearMemory.EndExactGrowth();
+            }
+
+            if (error == 0)
+                return previousSize;
+
+            var message = NativeErrors.TakeErrorMessage(error);
+            if (!raced)
+                throw new WasmAllocationException(message);
+        }
+    }
+
+    private const ulong WasmPageSize = 65536;
+
+    public override uint AtomicNotify(ulong address, uint count) => Runtime.AtomicNotify(this, address, count);
+
+    public override WasmWaitResult AtomicWait(ulong address, long expected, int size, TimeSpan? timeout, WasmWaitSignal? signal = null) => Runtime.AtomicWait(this, address, expected, size, timeout, signal);
+}
+
 internal sealed class WasmtimeTable(WasmtimeStore store, WasmtimeIndexedExtern handle, WasmTableType type) : WasmTable
 {
     public WasmtimeStore Store { get; } = store;

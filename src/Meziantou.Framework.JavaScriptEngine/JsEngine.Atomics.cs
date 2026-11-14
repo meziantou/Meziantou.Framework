@@ -8,6 +8,7 @@ public sealed partial class JsEngine
     // Pulsed when the promise of an Atomics.waitAsync is about to be resolved (by another agent, or by a timeout)
     private readonly object _atomicsSignal = new();
     private int _pendingAtomicsWaitAsyncCount;
+    private CancellationTokenSource? _atomicsLifetime;
 
     private bool? _canBlock;
 
@@ -20,6 +21,37 @@ public sealed partial class JsEngine
         get => _canBlock ?? Options.CanBlock;
         set => _canBlock = value;
     }
+
+    /// <summary>
+    /// A token canceled when the engine is disposed or when the cancellation token of its options is canceled: it stops the
+    /// asynchronous waiters of another runtime (<see cref="JsSharedDataBlockWaiters.WaitAsync"/>).
+    /// </summary>
+    internal CancellationToken AtomicsLifetimeToken
+    {
+        get
+        {
+            if (Volatile.Read(ref _atomicsLifetime) is not { } lifetime)
+            {
+                var created = Options.CancellationToken.CanBeCanceled ? CancellationTokenSource.CreateLinkedTokenSource(Options.CancellationToken) : new CancellationTokenSource();
+                lifetime = Interlocked.CompareExchange(ref _atomicsLifetime, created, comparand: null) ?? created;
+                if (lifetime != created)
+                {
+                    created.Dispose();
+                }
+            }
+
+            // The engine can be disposed while the source is created
+            if (_isDisposed)
+            {
+                lifetime.Cancel();
+            }
+
+            return lifetime.Token;
+        }
+    }
+
+    // The source is canceled, not disposed: the waiters can still register on its token
+    private void CancelAtomicsLifetime() => Volatile.Read(ref _atomicsLifetime)?.Cancel();
 
     /// <summary>Gets the number of the waiters of <c>Atomics.waitAsync</c> whose promise is not resolved yet (the host keeps the agent alive while it is not zero).</summary>
     internal int PendingAtomicsWaitAsyncCount => Volatile.Read(ref _pendingAtomicsWaitAsyncCount);

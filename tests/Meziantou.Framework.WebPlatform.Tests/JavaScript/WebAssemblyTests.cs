@@ -44,14 +44,20 @@ public sealed class WebAssemblyTests : IDisposable
     private static string Wasm(string text) => "new Uint8Array([" + string.Join(',', WasmtimeRuntime.WatToWasm(text)) + "])";
 
     // Runs a script whose promise sets the title of the document
-    private async Task<string> RunAsync(string script, WebPlatformFeatures? features = null, bool withRuntime = true, bool crossOriginIsolated = false)
+    private async Task<string> RunAsync(string script, WebPlatformFeatures? features = null, bool withRuntime = true, bool crossOriginIsolated = false, bool waitForTitle = false)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
             ScriptEngine = _engine,
             WebAssemblyRuntime = withRuntime ? Runtime : null,
             Features = features,
-            UnhandledScriptError = (_, error) => _errors.Add(error),
+            UnhandledScriptError = (_, error) =>
+            {
+                lock (_errors)
+                {
+                    _errors.Add(error);
+                }
+            },
         });
 
         var html = $"<script>({script})().then(r => document.title = String(r), e => document.title = 'error: ' + e);</script>";
@@ -59,9 +65,20 @@ public sealed class WebAssemblyTests : IDisposable
             ? context.Navigate("https://example.com/", _ => new DocumentResource(html) { Headers = CrossOriginIsolationHeaders })
             : context.Navigate("https://example.com/", _ => html);
 
-        // The modules are compiled on the thread pool
+        // The modules are compiled on the thread pool, and the workers run on their own threads
         await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
-        Assert.Empty(_errors);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        while (waitForTitle && document.Title.Length == 0 && stopwatch.Elapsed < TimeSpan.FromSeconds(30))
+        {
+            await Task.Delay(1, TestContext.Current.CancellationToken);
+            await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
+        }
+
+        lock (_errors)
+        {
+            Assert.Empty(_errors);
+        }
+
         return document.Title;
     }
 
@@ -388,6 +405,173 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task SharedMemory_CanBeImportedByAModule()
+    {
+        var bytes = Wasm("""
+            (module
+              (import "env" "memory" (memory 1 2 shared))
+              (func (export "add") (param i32 i32) (result i32) (i32.atomic.rmw.add (local.get 0) (local.get 1)))
+              (func (export "cas") (param i32 i32 i32) (result i32) (i32.atomic.rmw.cmpxchg (local.get 0) (local.get 1) (local.get 2)))
+              (func (export "load64") (param i32) (result i64) (i64.atomic.load (local.get 0)))
+              (func (export "size") (result i32) (memory.size))
+              (func (export "grow") (param i32) (result i32) (memory.grow (local.get 0))))
+            """);
+        var result = await RunAsync($$"""
+            async () => {
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 2, shared: true });
+              const { instance } = await WebAssembly.instantiate({{bytes}}, { env: { memory } });
+              const e = instance.exports;
+              const view = new Int32Array(memory.buffer);
+              Atomics.store(view, 1, 40);
+              const atomics = [e.add(4, 2), Atomics.load(view, 1), e.cas(4, 42, 7), view[1]].join();
+              new BigInt64Array(memory.buffer)[1] = 5n;
+              const buffer = memory.buffer;
+              const growth = [e.load64(8), e.grow(1), buffer.byteLength, memory.buffer.byteLength, e.size(), e.grow(1), memory.grow(0)].join();
+              let linkError;
+              try { await WebAssembly.instantiate({{bytes}}, { env: { memory: new WebAssembly.Memory({ initial: 1, maximum: 2 }) } }); } catch (error) { linkError = error.name; }
+              return [atomics, growth, linkError, memory.buffer instanceof SharedArrayBuffer].join('|');
+            }
+            """, crossOriginIsolated: true);
+
+        Assert.Equal("40,42,42,7|5,1,65536,131072,2,-1,2|LinkError|true", result);
+    }
+
+    [Fact]
+    public async Task SharedMemory_ReexportAndGrowableBuffer()
+    {
+        var bytes = Wasm("""
+            (module
+              (import "env" "memory" (memory 1 4 shared))
+              (export "memory" (memory 0))
+              (func (export "size") (result i32) (memory.size)))
+            """);
+        var result = await RunAsync($$"""
+            async () => {
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 4, shared: true });
+              const { instance } = await WebAssembly.instantiate({{bytes}}, { env: { memory } });
+              const buffer = memory.toResizableBuffer();
+              buffer.grow(65536);
+              const sameLength = [buffer.byteLength, instance.exports.size()].join();
+              buffer.grow(3 * 65536);
+              const grown = [buffer.byteLength, instance.exports.size(), memory.grow(0)].join();
+              let smaller;
+              try { buffer.grow(2 * 65536); } catch (error) { smaller = error.name; }
+              return [instance.exports.memory === memory, sameLength, grown, smaller].join('|');
+            }
+            """, crossOriginIsolated: true);
+
+        Assert.Equal("true|65536,1|196608,3,3|RangeError", result);
+    }
+
+    [Fact]
+    public async Task SharedMemory_CanBeDefinedByAModule()
+    {
+        var bytes = Wasm("""
+            (module
+              (memory (export "memory") 1 4 shared)
+              (func (export "store") (param i32 i32) (i32.atomic.store (local.get 0) (local.get 1)))
+              (func (export "grow") (param i32) (result i32) (memory.grow (local.get 0))))
+            """);
+        var result = await RunAsync($$"""
+            async () => {
+              const { instance } = await WebAssembly.instantiate({{bytes}});
+              const { memory, store, grow } = instance.exports;
+              store(8, 123);
+              const copy = structuredClone(memory);
+              const resizable = memory.toResizableBuffer();
+              const before = [memory.buffer instanceof SharedArrayBuffer, Atomics.load(new Int32Array(copy.buffer), 2), resizable.growable, resizable.maxByteLength].join();
+              const after = [grow(1), resizable.byteLength, copy.buffer.byteLength, memory.grow(1), instance.exports.memory === memory].join();
+              resizable.grow(4 * 65536);
+              return [before, after, copy.grow(0), WebAssembly.Module.exports(new WebAssembly.Module({{bytes}})).map(e => e.kind).join()].join('|');
+            }
+            """, crossOriginIsolated: true);
+
+        Assert.Equal("true,123,true,262144|1,131072,131072,2,true|4|memory,function,function", result);
+    }
+
+    [Fact]
+    public async Task SharedMemory_WaitAndNotifyBetweenWorkerAndWindow()
+    {
+        var bytes = Wasm("""
+            (module
+              (import "env" "memory" (memory 1 1 shared))
+              (func (export "wait") (param i32 i32) (result i32) (memory.atomic.wait32 (local.get 0) (local.get 1) (i64.const -1)))
+              (func (export "storeAndNotify") (param i32 i32) (result i32)
+                (i32.atomic.store (local.get 0) (local.get 1))
+                (memory.atomic.notify (local.get 0) (i32.const 1))))
+            """);
+
+        // The worker waits in WebAssembly until the window notifies it with Atomics.notify, then wakes the window, which
+        // waits with Atomics.waitAsync, with memory.atomic.notify
+        var result = await RunAsync($$"""
+            async () => {
+              const workerSource = `onmessage = async ({ data: { module, memory } }) => {
+                const { exports } = await WebAssembly.instantiate(module, { env: { memory } });
+                postMessage('ready');
+                const result = exports.wait(0, 0);
+                exports.storeAndNotify(4, result + 10);
+              };`;
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 1, shared: true });
+              const module = await WebAssembly.compile({{bytes}});
+              const view = new Int32Array(memory.buffer);
+              const worker = new Worker(URL.createObjectURL(new Blob([workerSource], { type: 'text/javascript' })));
+              const ready = new Promise(resolve => worker.onmessage = resolve);
+              worker.postMessage({ module, memory });
+              await ready;
+              const { async, value } = Atomics.waitAsync(view, 1, 0);
+
+              // The timers do not run while the worker is blocked: the window spins until the worker waits
+              while (Atomics.notify(view, 0, 1) === 0) {
+              }
+
+              return [async, await value, Atomics.load(view, 1)].join();
+            }
+            """, crossOriginIsolated: true, waitForTitle: true);
+
+        Assert.Equal("true,ok,10", result);
+    }
+
+    [Fact]
+    public async Task SharedMemory_AtomicsWaitIsNotifiedByWebAssembly()
+    {
+        var bytes = Wasm("""
+            (module
+              (import "env" "memory" (memory 1 1 shared))
+              (func (export "notify") (param i32) (result i32) (memory.atomic.notify (local.get 0) (i32.const 2))))
+            """);
+
+        // The worker blocks in Atomics.wait until the WebAssembly code of the window notifies it
+        var result = await RunAsync($$"""
+            async () => {
+              const workerSource = `onmessage = ({ data: memory }) => {
+                const view = new Int32Array(memory.buffer);
+                Atomics.store(view, 1, 1);
+                Atomics.notify(view, 1);
+                const results = [Atomics.wait(view, 0, 0), Atomics.wait(view, 0, 1), Atomics.wait(view, 0, 0, 10)];
+                postMessage(results.join());
+              };`;
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 1, shared: true });
+              const { instance } = await WebAssembly.instantiate({{bytes}}, { env: { memory } });
+              const view = new Int32Array(memory.buffer);
+              const worker = new Worker(URL.createObjectURL(new Blob([workerSource], { type: 'text/javascript' })));
+              const done = new Promise(resolve => worker.onmessage = e => resolve(e.data));
+              const { value: started } = Atomics.waitAsync(view, 1, 0);
+              worker.postMessage(memory);
+              const startResult = await started;
+
+              // The timers do not run while the worker is blocked: the window spins until the worker waits
+              let notified;
+              while ((notified = instance.exports.notify(0)) === 0) {
+              }
+
+              return [startResult, notified, await done].join('|');
+            }
+            """, crossOriginIsolated: true, waitForTitle: true);
+
+        Assert.Equal("ok|1|ok,not-equal,timed-out", result);
+    }
+
+    [Fact]
     public async Task Memory_CanBeImported()
     {
         var bytes = Wasm("""(module (import "env" "memory" (memory 1)) (func (export "load") (param i32) (result i32) (i32.load (local.get 0))))""");
@@ -538,6 +722,8 @@ public sealed class WebAssemblyTests : IDisposable
         public void CheckInterrupt()
         {
         }
+
+        public WasmSharedMemoryBytes CreateSharedMemoryBytes(ulong byteLength, ulong capacity) => throw new WasmAllocationException("The host cannot create a shared memory");
     }
 
     [Fact]
@@ -668,6 +854,8 @@ public sealed class WebAssemblyTests : IDisposable
         public void CheckInterrupt()
         {
         }
+
+        public WasmSharedMemoryBytes CreateSharedMemoryBytes(ulong byteLength, ulong capacity) => throw new WasmAllocationException("The host cannot create a shared memory");
     }
 
     [Fact]
@@ -696,6 +884,41 @@ public sealed class WebAssemblyTests : IDisposable
         await context.EventLoop.RunUntilIdleAsync();
 
         Assert.Equal("5", document.QuerySelector("output")!.TextContent);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_WebAssemblySharedMemory()
+    {
+        #region WebPlatformWasmtime_SharedMemory
+        using var runtime = new WasmtimeRuntime();
+        using var engine = new JavaScriptScriptEngine();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            ScriptEngine = engine,
+            WebAssemblyRuntime = runtime,
+        });
+
+        var document = await context.NavigateAsync("https://example.com/", _ => """
+            <output></output>
+            <script>
+              // (module (import "env" "memory" (memory 1 1 shared))
+              //   (func (export "add") (param i32 i32) (result i32) (i32.atomic.rmw.add (local.get 0) (local.get 1))))
+              const bytes = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 7, 1, 96, 2, 127, 127, 1, 127, 2, 16, 1, 3, 101,
+                110, 118, 6, 109, 101, 109, 111, 114, 121, 2, 3, 1, 1, 3, 2, 1, 0, 7, 7, 1, 3, 97, 100, 100, 0, 0, 10, 12, 1,
+                10, 0, 32, 0, 32, 1, 254, 30, 2, 0, 11]);
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 1, shared: true });
+              WebAssembly.instantiate(bytes, { env: { memory } }).then(({ instance }) => {
+                const counter = new Int32Array(memory.buffer); // a SharedArrayBuffer: postMessage() shares it with the workers
+                Atomics.store(counter, 0, 40);
+                instance.exports.add(0, 2);
+                document.querySelector('output').textContent = Atomics.load(counter, 0);
+              });
+            </script>
+            """);
+        await context.EventLoop.RunUntilIdleAsync();
+
+        Assert.Equal("42", document.QuerySelector("output")!.TextContent);
         #endregion
     }
 }

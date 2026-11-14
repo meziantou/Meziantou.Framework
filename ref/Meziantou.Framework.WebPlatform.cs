@@ -15068,6 +15068,15 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public Meziantou.Framework.WebPlatform.Dom.Window Window { get => throw null; }
     }
 
+    public interface IGrowableSharedDataBlock
+    {
+        nint Address { get; }
+        int ByteLength { get; }
+        object DataBlock { get; }
+        void SetWaiters(Meziantou.Framework.WebPlatform.Scripting.ISharedDataBlockWaiters waiters);
+        bool TryGrow(int newByteLength);
+    }
+
     public interface IJsAdapter<TValue> where TValue : class
     {
         object CurrentRealm { get; }
@@ -15090,6 +15099,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public TValue? CreateFixedLengthSharedArrayBuffer(object dataBlock, int byteLength) => throw null;
         TValue CreateFunction(string name, int length, Meziantou.Framework.WebPlatform.Scripting.JsHostFunction<TValue> function);
         public TValue? CreateGrowableSharedArrayBuffer(object dataBlock, System.Action<TValue, int> grow) => throw null;
+        public Meziantou.Framework.WebPlatform.Scripting.IGrowableSharedDataBlock? CreateGrowableSharedDataBlock(int byteLength, int maxByteLength) => throw null;
         public TValue CreateHtmlDdaPlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue> handler, Meziantou.Framework.WebPlatform.Scripting.JsHostFunction<TValue> call) => throw null;
         TValue CreateObject(TValue prototype);
         TValue CreatePlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue>? handler);
@@ -15205,6 +15215,13 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public bool IsNamedProperty(string name) => throw null;
         public void ReportAccess(string propertyName) { }
         public bool ShouldReportAccess() => throw null;
+    }
+
+    public interface ISharedDataBlockWaiters
+    {
+        int Notify(int byteIndex, int count);
+        bool Wait(int byteIndex, long expectedValue, int size, System.TimeSpan? timeout, System.Threading.CancellationToken cancellationToken);
+        bool WaitAsync(int byteIndex, long expectedValue, int size, System.TimeSpan? timeout, System.Action<bool> completed, System.Threading.CancellationToken cancellationToken);
     }
 
     public interface IWebIdlHost

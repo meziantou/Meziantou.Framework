@@ -174,6 +174,30 @@ public sealed class PdfPrintTests : IDisposable
     }
 
     [Fact]
+    public void PrintToPdf_ColorGlyphsThatOverhangAreNotClipped()
+    {
+        // The SVG document of A draws a red rectangle of half an em left of the origin of the glyph, and from the baseline to
+        // half an em below it: outside of the advance and of the descent of the font
+        var builder = Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.SvgBoxes();
+        builder.RawTables["SVG "] = Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.WriteSvgTable([(
+            Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.SvgA,
+            Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.SvgA,
+            System.Text.Encoding.UTF8.GetBytes("<svg xmlns='http://www.w3.org/2000/svg'><rect id='glyph2' x='-512' y='-256' width='512' height='768' fill='red'/></svg>"))]);
+        _pages.Resources["/svg.ttf"] = (builder.Build(), "font/ttf");
+        var context = _pages.Load(PageStyle + """
+            <style>@font-face { font-family: Svg; src: url(/svg.ttf) }</style>
+            <p style='position: absolute; left: 60px; top: 20px; margin: 0; font: 64px/1 Svg'>A</p>
+            """);
+
+        var pdf = Reopen(context.PrintToPdf());
+
+        // At 64px, the rectangle is 32px wide from x = 28, and 48px high from 16px above the baseline
+        using var page = PdfRenderer.RenderPage(pdf.Pages[0], new PdfRenderOptions { Dpi = 96, UseSystemFonts = false });
+        Assert.Equal(new Rgba32(255, 0, 0, 255), page.Frames[0][40, 85]);
+        AssertRendersAsTheRasterizer(context, pdf);
+    }
+
+    [Fact]
     public void PrintToPdf_TextIsEmbeddedAndExtractable()
     {
         var context = _pages.Load(PageStyle + LoadFont() + "<style>p { font: 14px Noto; margin: 0 }</style><p>office hours</p><p>Café — 1€</p>");

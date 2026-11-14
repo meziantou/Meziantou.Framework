@@ -116,15 +116,20 @@ internal sealed class InteractionContext
     // when they complete are attributed to the interaction. It is null on the threads that do not run a task of an interaction.
     private static readonly AsyncLocal<InteractionContext?> CurrentContext = new();
 
+    // Whether an interaction context was ever created: until then, the current interaction context is null, and reading it does
+    // not need the AsyncLocal lookup (the parsers and the DOM read it for each inserted node and each attribute change)
+    private static volatile bool s_created;
+
     public InteractionContext(ulong id, Document document, double startTime)
     {
+        s_created = true;
         Id = id;
         Document = document;
         StartTime = startTime;
     }
 
     /// <summary>Gets the current interaction context (https://wicg.github.io/soft-navigations/#get-the-current-interaction-context, without the document check).</summary>
-    public static InteractionContext? Current => CurrentContext.Value;
+    public static InteractionContext? Current => s_created ? CurrentContext.Value : null;
 
     /// <summary>The interaction id.</summary>
     public ulong Id { get; }

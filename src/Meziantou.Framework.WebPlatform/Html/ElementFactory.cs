@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Html;
@@ -13,7 +14,15 @@ internal static partial class ElementFactory
     /// for the registry of the document ("default"), null, or a registry.
     /// </summary>
     public static Element CreateElement(Document document, string localName, string? @namespace, string? prefix, string? isValue, bool synchronousCustomElements, CustomElementRegistry? registry)
+        => CreateElement(document, localName, @namespace, prefix, isValue, synchronousCustomElements, registry, htmlTagId: null);
+
+    /// <summary>
+    /// https://dom.spec.whatwg.org/#concept-create-element. <paramref name="htmlTagId"/> is the tag id of <paramref name="localName"/>
+    /// when the caller knows it (e.g. the parser, from the tag token), or null.
+    /// </summary>
+    public static Element CreateElement(Document document, string localName, string? @namespace, string? prefix, string? isValue, bool synchronousCustomElements, CustomElementRegistry? registry, TagId? htmlTagId)
     {
+        Debug.Assert(htmlTagId is null || htmlTagId == TagNames.GetTagId(localName));
         @namespace = Namespaces.Intern(@namespace);
         if (ReferenceEquals(registry, CustomElementRegistry.Default))
         {
@@ -26,8 +35,11 @@ internal static partial class ElementFactory
         Element result;
         if (ReferenceEquals(@namespace, Namespaces.Html))
         {
-            result = CreateHtmlElement(document, localName, prefix);
-            if (isValue is not null || CustomElements.IsValidCustomElementName(localName))
+            var tagId = htmlTagId ?? TagNames.GetTagId(localName);
+            result = CreateHtmlElement(document, localName, tagId, prefix);
+
+            // The well-known names are not valid custom element names
+            if (isValue is not null || (tagId == TagId.Unknown && CustomElements.IsValidCustomElementName(localName)))
             {
                 result.CustomElementState = CustomElementState.Undefined;
             }
@@ -155,9 +167,11 @@ internal static partial class ElementFactory
     }
 
     /// <summary>Creates an element implementing the element interface for the local name (https://html.spec.whatwg.org/#element-interface).</summary>
-    private static HtmlElement CreateHtmlElement(Document document, string localName, string? prefix)
+    private static HtmlElement CreateHtmlElement(Document document, string localName, string? prefix) => CreateHtmlElement(document, localName, TagNames.GetTagId(localName), prefix);
+
+    private static HtmlElement CreateHtmlElement(Document document, string localName, TagId tagId, string? prefix)
     {
-        var element = CreateHtmlElementOrNull(document, localName, prefix);
+        var element = CreateHtmlElementOrNull(document, localName, tagId, prefix);
         if (element is not null)
             return element;
 

@@ -6,7 +6,8 @@ internal static class CustomElements
     public static bool IsValidCustomElementName(string name)
     {
         // A valid element local name whose first code point is an ASCII lower alpha, without ASCII upper alphas, that contains a hyphen
-        if (name.Length == 0 || !char.IsAsciiLetterLower(name[0]) || !Infra.XmlNames.IsValidElementLocalName(name))
+        // The names without a hyphen (all the elements of the specifications but a few SVG and MathML ones) are rejected first
+        if (name.Length == 0 || !char.IsAsciiLetterLower(name[0]) || !name.AsSpan().Contains('-') || !Infra.XmlNames.IsValidElementLocalName(name))
             return false;
 
         var hasHyphen = false;

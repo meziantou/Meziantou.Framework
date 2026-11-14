@@ -18,7 +18,7 @@ public static class LocatorFuzzTargets
             Seeds = GetSeeds,
             Dictionary =
             [
-                "c:", "r:", "rh:", "re:", "t:", "te:", "l:", "le:", "p:", "a:", "T:", "i:", "\n",
+                "c:", ":scope", "r:", "rh:", "re:", "t:", "te:", "l:", "le:", "p:", "a:", "T:", "i:", "\n",
                 "button", "link", "heading", "listitem", "checkbox", "textbox", "img",
                 "<button>", "</button>", "<a href=\"#\">", "<h1>", "<ul><li>", "<label for=\"x\">", "<label>", "</label>", "<input id=\"x\">", "<input type=\"submit\" value=\"Go\">",
                 "<img alt=\"", "placeholder=\"", "title=\"", "data-testid=\"", "aria-label=\"", "aria-labelledby=\"", "aria-hidden=\"true\"", "role=\"", "style=\"display: none\"", "<script>", "<style>", " id=\"",
@@ -56,6 +56,7 @@ public static class LocatorFuzzTargets
         yield return FuzzSeed.FromText("title", "T:Search field\n" + UsersMarkup);
         yield return FuzzSeed.FromText("test-id", "i:user-grace\n" + UsersMarkup);
         yield return FuzzSeed.FromText("css", "c:li > button\n" + UsersMarkup);
+        yield return FuzzSeed.FromText("css-scope", "c::scope > body > ul\n" + UsersMarkup);
         yield return FuzzSeed.FromText("nested-text", "t:a\n<div>a<div>a<span>a</span></div><p>A</p></div><script>a</script>");
     }
 

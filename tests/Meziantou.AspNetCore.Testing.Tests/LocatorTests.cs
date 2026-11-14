@@ -184,6 +184,30 @@ public sealed class LocatorTests
     }
 
     [Fact]
+    public async Task Locator_ScopeIsTheElementOfTheParentLocator()
+    {
+        await using var host = new ComponentTestHost();
+        var page = await RenderMarkupAsync(host, """
+            <div id="panel"><button>Direct</button><p><button>Nested</button></p></div>
+            <div id="other"><button>Other</button></div>
+            """);
+
+        // :scope is the element that the locator searches, as in querySelectorAll
+        Assert.Equal(["Direct"], page.Locator("#panel").Locator(":scope > button").GetElements().Select(element => element.TextContent));
+        Assert.Equal(["Direct", "Other"], page.Locator("div").Locator(":scope > button").GetElements().Select(element => element.TextContent));
+        Assert.Equal(["Direct", "Nested"], page.Locator("#panel").Locator("button").GetElements().Select(element => element.TextContent));
+        await page.Locator("#panel").Locator(":scope > button").ClickAsync();
+
+        // The elements of an open shadow root are found too
+        await host.InvokeAsync(() =>
+        {
+            var shadowRoot = page.Find("#other").AttachShadow(new ShadowRootInit { Mode = ShadowRootMode.Open });
+            shadowRoot.InnerHtml = "<button>Shadow</button><slot></slot>";
+        });
+        Assert.Equal(["Shadow", "Other"], page.Locator("#other").Locator("button").GetElements().Select(element => element.TextContent));
+    }
+
+    [Fact]
     public async Task Locator_FindsTheElementsOfOpenShadowRoots()
     {
         await using var host = new ComponentTestHost();

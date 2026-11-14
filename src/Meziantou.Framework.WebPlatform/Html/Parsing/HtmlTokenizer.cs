@@ -1197,7 +1197,7 @@ internal sealed class HtmlTokenizer
                         EmitEndOfFile();
                         break;
                     default:
-                        _tagName.Append(ToAsciiLower((char)c));
+                        _tagName.AppendConsumed(ToAsciiLower((char)c), _input, _position - 1);
                         break;
                 }
 
@@ -1630,7 +1630,7 @@ internal sealed class HtmlTokenizer
                         _attributeName.Append((char)c);
                         break;
                     default:
-                        _attributeName.Append(ToAsciiLower((char)c));
+                        _attributeName.AppendConsumed(ToAsciiLower((char)c), _input, _position - 1);
                         break;
                 }
 
@@ -1736,7 +1736,7 @@ internal sealed class HtmlTokenizer
                 }
                 else
                 {
-                    _attributeValue.Append((char)c);
+                    _attributeValue.AppendConsumed((char)c, _input, _position - 1);
                 }
 
                 break;
@@ -1781,14 +1781,14 @@ internal sealed class HtmlTokenizer
                         break;
                     case '"' or '\'' or '<' or '=' or '`':
                         ReportError("unexpected-character-in-unquoted-attribute-value");
-                        _attributeValue.Append((char)c);
+                        _attributeValue.AppendConsumed((char)c, _input, _position - 1);
                         break;
                     case Eof:
                         ReportError("eof-in-tag");
                         EmitEndOfFile();
                         break;
                     default:
-                        _attributeValue.Append((char)c);
+                        _attributeValue.AppendConsumed((char)c, _input, _position - 1);
                         break;
                 }
 
@@ -1864,7 +1864,7 @@ internal sealed class HtmlTokenizer
                         _commentData.Append('\U0000FFFD');
                         break;
                     default:
-                        _commentData.Append((char)c);
+                        _commentData.AppendConsumed((char)c, _input, _position - 1);
                         break;
                 }
 
@@ -2006,7 +2006,7 @@ internal sealed class HtmlTokenizer
                         EmitEndOfFileAfterPendingToken();
                         break;
                     default:
-                        _commentData.Append((char)c);
+                        _commentData.AppendConsumed((char)c, _input, _position - 1);
                         break;
                 }
 
@@ -2658,7 +2658,7 @@ internal sealed class HtmlTokenizer
                 {
                     if (IsConsumedAsPartOfAnAttribute)
                     {
-                        _attributeValue.Append((char)c);
+                        _attributeValue.AppendConsumed((char)c, _input, _position - 1);
                     }
                     else
                     {
@@ -2974,7 +2974,7 @@ internal sealed class HtmlTokenizer
 
         if (c != Eof && char.IsAsciiLetter((char)c))
         {
-            _tagName.Append(ToAsciiLower((char)c));
+            _tagName.AppendConsumed(ToAsciiLower((char)c), _input, _position - 1);
             _temporaryBuffer.Append((char)c);
             return;
         }

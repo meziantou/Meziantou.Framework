@@ -51,6 +51,23 @@ internal sealed class InputTextBuilder
         Append(input.AsSpan(start, length));
     }
 
+    /// <summary>
+    /// Appends a character consumed from the input at <paramref name="index"/>: it starts a slice when the text is empty
+    /// and the character is unchanged (e.g. the first letter of a name, which the tokenizer reconsumes).
+    /// </summary>
+    public void AppendConsumed(char value, string input, int index)
+    {
+        if (_length == 0 && (uint)index < (uint)input.Length && input[index] == value)
+        {
+            _source = input;
+            _start = index;
+            _length = 1;
+            return;
+        }
+
+        Append(value);
+    }
+
     public void Append(char value)
     {
         if (_source is not null)

@@ -484,6 +484,36 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public bool GrowSharedDataBlockTo(object dataBlock, int newByteLength) => dataBlock is JsSharedDataBlock block && block.TryGrow(newByteLength);
 
+    public IGrowableSharedDataBlock? CreateGrowableSharedDataBlock(int byteLength, int maxByteLength)
+    {
+        using var scope = Engine.Enter();
+        return JsSharedDataBlock.TryCreate(byteLength, maxByteLength) is { } block ? new GrowableSharedDataBlock(block) : null;
+    }
+
+    /// <summary>A block of the engine: it does not reference the engine, which the agents of other engines do not keep alive.</summary>
+    private sealed class GrowableSharedDataBlock(JsSharedDataBlock block) : IGrowableSharedDataBlock
+    {
+        public object DataBlock => block;
+
+        public nint Address => block.Address;
+
+        public int ByteLength => block.ByteLength;
+
+        public bool TryGrow(int newByteLength) => block.TryGrow(newByteLength);
+
+        public void SetWaiters(ISharedDataBlockWaiters waiters) => block.Waiters = new SharedDataBlockWaiters(waiters);
+    }
+
+    /// <summary>The waiters of the bindings, as the waiters of a block of the engine.</summary>
+    private sealed class SharedDataBlockWaiters(ISharedDataBlockWaiters waiters) : JsSharedDataBlockWaiters
+    {
+        public override int Notify(int byteIndex, int count) => waiters.Notify(byteIndex, count);
+
+        public override bool Wait(int byteIndex, long expectedValue, int size, TimeSpan? timeout, CancellationToken cancellationToken) => waiters.Wait(byteIndex, expectedValue, size, timeout, cancellationToken);
+
+        public override bool WaitAsync(int byteIndex, long expectedValue, int size, TimeSpan? timeout, Action<bool> completed, CancellationToken cancellationToken) => waiters.WaitAsync(byteIndex, expectedValue, size, timeout, completed, cancellationToken);
+    }
+
     public object CreateArrayBufferView(WebIdlBufferKind kind, object buffer, int byteOffset, int length) => Realm.CreateBufferView((EngineBufferKind)kind, (JsObject)buffer, byteOffset, length);
 
     // The factories of the lazy properties are their state: no closure is allocated per property

@@ -591,7 +591,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
             // https://webassembly.github.io/threads/web-api/#serialization: a shared memory is serialized as its shared data
             // block, as a SharedArrayBuffer (it cannot be stored, and needs the cross-origin isolation)
-            if (target is WebAssemblyMemoryObject { SharedDataBlock: { } dataBlock, Maximum: { } maximum } sharedMemory)
+            if (target is WebAssemblyMemoryObject { IsShared: true } sharedMemory)
             {
                 if (adapter.ToBoolean(args[1]))
                     throw adapter.CreateException(ToJsError(new DomException("A shared WebAssembly.Memory could not be stored", "DataCloneError")));
@@ -600,7 +600,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                     throw adapter.CreateException(ToJsError(new DomException("A shared WebAssembly.Memory can only be cloned by a cross-origin isolated global", "DataCloneError")));
 
                 var memoryHandle = CreateObject();
-                Agent.SerializedPlatformObjects.AddOrUpdate(memoryHandle, new SerializedWasmSharedMemory(dataBlock, maximum, sharedMemory.Is64, GlobalScope.AgentClusterKey));
+                Agent.SerializedPlatformObjects.AddOrUpdate(memoryHandle, new SerializedWasmSharedMemory(sharedMemory.Memory, GlobalScope.AgentClusterKey));
                 return memoryHandle;
             }
 
@@ -624,14 +624,15 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 return GetWrapper(new WebAssemblyModuleObject(module.Module, module.BuiltinSets, module.ImportedStringModule));
             }
 
-            // A new WebAssembly.Memory object of the shared data block, whose buffer is a new SharedArrayBuffer
+            // A new WebAssembly.Memory object of the shared memory, whose buffer is a new SharedArrayBuffer: the modules of
+            // the realm can import it
             if (serializedObject is SerializedWasmSharedMemory serializedMemory)
             {
-                if (serializedMemory.AgentCluster is null || !ReferenceEquals(serializedMemory.AgentCluster, GlobalScope.AgentClusterKey))
+                if (serializedMemory.AgentCluster is null || !ReferenceEquals(serializedMemory.AgentCluster, GlobalScope.AgentClusterKey) || WebAssemblyRuntime is null)
                     throw adapter.CreateException(ToJsError(new DomException("A shared WebAssembly.Memory cannot be deserialized in another agent cluster", "DataCloneError")));
 
-                var memoryObject = new WebAssemblyMemoryObject(serializedMemory.DataBlock, serializedMemory.Maximum, serializedMemory.Is64);
-                memoryObject.BufferObject = CreateWasmSharedMemoryBuffer(memoryObject, resizable: false);
+                var memoryObject = new WebAssemblyMemoryObject(serializedMemory.Memory);
+                InitializeWasmMemoryObject(memoryObject);
                 return GetWrapper(memoryObject);
             }
 

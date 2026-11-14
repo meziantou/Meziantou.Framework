@@ -31,7 +31,10 @@ public static class FontLoader
 
         // A WOFF2 file is expanded from the span: only the font it holds is kept, not a copy of the file.
         if (data.Length >= 4 && FontBinary.UInt32(data, 0) == FontTags.Woff2)
-            return ParseExpanded(Woff2Reader.Decode(data, environment), environment, useEmbeddedBitmaps);
+        {
+            var font = Woff2Reader.Decode(data, environment, out var extendedData);
+            return ParseExpanded(font, environment, useEmbeddedBitmaps, extendedData);
+        }
 
         return Parse(data.ToArray(), environment, useEmbeddedBitmaps);
     }
@@ -97,22 +100,23 @@ public static class FontLoader
         if (Type1Font.HasSignature(bytes))
             return [new FontFace(new FontData(Type1FontConverter.Convert(bytes, metrics: null, environment), environment, useEmbeddedBitmaps), directoryOffset: 0)];
 
+        WoffExtendedData? extendedData = null;
         switch (FontBinary.UInt32(bytes, 0))
         {
             case FontTags.Woff:
-                bytes = WoffReader.Decode(bytes, environment.Limits);
+                bytes = WoffReader.Decode(bytes, environment.Limits, out extendedData);
                 break;
 
             case FontTags.Woff2:
-                bytes = Woff2Reader.Decode(bytes, environment);
+                bytes = Woff2Reader.Decode(bytes, environment, out extendedData);
                 break;
         }
 
-        return ParseExpanded(bytes, environment, useEmbeddedBitmaps);
+        return ParseExpanded(bytes, environment, useEmbeddedBitmaps, extendedData);
     }
 
     /// <summary>Creates the faces of a font file that is not a compressed container, or of the font a container held.</summary>
-    private static FontFace[] ParseExpanded(byte[] bytes, FontEnvironment environment, bool useEmbeddedBitmaps)
+    private static FontFace[] ParseExpanded(byte[] bytes, FontEnvironment environment, bool useEmbeddedBitmaps, WoffExtendedData? extendedData = null)
     {
         // A container holds a font, never another container.
         var limits = environment.Limits;
@@ -120,10 +124,10 @@ public static class FontLoader
         switch (bytes.Length < 4 ? 0 : FontBinary.UInt32(bytes, 0))
         {
             case FontTags.TrueType or FontTags.AppleTrueType or FontTags.OpenTypeCff or FontTags.PostScriptType1:
-                return [new FontFace(new FontData(bytes, environment, useEmbeddedBitmaps), directoryOffset: 0)];
+                return [new FontFace(new FontData(bytes, environment, useEmbeddedBitmaps, extendedData), directoryOffset: 0)];
 
             case FontTags.Collection:
-                return ParseCollection(new FontData(bytes, environment, useEmbeddedBitmaps));
+                return ParseCollection(new FontData(bytes, environment, useEmbeddedBitmaps, extendedData));
 
             case FontTags.Woff or FontTags.Woff2:
                 throw FontErrors.Invalid("a WOFF file contains another WOFF file.");

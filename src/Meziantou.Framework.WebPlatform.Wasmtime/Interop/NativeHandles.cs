@@ -42,6 +42,24 @@ internal sealed class StoreHandle : SafeHandle
     }
 }
 
+/// <summary>A <c>wasmtime_sharedmemory_t</c>: a reference to a shared memory, which can be used by any store of the engine and from any thread.</summary>
+internal sealed class SharedMemoryHandle : SafeHandle
+{
+    public SharedMemoryHandle(nint handle)
+        : base(0, ownsHandle: true)
+    {
+        SetHandle(handle);
+    }
+
+    public override bool IsInvalid => handle == 0;
+
+    protected override bool ReleaseHandle()
+    {
+        NativeMethods.wasmtime_sharedmemory_delete(handle);
+        return true;
+    }
+}
+
 /// <summary>A rooted <c>wasmtime_anyref_t</c> or <c>wasmtime_exnref_t</c> (the handle is a <c>WasmtimeRef*</c>), unrooted when the handle is released.</summary>
 internal sealed unsafe class RootedReferenceHandle : SafeHandle
 {

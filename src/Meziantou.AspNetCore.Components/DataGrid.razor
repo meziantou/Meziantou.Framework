@@ -47,26 +47,33 @@
         builder.AddComponentParameter(2, nameof(CascadingValue<DataGrid<TRowData>>.Value), this);
         builder.AddComponentParameter(3, nameof(CascadingValue<DataGrid<TRowData>>.ChildContent), (RenderFragment)(content =>
         {
-            // The columns and the table are in a component keyed by a generation: a new generation recreates the columns,
-            // so they all render again, in the order of ChildContent
+            // The columns are in a component keyed by a generation: a new generation recreates the columns, so they all
+            // render again, in the order of ChildContent. The table is not in it, so its rows and cells keep their state.
             content.OpenComponent<DeferredContent>(0);
             content.SetKey(columnsGeneration);
-            content.AddComponentParameter(1, nameof(DeferredContent.ChildContent), (RenderFragment)RenderColumnsAndTable);
+            content.AddComponentParameter(1, nameof(DeferredContent.ChildContent), (RenderFragment)RenderColumns);
+            content.CloseComponent();
+
+            // The renderer renders the queued components in order: the columns component, then this one, which queues the
+            // table after the columns that the columns component queued
+            content.OpenComponent<DeferredContent>(2);
+            content.AddComponentParameter(3, nameof(DeferredContent.ChildContent), (RenderFragment)(deferred =>
+            {
+                deferred.OpenComponent<DeferredContent>(0);
+                deferred.AddComponentParameter(1, nameof(DeferredContent.ChildContent), (RenderFragment)RenderTable);
+                deferred.CloseComponent();
+            }));
             content.CloseComponent();
         }));
         builder.CloseComponent();
     }
 
-    private void RenderColumnsAndTable(RenderTreeBuilder content)
+    private void RenderColumns(RenderTreeBuilder content)
     {
         // The columns register themselves while they render, in the order of ChildContent. Collecting them again on
-        // each render keeps that order when a column is removed and added back (for instance with @if). The table
-        // renders after them, in a child component.
+        // each render keeps that order when a column is removed and added back (for instance with @if).
         StartCollectingColumns();
         content.AddContent(0, ChildContent);
-        content.OpenComponent<DeferredContent>(1);
-        content.AddComponentParameter(2, nameof(DeferredContent.ChildContent), (RenderFragment)RenderTable);
-        content.CloseComponent();
     }
 
     private void RenderTable(RenderTreeBuilder __builder)

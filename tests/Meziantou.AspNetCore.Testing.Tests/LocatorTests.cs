@@ -358,6 +358,16 @@ public sealed class LocatorTests
         await form.GetByLabel("Birth date").ClearAsync();
         await Expect(form.Locator("#result")).ToHaveTextAsync("07:30 7");
 
+        // A valid value that the input writes in another format is accepted
+        await form.GetByLabel("Meeting").FillAsync("2026-07-01T12:30:00");
+        await Expect(form.GetByLabel("Meeting")).ToHaveValueAsync("2026-07-01T12:30");
+        await form.GetByLabel("Color").FillAsync("#FF0000");
+        await Expect(form.GetByLabel("Color")).ToHaveValueAsync("#ff0000");
+        await form.GetByLabel("Volume").FillAsync("42");
+        await Expect(form.GetByLabel("Volume")).ToHaveValueAsync("10");
+        await Assert.ThrowsAsync<ElementNotInteractableException>(() => form.GetByLabel("Volume").FillAsync("loud"));
+        await Assert.ThrowsAsync<ElementNotInteractableException>(() => form.GetByLabel("Color").FillAsync("red"));
+
         var exception = await Assert.ThrowsAsync<ElementNotInteractableException>(() => form.GetByLabel("Birth date").FillAsync("not a date"));
         Assert.Equal("The value \"not a date\" is not a valid value for the input <input> of type \"date\"", exception.Message);
     }

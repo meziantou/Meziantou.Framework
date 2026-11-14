@@ -231,8 +231,13 @@ public sealed class DataGridTests
         var grid = await host.RenderAsync<GridConditionalTitleColumnsPage>(parameters => parameters.Add(c => c.Items, [new Person(1, "Ada", 36)]));
         Assert.Equal(["A", "B"], grid.FindAll("th").Select(th => th.TextContent));
 
+        // Only the columns are recreated: the table and its rows keep their elements (and the state of their components)
+        var table = grid.Find("table");
+        var row = grid.Find("tbody tr");
         await grid.SetParametersAsync(parameters => parameters.Add(c => c.ShowFirst, true));
         Assert.Equal(["First", "A", "B"], grid.FindAll("th").Select(th => th.TextContent));
+        Assert.Same(table, grid.Find("table"));
+        Assert.Same(row, grid.Find("tbody tr"));
 
         await grid.SetParametersAsync(parameters => parameters.Add(c => c.ShowMiddle, true));
         Assert.Equal(["First", "A", "Middle", "B"], grid.FindAll("th").Select(th => th.TextContent));

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.AspNetCore.Testing.Internals;
 using Meziantou.Framework.WebPlatform.Animations;
 using Meziantou.Framework.WebPlatform.Css.TypedOm;
@@ -373,7 +374,17 @@ public sealed class PageInput
     private static void SetValue(HtmlInputElement field, string value)
     {
         field.Value = value;
-        if (!string.Equals(field.Value, value, StringComparison.Ordinal))
+
+        // The input sanitizes the value: it keeps a valid value in its normal format (2026-07-01T12:30:00 is
+        // 2026-07-01T12:30, #FF0000 is #ff0000, a range clamps its value), and replaces an invalid value
+        var isValid = field.Type switch
+        {
+            "range" => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _),
+            "color" => string.Equals(field.Value, value, StringComparison.OrdinalIgnoreCase),
+            _ => value.Length == 0 || field.Value.Length > 0,
+        };
+
+        if (!isValid)
             throw new ElementNotInteractableException($"The value \"{value}\" is not a valid value for the input {ActionTarget.DescribeElement(field)} of type \"{field.Type}\"");
 
         field.DispatchEvent(new Event("input", new EventInit { Bubbles = true, Composed = true }));

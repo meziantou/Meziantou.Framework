@@ -24,6 +24,17 @@ public static class Type1FuzzTargets
 
     private static readonly PooledFontEnvironment SharedEnvironment = new(Limits, 64 * 1024 * 1024);
 
+    // The converted font is checked by loading it again: it can be as large as MaxFontBytes, more than the encoded
+    // bytes the Type 1 file was allowed
+    private static readonly PooledFontEnvironment ReloadEnvironment = new(
+        new FontResourceLimits
+        {
+            MaxEncodedBytes = Limits.MaxFontBytes,
+            MaxFontBytes = Limits.MaxFontBytes,
+            MaxGlyphComplexity = Limits.MaxGlyphComplexity,
+        },
+        64 * 1024 * 1024);
+
     // The metrics the files are loaded with when the first byte of the input says so: kerning pairs of the glyphs of the
     // sample font, and the global metrics
     private static readonly Lazy<AfmFontMetrics> Metrics = new(() => AfmFontMetrics.Parse("""
@@ -119,7 +130,7 @@ public static class Type1FuzzTargets
     private static void CheckFace(FontFace face)
     {
         FuzzAssert.Equal(FontOutlineKind.Cff, face.Outlines, "A Type 1 font is converted to CFF outlines.");
-        var reloaded = FontLoader.Load(face.Data.Bytes.Span, SharedEnvironment);
+        var reloaded = FontLoader.Load(face.Data.Bytes.Span, ReloadEnvironment);
         FuzzAssert.Equal(1, reloaded.Length, "The converted font has one face.");
         FuzzAssert.Equal(face.GlyphCount, reloaded[0].GlyphCount, "The converted font loads again with the same glyphs.");
 

@@ -40252,6 +40252,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -40274,6 +40275,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -40342,6 +40351,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildFfmpeg)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check, encoder)",
           ".NET 11.0"
         ],
@@ -40357,6 +40367,14 @@
         "method": "hand-computed",
         "description": "A 5x4 floating-point pattern of high dynamic range written by the Radiance encoder of FFmpeg (flat scanlines). The RGBE pixels the file stores, read as the reference routines of Radiance read them. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
         "crossChecks": [
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
             "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
@@ -40424,6 +40442,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildFfmpeg)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check, encoder)",
           ".NET 11.0"
         ],
@@ -40439,6 +40458,14 @@
         "method": "hand-computed",
         "description": "A 23x17 floating-point pattern of high dynamic range written by the Radiance encoder of FFmpeg (new scanlines). The RGBE pixels the file stores, read as the reference routines of Radiance read them. A pixel of mantissas m and exponent e is (m + 0.5) × 2^(e - 136), 0 for the exponent 0 (\"Real Pixels\", the reference routines of Radiance), with an alpha of 1, in the standard orientation.",
         "crossChecks": [
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
+          },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
             "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
@@ -40506,6 +40533,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -40528,6 +40556,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -40596,6 +40632,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -40619,6 +40656,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -40687,6 +40732,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -40716,6 +40762,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -40784,6 +40838,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -40808,6 +40863,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -40876,6 +40939,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -40898,6 +40962,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -40966,6 +41038,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -40988,6 +41061,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -41056,6 +41137,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -41079,6 +41161,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -41147,6 +41237,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -41169,6 +41260,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -41237,6 +41336,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildEncodings)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -41259,6 +41359,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -41327,6 +41435,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -41349,6 +41458,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -41417,6 +41534,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -41439,6 +41557,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -41507,6 +41633,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -41529,6 +41656,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -41597,6 +41732,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -41619,6 +41755,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -41687,6 +41831,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -41709,6 +41854,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -41777,6 +41930,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -41799,6 +41953,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -41867,6 +42029,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -41889,6 +42052,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -41957,6 +42128,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -41979,6 +42151,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -42047,6 +42227,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -42069,6 +42250,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -42137,6 +42326,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildOrientations)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -42159,6 +42349,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -42227,6 +42425,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -42250,6 +42449,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -42323,6 +42530,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -42346,6 +42554,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -42414,6 +42630,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -42437,6 +42654,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -42510,6 +42735,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -42533,6 +42759,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -42601,6 +42835,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildHeaders)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           "ffmpeg 9.0.2 (cross-check)",
           ".NET 11.0"
         ],
@@ -42623,6 +42858,14 @@
             "maxAbsoluteError": 0,
             "meanAbsoluteError": 0.0,
             "notes": "The reader gives back the RGBE pattern the file was assembled from, byte for byte."
+          },
+          {
+            "decoder": "Radiance 6.1a+5b2a2154 (pvalue, the reference implementation)",
+            "command": "pvalue -h -H -df {input}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit."
           },
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec hdr decoder)",
@@ -65414,6 +65657,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65438,6 +65682,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65445,7 +65690,7 @@
         "exception": "InvalidImageContentException",
         "format": "Radiance"
       },
-      "notes": "A repetition of 8 pixels after the second pixel of a scanline of 9."
+      "notes": "A repetition of 8 pixels after the second pixel of a scanline of 9. pvalue reads the file: Radiance does not check that a repetition ends in its scanline."
     },
     {
       "id": "invalid/hdr/resolution-lowercase",
@@ -65462,6 +65707,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65486,6 +65732,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65510,6 +65757,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65534,6 +65782,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65558,6 +65807,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65565,7 +65815,7 @@
         "exception": "InvalidImageContentException",
         "format": "Radiance"
       },
-      "notes": "A code 0."
+      "notes": "A code 0. pvalue reads the file: Radiance reads a code 0 as an empty literal, which the documentation does not define (a literal has 1 to 128 bytes)."
     },
     {
       "id": "invalid/hdr/rle-length",
@@ -65582,6 +65832,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65606,6 +65857,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65630,6 +65882,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65654,6 +65907,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65678,6 +65932,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65702,6 +65957,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65726,6 +65982,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65750,6 +66007,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs (BuildInvalid)",
         "tools": [
+          "Radiance 6.1a+5b2a2154 (pvalue, cross-check)",
           ".NET 11.0"
         ]
       },
@@ -65757,7 +66015,7 @@
         "exception": "InvalidImageContentException",
         "format": "Radiance"
       },
-      "notes": "Two FORMAT lines."
+      "notes": "Two FORMAT lines. pvalue reads the file: Radiance does not check that the header has at most one FORMAT line, which the documentation requires."
     },
     {
       "id": "invalid/hdr/xyze",

@@ -2695,8 +2695,11 @@ tool version to see what changes; the interop CI job runs it on every build to d
   for the scanlines in file order (FFmpeg ignores the orientation of the resolution string), and records it as a
   documented difference excluded from the tolerance; FFmpeg misreads the files whose scanlines are columns, which is
   recorded. An invalid fixture is rejected by `ReferenceRadiance` too, except two FORMAT lines and a size of 0, which it
-  does not check. The tools of the Radiance distribution (`pvalue`, `getinfo`) are not pinned yet; the cross-checks are a
-  list (`CrossChecks`) they are added to:
+  does not check. `pvalue` of the Radiance distribution (the reference implementation, pinned in `PinnedRadiance`,
+  currently 6.1a+5b2a2154, by the meziantou/prebuilt release of the `Meziantou.Prebuilt` package) must give exactly the
+  reference of every valid fixture, in file order, and must reject every invalid fixture except the three Radiance
+  tolerates (`ToleratedByRadiance`: a repetition past the end of a scanline, a code 0, two FORMAT lines), which the
+  notes of these fixtures say; the generator fails when pvalue starts to reject one of them:
 
   ```shell
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- hdr          # check

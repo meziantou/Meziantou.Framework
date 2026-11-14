@@ -25,8 +25,10 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// Every valid file is cross-checked with the Radiance decoder of FFmpeg, which reads a mantissa as the bottom of its
 /// interval, <c>m × 2^(e - 136)</c>, and ignores the orientation of the resolution string: the check requires that FFmpeg
 /// gives exactly the reference minus half a unit of each exponent, for the scanlines in file order, and records it as a
-/// documented difference excluded from the tolerance. The cross-checks are a list (<see cref="CrossChecks"/>): the tools of
-/// the Radiance distribution (<c>pvalue</c>, <c>getinfo</c>) are added there when the pinned <c>Meziantou.Prebuilt</c>
+/// documented difference excluded from the tolerance. <c>pvalue</c> of the Radiance distribution (the reference
+/// implementation, from the pinned <c>Meziantou.Prebuilt</c> release) must give exactly the reference, in file order, and
+/// must reject every invalid fixture but the three it tolerates (<see cref="ToleratedByRadiance"/>). The cross-checks are a
+/// list (<see cref="CrossChecks"/>), which other tools join
 /// release provides them.
 /// </para>
 /// <para>
@@ -38,7 +40,7 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// Usage (from the repository root):
 ///     dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- hdr
 ///     dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- hdr --write
-/// Requirements: FFmpeg from the meziantou/prebuilt release pinned by the Meziantou.Prebuilt package. Any OS.
+/// Requirements: FFmpeg and pvalue from the meziantou/prebuilt release pinned by the Meziantou.Prebuilt package. Any OS.
 /// </summary>
 internal static class RadianceCorpus
 {
@@ -46,6 +48,18 @@ internal static class RadianceCorpus
 
     // The FFmpeg version of the committed fixtures: another version may write other RGBE bytes
     private const string PinnedFfmpeg = "9.0.2";
+
+    // The Radiance version of the tools of the pinned meziantou/prebuilt release
+    private const string PinnedRadiance = "6.1a+5b2a2154";
+
+    // The invalid fixtures pvalue reads: Radiance clips a repetition past the end of a scanline, reads a code 0 as an
+    // empty literal, and does not check the number of FORMAT lines. The library rejects them, as the specification says
+    private static readonly Dictionary<string, string> ToleratedByRadiance = new(StringComparer.Ordinal)
+    {
+        ["old-rle-repetition-past-end"] = "pvalue reads the file: Radiance does not check that a repetition ends in its scanline.",
+        ["rle-code-zero"] = "pvalue reads the file: Radiance reads a code 0 as an empty literal, which the documentation does not define (a literal has 1 to 128 bytes).",
+        ["two-formats"] = "pvalue reads the file: Radiance does not check that the header has at most one FORMAT line, which the documentation requires.",
+    };
 
     private static readonly (string Order, string Name)[] Orientations =
     [
@@ -59,7 +73,7 @@ internal static class RadianceCorpus
     ];
 
     /// <summary>The independent decoders every valid fixture is compared with, in this order.</summary>
-    private static readonly Func<Corpus<RadianceTools>, byte[], RadiancePicture, Obj?>[] CrossChecks = [FfmpegCrossCheck];
+    private static readonly Func<Corpus<RadianceTools>, byte[], RadiancePicture, Obj?>[] CrossChecks = [PvalueCrossCheck, FfmpegCrossCheck];
 
     private static bool IsRadianceFixture(Obj fixture) => (string?)fixture["format"] == "hdr";
 
@@ -427,7 +441,7 @@ internal static class RadianceCorpus
 
         var input = c.Write(fixtureId + ".hdr", data);
         input["role"] = "encoded";
-        var provenance = c.Provenance("generated", function, parameters, [$"{c.Tools.FfmpegLabel} (cross-check{(commands.Count > 0 ? ", encoder" : "")})", ToolSet.RuntimeLabel], commands);
+        var provenance = c.Provenance("generated", function, parameters, [$"Radiance {c.Tools.RadianceVersion} (pvalue, cross-check)", $"{c.Tools.FfmpegLabel} (cross-check{(commands.Count > 0 ? ", encoder" : "")})", ToolSet.RuntimeLabel], commands);
         var fixture = new Obj
         {
             ["id"] = fixtureId,
@@ -478,6 +492,42 @@ internal static class RadianceCorpus
         entry["rowOrder"] = "top-down";
         entry["compression"] = "none";
         return entry;
+    }
+
+    /// <summary>Decodes a file with <c>pvalue -h -H -df</c>, which gives the colors in file order: they must be the reference.</summary>
+    private static Obj? PvalueCrossCheck(Corpus<RadianceTools> c, byte[] data, RadiancePicture picture)
+    {
+        var path = c.Scratch / "pvalue-check.hdr";
+        File.WriteAllBytes(path, data);
+        List<string> command = [c.Tools.Pvalue, "-h", "-H", "-df", path.Value];
+        var output = Proc.Run(command);
+        var scanlines = RadianceFileBuilder.GetScanlines(picture.Width, picture.Height, picture.Rgbe.Span, picture.ScanOrder);
+        Py.Assert(output.Length == picture.Width * picture.Height * 12, "pvalue gives every pixel");
+        var differing = 0;
+        var index = 0;
+        foreach (var scanline in scanlines)
+        {
+            for (var j = 0; j < scanline.Length / 4; j++)
+            {
+                for (var component = 0; component < 3; component++)
+                {
+                    var value = BinaryPrimitives.ReadSingleLittleEndian(output.AsSpan(index++ * 4));
+                    if (BitConverter.SingleToUInt32Bits(value) != BitConverter.SingleToUInt32Bits(ReferenceRadiance.ToFloat(scanline[(j * 4) + component], scanline[(j * 4) + 3])))
+                        differing++;
+                }
+            }
+        }
+
+        Py.Assert(differing == 0, string.Create(CultureInfo.InvariantCulture, $"pvalue reads the file as the reference: {differing} samples differ"));
+        return new Obj
+        {
+            ["decoder"] = $"Radiance {c.Tools.RadianceVersion} (pvalue, the reference implementation)",
+            ["command"] = CommonCorpus.Display(command, c.Tools, [(path.Value, "{input}")]),
+            ["result"] = "exact",
+            ["maxAbsoluteError"] = 0,
+            ["meanAbsoluteError"] = 0.0,
+            ["notes"] = "pvalue gives the colors in the order of the scanlines of the file; reordered to the standard orientation, they are the reference, bit for bit.",
+        };
     }
 
     /// <summary>
@@ -559,10 +609,37 @@ internal static class RadianceCorpus
             var rejected = Rejects(data);
             Py.Assert(rejected || name is "two-formats" or "resolution-zero",
                 fixtureId + ": the reference reader reads the file");
+
+            // pvalue rejects the file too, unless Radiance is known to tolerate the defect
+            var pvalueRejects = PvalueRejects(c, data);
+            if (ToleratedByRadiance.TryGetValue(name, out var tolerated))
+            {
+                Py.Assert(!pvalueRejects, fixtureId + ": pvalue now rejects the file; remove it from ToleratedByRadiance");
+                notes += " " + tolerated;
+            }
+            else
+            {
+                Py.Assert(pvalueRejects, fixtureId + ": pvalue reads the file");
+            }
         }
 
-        var provenance = c.Provenance("generated", function, null, [ToolSet.RuntimeLabel]);
+        var provenance = c.Provenance("generated", function, null, kind == "invalid" ? [$"Radiance {c.Tools.RadianceVersion} (pvalue, cross-check)", ToolSet.RuntimeLabel] : [ToolSet.RuntimeLabel]);
         c.AddError(fixtureId, kind, fixtureId + ".hdr", data, "hdr", provenance, expectedError, features: features, decodeOptions: decodeOptions, notes: notes);
+    }
+
+    private static bool PvalueRejects(Corpus<RadianceTools> c, byte[] data)
+    {
+        var path = c.Scratch / "pvalue-error.hdr";
+        File.WriteAllBytes(path, data);
+        try
+        {
+            Proc.Run([c.Tools.Pvalue, "-h", "-H", "-df", path.Value]);
+            return false;
+        }
+        catch (ToolException)
+        {
+            return true;
+        }
     }
 
     private static bool Rejects(byte[] data)
@@ -591,11 +668,17 @@ internal static class RadianceCorpus
         public RadianceTools(bool acceptVersions)
             : base(PrebuiltTools.Ffmpeg.GetOrDownloadAsync(CancellationToken.None).GetAwaiter().GetResult())
         {
-            if (FfmpegVersion != PinnedFfmpeg && !acceptVersions)
-                throw new FatalException($"Tool versions differ from the pinned versions: FFmpeg {FfmpegVersion} (pinned {PinnedFfmpeg}). Review the impact and rerun with --accept-tool-versions (then update the pinned version).");
+            Pvalue = PrebuiltTools.Pvalue.GetOrDownloadAsync(CancellationToken.None).GetAwaiter().GetResult();
+            RadianceVersion = PrebuiltTools.Pvalue.Version;
+            if ((FfmpegVersion != PinnedFfmpeg || RadianceVersion != PinnedRadiance) && !acceptVersions)
+                throw new FatalException($"Tool versions differ from the pinned versions: FFmpeg {FfmpegVersion} (pinned {PinnedFfmpeg}), Radiance {RadianceVersion} (pinned {PinnedRadiance}). Review the impact and rerun with --accept-tool-versions (then update the pinned versions).");
 
-            DisplayNames = new Dictionary<string, string>(StringComparer.Ordinal) { [Ffmpeg] = "ffmpeg" };
+            DisplayNames = new Dictionary<string, string>(StringComparer.Ordinal) { [Ffmpeg] = "ffmpeg", [Pvalue] = "pvalue" };
         }
+
+        public string Pvalue { get; }
+
+        public string RadianceVersion { get; }
 
         public override IReadOnlyDictionary<string, string> DisplayNames { get; }
     }

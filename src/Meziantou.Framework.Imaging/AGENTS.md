@@ -1844,9 +1844,11 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   from RGBE patterns expect the pattern, read by the middle-of-interval rule, and `ReferenceRadiance` must give the
   pattern back from the file; the files of FFmpeg's encoder expect what `ReferenceRadiance` reads. FFmpeg ignores the
   orientation of the resolution string and misreads columns, and Apple ImageIO rejects the other orientations, the old
-  run-length encoding and a header without `FORMAT`: the generator and `RadianceInteropTests` record these limits. The
-  cross-checks of the generator are a list (`RadianceCorpus.CrossChecks`): the tools of the Radiance distribution
-  (`pvalue`, `getinfo`) go there once the pinned `Meziantou.Prebuilt` release provides them.
+  run-length encoding and a header without `FORMAT`: the generator and `RadianceInteropTests` record these limits. `pvalue`
+  (Radiance, the reference implementation) is the exact cross-check of every valid fixture (it gives the scanlines in
+  file order) and rejects the invalid ones except those `RadianceCorpus.ToleratedByRadiance` lists. `RadianceInteropTests`
+  also writes files with `pvalue -r` in the eight orientations, and rewrites them with `pflip` and `protate` (without
+  `-c`, the picture stays the same): `TestHarness/ExternalTools/RadianceTool` wraps the tools.
 
 - **JPEG 2000 fixtures** (`jp2` generator, `Jp2Corpus.cs` and its partial files). A fixture of the reversible
   transformations expects the pattern given to `opj_compress` or `ojph_compress`; a fixture of the irreversible ones

@@ -56,7 +56,7 @@ internal sealed class NavigationInterception(TestNavigationManager navigationMan
         if (!string.IsNullOrEmpty(target) && !string.Equals(target, "_self", StringComparison.OrdinalIgnoreCase))
             return;
 
-        var href = anchor.GetAttribute("href")!;
+        var href = anchor.GetAttribute("href");
         var absoluteUri = navigationManager.ToAbsoluteUri(href).AbsoluteUri;
         if (!absoluteUri.StartsWith(navigationManager.BaseUri, StringComparison.Ordinal))
             return;

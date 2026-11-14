@@ -562,7 +562,7 @@ public sealed partial class PageInput
         if (isAnimated)
         {
             const int RequiredStableFrames = 2;
-            var frameTime = element.OwnerDocument!.Timeline.CurrentTime;
+            var frameTime = element.OwnerDocument.Timeline.CurrentTime;
             var box = (rect.X, rect.Y, rect.Width, rect.Height);
             if (previousSample is not { } previous || previous.Box != box)
             {

@@ -61,7 +61,7 @@ internal readonly struct IcoRepresentationBuilder(
         if (!isLegal)
             throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The PNG payload of the icon directory entry {index} declares the color type {colorType} with the bit depth {bitDepth}, which is not a legal combination."));
 
-        var size = ValidateSize(width, height);
+        var size = ValidateSize(width, height, isPng: true);
         var (hasTransparency, isAnimated) = ProbePngChunks();
         if (isAnimated)
             throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"The payload of the icon directory entry {index} is an animated PNG; an icon representation is a still image."), "Payload: APNG");
@@ -166,7 +166,7 @@ internal readonly struct IcoRepresentationBuilder(
         if (header.Height % 2 != 0)
             throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The DIB payload of the icon directory entry {index} declares the odd height {header.Height}; an icon stores the color rows and the AND mask, so the height is always doubled."));
 
-        var size = ValidateSize((uint)header.Width, (uint)(header.Height / 2));
+        var size = ValidateSize((uint)header.Width, (uint)(header.Height / 2), isPng: false);
         var paletteOffset = (int)payloadOffset;
         payloadOffset += header.PaletteLength;
         if (payloadOffset > length)
@@ -206,10 +206,15 @@ internal readonly struct IcoRepresentationBuilder(
         };
     }
 
-    private Size ValidateSize(uint width, uint height)
+    private Size ValidateSize(uint width, uint height, bool isPng)
     {
-        if (width is 0 or > IcoFormat.MaxDimension || height is 0 or > IcoFormat.MaxDimension)
-            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The representation {index} is {width}x{height}; an icon or cursor stores representations of 1 to {IcoFormat.MaxDimension} pixels per side."));
+        // A side of more than 256 pixels is stored as 0, the byte of 256: only a PNG payload, whose header holds 31-bit
+        // dimensions, can be larger, and only next to that byte
+        if (width is 0 || height is 0 || (!isPng && (width > IcoFormat.MaxDimension || height > IcoFormat.MaxDimension)))
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The representation {index} is {width}x{height}; an icon or cursor stores representations of at least one pixel per side, and DIB representations of at most {IcoFormat.MaxDimension}."));
+
+        if (width > int.MaxValue || height > int.MaxValue)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The PNG payload of the representation {index} declares the dimensions {width}x{height}, more than the 2^31 - 1 pixels a PNG side can have."));
 
         var size = new Size((int)width, (int)height);
         context.Limits.EnsureCanvasWithinLimits(size.Width, size.Height);

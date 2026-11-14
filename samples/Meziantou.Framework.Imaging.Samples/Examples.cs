@@ -2018,6 +2018,25 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Bitmap glyphs: save the image a font gives for the glyph of a character, such as an emoji.</summary>
+    #region Imaging_DecodeBitmapGlyph
+    public static void SaveGlyphImage(string fontPath, string outputPath)
+    {
+        // A font whose glyphs are images (sbix, CBDT, EBDT or bdat tables)
+        var font = Font.Load(fontPath);
+
+        // The image of the strike that suits the size, at the size of the strike; null when the glyph has no image
+        using var glyph = font.DecodeBitmapGlyph(new Rune(0x1F600), size: 64);
+        if (glyph is null)
+            return;
+
+        // Where the font places it: pixels from the origin of the glyph to the left, and from the baseline up to the
+        // top. A mask (IsMask) has no colors of its own: a text draws it with its color.
+        Console.WriteLine($"{glyph.Image.Width}x{glyph.Image.Height} at ({glyph.Left}, {glyph.Top}), {glyph.PixelsPerEmX} pixels per em");
+        glyph.Image.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>Text: measure a text with a layout, then fill and outline it on an image of its size.</summary>
     #region Imaging_DrawText
     public static void DrawLabel(string fontPath, string outputPath)

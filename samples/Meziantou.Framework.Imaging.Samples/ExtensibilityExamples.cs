@@ -184,6 +184,43 @@ internal static class ExtensibilityExamples
     }
     #endregion
 
+    /// <summary>A custom processor that changes the size of every frame.</summary>
+    #region Imaging_Processor
+    public static void UpscalePixelArt(Image image, int factor)
+    {
+        // Every frame and the poster are computed before they replace the old ones: a failure leaves the image unchanged
+        image.ApplyProcessor<Rgba64, PixelArtUpscaler>(new PixelArtUpscaler(factor));
+    }
+
+    /// <summary>Repeats every pixel in a square of factor x factor pixels.</summary>
+    public readonly struct PixelArtUpscaler(int factor) : IImageProcessor<Rgba64>
+    {
+        // Called once, before anything is allocated: the canvas limits apply to the result
+        public Size GetOutputSize(Size size) => new(checked(size.Width * factor), checked(size.Height * factor));
+
+        public void Process(int frameIndex, PixelRowSource<Rgba64> source, PixelAccessor<Rgba64> destination, CancellationToken cancellationToken)
+        {
+            for (var y = 0; y < destination.Height; y++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var sourceRow = source.GetRow(y / factor);
+                var row = destination.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = sourceRow[x / factor];
+                }
+            }
+        }
+
+        // The hotspot of a cursor stays on the top-left pixel of its square
+        public bool TryMapPoint(Point source, Size sourceSize, Size destinationSize, out Point destination)
+        {
+            destination = new Point(source.X * factor, source.Y * factor);
+            return true;
+        }
+    }
+    #endregion
+
     /// <summary>Processes a buffer owned by another component without copying it.</summary>
     #region Imaging_WrapMemory
     public static void BlurCameraFrame(byte[] bgraPixels, int width, int height, int stride)

@@ -81,6 +81,7 @@
     <Project Path="src/Meziantou.AspNetCore.Mvc/Meziantou.AspNetCore.Mvc.csproj" />
     <Project Path="src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj" Id="997b1066-b521-4738-977a-b60cc01f15ed" />
     <Project Path="src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj" Id="75c124f1-5f21-47f5-b05b-7e1334290074" />
+    <Project Path="src/Meziantou.AspNetCore.Testing/Meziantou.AspNetCore.Testing.csproj" />
     <Project Path="src/Meziantou.AspNetCore/Meziantou.AspNetCore.csproj" />
     <Project Path="src/Meziantou.DnsProxy/Meziantou.DnsProxy.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.FileLogger/Meziantou.Extensions.Logging.FileLogger.csproj" />
@@ -514,6 +515,8 @@
     <Project Path="tests/Meziantou.AspNetCore.Components.WebAssembly.Tests/Meziantou.AspNetCore.Components.WebAssembly.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Mvc.Tests/Meziantou.AspNetCore.Mvc.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.Tests/Meziantou.AspNetCore.ServiceDefaults.Tests.csproj" Id="a1514aa2-f75e-4dcc-bf6b-1860a8c44fcb" />
+    <Project Path="tests/Meziantou.AspNetCore.Testing.TestApp/Meziantou.AspNetCore.Testing.TestApp.csproj" />
+    <Project Path="tests/Meziantou.AspNetCore.Testing.Tests/Meziantou.AspNetCore.Testing.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Tests/Meziantou.AspNetCore.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.FileLogger.Tests/Meziantou.Extensions.Logging.FileLogger.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.InMemory.Tests/Meziantou.Extensions.Logging.InMemory.Tests.csproj" />
@@ -735,6 +738,7 @@
     <Project Path="tools/Meziantou.Framework.WebPlatform.SpecUpdate/Meziantou.Framework.WebPlatform.SpecUpdate.csproj" />
   </Folder>
   <Folder Name="/fuzz/">
+    <Project Path="fuzz/Meziantou.AspNetCore.Testing.Fuzz/Meziantou.AspNetCore.Testing.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Avatar.Fuzz/Meziantou.Framework.Avatar.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Barcodes.Fuzz/Meziantou.Framework.Barcodes.Fuzz.csproj" />
@@ -762,6 +766,7 @@
     <Project Path="fuzz/Meziantou.Framework.Http.Caching.Fuzz/Meziantou.Framework.Http.Caching.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Fuzz/Meziantou.Framework.Http.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Imaging.Fuzz/Meziantou.Framework.Imaging.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" />
     <Project Path="fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.JsonPath.Fuzz/Meziantou.Framework.JsonPath.Fuzz.csproj" />

@@ -430,17 +430,18 @@ public sealed class TimingAndMetadataConformanceTests
         Assert.Equal(metadata.Resolution, png.Resolution);
         Assert.Equal(metadata.ExifProfile is not null || metadata.Orientation != ExifOrientation.TopLeft, png.Exif is not null);
 
-        // GIF stores only comments: strict throws, DiscardUnsupported drops, Strip writes nothing
-        var hasUnsupportedForGif = metadata.IccProfile is not null || metadata.ExifProfile is not null || metadata.XmpProfile is not null || metadata.Resolution is not null
+        // GIF stores comments, an RGB ICC profile and an XMP packet: strict throws for the rest, DiscardUnsupported drops it,
+        // Strip writes nothing
+        var hasUnsupportedForGif = metadata.ExifProfile is not null || metadata.Resolution is not null
             || metadata.Orientation != ExifOrientation.TopLeft || metadata.TextEntries.Any(entry => entry.Keyword != ImageTextEntry.CommentKeyword || entry.LanguageTag is not null);
         Assert.True(hasUnsupportedForGif);
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => MetadataWritePlan.Create(metadata, ImageFormat.Gif, MetadataHandling.Strict, size));
         Assert.Equal(ImageFormat.Gif, exception.Format);
         Assert.StartsWith("Metadata: ", exception.Feature, StringComparison.Ordinal);
         var gif = MetadataWritePlan.Create(metadata, ImageFormat.Gif, MetadataHandling.DiscardUnsupported, size);
-        Assert.Null(gif.IccProfile);
+        Assert.Equal(metadata.IccProfile?.ColorSpace == IccProfileColorSpace.Rgb ? metadata.IccProfile : null, gif.IccProfile);
         Assert.Null(gif.Exif);
-        Assert.Null(gif.XmpProfile);
+        Assert.Same(metadata.XmpProfile, gif.XmpProfile);
         Assert.Null(gif.Resolution);
         Assert.All(gif.TextEntries, entry => Assert.Equal(ImageTextEntry.CommentKeyword, entry.Keyword));
         var stripped = MetadataWritePlan.Create(metadata, ImageFormat.Png, MetadataHandling.Strip, size);

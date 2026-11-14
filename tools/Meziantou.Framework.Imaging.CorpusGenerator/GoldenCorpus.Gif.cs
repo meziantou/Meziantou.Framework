@@ -860,7 +860,7 @@ internal static partial class GoldenCorpus
         // --- Skipped extensions and comments --------------------------------------------------------------------------------
         blocks = [GifComment("first comment"), GifComment("café " + new string('x', 300)),
             [0x21, 0x99, 3, (byte)'a', (byte)'b', (byte)'c', 2, (byte)'d', (byte)'e', 0x00],
-            GifApplication("XMP DataXMP", [Bytes.Ascii("<x/>"), [0x01, 0x00]]),
+            GifApplication("MGK8BIM0000", [Bytes.Ascii("<x/>"), [0x01, 0x00]]),
             GifApplication("NETSCAPE2.0", [[0x02, 0x00, 0x00, 0x00, 0x00]]),
             CommonCorpus.GifGce(1, 20), Image(0, 0, ["RGB"]),
             [0x21, 0x77, 0x00],

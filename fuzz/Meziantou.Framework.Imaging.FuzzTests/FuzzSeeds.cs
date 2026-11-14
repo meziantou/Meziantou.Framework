@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Hevc = Meziantou.Framework.Imaging.TestHarness.Hevc;
 
@@ -67,6 +68,21 @@ internal static class FuzzSeeds
         {
             seeds.AddRange(FuzzGeneratedSeeds.GetSmoothedRecompressedJpegSeeds());
         }
+        else if (group is "gif")
+        {
+            seeds.Add(CreateGifWithXmpAndIcc(seeds.First(seed => seed.Id.StartsWith("gif/", StringComparison.Ordinal)).Data));
+        }
+        else if (group is "bmp")
+        {
+            seeds.Add(new FuzzSeed("bmp/generated-2-bit", CreateTwoBitBmp()));
+            seeds.Add(new FuzzSeed("bmp/generated-10-10-10-2", CreateWideBitFieldsBmp()));
+        }
+        else if (group is "pnm")
+        {
+            // A concatenation of images of several variants, the pages of a collection, with white space between two of them
+            var images = seeds.Where(seed => seed.Id.StartsWith("pnm/", StringComparison.Ordinal)).Take(3).Select(seed => seed.Data).ToArray();
+            seeds.Add(new FuzzSeed("pnm/generated-concatenation", [.. images[0], .. images[1], .. "\n\n"u8, .. images[2]]));
+        }
         else if (group is "heic-sequence")
         {
             seeds.AddRange(
@@ -80,6 +96,83 @@ internal static class FuzzSeeds
             throw new InvalidOperationException($"The fuzz seed group '{group}' has no corpus input.");
 
         return seeds;
+    }
+
+    /// <summary>
+    /// A GIF of the corpus with an ICC application extension (<c>ICCRGBG1012</c>, an RGB profile in 255-byte sub-blocks) and
+    /// an XMP one (<c>XMP DataXMP</c>, the packet stored as it is and its 257-byte magic trailer) before its first block.
+    /// </summary>
+    private static FuzzSeed CreateGifWithXmpAndIcc(byte[] gif)
+    {
+        var globalTable = (gif[10] & 0x80) != 0 ? 3 * (2 << (gif[10] & 0x07)) : 0;
+        var position = 13 + globalTable;
+        var profile = Tests.IccTestProfiles.Rgb(Tests.IccTestProfiles.SrgbColorants, Tests.IccTestProfiles.SrgbCurve()).Data.ToArray();
+        var extensions = new List<byte>([0x21, 0xFF, 11, .. "ICCRGBG1012"u8]);
+        foreach (var chunk in profile.Chunk(255))
+        {
+            extensions.Add((byte)chunk.Length);
+            extensions.AddRange(chunk);
+        }
+
+        extensions.Add(0);
+        extensions.AddRange([0x21, 0xFF, 11, .. "XMP DataXMP"u8, .. "<?xpacket begin='' id='W5M0MpCehiHzreSzNTczkc9d'?><x:xmpmeta xmlns:x='adobe:ns:meta/'/><?xpacket end='w'?>"u8, 0x01]);
+        for (var value = 255; value >= 0; value--)
+        {
+            extensions.Add((byte)value);
+        }
+
+        extensions.Add(0);
+        return new FuzzSeed("gif/generated-xmp-and-icc", [.. gif.AsSpan(0, position), .. extensions, .. gif.AsSpan(position)]);
+    }
+
+    /// <summary>A 3x2 BMP of 32-bit pixels whose bit fields are 10-10-10-2 (a <c>BITMAPV4HEADER</c> with <c>BI_BITFIELDS</c>).</summary>
+    private static byte[] CreateWideBitFieldsBmp()
+    {
+        const int HeaderLength = 108;
+        var offset = 14 + HeaderLength;
+        var data = new byte[offset + (3 * 2 * 4)];
+        "BM"u8.CopyTo(data);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(2), data.Length);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(10), offset);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(14), HeaderLength);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(18), 3);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(22), 2);
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(26), 1);
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(28), 32);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(30), 3);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(34), 3 * 2 * 4);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(54), 0x3FF00000);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(58), 0x000FFC00);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(62), 0x000003FF);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(66), 0xC0000000);
+        for (var i = 0; i < 6; i++)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset + (i * 4)), (uint)((i * 0x2F1C3A5) ^ 0x9E3779B9));
+        }
+
+        return data;
+    }
+
+    /// <summary>A 5x2 BMP of 2 bits per pixel (Windows CE) with a palette of four entries.</summary>
+    private static byte[] CreateTwoBitBmp()
+    {
+        byte[] palette = [30, 20, 10, 0, 100, 150, 200, 0, 0, 0, 0, 0, 255, 255, 255, 0];
+        byte[] rows = [0b10_11_00_01, 0b11_000000, 0, 0, 0b00_01_10_11, 0b01_000000, 0, 0];
+        var offset = 14 + 40 + palette.Length;
+        var data = new byte[offset + rows.Length];
+        "BM"u8.CopyTo(data);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(2), data.Length);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(10), offset);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(14), 40);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(18), 5);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(22), 2);
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(26), 1);
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(28), 2);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(34), rows.Length);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(46), 4);
+        palette.CopyTo(data, 54);
+        rows.CopyTo(data, offset);
+        return data;
     }
 
     // The HEVC vectors of the corpus are raw byte streams: each one is wrapped into a HEIC file, a still image or an image

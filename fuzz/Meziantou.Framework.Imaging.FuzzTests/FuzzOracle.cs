@@ -28,7 +28,7 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// than a documented exception or a file;</description></item>
 /// <item><description>a collection of pages or representations (<see cref="ImageCollection"/>) describes and decodes the same
 /// entries from a span and from a stream, rejects the formats that store one image, and its default entry (the first page,
-/// or the largest representation) is the image of the eager load;</description></item>
+/// or the largest representation) is the image of the eager load (the first image of a Netpbm concatenation);</description></item>
 /// <item><description>a lossless encoder, chosen by the variant among the encoders that have a lossless mode, gives back the
 /// pixels of a corner of the first frame of a decoded image.</description></item>
 /// </list>
@@ -855,7 +855,11 @@ internal static class FuzzOracle
         // The collection tells the formats apart from the detection prefix: the detection of a file of the HEIF family
         // reads the brands that follow it when it has them, and reports a file type box the prefix cuts as AVIF
         var prefixFormat = Image.DetectFormat(input.AsSpan(0, Math.Min(input.Length, Image.FormatDetectionPrefixLength)));
-        var isCollection = detected is ImageFormat.Tiff or ImageFormat.Ico or ImageFormat.Cur;
+        var isCollection = detected is ImageFormat.Tiff or ImageFormat.Ico or ImageFormat.Cur or ImageFormat.Pnm;
+
+        // A load and an identification of a Netpbm file read its first image only: the collection also reads the images
+        // that follow it, which can be malformed
+        var loadReadsEveryEntry = detected is not ImageFormat.Pnm;
         switch (fromSpan.Exception)
         {
             case null when !isCollection:
@@ -867,12 +871,12 @@ internal static class FuzzOracle
             case not null and not UnsupportedImageFeatureException when prefixFormat != ImageFormat.Unknown && !isCollection:
                 return $"collection-single-image: a {prefixFormat} input is rejected with {Describe(fromSpan.Exception)} instead of UnsupportedImageFeatureException";
 
-            case not null when eager.Succeeded && isCollection && full.Succeeded:
+            case not null when eager.Succeeded && isCollection && loadReadsEveryEntry && full.Succeeded:
                 return $"collection-failure-but-load: the eager load succeeded ({eager.Value}) but the collection {Describe(fromSpan.Exception)}";
         }
 
         // The collection and the full identification walk the same structure: every entry
-        if (isCollection && fromSpan.Succeeded != full.Succeeded && fromSpan.Exception is not ImageResourceLimitException && full.Exception is not ImageResourceLimitException)
+        if (isCollection && loadReadsEveryEntry && fromSpan.Succeeded != full.Succeeded && fromSpan.Exception is not ImageResourceLimitException && full.Exception is not ImageResourceLimitException)
             return $"collection-full-identify: the full identification {Describe(full.Exception)} but the collection {Describe(fromSpan.Exception)}";
 
         if (fromSpan.Exception is not null)
@@ -890,7 +894,7 @@ internal static class FuzzOracle
         // The default entry: the first page, or the largest representation (then the deepest, which the description of
         // an entry does not tell apart from the other representations of that size)
         var largest = fromSpan.Entries.Max(entry => (long)entry.Width * entry.Height);
-        List<int> candidates = detected == ImageFormat.Tiff ? [0] : Enumerable.Range(0, fromSpan.Entries.Count).Where(index => (long)fromSpan.Entries[index].Width * fromSpan.Entries[index].Height == largest).ToList();
+        List<int> candidates = detected is ImageFormat.Tiff or ImageFormat.Pnm ? [0] : Enumerable.Range(0, fromSpan.Entries.Count).Where(index => (long)fromSpan.Entries[index].Width * fromSpan.Entries[index].Height == largest).ToList();
         if (candidates.Exists(index => index >= CollectionSummary.MaxDecodedEntries))
             return string.Empty;
 

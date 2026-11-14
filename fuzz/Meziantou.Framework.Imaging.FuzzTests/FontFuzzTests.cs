@@ -895,9 +895,9 @@ public sealed class FontFuzzTests
                         canvas.StrokeText(state.TextPen, state.layout, new PointD(-3, 1.25));
                     }
                 });
-                // A color glyph can draw something without having an outline of its own.
+                // A color glyph, or a glyph that is an image, can draw something without having an outline of its own.
                 var path = layout.ToPath(new PointD(1.5, 2));
-                if (path.IsEmpty != layout.InkBounds.IsEmpty && path.IsEmpty && !font.HasColorGlyphs)
+                if (path.IsEmpty != layout.InkBounds.IsEmpty && path.IsEmpty && !font.HasColorGlyphs && !font.Face.HasBitmapGlyphs)
                     return FuzzFailure.Property("layout-path", "The layout has ink bounds and an empty path.");
             }
             catch (Exception exception)

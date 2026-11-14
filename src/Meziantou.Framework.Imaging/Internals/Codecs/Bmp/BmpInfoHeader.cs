@@ -215,13 +215,9 @@ internal readonly struct BmpInfoHeader
                 throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP compression {compressionValue} is not a defined biCompression value."));
         }
 
-        if (bitsPerPixel is not (1 or 4 or 8 or 16 or 24 or 32))
-        {
-            if (bitsPerPixel is 2)
-                throw BmpFormat.Unsupported("The BMP stores 2 bits per pixel (a Windows CE extension), which this version does not decode.", "Bit depth: 2");
-
-            throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP bit count is {bitsPerPixel}; 1, 4, 8, 16, 24 or 32 is expected."));
-        }
+        // 2 bits per pixel is the four-color layout of Windows CE
+        if (bitsPerPixel is not (1 or 2 or 4 or 8 or 16 or 24 or 32))
+            throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP bit count is {bitsPerPixel}; 1, 2, 4, 8, 16, 24 or 32 is expected."));
 
         if (compression is BmpDibCompression.BitFields or BmpDibCompression.AlphaBitFields && bitsPerPixel is not (16 or 32))
             throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP declares explicit color masks with {bitsPerPixel} bits per pixel; masks are only defined for 16 and 32 bits."));

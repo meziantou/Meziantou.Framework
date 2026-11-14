@@ -928,6 +928,8 @@ internal sealed partial class DrawingSession : IDisposable
         _strokeRecorder = null;
         _colorSurface?.Dispose();
         _colorSurface = null;
+        _maskRow?.Dispose();
+        _maskRow = null;
         _foregroundGradient?.Dispose();
         _foregroundGradient = null;
         _glyphScratch?.Dispose();

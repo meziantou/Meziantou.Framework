@@ -1,0 +1,4 @@
+title: Testing
+description: "Test Blazor components and whole ASP.NET Core applications in a managed browser: user input, DOM and accessibility snapshots, screenshots, and scripts."
+packageIds:
+- Meziantou.AspNetCore.Testing

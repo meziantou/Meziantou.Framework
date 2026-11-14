@@ -1,0 +1,20 @@
+<div id="area" style="width: 200px; height: 100px; background: lightblue"
+     @onpointerdown="OnPointerDown" @ontouchstart="OnTouchStart" @onwheel="OnWheel" @oncontextmenu="OnContextMenu" @oncontextmenu:preventDefault @onmouseover="OnMouseOver"></div>
+<input id="keys" @onkeydown="OnKeyDown" />
+<p id="log">@string.Join(",", _log)</p>
+
+@code {
+    private readonly List<string> _log = [];
+
+    private void OnPointerDown(PointerEventArgs e) => _log.Add($"pointerdown:{e.PointerType}:{e.OffsetX}:{e.OffsetY}");
+
+    private void OnTouchStart(TouchEventArgs e) => _log.Add($"touchstart:{e.Touches.Length}");
+
+    private void OnWheel(WheelEventArgs e) => _log.Add($"wheel:{e.DeltaY}");
+
+    private void OnContextMenu(MouseEventArgs e) => _log.Add($"contextmenu:{e.Button}");
+
+    private void OnMouseOver(MouseEventArgs e) => _log.Add("mouseover");
+
+    private void OnKeyDown(KeyboardEventArgs e) => _log.Add($"keydown:{e.Key}:{e.CtrlKey}");
+}

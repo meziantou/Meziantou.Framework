@@ -467,7 +467,7 @@ public sealed class GifEncoderTests
     }
 
     [Fact]
-    public void CommentsAreTheOnlyMetadataAndFollowThePolicy()
+    public void CommentsAnIccProfileAndAnXmpPacketAreTheOnlyMetadataAndFollowThePolicy()
     {
         using var image = CreateAnimation(PixelFormat.Rgba32, 3, 2, frameCount: 2, colorsPerFrame: 4, seed: 1);
         var longComment = new string('é', 600); // Latin-1, several sub-blocks
@@ -487,11 +487,51 @@ public sealed class GifEncoderTests
         // follow MetadataHandling: Strict throws before any output, DiscardUnsupported drops them, Strip writes nothing
         image.Metadata.TextEntries.Add(new ImageTextEntry(ImageTextEntry.CommentKeyword, "snow ☃"));
         Assert.Equal("Metadata: text entry 'Comment'", Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(new ThrowingStream(), new GifEncoder())).Feature);
-        image.Metadata.XmpProfile = new XmpProfile(new MetadataBlob("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"/>"u8));
         image.Metadata.Resolution = new ImageResolution(72, 72);
         Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(new ThrowingStream(), new GifEncoder()));
         Assert.Equal(["first", "", longComment], ReferenceGif.Parse(Encode(image, new GifEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported })).Comments);
         Assert.Empty(ReferenceGif.Parse(Encode(image, new GifEncoder { MetadataHandling = MetadataHandling.Strip })).Comments);
+    }
+
+    [Fact]
+    public void AnIccProfileAndAnXmpPacketAreWrittenAsApplicationExtensions()
+    {
+        using var image = CreateAnimation(PixelFormat.Rgba32, 3, 2, frameCount: 1, colorsPerFrame: 4, seed: 2);
+        var profile = IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.SrgbCurve());
+        var padding = new string('x', 700);
+        var packet = Encoding.UTF8.GetBytes($"<?xpacket begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\" a=\"{padding}\"/><?xpacket end=\"w\"?>");
+        image.Metadata.IccProfile = profile;
+        image.Metadata.XmpProfile = new XmpProfile(new MetadataBlob(packet));
+        image.Metadata.TextEntries.Add(new ImageTextEntry(ImageTextEntry.CommentKeyword, "c"));
+        var gif = Encode(image, new GifEncoder());
+
+        // Before the first image: ICCRGBG1012 with the profile in data sub-blocks, then XMP DataXMP with the packet as it is
+        // and the 257-byte magic trailer of the XMP specification (part 3), so that a reader that walks the bytes as data
+        // sub-blocks reaches the block terminator
+        Assert.Equal(["Loop", "Application", "Application", "Comment", "GCE", "Image"], ReferenceGif.Parse(gif).Blocks);
+        byte[] iccHeader = [0x21, 0xFF, 0x0B, .. "ICCRGBG1012"u8];
+        byte[] xmpHeader = [0x21, 0xFF, 0x0B, .. "XMP DataXMP"u8];
+        var icc = gif.AsSpan().IndexOf(iccHeader);
+        var xmp = gif.AsSpan().IndexOf(xmpHeader);
+        Assert.True(icc > 0 && xmp > icc);
+        var joined = new List<byte>();
+        var position = icc + 14;
+        while (gif[position] != 0)
+        {
+            joined.AddRange(gif.AsSpan(position + 1, gif[position]));
+            position += 1 + gif[position];
+        }
+
+        Assert.Equal(profile.Data.ToArray(), joined);
+        Assert.Equal(xmp, position + 1);
+        var stored = gif.AsSpan(xmp + 14, packet.Length + 258).ToArray();
+        Assert.Equal(packet, stored[..packet.Length]);
+        Assert.Equal([0x01, .. Enumerable.Range(0, 256).Select(i => (byte)(255 - i)), 0x00], stored[packet.Length..]);
+
+        using var decoded = Image.Load(gif);
+        Assert.Equal(profile.Data.ToArray(), decoded.Metadata.IccProfile!.Data.ToArray());
+        Assert.Equal(packet, decoded.Metadata.XmpProfile!.Data.ToArray());
+        Assert.Equal(["c"], decoded.Metadata.TextEntries.Select(entry => entry.Value));
     }
 
     [Theory]

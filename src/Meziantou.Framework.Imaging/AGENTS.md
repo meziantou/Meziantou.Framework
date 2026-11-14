@@ -37,7 +37,10 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   (see "Lossy JPEG XL quality tools"); they are listed in `THIRD-PARTY-NOTICES.md`. Reading the source of another codec
   needs the same explicit permission.
 - The extension points are `CustomImageCodec`/`CustomImageEncoder` (formats registered in `ImageConfiguration.Codecs`),
-  `IPixelRowOperation<TPixel>`/`IPixelNeighborhoodOperation<TPixel>` (custom filters), `Image.WrapMemory` (caller-owned
+  `IPixelRowOperation<TPixel>`/`IPixelNeighborhoodOperation<TPixel>` (custom filters), `IImageProcessor<TPixel>` (custom
+  processors that replace every frame through the geometry transaction; the built-in seam carving and inpainting use the
+  same path and implement the internal `INativePixelCopier` so that the pixels they keep are copied, not converted),
+  `Image.WrapMemory` (caller-owned
   pixel memory) and `ImageBufferPool` (the retention of the pool). No public allocator and no custom pixel type: the
   pixel formats are a closed set that every kernel, converter and codec switches over. Implementation types are
   `internal` and live under `Internals/`.

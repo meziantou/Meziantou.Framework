@@ -47,6 +47,8 @@ The title can only be inferred from a member access, such as `item => item.Date`
 
 `TRowData` must be set on each column, because a column cannot infer it from the grid.
 
+A column can be shown conditionally (`@if`): the table always lists the columns in the order of the markup.
+
 ## Rows
 
 <!-- ref:../../../samples/BlazorAppSample/Documentation/DataGridRowsExample.razor;format=md-fenced-code-block -->

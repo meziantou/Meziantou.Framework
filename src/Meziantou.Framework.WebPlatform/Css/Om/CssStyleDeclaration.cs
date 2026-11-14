@@ -15,6 +15,9 @@ internal sealed class CssDeclarationEntry(CssLonghandValue value, bool important
     private CssLonghandValue _value = value;
     private CssLonghandSnapshot? _snapshot;
 
+    /// <summary>The base URL, only set for the declarations of the style attributes: there is one declaration per longhand of the style sheets, so its size matters.</summary>
+    private DeclarationBaseUrl? _baseUrl;
+
     public CssLonghandValue Value
     {
         get => _value;
@@ -37,19 +40,17 @@ internal sealed class CssDeclarationEntry(CssLonghandValue value, bool important
     /// are resolved against it, not against the base URL of the document when the style is computed
     /// (https://drafts.csswg.org/css-values-4/#relative-urls).
     /// </summary>
-    public string? BaseUrl { get; private set; }
+    public string? BaseUrl => _baseUrl?.Url;
 
     /// <summary>The document whose base URL is <see cref="BaseUrl"/>: an element adopted by another document uses the base URL of its new document.</summary>
-    public Document? BaseUrlDocument { get; private set; }
+    public Document? BaseUrlDocument => _baseUrl?.Document;
 
-    public void SetBaseUrl(Document? document, string? baseUrl)
-    {
-        BaseUrlDocument = document;
-        BaseUrl = baseUrl;
-    }
+    public void SetBaseUrl(Document? document, string? baseUrl) => _baseUrl = document is null && baseUrl is null ? null : new DeclarationBaseUrl(document, baseUrl);
 
     /// <summary>Returns the base URL of the declaration in a document, or null when it is the document base URL.</summary>
     public string? GetBaseUrl(Document document) => ReferenceEquals(BaseUrlDocument, document) ? BaseUrl : null;
+
+    private sealed record DeclarationBaseUrl(Document? Document, string? Url);
 
     /// <summary>Returns whether the value of a declaration may contain a URL (a function or a string).</summary>
     public static bool MayContainUrl(string value) => value.AsSpan().IndexOfAny('(', '"', '\'') >= 0;

@@ -65,8 +65,8 @@ ones of [TestPage](cref:Meziantou.AspNetCore.Testing.TestPage), shared with the 
 [Locators and assertions](03-Locators.md), [User input](04-UserInput.md) and [Snapshots](05-Snapshots.md).
 
 The pages run their scripts; set [EnableJavaScript](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.EnableJavaScript)
-to false to test the pages as without JavaScript. The errors of the scripts are in `ScriptErrors`, their console in
-`ConsoleMessages`, and the violations of the content security policies (including the ones raised while the document
+to false to test the pages as without JavaScript. The errors of the scripts are in [ScriptErrors](cref:Meziantou.AspNetCore.Testing.TestPage.ScriptErrors), their console in
+[ConsoleMessages](cref:Meziantou.AspNetCore.Testing.TestPage.ConsoleMessages), and the violations of the content security policies (including the ones raised while the document
 loads) in [ContentSecurityPolicyViolations](cref:Meziantou.AspNetCore.Testing.TestPage.ContentSecurityPolicyViolations): what the developer tools of a browser report.
 
 The pages of a browser share its [Clipboard](cref:Meziantou.AspNetCore.Testing.WebAppBrowser.Clipboard), as they share
@@ -76,7 +76,7 @@ in parallel do not see what the others copy.
 ## Browsing context options
 
 [ConfigureBrowsingContext](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.ConfigureBrowsingContext) changes any
-option of the browsing contexts of the pages (`BrowsingContextOptions`): the user agent, the languages, the permissions,
+option of the browsing contexts of the pages ([BrowsingContextOptions](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions)): the user agent, the languages, the permissions,
 the geolocation, the dialogs... It receives the options made from the other settings and returns the options to use,
 usually with a `with` expression. The pages still record their console messages, script errors and content security
 policy violations, and call the callbacks that the function sets. The function cannot replace the document loader nor
@@ -106,7 +106,7 @@ Assert.Single(reports);
 ```
 <!-- endref -->
 
-`ComponentTestHostOptions` has the same function for the page that hosts the components.
+[ComponentTestHostOptions](cref:Meziantou.AspNetCore.Testing.Components.ComponentTestHostOptions) has the same function for the page that hosts the components.
 
 ## Waiting
 

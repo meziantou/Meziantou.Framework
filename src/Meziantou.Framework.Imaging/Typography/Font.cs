@@ -396,7 +396,7 @@ public sealed class Font
     /// <summary>Decodes the image the font gives for a glyph, in the strike that suits a size.</summary>
     /// <param name="glyph">The glyph, such as <see cref="PositionedGlyph.Glyph"/>.</param>
     /// <param name="size">The size the glyph is drawn at, in pixels per em.</param>
-    /// <returns>The image, or <see langword="null"/> when the font has no image for the glyph.</returns>
+    /// <returns>The image, or <see langword="null"/> when the font has no image for the glyph or an image without pixels (a blank glyph).</returns>
     /// <remarks>
     /// <para>
     /// The strike that suits a size is the smallest one that is at least as large, else the largest one. The tables are
@@ -417,7 +417,8 @@ public sealed class Font
         ValidateSize(size, nameof(size));
         try
         {
-            if (!Face.TryGetAnyBitmapGlyph(glyph, size, out var bitmap))
+            // A bitmap without pixels, such as the one of a space, is no image.
+            if (!Face.TryGetAnyBitmapGlyph(glyph, size, out var bitmap) || BitmapGlyphDecoder.IsBlank(bitmap))
                 return null;
 
             var image = BitmapGlyphDecoder.Decode(Face, bitmap);

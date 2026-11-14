@@ -651,6 +651,9 @@ public sealed class DrawingTextTests
         var builder = FontSamples.Boxes();
         var strike = new FontBitmapStrike { PixelsPerEm = 16, ImageFormat = imageFormat, BitDepth = bitDepth };
         strike.Glyphs.Add(new FontBitmapGlyph(FontSamples.BoxA, 2, 0, 8, 2, FontBitmapWriter.PackPixels(8, 2, bitDepth, imageFormat is 1 or 6, GetValue)));
+
+        // The space has a bitmap without pixels: it draws nothing.
+        strike.Glyphs.Add(new FontBitmapGlyph(1, 0, 0, 0, 0, []));
         builder.MonochromeBitmapStrikes.Add(strike);
         var font = FontTestSupport.Load(builder, new FontLoadOptions { UseEmbeddedBitmaps = true });
         Assert.False(font.HasColorGlyphs);
@@ -717,6 +720,11 @@ public sealed class DrawingTextTests
         Assert.True(glyph.IsMask);
         Assert.Equal((8, 2, 2, 2), (glyph.Image.Width, glyph.Image.Height, glyph.Left, glyph.Top));
         Assert.Equal(new Rgba32(0, 0, 0, (byte)Math.Round(GetValue(7, 0) * 255.0 / maximum, MidpointRounding.AwayFromZero)), glyph.Image.Frames[0][7, 0]);
+
+        // A bitmap without pixels draws nothing and has no image.
+        Assert.Equal(pixels, Render(PixelFormat.Gray8, 16, 16, canvas => canvas.FillText(White, "A ", font, 16, new PointD(0, 0))));
+        Assert.True(font.Face.TryGetBitmapGlyph(1, 16, out var blank) && blank.Width == 0);
+        Assert.Null(font.DecodeBitmapGlyph(new Rune(' '), 16));
 
         // At another size, the outline.
         Assert.Equal(

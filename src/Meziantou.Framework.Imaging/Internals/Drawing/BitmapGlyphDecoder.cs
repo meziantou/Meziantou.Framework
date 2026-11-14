@@ -10,13 +10,17 @@ internal static class BitmapGlyphDecoder
     /// <param name="face">The font.</param>
     /// <param name="bitmap">The image of the glyph in the font data.</param>
     /// <param name="size">The size the glyph is drawn at, in pixels per em.</param>
+    /// <returns>The display list, or <see langword="null"/> for a bitmap without pixels, such as the one of a space, which draws nothing.</returns>
     /// <exception cref="InvalidImageContentException">The image is malformed.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The image uses a feature of its format that is not supported.</exception>
     /// <exception cref="ImageResourceLimitException">The image exceeds a limit of the configuration of the font.</exception>
     /// <exception cref="InvalidFontException">The pixels of the glyph are malformed.</exception>
     /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit.</exception>
-    public static ColorGlyph CreateGlyph(FontFace face, in BitmapGlyph bitmap, double size)
+    public static ColorGlyph? CreateGlyph(FontFace face, in BitmapGlyph bitmap, double size)
     {
+        if (IsBlank(bitmap))
+            return null;
+
         using var image = Decode(face, bitmap);
 
         // The image as the font places it, in font units: a pixel of the strike is a fraction of the em.
@@ -62,9 +66,9 @@ internal static class BitmapGlyphDecoder
         var configuration = ImageFontEnvironment.GetConfiguration(face);
         if (bitmap.Format is BitmapGlyphFormat.Mask or BitmapGlyphFormat.Bgra)
         {
-            // The pixels the font code decodes: an empty box is no image.
-            if (bitmap.Width == 0 || bitmap.Height == 0)
-                throw new InvalidImageContentException("The font is invalid: the image of a glyph has no pixel.", ImageFormat.Unknown);
+            // The pixels the font code decodes: see IsBlank for an empty box.
+            if (IsBlank(bitmap))
+                throw new ArgumentException("The glyph has no pixel.", nameof(bitmap));
 
             var budget = new GlyphBudget(face.Data.Limits);
             var decoded = face.DecodeBitmap(bitmap, ref budget);
@@ -107,6 +111,12 @@ internal static class BitmapGlyphDecoder
             throw new InvalidImageContentException("The font is invalid: the image of a glyph is not an image the font format allows.", ImageFormat.Unknown, exception);
         }
     }
+
+    /// <summary>
+    /// Tells whether a bitmap glyph has no pixels: a bitmap that is not encoded with a width or a height of 0, such as
+    /// the one of a space. It draws nothing.
+    /// </summary>
+    public static bool IsBlank(in BitmapGlyph bitmap) => bitmap.Format is BitmapGlyphFormat.Mask or BitmapGlyphFormat.Bgra && (bitmap.Width == 0 || bitmap.Height == 0);
 
     private static ImageFormat ToImageFormat(BitmapGlyphFormat format) => format switch
     {

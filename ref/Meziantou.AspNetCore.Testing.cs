@@ -95,6 +95,18 @@ namespace Meziantou.AspNetCore.Testing
         public static Meziantou.AspNetCore.Testing.PageAssertions Expect(Meziantou.AspNetCore.Testing.TestPage page) => throw null;
     }
 
+    public sealed class FakeClipboard : Meziantou.Framework.WebPlatform.Dom.SystemClipboard
+    {
+        public override long ChangeCount { get => throw null; }
+        public System.Action<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem>>? ContentChanged { get => throw null; init { } }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem> Items { get => throw null; }
+        public System.Func<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem>>? ProvideContent { get => throw null; init { } }
+        public static Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem CreateTextItem(string text) => throw null;
+        public static string? GetText(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem> items) => throw null;
+        public void NotifyContentChanged() { }
+        public override void Write(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SystemClipboardItem> items) { }
+    }
+
     public sealed class GetByRoleOptions
     {
         public bool? Checked { get => throw null; init { } }
@@ -283,6 +295,7 @@ namespace Meziantou.AspNetCore.Testing
     {
         public Meziantou.Framework.WebPlatform.Dom.BrowsingContext BrowsingContext { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> ConsoleMessages { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ContentSecurityPolicyViolationReport> ContentSecurityPolicyViolations { get => throw null; }
         public System.TimeSpan DefaultTimeout { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Document Document { get => throw null; }
         public Meziantou.AspNetCore.Testing.PageInput Input { get => throw null; }
@@ -316,6 +329,7 @@ namespace Meziantou.AspNetCore.Testing
 
     public sealed class TestPageSettings
     {
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions, Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions>? ConfigureBrowsingContext { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar? CookieJar { get => throw null; init { } }
         public System.TimeSpan DefaultTimeout { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentLoader? DocumentLoader { get => throw null; init { } }
@@ -341,6 +355,7 @@ namespace Meziantou.AspNetCore.Testing
 
     public sealed class WebAppBrowserOptions
     {
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions, Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions>? ConfigureBrowsingContext { get => throw null; init { } }
         public System.TimeSpan DefaultTimeout { get => throw null; init { } }
         public bool EnableJavaScript { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.DocumentRequest, bool>? IsLongLivedRequest { get => throw null; init { } }
@@ -407,6 +422,7 @@ namespace Meziantou.AspNetCore.Testing.Components
     public sealed class ComponentTestHostOptions
     {
         public string BaseUrl { get => throw null; init { } }
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions, Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions>? ConfigureBrowsingContext { get => throw null; init { } }
         public System.Collections.Generic.IDictionary<string, System.Func<Meziantou.Framework.WebPlatform.Dom.Event, System.EventArgs>> CustomEventArgs { get => throw null; }
         public System.TimeSpan DefaultTimeout { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentLoader? DocumentLoader { get => throw null; init { } }

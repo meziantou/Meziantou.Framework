@@ -15,6 +15,7 @@ public sealed class TestPageSettings
     /// <summary>Gets the cookies of the page, or null for no cookie. Pages that share a jar share their cookies.</summary>
     public CookieJar? CookieJar { get; init; }
 
+
     /// <summary>Gets the engine that runs the scripts of the page, or null to run no script. The page disposes it.</summary>
     public ScriptEngine? ScriptEngine { get; init; }
 
@@ -26,4 +27,16 @@ public sealed class TestPageSettings
 
     /// <summary>Gets the name of the attribute that <see cref="LocatorScope.GetByTestId(string)"/> matches. The default is <c>data-testid</c>.</summary>
     public string TestIdAttribute { get; init; } = "data-testid";
+
+    /// <summary>
+    /// Gets a function that changes the options of the browsing context of the page, or null. It receives the options made
+    /// from the other settings and returns the options to use, usually with a <c>with</c> expression:
+    /// <c>options =&gt; options with { UserAgent = "..." }</c>. The page still records the console messages, the script
+    /// errors and the content security policy violations, and calls the callbacks that the function sets. The function
+    /// cannot replace <see cref="BrowsingContextOptions.DocumentLoader"/> nor <see cref="BrowsingContextOptions.ScriptEngine"/>:
+    /// the page waits for the requests of its loader and calls the functions of its engine, so set <see cref="DocumentLoader"/>
+    /// and <see cref="ScriptEngine"/> instead.
+    /// </summary>
+    /// <remarks>The page throws an <see cref="InvalidOperationException"/> when the function replaces them.</remarks>
+    public Func<BrowsingContextOptions, BrowsingContextOptions>? ConfigureBrowsingContext { get; init; }
 }

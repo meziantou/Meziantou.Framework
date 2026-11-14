@@ -20,6 +20,7 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
     private readonly ScriptEngine? _scriptEngine;
     private readonly List<string> _consoleMessages = [];
     private readonly List<ScriptError> _scriptErrors = [];
+    private readonly List<ContentSecurityPolicyViolationReport> _contentSecurityPolicyViolations = [];
     private readonly Lock _signalLock = new();
     private TaskCompletionSource _workSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _disposed;
@@ -32,7 +33,7 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
         DefaultTimeout = settings.DefaultTimeout;
         TestIdAttribute = settings.TestIdAttribute;
         _scriptEngine = settings.ScriptEngine;
-        _browsingContext = new BrowsingContext(new BrowsingContextOptions
+        var options = new BrowsingContextOptions
         {
             Viewport = settings.Viewport,
             DocumentLoader = settings.DocumentLoader,
@@ -40,23 +41,61 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
             RenderingBackend = new ImagingRenderingBackend(),
             ScriptEngine = settings.ScriptEngine,
             TimeProvider = settings.TimeProvider,
-            ConsoleMessage = (_, message) =>
+        };
+
+        if (settings.ConfigureBrowsingContext is { } configure)
+        {
+            options = configure(options);
+
+            // The page waits for the requests of its loader and calls the functions of its engine (JavaScript interop)
+            if (!ReferenceEquals(options.DocumentLoader, settings.DocumentLoader) || !ReferenceEquals(options.ScriptEngine, settings.ScriptEngine))
+            {
+                (settings.ScriptEngine as IDisposable)?.Dispose();
+                throw new InvalidOperationException($"{nameof(TestPageSettings.ConfigureBrowsingContext)} cannot replace the {nameof(BrowsingContextOptions.DocumentLoader)} or the {nameof(BrowsingContextOptions.ScriptEngine)} of the page: set them in the settings of the page instead (the loader of the WebAppBrowser, ComponentTestHostOptions.DocumentLoader, EnableJavaScript).");
+            }
+        }
+
+        // The page records what it reports, then calls the callbacks of the options
+        var consoleMessage = options.ConsoleMessage;
+        var unhandledScriptError = options.UnhandledScriptError;
+        var contentSecurityPolicyViolation = options.ContentSecurityPolicyViolation;
+        var documentActivated = options.DocumentActivated;
+        _browsingContext = new BrowsingContext(options with
+        {
+            ConsoleMessage = (context, message) =>
             {
                 lock (_consoleMessages)
                 {
                     _consoleMessages.Add(message.Text);
                 }
+
+                consoleMessage?.Invoke(context, message);
             },
-            UnhandledScriptError = (_, error) =>
+            UnhandledScriptError = (context, error) =>
             {
                 lock (_scriptErrors)
                 {
                     _scriptErrors.Add(error);
                 }
+
+                unhandledScriptError?.Invoke(context, error);
+            },
+            ContentSecurityPolicyViolation = (context, report) =>
+            {
+                lock (_contentSecurityPolicyViolations)
+                {
+                    _contentSecurityPolicyViolations.Add(report);
+                }
+
+                contentSecurityPolicyViolation?.Invoke(context, report);
             },
 
             // The elements of the next documents (navigations) find their page too
-            DocumentActivated = (_, document) => Pages.AddOrUpdate(document, this),
+            DocumentActivated = (context, document) =>
+            {
+                Pages.AddOrUpdate(document, this);
+                documentActivated?.Invoke(context, document);
+            },
         });
 
         _browsingContext.EventLoop.WorkSignal = SignalWork;
@@ -95,6 +134,22 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
             lock (_scriptErrors)
             {
                 return [.. _scriptErrors];
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the violations of the content security policies of the page (the <c>Content-Security-Policy</c> and
+    /// <c>Content-Security-Policy-Report-Only</c> headers and the <c>meta</c> elements), as reported by the
+    /// <c>securitypolicyviolation</c> events, including the ones raised while the document loads.
+    /// </summary>
+    public IReadOnlyList<ContentSecurityPolicyViolationReport> ContentSecurityPolicyViolations
+    {
+        get
+        {
+            lock (_contentSecurityPolicyViolations)
+            {
+                return [.. _contentSecurityPolicyViolations];
             }
         }
     }

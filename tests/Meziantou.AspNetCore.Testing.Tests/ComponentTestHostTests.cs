@@ -31,6 +31,32 @@ public sealed class ComponentTestHostTests
     }
 
     [Fact]
+    public async Task ConfigureBrowsingContext_ChangesTheOptions()
+    {
+        var clipboard = new FakeClipboard();
+        await using var host = new ComponentTestHost(new ComponentTestHostOptions
+        {
+            ConfigureBrowsingContext = options => options with { UserAgent = "TestBrowser/1.0", Clipboard = clipboard },
+        });
+        await using var otherHost = new ComponentTestHost();
+
+        Assert.Equal("TestBrowser/1.0", host.BrowsingContext.Window.Navigator.UserAgent);
+        Assert.Same(clipboard, host.BrowsingContext.Options.Clipboard);
+        Assert.Null(otherHost.BrowsingContext.Options.Clipboard);
+    }
+
+    [Fact]
+    public void ConfigureBrowsingContext_CannotReplaceTheScriptEngine()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() => new ComponentTestHost(new ComponentTestHostOptions
+        {
+            EnableJavaScript = true,
+            ConfigureBrowsingContext = options => options with { ScriptEngine = null },
+        }));
+        Assert.Contains("cannot replace the DocumentLoader or the ScriptEngine", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Counter_RenderCountAndSetParameters()
     {
         await using var host = new ComponentTestHost();

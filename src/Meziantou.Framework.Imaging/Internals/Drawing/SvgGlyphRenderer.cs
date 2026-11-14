@@ -222,6 +222,8 @@ internal static class SvgGlyphRenderer
 
         public GlyphBudget Budget => _budget;
 
+        public void Charge(long count) => _budget.Charge(count);
+
         /// <summary>Gets the width of the viewport of the document in its user units, the reference of the horizontal percentages.</summary>
         public double ViewportWidth { get; private set; } = face.UnitsPerEm;
 
@@ -907,7 +909,9 @@ internal static class SvgGlyphRenderer
             var dashArray = DashPatternArray;
             if (element.GetAttribute("stroke-dasharray") is { } dashes)
             {
-                // A list of lengths; a list with a value that is not a length, or a negative one, is not valid.
+                // A list of lengths; a list with a value that is not a length, or a negative one, is not valid. Its size is
+                // charged each time an element is visited (use elements visit it again).
+                builder.Charge(1 + (dashes.Length / 64));
                 var values = SvgValues.ParseLengthList(dashes, builder.Viewport);
                 if (dashes.Trim() is "none")
                 {

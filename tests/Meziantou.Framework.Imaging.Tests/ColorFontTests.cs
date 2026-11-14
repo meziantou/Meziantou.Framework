@@ -924,6 +924,7 @@ public sealed class ColorFontTests
         Assert.Equal(dashed, DrawSvg("<line x1='0' y1='320' x2='1024' y2='320' stroke='red' stroke-width='128' stroke-dasharray='128px, 64px'/>"));
         Assert.NotEqual(dashed, DrawSvg("<line x1='0' y1='320' x2='1024' y2='320' stroke='red' stroke-width='128' stroke-dasharray='128'/>"));
         Assert.Equal(DrawSvg("<line x1='0' y1='320' x2='1024' y2='320' stroke='red' stroke-width='128'/>"), DrawSvg("<line x1='0' y1='320' x2='1024' y2='320' stroke='red' stroke-width='128' stroke-dasharray='128 a'/>"));
+        Assert.Equal(DrawSvg("<line x1='0' y1='320' x2='1024' y2='320' stroke='red' stroke-width='128'/>"), DrawSvg("<line x1='0' y1='320' x2='1024' y2='320' stroke='red' stroke-width='128' stroke-dasharray='a " + string.Concat(Enumerable.Repeat("1 ", 100_000)) + "'/>"));
 
         // The coordinates of a gradient in user space take units.
         AssertClose(

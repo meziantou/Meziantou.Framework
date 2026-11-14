@@ -116,19 +116,7 @@ internal static class SvgValues
         if (!TryReadNumber(ref span, out value))
             return false;
 
-        double factor = span switch
-        {
-            [] or "px" => 1,
-            "%" => reference / 100,
-            "in" => 96,
-            "cm" => 96 / 2.54,
-            "mm" => 96 / 25.4,
-            "pt" => 96.0 / 72,
-            "pc" => 16,
-            _ => double.NaN,
-        };
-
-        value *= factor;
+        value *= GetUnitFactor(span, reference);
         return double.IsFinite(value);
     }
 
@@ -150,17 +138,40 @@ internal static class SvgValues
         return values;
     }
 
+    // The factor of a unit of a length: the absolute units of CSS, or a percentage of a reference; NaN for another unit.
+    private static double GetUnitFactor(ReadOnlySpan<char> unit, double reference) => unit switch
+    {
+        [] or "px" => 1,
+        "%" => reference / 100,
+        "in" => 96,
+        "cm" => 96 / 2.54,
+        "mm" => 96 / 25.4,
+        "pt" => 96.0 / 72,
+        "pc" => 16,
+        _ => double.NaN,
+    };
+
     /// <summary>Reads a list of lengths separated by white space or commas (<see cref="TryParseLength"/>).</summary>
-    /// <returns><see langword="null"/> when an item is not a length.</returns>
+    /// <returns><see langword="null"/> when an item is not a length: the list is read up to that item, without copying it.</returns>
     public static List<double>? ParseLengthList(string text, double reference)
     {
         var values = new List<double>();
-        foreach (var item in text.Split([' ', ',', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries))
+        var span = text.AsSpan();
+        SkipSeparators(ref span);
+        while (!span.IsEmpty)
         {
-            if (!TryParseLength(item, reference, out var value))
+            var end = span.IndexOfAny(" ,\t\n\r");
+            var item = end < 0 ? span : span[..end];
+            if (!TryReadNumber(ref item, out var value))
+                return null;
+
+            value *= GetUnitFactor(item, reference);
+            if (!double.IsFinite(value))
                 return null;
 
             values.Add(value);
+            span = end < 0 ? default : span[end..];
+            SkipSeparators(ref span);
         }
 
         return values;

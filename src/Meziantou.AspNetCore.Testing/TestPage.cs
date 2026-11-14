@@ -33,8 +33,7 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
         DefaultTimeout = settings.DefaultTimeout;
         TestIdAttribute = settings.TestIdAttribute;
         _scriptEngine = settings.ScriptEngine;
-        Clipboard = settings.Clipboard ?? new SystemClipboard();
-        _browsingContext = new BrowsingContext(new BrowsingContextOptions
+        var options = new BrowsingContextOptions
         {
             Viewport = settings.Viewport,
             DocumentLoader = settings.DocumentLoader,
@@ -42,31 +41,56 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
             RenderingBackend = new ImagingRenderingBackend(),
             ScriptEngine = settings.ScriptEngine,
             TimeProvider = settings.TimeProvider,
+        };
+
+        if (settings.ConfigureBrowsingContext is { } configure)
+        {
+            options = configure(options);
+        }
+
+        // The page records what it reports, then calls the callbacks of the options
+        var consoleMessage = options.ConsoleMessage;
+        var unhandledScriptError = options.UnhandledScriptError;
+        var contentSecurityPolicyViolation = options.ContentSecurityPolicyViolation;
+        var documentActivated = options.DocumentActivated;
+        Clipboard = options.Clipboard ?? new SystemClipboard();
+        _browsingContext = new BrowsingContext(options with
+        {
             Clipboard = Clipboard,
-            ConsoleMessage = (_, message) =>
+            ConsoleMessage = (context, message) =>
             {
                 lock (_consoleMessages)
                 {
                     _consoleMessages.Add(message.Text);
                 }
+
+                consoleMessage?.Invoke(context, message);
             },
-            UnhandledScriptError = (_, error) =>
+            UnhandledScriptError = (context, error) =>
             {
                 lock (_scriptErrors)
                 {
                     _scriptErrors.Add(error);
                 }
+
+                unhandledScriptError?.Invoke(context, error);
             },
-            ContentSecurityPolicyViolation = (_, report) =>
+            ContentSecurityPolicyViolation = (context, report) =>
             {
                 lock (_contentSecurityPolicyViolations)
                 {
                     _contentSecurityPolicyViolations.Add(report);
                 }
+
+                contentSecurityPolicyViolation?.Invoke(context, report);
             },
 
             // The elements of the next documents (navigations) find their page too
-            DocumentActivated = (_, document) => Pages.AddOrUpdate(document, this),
+            DocumentActivated = (context, document) =>
+            {
+                Pages.AddOrUpdate(document, this);
+                documentActivated?.Invoke(context, document);
+            },
         });
 
         _browsingContext.EventLoop.WorkSignal = SignalWork;
@@ -126,8 +150,9 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
     }
 
     /// <summary>
-    /// Gets the system clipboard of the page (<see cref="TestPageSettings.Clipboard"/>): read what the page copies, or
-    /// write what the page pastes.
+    /// Gets the system clipboard of the page: read what the page copies, or write what the page pastes. It is the
+    /// <see cref="BrowsingContextOptions.Clipboard"/> set by <see cref="TestPageSettings.ConfigureBrowsingContext"/>, or
+    /// a clipboard of the page.
     /// </summary>
     public SystemClipboard Clipboard { get; }
 

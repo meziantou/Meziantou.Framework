@@ -82,7 +82,7 @@ public sealed class WebAppBrowser : IAsyncDisposable, IDisposable
             Viewport = _options.Viewport,
             DocumentLoader = _loader,
             CookieJar = Cookies,
-            Clipboard = Clipboard,
+            ConfigureBrowsingContext = options => _options.ConfigureBrowsingContext is { } configure ? configure(options with { Clipboard = Clipboard }) : options with { Clipboard = Clipboard },
             ScriptEngine = _options.EnableJavaScript ? new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions { Timeout = _options.DefaultTimeout }) : null,
             TimeProvider = _options.TimeProvider,
             DefaultTimeout = _options.DefaultTimeout,

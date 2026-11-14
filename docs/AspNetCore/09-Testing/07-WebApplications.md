@@ -73,6 +73,39 @@ The pages of a browser share its [Clipboard](cref:Meziantou.AspNetCore.Testing.W
 its cookies: read what a page copies, or write what a page pastes. Each browser has its own clipboard, so tests that run
 in parallel do not see what the others copy.
 
+## Browsing context options
+
+[ConfigureBrowsingContext](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.ConfigureBrowsingContext) changes any
+option of the browsing contexts of the pages (`BrowsingContextOptions`): the user agent, the languages, the permissions,
+the geolocation, the dialogs... It receives the options made from the other settings and returns the options to use,
+usually with a `with` expression. The pages still record their console messages, script errors and content security
+policy violations, and call the callbacks that the function sets.
+
+<!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=WebAppBrowser_ConfigureBrowsingContext;format=md-fenced-code-block;dedent=true -->
+```csharp
+var reports = new List<ContentSecurityPolicyViolationReport>();
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions
+{
+    // Change any option of the browsing contexts of the pages
+    ConfigureBrowsingContext = options => options with
+    {
+        UserAgent = "TestBrowser/1.0",
+        ContentSecurityPolicyViolation = (_, report) => reports.Add(report),
+    },
+});
+var page = await browser.OpenAsync("/secure");
+
+Assert.Equal("TestBrowser/1.0", page.BrowsingContext.Window.Navigator.UserAgent);
+
+// The page still records what it reports, and calls the callbacks of the options
+Assert.Single(page.ContentSecurityPolicyViolations);
+Assert.Single(reports);
+```
+<!-- endref -->
+
+`ComponentTestHostOptions` has the same function for the page that hosts the components.
+
 ## Waiting
 
 Each action waits until the page is idle: no task in its event loop, and no request in progress. Some requests never

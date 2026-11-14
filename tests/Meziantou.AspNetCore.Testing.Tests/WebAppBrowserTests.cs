@@ -141,6 +141,33 @@ public sealed class WebAppBrowserTests
     }
 
     [Fact]
+    public async Task ConfigureTheBrowsingContextOfThePages()
+    {
+        #region WebAppBrowser_ConfigureBrowsingContext
+        var reports = new List<ContentSecurityPolicyViolationReport>();
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions
+        {
+            // Change any option of the browsing contexts of the pages
+            ConfigureBrowsingContext = options => options with
+            {
+                UserAgent = "TestBrowser/1.0",
+                ContentSecurityPolicyViolation = (_, report) => reports.Add(report),
+            },
+        });
+        var page = await browser.OpenAsync("/secure");
+
+        Assert.Equal("TestBrowser/1.0", page.BrowsingContext.Window.Navigator.UserAgent);
+
+        // The page still records what it reports, and calls the callbacks of the options
+        Assert.Single(page.ContentSecurityPolicyViolations);
+        Assert.Single(reports);
+        #endregion
+
+        Assert.Same(browser.Clipboard, page.Clipboard);
+    }
+
+    [Fact]
     public async Task PagesWithoutJavaScript()
     {
         await using var factory = new WebApplicationFactory<Program>();

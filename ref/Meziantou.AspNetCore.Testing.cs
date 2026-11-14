@@ -318,7 +318,7 @@ namespace Meziantou.AspNetCore.Testing
 
     public sealed class TestPageSettings
     {
-        public Meziantou.Framework.WebPlatform.Dom.SystemClipboard? Clipboard { get => throw null; init { } }
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions, Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions>? ConfigureBrowsingContext { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar? CookieJar { get => throw null; init { } }
         public System.TimeSpan DefaultTimeout { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentLoader? DocumentLoader { get => throw null; init { } }
@@ -345,6 +345,7 @@ namespace Meziantou.AspNetCore.Testing
 
     public sealed class WebAppBrowserOptions
     {
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions, Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions>? ConfigureBrowsingContext { get => throw null; init { } }
         public System.TimeSpan DefaultTimeout { get => throw null; init { } }
         public bool EnableJavaScript { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.DocumentRequest, bool>? IsLongLivedRequest { get => throw null; init { } }
@@ -411,6 +412,7 @@ namespace Meziantou.AspNetCore.Testing.Components
     public sealed class ComponentTestHostOptions
     {
         public string BaseUrl { get => throw null; init { } }
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions, Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions>? ConfigureBrowsingContext { get => throw null; init { } }
         public System.Collections.Generic.IDictionary<string, System.Func<Meziantou.Framework.WebPlatform.Dom.Event, System.EventArgs>> CustomEventArgs { get => throw null; }
         public System.TimeSpan DefaultTimeout { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentLoader? DocumentLoader { get => throw null; init { } }

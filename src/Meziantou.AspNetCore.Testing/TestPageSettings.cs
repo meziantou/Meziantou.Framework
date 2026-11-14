@@ -15,11 +15,6 @@ public sealed class TestPageSettings
     /// <summary>Gets the cookies of the page, or null for no cookie. Pages that share a jar share their cookies.</summary>
     public CookieJar? CookieJar { get; init; }
 
-    /// <summary>
-    /// Gets the system clipboard of the page: the data of the copy and cut actions and of <c>navigator.clipboard</c>, or null
-    /// for a clipboard of its own. Pages that share a clipboard share what they copy.
-    /// </summary>
-    public SystemClipboard? Clipboard { get; init; }
 
     /// <summary>Gets the engine that runs the scripts of the page, or null to run no script. The page disposes it.</summary>
     public ScriptEngine? ScriptEngine { get; init; }
@@ -32,4 +27,13 @@ public sealed class TestPageSettings
 
     /// <summary>Gets the name of the attribute that <see cref="LocatorScope.GetByTestId(string)"/> matches. The default is <c>data-testid</c>.</summary>
     public string TestIdAttribute { get; init; } = "data-testid";
+
+    /// <summary>
+    /// Gets a function that changes the options of the browsing context of the page, or null. It receives the options made
+    /// from the other settings and returns the options to use, usually with a <c>with</c> expression:
+    /// <c>options =&gt; options with { UserAgent = "..." }</c>. The page still records the console messages, the script
+    /// errors and the content security policy violations, and calls the callbacks that the function sets. A
+    /// <see cref="BrowsingContextOptions.ScriptEngine"/> set by the function is not disposed by the page.
+    /// </summary>
+    public Func<BrowsingContextOptions, BrowsingContextOptions>? ConfigureBrowsingContext { get; init; }
 }

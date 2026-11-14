@@ -31,6 +31,21 @@ public sealed class ComponentTestHostTests
     }
 
     [Fact]
+    public async Task ConfigureBrowsingContext_ChangesTheOptionsAndIsolatesTheClipboard()
+    {
+        var clipboard = new SystemClipboard();
+        await using var host = new ComponentTestHost(new ComponentTestHostOptions
+        {
+            ConfigureBrowsingContext = options => options with { UserAgent = "TestBrowser/1.0", Clipboard = clipboard },
+        });
+        await using var otherHost = new ComponentTestHost();
+
+        Assert.Equal("TestBrowser/1.0", host.BrowsingContext.Window.Navigator.UserAgent);
+        Assert.Same(clipboard, host.Clipboard);
+        Assert.NotSame(host.Clipboard, otherHost.Clipboard);
+    }
+
+    [Fact]
     public async Task Counter_RenderCountAndSetParameters()
     {
         await using var host = new ComponentTestHost();

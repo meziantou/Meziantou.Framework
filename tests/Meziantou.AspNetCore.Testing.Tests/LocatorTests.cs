@@ -365,7 +365,15 @@ public sealed class LocatorTests
         await Expect(form.GetByLabel("Color")).ToHaveValueAsync("#ff0000");
         await form.GetByLabel("Volume").FillAsync("42");
         await Expect(form.GetByLabel("Volume")).ToHaveValueAsync("10");
+        await form.GetByLabel("Volume").FillAsync("2.5e0");
+        await Expect(form.GetByLabel("Volume")).ToHaveValueAsync("3");
         await Assert.ThrowsAsync<ElementNotInteractableException>(() => form.GetByLabel("Volume").FillAsync("loud"));
+
+        // The number format of HTML: no plus sign, no infinity; the value is not changed
+        await Assert.ThrowsAsync<ElementNotInteractableException>(() => form.GetByLabel("Volume").FillAsync("+7"));
+        await Assert.ThrowsAsync<ElementNotInteractableException>(() => form.GetByLabel("Volume").FillAsync("Infinity"));
+        await Assert.ThrowsAsync<ElementNotInteractableException>(() => form.GetByLabel("Volume").FillAsync("1e999"));
+        await Expect(form.GetByLabel("Volume")).ToHaveValueAsync("3");
         await Assert.ThrowsAsync<ElementNotInteractableException>(() => form.GetByLabel("Color").FillAsync("red"));
 
         var exception = await Assert.ThrowsAsync<ElementNotInteractableException>(() => form.GetByLabel("Birth date").FillAsync("not a date"));

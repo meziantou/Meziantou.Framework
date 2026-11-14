@@ -24,7 +24,69 @@ public static class LocatorFuzzTargets
                 "<img alt=\"", "placeholder=\"", "title=\"", "data-testid=\"", "aria-label=\"", "aria-labelledby=\"", "aria-hidden=\"true\"", "role=\"", "style=\"display: none\"", "<script>", "<style>", " id=\"",
             ],
         },
+        new("aspnetcore-testing-fill-values", FillValues)
+        {
+            Seeds = GetFillValueSeeds,
+            Dictionary = ["-", "+", ".", "e", "E", "e+", "e-", "0", "9", " ", "Infinity", "NaN", "1e999", "2026", "-07", "-01", "T", ":", ":00", "W", "#", "ff", "FF"],
+        },
     ];
+
+    private static IEnumerable<FuzzSeed> GetFillValueSeeds()
+    {
+        yield return FuzzSeed.FromText("range", [0], "7");
+        yield return FuzzSeed.FromText("range-exponent", [0], "2.5e0");
+        yield return FuzzSeed.FromText("range-plus", [0], "+7");
+        yield return FuzzSeed.FromText("range-infinite", [0], "1e999");
+        yield return FuzzSeed.FromText("date", [1], "1815-12-10");
+        yield return FuzzSeed.FromText("time", [2], "07:30:00");
+        yield return FuzzSeed.FromText("datetime-local", [3], "2026-07-01T12:30:00");
+        yield return FuzzSeed.FromText("month", [4], "2026-07");
+        yield return FuzzSeed.FromText("week", [5], "2026-W27");
+        yield return FuzzSeed.FromText("color", [6], "#FF0000");
+        yield return FuzzSeed.FromText("invalid-date", [1], "not a date");
+    }
+
+    /// <summary>
+    /// Fills an input whose value is set (a range, a date, a time, a color): a rejected value leaves the input unchanged,
+    /// an accepted value is a value of the input (the empty string only for an empty text), within the bounds of a range.
+    /// </summary>
+    private static void FillValues(ReadOnlySpan<byte> data)
+    {
+        if (data.IsEmpty)
+            return;
+
+        var type = ValueInputTypes[data[0] % ValueInputTypes.Length];
+        var text = FuzzText.Decode(data[1..]);
+        using var page = new FuzzPage();
+        if (page.Document.Body is not { } body)
+            return;
+
+        body.InnerHtml = $"<input type=\"{type}\" min=\"0\" max=\"10\" aria-label=\"Field\">";
+        var field = (HtmlInputElement)page.Find("input");
+        var previousValue = field.Value;
+        try
+        {
+            page.GetByLabel("Field").FillAsync(text).GetAwaiter().GetResult();
+        }
+        catch (ElementNotInteractableException)
+        {
+            FuzzAssert.Equal(previousValue, field.Value, "A rejected value leaves the input unchanged");
+            return;
+        }
+
+        var value = field.Value;
+        if (text.Trim().Length > 0 || type is "range" or "color")
+        {
+            FuzzAssert.True(value.Length > 0, $"The input of type {type} accepted {FuzzAssert.Format(text)} but its value is empty");
+        }
+
+        if (type == "range")
+        {
+            FuzzAssert.True(double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number) && number is >= 0 and <= 10, $"The range has the value {FuzzAssert.Format(value)}");
+        }
+    }
+
+    private static readonly string[] ValueInputTypes = ["range", "date", "time", "datetime-local", "month", "week", "color"];
 
     private const string UsersMarkup = """
         <h1>Users</h1>

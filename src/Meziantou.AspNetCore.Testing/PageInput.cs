@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Meziantou.AspNetCore.Testing.Internals;
 using Meziantou.Framework.WebPlatform.Animations;
 using Meziantou.Framework.WebPlatform.Css.TypedOm;
@@ -13,7 +14,7 @@ namespace Meziantou.AspNetCore.Testing;
 /// clicks. As in Playwright, each action first waits until the element is actionable (attached, visible, stable, enabled,
 /// editable, not covered, depending on the action), then waits until the page is idle.
 /// </summary>
-public sealed class PageInput
+public sealed partial class PageInput
 {
     private readonly TestPage _page;
     private PointerInput? _touch;
@@ -373,24 +374,39 @@ public sealed class PageInput
     /// </summary>
     private static void SetValue(HtmlInputElement field, string value)
     {
+        var previousValue = field.Value;
         field.Value = value;
 
         // The input sanitizes the value: it keeps a valid value in its normal format (2026-07-01T12:30:00 is
         // 2026-07-01T12:30, #FF0000 is #ff0000, a range clamps its value), and replaces an invalid value
         var isValid = field.Type switch
         {
-            "range" => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _),
+            "range" => IsValidFloatingPointNumber(value),
             "color" => string.Equals(field.Value, value, StringComparison.OrdinalIgnoreCase),
             _ => value.Length == 0 || field.Value.Length > 0,
         };
 
         if (!isValid)
+        {
+            // The input keeps its value, and fires no event
+            field.Value = previousValue;
             throw new ElementNotInteractableException($"The value \"{value}\" is not a valid value for the input {ActionTarget.DescribeElement(field)} of type \"{field.Type}\"");
+        }
 
         field.DispatchEvent(new Event("input", new EventInit { Bubbles = true, Composed = true }));
         field.DispatchEvent(new Event("change", new EventInit { Bubbles = true }));
         field.Blur();
     }
+
+    /// <summary>
+    /// Gets whether a value is a valid floating-point number of HTML (https://html.spec.whatwg.org/#valid-floating-point-number),
+    /// the value that a range input keeps: no <c>+</c> sign, no white space, no <c>Infinity</c>, and a finite number.
+    /// </summary>
+    private static bool IsValidFloatingPointNumber(string value)
+        => ValidFloatingPointNumberRegex().IsMatch(value) && double.TryParse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, CultureInfo.InvariantCulture, out var number) && double.IsFinite(number);
+
+    [GeneratedRegex(@"^-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
+    private static partial Regex ValidFloatingPointNumberRegex();
 
     private static void Press(UserInput input, string key, string[] modifiers)
     {

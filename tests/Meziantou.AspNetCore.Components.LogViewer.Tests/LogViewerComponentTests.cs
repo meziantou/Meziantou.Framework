@@ -426,14 +426,14 @@ public class LogViewerComponentTests
         var viewer = await host.RenderAsync<LogViewer>(parameters => parameters.Add(c => c.Entries, [entry]));
         Assert.Equal(["Name:", "Level:"], viewer.FindAll("th").Select(header => header.TextContent));
 
-        // The links do not navigate (href="#" with @onclick:preventDefault)
+        // The links do not navigate (href="#" with @onclick:preventDefault). The JSON is indented with the new lines of the platform
         await viewer.GetByRole("link", "json").ClickAsync();
         Assert.Equal("""
             {
               "Name": "Ada",
               "Level": "Warning"
             }
-            """, viewer.Find("pre").TextContent);
+            """, viewer.Find("pre").TextContent?.ReplaceLineEndings("\n"));
         Assert.Equal("https://localhost/", host.Url);
 
         // A render of the parent keeps the format the user selected

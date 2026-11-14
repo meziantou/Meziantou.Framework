@@ -3,6 +3,9 @@
   <!-- A Blazor Web App is one of the applications under test: the Web SDK compiles its components and serves blazor.web.js -->
   <Sdk Name="Meziantou.NET.Sdk.Test" />
 
+  <!-- Maps the deterministic source paths, so the snapshots are found in the Release builds -->
+  <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.targets" />
+
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsPackable>false</IsPackable>

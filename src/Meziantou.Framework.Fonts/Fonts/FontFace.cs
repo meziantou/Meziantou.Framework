@@ -102,6 +102,9 @@ public sealed class FontFace
     private readonly FontFace _default;
     private FontInstance? _instance;
 
+    // Whether the MVAR table of an instance moves its ascender or its descender.
+    private bool _variesLineExtents;
+
     internal FontFace(FontData data, long directoryOffset)
     {
         _default = this;
@@ -578,10 +581,10 @@ public sealed class FontFace
 
     /// <summary>
     /// Gets a value indicating whether the vertical metrics of an instance of a variable font are varied by a table of
-    /// their own: <c>VVAR</c> for the advance heights of <c>vmtx</c>, <c>MVAR</c> for the line metrics of a font without
-    /// vertical metrics.
+    /// their own: <c>VVAR</c> for the advance heights of <c>vmtx</c>; for a font without vertical metrics, <c>MVAR</c>
+    /// when it moves the ascender or the descender (its other records leave them as they are).
     /// </summary>
-    internal bool VariesVerticalMetrics => _instance is not null && (HasVerticalMetrics ? _vvarStore != 0 : _mvarLength > 0);
+    internal bool VariesVerticalMetrics => _instance is not null && (HasVerticalMetrics ? _vvarStore != 0 : _variesLineExtents);
 
     /// <summary>Gets the advance width of a glyph, in font units.</summary>
     /// <remarks>
@@ -1239,11 +1242,13 @@ public sealed class FontFace
                 case FontTags.MetricAscender:
                     TypoAscender += delta;
                     HorizontalAscender += delta;
+                    _variesLineExtents = true;
                     break;
 
                 case FontTags.MetricDescender:
                     TypoDescender += delta;
                     HorizontalDescender += delta;
+                    _variesLineExtents = true;
                     break;
 
                 case FontTags.MetricLineGap:

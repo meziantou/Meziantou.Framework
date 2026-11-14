@@ -404,10 +404,26 @@ internal sealed class TrueTypeHinter : IDisposable
 
         var variedOrigin = origin + deltaX[0];
         var advanceX = _face.VariesAdvancesWithOutlines ? origin + advance + deltaX[1] : variedOrigin + _face.GetAdvanceWidth(glyphId);
-        // The advance height of the instance is the one of VVAR (or of MVAR) when the font has it: the delta of gvar is
-        // not added to it again, as with the advance of HVAR.
-        var topY = top + deltaY[2];
-        var bottomY = _face.VariesVerticalMetrics ? topY - advanceHeight : top - advanceHeight + deltaY[3];
+        // The advance height of the instance is the one of VVAR when the font has it: the delta of gvar is not added to
+        // it again, as with the advance of HVAR. Without vertical metrics, the top and the advance height are the
+        // ascender and the descender, which MVAR may have moved already.
+        double topY;
+        double bottomY;
+        if (!_face.VariesVerticalMetrics)
+        {
+            topY = top + deltaY[2];
+            bottomY = top - advanceHeight + deltaY[3];
+        }
+        else if (_face.HasVerticalMetrics)
+        {
+            topY = top + deltaY[2];
+            bottomY = topY - advanceHeight;
+        }
+        else
+        {
+            topY = top;
+            bottomY = top - advanceHeight;
+        }
         return new PhantomPoints
         {
             Origin = CreateVariedPoint(variedOrigin, deltaY[0]),

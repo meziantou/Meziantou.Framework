@@ -615,6 +615,25 @@ public sealed class FontVariationTests
         Assert.True(boldAdvance > regularAdvance, $"{boldAdvance} > {regularAdvance}");
     }
 
+    [Fact]
+    public void OnlyTheAscenderAndTheDescenderOfMvarVaryTheVerticalPhantomPoints()
+    {
+        // A font without vertical metrics: the vertical phantom points of the hinter are its ascender and its
+        // descender, which MVAR moves with its records hasc and hdsc; its other records (the underline, ...) do not.
+        var face = Variable.Face;
+        Assert.False(face.HasVerticalMetrics);
+        Assert.True(face.WithCoordinates([900 << 16, 100 << 16]).VariesVerticalMetrics);
+        Assert.False(face.VariesVerticalMetrics);
+
+        var builder = FontSamples.Variable();
+        builder.MetricVariationItems.Remove("hasc");
+        builder.MetricVariationItems.Remove("hdsc");
+        var underlineOnly = FontTestSupport.Load(builder).Face;
+        var heavy = underlineOnly.WithCoordinates([900 << 16, 100 << 16]);
+        Assert.NotEqual(underlineOnly.UnderlinePosition, heavy.UnderlinePosition);
+        Assert.False(heavy.VariesVerticalMetrics);
+    }
+
     private sealed class NullOutlineSink : OutlineSink
     {
         public override void MoveTo(double x, double y)

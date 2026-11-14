@@ -34,7 +34,8 @@ internal static class CommonMarkSpec
         return data;
     }
 
-    private static List<Example> Load(string fileName)
+    /// <summary>Loads the examples of a specification file of the <c>Specs</c> folder.</summary>
+    public static List<Example> Load(string fileName)
     {
         var path = Path.Combine(AppContext.BaseDirectory, "Specs", fileName);
         var lines = File.ReadAllText(path).ReplaceLineEndings("\n").Split('\n');

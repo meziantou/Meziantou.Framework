@@ -815,7 +815,7 @@ internal static partial class FontCorpus
     private const string AotsSha256 = "934e916b1b32a88c673b0307865aff1ad22052f6d74619c5e2ca14ea545e92c3";
 
     // The hash of the output of truetype_hinting.py, which pins the fonts, hb-subset and FreeType.
-    private const string HintingSuiteSha256 = "8125166b30a0f8e6ecd603f38a67afad6b3d0e254c2e4d8038d11effa20e6abf";
+    private const string HintingSuiteSha256 = "5fc088e71f2fd072798f155c7dcc666983da8097f9d682bd46071668f7ac12d6";
 
     // The texts shaped with each font by the reference shaper, as (text, features). The texts are chosen for what
     // shaping does to them: kerning, ligatures, marks that compose or are attached, characters without visible form,
@@ -2126,12 +2126,12 @@ internal static partial class FontCorpus
             {
                 ["origin"] = "external",
                 ["license"] = "Apache-2.0",
-                ["author"] = "Google Inc. and Christian Robertson (Droid Sans, Open Sans, Roboto), subset by hb-subset; expectations from FreeType 2.13.2",
+                ["author"] = "Google Inc. and Christian Robertson (Droid Sans, Open Sans, Roboto), subset by hb-subset, made variable by fontTools; expectations from FreeType 2.13.2",
                 ["source"] = "https://github.com/google/fonts (apache/droidsans, apache/opensans and apache/roboto at the commits of font-suites/truetype-hinting/README.md)",
             },
             ["fileCount"] = fileCount,
             ["sha256"] = hash,
-            ["description"] = "Three fonts hinted by hand with TrueType instructions, subset to Basic Latin, and the advance and the hinted points FreeType gives for each glyph at ten sizes with its version 40 interpreter for black and white pixels.",
+            ["description"] = "Three fonts hinted by hand with TrueType instructions, subset to Basic Latin, two variable fonts made of them (gvar and cvar), and the advance and the hinted points FreeType gives for each glyph at ten sizes (five sizes and four instances for the variable fonts) with its version 40 interpreter for black and white pixels.",
         };
     }
 

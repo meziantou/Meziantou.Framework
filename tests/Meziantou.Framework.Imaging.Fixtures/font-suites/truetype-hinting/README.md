@@ -1,7 +1,7 @@
 # TrueType hinting suite
 
-Three fonts hinted by hand with TrueType instructions, and the points FreeType gives for each of their glyphs once
-hinted: the expectations of `HintingConformanceTests`.
+Three fonts hinted by hand with TrueType instructions, two variable fonts made of them, and the points FreeType gives
+for each of their glyphs once hinted: the expectations of `HintingConformanceTests`.
 
 | File | Font | Source (Apache License 2.0) |
 | --- | --- | --- |
@@ -13,16 +13,24 @@ The fonts are Copyright Google Inc. and Christian Robertson (Roboto), licensed u
 (`LICENSES/Apache-2.0.txt`). They are modified: subset to Basic Latin (U+0020 to U+007E) by `hb-subset` of
 HarfBuzz 14.6.0, which keeps the instructions.
 
+`DroidSans-Variable.ttf` and `Roboto-Variable.ttf` are the subsets of Droid Sans and Roboto made variable by fontTools:
+two axes (`wght` from 100 to 900, default 400; `wdth` from 68 to 132, default 100), deltas computed from the
+coordinates of the points for four regions (each end of `wght`, the wide end of `wdth`, and an intermediate region of
+both), some of them left out so that they are inferred, deltas for the control values (`cvar`), no `HVAR` table (the
+advances vary with the phantom points) and no `hdmx` table. Their expectations are for four instances (`instance <wght>
+<wdth>` lines) and five sizes; the normalized coordinates of the instances are exact in 2.14.
+
 `expected/<font>.txt` holds, for each size (9 to 16, 20 and 24 pixels per em) and each glyph, the advance and the
 points (26.6 pixels, and whether each one is on the curve) that FreeType 2.13.2 gives with its version 40
 interpreter for black and white pixels (`FT_LOAD_NO_BITMAP | FT_LOAD_NO_AUTOHINT | FT_LOAD_TARGET_MONO`):
 
 ```
 font <file> glyphs <count> upem <units per em>
+instance <value of each axis>     (variable fonts only)
 size <pixels per em>
 g <glyph> <advance> <point count> <index of the last point of each contour>
 <x>,<y>,<on curve> ...
 ```
 
 `tools/Meziantou.Framework.Imaging.CorpusGenerator/truetype_hinting.py` downloads the fonts, checks their SHA-256,
-subsets them and writes the expectations.
+subsets them, makes the variable fonts and writes the expectations.

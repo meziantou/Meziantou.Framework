@@ -16,9 +16,10 @@ public enum TextHinting
     Light = 1,
 
     /// <summary>
-    /// The TrueType instructions of the font fit the outlines along both axes, the advances are whole numbers of
-    /// pixels and each glyph starts on a whole pixel. A font without instructions (CFF outlines, or TrueType outlines
-    /// without a font program nor a control value program) and an instance of a variable font are hinted as with
+    /// The hints of the font fit the outlines, the advances are whole numbers of pixels and each glyph starts on a whole
+    /// pixel: the TrueType instructions along both axes (an instance of a variable font with its own outlines and
+    /// control values), the stem hints and the alignment zones of CFF and CFF2 outlines along the vertical axis.
+    /// TrueType outlines without instructions (no font program nor control value program) are hinted as with
     /// <see cref="Light"/>.
     /// </summary>
     Full = 2,

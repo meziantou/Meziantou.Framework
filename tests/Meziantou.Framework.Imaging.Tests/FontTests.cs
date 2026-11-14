@@ -3288,6 +3288,208 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void TheHintsOfACffGlyphAreThoseOfItsCharstring()
+    {
+        // fontTools reads the same stems and masks (subroutines included): a stem is its first edge and its width, a
+        // mask its bytes. Glyph 2 has the ghost hint 8 -21 (a bottom edge at -13), glyph 3 the ghost hint 21 -21.
+        var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.letters.otf").Face;
+        Assert.Equal("", GetHints(face, 1));
+        Assert.Equal("H-13/139 H8/-21 V73/132 M60 Ma0 M60", GetHints(face, 2));
+        Assert.Equal("H21/-21 H224/73 H658/75 V4/600", GetHints(face, 3));
+        Assert.Equal("H398/64 H547/62 H689/64 V152/80 V686/81", GetHints(face, 10));
+        Assert.Equal("H-78/55.5 H-78/62 H71/63 V488/73 V693/73 Mb8 M78", GetHints(face, 200));
+        Assert.Equal("H380/60 H548/59 H703/62 H706/59 V71/67 V216/68 V313/201 V439/75 Mde Mee Med Mdd", GetHints(face, 300));
+
+        // The hints do not change the outline.
+        for (var glyph = 0; glyph < face.GlyphCount; glyph += 37)
+        {
+            var recorder = new HintRecorder();
+            var budget = new GlyphBudget(FontResourceLimits.Default);
+            using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("test"));
+            face.DecodeOutline(glyph, recorder, scratch, ref budget);
+            Assert.Equal(GetFaceOutline(face, glyph), recorder.Outline.ToString());
+        }
+
+        // The private DICT of the font DICT of each glyph.
+        var latin = face.GetCffHintValues(2)!;
+        Assert.Equal([-13.0, 0, 543, 557, 733, 747], latin.BlueValues);
+        Assert.Equal([-250.0, -229], latin.OtherBlues);
+        Assert.Empty(latin.FamilyBlues);
+        Assert.Equal((0.039625, 7.0, 1.0, 69.0, 85.0), (latin.BlueScale, latin.BlueShift, latin.BlueFuzz, latin.StdHW, latin.StdVW));
+        Assert.Equal([69.0, 79, 88], latin.StemSnapH);
+        Assert.Equal([85.0, 95, 111], latin.StemSnapV);
+        var ideographs = face.GetCffHintValues(200)!;
+        Assert.Equal([-250.0, -250, 1100, 1100], ideographs.BlueValues);
+        Assert.Empty(ideographs.OtherBlues);
+        Assert.Equal((65.0, 75.0), (ideographs.StdHW, ideographs.StdVW));
+        Assert.Equal([39.0, 50, 65], ideographs.StemSnapH);
+    }
+
+    [Fact]
+    public void TheHintingValuesOfACff2FontAreBlended()
+    {
+        // The blue values of the font are blended for the 5 regions of its store; fontTools gives the values of the
+        // default instance and, for each one, a delta per region. At wght=0 (-1), only the second region applies, with
+        // the scalar 1.
+        var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/text-rendering-tests/AdobeVFPrototype-Subset.otf").Face;
+        var values = face.GetCffHintValues(1)!;
+        Assert.Equal([-20.0, 0, 487, 503, 515, 531, 536, 552, 624, 640, 652, 672, 711, 731], values.BlueValues);
+        Assert.Equal([-232.0, -222], values.OtherBlues);
+        Assert.Equal((0.0375, 7.0, 0.0, 74.0, 190.0), (values.BlueScale, values.BlueShift, values.BlueFuzz, values.StdHW, values.StdVW));
+        Assert.Equal([60.0, 74], values.StemSnapH);
+
+        var light = face.WithCoordinates([0, 0]).GetCffHintValues(1)!;
+        Assert.Equal([-13.0, 0, 470, 483, 534, 547, 556, 569, 654, 667, 677, 690, 738, 758], light.BlueValues);
+        Assert.Equal([-255.0, -245], light.OtherBlues);
+        Assert.Equal((26.0, 28.0), (light.StdHW, light.StdVW));
+        Assert.Equal([20.0, 26], light.StemSnapH);
+    }
+
+    [Fact]
+    public void ASubsetKeepsTheHintsOfTheCffGlyphs()
+    {
+        var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.letters.otf").Face;
+        var table = FontSubsetter.SubsetCff(face, [2, 200, 300], "Subset");
+        var cff = CffTable.Read(table);
+        foreach (var glyph in (int[])[2, 200, 300])
+        {
+            var recorder = new HintRecorder();
+            var budget = new GlyphBudget(FontResourceLimits.Default);
+            cff.Decode(table, glyph, recorder, ref budget);
+            Assert.Equal(GetHints(face, glyph), recorder.Hints);
+            var original = face.GetCffHintValues(glyph)!;
+            var subset = cff.GetHintValues(table, glyph);
+            Assert.Equal((original.BlueValues, original.OtherBlues, original.StemSnapH, original.StdHW), (subset.BlueValues, subset.OtherBlues, subset.StemSnapH, subset.StdHW));
+        }
+    }
+
+    [Fact]
+    public void TheHintsOfACffFontFitItsStemsToThePixels()
+    {
+        // Glyph 3: a ghost edge at 0 (the baseline zone), and the stems 224 to 297 and 658 to 733 (the top of the
+        // second one in the zone 733 to 747). At 12 pixels per em (0.012 pixel per unit, under the blue scale: no
+        // overshoot), the edges go to 0, 2.688 -> 3 (with a width of 1 pixel: 4), and 8.796 -> 9 (733 -> 8.796, the
+        // zone flat at 9; the stem 0.9 -> 1 pixel thick from 8).
+        var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.letters.otf").Face;
+        using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("test"));
+        using var hinter = GlyphHinter.Create(face, 12, GlyphHinting.Full, scratch, face.Data.Environment.CreateAllocator("hinter"));
+        Assert.Equal(GlyphHinting.Full, hinter.Hinting);
+        var unhinted = new PointRecorder();
+        var budget = new GlyphBudget(FontResourceLimits.Default);
+        face.DecodeOutline(3, unhinted, scratch, ref budget);
+        var hinted = new PointRecorder();
+        budget = new GlyphBudget(FontResourceLimits.Default);
+        var advance = hinter.DecodeOutline(3, hinted, scratch, ref budget);
+        Assert.Equal(Math.Round(face.GetAdvanceWidth(3) * 12.0 / face.UnitsPerEm, MidpointRounding.AwayFromZero), advance);
+        Assert.HasCount(unhinted.Points.Count, hinted.Points);
+        var scale = 12.0 / face.UnitsPerEm;
+        var edges = new Dictionary<double, double> { [0] = 0, [224] = 3, [297] = 4, [658] = 8, [733] = 9 };
+        var checkedEdges = 0;
+        for (var i = 0; i < hinted.Points.Count; i++)
+        {
+            // The horizontal coordinates do not change.
+            Assert.Equal(unhinted.Points[i].X, hinted.Points[i].X);
+            if (edges.TryGetValue(unhinted.Points[i].Y, out var pixels))
+            {
+                Assert.Equal(pixels, hinted.Points[i].Y * scale, 1e-9);
+                checkedEdges++;
+            }
+        }
+
+        Assert.True(checkedEdges >= 8, $"{checkedEdges} points on the edges");
+
+        // Above the blue scale (39.625 pixels per em), an overshoot keeps at least a pixel: at 50 pixels the round
+        // bottom of glyph 2 (-13, in the zone -13 to 0) is a pixel under the baseline.
+        using var large = GlyphHinter.Create(face, 50, GlyphHinting.Full, scratch, face.Data.Environment.CreateAllocator("hinter"));
+        var bottom = new PointRecorder();
+        budget = new GlyphBudget(FontResourceLimits.Default);
+        large.DecodeOutline(2, bottom, scratch, ref budget);
+        Assert.Equal(-1, bottom.Points.Min(point => point.Y) * 50 / face.UnitsPerEm, 1e-9);
+    }
+
+    [Fact]
+    public void AContourThatClosesWithACurveEndsWhereItStarted()
+    {
+        // The stems 0 to 100 and 550 to 650; the contour starts at (0, 0) with the first one, and its last curve comes
+        // back to (0, 0) with the second one, whose map would place the height 0 elsewhere (0.15 pixel lower at 13
+        // pixels per em).
+        var font = new FontBuilder { FamilyName = "Meziantou Hint Masks", PostScriptName = "MeziantouHintMasks-Regular", UnitsPerEm = 1000, CmapFormats = FontCmapFormats.Format4 };
+        var cff = new FontCffWriter();
+        font.AddGlyph(FontGlyph.Empty(500), -1);
+        cff.CharStrings.Add(new FontCharstring().Op(FontCharstring.EndChar).ToArray());
+        font.AddGlyph(FontGlyph.Empty(600), 'A');
+        cff.CharStrings.Add(new FontCharstring()
+            .Op(FontCharstring.HStemHM, 0, 100, 450, 100)
+            .Op(FontCharstring.HintMask).Raw(0x80)
+            .Op(FontCharstring.RMoveTo, 0, 0)
+            .Op(FontCharstring.RLineTo, 500, 0, 0, 600)
+            .Op(FontCharstring.HintMask).Raw(0x40)
+            .Op(FontCharstring.RRCurveTo, -250, 0, -250, -300, 0, -300)
+            .Op(FontCharstring.EndChar)
+            .ToArray());
+        cff.Apply(font);
+        var face = FontTestSupport.Load(font).Face;
+        using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("test"));
+        using var hinter = GlyphHinter.Create(face, 13, GlyphHinting.Full, scratch, face.Data.Environment.CreateAllocator("hinter"));
+        var hinted = new PointRecorder();
+        var budget = new GlyphBudget(FontResourceLimits.Default);
+        hinter.DecodeOutline(1, hinted, scratch, ref budget);
+        Assert.Equal(hinted.Points[0], hinted.Points[^1]);
+    }
+
+    private static string GetHints(FontFace face, int glyph)
+    {
+        var recorder = new HintRecorder();
+        var budget = new GlyphBudget(FontResourceLimits.Default);
+        using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("test"));
+        face.DecodeOutline(glyph, recorder, scratch, ref budget);
+        return recorder.Hints;
+    }
+
+    /// <summary>Records the outline of a glyph as an SVG path, and its hints as fontTools writes them.</summary>
+    private sealed class HintRecorder : OutlineSink, ICffHintSink
+    {
+        private readonly StringBuilder _stems = new();
+        private readonly StringBuilder _masks = new();
+
+        public FontTestSupport.SvgPathSink Outline { get; } = new();
+
+        public string Hints => (_stems.ToString() + _masks.ToString()).TrimEnd();
+
+        public void AddStem(bool isHorizontal, double edge, double width) => _stems.Append(CultureInfo.InvariantCulture, $"{(isHorizontal ? 'H' : 'V')}{edge}/{width} ");
+
+        public void SetMask(ReadOnlySpan<byte> mask, bool isCounterMask) => _masks.Append(isCounterMask ? 'C' : 'M').Append(Convert.ToHexStringLower(mask)).Append(' ');
+
+        public override void MoveTo(double x, double y) => Outline.MoveTo(x, y);
+
+        public override void LineTo(double x, double y) => Outline.LineTo(x, y);
+
+        public override void QuadraticTo(double controlX, double controlY, double x, double y) => Outline.QuadraticTo(controlX, controlY, x, y);
+
+        public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) => Outline.CubicTo(control1X, control1Y, control2X, control2Y, x, y);
+
+        public override void Close() => Outline.Close();
+    }
+
+    /// <summary>Records the points of an outline, in order.</summary>
+    private sealed class PointRecorder : OutlineSink
+    {
+        public List<(double X, double Y)> Points { get; } = [];
+
+        public override void MoveTo(double x, double y) => Points.Add((x, y));
+
+        public override void LineTo(double x, double y) => Points.Add((x, y));
+
+        public override void QuadraticTo(double controlX, double controlY, double x, double y) => Points.AddRange([(controlX, controlY), (x, y)]);
+
+        public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) => Points.AddRange([(control1X, control1Y), (control2X, control2Y), (x, y)]);
+
+        public override void Close()
+        {
+        }
+    }
+
+    [Fact]
     public void TrueTypeGlyphOutlinesReadTheGlyfTable()
     {
         var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/noto-sans/NotoSans-Regular.subset.ttf").Face;

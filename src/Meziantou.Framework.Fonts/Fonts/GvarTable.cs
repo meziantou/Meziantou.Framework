@@ -124,7 +124,7 @@ internal sealed class GvarTable
 
             var tupleData = FontBinary.Slice(data, serialized, size);
             serialized += size;
-            var scalar = GetScalar(peak, intermediate, coordinates);
+            var scalar = GetScalar(peak, intermediate, coordinates, _axisCount);
             if (scalar == 0)
                 continue;
 
@@ -176,11 +176,14 @@ internal sealed class GvarTable
         return table.Slice(_data + (int)start, (int)(end - start));
     }
 
-    /// <summary>Gets the scalar of the region of a tuple variation: "Algorithm for interpolation of instance values".</summary>
-    private double GetScalar(ReadOnlySpan<byte> peak, ReadOnlySpan<byte> intermediate, ReadOnlySpan<int> coordinates)
+    /// <summary>
+    /// Gets the scalar of the region of a tuple variation: "Algorithm for interpolation of instance values". The
+    /// <c>cvar</c> table has the same tuple variations (<see cref="CvarTable"/>).
+    /// </summary>
+    internal static double GetScalar(ReadOnlySpan<byte> peak, ReadOnlySpan<byte> intermediate, ReadOnlySpan<int> coordinates, int axisCount)
     {
         var scalar = 1.0;
-        for (var axis = 0; axis < _axisCount; axis++)
+        for (var axis = 0; axis < axisCount; axis++)
         {
             var peakValue = FontBinary.Int16(peak, axis * 2);
             if (peakValue == 0)
@@ -204,7 +207,7 @@ internal sealed class GvarTable
             else
             {
                 var start = FontBinary.Int16(intermediate, axis * 2);
-                var end = FontBinary.Int16(intermediate, (_axisCount * 2) + (axis * 2));
+                var end = FontBinary.Int16(intermediate, (axisCount * 2) + (axis * 2));
                 if (start > peakValue || peakValue > end || (start < 0 && end > 0))
                     continue;
 

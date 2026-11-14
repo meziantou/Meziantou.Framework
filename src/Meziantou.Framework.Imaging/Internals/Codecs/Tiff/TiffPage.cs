@@ -596,10 +596,15 @@ internal sealed class TiffPage
         if (IsPlanar && IsYCbCr && (YCbCr is not { HorizontalSubsampling: 1, VerticalSubsampling: 1 } || Compression is TiffFormat.CompressionJpeg or TiffFormat.CompressionOldJpeg or TiffFormat.CompressionJpeg2000))
             throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores subsampled or JPEG-compressed YCbCr data in separate planes; YCbCr planes are supported without subsampling and with the lossless compressions, and YCbCr data with chunky samples otherwise."), "PlanarConfiguration: 2 with YCbCr data");
 
-        // TIFF 6.0 only allows the reversed order for bilevel data (uncompressed or CCITT), where it is the order of fax devices
+        // The reversed order is the order of fax devices, which TIFF 6.0 recommends for bilevel data only. It reverses the bits
+        // of every stored byte, whatever the width of the samples, before the decompression (libtiff does the same); a JPEG
+        // or JPEG 2000 datastream has its own bit order, which libtiff never reverses, so the order is not defined there
         var fillOrder = Directory.TryGetUnsigned(TiffFormat.FillOrderTag, out var fillOrderValue) ? fillOrderValue : TiffFormat.FillOrderMostSignificantBitFirst;
-        if (fillOrder != TiffFormat.FillOrderMostSignificantBitFirst && !(fillOrder == TiffFormat.FillOrderLeastSignificantBitFirst && BitsPerPixel == 1))
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the fill order {fillOrder}; 1 (most significant bit first) is supported, and 2 for bilevel data."), string.Create(CultureInfo.InvariantCulture, $"FillOrder: {fillOrder}"));
+        if (fillOrder is not (TiffFormat.FillOrderMostSignificantBitFirst or TiffFormat.FillOrderLeastSignificantBitFirst))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the fill order {fillOrder}; 1 (most significant bit first) and 2 (least significant bit first) are supported."), string.Create(CultureInfo.InvariantCulture, $"FillOrder: {fillOrder}"));
+
+        if (fillOrder == TiffFormat.FillOrderLeastSignificantBitFirst && Compression is TiffFormat.CompressionJpeg or TiffFormat.CompressionOldJpeg or TiffFormat.CompressionJpeg2000)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the fill order 2 with {TiffFormat.GetCompressionName(Compression)} compression, whose datastream has its own bit order."), string.Create(CultureInfo.InvariantCulture, $"FillOrder: 2 with {TiffFormat.GetCompressionName(Compression)}"));
 
         IsLeastSignificantBitFirst = fillOrder == TiffFormat.FillOrderLeastSignificantBitFirst;
 

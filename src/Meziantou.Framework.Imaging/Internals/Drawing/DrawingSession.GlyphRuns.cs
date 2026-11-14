@@ -333,7 +333,7 @@ internal sealed partial class DrawingSession
         var canvas = ToCanvas(placement);
         if (glyph.IsMask)
         {
-            DrawMaskGlyph(brush, glyph, canvas, paint: !_isPreparing);
+            DrawMaskGlyph(brush, glyph, canvas, brush.CompositeMode, brush.BlendMode, paint: !_isPreparing);
             return;
         }
 

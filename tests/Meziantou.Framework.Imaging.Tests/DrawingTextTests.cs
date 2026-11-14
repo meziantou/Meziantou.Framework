@@ -695,6 +695,22 @@ public sealed class DrawingTextTests
 
         Assert.Equal([0, 0, 0, 0], painted.AsSpan(((11 * 16) + 2) * 4, 4).ToArray());
 
+        // In perspective, the glyph is drawn on an image of the plane, which the operator of the brush then combines with
+        // the canvas: the operator is not applied twice. Scaled twice, the last pixel of the first row of the mask, which
+        // is covered entirely, is interpolated only with itself at the pixel (22, 23); a transformation whose W changes
+        // by a billionth draws in perspective.
+        var sourceIn = new SolidBrush(new Rgba32(255, 0, 0)) { CompositeMode = CompositeMode.SourceIn };
+        foreach (var transform in (ProjectiveTransform[])[new ProjectiveTransform(2, 0, 0, 0, 2, 0, 3, 1, 1), new ProjectiveTransform(2, 0, 1e-9, 0, 2, 0, 3, 1, 1)])
+        {
+            var drawn = Render(PixelFormat.Rgba32, 40, 32, canvas =>
+            {
+                canvas.FillRectangle(White, new RectangleD(0, 0, 40, 32));
+                canvas.Transform(transform, inner => inner.FillText(sourceIn, "A", font, 16, new PointD(0, 0)));
+            });
+            var offset = ((23 * 40) + 22) * 4;
+            Assert.True(drawn[offset] >= 253 && drawn[offset + 1] <= 2 && drawn[offset + 2] <= 2 && drawn[offset + 3] >= 253, $"The pixel is ({drawn[offset]}, {drawn[offset + 1]}, {drawn[offset + 2]}, {drawn[offset + 3]})");
+        }
+
         // The mask is decoded as a black image whose opacity is the coverage.
         using var glyph = font.DecodeBitmapGlyph(new Rune('A'), 16);
         Assert.NotNull(glyph);

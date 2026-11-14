@@ -67,7 +67,7 @@ internal sealed partial class DrawingSession
                 placement = ToCanvas(placement);
                 if (glyph.IsMask)
                 {
-                    DrawMaskGlyph(layout.GetBrush(runBrush) ?? brush, glyph, placement, paint);
+                    DrawMaskGlyph(layout.GetBrush(runBrush) ?? brush, glyph, placement, mode, blend, paint);
                     continue;
                 }
 
@@ -125,7 +125,8 @@ internal sealed partial class DrawingSession
         placement = ToCanvas(placement);
         if (glyph.IsMask)
         {
-            DrawMaskGlyph(brush, glyph, placement, paint: true);
+            // On the image of the plane, which is drawn with the operator and the blend mode of the brush
+            DrawMaskGlyph(brush, glyph, placement, CompositeMode.SourceOver, BlendMode.Normal, paint: true);
             return;
         }
 
@@ -298,8 +299,10 @@ internal sealed partial class DrawingSession
     /// <param name="brush">The brush of the text.</param>
     /// <param name="glyph">The glyph, whose image is the mask.</param>
     /// <param name="placement">The placement of the glyph in the pixels of the canvas.</param>
+    /// <param name="mode">The operator that combines the glyph with what is under it.</param>
+    /// <param name="blend">The blend mode that mixes the color of the glyph with the color under it.</param>
     /// <param name="paint"><see langword="false"/> to only rent what the drawing needs.</param>
-    private void DrawMaskGlyph(Brush brush, ColorGlyph glyph, in Affine2D placement, bool paint)
+    private void DrawMaskGlyph(Brush brush, ColorGlyph glyph, in Affine2D placement, CompositeMode mode, BlendMode blend, bool paint)
     {
         _maskRow ??= ResampleWeights.Rent<uint>(_image.Owner.Scope, Width);
         ReadOnlySpan<double> box = [glyph.XMin, glyph.YMin, glyph.XMax, glyph.YMax];
@@ -327,7 +330,7 @@ internal sealed partial class DrawingSession
                     target[i] = (uint)Math.Round(coverage[i] * opacity, MidpointRounding.AwayFromZero);
                 }
 
-                PaintSpan(color, evaluator, brush.CompositeMode, brush.BlendMode, CoverageRasterizer.FullCoverage, y, rasterizer.X, target, brush.Opacity);
+                PaintSpan(color, evaluator, mode, blend, CoverageRasterizer.FullCoverage, y, rasterizer.X, target, brush.Opacity);
             }
         }
         finally

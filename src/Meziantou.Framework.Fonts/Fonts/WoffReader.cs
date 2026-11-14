@@ -31,7 +31,6 @@ internal static class WoffReader
         if (flavor == FontTags.Collection)
             throw FontErrors.Invalid("a WOFF file cannot contain a font collection.");
 
-        extendedData = WoffExtendedData.ReadWoff(data, header);
         var tableCount = FontBinary.UInt16(header, 12);
         var entries = FontBinary.Slice(data, HeaderLength, (long)tableCount * EntryLength);
 
@@ -53,12 +52,16 @@ internal static class WoffReader
             total += SfntWriter.Pad(originalLength);
         }
 
-        if (total > limits.MaxFontBytes)
-            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, total);
+        // The blocks the font keeps next to its tables count with them.
+        var fields = header[WoffExtendedData.WoffFieldsOffset..];
+        var retained = total + WoffExtendedData.GetRetainedLength(fields, data.Length);
+        if (retained > limits.MaxFontBytes)
+            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, retained);
 
         if (total > Array.MaxLength)
             throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, Array.MaxLength, total);
 
+        extendedData = WoffExtendedData.Create(data, fields, isBrotli: false);
         var font = new byte[total];
         SfntWriter.WriteHeader(font, flavor, tableCount);
         var position = (int)SfntWriter.GetDirectoryLength(tableCount);

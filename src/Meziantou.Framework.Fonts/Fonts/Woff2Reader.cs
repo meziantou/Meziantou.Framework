@@ -43,15 +43,17 @@ internal static class Woff2Reader
         if (FontBinary.UInt32(header, 8) != data.Length)
             throw FontErrors.Invalid("the WOFF2 file declares another length than its size.");
 
+        // The blocks the font keeps next to its tables count with them.
+        var fields = header[WoffExtendedData.Woff2FieldsOffset..];
+        var retainedBlockBytes = WoffExtendedData.GetRetainedLength(fields, data.Length);
         var cursor = HeaderLength;
-        var tables = ReadTableDirectory(data, ref cursor, tableCount, limits, out var sourceLength);
+        var tables = ReadTableDirectory(data, ref cursor, tableCount, limits, retainedBlockBytes, out var sourceLength);
         uint collectionVersion = 0;
         var faces = flavor == FontTags.Collection ? ReadCollectionDirectory(data, ref cursor, tableCount, out collectionVersion) : [new Face(flavor, CreateSequence(tableCount))];
         AssignTables(tables, faces, isCollection: flavor == FontTags.Collection);
 
         var compressed = FontBinary.Slice(data, cursor, compressedLength);
         EnsureNoExtraneousData(header, cursor + (long)compressedLength, data.Length);
-        extendedData = WoffExtendedData.ReadWoff2(data, header);
         var scope = environment.CreateAllocator("WOFF2");
         if (sourceLength > Array.MaxLength)
             throw new FontResourceLimitException(FontResourceLimitKind.LiveAllocationBytes, scope.Limit, sourceLength);
@@ -62,7 +64,9 @@ internal static class Woff2Reader
         var rebuilt = new FontByteWriter?[tableCount];
         try
         {
-            return Build(source.Span, tables, faces, flavor, collectionVersion, rebuilt, scope, limits);
+            var font = Build(source.Span, tables, faces, flavor, collectionVersion, rebuilt, scope, limits, retainedBlockBytes);
+            extendedData = WoffExtendedData.Create(data, fields, isBrotli: true);
+            return font;
         }
         finally
         {
@@ -99,7 +103,7 @@ internal static class Woff2Reader
     }
 
     /// <summary>Reads the table directory: section 4.1.</summary>
-    private static Table[] ReadTableDirectory(ReadOnlySpan<byte> data, ref int cursor, int tableCount, FontResourceLimits limits, out long sourceLength)
+    private static Table[] ReadTableDirectory(ReadOnlySpan<byte> data, ref int cursor, int tableCount, FontResourceLimits limits, long retainedBlockBytes, out long sourceLength)
     {
         var tables = new Table[tableCount];
         sourceLength = 0;
@@ -144,8 +148,8 @@ internal static class Woff2Reader
 
         // The tables that are copied are part of the font: more of them than a font can be is refused before the stream
         // is expanded.
-        if (copiedLength > limits.MaxFontBytes)
-            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, copiedLength);
+        if (copiedLength + retainedBlockBytes > limits.MaxFontBytes)
+            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, copiedLength + retainedBlockBytes);
 
         return tables;
     }
@@ -270,7 +274,7 @@ internal static class Woff2Reader
         }
     }
 
-    private static byte[] Build(ReadOnlySpan<byte> source, Table[] tables, Face[] faces, uint flavor, uint collectionVersion, FontByteWriter?[] rebuilt, FontAllocator scope, FontResourceLimits limits)
+    private static byte[] Build(ReadOnlySpan<byte> source, Table[] tables, Face[] faces, uint flavor, uint collectionVersion, FontByteWriter?[] rebuilt, FontAllocator scope, FontResourceLimits limits, long retainedBlockBytes)
     {
         // The length of each table of the font. The glyph tables are rebuilt first: their length is not known otherwise.
         for (var i = 0; i < tables.Length; i++)
@@ -330,8 +334,8 @@ internal static class Woff2Reader
             position += SfntWriter.Pad(tables[i].OutputLength);
         }
 
-        if (position > limits.MaxFontBytes)
-            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, position);
+        if (position + retainedBlockBytes > limits.MaxFontBytes)
+            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, position + retainedBlockBytes);
 
         if (position > Array.MaxLength)
             throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, Array.MaxLength, position);

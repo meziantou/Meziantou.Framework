@@ -14,8 +14,9 @@ namespace Meziantou.Framework.Fonts;
 /// private data is opaque to the font.
 /// </para>
 /// <para>
-/// The blocks are copied from the file when it is read, still compressed, and the metadata is expanded only when it is
-/// asked for: they are not needed to use the font, so a block that lies outside a WOFF file does not prevent the font
+/// The blocks are copied from the file when it is read, still compressed, and counted with the font against
+/// <see cref="FontResourceLimits.MaxFontBytes"/>. The metadata is expanded only when it is asked for, in a buffer rented
+/// from the environment: they are not needed to use the font, so a block that lies outside a WOFF file does not prevent the font
 /// from loading, and is reported when it is read.
 /// </para>
 /// </remarks>
@@ -28,7 +29,7 @@ internal sealed class WoffExtendedData
     private readonly byte[]? _privateData;
     private readonly string? _privateDataError;
 
-    private WoffExtendedData(ReadOnlySpan<byte> file, BlockLocation metadata, long metadataLength, BlockLocation privateData, bool isBrotli)
+    private WoffExtendedData(ReadOnlySpan<byte> file, BlockLocation metadata, uint metadataLength, BlockLocation privateData, bool isBrotli)
     {
         _isBrotli = isBrotli;
         if (metadata.Length != 0)
@@ -61,18 +62,42 @@ internal sealed class WoffExtendedData
         }
     }
 
-    /// <summary>Reads the location of the blocks from the header of a WOFF file, at offset 24.</summary>
-    public static WoffExtendedData? ReadWoff(ReadOnlySpan<byte> file, ReadOnlySpan<byte> header) => Create(file, header[24..], isBrotli: false);
+    /// <summary>The offset of the fields that locate the blocks in the header of a WOFF file.</summary>
+    public const int WoffFieldsOffset = 24;
 
-    /// <summary>Reads the location of the blocks from the header of a WOFF2 file, at offset 28.</summary>
-    public static WoffExtendedData? ReadWoff2(ReadOnlySpan<byte> file, ReadOnlySpan<byte> header) => Create(file, header[28..], isBrotli: true);
+    /// <summary>The offset of the fields that locate the blocks in the header of a WOFF2 file.</summary>
+    public const int Woff2FieldsOffset = 28;
 
-    /// <summary>Reads the five fields of the header that locate the blocks: metaOffset, metaLength, metaOrigLength, privOffset and privLength.</summary>
-    private static WoffExtendedData? Create(ReadOnlySpan<byte> file, ReadOnlySpan<byte> fields, bool isBrotli)
+    /// <summary>
+    /// Gets the bytes the font keeps for the blocks: the blocks that lie inside the file, still compressed. They are
+    /// counted with the font against <see cref="FontResourceLimits.MaxFontBytes"/> before anything is allocated.
+    /// </summary>
+    /// <param name="fields">The five fields of the header that locate the blocks.</param>
+    /// <param name="fileLength">The length of the file.</param>
+    public static long GetRetainedLength(ReadOnlySpan<byte> fields, long fileLength)
     {
-        var metadata = new BlockLocation(BinaryPrimitives.ReadUInt32BigEndian(fields), BinaryPrimitives.ReadUInt32BigEndian(fields[4..]));
-        var metadataLength = BinaryPrimitives.ReadUInt32BigEndian(fields[8..]);
-        var privateData = new BlockLocation(BinaryPrimitives.ReadUInt32BigEndian(fields[12..]), BinaryPrimitives.ReadUInt32BigEndian(fields[16..]));
+        var (metadata, metadataLength, privateData) = ReadLocations(fields);
+        long length = 0;
+        if (metadata.Length != 0 && metadataLength != 0 && metadata.IsInside(fileLength))
+        {
+            length += metadata.Length;
+        }
+
+        if (privateData.Length != 0 && privateData.IsInside(fileLength))
+        {
+            length += privateData.Length;
+        }
+
+        return length;
+    }
+
+    /// <summary>Copies the blocks of a WOFF file, at the locations the header gives.</summary>
+    /// <param name="file">The bytes of the file.</param>
+    /// <param name="fields">The five fields of the header that locate the blocks: metaOffset, metaLength, metaOrigLength, privOffset and privLength.</param>
+    /// <param name="isBrotli">Whether the metadata is compressed with Brotli (WOFF2) instead of zlib (WOFF).</param>
+    public static WoffExtendedData? Create(ReadOnlySpan<byte> file, ReadOnlySpan<byte> fields, bool isBrotli)
+    {
+        var (metadata, metadataLength, privateData) = ReadLocations(fields);
 
         // A block is absent when its length is zero; the specifications also set its offset to zero.
         if (metadata.Length == 0 && privateData.Length == 0)
@@ -81,8 +106,16 @@ internal sealed class WoffExtendedData
         return new WoffExtendedData(file, metadata, metadataLength, privateData, isBrotli);
     }
 
-    /// <summary>Expands the metadata document.</summary>
-    public string? GetMetadata(FontResourceLimits limits)
+    private static (BlockLocation Metadata, uint MetadataLength, BlockLocation PrivateData) ReadLocations(ReadOnlySpan<byte> fields)
+    {
+        var metadata = new BlockLocation(BinaryPrimitives.ReadUInt32BigEndian(fields), BinaryPrimitives.ReadUInt32BigEndian(fields[4..]));
+        var metadataLength = BinaryPrimitives.ReadUInt32BigEndian(fields[8..]);
+        var privateData = new BlockLocation(BinaryPrimitives.ReadUInt32BigEndian(fields[12..]), BinaryPrimitives.ReadUInt32BigEndian(fields[16..]));
+        return (metadata, metadataLength, privateData);
+    }
+
+    /// <summary>Expands the metadata document, in a buffer rented from the environment.</summary>
+    public string? GetMetadata(FontEnvironment environment)
     {
         if (_metadataError is not null)
             throw FontErrors.Invalid(_metadataError);
@@ -90,13 +123,16 @@ internal sealed class WoffExtendedData
         if (_metadata is null)
             return null;
 
+        var limits = environment.Limits;
         if (_metadataLength > limits.MaxFontBytes)
             throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, _metadataLength);
 
+        var scope = environment.CreateAllocator("WOFF metadata");
         if (_metadataLength > Array.MaxLength)
-            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, Array.MaxLength, _metadataLength);
+            throw new FontResourceLimitException(FontResourceLimitKind.LiveAllocationBytes, scope.Limit, _metadataLength);
 
-        var document = new byte[_metadataLength];
+        using var buffer = scope.Rent((int)_metadataLength, clear: false);
+        var document = buffer.Span[..(int)_metadataLength];
         if (_isBrotli)
         {
             Unbrotli(_metadata, document);

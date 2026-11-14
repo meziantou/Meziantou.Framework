@@ -40,10 +40,10 @@ public sealed class FontData
     /// The XML document of the metadata block, or <see langword="null"/> when the font was not read from a WOFF or WOFF2
     /// file or when the file has no metadata block. The document is not parsed nor validated.
     /// </returns>
-    /// <remarks>The block is kept compressed with the font and expanded at each call.</remarks>
+    /// <remarks>The block is kept compressed with the font and expanded at each call, in a buffer rented from <see cref="Environment"/>.</remarks>
     /// <exception cref="InvalidFontException">The metadata block lies outside the file or its compressed data is malformed.</exception>
-    /// <exception cref="FontResourceLimitException">The document is longer than <see cref="FontResourceLimits.MaxFontBytes"/>.</exception>
-    public string? GetWoffMetadata() => _woffExtendedData?.GetMetadata(Limits);
+    /// <exception cref="FontResourceLimitException">The document is longer than <see cref="FontResourceLimits.MaxFontBytes"/> or than the temporary buffers of the environment can hold.</exception>
+    public string? GetWoffMetadata() => _woffExtendedData?.GetMetadata(Environment);
 
     /// <summary>Gets the private data block of the WOFF or WOFF2 file the font was read from.</summary>
     /// <returns>The bytes of the block, which only the font vendor can interpret, or an empty value when the font was not read from a WOFF or WOFF2 file or when the file has no private data block.</returns>

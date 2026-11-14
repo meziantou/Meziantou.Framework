@@ -17,10 +17,11 @@ public sealed class JsSharedDataBlock
     private readonly Lock _growLock = new();
     private int _byteLength;
 
-    private JsSharedDataBlock(byte[] data, int offset, int byteLength, int? maxByteLength)
+    private JsSharedDataBlock(byte[] data, int offset, nint address, int byteLength, int? maxByteLength)
     {
         _data = data;
         _offset = offset;
+        Address = address;
         _byteLength = byteLength;
         MaxByteLength = maxByteLength;
     }
@@ -33,6 +34,21 @@ public sealed class JsSharedDataBlock
 
     /// <summary>Gets whether the block is growable.</summary>
     public bool IsGrowable => MaxByteLength is not null;
+
+    /// <summary>
+    /// Gets the address of the first byte of the block, which never changes: the memory is pinned and allocated for the
+    /// maximum byte length, so that native code can share it (e.g. the memory of a WebAssembly runtime). The address is
+    /// valid while the block is alive.
+    /// </summary>
+    public nint Address { get; }
+
+    /// <summary>
+    /// Gets or sets the waiters of another runtime that shares the memory of the block (e.g. a shared WebAssembly memory),
+    /// which <c>Atomics.wait</c>, <c>Atomics.waitAsync</c> and <c>Atomics.notify</c> then use instead of the waiter lists of
+    /// the engines; <see langword="null"/> (the default) for the waiter lists of the engines. Set it before the
+    /// SharedArrayBuffer objects of the block are given to the scripts: the waiters of the engines are not moved.
+    /// </summary>
+    public JsSharedDataBlockWaiters? Waiters { get; set; }
 
     /// <summary>CreateSharedByteDataBlock(size): a zeroed block, or null when the memory cannot be allocated.</summary>
     /// <param name="byteLength">The initial byte length.</param>
@@ -71,7 +87,7 @@ public sealed class JsSharedDataBlock
 
         var offset = (int)((Alignment - (address % Alignment)) % Alignment);
         data.AsSpan(offset, byteLength).Clear();
-        return new JsSharedDataBlock(data, offset, byteLength, maxByteLength);
+        return new JsSharedDataBlock(data, offset, (nint)(address + (nuint)offset), byteLength, maxByteLength);
     }
 
     /// <summary>Gets the bytes of the block (its current byte length).</summary>

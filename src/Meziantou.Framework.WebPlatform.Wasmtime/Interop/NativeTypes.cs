@@ -112,6 +112,10 @@ internal struct WasmtimeExtern
 
     [FieldOffset(8)]
     public WasmtimeIndexedExtern Tag;
+
+    /// <summary>A <c>wasmtime_sharedmemory_t*</c>: the extern owns it.</summary>
+    [FieldOffset(8)]
+    public nint SharedMemory;
 }
 
 /// <summary><c>wasmtime_anyref_t</c>, <c>wasmtime_externref_t</c>, <c>wasmtime_exnref_t</c>: a rooted reference to a GC object (the null reference has a store id of 0).</summary>

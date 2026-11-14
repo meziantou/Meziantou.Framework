@@ -375,6 +375,24 @@ public sealed partial class JsEngine
         return remaining;
     }
 
+    /// <summary>
+    /// Creates a cancellation token source canceled when the cancellation token of the engine or of an execution scope of
+    /// the running entry is canceled: an operation that blocks the thread outside of the engine stops with them.
+    /// </summary>
+    internal CancellationTokenSource CreateInterruptCancellationTokenSource()
+    {
+        var tokens = new List<CancellationToken> { Options.CancellationToken };
+        foreach (var scope in _executionScopes)
+        {
+            if (scope.Limits.CancellationToken.CanBeCanceled)
+            {
+                tokens.Add(scope.Limits.CancellationToken);
+            }
+        }
+
+        return CancellationTokenSource.CreateLinkedTokenSource([.. tokens]);
+    }
+
     /// <summary>Gets whether an execution scope of the running entry has a cancellation token that can be canceled.</summary>
     internal bool HasCancelableExecutionScope
     {

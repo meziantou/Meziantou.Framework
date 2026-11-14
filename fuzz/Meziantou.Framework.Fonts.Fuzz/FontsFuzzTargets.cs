@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.IO.Compression;
 using Meziantou.Framework.Fuzzing;
 
 namespace Meziantou.Framework.Fonts.Fuzz;
@@ -111,6 +112,13 @@ public static class FontsFuzzTargets
         "latn", "arab", "DFLT", "dflt", "TRK ", "\0\0", "\0\x01", "\xFF\xFF",
     ];
 
+    // The signatures of the containers, a zlib header and the tokens of a WOFF metadata document
+    private static readonly string[] WoffBlocksTokens =
+    [
+        "wOFF", "wOF2", "\0\x01\0\0", "OTTO", "x\xDA", "x\x9C", "\xEF\xBB\xBF",
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>", "<metadata version=\"1.0\">", "</metadata>", "<vendor name=\"", "<text xml:lang=\"", "\"/>",
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("fonts-hinting", Hinting) { Seeds = GetHintingSeeds },
@@ -120,7 +128,151 @@ public static class FontsFuzzTargets
         new("fonts-split-runs", SplitRuns) { Seeds = GetSplitRunsSeeds, Dictionary = SplitRunsTokens },
         new("fonts-svg-table", ReadSvgTable) { Seeds = GetSvgTableSeeds, Dictionary = SvgTokens },
         new("fonts-svg-document", ExpandSvgDocument) { Seeds = GetSvgDocumentSeeds, Dictionary = SvgTokens },
+        new("fonts-woff-blocks", WoffBlocks) { Seeds = GetWoffBlocksSeeds, Dictionary = WoffBlocksTokens },
     ];
+
+    /// <summary>
+    /// Loads a font file from a span and from a stream, which expand a WOFF2 file by two code paths, then reads the
+    /// metadata and the private data of the file. Both paths must agree, the blocks must only throw
+    /// <see cref="FontException"/>, the private data cannot be longer than the file, and the blocks read the same at
+    /// each call.
+    /// </summary>
+    private static void WoffBlocks(ReadOnlySpan<byte> data)
+    {
+        var copy = data.ToArray();
+        var fromSpan = LoadOutcome(() => FontLoader.Load((ReadOnlySpan<byte>)copy, SharedEnvironment));
+        var fromStream = LoadOutcome(() => FontLoader.Load(new MemoryStream(copy, writable: false), SharedEnvironment));
+        FuzzAssert.Equal(fromSpan.Error, fromStream.Error, "A font file loads differently from a span and from a stream");
+        if (fromSpan.Faces is null || fromStream.Faces is null)
+            return;
+
+        var spanData = fromSpan.Faces[0].Data;
+        var streamData = fromStream.Faces[0].Data;
+        FuzzAssert.True(spanData.Bytes.Span.SequenceEqual(streamData.Bytes.Span), "A font file expands to other bytes from a span and from a stream");
+
+        var metadata = ReadMetadata(spanData);
+        FuzzAssert.Equal(metadata, ReadMetadata(streamData), "The metadata of a WOFF file reads differently from a span and from a stream");
+        FuzzAssert.Equal(metadata, ReadMetadata(spanData), "The metadata of a WOFF file reads differently at the second call");
+        if (metadata.Text is not null)
+        {
+            FuzzAssert.True(metadata.Text.Length <= Limits.MaxFontBytes, "The metadata of a WOFF file is longer than the limit of the bytes of a font");
+        }
+
+        var privateData = ReadPrivateData(spanData);
+        FuzzAssert.Equal(privateData.Error, ReadPrivateData(streamData).Error, "The private data of a WOFF file reads differently from a span and from a stream");
+        if (privateData.Bytes is not null)
+        {
+            FuzzAssert.True(privateData.Bytes.Length <= data.Length, "The private data of a WOFF file is longer than the file");
+            FuzzAssert.True(privateData.Bytes.AsSpan().SequenceEqual(ReadPrivateData(streamData).Bytes), "The private data of a WOFF file reads differently from a span and from a stream");
+            FuzzAssert.True(data.IndexOf(privateData.Bytes) >= 0, "The private data of a WOFF file is not a part of the file");
+        }
+
+        static (string? Error, FontFace[]? Faces) LoadOutcome(Func<FontFace[]> load)
+        {
+            try
+            {
+                return (null, load());
+            }
+            catch (FontException exception)
+            {
+                return (exception.GetType().Name, null);
+            }
+        }
+
+        static (string? Error, string? Text) ReadMetadata(FontData data)
+        {
+            try
+            {
+                return (null, data.GetWoffMetadata());
+            }
+            catch (FontException exception)
+            {
+                return (exception.GetType().Name + ": " + exception.Message, null);
+            }
+        }
+
+        static (string? Error, byte[]? Bytes) ReadPrivateData(FontData data)
+        {
+            try
+            {
+                return (null, data.GetWoffPrivateData().ToArray());
+            }
+            catch (FontException exception)
+            {
+                return (exception.GetType().Name + ": " + exception.Message, null);
+            }
+        }
+    }
+
+    /// <summary>The containers of the font seeds, with and without a metadata block and a private data block.</summary>
+    private static IEnumerable<FuzzSeed> GetWoffBlocksSeeds()
+    {
+        var metadata = "\uFEFF<?xml version=\"1.0\" encoding=\"UTF-8\"?><metadata version=\"1.0\"><vendor name=\"Meziantou \u00E9\"/></metadata>"u8.ToArray();
+        byte[] privateData = [1, 2, 3, 4, 5];
+        foreach (var seed in GetFontSeeds())
+        {
+            var file = seed.Data.ToArray();
+            var signature = BinaryPrimitives.ReadUInt32BigEndian(file);
+            if (signature is not (FontTags.Woff or FontTags.Woff2))
+                continue;
+
+            var isWoff2 = signature == FontTags.Woff2;
+            yield return seed;
+            yield return new FuzzSeed("metadata-" + seed.Name, AppendBlocks(file, isWoff2, metadata, privateData: null));
+            yield return new FuzzSeed("private-" + seed.Name, AppendBlocks(file, isWoff2, metadata: null, privateData));
+            yield return new FuzzSeed("both-" + seed.Name, AppendBlocks(file, isWoff2, metadata, privateData));
+        }
+    }
+
+    /// <summary>Appends the blocks to a WOFF or WOFF2 file that has none, each at a 4-byte boundary, and updates its header.</summary>
+    private static byte[] AppendBlocks(byte[] file, bool isWoff2, byte[]? metadata, byte[]? privateData)
+    {
+        var fields = isWoff2 ? 28 : 24;
+        using var output = new MemoryStream();
+        output.Write(file);
+        var header = new byte[20];
+        if (metadata is not null)
+        {
+            byte[] compressed;
+            using (var buffer = new MemoryStream())
+            {
+                using (Stream compressor = isWoff2 ? new BrotliStream(buffer, CompressionLevel.SmallestSize, leaveOpen: true) : new ZLibStream(buffer, CompressionLevel.SmallestSize, leaveOpen: true))
+                {
+                    compressor.Write(metadata);
+                }
+
+                compressed = buffer.ToArray();
+            }
+
+            Pad(output);
+            BinaryPrimitives.WriteUInt32BigEndian(header, (uint)output.Length);
+            BinaryPrimitives.WriteUInt32BigEndian(header.AsSpan(4), (uint)compressed.Length);
+            BinaryPrimitives.WriteUInt32BigEndian(header.AsSpan(8), (uint)metadata.Length);
+            output.Write(compressed);
+        }
+
+        if (privateData is not null)
+        {
+            Pad(output);
+            BinaryPrimitives.WriteUInt32BigEndian(header.AsSpan(12), (uint)output.Length);
+            BinaryPrimitives.WriteUInt32BigEndian(header.AsSpan(16), (uint)privateData.Length);
+            output.Write(privateData);
+        }
+
+        Pad(output);
+        var result = output.ToArray();
+        header.CopyTo(result, fields);
+        BinaryPrimitives.WriteUInt32BigEndian(result.AsSpan(8), (uint)result.Length);
+        return result;
+
+        static void Pad(MemoryStream stream)
+        {
+            while (stream.Length % 4 != 0)
+            {
+                stream.WriteByte(0);
+            }
+        }
+    }
 
     /// <summary>Hints the glyphs of a font file: option bytes give the hinting mode and the size.</summary>
     private static void Hinting(ReadOnlySpan<byte> data)

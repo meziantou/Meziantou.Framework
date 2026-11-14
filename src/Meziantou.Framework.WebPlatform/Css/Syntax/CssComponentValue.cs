@@ -13,11 +13,57 @@ internal abstract class CssComponentValue
 }
 
 /// <summary>https://drafts.csswg.org/css-syntax-3/#preserved-tokens</summary>
-internal sealed class CssPreservedToken(CssToken token) : CssComponentValue
+/// <remarks>
+/// The fields of the token are stored in the component value, which has its own position, instead of a <see cref="CssToken"/>:
+/// there is one per token of a style sheet, so its size matters.
+/// </remarks>
+internal sealed class CssPreservedToken : CssComponentValue
 {
-    public CssToken Token { get; } = token;
+    private readonly long _numericBits;
 
-    public CssTokenType Type => Token.Type;
+    public CssPreservedToken(CssToken token)
+    {
+        Value = token.Value;
+        _numericBits = token.NumericBits;
+        Sign = token.Sign;
+        Type = token.Type;
+        IsInteger = token.IsInteger;
+        IsIdHash = token.IsIdHash;
+    }
+
+    /// <summary>The token, at the position of the component value.</summary>
+    public CssToken Token => new()
+    {
+        Type = Type,
+        Value = Value,
+        NumericBits = _numericBits,
+        IsInteger = IsInteger,
+        Sign = Sign,
+        IsIdHash = IsIdHash,
+        Start = Start,
+        End = End,
+    };
+
+    public CssTokenType Type { get; }
+
+    /// <inheritdoc cref="CssToken.Value"/>
+    public string Value { get; }
+
+    /// <inheritdoc cref="CssToken.NumericValue"/>
+    public double NumericValue => BitConverter.Int64BitsToDouble(_numericBits);
+
+    /// <inheritdoc cref="CssToken.IsInteger"/>
+    public bool IsInteger { get; }
+
+    /// <inheritdoc cref="CssToken.Sign"/>
+    public char Sign { get; }
+
+    /// <inheritdoc cref="CssToken.IsIdHash"/>
+    public bool IsIdHash { get; }
+
+    public bool IsDelim(char c) => Type == CssTokenType.Delim && Value.Length == 1 && Value[0] == c;
+
+    public bool IsIdent(string value) => Type == CssTokenType.Ident && Infra.InfraAscii.EqualsIgnoreAsciiCase(Value, value);
 
     public override string ToString() => Token.ToString();
 }

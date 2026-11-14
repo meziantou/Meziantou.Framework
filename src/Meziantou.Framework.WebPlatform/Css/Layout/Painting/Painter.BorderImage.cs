@@ -258,10 +258,10 @@ internal sealed partial class Painter
             switch (component)
             {
                 case CssPreservedToken { Type: CssTokenType.Number } number:
-                    parsed.Add(new FourValue(number.Token.NumericValue, null, IsAuto: false));
+                    parsed.Add(new FourValue(number.NumericValue, null, IsAuto: false));
                     break;
 
-                case CssPreservedToken { Type: CssTokenType.Ident } ident when Infra.InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "auto"):
+                case CssPreservedToken { Type: CssTokenType.Ident } ident when Infra.InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "auto"):
                     parsed.Add(new FourValue(null, null, IsAuto: true));
                     break;
 

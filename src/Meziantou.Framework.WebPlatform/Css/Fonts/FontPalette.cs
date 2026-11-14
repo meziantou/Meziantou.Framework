@@ -204,14 +204,14 @@ internal sealed class FontPalette
         {
             // "This keyword causes the user-agent to use the first available palette in the font file marked this way. If [...]
             // no palette in the font is marked this way, this value behaves as normal."
-            case [CssPreservedToken { Type: CssTokenType.Ident } keyword] when keyword.Token.IsIdent("light") && glyphs.LightPalette is { } light:
+            case [CssPreservedToken { Type: CssTokenType.Ident } keyword] when keyword.IsIdent("light") && glyphs.LightPalette is { } light:
                 return GetFontPalette(glyphs, light);
 
-            case [CssPreservedToken { Type: CssTokenType.Ident } keyword] when keyword.Token.IsIdent("dark") && glyphs.DarkPalette is { } dark:
+            case [CssPreservedToken { Type: CssTokenType.Ident } keyword] when keyword.IsIdent("dark") && glyphs.DarkPalette is { } dark:
                 return GetFontPalette(glyphs, dark);
 
             // "If no applicable @font-palette-values rule is present, this value behaves as normal."
-            case [CssPreservedToken { Type: CssTokenType.Ident } identifier] when identifier.Token.Value.StartsWith("--", StringComparison.Ordinal) && FindRule(style, families, identifier.Token.Value) is { } rule:
+            case [CssPreservedToken { Type: CssTokenType.Ident } identifier] when identifier.Value.StartsWith("--", StringComparison.Ordinal) && FindRule(style, families, identifier.Value) is { } rule:
                 return ApplyRule(style, glyphs, rule);
 
             case [CssFunction function] when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "palette-mix") && depth < MaxMixDepth && Mix(style, glyphs, families, function, depth) is { } mixed:
@@ -329,10 +329,10 @@ internal sealed class FontPalette
         if (value is [CssFunction { Value: var argument } function] && InfraAscii.EqualsIgnoreAsciiCase(function.Name, "calc"))
             return GetInteger(ValueMatcher.RemoveWhitespace(argument));
 
-        if (value is [CssPreservedToken { Type: CssTokenType.Number } number] && number.Token.NumericValue >= 0)
+        if (value is [CssPreservedToken { Type: CssTokenType.Number } number] && number.NumericValue >= 0)
         {
             // https://drafts.csswg.org/css-values-4/#calc-type-checking: the result of a math function is rounded to the nearest integer
-            var rounded = Math.Floor(number.Token.NumericValue + 0.5);
+            var rounded = Math.Floor(number.NumericValue + 0.5);
             return rounded > int.MaxValue ? int.MaxValue : (int)rounded;
         }
 
@@ -349,7 +349,7 @@ internal sealed class FontPalette
         var arguments = CssValueComputer.SplitArguments(function.Value);
         string? method = null;
         var start = 0;
-        if (arguments is [[CssPreservedToken { Type: CssTokenType.Ident } first, ..], ..] && first.Token.IsIdent("in"))
+        if (arguments is [[CssPreservedToken { Type: CssTokenType.Ident } first, ..], ..] && first.IsIdent("in"))
         {
             // (the arguments are split without their whitespace)
             method = string.Join(' ', arguments[0].Select(static component => CssSerializer.SerializeValue([component], property: null)));

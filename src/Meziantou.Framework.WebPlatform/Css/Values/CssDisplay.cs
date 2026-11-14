@@ -102,7 +102,7 @@ internal static class CssDisplay
             return null;
 
         var start = display.IndexOf('(', StringComparison.Ordinal) + 1;
-        return Syntax.CssParser.ParseListOfComponentValues(display[start..^1]) is [Syntax.CssPreservedToken { Type: Syntax.CssTokenType.Ident } name] ? name.Token.Value : null;
+        return Syntax.CssParser.ParseListOfComponentValues(display[start..^1]) is [Syntax.CssPreservedToken { Type: Syntax.CssTokenType.Ident } name] ? name.Value : null;
     }
 
     /// <summary>https://drafts.csswg.org/css-display/#blockify: the display of a canonical value is block-level.</summary>

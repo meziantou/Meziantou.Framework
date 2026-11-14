@@ -751,9 +751,9 @@ internal static partial class Accessibility
             {
                 if (value is Css.Syntax.CssPreservedToken { Type: Css.Syntax.CssTokenType.String } stringToken)
                 {
-                    builder.Append(stringToken.Token.Value);
+                    builder.Append(stringToken.Value);
                 }
-                else if (value is Css.Syntax.CssPreservedToken slash && slash.Token.IsDelim('/'))
+                else if (value is Css.Syntax.CssPreservedToken slash && slash.IsDelim('/'))
                 {
                     // The alternative text of the content replaces it
                     builder.Clear();
@@ -779,7 +779,7 @@ internal static partial class Accessibility
             if (arguments.Count == 0 || arguments[0] is not [Css.Syntax.CssPreservedToken { Type: Css.Syntax.CssTokenType.Ident } name])
                 return null;
 
-            var separator = isCounters && arguments.Count > 1 && arguments[1] is [Css.Syntax.CssPreservedToken { Type: Css.Syntax.CssTokenType.String } separatorToken] ? separatorToken.Token.Value : null;
+            var separator = isCounters && arguments.Count > 1 && arguments[1] is [Css.Syntax.CssPreservedToken { Type: Css.Syntax.CssTokenType.String } separatorToken] ? separatorToken.Value : null;
             if (isCounters && separator is null)
                 return null;
 
@@ -787,8 +787,8 @@ internal static partial class Accessibility
             var styleIndex = isCounters ? 2 : 1;
             var counterStyle = (arguments.Count > styleIndex ? counters.ResolveCounterStyle(arguments[styleIndex], style, "content") : null) ?? CounterStyle.Decimal;
             return isCounters
-                ? counters.GetCounters(element, pseudoElement, name.Token.Value, separator!, counterStyle, style)
-                : counters.GetCounter(element, pseudoElement, name.Token.Value, counterStyle, style);
+                ? counters.GetCounters(element, pseudoElement, name.Value, separator!, counterStyle, style)
+                : counters.GetCounter(element, pseudoElement, name.Value, counterStyle, style);
         }
 
         /// <summary>

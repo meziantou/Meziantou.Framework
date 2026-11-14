@@ -33,7 +33,7 @@ internal static class CssGrid
             case "grid-template-areas":
                 return significant is [CssPreservedToken { Type: CssTokenType.Ident }] ? "none" : SerializeAreas(significant) ?? "";
 
-            case "grid-template-rows" or "grid-template-columns" when significant is [CssPreservedToken { Type: CssTokenType.Ident } first, ..] && first.Token.IsIdent("subgrid"):
+            case "grid-template-rows" or "grid-template-columns" when significant is [CssPreservedToken { Type: CssTokenType.Ident } first, ..] && first.IsIdent("subgrid"):
             {
                 // https://drafts.csswg.org/css-grid-2/#typedef-line-name-list: "subgrid <line-name-list>?" with at most one
                 // repeat(auto-fill, ...); the empty line names are kept (each one names a line of the subgrid)
@@ -41,7 +41,7 @@ internal static class CssGrid
                 foreach (var value in significant)
                 {
                     if (value is CssFunction function && InfraAscii.EqualsIgnoreAsciiCase(function.Name, "repeat") &&
-                        SplitAtComma(ValueMatcher.RemoveWhitespace(function.Value)) is [[CssPreservedToken count], _] && count.Token.IsIdent("auto-fill"))
+                        SplitAtComma(ValueMatcher.RemoveWhitespace(function.Value)) is [[CssPreservedToken count], _] && count.IsIdent("auto-fill"))
                     {
                         autoFill++;
                     }
@@ -55,8 +55,8 @@ internal static class CssGrid
 
             case "grid-auto-flow":
             {
-                var column = significant.Exists(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent("column"));
-                var dense = significant.Exists(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent("dense"));
+                var column = significant.Exists(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.IsIdent("column"));
+                var dense = significant.Exists(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.IsIdent("dense"));
                 return column ? dense ? "column dense" : "column" : dense ? "dense" : "row";
             }
 
@@ -78,7 +78,7 @@ internal static class CssGrid
         var rows = new List<List<string>>();
         foreach (var value in strings)
         {
-            if (value is not CssPreservedToken { Type: CssTokenType.String } stringToken || TokenizeAreaString(stringToken.Token.Value) is not { Count: > 0 } cells)
+            if (value is not CssPreservedToken { Type: CssTokenType.String } stringToken || TokenizeAreaString(stringToken.Value) is not { Count: > 0 } cells)
                 return null;
 
             if (rows.Count > 0 && cells.Count != rows[0].Count)
@@ -211,7 +211,7 @@ internal static class CssGrid
 
     private static string? SerializeLineNames(CssSimpleBlock block) => GetLineNames(block) is { Count: > 0 } names ? "[" + string.Join(' ', names) + "]" : null;
 
-    private static List<string> GetLineNames(CssSimpleBlock block) => [.. ValueMatcher.RemoveWhitespace(block.Value).Select(v => CssSerializer.SerializeIdentifier(((CssPreservedToken)v).Token.Value))];
+    private static List<string> GetLineNames(CssSimpleBlock block) => [.. ValueMatcher.RemoveWhitespace(block.Value).Select(v => CssSerializer.SerializeIdentifier(((CssPreservedToken)v).Value))];
 
     /// <summary>
     /// https://drafts.csswg.org/css-grid/#typedef-grid-row-start-grid-line: span, then the integer, then the name; the
@@ -222,9 +222,9 @@ internal static class CssGrid
         if (values is [CssPreservedToken { Type: CssTokenType.Ident }])
             return CssSerializer.SerializeValue(values, property);
 
-        var span = values.Exists(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent("span"));
+        var span = values.Exists(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.IsIdent("span"));
         var integer = values.Find(v => v is CssPreservedToken { Type: CssTokenType.Number } or CssFunction);
-        var name = values.Find(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && !ident.Token.IsIdent("span"));
+        var name = values.Find(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && !ident.IsIdent("span"));
         var parts = new List<string>(3);
         if (span)
         {
@@ -280,13 +280,13 @@ internal static class CssGrid
         {
             if (value is CssPreservedToken { Type: CssTokenType.String } stringToken)
             {
-                areas = stringToken.Token.Value;
+                areas = stringToken.Value;
             }
-            else if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Token.Value) is "normal" or "row" or "column" or "fill-reverse" or "track-reverse")
+            else if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Value) is "normal" or "row" or "column" or "fill-reverse" or "track-reverse")
             {
-                direction.Add(InfraAscii.ToAsciiLowercase(ident.Token.Value));
+                direction.Add(InfraAscii.ToAsciiLowercase(ident.Value));
             }
-            else if (value is not CssPreservedToken { Type: CssTokenType.Ident } noneIdent || !noneIdent.Token.IsIdent("none"))
+            else if (value is not CssPreservedToken { Type: CssTokenType.Ident } noneIdent || !noneIdent.IsIdent("none"))
             {
                 tracks.Add(value);
             }
@@ -336,7 +336,7 @@ internal static class CssGrid
 
             foreach (var value in strings)
             {
-                if (value is not CssPreservedToken { Type: CssTokenType.String } stringToken || TokenizeAreaString(stringToken.Token.Value) is not { } row || (isRow && row.Count != 1))
+                if (value is not CssPreservedToken { Type: CssTokenType.String } stringToken || TokenizeAreaString(stringToken.Value) is not { } row || (isRow && row.Count != 1))
                     return null;
 
                 cells.AddRange(row);
@@ -412,7 +412,7 @@ internal static class CssGrid
     /// </summary>
     private static Dictionary<string, string>? ExpandTemplate(List<CssComponentValue> significant)
     {
-        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } none] && none.Token.IsIdent("none"))
+        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } none] && none.IsIdent("none"))
             return new(StringComparer.Ordinal) { ["grid-template-rows"] = "none", ["grid-template-columns"] = "none", ["grid-template-areas"] = "none" };
 
         var parts = SplitAtSlash(significant);
@@ -565,9 +565,9 @@ internal static class CssGrid
         var autoFlow = false;
         var dense = false;
         var position = 0;
-        while (position < values.Count && values[position] is CssPreservedToken { Type: CssTokenType.Ident } ident && (ident.Token.IsIdent("auto-flow") || ident.Token.IsIdent("dense")))
+        while (position < values.Count && values[position] is CssPreservedToken { Type: CssTokenType.Ident } ident && (ident.IsIdent("auto-flow") || ident.IsIdent("dense")))
         {
-            if (ident.Token.IsIdent("auto-flow"))
+            if (ident.IsIdent("auto-flow"))
             {
                 if (autoFlow)
                     return null;
@@ -595,7 +595,7 @@ internal static class CssGrid
         if (CssPropertyRegistry.Get(name) is not { } property || CssPropertyRegistry.GetGrammar(property) is not { } grammar || !ValueMatcher.Matches(grammar, values))
             return null;
 
-        if (values.Exists(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Token.Value))))
+        if (values.Exists(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Value))))
             return null;
 
         return CanonicalizeLonghand(property, values) ?? CssSerializer.SerializeValue(InsertSpaces(values), property);
@@ -759,7 +759,7 @@ internal static class CssGrid
         var result = new List<List<CssComponentValue>> { new() };
         foreach (var value in values)
         {
-            if (value is CssPreservedToken slash && slash.Token.IsDelim('/'))
+            if (value is CssPreservedToken slash && slash.IsDelim('/'))
             {
                 result.Add([]);
             }

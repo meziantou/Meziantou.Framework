@@ -1336,7 +1336,7 @@ internal static class SrcsetParser
                 continue;
 
             double? autoSize = null;
-            var isAuto = values[^1] is CssPreservedToken { Type: CssTokenType.Ident } autoToken && InfraAscii.EqualsIgnoreAsciiCase(autoToken.Token.Value, "auto");
+            var isAuto = values[^1] is CssPreservedToken { Type: CssTokenType.Ident } autoToken && InfraAscii.EqualsIgnoreAsciiCase(autoToken.Value, "auto");
             // The concrete object size width of an image that is being rendered, else its last auto-sizes width
             if (isAuto && image is not null && AllowsAutoSizes(image))
             {

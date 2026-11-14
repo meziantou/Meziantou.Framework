@@ -219,7 +219,7 @@ internal sealed partial class ComputedStyle
                 switch (component)
                 {
                     case CssPreservedToken { Type: CssTokenType.Hash }:
-                    case CssPreservedToken { Type: CssTokenType.Ident } ident when ident.Token.Value is not ("none" or "context-fill" or "context-stroke" or "repeat" or "auto"):
+                    case CssPreservedToken { Type: CssTokenType.Ident } ident when ident.Value is not ("none" or "context-fill" or "context-stroke" or "repeat" or "auto"):
                     case CssFunction function when !InfraAscii.EqualsIgnoreAsciiCase(function.Name, "url") && !InfraAscii.EqualsIgnoreAsciiCase(function.Name, "repeat"):
                         colors?.Add(CssSerializer.SerializeValue([component], property: null));
                         builder?.Append(replacements![index]);

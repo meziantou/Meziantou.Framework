@@ -36,16 +36,16 @@ internal static partial class CssPropertyRules
             {
                 switch (argument)
                 {
-                    case CssPreservedToken { Type: CssTokenType.Number } zero when zero.Token.NumericValue == 0 && name is "blur" or "drop-shadow":
+                    case CssPreservedToken { Type: CssTokenType.Number } zero when zero.NumericValue == 0 && name is "blur" or "drop-shadow":
                         serialized.Add("0px");
                         break;
-                    case CssPreservedToken { Type: CssTokenType.Number } zero when zero.Token.NumericValue == 0 && name == "hue-rotate":
+                    case CssPreservedToken { Type: CssTokenType.Number } zero when zero.NumericValue == 0 && name == "hue-rotate":
                         serialized.Add("0deg");
                         break;
-                    case CssPreservedToken { Type: CssTokenType.Number } number when IsClampedFilter(name) && number.Token.NumericValue > 1:
+                    case CssPreservedToken { Type: CssTokenType.Number } number when IsClampedFilter(name) && number.NumericValue > 1:
                         serialized.Add("1");
                         break;
-                    case CssPreservedToken { Type: CssTokenType.Percentage } percentage when IsClampedFilter(name) && percentage.Token.NumericValue > 100:
+                    case CssPreservedToken { Type: CssTokenType.Percentage } percentage when IsClampedFilter(name) && percentage.NumericValue > 100:
                         serialized.Add("100%");
                         break;
                     case not CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension } when name == "drop-shadow" && ValueMatcher.IsColor(argument):
@@ -130,7 +130,7 @@ internal static partial class CssPropertyRules
                     double amount = 1;
                     if (arguments is [CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage } token])
                     {
-                        amount = token.Type == CssTokenType.Percentage ? token.Token.NumericValue / 100 : token.Token.NumericValue;
+                        amount = token.Type == CssTokenType.Percentage ? token.NumericValue / 100 : token.NumericValue;
                     }
 
                     amount = Math.Max(amount, 0);

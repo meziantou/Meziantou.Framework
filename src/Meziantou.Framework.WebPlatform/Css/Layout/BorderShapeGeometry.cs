@@ -136,7 +136,7 @@ internal sealed class BorderShapeGeometry
             }
             else if (component is CssPreservedToken { Type: CssTokenType.Ident } ident && shapes.Count > 0 && shapes[^1].Box is null)
             {
-                shapes[^1] = (shapes[^1].Shape, InfraAscii.ToAsciiLowercase(ident.Token.Value));
+                shapes[^1] = (shapes[^1].Shape, InfraAscii.ToAsciiLowercase(ident.Value));
             }
             else
             {

@@ -222,7 +222,7 @@ internal static class ValueMatcher
         switch (node)
         {
             case KeywordNode keyword:
-                return position < context.Values.Count && context.Values[position] is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, keyword.Keyword)
+                return position < context.Values.Count && context.Values[position] is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, keyword.Keyword)
                     ? [(position + 1, path)]
                     : [];
 
@@ -274,7 +274,7 @@ internal static class ValueMatcher
         "," => token.Type == CssTokenType.Comma,
         ":" => token.Type == CssTokenType.Colon,
         ";" => token.Type == CssTokenType.Semicolon,
-        _ => token.Token.Type == CssTokenType.Delim && token.Token.Value == literal,
+        _ => token.Type == CssTokenType.Delim && token.Value == literal,
     };
 
     private static IEnumerable<(int End, CapturePath? Path)> MatchGroup(GroupNode group, MatchContext context, int position, int depth, bool root, CapturePath? path)
@@ -499,7 +499,7 @@ internal static class ValueMatcher
                 }
 
                 var last = position;
-                while (last < values.Count && values[last] is CssPreservedToken { Type: CssTokenType.Ident } familyIdent && !CustomIdentExclusions["font-family-name"].Contains(InfraAscii.ToAsciiLowercase(familyIdent.Token.Value)))
+                while (last < values.Count && values[last] is CssPreservedToken { Type: CssTokenType.Ident } familyIdent && !CustomIdentExclusions["font-family-name"].Contains(InfraAscii.ToAsciiLowercase(familyIdent.Value)))
                 {
                     last++;
                 }
@@ -509,7 +509,7 @@ internal static class ValueMatcher
                     yield return end;
                 }
 
-                if (last > position && values[position] is CssPreservedToken single && InfraAscii.ToAsciiLowercase(single.Token.Value) is not "default" and var singleName
+                if (last > position && values[position] is CssPreservedToken single && InfraAscii.ToAsciiLowercase(single.Value) is not "default" and var singleName
                     && !CssWideKeywords.Contains(singleName))
                 {
                     yield return position + 1;
@@ -558,7 +558,7 @@ internal static class ValueMatcher
 
     /// <summary>Returns whether the value is a line name (https://drafts.csswg.org/css-grid/#typedef-line-names): a &lt;custom-ident&gt; other than span and auto.</summary>
     public static bool IsLineName(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident
-        && InfraAscii.ToAsciiLowercase(ident.Token.Value) is not ("span" or "auto" or "default") and var name && !CssWideKeywords.Contains(name);
+        && InfraAscii.ToAsciiLowercase(ident.Value) is not ("span" or "auto" or "default") and var name && !CssWideKeywords.Contains(name);
 
     /// <summary>Returns whether the function is sibling-index() or sibling-count() (https://drafts.csswg.org/css-values-5/#tree-counting).</summary>
     internal static bool IsTreeCountingFunction(CssFunction function) => InfraAscii.ToAsciiLowercase(function.Name) is "sibling-index" or "sibling-count" && function.Value.TrueForAll(v => v is CssPreservedToken { Type: CssTokenType.Whitespace });
@@ -645,24 +645,24 @@ internal static class ValueMatcher
                 return value is CssPreservedToken { Type: CssTokenType.Ident };
 
             case "custom-ident":
-                return value is CssPreservedToken { Type: CssTokenType.Ident } customIdent && !CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(customIdent.Token.Value)) && !InfraAscii.EqualsIgnoreAsciiCase(customIdent.Token.Value, "default")
-                    && !(excludedIdents?.Contains(InfraAscii.ToAsciiLowercase(customIdent.Token.Value)) ?? false);
+                return value is CssPreservedToken { Type: CssTokenType.Ident } customIdent && !CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(customIdent.Value)) && !InfraAscii.EqualsIgnoreAsciiCase(customIdent.Value, "default")
+                    && !(excludedIdents?.Contains(InfraAscii.ToAsciiLowercase(customIdent.Value)) ?? false);
 
             case "opentype-tag":
                 // https://drafts.csswg.org/css-fonts/#typedef-opentype-tag: four ASCII characters in the range U+20–7E
-                return value is CssPreservedToken { Type: CssTokenType.String } tag && tag.Token.Value.Length == 4 && tag.Token.Value.All(c => c is >= ' ' and <= '~');
+                return value is CssPreservedToken { Type: CssTokenType.String } tag && tag.Value.Length == 4 && tag.Value.All(c => c is >= ' ' and <= '~');
 
             case "dashed-ident":
-                return value is CssPreservedToken { Type: CssTokenType.Ident } dashed && dashed.Token.Value.StartsWith("--", StringComparison.Ordinal);
+                return value is CssPreservedToken { Type: CssTokenType.Ident } dashed && dashed.Value.StartsWith("--", StringComparison.Ordinal);
 
             case "hex-color":
-                return value is CssPreservedToken { Type: CssTokenType.Hash } hash && hash.Token.Value.Length is 3 or 4 or 6 or 8 && IsHex(hash.Token.Value);
+                return value is CssPreservedToken { Type: CssTokenType.Hash } hash && hash.Value.Length is 3 or 4 or 6 or 8 && IsHex(hash.Value);
 
             case "named-color":
-                return value is CssPreservedToken { Type: CssTokenType.Ident } named && CssColor.IsNamedColor(named.Token.Value);
+                return value is CssPreservedToken { Type: CssTokenType.Ident } named && CssColor.IsNamedColor(named.Value);
 
             case "system-color":
-                return value is CssPreservedToken { Type: CssTokenType.Ident } system && CssColor.IsSystemColor(system.Token.Value);
+                return value is CssPreservedToken { Type: CssTokenType.Ident } system && CssColor.IsSystemColor(system.Value);
 
             default:
                 return null;
@@ -730,7 +730,7 @@ internal static class ValueMatcher
         var basis = RemoveWhitespace(SplitAtCommas(calcSize.Value)[0]);
         return basis switch
         {
-            [CssPreservedToken { Type: CssTokenType.Ident } keyword] => InfraAscii.ToAsciiLowercase(keyword.Token.Value) is var name && (name == "any" || (name != "none" && (keywords?.Contains(name) ?? false))),
+            [CssPreservedToken { Type: CssTokenType.Ident } keyword] => InfraAscii.ToAsciiLowercase(keyword.Value) is var name && (name == "any" || (name != "none" && (keywords?.Contains(name) ?? false))),
             [CssFunction nested] when InfraAscii.EqualsIgnoreAsciiCase(nested.Name, "calc-size") => HasValidCalcSizeBasis(nested, keywords),
             _ => true,
         };
@@ -867,7 +867,7 @@ internal static class ValueMatcher
     /// <summary>Returns whether the value is a &lt;color&gt;: a color, currentcolor or a system color.</summary>
     public static bool IsColor(CssComponentValue value)
     {
-        if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && (InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "currentcolor") || CssColor.IsSystemColor(ident.Token.Value)))
+        if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && (InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "currentcolor") || CssColor.IsSystemColor(ident.Value)))
             return true;
 
         if (value is CssFunction function)
@@ -909,7 +909,7 @@ internal static class ValueMatcher
             if (argument is CssFunction nested && (MathFunctions.Contains(InfraAscii.ToAsciiLowercase(nested.Name)) || IsTreeCountingFunction(nested)))
                 return true;
 
-            if (argument is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "from"))
+            if (argument is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "from"))
                 return true;
         }
 
@@ -956,7 +956,7 @@ internal static class ValueMatcher
                     {
                         // https://drafts.csswg.org/css-values-5/#inherit-notation
                         var stream = RemoveWhitespace(function.Value);
-                        if (stream is not [CssPreservedToken { Type: CssTokenType.Ident } inheritName, ..] || !CssPropertyRegistry.IsCustomProperty(inheritName.Token.Value)
+                        if (stream is not [CssPreservedToken { Type: CssTokenType.Ident } inheritName, ..] || !CssPropertyRegistry.IsCustomProperty(inheritName.Value)
                             || (stream.Count > 1 && stream[1] is not CssPreservedToken { Type: CssTokenType.Comma }))
                             return false;
                     }
@@ -1107,7 +1107,7 @@ internal static class ValueMatcher
                 return false;
 
             // <dashed-ident> : is reserved for the named arguments (https://github.com/w3c/csswg-drafts/issues/11749)
-            if (significant is [CssPreservedToken { Type: CssTokenType.Ident } argumentName, CssPreservedToken { Type: CssTokenType.Colon }, ..] && CssPropertyRegistry.IsCustomProperty(argumentName.Token.Value))
+            if (significant is [CssPreservedToken { Type: CssTokenType.Ident } argumentName, CssPreservedToken { Type: CssTokenType.Colon }, ..] && CssPropertyRegistry.IsCustomProperty(argumentName.Value))
                 return false;
 
             if (significant is [CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket } block])

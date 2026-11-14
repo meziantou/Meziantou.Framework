@@ -641,7 +641,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             case "range":
                 foreach (var range in ValueMatcher.SplitAtCommas(significant))
                 {
-                    if (range is [CssPreservedToken { Type: CssTokenType.Number } lower, CssPreservedToken { Type: CssTokenType.Number } upper] && lower.Token.NumericValue > upper.Token.NumericValue)
+                    if (range is [CssPreservedToken { Type: CssTokenType.Number } lower, CssPreservedToken { Type: CssTokenType.Number } upper] && lower.NumericValue > upper.NumericValue)
                         return null;
                 }
 
@@ -659,10 +659,10 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
                     var (weight, symbol) = IsSymbol(first) ? (second, first) : (first, second);
                     if (name == "additive-symbols" && weight is CssPreservedToken { Type: CssTokenType.Number } number)
                     {
-                        if (previousWeight <= number.Token.NumericValue)
+                        if (previousWeight <= number.NumericValue)
                             return null;
 
-                        previousWeight = number.Token.NumericValue;
+                        previousWeight = number.NumericValue;
                     }
 
                     items.Add(CssSerializer.SerializeValue([weight], property: null) + " " + CssSerializer.SerializeValue([symbol], property: null));
@@ -691,11 +691,11 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             case "font-weight" or "font-width" when significant is [CssPreservedToken lower, CssPreservedToken upper] && lower.Token.ToString() == upper.Token.ToString():
                 return CssSerializer.SerializeValue([lower], property: null);
 
-            case "font-style" when significant is [CssPreservedToken { Type: CssTokenType.Ident } oblique, CssPreservedToken { Type: CssTokenType.Dimension } angle, ..] && InfraAscii.EqualsIgnoreAsciiCase(oblique.Token.Value, "oblique"):
+            case "font-style" when significant is [CssPreservedToken { Type: CssTokenType.Ident } oblique, CssPreservedToken { Type: CssTokenType.Dimension } angle, ..] && InfraAscii.EqualsIgnoreAsciiCase(oblique.Value, "oblique"):
                 if (significant is [_, _, CssPreservedToken upperAngle] && upperAngle.Token.ToString() != angle.Token.ToString())
                     return serialized;
 
-                return angle.Token.NumericValue == 0 ? "normal" : "oblique " + CssSerializer.SerializeValue([angle], property: null);
+                return angle.NumericValue == 0 ? "normal" : "oblique " + CssSerializer.SerializeValue([angle], property: null);
 
             default:
                 return serialized;
@@ -751,7 +751,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         static bool HasUnsupportedFormatString(List<CssComponentValue> entry) => entry.Exists(static value => value is CssFunction function
             && InfraAscii.EqualsIgnoreAsciiCase(function.Name, "format")
             && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } format]
-            && format.Token.Value is not ("collection" or "embedded-opentype" or "opentype" or "svg" or "truetype" or "woff" or "woff2"
+            && format.Value is not ("collection" or "embedded-opentype" or "opentype" or "svg" or "truetype" or "woff" or "woff2"
                 or "opentype-variations" or "truetype-variations" or "woff-variations" or "woff2-variations"));
 
         static string SerializeFontSourceComponent(CssComponentValue value)
@@ -763,10 +763,10 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             // https://drafts.csswg.org/cssom/#serialize-a-local: local() is serialized with a string, as in the browsers (WPT
             // css/css-fonts/font-family-src-quoted.html)
             if (name == "local" && ValueMatcher.RemoveWhitespace(((CssFunction)value).Value) is { Count: > 0 } localName && localName.TrueForAll(static argument => argument is CssPreservedToken { Type: CssTokenType.Ident }))
-                return "local(" + CssSerializer.SerializeString(string.Join(' ', localName.Select(static argument => ((CssPreservedToken)argument).Token.Value))) + ")";
+                return "local(" + CssSerializer.SerializeString(string.Join(' ', localName.Select(static argument => ((CssPreservedToken)argument).Value))) + ")";
 
             var arguments = Cascade.CssValueComputer.SplitArguments(((CssFunction)value).Value).Select(argument => string.Join(' ', argument.Select(component =>
-                name != "local" && component is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : CssSerializer.SerializeValue([component], property: null))));
+                name != "local" && component is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : CssSerializer.SerializeValue([component], property: null))));
             return name + "(" + string.Join(", ", arguments) + ")";
         }
     }
@@ -1950,7 +1950,7 @@ internal static class CssUnicodeRanges
 
     private static string? ParseRange(List<CssComponentValue> tokens, string source)
     {
-        if (tokens.Count < 2 || tokens[0] is not CssPreservedToken { Type: CssTokenType.Ident } u || !u.Token.IsIdent("u"))
+        if (tokens.Count < 2 || tokens[0] is not CssPreservedToken { Type: CssTokenType.Ident } u || !u.IsIdent("u"))
             return null;
 
         // The representations of the tokens after "u", concatenated

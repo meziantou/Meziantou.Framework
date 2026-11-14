@@ -35,7 +35,7 @@ internal static class CssRelativeColorResolver
                 if (index >= values.Count || values[index] is not CssPreservedToken { Type: CssTokenType.Ident } spaceToken)
                     return null;
 
-                space = InfraAscii.ToAsciiLowercase(spaceToken.Token.Value);
+                space = InfraAscii.ToAsciiLowercase(spaceToken.Value);
                 space = space == "xyz" ? "xyz-d65" : space;
                 index++;
                 break;
@@ -214,7 +214,7 @@ internal static class CssRelativeColorResolver
     {
         switch (value)
         {
-            case CssPreservedToken { Type: CssTokenType.Ident } ident when keywords.TryGetValue(InfraAscii.ToAsciiLowercase(ident.Token.Value), out var keyword):
+            case CssPreservedToken { Type: CssTokenType.Ident } ident when keywords.TryGetValue(InfraAscii.ToAsciiLowercase(ident.Value), out var keyword):
                 return new CssPreservedToken(new CssToken { Type = CssTokenType.Number, NumericValue = keyword ?? 0 });
 
             case CssFunction function:

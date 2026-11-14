@@ -32,7 +32,7 @@ internal readonly record struct GridBreadth(GridBreadthKind Kind, LengthPercenta
         switch (value)
         {
             case CssPreservedToken { Type: CssTokenType.Ident } ident:
-                return InfraAscii.ToAsciiLowercase(ident.Token.Value) switch
+                return InfraAscii.ToAsciiLowercase(ident.Value) switch
                 {
                     "auto" => Auto,
                     "min-content" => new GridBreadth(GridBreadthKind.MinContent),
@@ -40,8 +40,8 @@ internal readonly record struct GridBreadth(GridBreadthKind Kind, LengthPercenta
                     _ => null,
                 };
 
-            case CssPreservedToken { Type: CssTokenType.Dimension } dimension when string.Equals(dimension.Token.Value, "fr", StringComparison.OrdinalIgnoreCase):
-                return new GridBreadth(GridBreadthKind.Flex, Flex: dimension.Token.NumericValue);
+            case CssPreservedToken { Type: CssTokenType.Dimension } dimension when string.Equals(dimension.Value, "fr", StringComparison.OrdinalIgnoreCase):
+                return new GridBreadth(GridBreadthKind.Flex, Flex: dimension.NumericValue);
 
             default:
                 return LengthPercentage.TryParse(value, zoom, nonNegative: true, out var length) ? new GridBreadth(GridBreadthKind.LengthPercentage, length) : null;
@@ -150,7 +150,7 @@ internal sealed class GridTrackList
             return None;
 
         var values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
-        var isSubgrid = values is [CssPreservedToken { Type: CssTokenType.Ident } first, ..] && first.Token.IsIdent("subgrid");
+        var isSubgrid = values is [CssPreservedToken { Type: CssTokenType.Ident } first, ..] && first.IsIdent("subgrid");
         var segments = new List<GridTrackSegment>();
         var tracks = new List<GridTrackSize>();
         var names = new List<string[]>();
@@ -223,16 +223,16 @@ internal sealed class GridTrackList
 
         GridRepeatKind kind;
         var count = 1;
-        if (countToken.Token.Type == CssTokenType.Number)
+        if (countToken.Type == CssTokenType.Number)
         {
             kind = GridRepeatKind.Count;
-            count = (int)Math.Clamp(countToken.Token.NumericValue, 1, int.MaxValue);
+            count = (int)Math.Clamp(countToken.NumericValue, 1, int.MaxValue);
         }
-        else if (countToken.Token.IsIdent("auto-fill"))
+        else if (countToken.IsIdent("auto-fill"))
         {
             kind = GridRepeatKind.AutoFill;
         }
-        else if (countToken.Token.IsIdent("auto-fit"))
+        else if (countToken.IsIdent("auto-fit"))
         {
             kind = GridRepeatKind.AutoFit;
         }
@@ -282,7 +282,7 @@ internal sealed class GridTrackList
         {
             if (value is CssPreservedToken { Type: CssTokenType.Ident } ident)
             {
-                names.Add(ident.Token.Value);
+                names.Add(ident.Value);
             }
         }
 
@@ -359,7 +359,7 @@ internal sealed class GridTemplateAreas
         var rows = new List<string?[]>();
         foreach (var component in ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)))
         {
-            if (component is not CssPreservedToken { Type: CssTokenType.String } stringToken || CssGrid.TokenizeAreaString(stringToken.Token.Value) is not { } cells)
+            if (component is not CssPreservedToken { Type: CssTokenType.String } stringToken || CssGrid.TokenizeAreaString(stringToken.Value) is not { } cells)
                 return None;
 
             rows.Add([.. cells.Select(cell => cell == "." ? null : cell)]);

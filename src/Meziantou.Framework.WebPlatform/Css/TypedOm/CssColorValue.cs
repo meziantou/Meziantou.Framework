@@ -164,7 +164,7 @@ public abstract class CssColorValue : CssStyleValue
             throw DomException.Syntax($"'{cssText}' is not a valid color");
 
         if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && Values.CssColor.Parse(value) is null)
-            return new CssKeywordValue(InfraAscii.ToAsciiLowercase(ident.Token.Value));
+            return new CssKeywordValue(InfraAscii.ToAsciiLowercase(ident.Value));
 
         return Reify(value) ?? new CssStyleValue("color", cssText.Trim(' ', '\t', '\n'));
     }
@@ -223,7 +223,7 @@ public abstract class CssColorValue : CssStyleValue
                 case "oklch" when arguments.Count == 3:
                     return Create(arguments, [1, 0.4, Angle], channels => new CssOkLch(channels[0], channels[1], channels[2], alpha));
                 case "color" when arguments is [CssPreservedToken { Type: CssTokenType.Ident } space, _, _, _]:
-                    return Create(arguments[1..], [1, 1, 1], channels => new CssColor(InfraAscii.ToAsciiLowercase(space.Token.Value), [.. channels.Select(ToChannel)], (CssNumericValue)alpha));
+                    return Create(arguments[1..], [1, 1, 1], channels => new CssColor(InfraAscii.ToAsciiLowercase(space.Value), [.. channels.Select(ToChannel)], (CssNumericValue)alpha));
                 default:
                     return null;
             }

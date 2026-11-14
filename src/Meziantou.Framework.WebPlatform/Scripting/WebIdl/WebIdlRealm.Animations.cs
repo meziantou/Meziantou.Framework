@@ -292,9 +292,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 switch (component)
                 {
                     case Meziantou.Framework.WebPlatform.Css.Syntax.CssPreservedToken { Type: Meziantou.Framework.WebPlatform.Css.Syntax.CssTokenType.Number } number:
-                        return number.Token.NumericValue;
+                        return number.NumericValue;
                     case Meziantou.Framework.WebPlatform.Css.Syntax.CssPreservedToken { Type: Meziantou.Framework.WebPlatform.Css.Syntax.CssTokenType.Percentage } percentage:
-                        return percentage.Token.NumericValue / 100;
+                        return percentage.NumericValue / 100;
                     case Meziantou.Framework.WebPlatform.Css.Syntax.CssFunction function when CssCalc.Evaluate(function, CssCalcContext.Default) is { IsResolved: true } calc && calc.Unit is "" or "%":
                         return calc.Unit == "%" ? calc.Value / 100 : calc.Value;
                 }

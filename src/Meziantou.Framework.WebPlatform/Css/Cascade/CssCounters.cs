@@ -137,7 +137,7 @@ internal sealed class CssCounters
 
         var value = Values.ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(listStyleType));
         if (value is [CssPreservedToken { Type: CssTokenType.String } text])
-            return text.Token.Value;
+            return text.Value;
 
         if (ResolveCounterStyle(value, style, "list-style-type") is not { } counterStyle)
             return null;
@@ -550,19 +550,19 @@ internal sealed class CssCounters
             switch (component)
             {
                 case CssPreservedToken { Type: CssTokenType.Ident } ident:
-                    result.Add(new CounterValue(ident.Token.Value, defaultValue, Reversed: false, HasValue: false));
+                    result.Add(new CounterValue(ident.Value, defaultValue, Reversed: false, HasValue: false));
                     break;
 
                 case CssFunction { Name: var functionName } function when InfraAscii.EqualsIgnoreAsciiCase(functionName, "reversed"):
                     if (function.Value.OfType<CssPreservedToken>().FirstOrDefault(t => t.Type == CssTokenType.Ident) is { } reversedName)
                     {
-                        result.Add(new CounterValue(reversedName.Token.Value, defaultValue, Reversed: true, HasValue: false));
+                        result.Add(new CounterValue(reversedName.Value, defaultValue, Reversed: true, HasValue: false));
                     }
 
                     break;
 
                 case CssPreservedToken { Type: CssTokenType.Number, Token.IsInteger: true } number when result.Count > 0:
-                    result[^1] = result[^1] with { Value = (int)Math.Clamp(number.Token.NumericValue, int.MinValue, int.MaxValue), HasValue = true };
+                    result[^1] = result[^1] with { Value = (int)Math.Clamp(number.NumericValue, int.MinValue, int.MaxValue), HasValue = true };
                     break;
             }
         }

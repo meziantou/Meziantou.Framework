@@ -113,6 +113,8 @@ internal sealed class EvaluationNavigator<TValue> : JsonPathNavigator<TValue>
 
     public override bool HasConstantTimePropertyLookup => _inner.HasConstantTimePropertyLookup;
 
+    internal override bool PropertyLookupMatchesEnumeration => _inner.PropertyLookupMatchesEnumeration;
+
     public override void CopyElements(TValue? value, TValue?[] destination)
     {
         Check(_inner.GetArrayLength(value));

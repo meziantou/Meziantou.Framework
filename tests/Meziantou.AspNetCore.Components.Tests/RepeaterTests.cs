@@ -1,3 +1,5 @@
+using Meziantou.AspNetCore.Components.Tests.TestComponents;
+using Meziantou.AspNetCore.Testing.Components;
 using Meziantou.Framework.InlineSnapshotTesting;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -102,5 +104,32 @@ public sealed class RepeaterTests
             var component = await renderer.RenderComponentAsync<Repeater<string>>(ParameterView.FromDictionary(parameters));
             return component.ToHtmlString();
         });
+    }
+
+    [Fact]
+    public async Task Interactive_SwitchesBetweenLoadingEmptyAndItems()
+    {
+        await using var host = new ComponentTestHost();
+        var repeater = await host.RenderAsync<RepeaterPage>(parameters => parameters.Add(c => c.Items, null));
+        Assert.Equal("Loading...", repeater.Find("p").TextContent);
+
+        await repeater.SetParametersAsync(parameters => parameters.Add(c => c.Items, Array.Empty<string>()));
+        Assert.Equal("No items", repeater.Find("p").TextContent);
+
+        await repeater.SetParametersAsync(parameters => parameters.Add(c => c.Items, ["a", "b", "c"]));
+        Assert.Equal(["a", "", "b", "", "c"], repeater.FindAll("ul > li").Select(item => item.TextContent));
+        Assert.HasCount(2, repeater.FindAll("li[role=separator]"));
+
+        // A lazy sequence is enumerated once per render
+        var enumerations = 0;
+        await repeater.SetParametersAsync(parameters => parameters.Add(c => c.Items, Enumerate()));
+        Assert.Equal(1, enumerations);
+        Assert.Equal(["x"], repeater.FindAll("ul > li").Select(item => item.TextContent));
+
+        IEnumerable<string> Enumerate()
+        {
+            enumerations++;
+            yield return "x";
+        }
     }
 }

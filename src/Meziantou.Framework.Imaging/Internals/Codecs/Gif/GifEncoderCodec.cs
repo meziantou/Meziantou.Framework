@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -273,6 +274,8 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         private readonly int _height;
         private readonly ushort? _loopCount;
         private readonly byte[][] _comments;
+        private readonly IccProfile? _iccProfile;
+        private readonly XmpProfile? _xmpProfile;
         private readonly byte[] _colorTable = new byte[256 * 3];
         private PaletteQuantizer? _quantizer;
         private GifLzwEncoder? _lzw;
@@ -326,6 +329,8 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
 
             // Comments (already filtered by the metadata policy: bare Latin-1 comments), one extension each
             _comments = [.. options.Metadata.TextEntries.Select(entry => Encoding.Latin1.GetBytes(entry.Value))];
+            _iccProfile = options.Metadata.IccProfile;
+            _xmpProfile = options.Metadata.XmpProfile;
 
             var scope = options.Scope;
             var planeBytes = PaletteRowMapper.IsErrorDiffusion(_quantization.Dithering) && _quantization.DitherStrength > 0 && _encoder.Interlaced ? (long)_width * _height : 0;
@@ -368,6 +373,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         {
             None,
             Header,
+            Profiles,
             Comments,
             Compare,
             Histogram,
@@ -424,6 +430,22 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                 case Step.Header:
                     WriteHeader(output);
                     _headerWritten = true;
+                    _step = Step.Profiles;
+                    return false;
+
+                case Step.Profiles:
+                    // Before the first image, where readers of the header see them
+                    if (_iccProfile is not null)
+                    {
+                        WriteApplicationExtension(output, "ICCRGBG1012"u8);
+                        WriteSubBlocks(output, _iccProfile.Data.Span);
+                    }
+
+                    if (_xmpProfile is not null)
+                    {
+                        WriteXmp(output, _xmpProfile.Data.Span);
+                    }
+
                     _step = Step.Comments;
                     return false;
 
@@ -555,6 +577,32 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         {
             output.Write([ExtensionIntroducer, CommentLabel]);
             WriteSubBlocks(output, comment);
+        }
+
+        private static void WriteApplicationExtension(ImageOutputBuffer output, ReadOnlySpan<byte> identifier)
+        {
+            output.Write([ExtensionIntroducer, ApplicationLabel, (byte)identifier.Length]);
+            output.Write(identifier);
+        }
+
+        /// <summary>
+        /// Writes an XMP application extension (XMP Specification Part 3, 1.1.2): the packet as it is, then the 257 bytes of
+        /// the magic trailer (<c>0x01</c>, then <c>0xFF</c> down to <c>0x00</c>) that bring a reader that walks the bytes as
+        /// data sub-blocks to the block terminator.
+        /// </summary>
+        private static void WriteXmp(ImageOutputBuffer output, ReadOnlySpan<byte> packet)
+        {
+            WriteApplicationExtension(output, "XMP DataXMP"u8);
+            output.Write(packet);
+            var trailer = output.GetSpan(258);
+            trailer[0] = 0x01;
+            for (var i = 0; i < 256; i++)
+            {
+                trailer[1 + i] = (byte)(255 - i);
+            }
+
+            trailer[257] = 0;
+            output.Advance(258);
         }
 
         private static void WriteSubBlocks(ImageOutputBuffer output, ReadOnlySpan<byte> data)

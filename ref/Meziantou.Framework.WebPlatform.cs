@@ -3493,7 +3493,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool TryClose(bool runBeforeUnload = false) => throw null;
     }
 
-    public sealed class BrowsingContextOptions
+    public sealed class BrowsingContextOptions : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions>
     {
         public Meziantou.Framework.WebPlatform.Dom.AcceptCHCache? AcceptCHCache { get => throw null; init { } }
         public int BackForwardCacheSize { get => throw null; init { } }
@@ -3563,6 +3563,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.WakeLockOptions? WakeLock { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.WebAuthenticationOptions? WebAuthentication { get => throw null; init { } }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions? left, Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions? left, Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions? right) => throw null;
     }
 
     public sealed class BufferedChangeEvent : Meziantou.Framework.WebPlatform.Dom.Event
@@ -4479,6 +4485,16 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public Meziantou.Framework.WebPlatform.Dom.Element? PresentationArea { get => throw null; }
         public void UpdateInkTrailStartPoint(Meziantou.Framework.WebPlatform.Dom.PointerEvent @event, Meziantou.Framework.WebPlatform.Dom.InkTrailStyle style) { }
+    }
+
+    public sealed class DeprecationReportBody : Meziantou.Framework.WebPlatform.Dom.ReportBody
+    {
+        public System.DateTime? AnticipatedRemoval { get => throw null; init { } }
+        public int? ColumnNumber { get => throw null; init { } }
+        public string Id { get => throw null; init { } }
+        public int? LineNumber { get => throw null; init { } }
+        public string Message { get => throw null; init { } }
+        public string? SourceFile { get => throw null; init { } }
     }
 
     public sealed class DeviceDescriptor : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor>
@@ -8387,6 +8403,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string ScrollMargin { get => throw null; set { } }
         public object? Threshold { get => throw null; set { } }
         public bool TrackVisibility { get => throw null; set { } }
+    }
+
+    public sealed class InterventionReportBody : Meziantou.Framework.WebPlatform.Dom.ReportBody
+    {
+        public int? ColumnNumber { get => throw null; init { } }
+        public string Id { get => throw null; init { } }
+        public int? LineNumber { get => throw null; init { } }
+        public string Message { get => throw null; init { } }
+        public string? SourceFile { get => throw null; init { } }
     }
 
     public sealed class IntrinsicSizesResultOptions

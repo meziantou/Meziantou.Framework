@@ -348,7 +348,7 @@ path, a line feed, the SHA-256 of its content, a line feed).
 | --- | --- | --- |
 | `font-suites/aots` | Apache-2.0 | The Annotated OpenType Specification tests of Adobe, as the HarfBuzz project distributes them (`test/shape/data/aots` at the commit the manifest records): 205 fonts that each exercise one format of the `cmap`, class definition, coverage, `GSUB` or `GPOS` tables, and 128 files of tests (a font, the options of `hb-shape`, characters, the expected glyphs and positions). `ShapingSuiteTests` runs every test that is not commented out; the commented ones are the cases HarfBuzz itself does not pass |
 
-| `font-suites/truetype-hinting` | Apache-2.0 | Droid Sans, Open Sans and Roboto, fonts hinted by hand with TrueType instructions, subset to Basic Latin, and for each glyph at sizes 9 to 16, 20 and 24 the advance and the hinted points FreeType 2.13.2 gives with its version 40 interpreter for black and white pixels (`FT_LOAD_TARGET_MONO`), written by `tools/Meziantou.Framework.Imaging.CorpusGenerator/truetype_hinting.py` (see the README of the suite). `HintingConformanceTests` compares every glyph |
+| `font-suites/truetype-hinting` | Apache-2.0 | Droid Sans, Open Sans and Roboto, fonts hinted by hand with TrueType instructions, subset to Basic Latin, two variable fonts made of Droid Sans and Roboto by fontTools (`gvar`, `cvar`, four instances at five sizes), and for each glyph at sizes 9 to 16, 20 and 24 the advance and the hinted points FreeType 2.13.2 gives with its version 40 interpreter for black and white pixels (`FT_LOAD_TARGET_MONO`), written by `tools/Meziantou.Framework.Imaging.CorpusGenerator/truetype_hinting.py` (see the README of the suite). `HintingConformanceTests` compares every glyph |
 
 The generator copies a suite from a directory of the fonts directory (`aots`, `truetype-hinting`) and refuses a content whose
 hash is not the pinned one. The tools HarfBuzz keeps next to the suite (its test driver and build files) are not copied.
@@ -816,7 +816,7 @@ follows it, so keep both headings unique in this file.
 | Format | Valid | Invalid | Unsupported | Limit |
 | --- | --- | --- | --- | --- |
 | avif | 189 | 45 | 28 | 12 |
-| bmp | 24 | 21 | 4 | 2 |
+| bmp | 24 | 21 | 2 | 2 |
 | exr | 54 | 7 | 33 | 2 |
 | gif | 24 | 13 | 1 | 2 |
 | hdr | 27 | 15 | 3 | 2 |
@@ -1030,8 +1030,6 @@ follows it, so keep both headings unique in this file.
 | BMP odd width | `bmp.width=odd` | 20 | 0 | 0 | 2 |
 | BMP OS/2 Huffman 1D (rejected) | `bmp.unsupported=huffman1d` | 0 | 0 | 1 | 0 |
 | BMP embedded JPEG/PNG payload (rejected) | `bmp.unsupported=embedded-codec` | 0 | 0 | 1 | 0 |
-| BMP 2 bits per pixel (rejected) | `bmp.unsupported=bit-count-2` | 0 | 0 | 1 | 0 |
-| BMP channel mask wider than 8 bits (rejected) | `bmp.unsupported=wide-mask` | 0 | 0 | 1 | 0 |
 | TGA color-mapped (type 1) | `tga.imageType=1` | 3 | 0 | 0 | 0 |
 | TGA uncompressed true color (type 2) | `tga.imageType=2` | 10 | 0 | 0 | 1 |
 | TGA uncompressed grayscale (type 3) | `tga.imageType=3` | 3 | 0 | 0 | 0 |

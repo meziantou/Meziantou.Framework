@@ -1210,6 +1210,70 @@ public sealed class PdfRendererTests
     }
 
     [Fact]
+    public void TheAccentOfASeacGlyphIsPlacedFromTheSideBearingOfTheGlyph()
+    {
+        // The accent (side bearing 50, from 50 to 200) of a glyph whose side bearing is 20, with adx 150 and ady 120: FreeType
+        // moves it by adx - asb + sbx = 120, to 170..320. The base character is a square of 10 at its own side bearing (20).
+        static byte[] Charstring(params int[] tokens)
+        {
+            // Numbers from -107 to 107, operators written as their code minus 139, and 1000 + n for the escaped operator 12 n
+            var result = new List<byte>();
+            foreach (var token in tokens)
+            {
+                if (token >= 1000)
+                {
+                    result.AddRange([12, (byte)(token - 1000)]);
+                }
+                else
+                {
+                    result.Add((byte)(token + 139));
+                }
+            }
+
+            return [.. result];
+        }
+
+        static byte[] Encrypt(byte[] plain, int key)
+        {
+            var result = new byte[plain.Length];
+            var r = key;
+            for (var i = 0; i < plain.Length; i++)
+            {
+                result[i] = (byte)(plain[i] ^ (r >> 8));
+                r = (((result[i] + r) * 52845) + 22719) & 0xFFFF;
+            }
+
+            return result;
+        }
+
+        const int Hsbw = 13 - 139, RMoveTo = 21 - 139, RLineTo = 5 - 139, ClosePath = 9 - 139, EndChar = 14 - 139, Seac = 1006;
+        (string Name, byte[] Charstring)[] glyphs =
+        [
+            ("A", Charstring(20, 100, Hsbw, 0, 0, RMoveTo, 10, 0, RLineTo, 0, 10, RLineTo, -10, 0, RLineTo, ClosePath, EndChar)),
+            ("acute", Charstring(50, 100, Hsbw, 0, 50, RMoveTo, 100, 50, RLineTo, 50, -30, RLineTo, ClosePath, EndChar)),
+            ("Aacute", [.. Charstring(20, 100, Hsbw, 50), 247, 42, 247, 12, .. Charstring(65), 247, 86, .. Charstring(Seac)]),
+        ];
+
+        var privateText = new List<byte>();
+        privateText.AddRange([1, 2, 3, 4]);
+        privateText.AddRange(Encoding.Latin1.GetBytes("dup /Private 2 dict dup begin\n/lenIV -1 def\n2 index /CharStrings 3 dict dup begin\n"));
+        foreach (var (name, charstring) in glyphs)
+        {
+            privateText.AddRange(Encoding.Latin1.GetBytes(string.Create(CultureInfo.InvariantCulture, $"/{name} {charstring.Length} RD ")));
+            privateText.AddRange(charstring);
+            privateText.AddRange(" ND\n"u8.ToArray());
+        }
+
+        privateText.AddRange("end\nend\nmark currentfile closefile\n"u8.ToArray());
+        byte[] program = [.. "%!PS-AdobeFont-1.0: Test\n/FontMatrix [0.001 0 0 0.001 0 0] readonly def\n/Encoding StandardEncoding def\ncurrentfile eexec\n"u8.ToArray(), .. Encrypt([.. privateText], 55665)];
+
+        var font = Rendering.Fonts.Type1FontProgram.Read(program, length2: 0);
+        using var cache = new RenderCache(new PdfRenderOptions());
+        var bounds = font.GetPath("Aacute", cache)!.GetTightBounds();
+        Assert.Equal((20, 0, 320, 220), (bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
+    }
+
+    [Fact]
     public void CompositeFontsWithAType1ProgramAreReplaced()
     {
         // A CIDFont cannot have a Type 1 program: the font is replaced, and draws the H of its ToUnicode CMap

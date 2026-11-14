@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// transparent entry) with a deterministic quantizer, alpha is reduced to fully transparent or fully opaque, and 16-bit
 /// precision is reduced to 8 bits. Selecting the GIF encoder is the explicit opt-in to these losses. A frame whose colors fit
 /// its palette is reproduced exactly; other frames use a deterministic variance-based median-cut palette, or a fixed palette,
-/// optionally dithered (<see cref="Quantization"/>). Only <c>Comment</c> text entries (Latin-1) are stored as metadata.
+/// optionally dithered (<see cref="Quantization"/>). <c>Comment</c> text entries (Latin-1), an RGB ICC profile and an XMP packet (application extensions) are the metadata it stores.
 /// </para>
 /// <para>
 /// Frames are encoded from full displayed frames with freshly computed disposal/transparency control data, so pixels that

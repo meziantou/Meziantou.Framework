@@ -1,0 +1,20 @@
+@if (_data is null)
+{
+    <p class="loading">Loading...</p>
+}
+else
+{
+    <p class="data">@_data</p>
+}
+
+@code {
+    private string? _data;
+
+    [Parameter]
+    public Func<Task<string>>? Load { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _data = await Load!();
+    }
+}

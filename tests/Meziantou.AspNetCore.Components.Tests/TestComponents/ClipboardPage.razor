@@ -1,0 +1,14 @@
+@inject ClipboardService Clipboard
+<input id="text" @bind="_text" />
+<button @onclick="CopyAsync">Copy</button>
+<button @onclick="PasteAsync">Paste</button>
+<p id="pasted">@_pasted</p>
+
+@code {
+    private string? _text;
+    private string? _pasted;
+
+    private async Task CopyAsync() => await Clipboard.WriteTextAsync(_text ?? "");
+
+    private async Task PasteAsync() => _pasted = await Clipboard.ReadTextAsync();
+}

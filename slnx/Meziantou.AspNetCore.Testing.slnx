@@ -1,0 +1,42 @@
+<Solution>
+  <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.AspNetCore.Testing.Fuzz/Meziantou.AspNetCore.Testing.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.AspNetCore.Components.LogViewer/Meziantou.AspNetCore.Components.LogViewer.csproj" />
+    <Project Path="../src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj" />
+    <Project Path="../src/Meziantou.AspNetCore.Testing/Meziantou.AspNetCore.Testing.csproj" />
+    <Project Path="../src/Meziantou.Framework.AnsiFormatting/Meziantou.Framework.AnsiFormatting.csproj" />
+    <Project Path="../src/Meziantou.Framework.DiffEngine/Meziantou.Framework.DiffEngine.csproj" />
+    <Project Path="../src/Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />
+    <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
+    <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
+    <Project Path="../src/Meziantou.Framework.JavaScriptEngine.SourceGenerator/Meziantou.Framework.JavaScriptEngine.SourceGenerator.csproj" />
+    <Project Path="../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
+    <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj" />
+    <Project Path="../src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
+    <Project Path="../src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode.Dictionaries/Meziantou.Framework.Unicode.Dictionaries.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform.Imaging/Meziantou.Framework.WebPlatform.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform.JavaScript/Meziantou.Framework.WebPlatform.JavaScript.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.AspNetCore.Components.LogViewer.Tests/Meziantou.AspNetCore.Components.LogViewer.Tests.csproj" />
+    <Project Path="../tests/Meziantou.AspNetCore.Components.Tests/Meziantou.AspNetCore.Components.Tests.csproj" />
+    <Project Path="../tests/Meziantou.AspNetCore.Testing.TestApp/Meziantou.AspNetCore.Testing.TestApp.csproj" />
+    <Project Path="../tests/Meziantou.AspNetCore.Testing.Tests/Meziantou.AspNetCore.Testing.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="../tools/Meziantou.Framework.WebPlatform.Analyzers/Meziantou.Framework.WebPlatform.Analyzers.csproj" />
+  </Folder>
+</Solution>

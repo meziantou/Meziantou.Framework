@@ -1,0 +1,19 @@
+<button @onclick="SaveAsync">Save</button>
+<p role="status">@_status</p>
+
+@code {
+    private string _status = "";
+
+    [Parameter]
+    public EventCallback OnSaving { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnSave { get; set; }
+
+    private async Task SaveAsync()
+    {
+        await OnSaving.InvokeAsync();
+        await OnSave.InvokeAsync("data");
+        _status = "Saved";
+    }
+}

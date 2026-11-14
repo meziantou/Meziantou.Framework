@@ -10,14 +10,25 @@ namespace Meziantou.Framework.Fonts;
 /// its glyph is decoded (<see cref="CffCharstringInterpreter"/>). The table of an OpenType font holds one font.
 /// </para>
 /// <para>
-/// What is not needed to draw a glyph is not read: the names of the glyphs (charset, strings), the encoding, the
-/// hinting values of the private DICTs and the font matrix. OpenType gives the units of the outlines in the <c>head</c>
-/// table and the advances in the <c>hmtx</c> table.
+/// What is not needed to draw a glyph is not read: the names of the glyphs (charset, strings), the encoding and the
+/// font matrix. OpenType gives the units of the outlines in the <c>head</c> table and the advances in the <c>hmtx</c>
+/// table. The hinting values of the private DICTs are read when a hinter asks for them (<see cref="GetHintValues"/>).
 /// </para>
 /// </remarks>
 internal sealed class CffTable
 {
     // Operators of the Top DICT and of the Private DICT: tables 9, 10 and 23 of the specification.
+    private const int BlueValuesOperator = 6;
+    private const int OtherBluesOperator = 7;
+    private const int FamilyBluesOperator = 8;
+    private const int FamilyOtherBluesOperator = 9;
+    private const int StdHWOperator = 10;
+    private const int StdVWOperator = 11;
+    private const int BlueScaleOperator = CffDictReader.Escape + 9;
+    private const int BlueShiftOperator = CffDictReader.Escape + 10;
+    private const int BlueFuzzOperator = CffDictReader.Escape + 11;
+    private const int StemSnapHOperator = CffDictReader.Escape + 12;
+    private const int StemSnapVOperator = CffDictReader.Escape + 13;
     private const int CharStringsOperator = 17;
     private const int PrivateOperator = 18;
     private const int SubrsOperator = 19;
@@ -34,6 +45,9 @@ internal sealed class CffTable
     // The local subroutines of each font DICT: one for a font whose glyphs have names, one per font DICT for a font
     // whose glyphs are identified by CID.
     private readonly CffIndex[] _localSubroutines;
+
+    // The private DICT of each font DICT: its position and its length, -1 when there is none.
+    private readonly (long Offset, long Length)[] _privateDicts;
     private readonly int _fdSelect;
     private readonly int _fdSelectFormat;
 
@@ -41,11 +55,12 @@ internal sealed class CffTable
     // otherwise.
     private readonly int[]? _variationStoreIndexes;
 
-    private CffTable(CffIndex charStrings, CffIndex globalSubroutines, CffIndex[] localSubroutines, int fdSelect, int fdSelectFormat, int variationStore = 0, int[]? variationStoreIndexes = null)
+    private CffTable(CffIndex charStrings, CffIndex globalSubroutines, CffIndex[] localSubroutines, (long Offset, long Length)[] privateDicts, int fdSelect, int fdSelectFormat, int variationStore = 0, int[]? variationStoreIndexes = null)
     {
         _charStrings = charStrings;
         _globalSubroutines = globalSubroutines;
         _localSubroutines = localSubroutines;
+        _privateDicts = privateDicts;
         _fdSelect = fdSelect;
         _fdSelectFormat = fdSelectFormat;
         VariationStore = variationStore;
@@ -135,7 +150,7 @@ internal sealed class CffTable
             throw FontErrors.InvalidTable(FontTags.Cff, "has no charstring.");
 
         if (!isCidKeyed)
-            return new CffTable(charStrings, globalSubroutines, [ReadLocalSubroutines(table, privateOffset, privateLength)], fdSelect: -1, fdSelectFormat: 0);
+            return new CffTable(charStrings, globalSubroutines, [ReadLocalSubroutines(table, privateOffset, privateLength)], [(privateOffset, privateLength)], fdSelect: -1, fdSelectFormat: 0);
 
         // A CID-keyed font: an array of font DICTs, each with its private DICT, and the font DICT of each glyph.
         if (fdArrayOffset < 0 || fdSelectOffset < 0)
@@ -146,6 +161,7 @@ internal sealed class CffTable
             throw FontErrors.InvalidTable(FontTags.Cff, "has an empty font DICT array.");
 
         var localSubroutines = new CffIndex[fontDicts.Count];
+        var privateDicts = new (long Offset, long Length)[fontDicts.Count];
         for (var i = 0; i < localSubroutines.Length; i++)
         {
             privateOffset = -1;
@@ -161,9 +177,10 @@ internal sealed class CffTable
             }
 
             localSubroutines[i] = ReadLocalSubroutines(table, privateOffset, privateLength);
+            privateDicts[i] = (privateOffset, privateLength);
         }
 
-        return new CffTable(charStrings, globalSubroutines, localSubroutines, (int)fdSelectOffset, ReadFontDictSelectorFormat(table, fdSelectOffset, charStrings.Count));
+        return new CffTable(charStrings, globalSubroutines, localSubroutines, privateDicts, (int)fdSelectOffset, ReadFontDictSelectorFormat(table, fdSelectOffset, charStrings.Count));
     }
 
     /// <summary>
@@ -219,6 +236,7 @@ internal sealed class CffTable
             throw FontErrors.InvalidTable(FontTags.Cff2, "has an empty font DICT array.");
 
         var localSubroutines = new CffIndex[fontDicts.Count];
+        var privateDicts = new (long Offset, long Length)[fontDicts.Count];
         var variationStoreIndexes = new int[fontDicts.Count];
         for (var i = 0; i < localSubroutines.Length; i++)
         {
@@ -234,6 +252,7 @@ internal sealed class CffTable
                 }
             }
 
+            privateDicts[i] = (privateOffset, privateLength);
             if (privateOffset < 0 || privateLength == 0)
                 continue;
 
@@ -274,7 +293,7 @@ internal sealed class CffTable
             variationStore = (int)variationStoreOffset + 2;
         }
 
-        return new CffTable(charStrings, globalSubroutines, localSubroutines, (int)fdSelectOffset, fdSelectFormat, variationStore, variationStoreIndexes);
+        return new CffTable(charStrings, globalSubroutines, localSubroutines, privateDicts, (int)fdSelectOffset, fdSelectFormat, variationStore, variationStoreIndexes);
     }
 
     /// <summary>
@@ -372,6 +391,135 @@ internal sealed class CffTable
         var interpreter = new CffCharstringInterpreter(table, _globalSubroutines, _localSubroutines[fontDict], sink, ref budget) { AllowsAccentedGlyphs = true };
         interpreter.Run(_charStrings.Get(table, glyphId));
         return interpreter.AccentedGlyph;
+    }
+
+    /// <summary>
+    /// Reads the hinting values of the private DICT of the font DICT of a glyph. The values of a CFF2 table are blended
+    /// for an instance.
+    /// </summary>
+    /// <param name="table">The table.</param>
+    /// <param name="glyphId">The glyph.</param>
+    /// <param name="scalars">The scalars of the regions of the variation store of a CFF2 table for an instance; empty for the default instance.</param>
+    /// <exception cref="InvalidFontException">The private DICT is malformed.</exception>
+    public CffHintValues GetHintValues(ReadOnlySpan<byte> table, int glyphId, ReadOnlySpan<double> scalars = default)
+    {
+        if ((uint)glyphId >= (uint)_charStrings.Count)
+            return CffHintValues.Empty;
+
+        var fontDict = GetFontDict(table, glyphId);
+        if ((uint)fontDict >= (uint)_privateDicts.Length)
+            throw FontErrors.InvalidTable(FontTags.Cff, "selects a font DICT that does not exist for a glyph.");
+
+        var (offset, length) = _privateDicts[fontDict];
+        if (offset < 0 || length == 0)
+            return CffHintValues.Empty;
+
+        var data = FontBinary.Slice(table, offset, length);
+        if (_variationStoreIndexes is null)
+            return ReadHintValues(data, isCff2: false, blendScalars: default);
+
+        // The blends of the DICT have deltas for the regions of the subtable of the store its vsindex selects.
+        Span<double> blendScalars = stackalloc double[CffDictReader.MaxCff2Operands];
+        var regionCount = 0;
+        var index = _variationStoreIndexes[fontDict];
+        if (VariationStore != 0 && (uint)index <= ushort.MaxValue)
+        {
+            if (scalars.IsEmpty)
+            {
+                regionCount = Math.Min(ItemVariationStore.GetRegionCount(table, VariationStore, index), blendScalars.Length);
+                blendScalars[..regionCount].Clear();
+            }
+            else
+            {
+                regionCount = ItemVariationStore.GetRegionScalars(table, VariationStore, index, scalars, blendScalars);
+            }
+        }
+
+        return ReadHintValues(data, isCff2: true, blendScalars[..regionCount]);
+    }
+
+    private static CffHintValues ReadHintValues(ReadOnlySpan<byte> data, bool isCff2, ReadOnlySpan<double> blendScalars)
+    {
+        double[] blueValues = [], otherBlues = [], familyBlues = [], familyOtherBlues = [], stemSnapH = [], stemSnapV = [];
+        double blueScale = CffHintValues.DefaultBlueScale, blueShift = 7, blueFuzz = 1, stdHW = 0, stdVW = 0;
+        Span<double> operands = stackalloc double[isCff2 ? CffDictReader.MaxCff2Operands : CffDictReader.MaxOperands];
+        var reader = isCff2 ? new CffDictReader(data, blendScalars) : new CffDictReader(data);
+        while (reader.TryRead(operands, out var count, out var @operator))
+        {
+            var values = operands[..count];
+            switch (@operator)
+            {
+                case BlueValuesOperator:
+                    blueValues = ReadDeltas(values, pairs: true);
+                    break;
+                case OtherBluesOperator:
+                    otherBlues = ReadDeltas(values, pairs: true);
+                    break;
+                case FamilyBluesOperator:
+                    familyBlues = ReadDeltas(values, pairs: true);
+                    break;
+                case FamilyOtherBluesOperator:
+                    familyOtherBlues = ReadDeltas(values, pairs: true);
+                    break;
+                case StemSnapHOperator:
+                    stemSnapH = ReadDeltas(values, pairs: false);
+                    break;
+                case StemSnapVOperator:
+                    stemSnapV = ReadDeltas(values, pairs: false);
+                    break;
+                case BlueScaleOperator when count >= 1:
+                    blueScale = values[0];
+                    break;
+                case BlueShiftOperator when count >= 1:
+                    blueShift = values[0];
+                    break;
+                case BlueFuzzOperator when count >= 1:
+                    blueFuzz = values[0];
+                    break;
+                case StdHWOperator when count >= 1:
+                    stdHW = values[0];
+                    break;
+                case StdVWOperator when count >= 1:
+                    stdVW = values[0];
+                    break;
+            }
+        }
+
+        foreach (var value in (ReadOnlySpan<double>)[blueScale, blueShift, blueFuzz, stdHW, stdVW])
+        {
+            FontErrors.EnsureCoordinates(value, 0);
+        }
+
+        return new CffHintValues
+        {
+            BlueValues = blueValues,
+            OtherBlues = otherBlues,
+            FamilyBlues = familyBlues,
+            FamilyOtherBlues = familyOtherBlues,
+            BlueScale = blueScale,
+            BlueShift = blueShift,
+            BlueFuzz = blueFuzz,
+            StdHW = stdHW,
+            StdVW = stdVW,
+            StemSnapH = stemSnapH,
+            StemSnapV = stemSnapV,
+        };
+
+        // A delta array: each value is the difference with the one before it. The zones are pairs: an odd value
+        // left out.
+        static double[] ReadDeltas(ReadOnlySpan<double> values, bool pairs)
+        {
+            var result = new double[pairs ? values.Length & ~1 : values.Length];
+            var value = 0.0;
+            for (var i = 0; i < result.Length; i++)
+            {
+                value += values[i];
+                FontErrors.EnsureCoordinates(value, 0);
+                result[i] = value;
+            }
+
+            return result;
+        }
     }
 
     private int GetFontDict(ReadOnlySpan<byte> table, int glyphId)

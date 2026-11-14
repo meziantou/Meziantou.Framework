@@ -1,4 +1,6 @@
 ﻿@typeparam TRowData
+@using Meziantou.AspNetCore.Components.Internals
+@using Microsoft.AspNetCore.Components.Rendering
 @*
     <CascadingValue> allows descendant components (defined in ChildContent) to receive the specified value.
     Child components need to declare a cascading parameter with the same type as "Value" (i.e. Grid<TRowData>).
@@ -10,39 +12,7 @@
     performance optimization that allows the framework to skip setting up
     change notifications.
 *@
-<CascadingValue IsFixed="true" Value="this">@ChildContent</CascadingValue>
-
-<table @attributes="@TableAttributes">
-    <thead>
-        <tr>
-            @foreach (var column in columns)
-            {
-                @column.HeaderTemplate
-            }
-        </tr>
-    </thead>
-    <tbody>
-        @{
-            if (Items != null)
-            {
-                var index = 0;
-                foreach (var item in Items)
-                {
-                    var rowIndex = index;
-                    @* Use @key to help the diff algorithm when updating the collection. The key must be unique among
-                       siblings, so it falls back to the row index unless the caller supplies a real key. *@
-                    <tr @key="RowKey is null ? rowIndex : RowKey(item)" class="@(RowClass?.Invoke(item, rowIndex))">
-                        @foreach (var column in columns)
-                        {
-                            @column.CellTemplate(item)
-                        }
-                    </tr>
-                    index++;
-                }
-            }
-        }
-    </tbody>
-</table>
+@RenderGrid
 
 @code {
     /// <summary>Gets or sets additional attributes to apply to the table element.</summary>
@@ -70,24 +40,147 @@
     [Parameter]
     public Func<TRowData, object>? RowKey { get; set; }
 
-    private readonly List<DataGridColumn<TRowData>> columns = new List<DataGridColumn<TRowData>>();
+    private void RenderGrid(RenderTreeBuilder builder)
+    {
+        builder.OpenComponent<CascadingValue<DataGrid<TRowData>>>(0);
+        builder.AddComponentParameter(1, nameof(CascadingValue<DataGrid<TRowData>>.IsFixed), true);
+        builder.AddComponentParameter(2, nameof(CascadingValue<DataGrid<TRowData>>.Value), this);
+        builder.AddComponentParameter(3, nameof(CascadingValue<DataGrid<TRowData>>.ChildContent), (RenderFragment)(content =>
+        {
+            // The columns are in a component keyed by a generation: a new generation recreates the columns, so they all
+            // render again, in the order of ChildContent. The table is not in it, so its rows and cells keep their state.
+            content.OpenComponent<DeferredContent>(0);
+            content.SetKey(columnsGeneration);
+            content.AddComponentParameter(1, nameof(DeferredContent.ChildContent), (RenderFragment)RenderColumns);
+            content.CloseComponent();
 
-    // GridColumn uses these methods to register and unregister itself
+            // The renderer renders the queued components in order: the columns component, then this one, which queues the
+            // table after the columns that the columns component queued
+            content.OpenComponent<DeferredContent>(2);
+            content.AddComponentParameter(3, nameof(DeferredContent.ChildContent), (RenderFragment)(deferred =>
+            {
+                deferred.OpenComponent<DeferredContent>(0);
+                deferred.AddComponentParameter(1, nameof(DeferredContent.ChildContent), (RenderFragment)RenderTable);
+                deferred.CloseComponent();
+            }));
+            content.CloseComponent();
+        }));
+        builder.CloseComponent();
+    }
+
+    private void RenderColumns(RenderTreeBuilder content)
+    {
+        // The columns register themselves while they render, in the order of ChildContent. Collecting them again on
+        // each render keeps that order when a column is removed and added back (for instance with @if).
+        StartCollectingColumns();
+        content.AddContent(0, ChildContent);
+    }
+
+    private void RenderTable(RenderTreeBuilder __builder)
+    {
+        FinishCollectingColumns();
+        <table @attributes="@TableAttributes">
+            <thead>
+                <tr>
+                    @foreach (var column in columns)
+                    {
+                        @column.HeaderTemplate
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    if (Items != null)
+                    {
+                        var index = 0;
+                        foreach (var item in Items)
+                        {
+                            var rowIndex = index;
+                            @* Use @key to help the diff algorithm when updating the collection. The key must be unique among
+                               siblings, so it falls back to the row index unless the caller supplies a real key. *@
+                            <tr @key="RowKey is null ? rowIndex : RowKey(item)" class="@(RowClass?.Invoke(item, rowIndex))">
+                                @foreach (var column in columns)
+                                {
+                                    @column.CellTemplate(item)
+                                }
+                            </tr>
+                            index++;
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+    }
+
+    private readonly List<DataGridColumn<TRowData>> columns = new List<DataGridColumn<TRowData>>();
+    private readonly List<DataGridColumn<TRowData>> liveColumns = new List<DataGridColumn<TRowData>>();
+    private List<DataGridColumn<TRowData>> previousColumns = new List<DataGridColumn<TRowData>>();
+    private bool collectingColumns;
+    private int columnsGeneration;
+
+    private void StartCollectingColumns()
+    {
+        previousColumns = new List<DataGridColumn<TRowData>>(columns);
+        columns.Clear();
+        collectingColumns = true;
+    }
+
+    private void FinishCollectingColumns()
+    {
+        collectingColumns = false;
+
+        // A column whose parameters did not change (for instance a Title only) does not render again: it keeps the
+        // position it had after the column that preceded it
+        var hasNewColumn = columns.Exists(column => !previousColumns.Contains(column));
+        var hasSkippedColumn = false;
+        for (var i = 0; i < previousColumns.Count; i++)
+        {
+            var column = previousColumns[i];
+            if (columns.Contains(column) || !liveColumns.Contains(column))
+                continue;
+
+            hasSkippedColumn = true;
+
+            var insertAt = 0;
+            for (var j = i - 1; j >= 0; j--)
+            {
+                var index = columns.IndexOf(previousColumns[j]);
+                if (index >= 0)
+                {
+                    insertAt = index + 1;
+                    break;
+                }
+            }
+
+            columns.Insert(insertAt, column);
+        }
+
+        // The position of a new column among the columns that did not render is unknown (a column shown by @if before
+        // them): render the grid again with new columns, which all render in the order of ChildContent
+        if (hasNewColumn && hasSkippedColumn)
+        {
+            columnsGeneration++;
+            StateHasChanged();
+        }
+    }
+
+    // DataGridColumn calls this method when it is initialized
+    internal void RegisterColumn(DataGridColumn<TRowData> column) => liveColumns.Add(column);
+
+    // DataGridColumn calls this method while it renders. The columns render after the grid and before the table
+    // (DeferredContent), so the table uses the columns of the current ChildContent, in their order. This must not rely on
+    // OnAfterRender: static server-side rendering never calls it, which would leave the table permanently empty.
     internal void AddColumn(DataGridColumn<TRowData> column)
     {
-        columns.Add(column);
-
-        // Columns are instantiated while rendering ChildContent, so the columns collection is still empty when the
-        // table is first built. Requesting another render makes the renderer pick the columns up. This must not rely
-        // on OnAfterRender: static server-side rendering never calls it, which would leave the table permanently empty.
-        StateHasChanged();
+        if (collectingColumns && !columns.Contains(column))
+        {
+            columns.Add(column);
+        }
     }
 
     internal void RemoveColumn(DataGridColumn<TRowData> column)
     {
-        if (columns.Remove(column))
-        {
-            StateHasChanged();
-        }
+        liveColumns.Remove(column);
+        columns.Remove(column);
     }
 }

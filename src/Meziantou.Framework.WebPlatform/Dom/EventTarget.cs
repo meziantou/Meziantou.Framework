@@ -66,6 +66,9 @@ internal sealed class EventListenerEntry
 
     public bool? Passive { get; set; }
 
+    /// <summary>Whether <see cref="Passive"/> is the default passive value of the target (https://dom.spec.whatwg.org/#default-passive-value), not an option of the listener.</summary>
+    public bool PassiveByDefault { get; set; }
+
     public bool Once { get; init; }
 
     public AbortSignal? Signal { get; init; }
@@ -185,7 +188,11 @@ public partial class EventTarget
         if (listener.Callback is null)
             return;
 
-        listener.Passive ??= GetDefaultPassiveValue(listener.Type);
+        if (listener.Passive is null)
+        {
+            listener.Passive = GetDefaultPassiveValue(listener.Type);
+            listener.PassiveByDefault = listener.Passive.Value;
+        }
 
         var list = EventListenerList;
         foreach (var existing in list)
@@ -850,6 +857,7 @@ internal static class EventDispatcher
             if (listener.Passive == true)
             {
                 @event.InPassiveListenerFlag = true;
+                @event.DefaultPassiveListenerWindow = listener.PassiveByDefault ? @event.CurrentTarget?.RelevantGlobal as Window : null;
             }
 
             // The current event (window.event) of the global object of the listener's callback. The global of a .NET
@@ -902,6 +910,7 @@ internal static class EventDispatcher
             }
 
             @event.InPassiveListenerFlag = false;
+            @event.DefaultPassiveListenerWindow = null;
             if (@event.StopImmediatePropagationFlag)
                 break;
         }

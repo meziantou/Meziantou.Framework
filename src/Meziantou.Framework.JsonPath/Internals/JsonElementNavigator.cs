@@ -75,6 +75,9 @@ internal sealed class JsonElementNavigator : JsonPathNavigator<JsonElement>
 
     public override bool HasConstantTimePropertyLookup => false;
 
+    /// <summary><see cref="JsonElement.TryGetProperty(string, out JsonElement)"/> returns the last of duplicate properties.</summary>
+    internal override bool PropertyLookupMatchesEnumeration => true;
+
     public override void CopyElements(JsonElement value, JsonElement[] destination)
     {
         var index = 0;

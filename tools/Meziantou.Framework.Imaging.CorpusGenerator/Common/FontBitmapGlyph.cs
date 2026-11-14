@@ -14,4 +14,13 @@ internal sealed record FontBitmapGlyph(int GlyphId, int Left, int Bottom, int Wi
 
     /// <summary>Gets the glyph whose image this glyph uses instead of its own, in the <c>sbix</c> table.</summary>
     public int? DuplicateOf { get; init; }
+
+    /// <summary>Gets the image format of the glyph in the <c>CBDT</c> or <c>EBDT</c> table, when it is not the one of its strike.</summary>
+    public int? ImageFormat { get; init; }
+
+    /// <summary>
+    /// Gets the glyphs this glyph is made of (image formats 8 and 9 of <c>EBDT</c>), with the offset of their top left
+    /// corner from the top left corner of its box, in pixels; <see langword="null"/> for a glyph that has pixels.
+    /// </summary>
+    public IReadOnlyList<(int Glyph, int X, int Y)>? Components { get; init; }
 }

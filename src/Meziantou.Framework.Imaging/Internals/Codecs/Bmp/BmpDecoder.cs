@@ -37,7 +37,7 @@ internal sealed class BmpDecoder : IImageDecodeObserver
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
         OpaqueRgbaRows = structure.Layout.Header.BitsPerPixel == 24 && _request.PixelFormat == PixelFormat.Rgba32;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Bmp, structure.Size, structure.DefaultPixelFormat, OpaqueRgbaRows ? PixelFormat.Rgba32 : structure.DefaultPixelFormat, iccProfile: null);
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Bmp, structure.Size, structure.DefaultPixelFormat, OpaqueRgbaRows ? PixelFormat.Rgba32 : structure.Layout.SourcePixelFormat, iccProfile: null);
     }
 
     /// <summary>Starts the frame on its first row and leases it; dispose the lease before returning from the parser call.</summary>

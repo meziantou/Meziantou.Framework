@@ -149,7 +149,7 @@ public sealed class ImageWriterTests
             "jpeg-animation" => (new ImageWriterOptions(Width, Height) { Encoder = new JpegEncoder(), Animation = new AnimationMetadata() }, typeof(ArgumentException)),
             "gif-canvas" => (new ImageWriterOptions(70_000, 1) { Encoder = new GifEncoder() }, typeof(UnsupportedImageFeatureException)),
             "gif-plays" => (new ImageWriterOptions(Width, Height) { Encoder = new GifEncoder(), Animation = new AnimationMetadata { TotalPlays = 70_000 } }, typeof(UnsupportedImageFeatureException)),
-            "gif-icc-strict" => (new ImageWriterOptions(Width, Height) { Encoder = new GifEncoder(), Metadata = new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(TestRawImage.CreateIccHeader("RGB "u8))) } }, typeof(UnsupportedImageFeatureException)),
+            "gif-icc-strict" => (new ImageWriterOptions(Width, Height) { Encoder = new GifEncoder(), Metadata = new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(TestRawImage.CreateIccHeader("GRAY"u8))) } }, typeof(UnsupportedImageFeatureException)), // GIF samples are RGB
             _ => (new ImageWriterOptions(Width, Height), typeof(ArgumentException)),
         };
 

@@ -2,7 +2,7 @@
 
 The OpenType font reader and the text shaper shared by `Meziantou.Framework.Imaging` (which draws text),
 `Meziantou.Framework.WebPlatform` (which lays out HTML, SVG and MathML text) and `Meziantou.Framework.Pdf` (which embeds
-fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT), BASE
+fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT, SVG), BASE
 baselines, the shaping of complex scripts and of the fonts of Apple Advanced Typography, and the subsetting of TrueType
 and CFF outlines (`FontSubsetter`).
 
@@ -105,13 +105,24 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   variation index varies with the instance (the store of `GDEF`, as `GPOS`); the device tables of one size and
   `MathKernInfo` are not read. The header and the constants are validated when the face is created, the subtables of
   a glyph when it is looked up.
-- **Bitmap strikes.** The images of `sbix` (PNG, JPEG, TIFF) and of `CBDT` (PNG) are color glyphs: `BitmapGlyph` says
-  which format the font gives for the data, and `BitmapGlyphDecoder` rejects data of another one. The bitmaps without colors
-  of `EBLC` and `EBDT` are outlines: with `FontLoadOptions.UseEmbeddedBitmaps`, `FontFace.DecodeOutline(glyph, size,
-  ...)` emits a rectangle per run of pixels of a strike of one bit per pixel made for exactly that size, so nothing of
-  the drawing pipeline knows about them. Every caller that decodes an outline for a text passes the size; a cache of
-  what depends on the outline of a glyph has the size in its key. The option is off by default: the pixels of a text
-  do not change with the tables a font happens to have.
+- **Bitmap strikes.** `CblcTable` reads `CBLC`/`CBDT` and `EBLC`/`EBDT` (`bloc`/`bdat` in Apple fonts, which can
+  have `bhed` instead of `head`), `SbixTable` reads `sbix`. The encoded images (PNG, JPEG, TIFF of `sbix`, PNG of
+  `CBDT`) are color glyphs: `BitmapGlyph` says which format the font gives for the data, and Imaging's
+  `BitmapGlyphDecoder` decodes them and rejects data of another one. The pixels that are not encoded (image formats 1,
+  2, 5, 6, 7, and the glyphs made of other glyphs, 8 and 9) are decoded here (`FontFace.DecodeBitmap`): 32 bits per
+  pixel are colors (`Bgra`), 2, 4 and 8 bits a coverage drawn with the text color (`Mask`, `ColorGlyph.FromMask`,
+  whose `IsMask` lets Imaging paint it with the brush of the text, through the coverage, instead of its display list).
+  The bitmaps of one bit per pixel are outlines: `FontFace.DecodeOutline(glyph, size, ...)` emits a rectangle per run
+  of pixels, so nothing of the drawing pipeline knows about them. Every caller that decodes an outline for a text
+  passes the size; a cache of what depends on the outline of a glyph has the size in its key. A font with outlines
+  uses `EBDT` only with `FontLoadOptions.UseEmbeddedBitmaps`, at exactly the size of a strike: the pixels of a text do
+  not change with the tables a font happens to have. A font without outlines (`FontFace.IsBitmapOnly`) uses its
+  bitmaps at every size, from the strike that suits the size (the smallest one at least as large, else the largest).
+- **SVG glyphs** (`SvgTable`). The document records are validated when the face is created (sorted, not overlapping,
+  inside the table): a malformed list leaves the table out. `GetSvgDocument` returns the bytes of the font for a
+  document that is not compressed, and expands a gzip one into an array sized from its trailer, bounded by
+  `MaxFontBytes` before it is allocated, then checks its CRC-32. Reading and drawing the XML is the caller's:
+  Imaging draws it with `SvgGlyphRenderer`.
 - Tests have three sources: literals computed by hand on fonts built in memory (`FontTests`, with `Common/FontBuilder.cs`,
   `FontCffWriter.cs`, `FontCharstring.cs` and `FontWoff2Writer.cs` of the corpus generator, linked into the tests), the
   values HarfBuzz and FreeType both give for the fonts of the corpus (`Conformance/FontConformanceTests`: names,
@@ -122,7 +133,8 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
 ## Hinting
 
 `GlyphHinter` (`Fonts/Hinting/`) decodes outlines fitted to the pixel grid of a size: `LightHinter` (vertical only,
-no instructions, any outline format) and `TrueTypeHinter` with `TrueTypeInterpreter` (the TrueType instructions).
+no instructions, any outline format), `TrueTypeHinter` with `TrueTypeInterpreter` (the TrueType instructions) and
+`CffHinter` (the hints of CFF and CFF2 outlines).
 
 - Written from the OpenType specification ("TrueType Instructions", "Instructing TrueType Glyphs") and the Apple
   TrueType Reference Manual. FreeType is the oracle (version 40 interpreter, `FT_LOAD_TARGET_MONO`): the corpus suite
@@ -145,6 +157,20 @@ no instructions, any outline format) and `TrueTypeHinter` with `TrueTypeInterpre
   the phantom points is rounded before the instructions; a vector set from a line is truncated toward zero; a
   composite glyph rounds only the vertical offset of a component (`ROUND_XY_TO_GRID`), and nothing when the control
   value program turned the instructions off (`INSTCTRL`). GETINFO reports version 40, no grayscale and no ClearType.
+- **Instances of variable fonts** are hinted from their own points and control values (`gvar`, `CvarTable`). What
+  makes them those of FreeType, found with the two variable fonts of the suite (made by `truetype_hinting.py`): a
+  varied point is scaled from its position rounded to 1/64 of a unit, its position in font units (the original
+  distances) rounded to a whole unit, the offsets of the components too; a control value is scaled from its varied
+  value rounded to 1/64 of a unit; the phantom points round halves upward. FreeType keeps normalized coordinates in
+  16.16 and applies `hdmx` to every instance: the suite uses instances exact in 2.14 and fonts without `hdmx`, and the
+  library follows the specification. 11 points differ by 1/64 of a pixel (`KnownDivergences` of the test).
+- **CFF hints.** `CffCharstringInterpreter` gives the stems and the masks of a charstring to a sink that implements
+  `ICffHintSink`; `CffTable.GetHintValues` reads the private DICT of a glyph (`CffHintValues`, blended for an instance
+  of CFF2: `CffDictReader` evaluates the blends only for this reader). `CffHinter` builds a hint map per mask from the
+  horizontal stems and the blue zones, and maps the vertical coordinates (vertical only, as the CFF engine of FreeType;
+  the vertical stems are not used). It is written from TN #5177 and the Type 1 font format; the stems, masks and
+  values are compared with fontTools (`FontTests`), the hinted outlines with literals, not with FreeType. A ghost hint
+  of width -21 is a bottom edge at `edge + width`, of width -20 a top edge at `edge` (the CJK fonts of the corpus).
 - Remaining differences, found with fonts that cannot be committed (Arial, Verdana, Georgia, Times New Roman,
   Courier New of macOS) and with Noto Sans hinted by ttfautohint: one or two 1/64 pixel differences on a few glyphs of
   each font (fewer than 1 % of the glyphs), and about a third of the glyphs of Noto Sans at 7, 8, 20, 24 and 32 pixels

@@ -11,6 +11,7 @@ internal sealed class SbixTable
     private const uint Png = ((uint)'p' << 24) | ((uint)'n' << 16) | ((uint)'g' << 8) | ' ';
     private const uint Jpeg = ((uint)'j' << 24) | ((uint)'p' << 16) | ((uint)'g' << 8) | ' ';
     private const uint Tiff = ((uint)'t' << 24) | ((uint)'i' << 16) | ((uint)'f' << 8) | 'f';
+    private const uint PngHeader = ((uint)'I' << 24) | ((uint)'H' << 16) | ((uint)'D' << 8) | 'R';
     private const uint Duplicate = ((uint)'d' << 24) | ((uint)'u' << 16) | ((uint)'p' << 8) | 'e';
 
     private readonly int _strikeCount;
@@ -109,7 +110,24 @@ internal sealed class SbixTable
 
             var left = FontBinary.Int16(data, 0);
             var bottom = FontBinary.Int16(data, 2);
-            glyph = new BitmapGlyph(tableOffset + strike + (int)start + 8, data.Length - 8, strikeSize, strikeSize, left, bottom, 0, format);
+            // The size of a PNG image is in its header (PNG specification, "IHDR Image header"); the other formats
+            // give it to their decoder only.
+            var image = data[8..];
+            var width = 0;
+            var height = 0;
+            if (format == BitmapGlyphFormat.Png && image.Length >= 24 && FontBinary.UInt32(image, 12) == PngHeader)
+            {
+                width = (int)Math.Min(FontBinary.UInt32(image, 16), int.MaxValue);
+                height = (int)Math.Min(FontBinary.UInt32(image, 20), int.MaxValue);
+            }
+
+            glyph = new BitmapGlyph(tableOffset + strike + (int)start + 8, data.Length - 8, strikeSize, strikeSize, left, bottom, 0, format)
+            {
+                Width = width,
+                Height = height,
+                BitDepth = 32,
+                GlyphId = glyphId,
+            };
             return true;
         }
 

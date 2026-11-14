@@ -462,13 +462,16 @@ public sealed class ImageCollection : IDisposable
             return IcoCollectionReader.Create(input, configuration);
 
         var format = Image.DetectFormat(prefix[..available]);
+        if (format == ImageFormat.Pnm)
+            return PnmCollectionReader.Create(input, configuration);
+
         if (format == ImageFormat.Ani)
             throw new UnsupportedImageFeatureException("ANI stores an animation, not a collection of pages or representations: its frames are played in order. Use Image.Load instead.", format, "Image collection");
 
         if (format != ImageFormat.Unknown)
             throw new UnsupportedImageFeatureException($"{ImageFormatNames.Get(format)} stores a single image, not a collection of pages or representations. Use Image.Load instead.", format, "Image collection");
 
-        throw new UnknownImageFormatException("The image format is not recognized: the data does not start with the signature of a supported multi-entry format (TIFF, BigTIFF, ICO or CUR).");
+        throw new UnknownImageFormatException("The image format is not recognized: the data does not start with the signature of a supported multi-entry format (TIFF, BigTIFF, ICO, CUR or Netpbm).");
     }
 
     private ImageCollectionEntry CreateOwnedEntry(Image image, Point? hotspot)

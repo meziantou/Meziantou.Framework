@@ -12,7 +12,7 @@ which Windows picks the one it shows. A cursor also stores a hotspot per represe
 | | Reading | Writing |
 | --- | --- | --- |
 | Representations | PNG and bitmap (DIB) payloads of 1 to 32 bits, with their AND mask | Still PNG or 32-bit DIB payloads with alpha |
-| Sizes | Up to 256 pixels per side | Up to 256 pixels per side |
+| Sizes | Up to 256 pixels per side, and larger PNG payloads | Up to 256 pixels per side |
 | Hotspots | Read for each representation of a cursor | Written for each representation of a cursor |
 | Metadata | None | None |
 
@@ -65,8 +65,9 @@ public static Point WriteAndReadIcon(string inputPath, string iconPath, string c
 
 - An icon cannot store a hotspot: an entry or a frame that has one follows [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects it by
   default. The example discards them for the icon. A cursor always stores one, the top-left corner when the entry has none.
-- A representation larger than 256 pixels per side is rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): resize it
-  first.
+- The directory of a file cannot describe a side larger than 256 pixels (its byte 0 means 256): a PNG payload larger
+  than that is read at its own size, and a DIB payload is limited to 256 pixels per side. The encoder rejects a
+  representation larger than 256 pixels per side with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): resize it first.
 - A DIB stores 8-bit samples: [Auto](cref:Meziantou.Framework.Imaging.Formats.IconPayloadFormat.Auto) writes 16-bit pixels as PNG, and [Dib](cref:Meziantou.Framework.Imaging.Formats.IconPayloadFormat.Dib) rejects them instead of reducing them.
 - Animated images are rejected: an animated cursor is an [ANI](12-Ani.md) file.
 - The file stores no metadata: an ICC profile, EXIF, XMP, a resolution, an orientation or text entries follow

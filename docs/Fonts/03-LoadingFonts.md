@@ -24,6 +24,40 @@ bytes of the file.
   replace its outlines at the sizes they are made for. It is off by default, so that the rendering of a text does not
   change with the tables a font happens to have.
 
+## WOFF metadata and private data
+
+A WOFF or WOFF2 file can carry two blocks next to the font: an XML document of metadata (vendor, credits, license,
+copyright, ...) and private data that only the vendor of the font can interpret. They are not needed to use the font,
+so the face does not read them when it loads:
+
+- [GetWoffMetadata](cref:Meziantou.Framework.Fonts.FontData.GetWoffMetadata) expands the metadata block and returns
+  its XML document, without parsing it, or `null` when the file has none or is not a WOFF or WOFF2 file. The block is
+  kept compressed with the font and expanded at each call, in a buffer rented from the environment; its document is
+  bounded by `MaxFontBytes`.
+- [GetWoffPrivateData](cref:Meziantou.Framework.Fonts.FontData.GetWoffPrivateData) returns the bytes of the private
+  data block, empty when there is none.
+
+The blocks the font keeps count with the font against `MaxFontBytes` when the file is loaded. A block that lies outside
+a WOFF file, or whose compressed data is malformed, does not prevent the font from loading: the method that reads it
+throws [InvalidFontException](cref:Meziantou.Framework.Fonts.InvalidFontException).
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=Fonts_WoffMetadata;format=md-fenced-code-block;dedent=true -->
+```csharp
+static (string? Metadata, ReadOnlyMemory<byte> PrivateData) ReadWoffBlocks(byte[] woff)
+{
+    var environment = new PooledFontEnvironment(FontResourceLimits.Default, maxLiveAllocationBytes: 64 * 1024 * 1024);
+    var face = FontLoader.Load(woff, environment)[0];
+
+    // The XML document of the metadata block, or null when the file has none
+    var metadata = face.Data.GetWoffMetadata();
+
+    // The private data block, empty when the file has none
+    var privateData = face.Data.GetWoffPrivateData();
+    return (metadata, privateData);
+}
+```
+<!-- endref -->
+
 ## The environment
 
 The font code takes what it needs from its caller through a [FontEnvironment](cref:Meziantou.Framework.Fonts.FontEnvironment): the limits of its work

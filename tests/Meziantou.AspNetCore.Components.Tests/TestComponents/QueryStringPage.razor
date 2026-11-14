@@ -1,0 +1,17 @@
+@inject QueryStringService QueryString
+<p id="page">Page @PageIndex</p>
+<button @onclick="NextAsync">Next</button>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "page")]
+    public int PageIndex { get; set; } = 1;
+
+    protected override void OnInitialized() => QueryString.SetParametersFromQueryString(this);
+
+    private async Task NextAsync()
+    {
+        PageIndex++;
+        await QueryString.UpdateQueryString(this, reloadPage: false);
+    }
+}

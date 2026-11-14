@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Fonts;
 /// The size of the font is the sum of the lengths the directory declares: it is checked against
 /// <see cref="FontResourceLimits.MaxFontBytes"/> before anything is allocated, and a table that does not decompress to
 /// exactly its declared length is an error, so a small file cannot expand to more than the limit. The metadata and the
-/// private data of the file are not read.
+/// private data of the file are kept apart from the font (<see cref="WoffExtendedData"/>).
 /// </para>
 /// </remarks>
 internal static class WoffReader
@@ -23,7 +23,7 @@ internal static class WoffReader
     private const int HeaderLength = 44;
     private const int EntryLength = 20;
 
-    public static byte[] Decode(byte[] file, FontResourceLimits limits)
+    public static byte[] Decode(byte[] file, FontResourceLimits limits, out WoffExtendedData? extendedData)
     {
         ReadOnlySpan<byte> data = file;
         var header = FontBinary.Slice(data, 0, HeaderLength);
@@ -52,12 +52,16 @@ internal static class WoffReader
             total += SfntWriter.Pad(originalLength);
         }
 
-        if (total > limits.MaxFontBytes)
-            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, total);
+        // The blocks the font keeps next to its tables count with them.
+        var fields = header[WoffExtendedData.WoffFieldsOffset..];
+        var retained = total + WoffExtendedData.GetRetainedLength(fields, data.Length);
+        if (retained > limits.MaxFontBytes)
+            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, retained);
 
         if (total > Array.MaxLength)
             throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, Array.MaxLength, total);
 
+        extendedData = WoffExtendedData.Create(data, fields, isBrotli: false);
         var font = new byte[total];
         SfntWriter.WriteHeader(font, flavor, tableCount);
         var position = (int)SfntWriter.GetDirectoryLength(tableCount);

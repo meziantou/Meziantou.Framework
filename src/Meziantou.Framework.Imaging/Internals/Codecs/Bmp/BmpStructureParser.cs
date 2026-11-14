@@ -105,7 +105,7 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
     public ImageMetadata Metadata => _metadata.Metadata;
 
     /// <summary>Gets the default working representation.</summary>
-    public PixelFormat DefaultPixelFormat => Layout.SourcePixelFormat;
+    public PixelFormat DefaultPixelFormat => Layout.DefaultPixelFormat;
 
     public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
     {

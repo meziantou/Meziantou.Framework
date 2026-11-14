@@ -99,6 +99,13 @@ internal sealed class CannyEdgeDetector : IDisposable
     /// <summary>Replaces the pixels of a leased frame by its edges: the maximum sample for the colors of an edge, 0 elsewhere; alpha is kept.</summary>
     public void Apply(scoped in PixelLease lease, CancellationToken cancellationToken)
     {
+        Detect(lease, cancellationToken);
+        Write(lease, cancellationToken);
+    }
+
+    /// <summary>Finds the edges of a leased frame without changing it; <see cref="IsEdge"/> then tells them.</summary>
+    public void Detect(scoped in PixelLease lease, CancellationToken cancellationToken)
+    {
         ReadLuminance(lease, cancellationToken);
         if (_weights.Length > 1)
         {
@@ -108,8 +115,23 @@ internal sealed class CannyEdgeDetector : IDisposable
         ComputeGradients(cancellationToken);
         SuppressNonMaxima(cancellationToken);
         TraceEdges(cancellationToken);
-        Write(lease, cancellationToken);
     }
+
+    /// <summary>Gets whether a pixel is an edge, after <see cref="Detect"/>.</summary>
+    public bool IsEdge(int x, int y) => States[(y * _width) + x] == StateEdge;
+
+    /// <summary>
+    /// Gets the angle, in degrees, of the middle of the sector of the gradient of a pixel after <see cref="Detect"/>: 0 for a
+    /// horizontal gradient, 90 for a vertical one, 45 when it goes down to the right (y grows downward) and 135 when it goes
+    /// up to the right. The gradient is within 22.5 degrees of it.
+    /// </summary>
+    public int GetGradientSectorAngle(int x, int y) => Sectors[(y * _width) + x] switch
+    {
+        SectorHorizontal => 0,
+        SectorVertical => 90,
+        SectorDiagonalDown => 45,
+        _ => 135,
+    };
 
     public void Dispose()
     {

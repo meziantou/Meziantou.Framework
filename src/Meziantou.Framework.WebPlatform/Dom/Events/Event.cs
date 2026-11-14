@@ -234,6 +234,12 @@ public partial class Event
 
     internal bool InPassiveListenerFlag { get; set; }
 
+    /// <summary>
+    /// The window of the target of the running listener when the listener is passive because of the default passive value
+    /// of its target (https://dom.spec.whatwg.org/#default-passive-value), or null: canceling the event reports an intervention.
+    /// </summary>
+    internal Window? DefaultPassiveListenerWindow { get; set; }
+
     internal bool ComposedFlag { get; set; }
 
     internal bool Initialized { get; set; }
@@ -267,6 +273,11 @@ public partial class Event
         if (Cancelable && !InPassiveListenerFlag)
         {
             CanceledFlag = true;
+        }
+        else if (Cancelable && DefaultPassiveListenerWindow is { } window)
+        {
+            // As in Chromium, the call is ignored because the target treats the listener as passive: an intervention
+            window.ReportIntervention("PreventDefaultPassive", "Unable to preventDefault inside passive event listener due to target being treated as passive. See https://www.chromestatus.com/feature/5093566007214080");
         }
     }
 

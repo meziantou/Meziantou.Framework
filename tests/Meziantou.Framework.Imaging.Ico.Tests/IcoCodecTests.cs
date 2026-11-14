@@ -395,6 +395,29 @@ public sealed class IcoCodecTests
         Assert.Equal(new Size(4, 4), image.Size);
     }
 
+    [Fact]
+    public void APngRepresentationLargerThan256PixelsIsDeclaredAsZero()
+    {
+        var png = SyntheticImages.Png(512, 300);
+        var data = new IcoFileBuilder()
+            .Add(new IcoEntrySpec { Width = 256, Height = 256, DeclaredWidth = 0, DeclaredHeight = 0, Payload = png })
+            .Add(new IcoEntrySpec { Width = 4, Height = 4, Payload = SyntheticImages.Png(4, 4) })
+            .Build();
+
+        Assert.Equal(new Size(512, 300), Image.Identify(data).Size);
+        using var collection = ImageCollection.Load(data);
+        Assert.Equal(new Size(512, 300), collection[0].Size);
+        using var direct = Image.Load(png);
+        using var fromIcon = Image.Load(data);
+        TestImages.AssertSamePixels((Image<Rgba32>)direct, (Image<Rgba32>)fromIcon);
+
+        // A side above 256 pixels next to a non-zero directory byte contradicts it, and a DIB cannot be larger
+        var contradicting = new IcoFileBuilder().Add(new IcoEntrySpec { Width = 255, Height = 0, DeclaredWidth = 255, DeclaredHeight = 0, Payload = png }).Build();
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(contradicting));
+        var largeDib = new IcoFileBuilder().Add(new IcoEntrySpec { Width = 257, Height = 1, DeclaredWidth = 0, Payload = IcoFileBuilder.Dib32(257, 1, new Rgba32[257]) }).Build();
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(largeDib));
+    }
+
     /// <summary>The inputs an icon is buffered whole from: every one that is not a synchronous read of a seekable source.</summary>
     public static TheoryData<InputVariant> BufferedVariants =>
         [InputVariant.Span, InputVariant.NonSeekableStream, InputVariant.ShortReadStream, InputVariant.AsyncPath, InputVariant.AsyncStream, InputVariant.AsyncShortReadStream];

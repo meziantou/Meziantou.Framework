@@ -1,6 +1,6 @@
 ---
 title: Rotate, flip and transform
-description: Turn an image by quarter turns or by any angle, mirror it, skew it, correct a perspective and apply the EXIF orientation.
+description: Turn an image by quarter turns or by any angle, mirror it, skew it, correct a perspective, straighten a scan, estimate a homography and apply the EXIF orientation.
 ---
 
 Quarter turns and mirrors move pixels without changing them. Rotations by any angle, skews and transformations compute
@@ -148,6 +148,79 @@ public static void FlattenPage(string inputPath, string outputPath, PointD topLe
 <!-- endref -->
 
 An [AffineTransform](cref:Meziantou.Framework.Imaging.AffineTransform) converts implicitly to a [ProjectiveTransform](cref:Meziantou.Framework.Imaging.ProjectiveTransform).
+
+## Straighten a scanned document
+
+A page scanned or photographed at a slight angle has slanted lines of text.
+[Deskew](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Deskew) finds their angle and rotates the image back
+around its center, keeping its size and filling the uncovered corners with white, like paper:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_Deskew;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static double StraightenScan(string inputPath, string outputPath)
+{
+    using var scan = Image.Load(inputPath);
+
+    // The angle of the lines of text is estimated, and the page rotated back; the corners it uncovers are white
+    var skew = scan.Deskew(new SkewEstimationOptions { MaxAngle = 10 });
+    scan.Save(outputPath);
+    return skew;
+}
+```
+<!-- endref -->
+
+[EstimateSkew](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.EstimateSkew) returns the angle without changing
+anything: positive when the lines go down to the right, so `Rotate(-angle)` straightens them. The angle is the one of
+the projection profiles: the dark pixels (or the light ones, for light text on a dark background) are counted along the
+lines of each candidate angle, and the angle where the lines of text fall in the fewest rows wins.
+[SkewEstimationOptions](cref:Meziantou.Framework.Imaging.SkewEstimationOptions) sets the largest angle searched (15
+degrees by default) and the precision (0.05 degree). The estimate needs parallel lines of ink, such as text or a table;
+a page without contrast gives 0, and leaves the image unchanged. Pass
+[TransformOptions](cref:Meziantou.Framework.Imaging.TransformOptions) to choose another filter, background or canvas.
+
+## Estimate a homography from matched points
+
+When the corners of a page are not known exactly, or when two photos of the same flat scene are matched point by point
+(corners found by [DetectCorners](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.DetectCorners), for
+example), [ProjectiveTransform.EstimateHomography](cref:Meziantou.Framework.Imaging.ProjectiveTransform.EstimateHomography)
+computes the projective transformation that maps the points of one onto the points of the other, by least squares, from
+at least four pairs. Some matches are usually wrong:
+[EstimateHomographyRobust](cref:Meziantou.Framework.Imaging.ProjectiveTransform.EstimateHomographyRobust) keeps the
+homography most of them agree on (RANSAC), and tells which pairs are inliers:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_EstimateHomography;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static HomographyEstimate AlignToReference(string photoPath, string outputPath, PointD[] photoPoints, PointD[] referencePoints, Size referenceSize)
+{
+    using var photo = Image.Load(photoPath);
+
+    // The points of the photo and the points of the reference they match, some of them wrong: RANSAC keeps the
+    // homography most of them agree on
+    var estimate = ProjectiveTransform.EstimateHomographyRobust(photoPoints, referencePoints, new HomographyRansacOptions { Threshold = 2 });
+
+    // The photo seen from the point of view of the reference
+    photo.Transform(estimate.Transform, new TransformOptions
+    {
+        CanvasMode = TransformCanvasMode.Explicit,
+        CanvasSize = referenceSize,
+        BackgroundColor = new Rgba64(0, 0, 0, 65535),
+    });
+    photo.Save(outputPath);
+    return estimate;
+}
+```
+<!-- endref -->
+
+- **Points.** Four pairs with no three points on a line give the exact homography; more pairs are averaged. Points on a
+  line determine none, and throw an `ArgumentException`.
+- **Robust estimate.** [HomographyRansacOptions](cref:Meziantou.Framework.Imaging.HomographyRansacOptions) sets the
+  distance under which a pair is an inlier (3 pixels by default), the number of random samples (1,000) and the seed: the
+  same seed gives the same result everywhere. The
+  [HomographyEstimate](cref:Meziantou.Framework.Imaging.HomographyEstimate) has the homography, refitted on its inliers,
+  the inliers, and their error.
+- **Warp.** Pass the homography to [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform) with
+  [TransformCanvasMode.Explicit](cref:Meziantou.Framework.Imaging.TransformCanvasMode.Explicit): the canvas then has the
+  coordinates of the destination points.
 
 ## Transform options
 

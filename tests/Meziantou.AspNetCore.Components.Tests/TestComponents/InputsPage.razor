@@ -1,0 +1,18 @@
+<EditForm Model="this">
+    <label for="day">Day</label>
+    <InputEnumSelect id="day" @bind-Value="Day" EmptyOptionText="(none)" />
+    <label for="id">Identifier</label>
+    <InputGuid id="id" @bind-Value="Id" />
+    <ValidationMessage For="() => Id" />
+    <label for="url">Website</label>
+    <InputUrl id="url" @bind-Value="Url" />
+    <ValidationMessage For="() => Url" />
+</EditForm>
+
+@code {
+    public DayOfWeek? Day { get; set; } = DayOfWeek.Monday;
+
+    public Guid Id { get; set; }
+
+    public Uri? Url { get; set; }
+}

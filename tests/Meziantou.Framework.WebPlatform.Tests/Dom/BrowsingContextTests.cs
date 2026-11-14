@@ -2284,6 +2284,38 @@ public sealed class BrowsingContextTests
         #endregion
     }
 
+    [Fact]
+    public async Task Documentation_Downloads()
+    {
+        #region WebPlatform_Downloads
+        var loader = new InMemoryLoader(new Dictionary<string, (string Content, string ContentType)>(StringComparer.Ordinal)
+        {
+            ["https://example.com/"] = ("<a href=/export.csv download=report.csv>Export</a>", "text/html"),
+            ["https://example.com/export.csv"] = ("id,name\n1,Ada\n", "text/csv"),
+            ["https://example.com/archive.bin"] = ("binary", "application/octet-stream"),
+        });
+
+        var downloads = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = loader,
+
+            // The callback saves the response: Filename is the download attribute of the hyperlink, or null for a navigation
+            DownloadStarted = (_, download) => downloads.Add($"{download.Url} {download.Filename ?? "(navigation)"}: {download.Resource.Content}"),
+        });
+        context.Navigate("https://example.com/");
+        await context.EventLoop.RunUntilIdleAsync();
+        var page = context.Document;
+
+        ((HtmlElement)page.QuerySelector("a")!).Click(); // a hyperlink with a download attribute
+        context.Window.Location.Assign("/archive.bin");   // a response that is not displayed (application/octet-stream)
+        await context.EventLoop.RunUntilIdleAsync();
+
+        Assert.Same(page, context.Document); // the page stays
+        Assert.Equal(["https://example.com/export.csv report.csv: id,name\n1,Ada\n", "https://example.com/archive.bin (navigation): binary"], downloads);
+        #endregion
+    }
+
     #region WebPlatform_InMemoryLoader
     /// <summary>Serves the documents and the resources from memory, by absolute URL without fragment.</summary>
     private sealed class InMemoryLoader(IReadOnlyDictionary<string, (string Content, string ContentType)> files) : DocumentLoader

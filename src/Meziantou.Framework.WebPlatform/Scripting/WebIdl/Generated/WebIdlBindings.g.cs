@@ -810,6 +810,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.CustomEventInit dictionaryDom_CustomEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CustomEventInit(r, dictionaryDom_CustomEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DeprecationReportBody dictionaryDom_DeprecationReportBody:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeprecationReportBody(r, dictionaryDom_DeprecationReportBody);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventInit dictionaryDom_DeviceMotionEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceMotionEventInit(r, dictionaryDom_DeviceMotionEventInit);
                 return true;
@@ -842,6 +845,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IdbVersionChangeEventInit dictionaryDom_IdbVersionChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbVersionChangeEventInit(r, dictionaryDom_IdbVersionChangeEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.InterventionReportBody dictionaryDom_InterventionReportBody:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_InterventionReportBody(r, dictionaryDom_InterventionReportBody);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions dictionaryDom_MagnetometerSensorOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MagnetometerSensorOptions(r, dictionaryDom_MagnetometerSensorOptions);

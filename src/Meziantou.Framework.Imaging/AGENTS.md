@@ -37,7 +37,10 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   (see "Lossy JPEG XL quality tools"); they are listed in `THIRD-PARTY-NOTICES.md`. Reading the source of another codec
   needs the same explicit permission.
 - The extension points are `CustomImageCodec`/`CustomImageEncoder` (formats registered in `ImageConfiguration.Codecs`),
-  `IPixelRowOperation<TPixel>`/`IPixelNeighborhoodOperation<TPixel>` (custom filters), `Image.WrapMemory` (caller-owned
+  `IPixelRowOperation<TPixel>`/`IPixelNeighborhoodOperation<TPixel>` (custom filters), `IImageProcessor<TPixel>` (custom
+  processors that replace every frame through the geometry transaction; the built-in seam carving and inpainting use the
+  same path and implement the internal `INativePixelCopier` so that the pixels they keep are copied, not converted),
+  `Image.WrapMemory` (caller-owned
   pixel memory) and `ImageBufferPool` (the retention of the pool). No public allocator and no custom pixel type: the
   pixel formats are a closed set that every kernel, converter and codec switches over. Implementation types are
   `internal` and live under `Internals/`.
@@ -1479,6 +1482,15 @@ thin public types over its `FontFace`.
     higher than an outline (`FontRender.ImageShift`): a line of a bitmap font has no outline glyph for that reason.
     The literals of the bitmap glyphs are on `FontSamples.BitmapBoxes` (both table families, every index and image
     format).
+  - An SVG glyph (`SvgGlyphRenderer`, `SvgGlyphDocument`, `SvgValues`) is drawn with the canvas of the library into an
+    image of the pixels it covers at the size of the text (at most 4096 pixels a side, scaled beyond), which becomes a
+    `FillImage` display list like a bitmap glyph: its key in a layout is (font, glyph, palette, size). `COLR` wins over
+    `SVG `, which wins over the bitmaps; a document that cannot be read (not well-formed, no element for the glyph, a
+    malformed compressed document, a value the canvas refuses) gives no glyph, and the next form is drawn. The XML is
+    read without DTD processing nor resolver, every element, attribute, use and character of path data is charged to
+    the `GlyphBudget`, and nothing is drawn beyond an em around the box of the font. Tests: literals on
+    `FontSamples.SvgBoxes` and on documents compared with the same shapes drawn on the canvas (`ColorFontTests`), and
+    `FontFuzzTests.MutatedSvgGlyphsFailOnlyWithDocumentedErrors`.
 - **The layout overloads allocate nothing** once the scratch of the session has grown (`PerformanceContractTests`). The
   overload that takes a string creates a layout and is the documented exception.
 - Tests: literals on the boxes font (rectangles on whole pixels at 16 pixels per em, compared with `FillRectangle`;

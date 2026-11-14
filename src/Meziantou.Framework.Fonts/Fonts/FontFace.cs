@@ -92,15 +92,23 @@ public sealed class FontFace
     private readonly int _eblcLength;
     private readonly int _ebdtOffset;
     private readonly int _ebdtLength;
+    private readonly bool _isBitmapOnly;
+    private readonly bool _useMonochromeBitmaps;
     private readonly CblcTable? _cblc;
     private readonly int _cblcOffset;
     private readonly int _cblcLength;
     private readonly int _cbdtOffset;
     private readonly int _cbdtLength;
+    private readonly SvgTable? _svg;
+    private readonly int _svgOffset;
+    private readonly int _svgLength;
 
     // The face of the default instance, which the other instances are made from: itself for the face that was loaded.
     private readonly FontFace _default;
     private FontInstance? _instance;
+
+    // Whether the MVAR table of an instance moves its ascender or its descender.
+    private bool _variesLineExtents;
 
     internal FontFace(FontData data, long directoryOffset)
     {
@@ -110,13 +118,15 @@ public sealed class FontFace
         _directory = SfntDirectory.Read(file, directoryOffset);
 
         // head: OpenType specification, "head - Font Header Table".
-        var head = GetRequiredTable(FontTags.Head, 54);
+        // A font of Apple without outlines has bhed instead: the same table under another tag.
+        var headTag = _directory.TryFind(FontTags.Head, out _, out _) || !_directory.TryFind(FontTags.Bhed, out _, out _) ? FontTags.Head : FontTags.Bhed;
+        var head = GetRequiredTable(headTag, 54);
         if (FontBinary.UInt32(head, 12) != 0x5F0F3CF5)
-            throw FontErrors.InvalidTable(FontTags.Head, "does not have its magic number.");
+            throw FontErrors.InvalidTable(headTag, "does not have its magic number.");
 
         UnitsPerEm = FontBinary.UInt16(head, 18);
         if (UnitsPerEm is < 16 or > 16384)
-            throw FontErrors.InvalidTable(FontTags.Head, $"declares {UnitsPerEm} units per em; the valid range is 16 to 16384.");
+            throw FontErrors.InvalidTable(headTag, $"declares {UnitsPerEm} units per em; the valid range is 16 to 16384.");
 
         HeadFlags = FontBinary.UInt16(head, 16);
         XMin = FontBinary.Int16(head, 36);
@@ -127,7 +137,7 @@ public sealed class FontFace
         MacStyle = macStyle;
         var locationFormat = FontBinary.Int16(head, 50);
         if (locationFormat is not (0 or 1))
-            throw FontErrors.InvalidTable(FontTags.Head, $"declares the unknown location format {locationFormat}.");
+            throw FontErrors.InvalidTable(headTag, $"declares the unknown location format {locationFormat}.");
 
         _hasLongLocations = locationFormat == 1;
 
@@ -332,14 +342,35 @@ public sealed class FontFace
 
         if (_directory.TryFind(FontTags.Cblc, out _cblcOffset, out _cblcLength) && _directory.TryFind(FontTags.Cbdt, out _cbdtOffset, out _cbdtLength))
         {
-            _cblc = CblcTable.Read(file.Slice(_cblcOffset, _cblcLength));
+            _cblc = CblcTable.Read(file.Slice(_cblcOffset, _cblcLength), FontTags.Cbdt);
         }
 
-        // The bitmaps without colors, for the font that was loaded to use them.
-        if (data.UseEmbeddedBitmaps && _directory.TryFind(FontTags.Eblc, out _eblcOffset, out _eblcLength) && _directory.TryFind(FontTags.Ebdt, out _ebdtOffset, out _ebdtLength))
+        // The glyphs described by SVG documents. A malformed list of documents leaves the table out.
+        if (_directory.TryFind(FontTags.Svg, out _svgOffset, out _svgLength))
         {
-            _eblc = CblcTable.Read(file.Slice(_eblcOffset, _eblcLength));
+            try
+            {
+                _svg = SvgTable.Read(file.Slice(_svgOffset, _svgLength));
+            }
+            catch (InvalidFontException)
+            {
+                _svg = null;
+            }
         }
+
+        // The bitmaps without colors (bloc and bdat in the fonts of Apple). They replace the outlines of a font that
+        // was loaded to use them, at the sizes they are made for; a font without outlines is drawn with them at every size.
+        if (_directory.TryFind(FontTags.Eblc, out _eblcOffset, out _eblcLength) && _directory.TryFind(FontTags.Ebdt, out _ebdtOffset, out _ebdtLength))
+        {
+            _eblc = CblcTable.Read(file.Slice(_eblcOffset, _eblcLength), FontTags.Ebdt);
+        }
+        else if (_directory.TryFind(FontTags.Bloc, out _eblcOffset, out _eblcLength) && _directory.TryFind(FontTags.Bdat, out _ebdtOffset, out _ebdtLength))
+        {
+            _eblc = CblcTable.Read(file.Slice(_eblcOffset, _eblcLength), FontTags.Bdat);
+        }
+
+        _isBitmapOnly = Outlines == FontOutlineKind.None && (_eblc is not null || _cblc is not null || _sbix is not null);
+        _useMonochromeBitmaps = _eblc is not null && (data.UseEmbeddedBitmaps || _isBitmapOnly);
 
         // The variations: the axes, then the tables that vary the outlines, the advances and the metrics along them.
         // A table whose header is not understood is left out: what it varies keeps its default value.
@@ -576,6 +607,13 @@ public sealed class FontFace
     /// </summary>
     public bool VariesAdvancesWithOutlines => _instance is not null && _hvarStore == 0 && _gvar is not null;
 
+    /// <summary>
+    /// Gets a value indicating whether the vertical metrics of an instance of a variable font are varied by a table of
+    /// their own: <c>VVAR</c> for the advance heights of <c>vmtx</c>; for a font without vertical metrics, <c>MVAR</c>
+    /// when it moves the ascender or the descender (its other records leave them as they are).
+    /// </summary>
+    internal bool VariesVerticalMetrics => _instance is not null && (HasVerticalMetrics ? _vvarStore != 0 : _variesLineExtents);
+
     /// <summary>Gets the advance width of a glyph, in font units.</summary>
     /// <remarks>
     /// In an instance of a variable font, the advance of the default instance varies by the delta of the <c>HVAR</c>
@@ -729,8 +767,9 @@ public sealed class FontFace
             return true;
         }
 
+        // The glyphs of a font without outlines are its bitmaps: the box of the image of the largest strike.
         if (Outlines == FontOutlineKind.None)
-            return false;
+            return TryGetBitmapBounds(glyphId, out bounds);
 
         // The box of the points of the outline, which is the box of an outline that has a point at each extremum
         var sink = new GlyphBoundsSink();
@@ -947,21 +986,180 @@ public sealed class FontFace
     }
 
     /// <summary>Gets a value indicating whether the font has glyphs that are drawn with their own colors.</summary>
-    public bool HasColorGlyphs => _colr is not null || _sbix is not null || _cblc is not null;
+    public bool HasColorGlyphs => _colr is not null || _sbix is not null || _cblc is not null || _svg is not null;
 
-    /// <summary>Finds the image of a glyph the font gives as a bitmap, in the strike that suits a size.</summary>
+    /// <summary>Gets a value indicating whether the font has glyphs described by SVG documents (the <c>SVG </c> table).</summary>
+    public bool HasSvgGlyphs => _svg is not null;
+
+    /// <summary>Finds the SVG document that describes a glyph.</summary>
+    /// <param name="glyphId">The glyph.</param>
+    /// <param name="glyph">Where the document is; <see cref="GetSvgDocument"/> gives its text.</param>
+    /// <returns><see langword="false"/> when the font has no SVG document for the glyph.</returns>
+    public bool TryGetSvgGlyph(int glyphId, out SvgGlyph glyph)
+    {
+        if (_svg is null || (uint)glyphId >= (uint)GlyphCount)
+        {
+            glyph = default;
+            return false;
+        }
+
+        return _svg.TryGetGlyph(Data.RawBytes.AsSpan(_svgOffset, _svgLength), _svgOffset, glyphId, out glyph);
+    }
+
+    /// <summary>Gets the text of the SVG document of a glyph, in UTF-8, expanded when the font compresses it.</summary>
+    /// <param name="glyph">The glyph, from <see cref="TryGetSvgGlyph"/>.</param>
+    /// <returns>The bytes of the document: those of the font when it is not compressed.</returns>
+    /// <exception cref="ArgumentException">The document is not in the bytes of the font.</exception>
+    /// <exception cref="InvalidFontException">The compressed document is malformed.</exception>
+    /// <exception cref="FontResourceLimitException">The expanded document is larger than <see cref="FontResourceLimits.MaxFontBytes"/>.</exception>
+    public ReadOnlyMemory<byte> GetSvgDocument(in SvgGlyph glyph)
+    {
+        var bytes = Data.RawBytes;
+        if (glyph.Offset < _svgOffset || glyph.Length <= 0 || (long)glyph.Offset + glyph.Length > (long)_svgOffset + _svgLength)
+            throw new ArgumentException("The document is not a document of the SVG table of the font.", nameof(glyph));
+
+        return SvgTable.Decode(bytes.AsSpan(glyph.Offset, glyph.Length), bytes.AsMemory(glyph.Offset, glyph.Length), Data.Limits);
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the font has glyphs that are drawn as images (<see cref="TryGetBitmapGlyph"/>): the
+    /// color bitmaps of <c>sbix</c> and <c>CBDT</c>, and the bitmaps without colors of <c>EBDT</c> or <c>bdat</c> when
+    /// they are used (a font without outlines, or a font loaded to use them).
+    /// </summary>
+    public bool HasBitmapGlyphs => _sbix is not null || _cblc is not null || _useMonochromeBitmaps;
+
+    /// <summary>
+    /// Gets a value indicating whether the font has no outlines (<see cref="Outlines"/> is <see cref="FontOutlineKind.None"/>)
+    /// but has bitmap glyphs: its glyphs are drawn with the strike that suits the size, scaled.
+    /// </summary>
+    public bool IsBitmapOnly => _isBitmapOnly;
+
+    /// <summary>
+    /// Finds the image of a glyph the font draws as an image, in the strike that suits a size: an image of <c>sbix</c>
+    /// or <c>CBDT</c>, or a bitmap of <c>EBDT</c> of more than one bit per pixel when the font uses them. The bitmaps of
+    /// one bit per pixel are outlines, see <see cref="DecodeOutline(int, double, OutlineSink, GlyphScratch, ref GlyphBudget)"/>.
+    /// </summary>
     /// <returns><see langword="false"/> when the font has no image for the glyph.</returns>
+    /// <exception cref="InvalidFontException">The data of the glyph is malformed.</exception>
     public bool TryGetBitmapGlyph(int glyphId, double size, out BitmapGlyph glyph)
+    {
+        if (TryGetColorBitmap(glyphId, size, out glyph))
+            return true;
+
+        if (_useMonochromeBitmaps && (uint)glyphId < (uint)GlyphCount && TryGetMonochromeBitmap(glyphId, size, isExactSize: !_isBitmapOnly, out glyph) && glyph.BitDepth != 1)
+            return true;
+
+        glyph = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Finds the image of a glyph in any bitmap table of the font (<c>sbix</c>, <c>CBDT</c>, then <c>EBDT</c> or
+    /// <c>bdat</c>), in the strike that suits a size, whether the font draws it or not: the bitmaps of one bit per pixel
+    /// and the tables a font with outlines was not loaded to use count.
+    /// </summary>
+    /// <returns><see langword="false"/> when the font has no image for the glyph.</returns>
+    /// <exception cref="InvalidFontException">The data of the glyph is malformed.</exception>
+    public bool TryGetAnyBitmapGlyph(int glyphId, double size, out BitmapGlyph glyph)
+    {
+        if (TryGetColorBitmap(glyphId, size, out glyph))
+            return true;
+
+        if (_eblc is not null && (uint)glyphId < (uint)GlyphCount && TryGetMonochromeBitmap(glyphId, size, isExactSize: false, out glyph))
+            return true;
+
+        glyph = default;
+        return false;
+    }
+
+    private bool TryGetColorBitmap(int glyphId, double size, out BitmapGlyph glyph)
     {
         var bytes = Data.RawBytes.AsSpan();
         if (_sbix is not null && _sbix.TryGetGlyph(bytes.Slice(_sbixOffset, _sbixLength), _sbixOffset, glyphId, size, out glyph))
             return true;
 
         if (_cblc is not null && (uint)glyphId < (uint)GlyphCount)
-            return _cblc.TryGetGlyph(bytes.Slice(_cblcOffset, _cblcLength), bytes.Slice(_cbdtOffset, _cbdtLength), _cbdtOffset, glyphId, size, out glyph);
+            return _cblc.TryGetGlyph(bytes.Slice(_cblcOffset, _cblcLength), bytes.Slice(_cbdtOffset, _cbdtLength), _cbdtOffset, glyphId, size, isExactSize: false, isMonochromeTable: false, out glyph);
 
         glyph = default;
         return false;
+    }
+
+    private bool TryGetMonochromeBitmap(int glyphId, double size, bool isExactSize, out BitmapGlyph glyph)
+    {
+        var bytes = Data.RawBytes.AsSpan();
+        return _eblc!.TryGetGlyph(bytes.Slice(_eblcOffset, _eblcLength), bytes.Slice(_ebdtOffset, _ebdtLength), _ebdtOffset, glyphId, size, isExactSize, isMonochromeTable: true, out glyph);
+    }
+
+    /// <summary>
+    /// Decodes the pixels of a bitmap glyph that are not encoded (<see cref="BitmapGlyphFormat.Mask"/> and
+    /// <see cref="BitmapGlyphFormat.Bgra"/>), with the glyphs it is made of, at the size of its strike.
+    /// </summary>
+    /// <param name="glyph">The glyph, from <see cref="TryGetBitmapGlyph"/>.</param>
+    /// <param name="budget">The budget of the glyph.</param>
+    /// <returns>The pixels: a mask is black, with the coverage of each pixel as its opacity.</returns>
+    /// <exception cref="ArgumentException">The glyph is an encoded image (PNG, JPEG, TIFF), or not a glyph of this font.</exception>
+    /// <exception cref="InvalidFontException">The data of the glyph is malformed.</exception>
+    /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit.</exception>
+    public ColorImage DecodeBitmap(in BitmapGlyph glyph, ref GlyphBudget budget)
+    {
+        if (glyph.Format is not (BitmapGlyphFormat.Mask or BitmapGlyphFormat.Bgra))
+            throw new ArgumentException("The glyph is an encoded image: decode it with an image decoder.", nameof(glyph));
+
+        var table = glyph.IsMonochromeTable ? _eblc : _cblc;
+        if (table is null)
+            throw new ArgumentException("The glyph is not a bitmap glyph of this font.", nameof(glyph));
+
+        var pixels = new byte[glyph.Width * glyph.Height * 4];
+        DecodePremultiplied(table, glyph, pixels, ref budget);
+
+        // The colors of a color image are not multiplied by its opacity.
+        for (var i = 0; i < pixels.Length; i += 4)
+        {
+            var alpha = pixels[i + 3];
+            if (alpha is not (0 or 255))
+            {
+                pixels[i] = (byte)Math.Min(255, ((pixels[i] * 255) + (alpha / 2)) / alpha);
+                pixels[i + 1] = (byte)Math.Min(255, ((pixels[i + 1] * 255) + (alpha / 2)) / alpha);
+                pixels[i + 2] = (byte)Math.Min(255, ((pixels[i + 2] * 255) + (alpha / 2)) / alpha);
+            }
+        }
+
+        return new ColorImage(glyph.Width, glyph.Height, pixels);
+    }
+
+    private void DecodePremultiplied(CblcTable table, in BitmapGlyph glyph, Span<byte> pixels, ref GlyphBudget budget)
+    {
+        var bytes = Data.RawBytes.AsSpan();
+        if (glyph.IsMonochromeTable)
+        {
+            table.Decode(bytes.Slice(_eblcOffset, _eblcLength), bytes.Slice(_ebdtOffset, _ebdtLength), glyph, pixels, ref budget);
+        }
+        else
+        {
+            table.Decode(bytes.Slice(_cblcOffset, _cblcLength), bytes.Slice(_cbdtOffset, _cbdtLength), glyph, pixels, ref budget);
+        }
+    }
+
+    /// <summary>Gets the box of the bitmap of a glyph of a font without outlines, in font units, from the largest strike that has it.</summary>
+    private bool TryGetBitmapBounds(int glyphId, out GlyphBox bounds)
+    {
+        bounds = default;
+        if (!TryGetAnyBitmapGlyph(glyphId, double.MaxValue, out var glyph) || glyph.Width <= 0 || glyph.Height <= 0)
+            return false;
+
+        var unitsPerPixelX = (double)UnitsPerEm / glyph.PixelsPerEmX;
+        var unitsPerPixelY = (double)UnitsPerEm / glyph.PixelsPerEmY;
+        var top = glyph.Bottom is { } bottom ? (double)bottom + glyph.Height : glyph.Top;
+        bounds = new GlyphBox(
+            Clamp(Math.Floor(glyph.Left * unitsPerPixelX)),
+            Clamp(Math.Floor((top - glyph.Height) * unitsPerPixelY)),
+            Clamp(Math.Ceiling(((double)glyph.Left + glyph.Width) * unitsPerPixelX)),
+            Clamp(Math.Ceiling(top * unitsPerPixelY)));
+        return true;
+
+        // The size of a PNG image is what its header declares: it is not checked until the image is decoded.
+        static int Clamp(double value) => (int)Math.Clamp(value, -FontErrors.MaxCoordinate, FontErrors.MaxCoordinate);
     }
 
     /// <summary>Gets the number of palettes of colors of the font.</summary>
@@ -1232,11 +1430,13 @@ public sealed class FontFace
                 case FontTags.MetricAscender:
                     TypoAscender += delta;
                     HorizontalAscender += delta;
+                    _variesLineExtents = true;
                     break;
 
                 case FontTags.MetricDescender:
                     TypoDescender += delta;
                     HorizontalDescender += delta;
+                    _variesLineExtents = true;
                     break;
 
                 case FontTags.MetricLineGap:
@@ -1381,8 +1581,16 @@ public sealed class FontFace
     }
 
     /// <summary>
-    /// Decodes the outline of a glyph as it is drawn at a size: the outline of the glyph, or, when the font was loaded
-    /// to use its bitmaps without colors and has one for the glyph at exactly this size, the squares of its pixels.
+    /// Gets the hinting values of the private DICT a glyph of a font with CFF or CFF2 outlines uses (for an instance,
+    /// blended), or <see langword="null"/> for a font with other outlines.
+    /// </summary>
+    /// <exception cref="InvalidFontException">The private DICT is malformed.</exception>
+    internal CffHintValues? GetCffHintValues(int glyphId) => _cff?.GetHintValues(Data.RawBytes.AsSpan(_cffOffset, _cffLength), glyphId, _instance is null ? default : _instance.OutlineScalars);
+
+    /// <summary>
+    /// Decodes the outline of a glyph as it is drawn at a size: the outline of the glyph, or the squares of the pixels of
+    /// its bitmap of one bit per pixel when the font uses one at this size (a font loaded to use its bitmaps without
+    /// colors that has one made for exactly this size, or a font without outlines, at any size).
     /// </summary>
     /// <param name="glyphId">The glyph.</param>
     /// <param name="size">The size the glyph is drawn at, in pixels per em.</param>
@@ -1394,76 +1602,70 @@ public sealed class FontFace
     /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
     public void DecodeOutline(int glyphId, double size, OutlineSink sink, GlyphScratch scratch, ref GlyphBudget budget)
     {
-        if (!TryDecodeMonochromeBitmap(glyphId, size, sink, ref budget))
+        if (!TryDecodeMonochromeBitmap(glyphId, size, sink, scratch, ref budget))
         {
             DecodeOutline(glyphId, sink, scratch, ref budget);
         }
     }
 
     /// <summary>
-    /// Emits the squares of the pixels of the bitmap without colors the font has for a glyph at exactly a size, when
-    /// it was loaded to use them.
+    /// Emits the squares of the pixels of the bitmap of one bit per pixel the font uses for a glyph at a size: one made
+    /// for exactly this size in a font loaded to use them, the one of the strike that suits the size in a font without
+    /// outlines.
     /// </summary>
     /// <returns><see langword="true"/> when the glyph is drawn with a bitmap.</returns>
-    internal bool TryDecodeMonochromeBitmap(int glyphId, double size, OutlineSink sink, ref GlyphBudget budget)
+    internal bool TryDecodeMonochromeBitmap(int glyphId, double size, OutlineSink sink, GlyphScratch scratch, ref GlyphBudget budget)
     {
-        if (_eblc is not null && (uint)glyphId < (uint)GlyphCount && size is >= 1 and <= 255 && size == Math.Floor(size))
+        if (!_useMonochromeBitmaps || (uint)glyphId >= (uint)GlyphCount || !TryGetMonochromeBitmap(glyphId, size, isExactSize: !_isBitmapOnly, out var bitmap) || bitmap.BitDepth != 1)
+            return false;
+
+        // A pixel of the strike is a fraction of the em.
+        var bytes = Data.RawBytes.AsSpan();
+        var locations = bytes.Slice(_eblcOffset, _eblcLength);
+        var bits = bytes.Slice(_ebdtOffset, _ebdtLength);
+        var unitsPerPixelX = (double)UnitsPerEm / bitmap.PixelsPerEmX;
+        var unitsPerPixelY = (double)UnitsPerEm / bitmap.PixelsPerEmY;
+        if (_eblc!.TryEmitBits(locations, bits, bitmap, unitsPerPixelX, unitsPerPixelY, sink, ref budget))
+            return true;
+
+        // A glyph made of other glyphs: its pixels are composed in its box first, in the working storage of the
+        // outlines, then emitted as runs.
+        var length = bitmap.Width * bitmap.Height;
+        var start = scratch.RentWork(length);
+        try
         {
-            var bytes = Data.RawBytes.AsSpan();
-            var bits = bytes.Slice(_ebdtOffset, _ebdtLength);
-            if (_eblc.TryGetMonochromeGlyph(bytes.Slice(_eblcOffset, _eblcLength), bits, glyphId, (int)size, out var bitmap))
+            _eblc.DecodeCoverage(locations, bits, bitmap, scratch.Work.Slice(start, length), ref budget);
+            var coverage = scratch.Work.Slice(start, length);
+            for (var row = 0; row < bitmap.Height; row++)
             {
-                EmitBitmap(bits.Slice(bitmap.Offset, bitmap.Length), bitmap, sink, ref budget);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// Emits a bitmap as an outline: a rectangle for each run of pixels of each row, in font units. The rectangles of
-    /// two rows share an edge and do not overlap: filled, they cover exactly the pixels of the bitmap.
-    /// </summary>
-    private void EmitBitmap(ReadOnlySpan<byte> bits, in MonochromeBitmap bitmap, OutlineSink sink, ref GlyphBudget budget)
-    {
-        var unit = (double)UnitsPerEm / bitmap.PixelsPerEm;
-        var rowBits = bitmap.IsByteAligned ? ((bitmap.Width + 7) / 8) * 8 : bitmap.Width;
-        for (var row = 0; row < bitmap.Height; row++)
-        {
-            budget.Charge(1);
-            var top = (bitmap.Top - row) * unit;
-            var bottom = (bitmap.Top - row - 1) * unit;
-            var first = row * rowBits;
-            for (var column = 0; column < bitmap.Width;)
-            {
-                if (!IsSet(bits, first + column))
-                {
-                    column++;
-                    continue;
-                }
-
-                var end = column + 1;
-                while (end < bitmap.Width && IsSet(bits, first + end))
-                {
-                    end++;
-                }
-
-                // In the direction of the contours of a TrueType outline.
                 budget.Charge(1);
-                var left = (bitmap.Left + column) * unit;
-                var right = (bitmap.Left + end) * unit;
-                sink.MoveTo(left, bottom);
-                sink.LineTo(left, top);
-                sink.LineTo(right, top);
-                sink.LineTo(right, bottom);
-                sink.LineTo(left, bottom);
-                sink.Close();
-                column = end;
+                var pixels = coverage.Slice(row * bitmap.Width, bitmap.Width);
+                for (var column = 0; column < bitmap.Width;)
+                {
+                    if (pixels[column] == 0)
+                    {
+                        column++;
+                        continue;
+                    }
+
+                    var end = column + 1;
+                    while (end < bitmap.Width && pixels[end] != 0)
+                    {
+                        end++;
+                    }
+
+                    budget.Charge(1);
+                    CblcTable.EmitRectangle(sink, bitmap.Left + column, bitmap.Left + end, bitmap.Top - row, unitsPerPixelX, unitsPerPixelY);
+                    column = end;
+                }
             }
         }
+        finally
+        {
+            scratch.ReturnWork(start);
+        }
 
-        static bool IsSet(ReadOnlySpan<byte> bits, int index) => (bits[index >> 3] & (0x80 >> (index & 7))) != 0;
+        return true;
     }
 
     private ReadOnlySpan<byte> GetRequiredTable(uint tag, int minimumLength)

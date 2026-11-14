@@ -11,6 +11,7 @@
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.AspNetCore.Mvc'">https://meziantou.github.io/Meziantou.Framework/asp-net-core/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.AspNetCore.ServiceDefaults'">https://meziantou.github.io/Meziantou.Framework/asp-net-core/service-defaults/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.AspNetCore.ServiceDefaults.AutoRegister'">https://meziantou.github.io/Meziantou.Framework/asp-net-core/service-defaults/</PackageProjectUrl>
+    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.AspNetCore.Testing'">https://meziantou.github.io/Meziantou.Framework/asp-net-core/testing/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.DnsProxy'">https://meziantou.github.io/Meziantou.Framework/dns/dnsproxy/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Extensions.Logging.FileLogger'">https://meziantou.github.io/Meziantou.Framework/logging/file-logger/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Extensions.Logging.InMemory'">https://meziantou.github.io/Meziantou.Framework/logging/in-memory-logger/</PackageProjectUrl>

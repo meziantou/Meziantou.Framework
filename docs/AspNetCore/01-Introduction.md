@@ -18,6 +18,7 @@ Pages, and Blazor components. Each package is independent: install only the ones
 | `Meziantou.AspNetCore.Mvc` | Tag helpers for MVC and Razor Pages: conditional rendering, inlined CSS, scripts and images, deferred content, `datetime` attributes | [MVC tag helpers](06-MvcTagHelpers.md) |
 | `Meziantou.AspNetCore.Components` | Blazor components (repeater, data grid, infinite scrolling, generated forms, inputs) and browser services (clipboard, query string, time zone) | [Blazor components](07-BlazorComponents/01-Overview.md) |
 | `Meziantou.AspNetCore.Components.LogViewer` | A Blazor component that displays log entries with highlighting, ANSI colors, structured payloads and nested entries | [Log viewer](07-BlazorComponents/11-LogViewer/01-Overview.md) |
+| `Meziantou.AspNetCore.Testing` | Tests Blazor components and the pages of whole applications (MVC, Razor Pages, Blazor, minimal APIs...) in a managed browser: user input (mouse, keyboard, touch), scripts, DOM and accessibility snapshots, screenshots | [Testing](09-Testing/01-Overview.md) |
 | `Meziantou.AspNetCore.Components.WebAssembly` | A message handler that sets the browser fetch options (cache, credentials, mode) of every `HttpClient` request in Blazor WebAssembly | [Browser fetch options](08-BrowserFetchOptions.md) |
 
 ## Which package do I need?
@@ -29,6 +30,7 @@ Pages, and Blazor components. Each package is independent: install only the ones
 - **Server-rendered pages** (MVC views or Razor Pages): `Meziantou.AspNetCore.Mvc`.
 - **A Blazor application**: `Meziantou.AspNetCore.Components`, plus `Meziantou.AspNetCore.Components.LogViewer` to show
   logs, and `Meziantou.AspNetCore.Components.WebAssembly` for a WebAssembly client that calls an API.
+- **Tests of Blazor components or of a whole application** in a browser, with the user input and screenshots: `Meziantou.AspNetCore.Testing`.
 - **Debugging the order of your middleware**: `Meziantou.AspNetCore`.
 
 ## Principles

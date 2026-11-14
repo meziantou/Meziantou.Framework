@@ -1,0 +1,25 @@
+<button @onclick="LoadAsync">Load</button>
+<LoadingIndicator IsLoading="_loading" LoadingText="Please wait">
+    <p id="result">@_result</p>
+</LoadingIndicator>
+
+@code {
+    private bool _loading;
+    private string? _result;
+
+    [Parameter]
+    public Func<Task<string>> Load { get; set; } = () => Task.FromResult("done");
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _result = await Load();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

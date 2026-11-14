@@ -110,7 +110,7 @@ public static void EditMetadata(string path)
   of the image, and an EXIF thumbnail that a crop, a resize or a color conversion made stale is removed, so it can no
   longer show the uncropped photo.
 - **Each format stores different metadata.** JPEG, PNG, WebP, AVIF and HEIC store EXIF, XMP and ICC profiles; GIF stores
-  comments only; QOI, TGA and Netpbm store none. The full table is in
+  comments, XMP and an RGB ICC profile; QOI, TGA and Netpbm store none. The full table is in
   [Metadata and orientation](../09-Color/02-MetadataAndOrientation.md).
 - **Saving re-encodes the pixels.** The library writes a file from the image, so editing the metadata of a JPEG file and
   saving it as JPEG compresses its pixels again.

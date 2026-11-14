@@ -405,7 +405,7 @@ internal sealed class FontBuilder
     }
 
     /// <summary>Wraps an OpenType file into a WOFF 1.0 file: each table is compressed with zlib when that makes it smaller.</summary>
-    public static byte[] WriteWoff(ReadOnlySpan<byte> sfnt, bool compress = true)
+    public static byte[] WriteWoff(ReadOnlySpan<byte> sfnt, bool compress = true, byte[]? metadata = null, byte[]? privateData = null)
     {
         var tableCount = BinaryPrimitives.ReadUInt16BigEndian(sfnt[4..]);
         var tables = new List<(uint Tag, uint Checksum, byte[] Data)>();
@@ -468,6 +468,30 @@ internal sealed class FontBuilder
             writer.PatchUInt32(record + 12, (uint)data.Length);
             writer.PatchUInt32(record + 16, checksum);
             writer.Bytes(stored);
+        }
+
+        // The metadata block, compressed with zlib, then the private data block, each at a 4-byte boundary.
+        if (metadata is not null)
+        {
+            using var output = new MemoryStream();
+            using (var zlib = new ZLibStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
+            {
+                zlib.Write(metadata);
+            }
+
+            writer.Pad(4);
+            writer.PatchUInt32(24, (uint)writer.Length);
+            writer.PatchUInt32(28, (uint)output.Length);
+            writer.PatchUInt32(32, (uint)metadata.Length);
+            writer.Bytes(output.ToArray());
+        }
+
+        if (privateData is not null)
+        {
+            writer.Pad(4);
+            writer.PatchUInt32(36, (uint)writer.Length);
+            writer.PatchUInt32(40, (uint)privateData.Length);
+            writer.Bytes(privateData);
         }
 
         writer.Pad(4);

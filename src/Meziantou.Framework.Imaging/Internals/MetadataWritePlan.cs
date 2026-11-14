@@ -135,8 +135,8 @@ internal sealed class MetadataWritePlan
                 if (!MetadataValidation.TryValidateIccProfile(iccProfile.Data.Span, out var error))
                     throw new InvalidImageContentException("The ICC profile is malformed: " + error, format);
 
-                // WebP and BMP store RGB samples whatever the pixel format: a gray source is written as RGB
-                var labeled = format is ImageFormat.WebP or ImageFormat.Bmp && pixelFormat is { } source && PixelFormats.IsGrayscale(source) ? PixelFormat.Rgb24 : pixelFormat;
+                // WebP, BMP and GIF store RGB samples whatever the pixel format: a gray source is written as RGB
+                var labeled = format is ImageFormat.WebP or ImageFormat.Bmp or ImageFormat.Gif && pixelFormat is { } source && PixelFormats.IsGrayscale(source) ? PixelFormat.Rgb24 : pixelFormat;
                 if (labeled is { } pixels && !ColorProfileCompatibility.IsCompatible(iccProfile.ColorSpace, pixels))
                 {
                     context.Unsupported(string.Create(CultureInfo.InvariantCulture, $"ICC color profile declaring the {iccProfile.ColorSpace} color space for {pixels} pixels"));
@@ -202,6 +202,11 @@ internal sealed class MetadataWritePlan
                 if (format == ImageFormat.Jpeg && xmpProfile.Data.Length > MaxJpegStandardXmpBytes)
                 {
                     context.Unsupported("XMP packet larger than one JPEG APP1 segment (extended XMP)");
+                }
+                else if (format == ImageFormat.Gif && xmpProfile.Data.Span.Contains((byte)0))
+                {
+                    // The packet is stored as it is and read as data sub-blocks: a 0x00 byte would end them
+                    context.Unsupported("XMP packet with a NUL character (a GIF stores the packet as it is)");
                 }
                 else
                 {
@@ -421,7 +426,8 @@ internal sealed class MetadataWritePlan
         // PNG stores a CICP color description in a cICP chunk when no ICC profile is written, with the mastering display
         // (mDCV, which needs the cICP chunk) and the light levels (cLLI)
         private static readonly FormatCapabilities Png = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.PngKeywords, cicpWithoutIcc: true, contentLightLevel: true, masteringDisplay: true);
-        private static readonly FormatCapabilities Gif = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.CommentsOnly);
+        // GIF stores an ICC profile and an XMP packet in application extensions (ICCRGBG1012, XMP DataXMP)
+        private static readonly FormatCapabilities Gif = new(icc: true, exif: false, xmp: true, resolution: false, TextSupport.CommentsOnly);
         private static readonly FormatCapabilities Jpeg = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.JpegComments);
         private static readonly FormatCapabilities WebP = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None);
         private static readonly FormatCapabilities Bmp = new(icc: true, exif: false, xmp: false, resolution: true, TextSupport.None);

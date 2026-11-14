@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
@@ -473,7 +474,7 @@ public sealed class GifDecoderTests
         var data = new GifTestBuilder(2, 1, Palette)
             .Comment("before")
             .Extension(0x99, [1, 2, 3], [4])
-            .Application("XMP DataXMP", [(byte)'<', (byte)'x', (byte)'/', (byte)'>'])
+            .Application("MGK8BIM0000", [(byte)'<', (byte)'x', (byte)'/', (byte)'>'])
             .Image(0, 0, 2, 1, [0, 1], 3)
             .Comment("between")
             .Extension(0x42)
@@ -509,6 +510,96 @@ public sealed class GifDecoderTests
             Assert.Throws<InvalidOperationException>(() => reader.ReadFrame());
         }
     }
+
+    [Fact]
+    public void XmpAndIccApplicationExtensionsBecomeMetadata()
+    {
+        // ImageMagick 7.1.1-32 wrote the ICC profile (ICCRGBG1012) and exiftool 12.80 the XMP packet (XMP DataXMP) of this
+        // 4x2 file: "magick -size 4x2 xc:red -fill blue -draw 'point 1,0' -profile srgb.icc -set comment hi im.gif", then
+        // "exiftool '-xmp<=x.xmp' im.gif". "magick im.gif icc:-" and "exiftool -b -icc_profile" give the 588 bytes of the
+        // profile, "exiftool -b -xmp" the 279 bytes of the packet; their SHA-256 digests are below.
+        var data = Convert.FromBase64String(ExifToolXmpAndImageMagickIccGif);
+        using (var image = Image.Load<Rgba32>(data))
+        {
+            Assert.Equal("a6be9309504ef42abd257c25751693d297c15b5918d835ae9df1f400cb09e790", Convert.ToHexStringLower(SHA256.HashData(image.Metadata.IccProfile!.Data.Span)));
+            Assert.Equal("18ad0cfc71905f2b5ced1da6d98b45ff84db7e049923152fddb26426eef05a64", Convert.ToHexStringLower(SHA256.HashData(image.Metadata.XmpProfile!.Data.Span)));
+            Assert.Equal(["hi"], image.Metadata.TextEntries.Select(entry => entry.Value));
+            Assert.Equal([R, B, R, R, R, R, R, R], GetPixels(image.Frames[0]));
+        }
+
+        // Both precede the first image: the header walk and the readers see them
+        var info = Image.Identify(data);
+        Assert.Equal(588, info.Metadata.IccProfile!.Data.Length);
+        Assert.Equal(279, info.Metadata.XmpProfile!.Data.Length);
+        using (var reader = Image.OpenReader<Rgba32>(new MemoryStream(data)))
+        {
+            using var frame = reader.ReadFrame();
+            Assert.NotNull(frame);
+            Assert.NotNull(reader.Info.Metadata.XmpProfile);
+        }
+
+        // An ICC profile after the first image labels the image too; the first extension of each kind wins
+        using var source = Image.Load(data);
+        var profile = source.Metadata.IccProfile!.Data.ToArray();
+        var packet = Encoding.UTF8.GetBytes("<?xpacket begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\"/><?xpacket end=\"w\"?>");
+        var late = new GifTestBuilder(2, 1, Palette)
+            .Image(0, 0, 2, 1, [0, 1], 3)
+            .Application("XMP DataXMP", RawSubBlocks([.. packet, .. XmpMagicTrailer()]))
+            .Application("XMP DataXMP", RawSubBlocks([.. Encoding.UTF8.GetBytes("<x/>"), .. XmpMagicTrailer()]))
+            .Application("ICCRGBG1012", profile.Chunk(255).ToArray())
+            .ToArray();
+        using (var image = Image.Load(late))
+        {
+            Assert.Equal(profile, image.Metadata.IccProfile!.Data.ToArray());
+            Assert.Equal(packet, image.Metadata.XmpProfile!.Data.ToArray());
+        }
+
+        // A packet of several kilobytes grows the buffer the sub-blocks are joined in
+        var large = Encoding.UTF8.GetBytes($"<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" a=\"{new string('y', 5000)}\"/>");
+        var withLarge = new GifTestBuilder(2, 1, Palette).Application("XMP DataXMP", RawSubBlocks([.. large, .. XmpMagicTrailer()])).Image(0, 0, 2, 1, [0, 1], 3).ToArray();
+        using (var image = Image.Load(withLarge))
+        {
+            Assert.Equal(large, image.Metadata.XmpProfile!.Data.ToArray());
+        }
+
+        // An XMP extension without the magic trailer is malformed
+        var noTrailer = new GifTestBuilder(2, 1, Palette).Application("XMP DataXMP", RawSubBlocks(packet)).Image(0, 0, 2, 1, [0, 1], 3).ToArray();
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(noTrailer));
+    }
+
+    /// <summary>The 257 bytes that end the packet of an XMP application extension: 0x01, then 0xFF down to 0x00.</summary>
+    private static byte[] XmpMagicTrailer() => [0x01, .. Enumerable.Range(0, 256).Select(i => (byte)(255 - i))];
+
+    /// <summary>Cuts bytes stored as they are into the sub-blocks a reader walks them as (each first byte is a length).</summary>
+    private static byte[][] RawSubBlocks(byte[] raw)
+    {
+        var blocks = new List<byte[]>();
+        var position = 0;
+        while (position < raw.Length)
+        {
+            var length = Math.Min(raw[position], raw.Length - position - 1);
+            blocks.Add(raw.AsSpan(position + 1, length).ToArray());
+            position += 1 + length;
+        }
+
+        return [.. blocks];
+    }
+
+    private const string ExifToolXmpAndImageMagickIccGif =
+        "R0lGODlhBAACAPAAAP8AAAAA/yH5BAAAAAAAIf4CaGkAIf8LSUNDUkdCRzEwMTL/AAACTGxjbXMEQAAAbW50clJHQiBYWVogB+oACwAOAAIAOwAPYWNz" +
+        "cEFQUEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPbWAAEAAAAA0y1sY21zAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+        "AAAAAAALZGVzYwAAAQgAAAA2Y3BydAAAAUAAAABMd3RwdAAAAYwAAAAUY2hhZAAAAaAAAAAsclhZWgAAAcwAAAAUYlhZWgAAAeAAAAAUZ1hZWgAAAfQA" +
+        "AAAUclRSQwAAAggAAAAgZ1RSQwAAAggAAAAgYlRSQwAAAggAAAAgY2hy/20AAAIoAAAAJG1sdWMAAAAAAAAAAQAAAAxlblVTAAAAGgAAABwAcwBSAEcA" +
+        "QgAgAGIAdQBpAGwAdAAtAGkAbgAAbWx1YwAAAAAAAAABAAAADGVuVVMAAAAwAAAAHABOAG8AIABjAG8AcAB5AHIAaQBnAGgAdAAsACAAdQBzAGUAIABm" +
+        "AHIAZQBlAGwAeVhZWiAAAAAAAAD21gABAAAAANMtc2YzMgAAAAAAAQxCAAAF3v//8yUAAAeTAAD9kP//+6H///2iAAAD3AAAwG5YWVogAAAAAAAAb6AA" +
+        "ADj1AAADkFhZWiAAAAAAAAAknwAAD4QAALbDWFlaIAAAAAAAAE5ilwAAt4cAABjZcGFyYQAAAAAAAwAAAAJmZgAA8qcAAA1ZAAAT0AAACltjaHJtAAAA" +
+        "AAADAAAAAKPXAABUewAATM0AAJmaAAAmZgAAD1wAIf8LWE1QIERhdGFYTVA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pO" +
+        "VGN6a2M5ZCI/Pjx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iPjxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5" +
+        "OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+PHJkZjpEZXNjcmlwdGlvbiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIGRj" +
+        "OmZvcm1hdD0iaW1hZ2UvZ2lmIi8+PC9yZGY6UkRGPjwveDp4bXBtZXRhPjw/eHBhY2tldCBlbmQ9InciPz4B//79/Pv6+fj39vX08/Lx8O/u7ezr6uno" +
+        "5+bl5OPi4eDf3t3c29rZ2NfW1dTT0tHQz87NzMvKycjHxsXEw8LBwL++vby7urm4t7a1tLOysbCvrq2sq6qpqKempaSjoqGgn56dnJuamZiXlpWUk5KR" +
+        "kI+OjYyLiomIh4aFhIOCgYB/fn18e3p5eHd2dXRzcnFwb25tbGtqaWhnZmVkY2JhYF9eXVxbWllYV1ZVVFNSUVBPTk1MS0pJSEdGRURDQkFAPz49PDs6" +
+        "OTg3NjU0MzIxMC8uLSwrKikoJyYlJCMiISAfHh0cGxoZGBcWFRQTEhEQDw4NDAsKCQgHBgUEAwIBAAAsAAAAAAQAAgAAAgNEgFkAOw==";
 
     [Fact]
     public void TruncationIsNeverACleanEnd()

@@ -382,6 +382,55 @@ public sealed class Font
         return Metrics.Scale(size / UnitsPerEm);
     }
 
+    /// <summary>Decodes the image the font gives for the glyph of a character, in the strike that suits a size.</summary>
+    /// <param name="codePoint">The character.</param>
+    /// <param name="size">The size the glyph is drawn at, in pixels per em.</param>
+    /// <returns>The image, or <see langword="null"/> when the font has no image for the glyph.</returns>
+    /// <remarks>See <see cref="DecodeBitmapGlyph(int, double)"/>.</remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is not a positive finite number, or is greater than 65536.</exception>
+    /// <exception cref="InvalidImageContentException">The font or the image of the glyph is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The image uses a feature of its format that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">The image exceeds a limit of the configuration of the font.</exception>
+    public BitmapGlyphImage? DecodeBitmapGlyph(Rune codePoint, double size) => DecodeBitmapGlyph(Face.MapCodePoint(codePoint.Value), size);
+
+    /// <summary>Decodes the image the font gives for a glyph, in the strike that suits a size.</summary>
+    /// <param name="glyph">The glyph, such as <see cref="PositionedGlyph.Glyph"/>.</param>
+    /// <param name="size">The size the glyph is drawn at, in pixels per em.</param>
+    /// <returns>The image, or <see langword="null"/> when the font has no image for the glyph or an image without pixels (a blank glyph).</returns>
+    /// <remarks>
+    /// <para>
+    /// The strike that suits a size is the smallest one that is at least as large, else the largest one. The tables are
+    /// looked at in this order: <c>sbix</c>, <c>CBDT</c>, then <c>EBDT</c> (or <c>bdat</c>), whether or not
+    /// <see cref="FontLoadOptions.UseEmbeddedBitmaps"/> is set. The image is not scaled to the size.
+    /// </para>
+    /// <para>
+    /// The encoded images (PNG, JPEG, TIFF) are decoded with the codecs of the library; the bitmaps that are not
+    /// encoded, and the glyphs made of other glyphs, by the font reader.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is not a positive finite number, or is greater than 65536.</exception>
+    /// <exception cref="InvalidImageContentException">The font or the image of the glyph is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The image uses a feature of its format that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">The image exceeds a limit of the configuration of the font.</exception>
+    public BitmapGlyphImage? DecodeBitmapGlyph(int glyph, double size)
+    {
+        ValidateSize(size, nameof(size));
+        try
+        {
+            // A bitmap without pixels, such as the one of a space, is no image.
+            if (!Face.TryGetAnyBitmapGlyph(glyph, size, out var bitmap) || BitmapGlyphDecoder.IsBlank(bitmap))
+                return null;
+
+            var image = BitmapGlyphDecoder.Decode(Face, bitmap);
+            var top = bitmap.Bottom is { } bottom ? bottom + image.Height : bitmap.Top;
+            return new BitmapGlyphImage(image, bitmap.PixelsPerEmX, bitmap.PixelsPerEmY, bitmap.Left, top, bitmap.Format == BitmapGlyphFormat.Mask);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+    }
+
     /// <summary>Determines whether the font has a glyph for a character.</summary>
     /// <param name="codePoint">The character.</param>
     /// <returns><see langword="true"/> when the character map of the font gives the character a glyph other than the missing glyph.</returns>

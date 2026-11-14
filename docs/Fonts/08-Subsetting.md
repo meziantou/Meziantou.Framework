@@ -34,7 +34,7 @@ static byte[] Subset(FontFace face, string text)
 | Method | Outlines | Result |
 | --- | --- | --- |
 | [SubsetTrueType](cref:Meziantou.Framework.Fonts.FontSubsetter.SubsetTrueType) | TrueType ([FontOutlineKind.TrueType](cref:Meziantou.Framework.Fonts.FontOutlineKind.TrueType)) | A font file with the `glyf` and `loca` tables rebuilt, the metrics tables (`head`, `hhea`, `hmtx`, `maxp`), `OS/2` and `name`, a `post` table without glyph names, and the instructions when `keepHinting` is set |
-| [SubsetCff](cref:Meziantou.Framework.Fonts.FontSubsetter.SubsetCff) | CFF ([FontOutlineKind.Cff](cref:Meziantou.Framework.Fonts.FontOutlineKind.Cff)) | A CID-keyed `CFF` table whose CIDs are the glyph identifiers: the charstrings of the glyphs that are not kept end at once, and the subroutines are kept whole |
+| [SubsetCff](cref:Meziantou.Framework.Fonts.FontSubsetter.SubsetCff) | CFF ([FontOutlineKind.Cff](cref:Meziantou.Framework.Fonts.FontOutlineKind.Cff)) | A CID-keyed `CFF` table whose CIDs are the glyph identifiers: the charstrings of the glyphs that are not kept end at once, and the subroutines are kept whole. The hints are kept: the stem hints and the hint masks of the charstrings, and the alignment zones and the stem widths of the private DICTs |
 
 The result is a font program to embed, not a font to install: it has no character map and no layout tables. A method
 called with a face whose outlines are of the other kind throws an `ArgumentException`.

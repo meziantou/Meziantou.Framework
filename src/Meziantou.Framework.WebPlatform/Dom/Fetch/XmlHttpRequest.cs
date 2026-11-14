@@ -201,6 +201,12 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         if (!async && window is not null && (_timeout != 0 || _responseType != XmlHttpRequestResponseType.Default))
             throw new DomException("A synchronous request cannot have a timeout or a response type", "InvalidAccessError");
 
+        // As in Chromium, a synchronous request of a window is a deprecated feature
+        if (!async && window is not null)
+        {
+            window.ReportDeprecation("XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload", "Synchronous XMLHttpRequest on the main thread is deprecated because of its detrimental effects to the end user's experience. For more help, check https://xhr.spec.whatwg.org/.");
+        }
+
         TerminateFetch();
         _sendFlag = false;
         _uploadListener = false;

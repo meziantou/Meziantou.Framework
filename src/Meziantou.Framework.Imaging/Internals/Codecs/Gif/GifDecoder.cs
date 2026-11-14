@@ -57,6 +57,7 @@ internal sealed class GifDecoder : GifDecodeObserver, IPartialFrameRenderer
 
     // Current image
     private bool _imageOpen;
+    private bool _profileKnownAtHeader;
     private int _left;
     private int _top;
     private int _width;
@@ -87,6 +88,7 @@ internal sealed class GifDecoder : GifDecodeObserver, IPartialFrameRenderer
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
+        _profileKnownAtHeader = structure.Metadata.IccProfile is not null;
         _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Gif, structure.Size, DefaultPixelFormats.Gif, PixelFormat.Rgba32, structure.Metadata.IccProfile);
         _sink.SetPartialFrameRenderer(this);
     }
@@ -197,6 +199,17 @@ internal sealed class GifDecoder : GifDecodeObserver, IPartialFrameRenderer
         _compositor.CopyTo(_sink);
         _sink.EndRefinement(downsampling: 1, passCount: 0);
         return true;
+    }
+
+    public override void OnEnd(GifStructureParser structure)
+    {
+        ArgumentNullException.ThrowIfNull(structure);
+
+        // An ICC application extension after the first image descriptor was not known when the sink was created
+        if (!_profileKnownAtHeader && structure.Metadata.IccProfile is { } profile)
+        {
+            _sink!.AdoptColorProfile(profile);
+        }
     }
 
     public override Image GetResult()

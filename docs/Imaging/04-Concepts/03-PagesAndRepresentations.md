@@ -1,10 +1,10 @@
 ---
 title: Pages and representations
-description: Read and write multi-page TIFF documents and the sizes of an icon or a cursor with ImageCollection.
+description: Read and write multi-page TIFF documents and the sizes of an icon or a cursor, and read the images of a Netpbm file, with ImageCollection.
 ---
 
 Some files hold several images that are not an animation: the pages of a TIFF document, in order, and the sizes and
-color depths of the same drawing in an icon or a cursor file. The library keeps them apart from frames, in an
+color depths of the same drawing in an icon or a cursor file, and the images that a Netpbm file concatenates. The library keeps them apart from frames, in an
 [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection). Its entries can each have their own size, pixel format and metadata, and never have a duration or a
 play count, so code that plays the frames of an animation never receives pages or icon sizes by accident.
 
@@ -99,6 +99,7 @@ public static Point WriteAndReadIcon(string inputPath, string iconPath, string c
 | --- | --- |
 | TIFF document | The first page |
 | ICO or CUR file | The largest representation (then the deepest), with its hotspot on `Frames[0].Metadata.Hotspot` for a cursor |
+| Netpbm file | The first image; the identification does not count the images, and the streaming readers read the first one |
 
 [ImageInfo.CollectionEntryCount](cref:Meziantou.Framework.Imaging.ImageInfo.CollectionEntryCount) tells how many entries the file has. Use [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) to reach the other ones.
 The [streaming readers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md) reject TIFF, ICO and CUR files,

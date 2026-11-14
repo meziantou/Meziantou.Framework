@@ -211,6 +211,17 @@
       "expectedLoad": "InvalidImageContentException"
     },
     {
+      "id": "pnm/collection-three-byte-signature",
+      "file": "pnm-collection-three-byte-signature.min.pnm",
+      "sha256": "84b4ed3715c617fa7cf5faa45afac3b9c162a907d55a63e31d38c45f6f5260c8",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group pnm, base seed 5576998306593010799 (default), default iterations, mutation 436 of invalid/pnm/maxval-65536 (reader variant 176); minimized by FuzzMinimizer from 7 to 3 bytes",
+      "defect": "The input is a Netpbm magic number and its white space only, which DetectFormat does not recognize: ImageCollection.Load selected the Netpbm collection reader from the signature alone and reported a truncated Netpbm file instead of UnknownImageFormatException. Fixed in ImageCollection.CreateReader: the Netpbm reader is selected from DetectFormat.",
+      "expectedIdentify": "UnknownImageFormatException",
+      "expectedLoad": "UnknownImageFormatException"
+    },
+    {
       "id": "cur/png-payload-illegal-color-type",
       "file": "cur-png-payload-illegal-color-type.min.cur",
       "sha256": "b189c5632d3bd1d3161ab6b15f0e1563ebefaf41e3faec9177b7dfe0af3e9a69",

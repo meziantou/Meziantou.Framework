@@ -1,5 +1,8 @@
 using System.Linq.Expressions;
 using System.Reflection;
+using Meziantou.AspNetCore.Components.Tests.TestComponents;
+using Meziantou.AspNetCore.Testing;
+using Meziantou.AspNetCore.Testing.Components;
 using Microsoft.AspNetCore.Components;
 
 namespace Meziantou.AspNetCore.Components.Tests;
@@ -108,4 +111,59 @@ public sealed class InputTests
         result = success ? (TValue?)args[1] : default;
         return success;
     }
+
+    [Fact]
+    public async Task Interactive_InputEnumSelectBindsTheSelectedValue()
+    {
+        await using var host = new ComponentTestHost();
+        var page = await host.RenderAsync<InputsPage>();
+        var select = page.GetByLabel("Day");
+        Assert.Equal(["(none)", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], select.Locator("option").GetElements().Select(option => option.TextContent));
+        Assert.Equal("Monday", select.InputValue);
+
+        await select.SelectOptionAsync("Friday");
+        Assert.Equal(DayOfWeek.Friday, page.Instance.Day);
+
+        await select.SelectOptionAsync("");
+        Assert.Null(page.Instance.Day);
+    }
+
+    [Fact]
+    public async Task Interactive_InputGuidReportsInvalidValues()
+    {
+        await using var host = new ComponentTestHost();
+        var page = await host.RenderAsync<InputsPage>();
+        var input = page.GetByLabel("Identifier");
+
+        await input.FillAsync("not a guid");
+        Assert.Equal(["The Id field must be a valid GUID."], GetValidationMessages(page));
+        Assert.Equal("invalid", input.GetAttribute("class")?.Split(' ').Last());
+        Assert.Equal(Guid.Empty, page.Instance.Id);
+
+        var id = Guid.NewGuid();
+        await input.FillAsync(id.ToString());
+        Assert.Equal(id, page.Instance.Id);
+        Assert.Empty(GetValidationMessages(page));
+    }
+
+    [Fact]
+    public async Task Interactive_InputUrlRejectsScriptUrls()
+    {
+        await using var host = new ComponentTestHost();
+        var page = await host.RenderAsync<InputsPage>();
+        var input = page.GetByLabel("Website");
+
+        await input.FillAsync("javascript:alert(1)");
+        Assert.Null(page.Instance.Url);
+        Assert.Equal(["The Url field must be a valid URL."], GetValidationMessages(page));
+
+        await input.FillAsync("https://example.com/path");
+        Assert.Equal(new Uri("https://example.com/path"), page.Instance.Url);
+        Assert.Empty(GetValidationMessages(page));
+    }
+
+    // Since .NET 11, ValidationMessage also renders an empty message element when the field is valid
+    private static string?[] GetValidationMessages<TComponent>(RenderedComponent<TComponent> component)
+        where TComponent : IComponent
+        => [.. component.FindAll(".validation-message").Select(message => message.TextContent).Where(text => !string.IsNullOrEmpty(text))];
 }

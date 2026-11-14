@@ -5,7 +5,12 @@ using System.Text;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>Options of a <see cref="BrowsingContext"/>, shared by its nested browsing contexts.</summary>
-public sealed partial class BrowsingContextOptions
+/// <remarks>
+/// Copy the options with a <c>with</c> expression to change some of them (<c>options with { UserAgent = "..." }</c>). A copy
+/// made after a browsing context used the options shares their default clipboard and permission store (see
+/// <see cref="Clipboard"/> and <see cref="Permissions"/>).
+/// </remarks>
+public sealed partial record BrowsingContextOptions
 {
     private readonly bool? _scriptingEnabled;
     private readonly bool? _declarativeRefreshEnabled;

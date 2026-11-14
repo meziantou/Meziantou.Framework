@@ -1,129 +1,142 @@
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Fuzzing;
-using Meziantou.Framework.Imaging.Formats;
 
 namespace Meziantou.Framework.Imaging.Fuzz;
 
 /// <summary>
-/// A Radiance HDR file must only throw the exceptions the library documents for invalid input. An identification and a
-/// load must agree (the same size, the same rejections), a sequential reader must give the pixels of the load, and the
-/// decoded pixels, which are always colors RGBE can store, must encode without error to a file that the decoder reads
-/// back and the encoder writes again byte for byte (a decoded mantissa is the middle of its interval, which the encoder
-/// truncates back into it).
+/// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, and its processing operations that read pixels or points
+/// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation and
+/// homography estimation. The inputs of the processing targets are small images whose pixel format, size, frames and bytes
+/// come from the fuzzer, followed by the options of the operation.
 /// </summary>
-public static class ImagingFuzzTargets
+public static partial class ImagingFuzzTargets
 {
-    // The tokens of the information header and of the resolution string, and the markers of the run-length encodings
+    /// <summary>The bytes that select the formats, the sizes and the options, and the extreme samples.</summary>
     private static readonly string[] Tokens =
     [
-        "#?RADIANCE\n", "#?RGBE\n", "\n", "\n\n", "FORMAT=", "32-bit_rle_rgbe", "32-bit_rle_xyze", "EXPOSURE=", "COLORCORR=", "PRIMARIES=",
-        "PIXASPECT=", "GAMMA=", "VIEW=", "SOFTWARE=", "-Y ", "+Y ", "-X ", "+X ", " ", "\t", "1", "8", "0.5", "1e-3", "inf", "nan", "-1",
-        "0.640 0.330 0.290 0.600 0.150 0.060 0.333 0.333", "\x02\x02\x00\x08", "\x02\x02\x7f\xff", "\x01\x01\x01\x08", "\x80", "\x81", "\xff",
+        "\0", "\u0001", "\u0002", "\u0003", "\u0004", "\u0007", "\u0008", "\u000F", "\u0010", "\u001F", "\u007F",
+        "\0\0\0\0", "\u007F\u007F\u007F\u007F", "\0\u007F\0\u007F",
     ];
 
-    // Small images: a file that declares a large one fails at the limits instead of allocating
-    private static readonly ImageConfiguration Configuration = new()
-    {
-        Limits = new ImageResourceLimits { MaxEncodedBytes = 4 * 1024 * 1024, MaxFramePixels = 1 << 20, MaxMetadataBytes = 1 << 20 },
-    };
+    /// <summary>The pixel formats of the images of the inputs.</summary>
+    private static readonly PixelFormat[] Formats =
+    [
+        PixelFormat.Rgba32, PixelFormat.Rgb24, PixelFormat.Gray8, PixelFormat.Gray16, PixelFormat.Rgba64, PixelFormat.La16,
+        PixelFormat.RgbaFloat, PixelFormat.RgbaHalf, PixelFormat.Bgr565, PixelFormat.A8, PixelFormat.Bgra32, PixelFormat.Rgb48,
+    ];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
-        new("imaging-radiance", Radiance) { Seeds = GetSeeds, Dictionary = Tokens },
+        new("imaging-radiance", RadianceTarget) { Seeds = GetRadianceSeeds, Dictionary = RadianceTokens },
+        new("imaging-processor", ProcessorTarget) { Seeds = GetProcessorSeeds, Dictionary = Tokens },
+        new("imaging-seam-carving", SeamCarvingTarget) { Seeds = GetSeamCarvingSeeds, Dictionary = Tokens },
+        new("imaging-inpainting", InpaintingTarget) { Seeds = GetInpaintingSeeds, Dictionary = Tokens },
+        new("imaging-hough-lines", LinesTarget) { Seeds = GetLinesSeeds, Dictionary = Tokens },
+        new("imaging-corners", CornersTarget) { Seeds = GetCornersSeeds, Dictionary = Tokens },
+        new("imaging-homography", HomographyTarget) { Seeds = GetHomographySeeds, Dictionary = Tokens },
+        new("imaging-skew", SkewTarget) { Seeds = GetSkewSeeds, Dictionary = Tokens },
     ];
 
-    private static void Radiance(ReadOnlySpan<byte> data)
+    /// <summary>
+    /// Reads an image from the input: a byte of format, a byte of width and one of height (1 to <paramref name="maxSide"/>),
+    /// a byte of frame count (1 to 3, and a poster frame when its high bit is set), then the bytes of the pixels, repeated
+    /// when the input is shorter.
+    /// </summary>
+    private static Image CreateImage(ref ReadOnlySpan<byte> data, int maxSide, ReadOnlySpan<byte> pixels = default)
     {
-        var input = data.ToArray();
-        var identified = Catch(() => Image.Identify(input, new ImageIdentifyOptions { Configuration = Configuration, Mode = ImageIdentifyMode.FullScan }));
-        Image<RgbaFloat>? image = null;
-        var loaded = Catch(() => image = Image.Load<RgbaFloat>(input, new ImageDecodeOptions { Configuration = Configuration }));
+        var format = Formats[FuzzInput.ReadByte(ref data) % Formats.Length];
+        var width = 1 + (FuzzInput.ReadByte(ref data) % maxSide);
+        var height = 1 + (FuzzInput.ReadByte(ref data) % maxSide);
+        var frameByte = FuzzInput.ReadByte(ref data);
+        var frames = 1 + (frameByte & 0x7F) % 3;
+        var source = pixels.IsEmpty ? data : pixels;
+        Image image = format switch
+        {
+            PixelFormat.Rgba32 => Create<Rgba32>(source, width, height),
+            PixelFormat.Rgb24 => Create<Rgb24>(source, width, height),
+            PixelFormat.Gray8 => Create<Gray8>(source, width, height),
+            PixelFormat.Gray16 => Create<Gray16>(source, width, height),
+            PixelFormat.Rgba64 => Create<Rgba64>(source, width, height),
+            PixelFormat.La16 => Create<La16>(source, width, height),
+            PixelFormat.RgbaFloat => Create<RgbaFloat>(source, width, height),
+            PixelFormat.RgbaHalf => Create<RgbaHalf>(source, width, height),
+            PixelFormat.Bgr565 => Create<Bgr565>(source, width, height),
+            PixelFormat.A8 => Create<A8>(source, width, height),
+            PixelFormat.Bgra32 => Create<Bgra32>(source, width, height),
+            PixelFormat.Rgb48 => Create<Rgb48>(source, width, height),
+            _ => throw new InvalidOperationException("The format is not listed."),
+        };
+
         try
         {
-            if (identified.Info is not { Format: ImageFormat.Radiance } info)
-                return;
-
-            // A load rejects what a full scan rejects; it rejects XYZE samples, which an identification reports
-            if (image is null)
+            for (var i = 1; i < frames; i++)
             {
-                FuzzAssert.True(loaded.Exception is UnsupportedImageFeatureException { Feature: "XYZE samples" } && info.Metadata.RadianceHeader?.IsXyz == true, "A load fails where a full scan succeeds: " + loaded.Exception?.Message);
-                return;
+                // The next frames are the first one with its rows rotated, so that they differ
+                var frame = image.InsertFrame(i, image.Frames[0]);
+                RotateRows(frame, i);
             }
 
-            FuzzAssert.Equal(info.Size, image.Size, "The identified size");
-            FuzzAssert.True(identified.Exception is null, "The full scan failed: " + identified.Exception?.Message);
-
-            using (var reader = Image.OpenReader<RgbaFloat>(new MemoryStream(input), new ImageReaderOptions { Configuration = Configuration }))
-            using (var frame = reader.ReadFrame())
+            if ((frameByte & 0x80) != 0)
             {
-                FuzzAssert.True(frame is not null && GetBytes(frame).AsSpan().SequenceEqual(GetBytes(image)), "The reader gives other pixels than the load");
-            }
-
-            foreach (var compression in Enum.GetValues<RadianceCompression>())
-            {
-                var encoder = new RadianceEncoder { Compression = compression };
-                var first = Save(image, encoder);
-                using var decoded = Image.Load<RgbaFloat>(first);
-                FuzzAssert.Equal(image.Size, decoded.Size, "The size of the encoded image");
-                var second = Save(decoded, encoder);
-                FuzzAssert.True(first.AsSpan().SequenceEqual(second), "A decoded image does not encode to the same bytes again");
+                RotateRows(image.SetPosterFrame(image.Frames[0]), frames);
             }
         }
-        finally
+        catch
         {
-            image?.Dispose();
+            image.Dispose();
+            throw;
         }
+
+        return image;
     }
 
-    private static (ImageInfo? Info, Exception? Exception) Catch(Func<ImageInfo> action)
+    private static Image<TPixel> Create<TPixel>(ReadOnlySpan<byte> source, int width, int height)
+        where TPixel : unmanaged
     {
-        try
+        var length = width * height * Marshal.SizeOf<TPixel>();
+        var bytes = new byte[length];
+        for (var i = 0; i < length && !source.IsEmpty; i++)
         {
-            return (action(), null);
+            bytes[i] = source[i % source.Length];
         }
-        catch (Exception exception) when (IsDocumented(exception))
-        {
-            return (null, exception);
-        }
+
+        return Image.ImportPixelBytes<TPixel>(bytes, width, height);
     }
 
-    private static (ImageInfo? Info, Exception? Exception) Catch(Action action)
+    private static void RotateRows(ImageFrame frame, int shift)
     {
-        try
+        var rowLength = frame.Width * PixelFormats.GetBytesPerPixel(frame.PixelFormat);
+        var bytes = new byte[rowLength * frame.Height];
+        frame.CopyPixelBytesTo(bytes);
+        var rotated = new byte[bytes.Length];
+        for (var y = 0; y < frame.Height; y++)
         {
-            action();
-            return (null, null);
+            bytes.AsSpan(((y + shift) % frame.Height) * rowLength, rowLength).CopyTo(rotated.AsSpan(y * rowLength));
         }
-        catch (Exception exception) when (IsDocumented(exception))
+
+        frame.ProcessPixelBytes(rotated, static (pixels, rotated) =>
         {
-            return (null, exception);
-        }
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                rotated.AsSpan(y * pixels.RowLength, pixels.RowLength).CopyTo(pixels.GetRowSpan(y));
+            }
+        });
     }
 
-    private static bool IsDocumented(Exception exception) => exception is UnknownImageFormatException or InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException;
-
-    private static byte[] Save(Image image, ImageEncoder encoder)
+    /// <summary>Gets the size, the frame count and the bytes of every frame and of the poster: what a failed transactional operation must leave unchanged.</summary>
+    private static string Snapshot(Image image)
     {
-        using var stream = new MemoryStream();
-        image.Save(stream, encoder);
-        return stream.ToArray();
-    }
-
-    private static byte[] GetBytes(Image image)
-    {
-        var bytes = new byte[image.Width * image.Height * 16];
-        image.Frames[0].CopyPixelBytesTo(bytes);
-        return bytes;
-    }
-
-    private static IEnumerable<FuzzSeed> GetSeeds()
-    {
-        var assembly = typeof(ImagingFuzzTargets).Assembly;
-        foreach (var name in assembly.GetManifestResourceNames().Where(name => name.StartsWith("Seeds/radiance/", StringComparison.Ordinal)).Order(StringComparer.Ordinal))
+        var builder = new System.Text.StringBuilder();
+        builder.Append(image.Width).Append('x').Append(image.Height).Append(' ').Append(image.Frames.Count).Append(image.PosterFrame is null ? "" : "+poster");
+        var frames = image.PosterFrame is null ? [.. image.Frames] : (ImageFrame[])[.. image.Frames, image.PosterFrame];
+        foreach (var frame in frames)
         {
-            using var stream = FuzzResources.Open(assembly, name);
-            using var buffer = new MemoryStream();
-            stream.CopyTo(buffer);
-            yield return new FuzzSeed(name["Seeds/radiance/".Length..^".hdr".Length], buffer.ToArray());
+            var bytes = new byte[frame.Width * frame.Height * PixelFormats.GetBytesPerPixel(frame.PixelFormat)];
+            frame.CopyPixelBytesTo(bytes);
+            builder.Append(' ').Append(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)));
+            builder.Append(' ').Append(frame.Metadata.Hotspot?.ToString() ?? "-");
         }
+
+        return builder.ToString();
     }
 }

@@ -179,6 +179,14 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   accesses between two windows that a report-only policy would separate (`access-from-coop-page-to-openee` and the other
   `access-*` reports, with the name of the property). The `ReportingObserver`s of the page that performs the access
   receive its report as a `coop-access-violation` report.
+- As in Chromium, the page reports the use of deprecated features (`deprecation` reports, once per page and feature: a
+  synchronous `XMLHttpRequest` in a window) and the requests that the library does not honor (`intervention` reports: a
+  `preventDefault()` call in a `touchstart`, `touchmove`, `wheel` or `mousewheel` listener of the window, the document,
+  the root element or the body that is passive because it is registered without the `passive` option). The
+  `ReportingObserver`s of the page receive them, and they are sent to the `default` endpoint of the `Reporting-Endpoints`
+  header. The body gives the identifier of the feature (as in Chromium, e.g.
+  `XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload`, `PreventDefaultPassive`), a message and the location of the
+  script.
 - The scripts, the style sheets and the preloads check the hashes of their `integrity` attribute
   ([Subresource Integrity](https://w3c.github.io/webappsec-subresource-integrity/)): a resource whose body does not match
   is a network error (the element fires `error`, the script does not run, the style sheet does not apply), and so is a
@@ -215,3 +223,46 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
 
 The requests are canceled when the navigation is aborted (another navigation, the removal of the `iframe`) and when the
 browsing context is disposed: pass the `CancellationToken` to your I/O.
+
+## Downloads
+
+A hyperlink with a `download` attribute, and a navigation to a response that is not displayed (its `Content-Disposition`
+is `attachment`, or its MIME type is `application/octet-stream`), start a download: the page stays, and
+[DownloadStarted](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DownloadStarted) receives the response ([Download](cref:Meziantou.Framework.WebPlatform.Dom.Download)) to save it:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_Downloads;format=md-fenced-code-block;dedent=true -->
+```csharp
+var loader = new InMemoryLoader(new Dictionary<string, (string Content, string ContentType)>(StringComparer.Ordinal)
+{
+    ["https://example.com/"] = ("<a href=/export.csv download=report.csv>Export</a>", "text/html"),
+    ["https://example.com/export.csv"] = ("id,name\n1,Ada\n", "text/csv"),
+    ["https://example.com/archive.bin"] = ("binary", "application/octet-stream"),
+});
+
+var downloads = new List<string>();
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    DocumentLoader = loader,
+
+    // The callback saves the response: Filename is the download attribute of the hyperlink, or null for a navigation
+    DownloadStarted = (_, download) => downloads.Add($"{download.Url} {download.Filename ?? "(navigation)"}: {download.Resource.Content}"),
+});
+context.Navigate("https://example.com/");
+await context.EventLoop.RunUntilIdleAsync();
+var page = context.Document;
+
+((HtmlElement)page.QuerySelector("a")!).Click(); // a hyperlink with a download attribute
+context.Window.Location.Assign("/archive.bin");   // a response that is not displayed (application/octet-stream)
+await context.EventLoop.RunUntilIdleAsync();
+
+Assert.Same(page, context.Document); // the page stays
+Assert.Equal(["https://example.com/export.csv report.csv: id,name\n1,Ada\n", "https://example.com/archive.bin (navigation): binary"], downloads);
+```
+<!-- endref -->
+
+- [Filename](cref:Meziantou.Framework.WebPlatform.Dom.Download.Filename) is the value of the `download` attribute (possibly empty), or null for a navigation; the
+  `Content-Disposition` header of [Resource](cref:Meziantou.Framework.WebPlatform.Dom.Download.Resource) may suggest another name.
+- A body that arrives over time ([RemainingContentBytes](cref:Meziantou.Framework.WebPlatform.Dom.DocumentResource.RemainingContentBytes)) is not read by the library: enumerate it to save the
+  rest of the file, or dispose its enumerator to cancel the download.
+- Without a callback, the downloads are ignored: the hyperlinks with a `download` attribute fetch nothing. The documents
+  sandboxed without `allow-downloads` do not download, and the listeners of the `navigate` event can cancel a download.

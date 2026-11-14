@@ -1,4 +1,7 @@
-<Project Sdk="Meziantou.NET.Sdk.Test">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!-- The interactive tests render Razor components: the Razor SDK compiles them, the test SDK adds the test framework -->
+  <Sdk Name="Meziantou.NET.Sdk.Test" />
 
   <PropertyGroup>
     <!-- Tests Meziantou.AspNetCore.Components, which depends on ICU -->
@@ -10,7 +13,13 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj" />
+    <ProjectReference Include="../../src/Meziantou.AspNetCore.Testing/Meziantou.AspNetCore.Testing.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The JavaScript modules of the components, served to the test pages at the URLs of a Razor class library -->
+    <None Include="../../src/Meziantou.AspNetCore.Components/wwwroot/**" LinkBase="wwwroot/_content/Meziantou.AspNetCore.Components" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -57,13 +57,13 @@ fails.
   [script engine](06-Scripting/01-Overview.md): the scripts are not fetched and the event handler attributes have no
   effect. A document parsed with [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser) has no browsing context: no window, no computed style and no
   event loop, so the mutation observer callbacks are not invoked.
-- **No downloads**, and the third-party cookies are not blocked unless you
-  [block them](05-LoadingPages/03-CookiesAndStorage.md#third-party-cookies-and-storage-access). The Storage Access API
-  only gives access to the cookies: `requestStorageAccess(types)` and its `StorageAccessHandle` (the unpartitioned
+- **Storage Access API.** The third-party cookies are not blocked unless you
+  [block them](05-LoadingPages/03-CookiesAndStorage.md#third-party-cookies-and-storage-access), and the Storage Access
+  API only gives access to the cookies: `requestStorageAccess(types)` and its `StorageAccessHandle` (the unpartitioned
   local storage, IndexedDB, caches... of a third-party frame) are not supported.
-- **Reporting API.** Content Security Policy reports its violations, but the Reporting API generates only the CSP, COEP,
-  COOP, Permissions Policy, Document Policy, integrity policy and test reports: there are no deprecation or intervention
-  reports.
+- **Reporting API.** The `deprecation` and `intervention` reports are only generated for the features listed in
+  [Network requests](05-LoadingPages/02-NetworkRequests.md#responses) (the synchronous `XMLHttpRequest` requests of a
+  window, `preventDefault()` in the listeners that are passive by default), and there is no Crash Reporting API.
 - **Signature-based Subresource Integrity** does not support the `signature` attribute of the inline scripts of
   earlier drafts, nor the `'ed25519-…'` sources of Content Security Policy.
 - **Compression dictionaries**: the `dcb` streams whose dictionary and data exceed the window of the stream are not

@@ -106,6 +106,41 @@ public sealed class WebAppBrowserTests
     }
 
     [Fact]
+    public async Task ContentSecurityPolicyViolations()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/secure");
+
+        var violation = Assert.Single(page.ContentSecurityPolicyViolations);
+        Assert.Equal("script-src-elem", violation.EffectiveDirective);
+        Assert.Equal("inline", violation.BlockedUrl);
+        Assert.Equal("Secure", page.Document.Title);
+        Assert.Empty(page.ScriptErrors);
+
+        var otherPage = await browser.OpenAsync("/");
+        Assert.Empty(otherPage.ContentSecurityPolicyViolations);
+    }
+
+    [Fact]
+    public async Task PagesShareTheClipboardOfTheirBrowser()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/secure");
+
+        await page.Find("#copy").ClickAsync();
+
+        Assert.Equal("Copied text", browser.Clipboard.ReadText());
+        Assert.Same(browser.Clipboard, page.Clipboard);
+        var otherPage = await browser.OpenAsync("/");
+        Assert.Same(browser.Clipboard, otherPage.Clipboard);
+
+        await using var otherBrowser = WebAppBrowser.Create(factory.Server);
+        Assert.Null(otherBrowser.Clipboard.ReadText());
+    }
+
+    [Fact]
     public async Task PagesWithoutJavaScript()
     {
         await using var factory = new WebApplicationFactory<Program>();

@@ -51,6 +51,9 @@ public sealed class WebAppBrowser : IAsyncDisposable, IDisposable
     /// <summary>Gets the cookies of the pages.</summary>
     public CookieJar Cookies { get; } = new();
 
+    /// <summary>Gets the system clipboard of the pages: a page can paste what another page copies.</summary>
+    public SystemClipboard Clipboard { get; } = new();
+
     /// <summary>Gets the open pages.</summary>
     public IReadOnlyList<BrowserPage> Pages => [.. _pages];
 
@@ -79,6 +82,7 @@ public sealed class WebAppBrowser : IAsyncDisposable, IDisposable
             Viewport = _options.Viewport,
             DocumentLoader = _loader,
             CookieJar = Cookies,
+            Clipboard = Clipboard,
             ScriptEngine = _options.EnableJavaScript ? new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions { Timeout = _options.DefaultTimeout }) : null,
             TimeProvider = _options.TimeProvider,
             DefaultTimeout = _options.DefaultTimeout,

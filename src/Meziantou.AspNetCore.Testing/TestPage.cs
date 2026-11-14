@@ -20,6 +20,7 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
     private readonly ScriptEngine? _scriptEngine;
     private readonly List<string> _consoleMessages = [];
     private readonly List<ScriptError> _scriptErrors = [];
+    private readonly List<ContentSecurityPolicyViolationReport> _contentSecurityPolicyViolations = [];
     private readonly Lock _signalLock = new();
     private TaskCompletionSource _workSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _disposed;
@@ -32,6 +33,7 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
         DefaultTimeout = settings.DefaultTimeout;
         TestIdAttribute = settings.TestIdAttribute;
         _scriptEngine = settings.ScriptEngine;
+        Clipboard = settings.Clipboard ?? new SystemClipboard();
         _browsingContext = new BrowsingContext(new BrowsingContextOptions
         {
             Viewport = settings.Viewport,
@@ -40,6 +42,7 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
             RenderingBackend = new ImagingRenderingBackend(),
             ScriptEngine = settings.ScriptEngine,
             TimeProvider = settings.TimeProvider,
+            Clipboard = Clipboard,
             ConsoleMessage = (_, message) =>
             {
                 lock (_consoleMessages)
@@ -52,6 +55,13 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
                 lock (_scriptErrors)
                 {
                     _scriptErrors.Add(error);
+                }
+            },
+            ContentSecurityPolicyViolation = (_, report) =>
+            {
+                lock (_contentSecurityPolicyViolations)
+                {
+                    _contentSecurityPolicyViolations.Add(report);
                 }
             },
 
@@ -98,6 +108,28 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
             }
         }
     }
+
+    /// <summary>
+    /// Gets the violations of the content security policies of the page (the <c>Content-Security-Policy</c> and
+    /// <c>Content-Security-Policy-Report-Only</c> headers and the <c>meta</c> elements), as reported by the
+    /// <c>securitypolicyviolation</c> events, including the ones raised while the document loads.
+    /// </summary>
+    public IReadOnlyList<ContentSecurityPolicyViolationReport> ContentSecurityPolicyViolations
+    {
+        get
+        {
+            lock (_contentSecurityPolicyViolations)
+            {
+                return [.. _contentSecurityPolicyViolations];
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the system clipboard of the page (<see cref="TestPageSettings.Clipboard"/>): read what the page copies, or
+    /// write what the page pastes.
+    /// </summary>
+    public SystemClipboard Clipboard { get; }
 
     /// <summary>Gets the maximum time the waits of the page wait for.</summary>
     public TimeSpan DefaultTimeout { get; }

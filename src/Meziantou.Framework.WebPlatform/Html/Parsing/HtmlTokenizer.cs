@@ -1138,8 +1138,11 @@ internal sealed class HtmlTokenizer
                     default:
                         if (char.IsAsciiLetter((char)c))
                         {
+                            // The tag name state appends the letter (lowercased): the rest of the name is read by its fast path
                             CreateTagToken(isEndTag: false);
-                            Reconsume(TokenizerState.TagName);
+                            _tagName.Append(ToAsciiLower((char)c));
+                            _state = TokenizerState.TagName;
+                            goto tagName;
                         }
                         else
                         {
@@ -1160,7 +1163,9 @@ internal sealed class HtmlTokenizer
                 if (c != Eof && char.IsAsciiLetter((char)c))
                 {
                     CreateTagToken(isEndTag: true);
-                    Reconsume(TokenizerState.TagName);
+                    _tagName.Append(ToAsciiLower((char)c));
+                    _state = TokenizerState.TagName;
+                    goto tagName;
                 }
                 else if (c == '>')
                 {
@@ -1184,7 +1189,10 @@ internal sealed class HtmlTokenizer
                 break;
             }
 
+            // The tag states go to the label of the next tag state instead of returning to the loop of NextToken, which
+            // only needs to observe the transitions from the text states (NextTokenSuspendable)
             case TokenizerState.TagName:
+            tagName:
             {
                 if (!_reconsume)
                 {
@@ -1209,10 +1217,10 @@ internal sealed class HtmlTokenizer
                 {
                     case '\t' or '\n' or '\f' or ' ':
                         _state = TokenizerState.BeforeAttributeName;
-                        break;
+                        goto beforeAttributeName;
                     case '/':
                         _state = TokenizerState.SelfClosingStartTag;
-                        break;
+                        goto selfClosingStartTag;
                     case '>':
                         _state = TokenizerState.Data;
                         EmitTag();
@@ -1596,31 +1604,40 @@ internal sealed class HtmlTokenizer
             }
 
             case TokenizerState.BeforeAttributeName:
+            beforeAttributeName:
             {
                 var c = Consume();
                 switch (c)
                 {
                     case '\t' or '\n' or '\f' or ' ':
-                        break;
+                        goto beforeAttributeName;
                     case '/' or '>' or Eof:
                         Reconsume(TokenizerState.AfterAttributeName);
-                        break;
+                        goto afterAttributeName;
                     case '=':
                         ReportError("unexpected-equals-sign-before-attribute-name");
                         StartAttribute();
                         _attributeName.Append('=');
                         _state = TokenizerState.AttributeName;
                         break;
-                    default:
+                    case '\0' or '"' or '\'' or '<':
                         StartAttribute();
                         Reconsume(TokenizerState.AttributeName);
                         break;
+                    default:
+                        // The attribute name state appends the character as is (lowercased): the rest of the name is read
+                        // by its fast path
+                        StartAttribute();
+                        _attributeName.Append(ToAsciiLower((char)c));
+                        _state = TokenizerState.AttributeName;
+                        goto attributeName;
                 }
 
                 break;
             }
 
             case TokenizerState.AttributeName:
+            attributeName:
             {
                 if (!_reconsume)
                 {
@@ -1645,11 +1662,11 @@ internal sealed class HtmlTokenizer
                     case '\t' or '\n' or '\f' or ' ' or '/' or '>' or Eof:
                         Reconsume(TokenizerState.AfterAttributeName);
                         LeaveAttributeName();
-                        break;
+                        goto afterAttributeName;
                     case '=':
                         _state = TokenizerState.BeforeAttributeValue;
                         LeaveAttributeName();
-                        break;
+                        goto beforeAttributeValue;
                     case '\0':
                         ReportError("unexpected-null-character");
                         _attributeName.Append('\U0000FFFD');
@@ -1667,18 +1684,19 @@ internal sealed class HtmlTokenizer
             }
 
             case TokenizerState.AfterAttributeName:
+            afterAttributeName:
             {
                 var c = Consume();
                 switch (c)
                 {
                     case '\t' or '\n' or '\f' or ' ':
-                        break;
+                        goto afterAttributeName;
                     case '/':
                         _state = TokenizerState.SelfClosingStartTag;
-                        break;
+                        goto selfClosingStartTag;
                     case '=':
                         _state = TokenizerState.BeforeAttributeValue;
-                        break;
+                        goto beforeAttributeValue;
                     case '>':
                         _state = TokenizerState.Data;
                         EmitTag();
@@ -1697,18 +1715,19 @@ internal sealed class HtmlTokenizer
             }
 
             case TokenizerState.BeforeAttributeValue:
+            beforeAttributeValue:
             {
                 var c = Consume();
                 switch (c)
                 {
                     case '\t' or '\n' or '\f' or ' ':
-                        break;
+                        goto beforeAttributeValue;
                     case '"':
                         _state = TokenizerState.AttributeValueDoubleQuoted;
-                        break;
+                        goto attributeValueQuoted;
                     case '\'':
                         _state = TokenizerState.AttributeValueSingleQuoted;
-                        break;
+                        goto attributeValueQuoted;
                     case '>':
                         ReportError("missing-attribute-value");
                         _state = TokenizerState.Data;
@@ -1716,7 +1735,7 @@ internal sealed class HtmlTokenizer
                         break;
                     default:
                         Reconsume(TokenizerState.AttributeValueUnquoted);
-                        break;
+                        goto attributeValueUnquoted;
                 }
 
                 break;
@@ -1724,6 +1743,7 @@ internal sealed class HtmlTokenizer
 
             case TokenizerState.AttributeValueDoubleQuoted:
             case TokenizerState.AttributeValueSingleQuoted:
+            attributeValueQuoted:
             {
                 var quote = _state == TokenizerState.AttributeValueDoubleQuoted ? '"' : '\'';
                 if (!_reconsume)
@@ -1747,6 +1767,7 @@ internal sealed class HtmlTokenizer
                 if (c == quote)
                 {
                     _state = TokenizerState.AfterAttributeValueQuoted;
+                    goto afterAttributeValueQuoted;
                 }
                 else if (c == '&')
                 {
@@ -1772,6 +1793,7 @@ internal sealed class HtmlTokenizer
             }
 
             case TokenizerState.AttributeValueUnquoted:
+            attributeValueUnquoted:
             {
                 if (!_reconsume)
                 {
@@ -1795,7 +1817,7 @@ internal sealed class HtmlTokenizer
                 {
                     case '\t' or '\n' or '\f' or ' ':
                         _state = TokenizerState.BeforeAttributeName;
-                        break;
+                        goto beforeAttributeName;
                     case '&':
                         _returnState = TokenizerState.AttributeValueUnquoted;
                         _state = TokenizerState.CharacterReference;
@@ -1825,16 +1847,17 @@ internal sealed class HtmlTokenizer
             }
 
             case TokenizerState.AfterAttributeValueQuoted:
+            afterAttributeValueQuoted:
             {
                 var c = Consume();
                 switch (c)
                 {
                     case '\t' or '\n' or '\f' or ' ':
                         _state = TokenizerState.BeforeAttributeName;
-                        break;
+                        goto beforeAttributeName;
                     case '/':
                         _state = TokenizerState.SelfClosingStartTag;
-                        break;
+                        goto selfClosingStartTag;
                     case '>':
                         _state = TokenizerState.Data;
                         EmitTag();
@@ -1853,6 +1876,7 @@ internal sealed class HtmlTokenizer
             }
 
             case TokenizerState.SelfClosingStartTag:
+            selfClosingStartTag:
             {
                 var c = Consume();
                 switch (c)

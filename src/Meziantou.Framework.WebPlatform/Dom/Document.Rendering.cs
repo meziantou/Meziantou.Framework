@@ -193,6 +193,13 @@ public partial class Document
     }
 
     /// <summary>
+    /// Returns the pinch zoom of the user (see <see cref="UserInput.Pinch"/>): the factor by which the page scale is multiplied
+    /// (1 when the page is not zoomed in), and the offset of the visual viewport in the layout viewport, in CSS pixels.
+    /// </summary>
+    internal (double Scale, Css.Layout.PhysicalOffset Offset) GetPinchZoom()
+        => VisualViewportOrNull is { PinchScale: not 1 } visualViewport && IsFullyActive ? (visualViewport.PinchScale, visualViewport.PinchOffset) : (1, Css.Layout.PhysicalOffset.Zero);
+
+    /// <summary>
     /// Called when a <c>meta</c> element is inserted in or removed from the document, or when its name or content changes: the
     /// page's supported color schemes and the viewport meta element are computed again.
     /// </summary>

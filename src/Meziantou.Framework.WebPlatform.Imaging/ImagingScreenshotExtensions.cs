@@ -170,6 +170,15 @@ public static class ImagingScreenshotExtensions
             area = new PhysicalRect(0, 0, Math.Min(area.Width, Math.Floor((viewport.Width / pageScale) + Epsilon)), Math.Min(area.Height, Math.Floor((viewport.Height / pageScale) + Epsilon)));
         }
 
+        // The pinch zoom of the user magnifies the visual viewport: a smaller area of the layout viewport, at its offset, is
+        // rendered at the same size
+        var (pinchScale, pinchOffset) = document.GetPinchZoom();
+        if (pinchScale != 1 && options?.FullPage != true)
+        {
+            area = new PhysicalRect(pinchOffset.X, pinchOffset.Y, area.Width / pinchScale, area.Height / pinchScale);
+            pageScale *= pinchScale;
+        }
+
         // The size of the screenshot of a viewport is rounded to device pixels (e.g. a viewport of 839px at a device pixel ratio
         // of 2.625 is 2202 pixels high), as in Chromium; a clip is rounded outwards
         var roundSize = options?.Clip is null;

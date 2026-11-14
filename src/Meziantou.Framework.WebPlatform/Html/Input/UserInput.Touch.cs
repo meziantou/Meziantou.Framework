@@ -118,15 +118,48 @@ public sealed partial class UserInput
         if (touchMoveCanceled || !TryStartPan(pointer, deltaX, deltaY))
             return;
 
-        // https://w3c.github.io/pointerevents/#suppressing-a-pointer-event-stream: the touch is used for a direct
-        // manipulation, so pointercancel, pointerout and pointerleave are fired and the capture is released
+        SuppressPointerEventStream(pointer);
+
+        // A pinch zoom uses the other touches too: their pointer event streams are suppressed
+        if (GetOtherActiveTouch(pointer) is not null)
+        {
+            foreach (var other in _pointers.ToArray())
+            {
+                if (other.IsTouch && other.IsActive && !other.IsCanceled && !ReferenceEquals(other, pointer))
+                {
+                    other.PanDecided = true;
+                    SuppressPointerEventStream(other);
+                }
+            }
+        }
+
+        Pan(pointer, deltaX, deltaY);
+    }
+
+    /// <summary>
+    /// https://w3c.github.io/pointerevents/#suppressing-a-pointer-event-stream: the touch is used for a direct manipulation, so
+    /// pointercancel, pointerout and pointerleave are fired and the capture is released.
+    /// </summary>
+    private void SuppressPointerEventStream(PointerInput pointer)
+    {
         pointer.Buttons = 0;
         FirePointerEvent(pointer, "pointercancel", button: 0, updateMouseOver: false, out _);
         pointer.PendingCaptureTarget = null;
         ProcessPendingPointerCapture(pointer);
         SetPointerOver(pointer, null, button: 0);
         pointer.IsCanceled = true;
-        Pan(pointer, deltaX, deltaY);
+    }
+
+    /// <summary>The first active touch pointer other than <paramref name="pointer"/>, or null.</summary>
+    private PointerInput? GetOtherActiveTouch(PointerInput pointer)
+    {
+        foreach (var other in _pointers)
+        {
+            if (other.IsTouch && other.IsActive && !ReferenceEquals(other, pointer))
+                return other;
+        }
+
+        return null;
     }
 
     private void TouchUp(PointerInput pointer)
@@ -139,6 +172,7 @@ public sealed partial class UserInput
             pointer.IsActive = false;
             FireTouchEvent(pointer, "touchend", cancelable: false);
             EndTouch(pointer);
+            EndVisualViewportGesture();
             return;
         }
 
@@ -160,6 +194,9 @@ public sealed partial class UserInput
         var preventMouseEvent = pointer.PreventMouseEvent;
         var isPrimary = pointer.IsPrimary;
         EndTouch(pointer);
+
+        // The other touch of a pinch or of a pan may be released last, without having moved
+        EndVisualViewportGesture();
         if (!isTap || target is null)
             return;
 
@@ -238,6 +275,16 @@ public sealed partial class UserInput
         pointer.IsActive = false;
         FireTouchEvent(pointer, "touchcancel", cancelable: false);
         EndTouch(pointer);
+        EndVisualViewportGesture();
+    }
+
+    /// <summary>The end of a contact: once no touch is in contact, the gesture that pinched or scrolled the visual viewport ends (its <c>scrollend</c> event).</summary>
+    private void EndVisualViewportGesture()
+    {
+        if (GetOtherActiveTouch(Mouse) is null && _browsingContext.Document.VisualViewportOrNull is { } visualViewport)
+        {
+            visualViewport.EndUserGesture();
+        }
     }
 
     /// <summary>The end of the contact: the pointer is removed from the active pointers, and the scroll of its pan ends (it snaps, then fires <c>scrollend</c>).</summary>
@@ -267,17 +314,20 @@ public sealed partial class UserInput
     /// <summary>
     /// Whether the move of a touch from its start position begins a direct manipulation
     /// (https://w3c.github.io/pointerevents/#determining-supported-direct-manipulation-behavior): a pan in the direction of the
-    /// move (its dominant axis) that <c>touch-action</c> allows, or a pinch zoom (not emulated) when another touch is in contact.
+    /// move (its dominant axis) that <c>touch-action</c> allows, or a pinch zoom when another touch is in contact.
     /// As in the browsers, a touch that starts on a scrollbar operates the scrollbar (which is not emulated): it does not pan.
     /// </summary>
     private bool TryStartPan(PointerInput pointer, double deltaX, double deltaY)
     {
         var allowed = (TouchActions)pointer.TouchActions;
-        var required = HasActiveTouch(pointer)
-            ? TouchActions.PinchZoom
-            : Math.Abs(deltaX) > Math.Abs(deltaY)
-                ? (deltaX > 0 ? TouchActions.PanRight : TouchActions.PanLeft)
-                : (deltaY > 0 ? TouchActions.PanDown : TouchActions.PanUp);
+
+        // The pinch zoom of two touches is allowed by the touch-action of the elements of both touches
+        if (GetOtherActiveTouch(pointer) is { } other)
+            return (allowed & (TouchActions)other.TouchActions & TouchActions.PinchZoom) != TouchActions.None;
+
+        var required = Math.Abs(deltaX) > Math.Abs(deltaY)
+            ? (deltaX > 0 ? TouchActions.PanRight : TouchActions.PanLeft)
+            : (deltaY > 0 ? TouchActions.PanDown : TouchActions.PanUp);
         return (allowed & required) != TouchActions.None;
     }
 
@@ -361,7 +411,7 @@ public sealed partial class UserInput
     /// <summary>
     /// Scrolls by the move of a panning touch (a direct manipulation: not snapped until the touch ends, see
     /// <see cref="LayoutEngine.ScrollByUser"/>): the scrolling box is latched when the pan starts, and only the axes that
-    /// <c>touch-action</c> allows scroll.
+    /// <c>touch-action</c> allows scroll. While another touch is in contact, the touches pinch instead (see <see cref="PinchTouches"/>).
     /// </summary>
     private void Pan(PointerInput pointer, double deltaX, double deltaY)
     {
@@ -369,6 +419,16 @@ public sealed partial class UserInput
             return;
 
         var allowed = (TouchActions)pointer.TouchActions;
+        if (GetOtherActiveTouch(pointer) is { } other)
+        {
+            if ((allowed & TouchActions.PinchZoom) != TouchActions.None && ((TouchActions)other.TouchActions & TouchActions.PinchZoom) != TouchActions.None)
+            {
+                PinchTouches(new PhysicalOffset(pointer.X + deltaX, pointer.Y + deltaY), new PhysicalOffset(pointer.X, pointer.Y), new PhysicalOffset(other.X, other.Y));
+            }
+
+            return;
+        }
+
         if ((allowed & (deltaX > 0 ? TouchActions.PanRight : TouchActions.PanLeft)) == TouchActions.None)
         {
             deltaX = 0;
@@ -379,16 +439,12 @@ public sealed partial class UserInput
             deltaY = 0;
         }
 
-        // The pinch zoom of two touches is not emulated
-        if (HasActiveTouch(pointer))
-            return;
-
         if (deltaX == 0 && deltaY == 0)
             return;
 
         if (pointer.PanScroller is { Fragment: not null } scroller && pointer.PanDocument is { IsFullyActive: true } document)
         {
-            ScrollBox(document, scroller, ref deltaX, ref deltaY, UserScrollUnit.Pixel, UserScrollKind.DirectManipulation);
+            ScrollBoxOrVisualViewport(document, scroller, ref deltaX, ref deltaY, UserScrollUnit.Pixel, UserScrollKind.DirectManipulation);
             return;
         }
 
@@ -398,6 +454,28 @@ public sealed partial class UserInput
             pointer.PanScroller = latched;
             pointer.PanDocument = latchedDocument;
         }
+    }
+
+    /// <summary>
+    /// The move of a touch while another touch is in contact (a pinch): the visual viewport of the top-level document is zoomed
+    /// by the ratio of the distances between the touches after and before the move, and the point that was under the middle of
+    /// the touches moves under their new middle.
+    /// </summary>
+    /// <param name="oldPosition">The position of the touch that moved, before the move.</param>
+    /// <param name="newPosition">The position of the touch that moved, after the move.</param>
+    /// <param name="otherPosition">The position of the other touch.</param>
+    private void PinchTouches(PhysicalOffset oldPosition, PhysicalOffset newPosition, PhysicalOffset otherPosition)
+    {
+        var oldDistance = Distance(oldPosition, otherPosition);
+        var newDistance = Distance(newPosition, otherPosition);
+        if (oldDistance <= 0 || newDistance <= 0 || !_browsingContext.Document.IsFullyActive)
+            return;
+
+        var oldCenter = new PhysicalOffset((oldPosition.X + otherPosition.X) / 2, (oldPosition.Y + otherPosition.Y) / 2);
+        var newCenter = new PhysicalOffset((newPosition.X + otherPosition.X) / 2, (newPosition.Y + otherPosition.Y) / 2);
+        _browsingContext.Document.VisualViewport.ZoomBy(newDistance / oldDistance, oldCenter, newCenter, endsGesture: false);
+
+        static double Distance(PhysicalOffset a, PhysicalOffset b) => Math.Sqrt(((a.X - b.X) * (a.X - b.X)) + ((a.Y - b.Y) * (a.Y - b.Y)));
     }
 
     /// <summary>The identifier of a new touch point (https://w3c.github.io/touch-events/#dom-touch-identifier): the smallest one that no active touch point uses.</summary>

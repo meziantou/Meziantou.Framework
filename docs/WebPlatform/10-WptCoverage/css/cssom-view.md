@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of css/cssom-view, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 217 | 233 | 0 | 93% |
+| [Stable](#stable-tests) | 220 | 233 | 0 | 94% |
 | [Tentative](#tentative-tests) | 3 | 4 | 0 | 75% |
 | [Reftests](#reftests) | 11 | 11 | 0 | 100% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **235** | **252** | **0** | **93%** |
+| **All** | **238** | **252** | **0** | **94%** |
 
 ## Failure reasons
 
@@ -21,8 +21,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 8
 - **NOT IMPLEMENTED**: 6
-- **REQUIRES**: 3
-  - `user-input`: 3
 
 ## Stable tests
 
@@ -251,9 +249,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`table-with-border-client-width-height.html`](https://wpt.fyi/results/css/cssom-view/table-with-border-client-width-height.html) | Pass | 1 / 1 |  |  |
 | [`ttwf-js-cssomview-getclientrects-length.html`](https://wpt.fyi/results/css/cssom-view/ttwf-js-cssomview-getclientrects-length.html) | Pass | 3 / 3 |  |  |
 | [`user-scroll-interrupts-smooth-scroll.html`](https://wpt.fyi/results/css/cssom-view/user-scroll-interrupts-smooth-scroll.html) | Pass | 3 / 3 |  |  |
-| [`visual-scrollIntoView-001.html`](https://wpt.fyi/results/css/cssom-view/visual-scrollIntoView-001.html) | Fail | 0 / 1 | REQUIRES(user-input) | pinch zoom: the move of two touches does not zoom, and the visual viewport is never scaled nor scrolled relative to the layout viewport (its `scale` is 1, its offsets 0) |
-| [`visual-scrollIntoView-002.html`](https://wpt.fyi/results/css/cssom-view/visual-scrollIntoView-002.html) | Fail | 0 / 1 | REQUIRES(user-input) | pinch zoom: the move of two touches does not zoom, and the visual viewport is never scaled nor scrolled relative to the layout viewport (its `scale` is 1, its offsets 0) |
-| [`visual-scrollIntoView-003.html`](https://wpt.fyi/results/css/cssom-view/visual-scrollIntoView-003.html) | Fail | 0 / 1 | REQUIRES(user-input) | pinch zoom: the move of two touches does not zoom, and the visual viewport is never scaled nor scrolled relative to the layout viewport (its `scale` is 1, its offsets 0) |
+| [`visual-scrollIntoView-001.html`](https://wpt.fyi/results/css/cssom-view/visual-scrollIntoView-001.html) | Pass | 1 / 1 |  |  |
+| [`visual-scrollIntoView-002.html`](https://wpt.fyi/results/css/cssom-view/visual-scrollIntoView-002.html) | Pass | 1 / 1 |  |  |
+| [`visual-scrollIntoView-003.html`](https://wpt.fyi/results/css/cssom-view/visual-scrollIntoView-003.html) | Pass | 1 / 1 |  |  |
 | [`window-screen-height-immutable.html`](https://wpt.fyi/results/css/cssom-view/window-screen-height-immutable.html) | Pass | 1 / 1 |  |  |
 | [`window-screen-height.html`](https://wpt.fyi/results/css/cssom-view/window-screen-height.html) | Pass | 3 / 3 |  |  |
 | [`window-screen-width-immutable.html`](https://wpt.fyi/results/css/cssom-view/window-screen-width-immutable.html) | Pass | 1 / 1 |  |  |

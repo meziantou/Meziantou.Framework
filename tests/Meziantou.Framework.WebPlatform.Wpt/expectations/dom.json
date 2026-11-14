@@ -668,8 +668,11 @@
     "total": 1
   },
   "dom/events/scrolling/scrollend-event-fires-on-visual-viewport.html": {
-    "harness": "ERROR",
-    "total": 0
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "visualviewport.onscrollend  and window scrollend order.": "TIMEOUT"
+    }
   },
   "dom/events/scrolling/scrollend-event-fires-to-iframe-window.html": {
     "total": 6

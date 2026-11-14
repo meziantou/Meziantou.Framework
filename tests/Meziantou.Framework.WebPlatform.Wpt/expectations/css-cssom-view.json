@@ -831,22 +831,13 @@
     "total": 3
   },
   "css/cssom-view/visual-scrollIntoView-001.html": {
-    "total": 1,
-    "failures": {
-      "Element.scrollIntoView scrolls visually": "FAIL"
-    }
+    "total": 1
   },
   "css/cssom-view/visual-scrollIntoView-002.html": {
-    "total": 1,
-    "failures": {
-      "Element.scrollIntoView scrolls visually to a position: fixed element with non-zero layout scroll offset": "FAIL"
-    }
+    "total": 1
   },
   "css/cssom-view/visual-scrollIntoView-003.html": {
-    "total": 1,
-    "failures": {
-      "Element.scrollIntoView scrolls visually to an element in nested position: fixed elements": "FAIL"
-    }
+    "total": 1
   },
   "css/cssom-view/window-screen-height-immutable.html": {
     "total": 1

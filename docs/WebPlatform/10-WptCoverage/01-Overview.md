@@ -49,24 +49,24 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,842 | 29,904 | 1,915 | 96% |
+| [Stable](#stable-tests) | 26,848 | 29,904 | 1,915 | 96% |
 | [Tentative](#tentative-tests) | 1,454 | 3,169 | 659 | 58% |
 | [Reftests](#reftests) | 28,313 | 29,507 | 149 | 96% |
 | [Crash tests](#crash-tests) | 2,041 | 2,111 | 58 | 99% |
-| **All** | **58,650** | **64,691** | **2,781** | **95%** |
+| **All** | **58,656** | **64,691** | **2,781** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 163
-- **TEST BUG**: 1,075
-- **NOT IMPLEMENTED**: 3,848
-- **REQUIRES**: 766
+- **TEST BUG**: 1,076
+- **NOT IMPLEMENTED**: 3,847
+- **REQUIRES**: 760
   - `hardware`: 575
   - `layout`: 23
   - `media`: 21
-  - `user-input`: 155
+  - `user-input`: 149
   - `workers`: 2
 - **TEST RUNNER**: 191
 - **OUT OF SCOPE**: 210
@@ -187,7 +187,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-writing-modes`](css/css-writing-modes.md) | 80 | 85 | 0 | 94% |
 | [`css/CSS2`](css/CSS2.md) | 74 | 74 | 0 | 100% |
 | [`css/cssom`](css/cssom.md) | 260 | 263 | 0 | 99% |
-| [`css/cssom-view`](css/cssom-view.md) | 217 | 233 | 0 | 93% |
+| [`css/cssom-view`](css/cssom-view.md) | 220 | 233 | 0 | 94% |
 | [`css/fetching`](css/fetching.md) | 1 | 2 | 0 | 50% |
 | [`css/fill-stroke`](css/fill-stroke.md) | 5 | 8 | 0 | 63% |
 | [`css/filter-effects`](css/filter-effects.md) | 37 | 37 | 0 | 100% |
@@ -366,7 +366,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`svg`](svg.md) | 727 | 746 | 2 | 98% |
 | [`svg-aam`](svg-aam.md) | 5 | 5 | 0 | 100% |
 | [`timing-entrytypes-registry`](timing-entrytypes-registry.md) | 2 | 2 | 0 | 100% |
-| [`touch-events`](touch-events.md) | 9 | 12 | 0 | 75% |
+| [`touch-events`](touch-events.md) | 10 | 12 | 0 | 83% |
 | [`trusted-types`](trusted-types.md) | 223 | 224 | 0 | 99.5% |
 | [`ua-client-hints`](ua-client-hints.md) | 2 | 2 | 0 | 100% |
 | [`uievents`](uievents.md) | 62 | 66 | 0 | 94% |
@@ -379,7 +379,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`viewport`](viewport.md) | 1 | 1 | 0 | 100% |
 | [`viewport-segments`](viewport-segments.md) | 3 | 3 | 0 | 100% |
 | [`virtual-keyboard`](virtual-keyboard.md) | 3 | 3 | 0 | 100% |
-| [`visual-viewport`](visual-viewport.md) | 16 | 19 | 0 | 84% |
+| [`visual-viewport`](visual-viewport.md) | 18 | 19 | 0 | 95% |
 | [`wai-aria`](wai-aria.md) | 20 | 21 | 0 | 95% |
 | [`wasm`](wasm.md) | 334 | 342 | 0 | 98% |
 | [`web-animations`](web-animations.md) | 128 | 136 | 0 | 94% |
@@ -420,7 +420,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 328 | 331 | 0 | 99% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,842** | **29,904** | **1,915** | **96%** |
+| **Total (343 sections)** | **26,848** | **29,904** | **1,915** | **96%** |
 
 ## Tentative tests
 

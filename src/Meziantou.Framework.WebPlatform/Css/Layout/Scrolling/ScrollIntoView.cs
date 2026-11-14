@@ -119,7 +119,14 @@ internal static class ScrollIntoView
                     fixedFollowsViewport = engine.GetViewportScrollCompensation(fixedBox);
                 }
 
-                if (fragment is not BoxFragment { ScrollState: { } state } scrollContainer || (state.IsViewport && fixedToViewport && !fixedFollowsViewport.Horizontal && !fixedFollowsViewport.Vertical))
+                if (fragment is not BoxFragment { ScrollState: { } state } scrollContainer)
+                    continue;
+
+                // The visual viewport of the top-level document zoomed in by the user: the target is aligned with it, and it scrolls
+                // in the layout viewport before the layout viewport scrolls (https://drafts.csswg.org/cssom-view/#perform-a-scroll),
+                // also to a fixed positioned target (WPT css/cssom-view/visual-scrollIntoView-001.html)
+                var visualViewport = state.IsViewport && document is { BrowsingContext: { Parent: null, Container: null }, VisualViewportOrNull: { PinchScale: > 1 } zoomed } ? zoomed : null;
+                if (state.IsViewport && fixedToViewport && !fixedFollowsViewport.Horizontal && !fixedFollowsViewport.Vertical && visualViewport is null)
                     continue;
 
                 var isFixedInViewport = state.IsViewport && fixedToViewport;
@@ -135,7 +142,24 @@ internal static class ScrollIntoView
                 var scrollport = GetScrollport(document, scrollContainer, state, applyScrollPadding: !isInStuckBox);
                 isInStuckBox = false;
                 var associatedElement = state.GetAssociatedElement(document);
+                var visualDelta = PhysicalOffset.Zero;
+                if (visualViewport is not null)
+                {
+                    var pinchOffset = visualViewport.PinchOffset;
+                    scrollport = new PhysicalRect(
+                        scrollport.X + pinchOffset.X,
+                        scrollport.Y + pinchOffset.Y,
+                        Math.Max(0, scrollport.Width - state.Scrollport.Width + visualViewport.Width),
+                        Math.Max(0, scrollport.Height - state.Scrollport.Height + visualViewport.Height));
+                }
+
                 var delta = GetScrollDelta(rect, scrollport, state.WritingDirection, block, inline, ifNeeded ? borderRect : null);
+                if (visualViewport is not null)
+                {
+                    visualDelta = visualViewport.GetReachableDelta(delta);
+                    delta -= visualDelta;
+                }
+
                 if (isFixedInViewport)
                 {
                     delta = new PhysicalOffset(fixedFollowsViewport.Horizontal ? delta.X : 0, fixedFollowsViewport.Vertical ? delta.Y : 0);
@@ -161,6 +185,12 @@ internal static class ScrollIntoView
                 else
                 {
                     engine.UpdateScrollSnapChangeTargets(state);
+                }
+
+                // (also without move: the scroll aborts a smooth scroll of the visual viewport in progress)
+                if (visualViewport is not null && visualViewport.ScrollBy(visualDelta, engine.IsSmoothScroll(state, behavior, associatedElement)) is { IsCompleted: false } visualScroll)
+                {
+                    (promises ??= []).Add(visualScroll);
                 }
 
                 // The target moves with the contents of the scrolling box. For the scrolling boxes of the ancestors, the target is

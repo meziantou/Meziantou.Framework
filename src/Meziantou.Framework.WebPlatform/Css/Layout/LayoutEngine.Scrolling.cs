@@ -203,6 +203,16 @@ internal sealed partial class LayoutEngine
         return PerformScrollCore(state, position, behavior, associatedElement);
     }
 
+    /// <summary>
+    /// Whether a scroll of a scrolling box with a behavior is smooth: <c>smooth</c>, or <c>auto</c> when the <c>scroll-behavior</c>
+    /// of its associated element is <c>smooth</c> (the scroll-behavior of a pseudo-element is the one of its box).
+    /// </summary>
+    internal bool IsSmoothScroll(ScrollState state, ScrollBehavior behavior, Element? associatedElement)
+        => behavior == ScrollBehavior.Smooth
+            || (behavior == ScrollBehavior.Auto && associatedElement is not null && Cascade.ComputedStyleDeclarations.IsBeingRendered(associatedElement)
+                && _document.GetStyleEngine().GetStyle(associatedElement).Layout.Overflow.SmoothScrolling)
+            || (behavior == ScrollBehavior.Auto && state.PseudoElement is not null && state.ContainerStyle is { Overflow.SmoothScrolling: true });
+
     /// <summary>Performs a scroll of a scrolling box that is not a scroll operation (a re-snap after a layout change, see <see cref="PerformScroll"/>).</summary>
     private Task PerformScrollCore(ScrollState state, PhysicalOffset position, ScrollBehavior behavior, Element? associatedElement)
     {
@@ -215,11 +225,7 @@ internal sealed partial class LayoutEngine
             state.UserGestureVersion++;
         }
 
-        // (the scroll-behavior of a pseudo-element is the one of its box)
-        var smooth = behavior == ScrollBehavior.Smooth
-            || (behavior == ScrollBehavior.Auto && associatedElement is not null && Cascade.ComputedStyleDeclarations.IsBeingRendered(associatedElement)
-                && _document.GetStyleEngine().GetStyle(associatedElement).Layout.Overflow.SmoothScrolling)
-            || (behavior == ScrollBehavior.Auto && state.PseudoElement is not null && state.ContainerStyle is { Overflow.SmoothScrolling: true });
+        var smooth = IsSmoothScroll(state, behavior, associatedElement);
         var eventLoop = _document.EventLoop;
 
         // A smooth scroll to the position an ongoing smooth scroll goes to does not restart it, as in the browsers (WPT
@@ -409,6 +415,24 @@ internal sealed partial class LayoutEngine
         QueuePendingScrollEvent(state.Element ?? (EventTarget)_document, "scrollend");
     }
 
+    /// <summary>Queues a <c>scroll</c> or <c>scrollend</c> event at the visual viewport of the document, fired by the next scroll steps.</summary>
+    internal void QueueVisualViewportScrollEvent(Dom.VisualViewport visualViewport, string type) => QueuePendingScrollEvent(visualViewport, type);
+
+    /// <summary>Removes the pending <c>scrollend</c> event of the visual viewport of the document (a smooth scroll starts: it is fired at its end). Returns whether there was one.</summary>
+    internal bool CancelVisualViewportScrollEndEvent(Dom.VisualViewport visualViewport)
+    {
+        for (var i = 0; i < _pendingScrollEvents.Count; i++)
+        {
+            if (ReferenceEquals(_pendingScrollEvents[i].Target, visualViewport) && _pendingScrollEvents[i].Type == "scrollend")
+            {
+                _pendingScrollEvents.RemoveAt(i);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void QueuePendingScrollEvent(EventTarget target, string type, Node? snapTargetBlock = null, Node? snapTargetInline = null)
     {
         for (var i = 0; i < _pendingScrollEvents.Count; i++)
@@ -467,6 +491,12 @@ internal sealed partial class LayoutEngine
             {
                 animating = true;
             }
+        }
+
+        // The smooth scroll of the visual viewport (see VisualViewport.ScrollBy)
+        if (_document.VisualViewportOrNull is { } visualViewport && visualViewport.RunSmoothScroll(frameTimestamp, timestampFrequency))
+        {
+            animating = true;
         }
 
         if (_pendingScrollEvents.Count > 0)

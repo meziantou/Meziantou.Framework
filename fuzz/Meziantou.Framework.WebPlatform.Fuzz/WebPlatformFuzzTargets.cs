@@ -96,6 +96,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-use-as-dictionary", data => UseAsDictionary(FuzzText.Decode(data))) { Seeds = GetUseAsDictionarySeeds, Dictionary = StructuredFieldTokens },
         new("webplatform-dictionary-decompression", DictionaryDecompression) { Seeds = GetDictionaryDecompressionSeeds },
         new("webplatform-integrity-signatures", data => IntegritySignatureVerification(FuzzText.Decode(data))) { Seeds = GetIntegritySignatureSeeds, Dictionary = StructuredFieldTokens },
+        new("webplatform-pinch-zoom", PinchZoom) { Seeds = GetPinchZoomSeeds, Dictionary = PinchZoomTokens },
     ];
 
     /// <summary>

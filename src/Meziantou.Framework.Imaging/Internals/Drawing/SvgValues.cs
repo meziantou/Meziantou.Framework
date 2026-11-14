@@ -121,15 +121,17 @@ internal static class SvgValues
     }
 
     /// <summary>Reads a list of numbers separated by white space or commas.</summary>
-    /// <returns>The numbers read before the first one that is not a number.</returns>
-    public static List<double> ParseNumberList(string? text)
+    /// <param name="text">The list.</param>
+    /// <param name="maxCount">The number of values after which the rest of the list is not read.</param>
+    /// <returns>The numbers read before the first one that is not a number, at most <paramref name="maxCount"/>.</returns>
+    public static List<double> ParseNumberList(string? text, int maxCount = int.MaxValue)
     {
         var values = new List<double>();
         if (text is null)
             return values;
 
         var span = text.AsSpan().Trim();
-        while (!span.IsEmpty && TryReadNumber(ref span, out var value))
+        while (!span.IsEmpty && values.Count < maxCount && TryReadNumber(ref span, out var value))
         {
             values.Add(value);
             SkipSeparators(ref span);

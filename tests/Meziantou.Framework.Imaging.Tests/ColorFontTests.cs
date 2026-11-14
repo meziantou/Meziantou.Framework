@@ -1012,6 +1012,13 @@ public sealed class ColorFontTests
         // A symbol has its own opacity.
         Check("<defs><symbol id='s' opacity='0.5'><rect x='128' y='64' width='256' height='512' fill='red'/></symbol></defs><use xlink:href='#s'/>", canvas => canvas.FillRectangle(new Rgba32(255, 0, 0, 128), new RectangleD(2, 1, 4, 8)), tolerance: 1);
 
+        // The viewBox of a symbol is fitted into the width and height of the use element, the percentages of its content
+        // are of its viewBox, and what overflows the viewport of the symbol is clipped.
+        Check("<defs><symbol id='s' viewBox='0 0 512 512'><rect x='64' y='32' width='25%' height='256' fill='red'/></symbol></defs><use xlink:href='#s' width='1024' height='1024'/>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 8)), tolerance: 1);
+        Check("<defs><symbol id='s' viewBox='0 0 512 512' width='512' height='512'><rect x='128' y='64' width='256' height='512' fill='red'/></symbol></defs><use xlink:href='#s'/>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 7)), tolerance: 1);
+        Check("<defs><symbol id='s'><rect x='128' y='64' width='512' height='512' fill='red'/></symbol></defs><use xlink:href='#s' width='256' height='256'/>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 2, 3)), tolerance: 1);
+        Check("<defs><symbol id='s'><rect x='128' y='64' width='512' height='512' fill='red'/></symbol></defs><use xlink:href='#s' width='0'/>", _ => { });
+
         // Each child of a clipping path has its own clip rule: the hole of the even-odd square stays open.
         Check(
             "<clipPath id='c'><rect x='128' y='64' width='128' height='512'/><path clip-rule='evenodd' d='M384 64h512v512h-512z M512 192h256v256h-256z'/></clipPath><rect width='1024' height='1024' fill='red' clip-path='url(#c)'/>",
@@ -1076,6 +1083,20 @@ public sealed class ColorFontTests
         var limited = FontTestSupport.Load(font, new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxFramePixels = 16 } } });
         Assert.Throws<ImageResourceLimitException>(() => TextLayout.Create("A", limited, 16));
         Assert.NotEqual(Draw(20, 20, _ => { }), Draw(20, 20, canvas => canvas.FillText(Black, "A", FontTestSupport.Load(font), 16, new PointD(0, 0))));
+
+        // The data of an image and the points of a polygon are charged to the complexity of the glyph before they are read.
+        var options = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxGlyphComplexity = 10_000 } } };
+        foreach (var element in new[]
+        {
+            "<image width='256' height='256' href='data:image/png;base64," + new string('A', 100_000) + "'/>",
+            "<polygon points='" + string.Concat(Enumerable.Repeat("1 ", 50_000)) + "'/>",
+        })
+        {
+            font.RawTables["SVG "] = FontSamples.WriteSvgTable([(FontSamples.BoxA, FontSamples.BoxA, System.Text.Encoding.UTF8.GetBytes(
+                "<svg xmlns='http://www.w3.org/2000/svg'><g id='glyph" + FontSamples.BoxA.ToString(CultureInfo.InvariantCulture) + "'>" + element + "</g></svg>"))]);
+            var limit = Assert.Throws<ImageResourceLimitException>(() => TextLayout.Create("A", FontTestSupport.Load(font, options), 16));
+            Assert.Equal(ImageResourceLimitKind.GlyphComplexity, limit.Kind);
+        }
     }
 
     /// <summary>Draws A at 16 pixels per em with a font whose SVG table has one document for A.</summary>

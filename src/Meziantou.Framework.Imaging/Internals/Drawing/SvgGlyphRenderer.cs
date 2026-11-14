@@ -276,17 +276,31 @@ internal static class SvgGlyphRenderer
             double em = face.UnitsPerEm;
             var width = SvgValues.TryParseLength(root.GetAttribute("width"), em, out var w) && w > 0 ? w : em;
             var height = SvgValues.TryParseLength(root.GetAttribute("height"), em, out var h) && h > 0 ? h : em;
-            var viewBox = SvgValues.ParseNumberList(root.GetAttribute("viewBox"));
-            if (viewBox.Count != 4 || !(viewBox[2] > 0) || !(viewBox[3] > 0))
+            if (!TryGetViewBox(root, out var viewBox))
             {
                 ViewportWidth = width;
                 ViewportHeight = height;
                 return AffineTransform.Identity;
             }
 
-            ViewportWidth = viewBox[2];
-            ViewportHeight = viewBox[3];
-            return FitViewBox(viewBox[0], viewBox[1], viewBox[2], viewBox[3], width, height, root.GetAttribute("preserveAspectRatio"));
+            ViewportWidth = viewBox.Width;
+            ViewportHeight = viewBox.Height;
+            return FitViewBox(viewBox.X, viewBox.Y, viewBox.Width, viewBox.Height, width, height, root.GetAttribute("preserveAspectRatio"));
+        }
+
+        /// <summary>Reads the <c>viewBox</c> of an element: four numbers, a width and a height greater than zero.</summary>
+        private static bool TryGetViewBox(SvgElement element, out RectangleD viewBox)
+        {
+            // A fifth number makes the list invalid: the rest of the attribute is not read.
+            var values = SvgValues.ParseNumberList(element.GetAttribute("viewBox"), maxCount: 5);
+            if (values is [var x, var y, var width, var height] && width > 0 && height > 0)
+            {
+                viewBox = new RectangleD(x, y, width, height);
+                return true;
+            }
+
+            viewBox = default;
+            return false;
         }
 
         /// <summary>Gets the reference of the percentages of an attribute: the width of the viewport for a horizontal length, its height for a vertical one.</summary>
@@ -420,7 +434,7 @@ internal static class SvgGlyphRenderer
                     {
                         if (target.GetAttribute("display") is not "none" && depth + 1 < MaxDepth)
                         {
-                            builder.AddGroup(target, style.Inherit(target, builder), SvgValues.ParseTransform(target.GetAttribute("transform")).Then(transform), ops, depth + 1, (builder, element, style, transform, ops, depth) => builder.AddChildren(element, style, transform, ops, depth));
+                            builder.AddSymbol(element, target, style, transform, ops, depth + 1);
                         }
                     }
                     else
@@ -433,6 +447,64 @@ internal static class SvgGlyphRenderer
             {
                 _activeUses.Remove(target);
             }
+        }
+
+        /// <summary>
+        /// Adds a symbol a use element refers to. SVG 2, "The symbol element": the symbol establishes a viewport at the
+        /// position of the use element, whose <c>width</c> and <c>height</c> (else those of the symbol, else 100%) size
+        /// it; its <c>viewBox</c> is fitted into it (<c>preserveAspectRatio</c>), and what overflows is clipped. The
+        /// percentages of its content refer to that viewport.
+        /// </summary>
+        private void AddSymbol(SvgElement use, SvgElement symbol, Style style, AffineTransform transform, List<Op> ops, int depth)
+        {
+            var width = GetViewportSize(use, symbol, "width", ViewportWidth);
+            var height = GetViewportSize(use, symbol, "height", ViewportHeight);
+            if (!(width > 0 && height > 0))
+                return;
+
+            var contentTransform = SvgValues.ParseTransform(symbol.GetAttribute("transform")).Then(transform);
+            var viewportWidth = width;
+            var viewportHeight = height;
+            if (TryGetViewBox(symbol, out var viewBox))
+            {
+                contentTransform = FitViewBox(viewBox.X, viewBox.Y, viewBox.Width, viewBox.Height, width, height, symbol.GetAttribute("preserveAspectRatio")).Then(contentTransform);
+                viewportWidth = viewBox.Width;
+                viewportHeight = viewBox.Height;
+            }
+
+            var symbolStyle = style.Inherit(symbol, this);
+            var savedWidth = ViewportWidth;
+            var savedHeight = ViewportHeight;
+            ViewportWidth = viewportWidth;
+            ViewportHeight = viewportHeight;
+            try
+            {
+                var viewport = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, width, height)).Build().Transform(transform);
+                var clipped = new GroupOp(1, viewport, FillRule.NonZero);
+                AddGroup(symbol, symbolStyle, contentTransform, clipped.Children, depth, (builder, element, style, transform, ops, depth) => builder.AddChildren(element, style, transform, ops, depth));
+                if (clipped.Children.Count > 0)
+                {
+                    ops.Add(clipped);
+                }
+            }
+            finally
+            {
+                ViewportWidth = savedWidth;
+                ViewportHeight = savedHeight;
+            }
+        }
+
+        // The size of the viewport of a symbol: the attribute of the use element, else that of the symbol, else 100% of
+        // the viewport the use element is in.
+        private static double GetViewportSize(SvgElement use, SvgElement symbol, string attribute, double reference)
+        {
+            if (SvgValues.TryParseLength(use.GetAttribute(attribute), reference, out var value) && value >= 0)
+                return value;
+
+            if (SvgValues.TryParseLength(symbol.GetAttribute(attribute), reference, out value) && value >= 0)
+                return value;
+
+            return reference;
         }
 
         private static bool IsAncestorOrSelf(SvgElement candidate, SvgElement element)
@@ -527,8 +599,10 @@ internal static class SvgGlyphRenderer
                 case "polyline":
                 case "polygon":
                     // An odd number of coordinates draws the points before the last one.
-                    var points = SvgValues.ParseNumberList(element.GetAttribute("points"));
-                    _budget.Charge(points.Count);
+                    // The text is charged before it is read: the list grows with it.
+                    var pointsText = element.GetAttribute("points");
+                    _budget.Charge(pointsText?.Length ?? 0);
+                    var points = SvgValues.ParseNumberList(pointsText);
                     if (points.Count < 4)
                         return null;
 
@@ -565,21 +639,17 @@ internal static class SvgGlyphRenderer
             if (!url.StartsWith("data:", StringComparison.OrdinalIgnoreCase) || comma < 0 || !url[..comma].EndsWith(";base64", StringComparison.OrdinalIgnoreCase))
                 return;
 
-            byte[] bytes;
-            try
-            {
-                bytes = Convert.FromBase64String(url[(comma + 1)..].ToString());
-            }
-            catch (FormatException)
-            {
+            // The data is charged before it is decoded, from the span of the attribute: nothing is copied before.
+            var data = url[(comma + 1)..];
+            _budget.Charge(data.Length);
+            var bytes = new byte[(data.Length / 4 * 3) + 3];
+            if (!Convert.TryFromBase64Chars(data, bytes, out var written))
                 return;
-            }
 
-            _budget.Charge(bytes.Length);
             Image<Rgba32> image;
             try
             {
-                image = Image.Load<Rgba32>(bytes.AsSpan(), new ImageDecodeOptions { Configuration = ImageFontEnvironment.GetConfiguration(face), FrameLimit = 1 });
+                image = Image.Load<Rgba32>(bytes.AsSpan(0, written), new ImageDecodeOptions { Configuration = ImageFontEnvironment.GetConfiguration(face), FrameLimit = 1 });
             }
             catch (Exception exception) when (exception is InvalidImageContentException or UnknownImageFormatException or UnsupportedImageFeatureException)
             {

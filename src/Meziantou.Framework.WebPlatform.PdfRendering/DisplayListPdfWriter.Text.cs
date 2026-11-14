@@ -47,7 +47,10 @@ internal sealed partial class DisplayListPdfWriter
         Mark(draw);
         if (HasColorGlyph(face, run, count, font.Size))
         {
-            WithActualText(run.Text, () => Rasterize([draw], PdfGeometry.GetBounds(draw), firstItem: null));
+            // The bounds are estimated from the metrics of the font, but the artwork of a color glyph (an SVG document, an
+            // image, a COLR glyph) can extend beyond them: the area rasterized has a margin of one em
+            var bounds = PdfGeometry.GetBounds(draw) is { } estimate ? PdfGeometry.Inflate(estimate, font.Size) : (PhysicalRect?)null;
+            WithActualText(run.Text, () => Rasterize([draw], bounds, firstItem: null));
             return;
         }
 

@@ -168,6 +168,19 @@ public sealed class WebAppBrowserTests
     }
 
     [Fact]
+    public async Task ConfigureBrowsingContextCannotReplaceTheLoader()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions
+        {
+            ConfigureBrowsingContext = options => options with { DocumentLoader = TestDocumentLoaders.FromTestServer(factory.Server) },
+        });
+
+        var exception = Assert.Throws<InvalidOperationException>(browser.NewPage);
+        Assert.Contains("cannot replace the DocumentLoader or the ScriptEngine", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task PagesWithoutJavaScript()
     {
         await using var factory = new WebApplicationFactory<Program>();

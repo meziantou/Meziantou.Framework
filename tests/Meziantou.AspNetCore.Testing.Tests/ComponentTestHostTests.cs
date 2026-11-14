@@ -46,6 +46,17 @@ public sealed class ComponentTestHostTests
     }
 
     [Fact]
+    public void ConfigureBrowsingContext_CannotReplaceTheScriptEngine()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() => new ComponentTestHost(new ComponentTestHostOptions
+        {
+            EnableJavaScript = true,
+            ConfigureBrowsingContext = options => options with { ScriptEngine = null },
+        }));
+        Assert.Contains("cannot replace the DocumentLoader or the ScriptEngine", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Counter_RenderCountAndSetParameters()
     {
         await using var host = new ComponentTestHost();

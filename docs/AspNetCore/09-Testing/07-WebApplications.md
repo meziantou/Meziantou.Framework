@@ -67,7 +67,7 @@ ones of [TestPage](cref:Meziantou.AspNetCore.Testing.TestPage), shared with the 
 The pages run their scripts; set [EnableJavaScript](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.EnableJavaScript)
 to false to test the pages as without JavaScript. The errors of the scripts are in `ScriptErrors`, their console in
 `ConsoleMessages`, and the violations of the content security policies (including the ones raised while the document
-loads) in `ContentSecurityPolicyViolations`: what the developer tools of a browser report.
+loads) in [ContentSecurityPolicyViolations](cref:Meziantou.AspNetCore.Testing.TestPage.ContentSecurityPolicyViolations): what the developer tools of a browser report.
 
 The pages of a browser share its [Clipboard](cref:Meziantou.AspNetCore.Testing.WebAppBrowser.Clipboard), as they share
 its cookies: read what a page copies, or write what a page pastes. Each browser has its own clipboard, so tests that run
@@ -79,7 +79,9 @@ in parallel do not see what the others copy.
 option of the browsing contexts of the pages (`BrowsingContextOptions`): the user agent, the languages, the permissions,
 the geolocation, the dialogs... It receives the options made from the other settings and returns the options to use,
 usually with a `with` expression. The pages still record their console messages, script errors and content security
-policy violations, and call the callbacks that the function sets.
+policy violations, and call the callbacks that the function sets. The function cannot replace the document loader nor
+the script engine, which the pages depend on to wait and to run the JavaScript interop: use the loader of the browser and
+[EnableJavaScript](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.EnableJavaScript) instead.
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=WebAppBrowser_ConfigureBrowsingContext;format=md-fenced-code-block;dedent=true -->
 ```csharp

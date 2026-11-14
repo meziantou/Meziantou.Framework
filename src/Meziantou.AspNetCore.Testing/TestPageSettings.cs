@@ -32,8 +32,11 @@ public sealed class TestPageSettings
     /// Gets a function that changes the options of the browsing context of the page, or null. It receives the options made
     /// from the other settings and returns the options to use, usually with a <c>with</c> expression:
     /// <c>options =&gt; options with { UserAgent = "..." }</c>. The page still records the console messages, the script
-    /// errors and the content security policy violations, and calls the callbacks that the function sets. A
-    /// <see cref="BrowsingContextOptions.ScriptEngine"/> set by the function is not disposed by the page.
+    /// errors and the content security policy violations, and calls the callbacks that the function sets. The function
+    /// cannot replace <see cref="BrowsingContextOptions.DocumentLoader"/> nor <see cref="BrowsingContextOptions.ScriptEngine"/>:
+    /// the page waits for the requests of its loader and calls the functions of its engine, so set <see cref="DocumentLoader"/>
+    /// and <see cref="ScriptEngine"/> instead.
     /// </summary>
+    /// <remarks>The page throws an <see cref="InvalidOperationException"/> when the function replaces them.</remarks>
     public Func<BrowsingContextOptions, BrowsingContextOptions>? ConfigureBrowsingContext { get; init; }
 }

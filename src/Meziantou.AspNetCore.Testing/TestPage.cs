@@ -46,6 +46,13 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
         if (settings.ConfigureBrowsingContext is { } configure)
         {
             options = configure(options);
+
+            // The page waits for the requests of its loader and calls the functions of its engine (JavaScript interop)
+            if (!ReferenceEquals(options.DocumentLoader, settings.DocumentLoader) || !ReferenceEquals(options.ScriptEngine, settings.ScriptEngine))
+            {
+                (settings.ScriptEngine as IDisposable)?.Dispose();
+                throw new InvalidOperationException($"{nameof(TestPageSettings.ConfigureBrowsingContext)} cannot replace the {nameof(BrowsingContextOptions.DocumentLoader)} or the {nameof(BrowsingContextOptions.ScriptEngine)} of the page: set them in the settings of the page instead (the loader of the WebAppBrowser, ComponentTestHostOptions.DocumentLoader, EnableJavaScript).");
+            }
         }
 
         // The page records what it reports, then calls the callbacks of the options

@@ -3673,6 +3673,45 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SeamCarveKeepsTheProtectedRegion()
+    {
+        // A flat background, a textured subject on the left and a smaller one on the right: halving the width keeps the
+        // protected subject whole
+        var input = GetPath("scene.png");
+        using (var source = new Image<Rgb24>(40, 10, new Rgb24(200, 220, 240)))
+        {
+            for (var y = 0; y < 10; y++)
+            {
+                for (var x = 2; x < 12; x++)
+                {
+                    source.Frames[0][x, y] = new Rgb24((byte)(40 + (45 * (((7 * x) + (3 * y)) % 5))), 60, 20);
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var output = GetPath("banner.png");
+        ProcessingExamples.ResizeToBanner(input, output, new Rectangle(2, 0, 10, 10));
+
+        using var result = Image.Load<Rgb24>(output);
+        Assert.Equal(new Size(20, 10), result.Size);
+        var subjectPixels = 0;
+        for (var y = 0; y < 10; y++)
+        {
+            for (var x = 0; x < 20; x++)
+            {
+                if (result.Frames[0][x, y] != new Rgb24(200, 220, 240))
+                {
+                    subjectPixels++;
+                }
+            }
+        }
+
+        Assert.Equal(100, subjectPixels);
+    }
+
+    [Fact]
     public void RotateAndFlipTransposesThePixels()
     {
         // A quarter turn clockwise then a horizontal mirror moves the pixel (x, y) to (y, x)

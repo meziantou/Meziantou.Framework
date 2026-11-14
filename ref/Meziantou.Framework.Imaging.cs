@@ -1343,6 +1343,7 @@ namespace Meziantou.Framework.Imaging
         public static void Resize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ResizeOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Rotate(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.RotateMode mode, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Rotate(this Meziantou.Framework.Imaging.Image image, double degrees, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void SeamCarve(this Meziantou.Framework.Imaging.Image image, int width, int height, Meziantou.Framework.Imaging.SeamCarvingOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Sharpen(this Meziantou.Framework.Imaging.Image image, double sigma, double amount = 1d, double threshold = 0d, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Sharpen(this Meziantou.Framework.Imaging.ImageFrame frame, double sigma, double amount = 1d, double threshold = 0d, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Skew(this Meziantou.Framework.Imaging.Image image, double degreesX, double degreesY, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
@@ -1744,6 +1745,20 @@ namespace Meziantou.Framework.Imaging
         public static bool IsSupported<TPixel>() where TPixel : unmanaged => throw null;
     }
 
+    public sealed class PixelMask
+    {
+        public int Count { get => throw null; }
+        public int Height { get => throw null; }
+        public bool this[int x, int y] { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Size Size { get => throw null; }
+        public int Width { get => throw null; }
+        public PixelMask(Meziantou.Framework.Imaging.Size size) { }
+        public PixelMask(int width, int height) { }
+        public void Clear() { }
+        public void Fill(Meziantou.Framework.Imaging.Rectangle rectangle, bool value = true) { }
+        public static Meziantou.Framework.Imaging.PixelMask FromFrame(Meziantou.Framework.Imaging.ImageFrame frame) => throw null;
+    }
+
     public ref struct PixelRowSource<TPixel> where TPixel : unmanaged
     {
         public int Height { get => throw null; }
@@ -2110,6 +2125,13 @@ namespace Meziantou.Framework.Imaging
         Rotate90 = 90,
         Rotate180 = 180,
         Rotate270 = 270,
+    }
+
+    public sealed class SeamCarvingOptions
+    {
+        public static Meziantou.Framework.Imaging.SeamCarvingOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.PixelMask? ProtectedRegion { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.PixelMask? RemovedRegion { get => throw null; init { } }
     }
 
     public enum SimilarityPrecision

@@ -28,6 +28,7 @@ public sealed class ApiSurfaceTests
         typeof(ConvolutionKernel),
         typeof(AutoCropOptions),
         typeof(CropSuggestionOptions),
+        typeof(SeamCarvingOptions),
         typeof(RadialBlurOptions),
         typeof(ImageSimilarityOptions),
         typeof(DifferenceMapOptions),

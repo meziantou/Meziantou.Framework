@@ -39,7 +39,7 @@ color conversion, and bounded-memory streaming.
   `RgbaHalf`) for scene-referred and high dynamic range data, and two CMYK ones (`Cmyk32`, `Cmyk64`) that keep the inks
   of print images
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
-  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions and resizing (seam carving), morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -776,7 +776,8 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 ### Processing
 
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
-`Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `Pad` (a border of a given
+`Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `SeamCarve` (a
+content-aware resize, see [Content-aware resize](#content-aware-resize)), `Pad` (a border of a given
 width on each side), `ExtendCanvas` (a larger canvas, with the image at one of nine anchors), `Rotate` (exact 90/180/270
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
@@ -1280,6 +1281,38 @@ public static void ApplyColorFilters(string photoPath, string iconPath, string o
     });
 
     photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Content-aware resize
+
+`SeamCarve(width, height, options)` resizes every frame and the poster by seam carving (Avidan and Shamir, 2007): it
+removes, or duplicates, the connected paths of one pixel per row (vertical seams, for the width) or per column
+(horizontal seams, for the height) whose removal brings together the least different pixels, the forward energy of
+Rubinstein, Shamir and Avidan (2008) on the Rec. 709 luma premultiplied by alpha and on the alpha, at the storage
+precision. The width changes first, then the height. An enlargement duplicates the seams a reduction would remove, at
+most half of the current size at a time, each new pixel blended from the seam pixel and its neighbor (premultiplied by
+alpha, in single precision); the other pixels keep their stored values. The seams are computed once from the energies of
+every frame and the poster, so an animation stays aligned, and a cursor hotspot follows its pixel (the operation fails
+when a seam removes it). `SeamCarvingOptions.ProtectedRegion` and `RemovedRegion` are `PixelMask`s of the size of the
+image: a seam is compared by the protected pixels minus the pixels to remove it crosses, then by its energy. Costs are
+integers and ties go to the straight path, then the left, then the right, and to the leftmost seam, so the result is the
+same on every platform. The time is the number of seams times the number of pixels and frames; the working memory
+(about 8 bytes per pixel and frame, 13 per pixel for the search, and two working frames) is charged to the image, and
+the operation is transactional.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_SeamCarve;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ResizeToBanner(string inputPath, string outputPath, Rectangle face)
+{
+    using var image = Image.Load(inputPath);
+
+    // Half as wide: the seams of least detail are removed, and never through the face while another seam remains
+    var protectedRegion = new PixelMask(image.Size);
+    protectedRegion.Fill(face);
+    image.SeamCarve(image.Width / 2, image.Height, new SeamCarvingOptions { ProtectedRegion = protectedRegion });
+    image.Save(outputPath);
 }
 ```
 <!-- endref -->

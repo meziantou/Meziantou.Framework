@@ -46,6 +46,20 @@ internal static class ProcessingExamples
     }
     #endregion
 
+    /// <summary>Content-aware resizing: the background shrinks, the subjects keep their proportions.</summary>
+    #region Imaging_SeamCarve
+    public static void ResizeToBanner(string inputPath, string outputPath, Rectangle face)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Half as wide: the seams of least detail are removed, and never through the face while another seam remains
+        var protectedRegion = new PixelMask(image.Size);
+        protectedRegion.Fill(face);
+        image.SeamCarve(image.Width / 2, image.Height, new SeamCarvingOptions { ProtectedRegion = protectedRegion });
+        image.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>Quarter turns and mirrors: exact pixel permutations.</summary>
     #region Imaging_RotateAndFlip
     public static void RotateAndFlip(string inputPath, string outputPath)

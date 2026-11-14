@@ -28,6 +28,7 @@ public static partial class ImagingFuzzTargets
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("imaging-processor", ProcessorTarget) { Seeds = GetProcessorSeeds, Dictionary = Tokens },
+        new("imaging-seam-carving", SeamCarvingTarget) { Seeds = GetSeamCarvingSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>

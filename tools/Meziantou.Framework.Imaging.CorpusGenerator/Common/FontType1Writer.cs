@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
@@ -12,6 +13,7 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator.Common;
 /// Self-contained: the fuzz project links this file for its seeds. <see cref="Sample"/> is the font of the tests, whose
 /// outlines were checked against FreeType (<c>hb-vector --font-funcs=ft</c>).
 /// </remarks>
+[SuppressMessage("Design", "MA0182:Unused internal type", Justification = "The corpus generator does not use it: the font tests and the fuzz project use it.")]
 internal sealed class FontType1Writer
 {
     private static readonly Dictionary<string, int[]> Operators = new(StringComparer.Ordinal)

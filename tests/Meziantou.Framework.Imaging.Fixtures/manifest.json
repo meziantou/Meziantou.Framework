@@ -58319,34 +58319,6 @@
       "notes": "BI_PNG (an embedded PNG payload) is recognized and rejected."
     },
     {
-      "id": "invalid/bmp/mask-10-bits",
-      "kind": "unsupported",
-      "format": "bmp",
-      "input": {
-        "path": "invalid/bmp/mask-10-bits.bmp",
-        "sha256": "3da0369141c741a930cbe0578a0001abb1bcf5f8b33ac8e15e7fee08c02eab0a",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
-        "tools": [
-          ".NET 11.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Bmp",
-        "feature": "Bit fields: channel wider than 8 bits"
-      },
-      "features": [
-        "bmp.unsupported=wide-mask"
-      ],
-      "notes": "A 10-10-10-2 bit-field layout: channels wider than 8 bits are recognized and rejected rather than truncated."
-    },
-    {
       "id": "invalid/bmp/non-contiguous-mask",
       "kind": "invalid",
       "format": "bmp",

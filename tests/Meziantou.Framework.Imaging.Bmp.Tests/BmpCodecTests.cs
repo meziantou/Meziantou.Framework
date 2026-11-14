@@ -115,6 +115,40 @@ public sealed class BmpCodecTests
     }
 
     [Fact]
+    public void ChannelsWiderThanEightBitsAreExpandedToSixteenBits()
+    {
+        // 10-10-10-2 (a BITMAPV4HEADER with BI_BITFIELDS): every channel is expanded with round(value * 65535 / max), the
+        // 2-bit alpha included, so the largest value of a channel is its full value. ImageMagick 7.1 and Apple ImageIO read
+        // the same samples left-justified instead (value << (16 - bits)): 1023 is 65472 for them, and an alpha of 3 is 0.75
+        static byte[] Pixel(uint red, uint green, uint blue, uint alpha) => BitConverter.GetBytes((red << 20) | (green << 10) | blue | (alpha << 30));
+        byte[][] rows = [[.. Pixel(0, 1023, 512, 3), .. Pixel(1, 2, 1022, 2)], [.. Pixel(700, 300, 5, 1), .. Pixel(1023, 0, 0, 0)]];
+        var data = Bmp(2, 2, 32, rows, compression: BiBitFields, masks: [0x3FF00000, 0x000FFC00, 0x000003FF, 0xC0000000], headerLength: 108, topDown: true);
+        var info = Image.Identify(data);
+        Assert.Equal(PixelFormat.Rgba64, info.PixelFormat);
+        Assert.Equal(10, info.BitsPerComponent);
+        using (var image = Image.Load(data))
+        {
+            Assert.Equal(PixelFormat.Rgba64, image.PixelFormat);
+            Assert.Equal([new Rgba64(0, 65535, 32800, 65535), new Rgba64(64, 128, 65471, 43690), new Rgba64(44843, 19218, 320, 21845), new Rgba64(65535, 0, 0, 0)], GetPixels(((Image<Rgba64>)image).Frames[0]));
+        }
+
+        // Without an alpha mask: Rgb48
+        var opaque = Bmp(2, 2, 32, rows, compression: BiBitFields, masks: [0x3FF00000, 0x000FFC00, 0x000003FF], topDown: true);
+        using (var image = Image.Load(opaque))
+        {
+            Assert.Equal(PixelFormat.Rgb48, image.PixelFormat);
+            Assert.Equal([new Rgb48(0, 65535, 32800), new Rgb48(64, 128, 65471), new Rgb48(44843, 19218, 320), new Rgb48(65535, 0, 0)], GetPixels(((Image<Rgb48>)image).Frames[0]));
+        }
+
+        // A 12-bit channel in a 16-bit pixel
+        var sixteen = Bmp(2, 1, 16, [[0xFF, 0xFF, 0x01, 0x00]], compression: BiBitFields, masks: [0xFFF0, 0x000C, 0x0003]);
+        using (var image = Image.Load(sixteen))
+        {
+            Assert.Equal([new Rgb48(65535, 65535, 65535), new Rgb48(0, 0, 21845)], GetPixels(((Image<Rgb48>)image).Frames[0]));
+        }
+    }
+
+    [Fact]
     public void SixteenBitChannelsAreExpandedWithTheExactRatio()
     {
         // Implicit 5-5-5: 0 maps to 0, 31 to 255, and the values in between are round(value * 255 / 31)
@@ -520,11 +554,10 @@ public sealed class BmpCodecTests
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(valid, 30, [12, 0, 0, 0]))); // undefined compression
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(valid, 10, [40, 0, 0, 0]))); // pixel data inside the header
 
-        // Masks: non-contiguous, overlapping, zero and wider than eight bits
+        // Masks: non-contiguous, overlapping and zero
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Bmp(1, 1, 16, [[0, 0, 0, 0]], compression: BiBitFields, masks: [0xF810, 0x07E0, 0x001F])));
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Bmp(1, 1, 16, [[0, 0, 0, 0]], compression: BiBitFields, masks: [0xF800, 0xF800, 0x001F])));
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Bmp(1, 1, 16, [[0, 0, 0, 0]], compression: BiBitFields, masks: [0xF800, 0, 0x001F])));
-        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Bmp(1, 1, 32, [[0, 0, 0, 0]], compression: BiBitFields, masks: [0x3FF00000, 0x000FFC00, 0x000003FF])));
 
         // Masks are only defined for 16 and 32 bits per pixel
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Bmp(1, 1, 24, [[0, 0, 0, 0]], compression: BiBitFields, masks: [0xFF0000, 0x00FF00, 0x0000FF])));
@@ -1197,9 +1230,10 @@ public sealed class BmpCodecTests
         return GetPixels(image.Frames[0]);
     }
 
-    private static Rgba32[] GetPixels(ImageFrame<Rgba32> frame)
+    private static TPixel[] GetPixels<TPixel>(ImageFrame<TPixel> frame)
+        where TPixel : unmanaged
     {
-        var pixels = new Rgba32[frame.Width * frame.Height];
+        var pixels = new TPixel[frame.Width * frame.Height];
         frame.CopyPixelDataTo(pixels);
         return pixels;
     }

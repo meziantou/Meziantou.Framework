@@ -1191,11 +1191,6 @@ internal static class BmpCorpus
             BmpEdit(28, Bytes.Concat(U16(24), U32(BiPng))),
             "UnsupportedImageFeatureException", "BI_PNG (an embedded PNG payload) is recognized and rejected.",
             feature: "Compression: embedded codec", features: ["bmp.unsupported=embedded-codec"]);
-        AddError(c, Format, "invalid/bmp/mask-10-bits", "invalid/bmp/mask-10-bits.bmp",
-            Bytes.Concat(Bytes.Slice(read["bmp/bgra32-v4-alpha"], null, 54), U32(0x3FF00000, 0x000FFC00, 0x000003FF, 0xC0000000),
-                Bytes.Slice(read["bmp/bgra32-v4-alpha"], 70)),
-            "UnsupportedImageFeatureException", "A 10-10-10-2 bit-field layout: channels wider than 8 bits are recognized " +
-            "and rejected rather than truncated.", feature: "Bit fields: channel wider than 8 bits", features: ["bmp.unsupported=wide-mask"]);
     }
 
     private static void BuildLimits(Corpus<FfmpegTools> c)

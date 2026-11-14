@@ -75,6 +75,7 @@ internal static class FuzzSeeds
         else if (group is "bmp")
         {
             seeds.Add(new FuzzSeed("bmp/generated-2-bit", CreateTwoBitBmp()));
+            seeds.Add(new FuzzSeed("bmp/generated-10-10-10-2", CreateWideBitFieldsBmp()));
         }
         else if (group is "pnm")
         {
@@ -122,6 +123,34 @@ internal static class FuzzSeeds
 
         extensions.Add(0);
         return new FuzzSeed("gif/generated-xmp-and-icc", [.. gif.AsSpan(0, position), .. extensions, .. gif.AsSpan(position)]);
+    }
+
+    /// <summary>A 3x2 BMP of 32-bit pixels whose bit fields are 10-10-10-2 (a <c>BITMAPV4HEADER</c> with <c>BI_BITFIELDS</c>).</summary>
+    private static byte[] CreateWideBitFieldsBmp()
+    {
+        const int HeaderLength = 108;
+        var offset = 14 + HeaderLength;
+        var data = new byte[offset + (3 * 2 * 4)];
+        "BM"u8.CopyTo(data);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(2), data.Length);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(10), offset);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(14), HeaderLength);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(18), 3);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(22), 2);
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(26), 1);
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(28), 32);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(30), 3);
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(34), 3 * 2 * 4);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(54), 0x3FF00000);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(58), 0x000FFC00);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(62), 0x000003FF);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(66), 0xC0000000);
+        for (var i = 0; i < 6; i++)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset + (i * 4)), (uint)((i * 0x2F1C3A5) ^ 0x9E3779B9));
+        }
+
+        return data;
     }
 
     /// <summary>A 5x2 BMP of 2 bits per pixel (Windows CE) with a palette of four entries.</summary>

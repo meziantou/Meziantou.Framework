@@ -104,7 +104,10 @@ lossless, but can be larger than uncompressed output.
   file and follows [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling). Linked profiles (a file name) are not read.
 - [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) reads the header only, which is before the embedded profile: a full scan
   ([ImageIdentifyMode.FullScan](cref:Meziantou.Framework.Imaging.ImageIdentifyMode.FullScan)) or a load reports it.
-- The decoder rejects embedded JPEG or PNG payloads, OS/2 Huffman compression and channels wider than 8 bits
+- A file whose bit fields have a channel wider than 8 bits (10-10-10-2) loads as [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48), or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) with
+  alpha: the largest value of each channel is its full value, where some viewers shift the samples and show a 2-bit alpha
+  of 3 as 75 % opaque.
+- The decoder rejects embedded JPEG or PNG payloads and OS/2 Huffman compression
   with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Run-length data is read strictly: a run past its row or a missing
   end-of-bitmap marker is an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException).
 - The indexed layouts keep one byte per pixel of working memory while they encode.

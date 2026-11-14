@@ -53,6 +53,13 @@ public sealed class WebAppBrowserOptions
         return false;
     }
 
+    /// <summary>
+    /// Gets a function that changes the options of the browsing contexts of the pages, or null (see
+    /// <see cref="TestPageSettings.ConfigureBrowsingContext"/>). It is called for each page: return the same
+    /// <see cref="BrowsingContextOptions.Clipboard"/> (for instance a <see cref="FakeClipboard"/>) for the pages to share it.
+    /// </summary>
+    public Func<BrowsingContextOptions, BrowsingContextOptions>? ConfigureBrowsingContext { get; init; }
+
     /// <summary>Gets the name of the attribute that <see cref="LocatorScope.GetByTestId(string)"/> matches. The default is <c>data-testid</c>.</summary>
     public string TestIdAttribute { get; init; } = "data-testid";
 }

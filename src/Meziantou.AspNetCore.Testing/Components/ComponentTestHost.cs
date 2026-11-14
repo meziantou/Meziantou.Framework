@@ -60,6 +60,7 @@ public sealed class ComponentTestHost : TestPage
             TimeProvider = options.TimeProvider,
             DefaultTimeout = options.DefaultTimeout,
             TestIdAttribute = options.TestIdAttribute,
+            ConfigureBrowsingContext = options.ConfigureBrowsingContext,
         })
     {
         _options = options;

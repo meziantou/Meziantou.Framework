@@ -59,6 +59,12 @@ public sealed class ComponentTestHostOptions
     /// </summary>
     public IDictionary<string, Func<Event, EventArgs>> CustomEventArgs { get; } = new Dictionary<string, Func<Event, EventArgs>>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Gets a function that changes the options of the browsing context of the page, or null (see
+    /// <see cref="TestPageSettings.ConfigureBrowsingContext"/>).
+    /// </summary>
+    public Func<BrowsingContextOptions, BrowsingContextOptions>? ConfigureBrowsingContext { get; init; }
+
     /// <summary>Gets the name of the attribute that <see cref="LocatorScope.GetByTestId(string)"/> matches. The default is <c>data-testid</c>.</summary>
     public string TestIdAttribute { get; init; } = "data-testid";
 }

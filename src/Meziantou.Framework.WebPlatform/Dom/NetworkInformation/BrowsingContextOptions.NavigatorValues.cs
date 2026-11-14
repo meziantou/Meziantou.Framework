@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-public sealed partial class BrowsingContextOptions
+public sealed partial record BrowsingContextOptions
 {
     /// <summary>
     /// Gets or sets the host hooks of the Network Information API (https://wicg.github.io/netinfo/, <c>navigator.connection</c>):

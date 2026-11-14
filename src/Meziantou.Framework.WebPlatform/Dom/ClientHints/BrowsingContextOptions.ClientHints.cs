@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-public sealed partial class BrowsingContextOptions
+public sealed partial record BrowsingContextOptions
 {
     /// <summary>
     /// Gets or sets the values of the client hints of the browsing contexts (https://wicg.github.io/client-hints-infrastructure/,

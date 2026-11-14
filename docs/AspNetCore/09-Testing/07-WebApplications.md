@@ -65,8 +65,85 @@ ones of [TestPage](cref:Meziantou.AspNetCore.Testing.TestPage), shared with the 
 [Locators and assertions](03-Locators.md), [User input](04-UserInput.md) and [Snapshots](05-Snapshots.md).
 
 The pages run their scripts; set [EnableJavaScript](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.EnableJavaScript)
-to false to test the pages as without JavaScript. The errors of the scripts are in `ScriptErrors`, and their console in
-`ConsoleMessages`.
+to false to test the pages as without JavaScript. The errors of the scripts are in [ScriptErrors](cref:Meziantou.AspNetCore.Testing.TestPage.ScriptErrors), their console in
+[ConsoleMessages](cref:Meziantou.AspNetCore.Testing.TestPage.ConsoleMessages), and the violations of the content security policies (including the ones raised while the document
+loads) in [ContentSecurityPolicyViolations](cref:Meziantou.AspNetCore.Testing.TestPage.ContentSecurityPolicyViolations): what the developer tools of a browser report.
+
+## Browsing context options
+
+[ConfigureBrowsingContext](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.ConfigureBrowsingContext) changes any
+option of the browsing contexts of the pages ([BrowsingContextOptions](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions)): the user agent, the languages, the permissions,
+the geolocation, the dialogs... It receives the options made from the other settings and returns the options to use,
+usually with a `with` expression. The pages still record their console messages, script errors and content security
+policy violations, and call the callbacks that the function sets. The function cannot replace the document loader nor
+the script engine, which the pages depend on to wait and to run the JavaScript interop: use the loader of the browser and
+[EnableJavaScript](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.EnableJavaScript) instead.
+
+<!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=WebAppBrowser_ConfigureBrowsingContext;format=md-fenced-code-block;dedent=true -->
+```csharp
+var reports = new List<ContentSecurityPolicyViolationReport>();
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions
+{
+    // Change any option of the browsing contexts of the pages
+    ConfigureBrowsingContext = options => options with
+    {
+        UserAgent = "TestBrowser/1.0",
+        ContentSecurityPolicyViolation = (_, report) => reports.Add(report),
+    },
+});
+var page = await browser.OpenAsync("/secure");
+
+Assert.Equal("TestBrowser/1.0", page.BrowsingContext.Window.Navigator.UserAgent);
+
+// The page still records what it reports, and calls the callbacks of the options
+Assert.Single(page.ContentSecurityPolicyViolations);
+Assert.Single(reports);
+```
+<!-- endref -->
+
+[ComponentTestHostOptions](cref:Meziantou.AspNetCore.Testing.Components.ComponentTestHostOptions) has the same function for the page that hosts the components.
+
+## Clipboard
+
+Each page has a clipboard of its own, so tests that run in parallel do not see what the others copy.
+[FakeClipboard](cref:Meziantou.AspNetCore.Testing.FakeClipboard) supplies what the pages paste
+([ProvideContent](cref:Meziantou.AspNetCore.Testing.FakeClipboard.ProvideContent)) and receives what they copy
+([ContentChanged](cref:Meziantou.AspNetCore.Testing.FakeClipboard.ContentChanged)). Set it with
+[ConfigureBrowsingContext](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.ConfigureBrowsingContext): the pages that
+use the same instance share it. Without [ProvideContent](cref:Meziantou.AspNetCore.Testing.FakeClipboard.ProvideContent), the pages read what was last written.
+
+<!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=FakeClipboard_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var copied = new List<string?>();
+var clipboard = new FakeClipboard
+{
+    // What the pages paste or read
+    ProvideContent = () => [FakeClipboard.CreateTextItem("Pasted text")],
+
+    // Called with what the pages copy or write
+    ContentChanged = items => copied.Add(FakeClipboard.GetText(items)),
+};
+
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions
+{
+    // The pages that use the same clipboard share it
+    ConfigureBrowsingContext = options => options with { Clipboard = clipboard },
+});
+var page = await browser.OpenAsync("/secure");
+
+await page.Find("#copy").ClickAsync();
+await page.Find("#paste").ClickAsync();
+
+Assert.Equal(["Copied text"], copied);
+Assert.Equal("Pasted text", page.Find("output").TextContent);
+```
+<!-- endref -->
+
+When the content returned by [ProvideContent](cref:Meziantou.AspNetCore.Testing.FakeClipboard.ProvideContent) changes, as when another application writes to the clipboard,
+[NotifyContentChanged](cref:Meziantou.AspNetCore.Testing.FakeClipboard.NotifyContentChanged) fires the `clipboardchange`
+events of the pages.
 
 ## Waiting
 

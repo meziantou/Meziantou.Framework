@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>1.0.10</Version>
-    <Description>Fully managed OpenType font reader and text shaper shared by Meziantou.Framework.Imaging and Meziantou.Framework.WebPlatform: TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts, the shaping of complex scripts, Apple Advanced Typography (morx, kerx), and AFM font metrics files.</Description>
-    <PackageTags>font;opentype;truetype;woff;woff2;cff;shaping;typography;afm;aat</PackageTags>
+    <Description>Fully managed OpenType font reader and text shaper shared by Meziantou.Framework.Imaging and Meziantou.Framework.WebPlatform: TrueType, CFF and CFF2 outlines, WOFF and WOFF2, PostScript Type 1 fonts, variable fonts, color fonts, the shaping of complex scripts, Apple Advanced Typography (morx, kerx), and AFM font metrics files.</Description>
+    <PackageTags>font;opentype;truetype;woff;woff2;cff;type1;postscript;shaping;typography;afm;aat</PackageTags>
 
     <!-- Every member must be documented -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
@@ -25,6 +25,11 @@
       their license forbids distributing the AFM files without MustRead.html
     -->
     <EmbeddedResource Include="Afm\StandardFonts\*.afm;Afm\StandardFonts\MustRead.html" LogicalName="Meziantou.Framework.Fonts.Afm.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The Adobe Glyph List, for the characters of the glyph names of Type 1 fonts (BSD-3-Clause, see Type1/GlyphList/LICENSE.md) -->
+    <EmbeddedResource Include="Type1\GlyphList\glyphlist.txt" LogicalName="Meziantou.Framework.Fonts.Type1.glyphlist.txt" />
   </ItemGroup>
 
   <ItemGroup>

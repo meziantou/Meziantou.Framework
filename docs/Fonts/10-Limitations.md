@@ -8,13 +8,15 @@ description: What the font reader and the shaper do not do.
   [Meziantou.Framework.Unicode](../Unicode/01-Introduction.md) has the algorithms to write your own.
 - **No rasterization.** Outlines are given as lines and curves; filling them with pixels is up to the renderer.
 - **No decoding of bitmap glyphs.** The images of `sbix` and `CBDT` glyphs are given as encoded data.
-- **Not supported**: glyphs in SVG (`SVG ` table), fonts without outlines (bitmap-only fonts), PostScript Type 1 fonts,
-  the hints of CFF outlines, the variation of the TrueType hinting values (`cvar`), and the metadata and private blocks
+- **Not supported**: glyphs in SVG (`SVG ` table), fonts without outlines (bitmap-only fonts), the hints of CFF outlines, the variation of the TrueType hinting values (`cvar`), and the metadata and private blocks
   of WOFF and WOFF2 files.
 - **Apple Advanced Typography**: the `mort` table (the version before `morx`), the state tables of the legacy `kern`
   table (formats 1 to 3, pairs only are applied), the variations of `kerx`, its anchors that are control points of the
   outlines, the tracks other than the normal one, and the features of a range of a run (the `morx` features apply to
   the whole run) are not supported.
 - **AFM files**: the multiple master (AMFM) and composite (ACFM) metrics files are not supported.
+- **PostScript Type 1 fonts**: the hints of the charstrings are dropped; the ligatures of an AFM file are not applied;
+  multiple master, CID-keyed and stroked fonts, and the fonts of the resource fork of a Macintosh file (LWFN), are not
+  supported. The installed fonts (`SystemFontCollection`) do not include Type 1 fonts.
 - **Low-level API.** The public API is the one the Imaging, WebPlatform and Pdf libraries use; update the packages that
   use it together.

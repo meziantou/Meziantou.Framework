@@ -104,6 +104,7 @@ public static class FontsFuzzTargets
         new("fonts-subset", Subset) { Seeds = () => GetFontSeeds().Select((seed, index) => seed with { Data = (byte[])[(byte)index, (byte)(index * 13), .. seed.Data.Span] }) },
         new("fonts-shaping", Shaping) { Seeds = GetShapingSeeds, Dictionary = ShapingTokens },
         new("fonts-split-runs", SplitRuns) { Seeds = GetSplitRunsSeeds, Dictionary = SplitRunsTokens },
+        .. Type1FuzzTargets.All,
     ];
 
     /// <summary>Hints the glyphs of a font file: option bytes give the hinting mode and the size.</summary>

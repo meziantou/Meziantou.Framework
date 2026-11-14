@@ -2,7 +2,7 @@
 
 The OpenType font reader and the text shaper shared by `Meziantou.Framework.Imaging` (which draws text),
 `Meziantou.Framework.WebPlatform` (which lays out HTML, SVG and MathML text) and `Meziantou.Framework.Pdf` (which embeds
-fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT), BASE
+fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, PostScript Type 1 fonts, variable fonts, color fonts (COLR, CPAL, sbix, CBDT), BASE
 baselines, the shaping of complex scripts and of the fonts of Apple Advanced Typography, and the subsetting of TrueType
 and CFF outlines (`FontSubsetter`).
 
@@ -118,6 +118,29 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   metrics, the whole character map, every advance and outline; a container must give the tables of its original font),
   and mutation fuzzing (`FontFuzzTests`). The test-side writers are not oracles: a file they write is a fixture only
   after the corpus generator has read it back with the reference decoders.
+
+## Type 1 fonts
+
+`Type1/` reads PostScript Type 1 fonts (PFB and PFA files) and converts them to an OpenType font with CFF outlines when
+they are loaded (`Type1FontConverter`), as a WOFF file is expanded: everything after `FontLoader` sees an ordinary
+font. `Type1Font` reads the file (`PostScriptTokenizer`, eexec and charstring decryption), `Type1CharstringConverter`
+runs each charstring into a Type 2 charstring (`Type2CharstringWriter`), `Type1GlyphNames` maps the glyph names with
+the Adobe Glyph List (`Type1/GlyphList`, vendored, see `THIRD-PARTY-NOTICES.md`).
+
+- Written from the Adobe Type 1 Font Format and Technical Note #5040 (PFB segments). The font program is never run as
+  PostScript: the dictionaries are read from the tokens of the usual layout of a font.
+- **Eager and strict.** Every charstring is converted at load time, each one charged to its own `GlyphBudget`, and the
+  whole font to a budget of `MaxGlyphComplexity` plus 64 operations per byte of the file. A malformed charstring fails
+  the loading (`InvalidFontException` naming the glyph): a converted font has no charstring that fails to decode, which
+  the fuzz targets check.
+- Subroutines, flex (the two curves) and `seac` are expanded; hints, hint replacement (subroutine 3) and counter
+  control are dropped. Points are rounded to 16.16 and written relative to the previous rounded point, so the decoded
+  outline is exact.
+- **FreeType is the oracle** (the prebuilt `hb-*` tools have no Type 1 driver: embed the font as `/FontFile` in a PDF
+  file and read the paths of `mutool draw -F svg -O text=path`). It moves the accent of `seac` by
+  `adx - asb + sbx` (the side bearing of the accented glyph), which `FontTests` checks with a glyph whose side bearing
+  differs from the one of its base. The sample font is `FontType1Writer.Sample` (corpus generator, shared with the
+  fuzz project).
 
 ## Hinting
 

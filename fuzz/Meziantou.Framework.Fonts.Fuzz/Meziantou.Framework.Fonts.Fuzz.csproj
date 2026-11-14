@@ -1,5 +1,5 @@
 <Project Sdk="Meziantou.NET.Sdk">
-  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter, the subsetter and the shaper). See fuzz/README.md. -->
+  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter, the subsetter, the shaper and the Type 1 reader). See fuzz/README.md. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
@@ -24,6 +24,11 @@
     <ShapingSeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\aat-*.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\arabic-forms.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\thai-forms.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\thai-forms.mac.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\languages.ttf" />
     <ShapingSeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\font-suites\aots\fonts\gsub*.otf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\font-suites\aots\fonts\gpos*.otf" />
     <EmbeddedResource Include="@(ShapingSeedFont)" LogicalName="Seeds/shaping/%(Filename)%(Extension)" Link="Seeds\shaping\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The writer of the Type 1 fonts of the tests: the seeds of the Type 1 targets, and the font the charstrings of the input are put in -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontType1Writer.cs" Link="Shared\FontType1Writer.cs" />
   </ItemGroup>
 
   <ItemGroup>

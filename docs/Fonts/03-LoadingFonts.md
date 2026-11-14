@@ -1,6 +1,6 @@
 ---
 title: Loading fonts
-description: Load fonts from files, streams and memory, bound the work of hostile fonts with limits, and handle the errors.
+description: Load fonts from files, streams and memory, PostScript Type 1 fonts included, bound the work of hostile fonts with limits, and handle the errors.
 ---
 
 ## Load a font
@@ -13,6 +13,7 @@ them in place.
 | `FontLoader.Load(ReadOnlySpan<byte>, environment)` | The bytes of a file |
 | `FontLoader.Load(Stream, environment)` | A stream, to its end |
 | `FontLoader.LoadAsync(Stream, environment, useEmbeddedBitmaps, cancellationToken)` | A stream, asynchronously |
+| `FontLoader.LoadType1(ReadOnlySpan<byte>, metrics, environment)` | A PostScript Type 1 font, with the metrics of its AFM file |
 
 The result is an array of [FontFace](cref:Meziantou.Framework.Fonts.FontFace): one for a font, one per font of a collection. The faces of a collection share the
 bytes of the file.
@@ -23,6 +24,49 @@ bytes of the file.
 - `useEmbeddedBitmaps` makes the one-bit bitmaps of the font (`EBLC` and `EBDT`), made for screens of low resolution,
   replace its outlines at the sizes they are made for. It is off by default, so that the rendering of a text does not
   change with the tables a font happens to have.
+
+## PostScript Type 1 fonts
+
+The `Load` methods also read PostScript Type 1 fonts: PFB files (binary) and PFA files (text). The format is detected
+from the content. The font is converted to an OpenType font with CFF outlines when it is loaded, so it is measured,
+shaped, drawn and subset like any other font: `Outlines` is `Cff`, and `FontFace.Data.Bytes` are the bytes of the
+converted font.
+
+- The glyphs are the ones of the font program, in its order, with `.notdef` first. The outlines are the ones of the
+  charstrings: the subroutines, the flex mechanism and the accented characters made with `seac` are expanded. The
+  hints are not kept.
+- The character map comes from the names of the glyphs and the Adobe Glyph List (`A`, `Aacute`, `fi`, `uni2206`): a
+  glyph whose name has no character, such as a variant (`a.sc`), is only reached by its identifier.
+- The units per em come from the font matrix (1000 for most fonts). The ascender and the descender are the top and the
+  bottom of the bounding box of the font, and the cap height and the x-height the tops of `H` and `x`.
+
+The metrics of a Type 1 font are in a separate AFM file. Give them to
+[LoadType1](cref:Meziantou.Framework.Fonts.FontLoader.LoadType1) to add the kerning pairs of the file to the font, and
+to take its ascender, descender, cap height and x-height. The advance widths are always the ones of the font program.
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=Fonts_LoadType1;format=md-fenced-code-block;dedent=true -->
+```csharp
+var environment = new PooledFontEnvironment(FontResourceLimits.Default, maxLiveAllocationBytes: 64 * 1024 * 1024);
+
+// A PFB or PFA file is detected from its content, like the other formats: it becomes a face with CFF outlines
+var face = FontLoader.Load(pfbFile, environment)[0];
+Assert.Equal(FontOutlineKind.Cff, face.Outlines);
+
+// The characters come from the names of the glyphs: "A" is the character A
+var glyph = face.MapCodePoint('A');
+Assert.Equal(600, face.GetAdvanceWidth(glyph));
+
+// The AFM file of the font adds its kerning
+var metrics = AfmFontMetrics.Parse(afmFile);
+var kerned = FontLoader.LoadType1(pfbFile, metrics, environment);
+Assert.Equal(-50, kerned.GetLegacyKerning(glyph, kerned.MapCodePoint('O')));
+```
+<!-- endref -->
+
+Multiple master fonts, CID-keyed fonts and stroked fonts (`PaintType 2`) are
+[UnsupportedFontFeatureException](cref:Meziantou.Framework.Fonts.UnsupportedFontFeatureException). Every charstring
+is run when the font is loaded: a malformed one fails the loading with an
+[InvalidFontException](cref:Meziantou.Framework.Fonts.InvalidFontException) that names the glyph.
 
 ## The environment
 
@@ -43,7 +87,7 @@ other, to describe an outline far larger than the file, and its lookups can mult
 | --- | --- | --- |
 | [MaxEncodedBytes](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxEncodedBytes) | 256 MiB | The bytes read from a font file |
 | [MaxFontBytes](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxFontBytes) | 256 MiB | The bytes a font keeps in memory, checked before a WOFF or WOFF2 file is expanded |
-| [MaxGlyphComplexity](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxGlyphComplexity) | 1,000,000 | The elementary operations (outline points, components, charstring operators, instructions) to produce one glyph |
+| [MaxGlyphComplexity](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxGlyphComplexity) | 1,000,000 | The elementary operations (outline points, components, charstring operators, instructions) to produce one glyph, also when the charstrings of a Type 1 font are converted |
 | [MaxTextGlyphs](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxTextGlyphs) | 1,000,000 | The glyphs of a shaped text |
 | [MaxCollectionFaces](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxCollectionFaces) | 1,024 | The faces of a font collection (`.ttc`, `.otc`), checked before they are read: each face is read when the collection is loaded |
 

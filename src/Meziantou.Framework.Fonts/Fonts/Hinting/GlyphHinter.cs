@@ -13,11 +13,12 @@ namespace Meziantou.Framework.Fonts;
 /// <para>
 /// <see cref="GlyphHinting.Full"/> runs the TrueType instructions of the font (OpenType specification, "TrueType
 /// Instructions"), with the version 40 interpreter of FreeType hinting for black and white pixels
-/// (<c>FT_LOAD_TARGET_MONO</c>) as the reference. A font program or a control value program that breaks a rule of
-/// the specification makes the font unhinted; instructions of a glyph that break one make that glyph unhinted. The
-/// work of the programs is bounded: each run charges every instruction to a <see cref="GlyphBudget"/>, and the
-/// stack, the storage area, the control values, the functions and the twilight zone are sized from the font and
-/// rented from the allocator.
+/// (<c>FT_LOAD_TARGET_MONO</c>) as the reference, and fits CFF and CFF2 outlines along the vertical axis with their
+/// stem hints and the alignment zones of their private DICTs (Adobe Technical Note #5177, "Hint Operators"). A font
+/// program or a control value program that breaks a rule of the specification makes the font unhinted; instructions
+/// of a glyph that break one make that glyph unhinted. The work of the programs is bounded: each run charges every
+/// instruction to a <see cref="GlyphBudget"/>, and the stack, the storage area, the control values, the functions and
+/// the twilight zone are sized from the font and rented from the allocator.
 /// </para>
 /// <para>
 /// A hinter keeps the state of the programs of the font at its size: it is used by one operation at a time, and must
@@ -28,16 +29,18 @@ public sealed class GlyphHinter : IDisposable
 {
     private readonly FontFace _face;
     private readonly TrueTypeHinter? _trueType;
+    private readonly CffHinter? _cff;
     private readonly LightHinter? _light;
     private readonly double _unitsPerPixel;
     private bool _isDisposed;
 
-    private GlyphHinter(FontFace face, double size, GlyphHinting hinting, TrueTypeHinter? trueType, LightHinter? light)
+    private GlyphHinter(FontFace face, double size, GlyphHinting hinting, TrueTypeHinter? trueType, LightHinter? light, CffHinter? cff = null)
     {
         _face = face;
         Size = size;
         Hinting = hinting;
         _trueType = trueType;
+        _cff = cff;
         _light = light;
         _unitsPerPixel = face.UnitsPerEm / size;
     }
@@ -80,6 +83,9 @@ public sealed class GlyphHinter : IDisposable
 #pragma warning restore CA2000
         }
 
+        if (hinting == GlyphHinting.Full && CffHinter.CanHint(face))
+            return new GlyphHinter(face, size, GlyphHinting.Full, trueType: null, light: null, CffHinter.Create(face, size));
+
         if (hinting == GlyphHinting.None)
             return new GlyphHinter(face, size, GlyphHinting.None, trueType: null, light: null);
 
@@ -109,6 +115,10 @@ public sealed class GlyphHinter : IDisposable
 
         switch (Hinting)
         {
+            case GlyphHinting.Full when _cff is not null:
+                _cff.Decode(_face, glyphId, sink, scratch, ref budget);
+                return Math.Round(advance, MidpointRounding.AwayFromZero);
+
             case GlyphHinting.Full when _trueType!.TryHint(glyphId, scratch, ref budget):
                 EmitHinted(sink, scratch);
                 return _trueType.Advance / 64.0;

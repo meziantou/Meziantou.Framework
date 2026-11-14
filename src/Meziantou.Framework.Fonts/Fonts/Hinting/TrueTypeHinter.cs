@@ -21,6 +21,15 @@ namespace Meziantou.Framework.Fonts;
 /// glyphs hinted before it.
 /// </para>
 /// <para>
+/// An instance of a variable font is hinted from its own points and control values: the deltas of the <c>gvar</c>
+/// table move the points of each glyph, the offsets of the components and the phantom points (the advance follows the
+/// <c>HVAR</c> table when the font has one), and the deltas of the <c>cvar</c> table move the control values
+/// (<see cref="CvarTable"/>). As with FreeType, a point or a control value of an instance is scaled from its position
+/// rounded to 1/64 of a font unit, then rounded to 1/64 of a pixel; the position in font units the instructions
+/// measure original distances with is rounded to a whole unit, as are the offsets of the components. GETVARIATION
+/// reports the normalized coordinates of the instance.
+/// </para>
+/// <para>
 /// The instance is not thread-safe: a hinter is used by one operation at a time.
 /// </para>
 /// </remarks>
@@ -64,10 +73,10 @@ internal sealed class TrueTypeHinter : IDisposable
     /// <summary>Gets a value indicating whether the instructions of the glyphs are run: the control value program can turn them off.</summary>
     public bool RunsGlyphPrograms => (_glyphState.InstructControl & 1) == 0;
 
-    /// <summary>Gets a value indicating whether a font has TrueType instructions this hinter can run: a font program or a control value program, and no variations.</summary>
+    /// <summary>Gets a value indicating whether a font has TrueType instructions this hinter can run: a font program or a control value program.</summary>
     public static bool CanHint(FontFace face)
     {
-        if (face.Outlines != FontOutlineKind.TrueType || face.Instance is not null)
+        if (face.Outlines != FontOutlineKind.TrueType)
             return false;
 
         if (!face.TryFindTable(FontTags.Maxp, out _, out var maxpLength) || maxpLength < 32)
@@ -84,6 +93,7 @@ internal sealed class TrueTypeHinter : IDisposable
     /// <param name="face">A face for which <see cref="CanHint"/> is <see langword="true"/>.</param>
     /// <param name="size">The size, in pixels per em.</param>
     /// <param name="allocator">The storage of the interpreter.</param>
+    /// <exception cref="InvalidFontException">The <c>cvar</c> table of a variable font is malformed.</exception>
     /// <exception cref="FontResourceLimitException">A program exceeds the complexity limit, or the storage exceeds the allocation limit.</exception>
     public static TrueTypeHinter? Create(FontFace face, double size, FontAllocator allocator)
     {
@@ -103,13 +113,8 @@ internal sealed class TrueTypeHinter : IDisposable
         {
             interpreter.PixelsPerEm = pixelsPerEm;
             interpreter.Scale = scale;
-            var controlValues = interpreter.ControlValues;
-            for (var i = 0; i < cvtCount; i++)
-            {
-                controlValues[i] = interpreter.ScaleFontUnits(FontBinary.Int16(bytes.AsSpan(cvtOffset, cvtLength), i * 2));
-            }
-
             var limits = face.Data.Limits;
+            SetControlValues(face, interpreter, bytes.AsSpan(cvtOffset, cvtLength), allocator, limits);
             try
             {
                 if (face.TryFindTable(FontTags.Fpgm, out var fpgmOffset, out var fpgmLength) && fpgmLength > 0)
@@ -157,6 +162,46 @@ internal sealed class TrueTypeHinter : IDisposable
             throw;
         }
     }
+
+    /// <summary>
+    /// Sets the control values, scaled: those of the <c>cvt </c> table, moved for an instance of a variable font by the
+    /// deltas of its <c>cvar</c> table.
+    /// </summary>
+    private static void SetControlValues(FontFace face, TrueTypeInterpreter interpreter, ReadOnlySpan<byte> cvt, FontAllocator allocator, FontResourceLimits limits)
+    {
+        var controlValues = interpreter.ControlValues;
+        var instance = face.Instance;
+        if (instance is not null)
+        {
+            interpreter.Coordinates = instance.Coordinates.ToArray();
+        }
+
+        if (instance is null || !face.TryFindTable(FontTags.Cvar, out var cvarOffset, out var cvarLength) || controlValues.IsEmpty)
+        {
+            for (var i = 0; i < controlValues.Length; i++)
+            {
+                controlValues[i] = interpreter.ScaleFontUnits(FontBinary.Int16(cvt, i * 2));
+            }
+
+            return;
+        }
+
+        using var buffer = allocator.Rent<double>(controlValues.Length);
+        var sums = AsSpan<double>(buffer)[..controlValues.Length];
+        sums.Clear();
+        var budget = new GlyphBudget(limits);
+        CvarTable.AddDeltas(face.Data.RawBytes.AsSpan(cvarOffset, cvarLength), face.Axes.Length, instance.Coordinates, sums, ref budget);
+        for (var i = 0; i < controlValues.Length; i++)
+        {
+            controlValues[i] = ScaleFraction(FontBinary.Int16(cvt, i * 2) + sums[i], interpreter.Scale);
+        }
+    }
+
+    /// <summary>Rounds a number to the nearest integer, halves upward.</summary>
+    private static int RoundHalfUp(double value) => (int)Math.Clamp(Math.Floor(value + 0.5), -64 * FontErrors.MaxCoordinate, 64 * FontErrors.MaxCoordinate);
+
+    /// <summary>Scales a fraction of font units to 26.6 pixels: from the value rounded to 1/64 of a unit.</summary>
+    private static int ScaleFraction(double value, int scale) => (int)((TrueTypeInterpreter.MultiplyFixed(RoundHalfUp(value * 64), scale) + 32) >> 6);
 
     /// <summary>Gets the hinted points of the glyph that was hinted last.</summary>
     public ReadOnlySpan<HintPoint> Points => _points is null ? default : unsafe(MemoryMarshal.Cast<byte, HintPoint>(_points.Span))[.._pointCount];
@@ -237,7 +282,7 @@ internal sealed class TrueTypeHinter : IDisposable
         where T : unmanaged
     {
         // Only the types of the saved state, whose every bit pattern is valid, are read back from the bytes.
-        Debug.Assert(typeof(T) == typeof(int) || typeof(T) == typeof(HintPoint));
+        Debug.Assert(typeof(T) == typeof(int) || typeof(T) == typeof(HintPoint) || typeof(T) == typeof(double));
         return unsafe(MemoryMarshal.Cast<byte, T>(buffer.Span));
     }
 
@@ -297,24 +342,42 @@ internal sealed class TrueTypeHinter : IDisposable
         var contourCount = data.Length >= 10 ? FontBinary.Int16(data, 0) : 0;
         var xMin = data.Length >= 10 ? FontBinary.Int16(data, 2) : 0;
         var yMax = data.Length >= 10 ? FontBinary.Int16(data, 8) : 0;
-        phantoms = CreatePhantomPoints(glyphId, xMin - leftSideBearing, advance, yMax);
+        var metrics = new GlyphMetrics(glyphId, xMin - leftSideBearing, advance, yMax);
         if (data.IsEmpty)
+        {
+            Span<double> sums = stackalloc double[2 * PhantomPointCount];
+            sums.Clear();
+            context.Variations?.AddDeltas(context.Gvar, glyphId, context.Coordinates, PhantomPointCount, 0, sums[..PhantomPointCount], sums[PhantomPointCount..], contours: default, work: default, ref budget);
+            phantoms = CreatePhantomPoints(metrics, sums[..PhantomPointCount], sums[PhantomPointCount..]);
             return;
+        }
 
         if (contourCount >= 0)
         {
-            LoadSimple(data, contourCount, _face.GlyfOffset + glyphOffset, scratch, ref budget, ref phantoms);
+            LoadSimple(context, data, contourCount, _face.GlyfOffset + glyphOffset, metrics, scratch, ref budget, out phantoms);
             return;
         }
 
         if (depth >= GlyfOutlineReader.MaxCompositeDepth)
             throw FontErrors.InvalidTable(FontTags.Glyf, "has composite glyphs nested too deeply, or that refer to each other.");
 
-        LoadComposite(context, data, _face.GlyfOffset + glyphOffset, scratch, ref budget, depth, ref phantoms);
+        LoadComposite(context, data, _face.GlyfOffset + glyphOffset, metrics, scratch, ref budget, depth, out phantoms);
     }
 
-    private PhantomPoints CreatePhantomPoints(int glyphId, int origin, int advance, int yMax)
+    /// <summary>
+    /// Creates the phantom points of a glyph, moved by their deltas in an instance of a variable font: its origin, its
+    /// advance (which the <c>HVAR</c> table gives when the font has one), its top and its bottom.
+    /// </summary>
+    /// <param name="metrics">The glyph and its metrics in the default instance.</param>
+    /// <param name="deltaX">The horizontal deltas of the four phantom points; empty in the default instance.</param>
+    /// <param name="deltaY">The vertical deltas of the four phantom points; empty in the default instance.</param>
+    private PhantomPoints CreatePhantomPoints(in GlyphMetrics metrics, ReadOnlySpan<double> deltaX, ReadOnlySpan<double> deltaY)
     {
+        var glyphId = metrics.GlyphId;
+        var origin = metrics.Origin;
+        var advance = metrics.Advance;
+        var intOrigin = (int)origin;
+        var yMax = metrics.YMax;
         int top;
         int advanceHeight;
         if (_face.HasVerticalMetrics)
@@ -328,13 +391,66 @@ internal sealed class TrueTypeHinter : IDisposable
             advanceHeight = _face.HorizontalAscender - _face.HorizontalDescender;
         }
 
+        if (deltaX.IsEmpty)
+        {
+            return new PhantomPoints
+            {
+                Origin = CreatePoint(intOrigin, 0),
+                Advance = CreatePoint(intOrigin + advance, 0),
+                Top = CreatePoint(intOrigin, top),
+                Bottom = CreatePoint(intOrigin, top - advanceHeight),
+            };
+        }
+
+        var variedOrigin = origin + deltaX[0];
+        var advanceX = _face.VariesAdvancesWithOutlines ? origin + advance + deltaX[1] : variedOrigin + _face.GetAdvanceWidth(glyphId);
+        // The advance height of the instance is the one of VVAR when the font has it: the delta of gvar is not added to
+        // it again, as with the advance of HVAR. Without vertical metrics, the top and the advance height are the
+        // ascender and the descender, which MVAR may have moved already.
+        double topY;
+        double bottomY;
+        if (!_face.VariesVerticalMetrics)
+        {
+            topY = top + deltaY[2];
+            bottomY = top - advanceHeight + deltaY[3];
+        }
+        else if (_face.HasVerticalMetrics)
+        {
+            topY = top + deltaY[2];
+            bottomY = topY - advanceHeight;
+        }
+        else
+        {
+            topY = top;
+            bottomY = top - advanceHeight;
+        }
         return new PhantomPoints
         {
-            Origin = CreatePoint(origin, 0),
-            Advance = CreatePoint(origin + advance, 0),
-            Top = CreatePoint(origin, top),
-            Bottom = CreatePoint(origin, top - advanceHeight),
+            Origin = CreateVariedPoint(variedOrigin, deltaY[0]),
+            Advance = CreateVariedPoint(advanceX, deltaY[1]),
+            Top = CreateVariedPoint(origin + deltaX[2], topY),
+            Bottom = CreateVariedPoint(origin + deltaX[3], bottomY),
         };
+    }
+
+    /// <summary>
+    /// Creates a point of an instance of a variable font, whose position is a fraction of font units: it is scaled from
+    /// that position rounded to 1/64 of a unit, and its position in font units, which the instructions measure original
+    /// distances with, is rounded to a whole unit (halves upward).
+    /// </summary>
+    private HintPoint CreateVariedPoint(double x, double y)
+    {
+        var point = new HintPoint
+        {
+            UnscaledX = RoundHalfUp(x),
+            UnscaledY = RoundHalfUp(y),
+            OriginalX = ScaleFraction(x, _scale),
+            OriginalY = ScaleFraction(y, _scale),
+        };
+
+        point.X = point.OriginalX;
+        point.Y = point.OriginalY;
+        return point;
     }
 
     private HintPoint CreatePoint(int x, int y)
@@ -352,12 +468,30 @@ internal sealed class TrueTypeHinter : IDisposable
         return point;
     }
 
-    private void LoadSimple(ReadOnlySpan<byte> data, int contourCount, int dataOffset, GlyphScratch scratch, ref GlyphBudget budget, ref PhantomPoints phantoms)
+    private void LoadSimple(in GlyfContext context, ReadOnlySpan<byte> data, int contourCount, int dataOffset, in GlyphMetrics metrics, GlyphScratch scratch, ref GlyphBudget budget, out PhantomPoints phantoms)
     {
         scratch.Reset();
         GlyfOutlineReader.CollectSimple(data, contourCount, scratch, ref budget, out var instructionOffset, out var instructionLength);
         var source = scratch.Points;
         var count = source.Length;
+        Span<double> sumX = default;
+        Span<double> sumY = default;
+        if (context.Variations is { } variations)
+        {
+            // In an instance, the points and the phantom points move by their deltas. The sums stay in the work
+            // storage of the scratch until the points are in the zone: the next simple glyph resets the scratch.
+            var total = count + PhantomPointCount;
+            var workStart = scratch.RentWork((2L * total) + (3L * count));
+            var work = scratch.Work[workStart..];
+            sumX = work[..total];
+            sumY = work.Slice(total, total);
+            variations.AddDeltas(context.Gvar, metrics.GlyphId, context.Coordinates, total, 0, sumX, sumY, source, work[(2 * total)..], ref budget);
+            phantoms = CreatePhantomPoints(metrics, sumX[count..], sumY[count..]);
+        }
+        else
+        {
+            phantoms = CreatePhantomPoints(metrics, default, default);
+        }
 
         // The zone of the glyph: its points, scaled, then the phantom points, rounded to the grid.
         _interpreter.PrepareGlyphZone(count + PhantomPointCount, contourCount);
@@ -366,7 +500,15 @@ internal sealed class TrueTypeHinter : IDisposable
         var contour = 0;
         for (var i = 0; i < count; i++)
         {
-            zone[i] = CreatePoint((int)source[i].X, (int)source[i].Y);
+            if (sumX.IsEmpty)
+            {
+                zone[i] = CreatePoint((int)source[i].X, (int)source[i].Y);
+            }
+            else
+            {
+                zone[i] = CreateVariedPoint(source[i].X + sumX[i], source[i].Y + sumY[i]);
+            }
+
             if ((source[i].Flags & GlyphPoint.OnCurve) != 0)
             {
                 zone[i].Flags = HintPoint.OnCurve;
@@ -401,19 +543,73 @@ internal sealed class TrueTypeHinter : IDisposable
 
     private static void RoundPhantomPoints(ref PhantomPoints phantoms)
     {
-        // Only where they are is rounded: where they were stays where the font puts them.
-        phantoms.Origin.X = RoundToGrid(phantoms.Origin.OriginalX);
-        phantoms.Advance.X = RoundToGrid(phantoms.Advance.OriginalX);
-        phantoms.Top.Y = RoundToGrid(phantoms.Top.OriginalY);
-        phantoms.Bottom.Y = RoundToGrid(phantoms.Bottom.OriginalY);
+        // Only where they are is rounded: where they were stays where the font puts them. Halves are rounded upward
+        // (an origin half a pixel left of zero goes to zero), as by FreeType: it shows in the instances of a variable
+        // font, whose origins move.
+        phantoms.Origin.X = RoundPhantom(phantoms.Origin.OriginalX);
+        phantoms.Advance.X = RoundPhantom(phantoms.Advance.OriginalX);
+        phantoms.Top.Y = RoundPhantom(phantoms.Top.OriginalY);
+        phantoms.Bottom.Y = RoundPhantom(phantoms.Bottom.OriginalY);
+
+        static int RoundPhantom(int value) => (value + 32) & -64;
     }
 
-    private void LoadComposite(in GlyfContext context, ReadOnlySpan<byte> data, int dataOffset, GlyphScratch scratch, ref GlyphBudget budget, int depth, ref PhantomPoints phantoms)
+    private void LoadComposite(in GlyfContext context, ReadOnlySpan<byte> data, int dataOffset, in GlyphMetrics metrics, GlyphScratch scratch, ref GlyphBudget budget, int depth, out PhantomPoints phantoms)
+    {
+        // In an instance, the offset of each component and the phantom points have deltas: one point per component.
+        // They are rounded, and kept in storage of their own: the components use the scratch.
+        FontBuffer? deltas = null;
+        var componentCount = 0;
+        if (context.Variations is { } variations)
+        {
+            for (var record = 10; ;)
+            {
+                budget.Charge(1);
+                var flags = FontBinary.UInt16(data, record);
+                record += GlyfOutlineReader.GetComponentLength(flags);
+                componentCount++;
+                if ((flags & GlyfOutlineReader.MoreComponents) == 0)
+                    break;
+            }
+
+            var total = componentCount + PhantomPointCount;
+            var workStart = scratch.RentWork(2L * total);
+            var work = scratch.Work.Slice(workStart, 2 * total);
+            work.Clear();
+            variations.AddDeltas(context.Gvar, metrics.GlyphId, context.Coordinates, total, 0, work[..total], work[total..], contours: default, work: default, ref budget);
+            phantoms = CreatePhantomPoints(metrics, work[componentCount..total], work[(total + componentCount)..]);
+            deltas = _allocator.Rent<int>(2 * componentCount);
+            var rounded = AsSpan<int>(deltas);
+            for (var i = 0; i < componentCount; i++)
+            {
+                rounded[i] = RoundHalfUp(work[i]);
+                rounded[componentCount + i] = RoundHalfUp(work[total + i]);
+            }
+
+            scratch.ReturnWork(workStart);
+        }
+        else
+        {
+            phantoms = CreatePhantomPoints(metrics, default, default);
+        }
+
+        try
+        {
+            LoadComponents(context, data, dataOffset, deltas, componentCount, scratch, ref budget, depth, ref phantoms);
+        }
+        finally
+        {
+            deltas?.Dispose();
+        }
+    }
+
+    private void LoadComponents(in GlyfContext context, ReadOnlySpan<byte> data, int dataOffset, FontBuffer? deltas, int componentCount, GlyphScratch scratch, ref GlyphBudget budget, int depth, ref PhantomPoints phantoms)
     {
         var glyphStart = _pointCount;
         var contourStart = _contourCount;
         var position = 10;
         var hasInstructions = false;
+        var componentNumber = 0;
         RoundPhantomPoints(ref phantoms);
         while (true)
         {
@@ -482,6 +678,13 @@ internal sealed class TrueTypeHinter : IDisposable
             {
                 unscaledX = argument1;
                 unscaledY = argument2;
+                if (deltas is not null)
+                {
+                    var rounded = AsSpan<int>(deltas);
+                    unscaledX += rounded[componentNumber];
+                    unscaledY += rounded[componentCount + componentNumber];
+                }
+
                 if (isTransformed && (flags & GlyfOutlineReader.ScaledComponentOffset) != 0 && (flags & GlyfOutlineReader.UnscaledComponentOffset) == 0)
                 {
                     (unscaledX, unscaledY) = (Fix14(unscaledX, a) + Fix14(unscaledY, c), Fix14(unscaledX, b) + Fix14(unscaledY, d));
@@ -528,6 +731,7 @@ internal sealed class TrueTypeHinter : IDisposable
             }
 
             hasInstructions |= (flags & GlyfOutlineReader.WeHaveInstructions) != 0;
+            componentNumber++;
             if ((flags & GlyfOutlineReader.MoreComponents) == 0)
                 break;
         }
@@ -581,6 +785,10 @@ internal sealed class TrueTypeHinter : IDisposable
         (point.OriginalX, point.OriginalY) = (Fix14(point.OriginalX, a) + Fix14(point.OriginalY, c), Fix14(point.OriginalX, b) + Fix14(point.OriginalY, d));
         (point.UnscaledX, point.UnscaledY) = (Fix14(point.UnscaledX, a) + Fix14(point.UnscaledY, c), Fix14(point.UnscaledX, b) + Fix14(point.UnscaledY, d));
     }
+
+    /// <summary>A glyph and its metrics in the default instance, in font units: the origin, the advance and the top of its bounding box.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct GlyphMetrics(int GlyphId, double Origin, int Advance, int YMax);
 
     /// <summary>The four phantom points of a glyph.</summary>
     [StructLayout(LayoutKind.Auto)]

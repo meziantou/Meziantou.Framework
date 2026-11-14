@@ -107,6 +107,25 @@ public static class FontsFuzzTargets
         "latn", "arab", "DFLT", "dflt", "TRK ", "\0\0", "\0\x01", "\xFF\xFF",
     ];
 
+    // The tokens of the tuple variation store: the version of the table, the flags of the tuple variations (embedded
+    // peak, intermediate region, private points, shared points), the ends of an axis, and the control bytes of the runs
+    // of packed point numbers and deltas
+    private static readonly string[] TupleVariationTokens =
+    [
+        "\x00\x01\x00\x00", "\x80\x00", "\xA0\x00", "\xC0\x00", "\xE0\x00", "\x40\x00", "\xC0\x00", "\x20\x00",
+        "\x00", "\x80", "\x40", "\x7F", "\xBF",
+    ];
+
+    /// <summary>The <c>cvar</c> tables of the unit tests (one axis, four control values).</summary>
+    private static readonly (string Name, byte[] Table)[] ControlValueVariationTables =
+    [
+        // Private points 1 and 3 with deltas 10 and -20 at the end of the axis; every value +4 in a region from 0 to 1 peaking at 0.5
+        ("private-points", [0, 1, 0, 0, 0, 2, 0, 24, 0, 7, 0xA0, 0, 0x40, 0, 0, 5, 0xC0, 0, 0x20, 0, 0, 0, 0x40, 0, 2, 1, 1, 2, 1, 10, 0xEC, 3, 4, 4, 4, 4]),
+
+        // The same with the shared points 0 and 2 for the second variation
+        ("shared-points", [0, 1, 0, 0, 0x80, 2, 0, 24, 0, 7, 0xA0, 0, 0x40, 0, 0, 3, 0xC0, 0, 0x20, 0, 0, 0, 0x40, 0, 2, 1, 0, 2, 2, 1, 1, 2, 1, 10, 0xEC, 1, 4, 4]),
+    ];
+
     // The signatures of the containers, a zlib header and the tokens of a WOFF metadata document
     private static readonly string[] WoffBlocksTokens =
     [
@@ -118,6 +137,8 @@ public static class FontsFuzzTargets
     [
         new("fonts-hinting", Hinting) { Seeds = GetHintingSeeds },
         new("fonts-hinting-bytecode", HintingBytecode) { Seeds = GetBytecodeSeeds },
+        new("fonts-cff-hints", CffHints) { Seeds = GetCffHintSeeds },
+        new("fonts-cvar", ControlValueVariations) { Seeds = GetControlValueVariationSeeds, Dictionary = TupleVariationTokens },
         new("fonts-subset", Subset) { Seeds = () => GetFontSeeds().Select((seed, index) => seed with { Data = (byte[])[(byte)index, (byte)(index * 13), .. seed.Data.Span] }) },
         new("fonts-shaping", Shaping) { Seeds = GetShapingSeeds, Dictionary = ShapingTokens },
         new("fonts-split-runs", SplitRuns) { Seeds = GetSplitRunsSeeds, Dictionary = SplitRunsTokens },
@@ -419,10 +440,16 @@ public static class FontsFuzzTargets
         }
     }
 
-    /// <summary>Hints the glyphs of a font file: option bytes give the hinting mode and the size.</summary>
+    /// <summary>
+    /// Hints the glyphs of a font file: option bytes give the hinting mode, an instance of a variable font (the
+    /// quotient of the first byte by 3, two bits per axis: the default, the minimum, the maximum or the middle of the
+    /// default and the maximum) and the size.
+    /// </summary>
     private static void Hinting(ReadOnlySpan<byte> data)
     {
-        var mode = (GlyphHinting)(FuzzInput.ReadByte(ref data) % 3);
+        var options = FuzzInput.ReadByte(ref data);
+        var mode = (GlyphHinting)(options % 3);
+        var instance = options / 3;
         var size = ReadSize(FuzzInput.ReadByte(ref data));
         FontFace[] faces;
         try
@@ -437,7 +464,163 @@ public static class FontsFuzzTargets
         foreach (var face in faces.Take(2))
         {
             CheckHinting(face, size, mode, GetHintedGlyphs(face));
+            if (instance != 0 && face.Axes.Length > 0)
+            {
+                CheckHinting(face.WithCoordinates(GetInstanceCoordinates(face, instance)), size, mode, GetHintedGlyphs(face));
+            }
         }
+    }
+
+    /// <summary>
+    /// Reads the hints of the glyphs of a font with CFF or CFF2 outlines: an option byte gives an instance (see
+    /// <see cref="Hinting"/>). The outline decoded with a sink of hints is the one decoded without, and the hinting
+    /// values of the private DICTs are finite, with zones in pairs.
+    /// </summary>
+    private static void CffHints(ReadOnlySpan<byte> data)
+    {
+        var instance = FuzzInput.ReadByte(ref data);
+        FontFace[] faces;
+        try
+        {
+            faces = FontLoader.Load(data, SharedEnvironment);
+        }
+        catch (FontException)
+        {
+            return;
+        }
+
+        foreach (var defaultFace in faces.Take(2))
+        {
+            if (defaultFace.Outlines is not (FontOutlineKind.Cff or FontOutlineKind.Cff2))
+                continue;
+
+            var face = instance != 0 && defaultFace.Axes.Length > 0 ? defaultFace.WithCoordinates(GetInstanceCoordinates(defaultFace, instance)) : defaultFace;
+            using var scratch = new GlyphScratch(SharedEnvironment.CreateAllocator("fuzz"));
+            foreach (var glyph in GetHintedGlyphs(face))
+            {
+                var hinted = new HintCheckingSink();
+                var plain = new RecordingSink();
+                var hintedError = Decode(face, glyph, hinted, scratch);
+                var plainError = Decode(face, glyph, plain, scratch);
+                FuzzAssert.Equal(plainError, hintedError, $"The glyph {glyph} decodes differently with a sink of hints");
+                if (plainError is null)
+                {
+                    FuzzAssert.True(plain.Values.SequenceEqual(hinted.Outline.Values), $"The outline of the glyph {glyph} changes with a sink of hints");
+                }
+
+                CheckHintValues(face, glyph);
+            }
+        }
+
+        static string? Decode(FontFace face, int glyph, OutlineSink sink, GlyphScratch scratch)
+        {
+            try
+            {
+                var budget = new GlyphBudget(Limits);
+                face.DecodeOutline(glyph, sink, scratch, ref budget);
+                return null;
+            }
+            catch (FontException ex)
+            {
+                return ex.GetType().Name;
+            }
+        }
+
+        static void CheckHintValues(FontFace face, int glyph)
+        {
+            CffHintValues? values;
+            try
+            {
+                values = face.GetCffHintValues(glyph);
+            }
+            catch (InvalidFontException)
+            {
+                return;
+            }
+
+            FuzzAssert.True(values is not null, "A font with CFF outlines has no hinting values");
+            foreach (var zones in (double[][])[values.BlueValues, values.OtherBlues, values.FamilyBlues, values.FamilyOtherBlues])
+            {
+                FuzzAssert.True(zones.Length % 2 == 0, "A list of zones is not made of pairs");
+            }
+
+            foreach (var value in values.BlueValues.Concat(values.OtherBlues).Concat(values.FamilyBlues).Concat(values.FamilyOtherBlues).Concat(values.StemSnapH).Concat(values.StemSnapV).Concat([values.BlueScale, values.BlueShift, values.BlueFuzz, values.StdHW, values.StdVW]))
+            {
+                FuzzAssert.True(double.IsFinite(value), $"A hinting value is {value}");
+            }
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetCffHintSeeds()
+    {
+        foreach (var seed in GetFontSeeds())
+        {
+            if (seed.Name.EndsWith(".otf", StringComparison.Ordinal))
+            {
+                yield return new FuzzSeed(seed.Name, (byte[])[0, .. seed.Data.Span]);
+                yield return new FuzzSeed("instance-" + seed.Name, (byte[])[6, .. seed.Data.Span]);
+            }
+        }
+    }
+
+    private static int[] GetInstanceCoordinates(FontFace face, int selector)
+    {
+        var coordinates = new int[face.Axes.Length];
+        for (var i = 0; i < coordinates.Length; i++)
+        {
+            var axis = face.Axes[i];
+            coordinates[i] = ((selector >> (2 * (i % 4))) & 3) switch
+            {
+                0 => axis.Default,
+                1 => axis.Minimum,
+                2 => axis.Maximum,
+                _ => (int)(((long)axis.Default + axis.Maximum) / 2),
+            };
+        }
+
+        return coordinates;
+    }
+
+    /// <summary>
+    /// Reads a <c>cvar</c> table: option bytes give the number of axes (1 to 4), the number of control values, and the
+    /// normalized coordinates of the instance (16 bits each), then come the bytes of the table. The sums of the deltas
+    /// must be finite, and none at the default instance, where every region has a scalar of zero.
+    /// </summary>
+    private static void ControlValueVariations(ReadOnlySpan<byte> data)
+    {
+        var axisCount = (FuzzInput.ReadByte(ref data) % 4) + 1;
+        var controlValueCount = FuzzInput.ReadByte(ref data) * 4;
+        var coordinates = new int[axisCount];
+        for (var i = 0; i < axisCount; i++)
+        {
+            var value = (short)((FuzzInput.ReadByte(ref data) << 8) | FuzzInput.ReadByte(ref data));
+            coordinates[i] = Math.Clamp((int)value, -FontInstance.TableOne, FontInstance.TableOne);
+        }
+
+        var sums = new double[controlValueCount];
+        var budget = new GlyphBudget(Limits);
+        try
+        {
+            CvarTable.AddDeltas(data, axisCount, coordinates, sums, ref budget);
+        }
+        catch (InvalidFontException)
+        {
+            return;
+        }
+        catch (FontResourceLimitException)
+        {
+            return;
+        }
+
+        foreach (var sum in sums)
+        {
+            FuzzAssert.True(double.IsFinite(sum), $"A control value has the delta {sum}");
+        }
+
+        var atDefault = new double[controlValueCount];
+        budget = new GlyphBudget(Limits);
+        CvarTable.AddDeltas(data, axisCount, new int[axisCount], atDefault, ref budget);
+        FuzzAssert.True(atDefault.All(sum => sum == 0), "The default instance has deltas");
     }
 
     /// <summary>
@@ -1266,6 +1449,42 @@ public static class FontsFuzzTargets
                 byte[] prefix = [(byte)mode, (byte)(index++ * 11)];
                 yield return new FuzzSeed($"{mode}-{seed.Name}", (byte[])[.. prefix, .. seed.Data.Span]);
             }
+
+            // An instance of a variable font too: the first axis at its maximum, the second one at its minimum
+            byte[] instance = [(byte)((int)GlyphHinting.Full + (3 * 6)), (byte)(index++ * 11)];
+            yield return new FuzzSeed($"Full-instance-{seed.Name}", (byte[])[.. instance, .. seed.Data.Span]);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetControlValueVariationSeeds()
+    {
+        // The tables of the variable fonts of the seeds, at instances of their axes, and tables built by hand
+        var index = 0;
+        foreach (var seed in GetFontSeeds())
+        {
+            FontFace face;
+            try
+            {
+                face = FontLoader.Load(seed.Data.Span, SharedEnvironment)[0];
+            }
+            catch (FontException)
+            {
+                continue;
+            }
+
+            if (!face.TryGetTable(FontTags.Cvar, out var cvar) || !face.TryGetTable(Cvt, out var cvt))
+                continue;
+
+            foreach (var coordinates in new[] { (FontInstance.TableOne, 0), (-FontInstance.TableOne, FontInstance.TableOne / 2), (FontInstance.TableOne / 3, FontInstance.TableOne) })
+            {
+                byte[] prefix = [(byte)(face.Axes.Length - 1), (byte)((cvt.Length / 2 + 3) / 4), (byte)(coordinates.Item1 >> 8), (byte)coordinates.Item1, (byte)(coordinates.Item2 >> 8), (byte)coordinates.Item2];
+                yield return new FuzzSeed($"{seed.Name}-{index++}", (byte[])[.. prefix, .. cvar.Span]);
+            }
+        }
+
+        foreach (var (name, table) in ControlValueVariationTables)
+        {
+            yield return new FuzzSeed(name, (byte[])[0, 1, 0x20, 0x00, .. table]);
         }
     }
 
@@ -1385,6 +1604,42 @@ public static class FontsFuzzTargets
     private sealed record ShapingOutcome(string? Error, (int Glyph, int Cluster)[]? Glyphs, (int, int, int, int, int, byte)[] Positions);
 
     /// <summary>Records the commands of an outline, and checks that its coordinates are finite.</summary>
+    /// <summary>
+    /// Records an outline and checks the hints of its charstring: finite stems, and masks of one bit per stem given
+    /// before them.
+    /// </summary>
+    private sealed class HintCheckingSink : OutlineSink, ICffHintSink
+    {
+        private int _stemCount;
+
+        public RecordingSink Outline { get; } = new();
+
+        public int HintCount { get; private set; }
+
+        public void AddStem(bool isHorizontal, double edge, double width)
+        {
+            FuzzAssert.True(double.IsFinite(edge) && double.IsFinite(width), $"The glyph has the stem {edge} {width}");
+            _stemCount++;
+            HintCount++;
+        }
+
+        public void SetMask(ReadOnlySpan<byte> mask, bool isCounterMask)
+        {
+            FuzzAssert.Equal((_stemCount + 7) / 8, mask.Length, "A mask does not have one bit per stem");
+            HintCount++;
+        }
+
+        public override void MoveTo(double x, double y) => Outline.MoveTo(x, y);
+
+        public override void LineTo(double x, double y) => Outline.LineTo(x, y);
+
+        public override void QuadraticTo(double controlX, double controlY, double x, double y) => Outline.QuadraticTo(controlX, controlY, x, y);
+
+        public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) => Outline.CubicTo(control1X, control1Y, control2X, control2Y, x, y);
+
+        public override void Close() => Outline.Close();
+    }
+
     private sealed class RecordingSink : OutlineSink
     {
         public List<double> Values { get; } = [];

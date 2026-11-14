@@ -111,9 +111,18 @@ pixel grid of a size:
 
 - [GlyphHinting.Light](cref:Meziantou.Framework.Fonts.GlyphHinting.Light) aligns the outlines along the vertical axis, without the instructions of the font, for any
   outline format.
-- [GlyphHinting.Full](cref:Meziantou.Framework.Fonts.GlyphHinting.Full) runs the TrueType instructions of the font. Instructions that break a rule of the specification
-  leave the glyph, or the font when they are in its programs, unhinted. [Hinting](cref:Meziantou.Framework.Fonts.GlyphHinter.Hinting) gives the mode that is used: [Light](cref:Meziantou.Framework.Fonts.GlyphHinting.Light)
-  when the instructions of the font cannot be run.
+- [GlyphHinting.Full](cref:Meziantou.Framework.Fonts.GlyphHinting.Full) uses the hints of the font, and makes the advances whole pixels:
+  - TrueType outlines: the instructions of the font, along both axes. An instance of a variable font is hinted with
+    its own outlines and control values (the `cvar` table). Instructions that break a rule of the specification leave
+    the glyph, or the font when they are in its programs, unhinted.
+  - CFF and CFF2 outlines: the horizontal stem hints of each glyph (with the hint masks that replace them along the
+    outline) and the alignment zones of the font (`BlueValues`, `OtherBlues`, `BlueScale`, `BlueShift`, `BlueFuzz`),
+    along the vertical axis. The edges of the stems in a zone go to the zone, the other stems are a whole number of
+    pixels thick, and the overshoots of the zones are suppressed at small sizes. A glyph without stem hints is not
+    changed.
+
+  [Hinting](cref:Meziantou.Framework.Fonts.GlyphHinter.Hinting) gives the mode that is used: [Light](cref:Meziantou.Framework.Fonts.GlyphHinting.Light) for TrueType outlines without instructions, or whose
+  programs cannot be run.
 
 [GlyphHinter.Create](cref:Meziantou.Framework.Fonts.GlyphHinter.Create) prepares a font at a size, and [DecodeOutline](cref:Meziantou.Framework.Fonts.GlyphHinter.DecodeOutline) gives the hinted outline of a glyph and its advance
 in pixels. A hinter keeps the state of the programs of the font: use it for one operation at a time, and dispose it.

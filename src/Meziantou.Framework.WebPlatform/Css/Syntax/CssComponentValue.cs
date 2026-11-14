@@ -96,14 +96,21 @@ internal static partial class CssParser
     /// <summary>Parses a list of component values and returns the preprocessed input (the positions of the component values are relative to it).</summary>
     public static List<CssComponentValue> ParseListOfComponentValues(string input, out string preprocessedInput)
     {
+        var result = new List<CssComponentValue>();
+        ParseListOfComponentValues(input, result, out preprocessedInput);
+        return result;
+    }
+
+    /// <summary>Parses a list of component values into a list (e.g. a list that is reused).</summary>
+    public static void ParseListOfComponentValues(string input, List<CssComponentValue> result, out string preprocessedInput)
+    {
         var tokenizer = new CssTokenizer(input);
         preprocessedInput = tokenizer.Input;
-        var result = new List<CssComponentValue>();
         while (true)
         {
             var token = tokenizer.ConsumeToken();
             if (token.Type == CssTokenType.EndOfFile)
-                return result;
+                return;
 
             result.Add(ConsumeComponentValue(tokenizer, token));
         }

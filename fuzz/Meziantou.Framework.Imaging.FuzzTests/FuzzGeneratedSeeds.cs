@@ -126,6 +126,21 @@ internal static class FuzzGeneratedSeeds
         pyramid.SubPages.Add(Level(16, 12, 1, 227));
         pyramid.SubPages.Add(Level(4, 3, 1, 223));
         seeds.Add(new FuzzSeed("tiff/builder-pyramid-subifds-bigtiff", new TiffFileBuilder { BigTiff = true }.AddPage(pyramid).Build()));
+        // Old-style JPEG (compression 6), which no encoder writes: the header of the JPEG interchange format with the
+        // scan in a strip, or the whole datastream at JPEGInterchangeFormat, with 8- and 12-bit samples
+        using (var rgb = CreateRgb24(19, 13, salt: 6))
+        {
+            seeds.Add(OldJpeg("tiff/builder-ojpeg-ycbcr420-interchange-strip", rgb, new JpegEncoder { Quality = 80, ChromaSubsampling = JpegChromaSubsampling.Ratio420 }, bitsPerSample: 8, wholeImage: false));
+            seeds.Add(OldJpeg("tiff/builder-ojpeg12-ycbcr420-interchange-whole", rgb, new JpegEncoder { Quality = 80, ChromaSubsampling = JpegChromaSubsampling.Ratio420, BitDepth = 12 }, bitsPerSample: 12, wholeImage: true));
+            seeds.Add(OldJpegFromTables("tiff/builder-ojpeg12-ycbcr420-table-tags", rgb, new JpegEncoder { Quality = 80, ChromaSubsampling = JpegChromaSubsampling.Ratio420, BitDepth = 12 }, bitsPerSample: 12));
+        }
+
+        using (var gray16 = CreateGray16(11, 9, salt: 7))
+        {
+            seeds.Add(OldJpeg("tiff/builder-ojpeg12-gray-interchange-strip", gray16, new JpegEncoder { Quality = 85, BitDepth = 12 }, bitsPerSample: 12, wholeImage: false));
+            seeds.Add(OldJpegFromTables("tiff/builder-ojpeg12-gray-table-tags", gray16, new JpegEncoder { Quality = 85, BitDepth = 12 }, bitsPerSample: 12));
+        }
+
         seeds.Add(new FuzzSeed("tiff/builder-rgba32-bigtiff-unassociated", new TiffFileBuilder { BigTiff = true }.AddPage(new TiffPageSpec { Width = 5, Height = 4, SamplesPerPixel = 4, Photometric = 2, ExtraSamples = [2], Compression = 8, Samples = Samples(5 * 4 * 4, 256) }).Build()));
         return seeds;
     }
@@ -364,6 +379,178 @@ internal static class FuzzGeneratedSeeds
             image.Save(stream, new IcoEncoder { Kind = IconKind.Cursor, PayloadFormat = IconPayloadFormat.Dib });
             return stream.ToArray();
         }
+    }
+
+    /// <summary>
+    /// Builds an old-style JPEG page of one strip from a JPEG file: <c>JPEGInterchangeFormat</c> holds the markers of the
+    /// file up to its start of scan and the strip its entropy-coded data, or, for <paramref name="wholeImage"/>, it holds
+    /// the whole file and the page declares no strip byte counts.
+    /// </summary>
+    private static FuzzSeed OldJpeg(string id, Image image, JpegEncoder encoder, int bitsPerSample, bool wholeImage)
+    {
+        using var stream = new MemoryStream();
+        image.Save(stream, encoder);
+        var jpeg = stream.ToArray();
+        var headerLength = TiffOldJpegLayout.FindHeaderLength(jpeg);
+        var isGray = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Gray16;
+        byte[] appended = wholeImage ? jpeg : jpeg[..headerLength];
+
+        TiffPageSpec CreatePage(ulong offset)
+        {
+            var page = new TiffPageSpec
+            {
+                Width = image.Width,
+                Height = image.Height,
+                SamplesPerPixel = isGray ? 1 : 3,
+                BitsPerSample = bitsPerSample,
+                Photometric = isGray ? 1 : 6,
+                Compression = 6,
+                RowsPerStrip = image.Height,
+                OmitByteCounts = wholeImage,
+                EncodedBlocks = [wholeImage ? [0] : jpeg[headerLength..^2]],
+                Samples = [],
+            };
+            page.ExtraFields.Add(TiffFieldSpec.Long(513, (uint)offset));
+            page.ExtraFields.Add(TiffFieldSpec.Long(514, (uint)appended.Length));
+            return page;
+        }
+
+        // The bytes are appended to the file, whose length the value of the offset does not change
+        var length = (ulong)new TiffFileBuilder().AddPage(CreatePage(0)).Build().Length;
+        return new FuzzSeed(id, [.. new TiffFileBuilder().AddPage(CreatePage(length)).Build(), .. appended]);
+    }
+
+    /// <summary>
+    /// Builds an old-style JPEG page of one strip from a JPEG file, with its tables in <c>JPEGQTables</c>,
+    /// <c>JPEGDCTables</c> and <c>JPEGACTables</c> and the entropy-coded data of its scan in the strip, so that the
+    /// decoder assembles the header of the strip from the tags.
+    /// </summary>
+    private static FuzzSeed OldJpegFromTables(string id, Image image, JpegEncoder encoder, int bitsPerSample)
+    {
+        using var stream = new MemoryStream();
+        image.Save(stream, encoder);
+        var jpeg = stream.ToArray();
+
+        // The tables of the file, the quantization table of each component and the Huffman tables of the scan
+        var quantization = new Dictionary<int, byte[]>();
+        var huffman = new Dictionary<(int Class, int Id), byte[]>();
+        var componentQuantization = new List<int>();
+        var selectors = new List<(int Dc, int Ac)>();
+        var restartInterval = 0;
+        var lumaSampling = 0x11;
+        var position = 2;
+        while (selectors.Count == 0)
+        {
+            var marker = jpeg[position + 1];
+            var length = (jpeg[position + 2] << 8) | jpeg[position + 3];
+            var payload = jpeg.AsSpan(position + 4, length - 2);
+            switch (marker)
+            {
+                case 0xDB:
+                    for (var i = 0; i < payload.Length; i += 65)
+                    {
+                        // The tags hold 8-bit quantization values only
+                        if (payload[i] >> 4 != 0)
+                            throw new InvalidOperationException("The JPEG file has a 16-bit quantization table.");
+
+                        quantization[payload[i] & 15] = payload.Slice(i + 1, 64).ToArray();
+                    }
+
+                    break;
+
+                case 0xC4:
+                    for (var i = 0; i < payload.Length;)
+                    {
+                        var count = 16;
+                        for (var k = 0; k < 16; k++)
+                        {
+                            count += payload[i + 1 + k];
+                        }
+
+                        huffman[(payload[i] >> 4, payload[i] & 15)] = payload.Slice(i + 1, count).ToArray();
+                        i += 1 + count;
+                    }
+
+                    break;
+
+                case 0xDD:
+                    restartInterval = (payload[0] << 8) | payload[1];
+                    break;
+
+                case 0xC0 or 0xC1:
+                    lumaSampling = payload[7];
+                    for (var i = 0; i < payload[5]; i++)
+                    {
+                        componentQuantization.Add(payload[6 + (i * 3) + 2]);
+                    }
+
+                    break;
+
+                case 0xDA:
+                    for (var i = 0; i < payload[0]; i++)
+                    {
+                        selectors.Add((payload[2 + (i * 2)] >> 4, payload[2 + (i * 2)] & 15));
+                    }
+
+                    break;
+            }
+
+            position += 2 + length;
+        }
+
+        var componentCount = componentQuantization.Count;
+        byte[] scan = jpeg[position..^2];
+        var appended = new List<byte>();
+        var offsets = (Quantization: new ulong[componentCount], Dc: new ulong[componentCount], Ac: new ulong[componentCount]);
+
+        TiffPageSpec CreatePage(ulong offset)
+        {
+            // Each component reads its own copy of its tables, at the offsets the tags give
+            appended.Clear();
+            for (var component = 0; component < componentCount; component++)
+            {
+                offsets.Quantization[component] = offset + (ulong)appended.Count;
+                appended.AddRange(quantization[componentQuantization[component]]);
+                offsets.Dc[component] = offset + (ulong)appended.Count;
+                appended.AddRange(huffman[(0, selectors[component].Dc)]);
+                offsets.Ac[component] = offset + (ulong)appended.Count;
+                appended.AddRange(huffman[(1, selectors[component].Ac)]);
+            }
+
+            var page = new TiffPageSpec
+            {
+                Width = image.Width,
+                Height = image.Height,
+                SamplesPerPixel = componentCount,
+                BitsPerSample = bitsPerSample,
+                Photometric = componentCount == 1 ? 1 : 6,
+                Compression = 6,
+                RowsPerStrip = image.Height,
+                EncodedBlocks = [scan],
+                Samples = [],
+            };
+            page.ExtraFields.Add(new TiffFieldSpec(512, 3, [1]));
+            page.ExtraFields.Add(new TiffFieldSpec(519, 4, offsets.Quantization));
+            page.ExtraFields.Add(new TiffFieldSpec(520, 4, offsets.Dc));
+            page.ExtraFields.Add(new TiffFieldSpec(521, 4, offsets.Ac));
+            if (restartInterval > 0)
+            {
+                page.ExtraFields.Add(TiffFieldSpec.Short(515, (ushort)restartInterval));
+            }
+
+            if (componentCount == 3)
+            {
+                // The sampling factors of the luma component of the file
+                page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [(ushort)(lumaSampling >> 4), (ushort)(lumaSampling & 15)]));
+            }
+
+            return page;
+        }
+
+        // The tables are appended to the file, whose length the values of the offsets do not change
+        var fileLength = (ulong)new TiffFileBuilder().AddPage(CreatePage(0)).Build().Length;
+        var data = new TiffFileBuilder().AddPage(CreatePage(fileLength)).Build();
+        return new FuzzSeed(id, [.. data, .. appended]);
     }
 
     private static List<FuzzSeed> GetRadianceSeeds()

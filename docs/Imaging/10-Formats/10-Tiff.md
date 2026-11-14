@@ -145,8 +145,9 @@ store a page exactly or reject it with an [UnsupportedImageFeatureException](cre
   [ImageColorModel.CieLab](cref:Meziantou.Framework.Imaging.ImageColorModel.CieLab). Pages that store only the lightness, `ITULab` and 16-bit `ICCLab` are rejected.
 - Old-style JPEG pages (TIFF 6.0 compression 6) are read as libtiff reads them: with the header of
   `JPEGInterchangeFormat` or with the tables of the `JPEGQTables`, `JPEGDCTables` and `JPEGACTables` tags, each strip or
-  tile is decoded as a JPEG datastream of its own. Only the baseline process with 8-bit samples is read; the lossless
-  process and separate planes with an interchange format are rejected.
+  tile is decoded as a JPEG datastream of its own. Only the baseline process is read, with 8-bit or 12-bit samples (12-bit
+  samples are decoded scaled to 16 bits, as with JPEG compression); the lossless process and separate planes with an
+  interchange format are rejected.
 - YCbCr data in separate planes is read when it is not subsampled (`YCbCrSubSampling` 1, 1), like libtiff;
   subsampled or JPEG-compressed planes are rejected.
 - The orientation of a page is reported, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient).

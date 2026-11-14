@@ -13,6 +13,8 @@ internal static class FontErrors
 
     internal static InvalidFontException InvalidAfm(int line, string message) => new($"The AFM file is invalid: line {line}: {message}");
 
+    internal static InvalidFontException InvalidType1(string message) => new("The Type 1 font is invalid: " + message);
+
     internal static InvalidFontException Truncated()
         => new("The font is invalid: a table is truncated or refers to data outside its bounds.");
 

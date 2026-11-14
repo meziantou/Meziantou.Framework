@@ -1,4 +1,8 @@
+using Meziantou.AspNetCore.Components.Tests.TestComponents;
+using Meziantou.AspNetCore.Testing;
+using Meziantou.AspNetCore.Testing.Components;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Meziantou.AspNetCore.Components.Tests;
 
@@ -138,5 +142,22 @@ public sealed class QueryStringServiceTests
 
         Assert.Contains("Day=Monday", navigation.NavigatedTo);
         Assert.Contains("Page=5", navigation.NavigatedTo);
+    }
+
+    [Fact]
+    public async Task Interactive_ReadsTheQueryStringAndReplacesTheUrl()
+    {
+        // The page runs JavaScript: UpdateQueryString calls history.replaceState of the page
+        await using var host = InteractiveTestHosts.CreateWithJavaScript();
+        host.Services.AddQueryStringParameters();
+        await host.NavigateAsync("?page=3&sort=name");
+        var page = await host.RenderAsync<QueryStringPage>();
+        Assert.Equal("Page 3", page.Find("#page").TextContent);
+
+        await page.GetByRole("button", "Next").ClickAsync();
+
+        Assert.Equal("Page 4", page.Find("#page").TextContent);
+        Assert.Equal("https://localhost/?page=4&sort=name", host.BrowsingContext.Window.Location.Href);
+        Assert.Empty(host.ScriptErrors);
     }
 }

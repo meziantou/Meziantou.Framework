@@ -1,0 +1,28 @@
+<input id="new-item" placeholder="What needs to be done?" @bind="_newItem" @bind:event="oninput" @onkeydown="OnKeyDown" />
+<ul>
+    @foreach (var item in Items)
+    {
+        <li @key="item"><span>@item</span> <button @onclick="() => Remove(item)" aria-label="@("Remove " + item)">x</button></li>
+    }
+</ul>
+<button @onclick="Reverse">Reverse</button>
+
+@code {
+    private string _newItem = "";
+
+    [Parameter]
+    public List<string> Items { get; set; } = [];
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_newItem))
+        {
+            Items.Add(_newItem);
+            _newItem = "";
+        }
+    }
+
+    private void Remove(string item) => Items.Remove(item);
+
+    private void Reverse() => Items.Reverse();
+}

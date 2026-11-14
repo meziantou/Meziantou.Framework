@@ -16,6 +16,7 @@ on:
         default: all
         options:
           - all
+          - aspnetcore-testing
           - atlassian-data-format
           - avatar
           - barcodes
@@ -103,6 +104,7 @@ env:
   # with the fewest, and gets an option of the component input (Meziantou.Framework.Fuzzing.Tests checks both).
   FUZZ_PROJECTS: |
     [
+      { "project": "Meziantou.AspNetCore.Testing.Fuzz",            "component": "aspnetcore-testing",    "day": 4 },
       { "project": "Meziantou.Framework.AtlassianDataFormat.Fuzz", "component": "atlassian-data-format", "day": 4 },
       { "project": "Meziantou.Framework.Avatar.Fuzz",              "component": "avatar",                "day": 2 },
       { "project": "Meziantou.Framework.Barcodes.Fuzz",            "component": "barcodes",              "day": 5 },

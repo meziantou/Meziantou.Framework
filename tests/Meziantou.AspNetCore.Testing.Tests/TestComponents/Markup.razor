@@ -1,0 +1,25 @@
+<div id="container">
+    @if (ShowMarkup)
+    {
+        @((MarkupString)Html)
+    }
+    <svg width="10" height="10"><circle cx="5" cy="5" r="@Radius" /></svg>
+    @foreach (var child in Children)
+    {
+        <Counter IncrementAmount="child" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public bool ShowMarkup { get; set; } = true;
+
+    [Parameter]
+    public string Html { get; set; } = "<b>bold</b> text";
+
+    [Parameter]
+    public int Radius { get; set; } = 4;
+
+    [Parameter]
+    public int[] Children { get; set; } = [];
+}

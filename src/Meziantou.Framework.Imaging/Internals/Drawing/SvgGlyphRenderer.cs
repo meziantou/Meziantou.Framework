@@ -462,7 +462,9 @@ internal static class SvgGlyphRenderer
             if (!(width > 0 && height > 0))
                 return;
 
-            var contentTransform = SvgValues.ParseTransform(symbol.GetAttribute("transform")).Then(transform);
+            // The transformation of the symbol moves its viewport and its content together.
+            var symbolTransform = SvgValues.ParseTransform(symbol.GetAttribute("transform")).Then(transform);
+            var contentTransform = symbolTransform;
             var viewportWidth = width;
             var viewportHeight = height;
             if (TryGetViewBox(symbol, out var viewBox))
@@ -479,7 +481,7 @@ internal static class SvgGlyphRenderer
             ViewportHeight = viewportHeight;
             try
             {
-                var viewport = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, width, height)).Build().Transform(transform);
+                var viewport = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, width, height)).Build().Transform(symbolTransform);
                 var clipped = new GroupOp(1, viewport, FillRule.NonZero);
                 AddGroup(symbol, symbolStyle, contentTransform, clipped.Children, depth, (builder, element, style, transform, ops, depth) => builder.AddChildren(element, style, transform, ops, depth));
                 if (clipped.Children.Count > 0)

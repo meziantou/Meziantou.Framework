@@ -1018,6 +1018,7 @@ public sealed class ColorFontTests
         Check("<defs><symbol id='s' viewBox='0 0 512 512' width='512' height='512'><rect x='128' y='64' width='256' height='512' fill='red'/></symbol></defs><use xlink:href='#s'/>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 4, 7)), tolerance: 1);
         Check("<defs><symbol id='s'><rect x='128' y='64' width='512' height='512' fill='red'/></symbol></defs><use xlink:href='#s' width='256' height='256'/>", canvas => canvas.FillRectangle(Red, new RectangleD(2, 1, 2, 3)), tolerance: 1);
         Check("<defs><symbol id='s'><rect x='128' y='64' width='512' height='512' fill='red'/></symbol></defs><use xlink:href='#s' width='0'/>", _ => { });
+        Check("<defs><symbol id='s' transform='translate(512 0)'><rect x='0' y='64' width='512' height='512' fill='red'/></symbol></defs><use xlink:href='#s' width='256' height='256'/>", canvas => canvas.FillRectangle(Red, new RectangleD(8, 1, 4, 3)), tolerance: 1);
 
         // Each child of a clipping path has its own clip rule: the hole of the even-odd square stays open.
         Check(

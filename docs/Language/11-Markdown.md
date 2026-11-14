@@ -312,11 +312,31 @@ Assert.Equal("<div class=\"warning\"><p>This is <span>important</span>.</p>\n</d
 ```
 <!-- endref -->
 
+- [DefinitionLists](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.DefinitionLists): the lines of a
+  paragraph are terms when the next line starts with `:` or `~` and its content starts four columns from the start of the
+  line. The [MarkdownDefinitionListSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownDefinitionListSyntax) has
+  [MarkdownDefinitionItemSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownDefinitionItemSyntax) definitions,
+  each with its terms and its blocks, rendered as `<dl>`, `<dt>` and `<dd>`. The next lines of a definition are indented
+  by four columns, and another marker starts the next definition.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_DefinitionLists;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.DefinitionLists };
+var tree = MarkdownSyntaxTree.ParseText("Apple\nPear\n:   A fruit.\n:   A tree.\n", options);
+
+// The lines of the paragraph before the marker are the terms, and a marker after a definition starts another one
+var list = Assert.IsType<MarkdownDefinitionListSyntax>(tree.GetRoot().Blocks.Single());
+Assert.Equal(["Apple", "Pear"], list.Items[0].Terms.Select(term => term.GetPlainText()).ToArray());
+Assert.Empty(list.Items[1].Terms);
+Assert.Equal("<dl>\n<dt>Apple</dt>\n<dt>Pear</dt>\n<dd>A fruit.</dd>\n<dd>A tree.</dd>\n</dl>\n", MarkdownHtmlRenderer.ToHtml(tree));
+```
+<!-- endref -->
+
 [DisableHtml](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.DisableHtml) reads HTML as text: the
 renderer escapes it, and autolinks such as `<https://example.com>` are still links.
 
 ## Limitations of the prototype
 
-- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no definition lists, grid tables, emoji, SmartyPants...
+- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no grid tables, emoji, SmartyPants...
 - Inserting and removing blocks parses the whole text again.
 - Parsing allocates more and is slower than [Meziantou.Framework.Markdown](../Markdown/01-Introduction.md).

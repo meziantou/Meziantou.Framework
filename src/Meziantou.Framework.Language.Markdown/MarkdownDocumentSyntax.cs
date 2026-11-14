@@ -29,7 +29,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     public IEnumerable<MarkdownLinkReferenceDefinitionSyntax> LinkReferenceDefinitions => DescendantNodes(IsBlockContainer).OfType<MarkdownLinkReferenceDefinitionSyntax>();
 
     // The nodes whose children are blocks, where definitions can be
-    internal static bool IsBlockContainer(SyntaxNode node) => node is MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownAlertSyntax or MarkdownListSyntax or MarkdownListItemSyntax or MarkdownFootnoteDefinitionSyntax or MarkdownCustomContainerSyntax;
+    internal static bool IsBlockContainer(SyntaxNode node) => node is MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownAlertSyntax or MarkdownListSyntax or MarkdownListItemSyntax or MarkdownFootnoteDefinitionSyntax or MarkdownCustomContainerSyntax or MarkdownDefinitionListSyntax or MarkdownDefinitionItemSyntax;
 
     /// <summary>Finds the definition of a footnote: the first one with the same label, compared as CommonMark compares link labels.</summary>
     /// <param name="label">The label, with its <c>^</c>.</param>

@@ -70,6 +70,7 @@ public enum SyntaxKind
     ExtendedAutolinkToken,
     CustomContainerFenceToken,
     CustomContainerArgumentsToken,
+    DefinitionMarkerToken,
 
     // Blocks
     Document,
@@ -95,6 +96,9 @@ public enum SyntaxKind
     AbbreviationDefinition,
     FootnoteDefinition,
     CustomContainer,
+    DefinitionList,
+    DefinitionItem,
+    DefinitionTerm,
 
     // Inlines
     Emphasis,

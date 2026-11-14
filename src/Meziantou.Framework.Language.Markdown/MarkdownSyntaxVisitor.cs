@@ -74,6 +74,15 @@ public abstract class MarkdownSyntaxVisitor
     /// <summary>Visits a <see cref="MarkdownCustomContainerSyntax"/>.</summary>
     public virtual void VisitMarkdownCustomContainer(MarkdownCustomContainerSyntax node) => DefaultVisit(node);
 
+    /// <summary>Visits a <see cref="MarkdownDefinitionTermSyntax"/>.</summary>
+    public virtual void VisitMarkdownDefinitionTerm(MarkdownDefinitionTermSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownDefinitionItemSyntax"/>.</summary>
+    public virtual void VisitMarkdownDefinitionItem(MarkdownDefinitionItemSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownDefinitionListSyntax"/>.</summary>
+    public virtual void VisitMarkdownDefinitionList(MarkdownDefinitionListSyntax node) => DefaultVisit(node);
+
     /// <summary>Visits a <see cref="MarkdownAbbreviationDefinitionSyntax"/>.</summary>
     public virtual void VisitMarkdownAbbreviationDefinition(MarkdownAbbreviationDefinitionSyntax node) => DefaultVisit(node);
 
@@ -173,6 +182,15 @@ public abstract class MarkdownSyntaxVisitor<TResult>
 
     /// <summary>Visits a <see cref="MarkdownCustomContainerSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownCustomContainer(MarkdownCustomContainerSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownDefinitionTermSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownDefinitionTerm(MarkdownDefinitionTermSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownDefinitionItemSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownDefinitionItem(MarkdownDefinitionItemSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownDefinitionListSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownDefinitionList(MarkdownDefinitionListSyntax node) => DefaultVisit(node);
 
     /// <summary>Visits a <see cref="MarkdownAbbreviationDefinitionSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownAbbreviationDefinition(MarkdownAbbreviationDefinitionSyntax node) => DefaultVisit(node);

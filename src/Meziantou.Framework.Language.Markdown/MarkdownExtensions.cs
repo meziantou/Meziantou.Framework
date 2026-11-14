@@ -64,6 +64,9 @@ public enum MarkdownExtensions
     /// <summary>Custom containers: blocks between <c>:::name</c> and <c>:::</c> lines, rendered as <c>&lt;div class="name"&gt;</c>, and text between <c>::</c>, rendered as <c>&lt;span&gt;</c>.</summary>
     CustomContainers = 1 << 18,
 
+    /// <summary>Definition lists: the lines of a paragraph are terms when the next line starts with <c>:</c> or <c>~</c> and its content at four columns, which is a definition, rendered as <c>&lt;dl&gt;</c>.</summary>
+    DefinitionLists = 1 << 19,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

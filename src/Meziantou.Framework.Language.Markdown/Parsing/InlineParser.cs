@@ -55,13 +55,13 @@ internal sealed class InlineParser
         _autolinks = extensions.HasFlag(MarkdownExtensions.Autolinks);
     }
 
-    /// <summary>Parses the inlines of the subject from <paramref name="start"/>, without the whitespace around them.</summary>
-    public void Parse(Subject subject, int start, List<BuildElement> output)
+    /// <summary>Parses the inlines of the subject from <paramref name="start"/>, without the whitespace around them, or only before them.</summary>
+    public void Parse(Subject subject, int start, List<BuildElement> output, bool trimEnd = true)
     {
         _subject = subject;
         _text = subject.Text;
         _end = _text.Length;
-        while (_end > start && _text[_end - 1] is ' ' or '\t' or '\n')
+        while (trimEnd && _end > start && _text[_end - 1] is ' ' or '\t' or '\n')
         {
             _end--;
         }

@@ -65,8 +65,9 @@ public static class MarkdownHtmlRenderer
         private readonly bool _diagrams = options.Extensions.HasFlag(MarkdownExtensions.Diagrams);
         private readonly bool _autoIdentifiers = options.Extensions.HasFlag(MarkdownExtensions.AutoIdentifiers);
 
-        // Whether the next block is the first of a custom container
+        // Whether the next block is the first of a custom container or of a definition
         private bool _firstInContainer;
+        private bool _paragraphOnNewLineInDefinition;
 
         // In a cell of a table, a pipe escaped by a backslash is a pipe, even in a code span or a link destination
         private bool _inTableCell;
@@ -170,13 +171,17 @@ public static class MarkdownHtmlRenderer
         }
 
         // Before a block that Markdig starts on a new line only when it is not the first block of a custom container, which is
-        // written just after the <div>: a paragraph, a heading, a thematic break, HTML
-        private void CrUnlessFirstInContainer()
+        // written just after the <div>, or of a definition, after the <dd>: a paragraph, a heading, a thematic break, HTML. In a
+        // definition, Markdig starts a paragraph on a new line when the definition list is not the first block of its container.
+        private void CrUnlessFirstInContainer(bool paragraph = false)
         {
             if (_firstInContainer)
             {
                 _firstInContainer = false;
-                return;
+                if (!(paragraph && _paragraphOnNewLineInDefinition))
+                {
+                    return;
+                }
             }
 
             Cr();
@@ -190,6 +195,64 @@ public static class MarkdownHtmlRenderer
                 _output.Append('\n');
             }
         }
+
+        // As Markdig: the terms, then the blocks of the definition in <dd>, where a paragraph alone is written without <p>
+        private void WriteDefinitionList(MarkdownDefinitionListSyntax list)
+        {
+            Cr();
+            _output.Append("<dl");
+            AppendAttributes(list);
+            _output.Append(">\n");
+            var paragraphOnNewLine = !IsFirstBlockForMarkdig(list);
+            foreach (var item in list.Items)
+            {
+                foreach (var term in item.Terms)
+                {
+                    _output.Append("<dt");
+                    AppendAttributes(term);
+                    _output.Append('>');
+                    WriteInlines(term.Inlines);
+                    _output.Append("</dt>\n");
+                }
+
+                // Markdig moves the definitions out of the definition
+                var blocks = item.Blocks.Where(block => block is not (MarkdownLinkReferenceDefinitionSyntax or MarkdownAbbreviationDefinitionSyntax)).ToList();
+                if (blocks.Count == 0 && item.BlankLineCount == 0)
+                {
+                    continue;
+                }
+
+                _output.Append("<dd");
+                AppendAttributes(item);
+                _output.Append('>');
+                if (blocks is [MarkdownParagraphSyntax paragraph] && item.BlankLineCount == 0)
+                {
+                    WriteInlines(paragraph.Inlines);
+                    _output.Append("</dd>\n");
+                    continue;
+                }
+
+                _firstInContainer = true;
+                _paragraphOnNewLineInDefinition = paragraphOnNewLine;
+                WriteBlocks(blocks);
+                _firstInContainer = false;
+                _paragraphOnNewLineInDefinition = false;
+                Cr();
+                _output.Append("</dd>\n");
+            }
+
+            Cr();
+            _output.Append("</dl>");
+            Cr();
+        }
+
+        // Markdig writes the blocks of a definition itself, so they read whether the definition list is the first block of its container
+        private static bool IsFirstBlockForMarkdig(MarkdownBlockSyntax block) => block.Parent switch
+        {
+            MarkdownDefinitionItemSyntax { Parent: MarkdownDefinitionListSyntax list } => IsFirstBlockForMarkdig(list),
+            { } parent => parent.ChildNodes().FirstOrDefault(node => node is MarkdownBlockSyntax) == block,
+            _ => true,
+        };
 
         public void WriteBlocks(IReadOnlyList<MarkdownBlockSyntax> blocks)
         {
@@ -211,7 +274,7 @@ public static class MarkdownHtmlRenderer
                 {
                     // The paragraphs of a tight list have no <p>, as the ones of its custom containers in Markdig
                     var parent = paragraph.Parent;
-                    while (parent is MarkdownCustomContainerSyntax)
+                    while (parent is MarkdownCustomContainerSyntax or MarkdownDefinitionItemSyntax or MarkdownDefinitionListSyntax)
                     {
                         parent = parent.Parent;
                     }
@@ -223,7 +286,7 @@ public static class MarkdownHtmlRenderer
                     }
                     else
                     {
-                        CrUnlessFirstInContainer();
+                        CrUnlessFirstInContainer(paragraph: true);
                         _output.Append("<p");
                         AppendAttributes(paragraph);
                         _output.Append('>');
@@ -295,6 +358,10 @@ public static class MarkdownHtmlRenderer
                     _firstInContainer = false;
                     _output.Append("</div>");
                     Cr();
+                    break;
+
+                case MarkdownDefinitionListSyntax list:
+                    WriteDefinitionList(list);
                     break;
 
                 case MarkdownBlockQuoteSyntax quote:

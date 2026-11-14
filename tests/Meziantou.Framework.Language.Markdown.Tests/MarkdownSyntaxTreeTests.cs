@@ -615,6 +615,58 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void ReadmeExample_DefinitionLists()
+    {
+        #region MarkdownSyntaxTree_DefinitionLists
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.DefinitionLists };
+        var tree = MarkdownSyntaxTree.ParseText("Apple\nPear\n:   A fruit.\n:   A tree.\n", options);
+
+        // The lines of the paragraph before the marker are the terms, and a marker after a definition starts another one
+        var list = Assert.IsType<MarkdownDefinitionListSyntax>(tree.GetRoot().Blocks.Single());
+        Assert.Equal(["Apple", "Pear"], list.Items[0].Terms.Select(term => term.GetPlainText()).ToArray());
+        Assert.Empty(list.Items[1].Terms);
+        Assert.Equal("<dl>\n<dt>Apple</dt>\n<dt>Pear</dt>\n<dd>A fruit.</dd>\n<dd>A tree.</dd>\n</dl>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("T\n:   a\n\n:   b\n", "<dd><p>a</p>\n</dd>\n<dd>b</dd>")]
+    [InlineData("T\n:   a\n\n", "<dd><p>a</p>\n</dd>")]
+    [InlineData("T\n:   a\n\nnext\n", "<dd>a</dd>\n</dl>\n<p>next</p>\n")]
+    [InlineData("p\n\nT\n:   a\n    > q\n", "<dd>\n<p>a</p>\n<blockquote>")]
+    [InlineData("T\n:   a\n    > q\n", "<dd><p>a</p>\n<blockquote>")]
+    [InlineData("T\n:   a\n# h\n", "<dd><p>a</p>\n<h1>h</h1>\n</dd>")]
+    [InlineData("T\n:   * a\n# h\n", "</ul>\n</dd>\n</dl>\n<h1>h</h1>")]
+    [InlineData("T\n:   > q\nlazy\n", "<p>q\nlazy</p>")]
+    [InlineData("T\n:  x\n", "<p>T\n:  x</p>")]
+    [InlineData("T\n   :x\n", "<dt>T</dt>\n<dd>x</dd>")]
+    [InlineData("T\n\n    : code\n", "<pre><code>: code\n</code></pre>")]
+    [InlineData("Term\n\n\n~   def\n", "<dt>Term</dt>\n<dd>def</dd>")]
+    [InlineData("T \n:   d\n", "<dt>T </dt>")]
+    [InlineData("[a]: /u\nT\n:   d\n\n[a]\n", "<dt>[a]: /u</dt>\n<dt>T</dt>\n<dd>d</dd>\n</dl>\n<p>[a]</p>")]
+    [InlineData("A\n:   1\n\nB\n:   2\n", "<dd>1</dd>\n<dt>B</dt>\n<dd>2</dd>\n</dl>")]
+    [InlineData("- T\n  :   a\n- b\n", "<li>\n<dl>\n<dt>T</dt>\n<dd>a</dd>\n</dl>\n</li>")]
+    [InlineData("T {.t}\n:   d\n", "<dt class=\"t\">T</dt>")]
+    [InlineData("[foo]: /url\n===\nT\n:   d\n", "<p>===\nT\n:   d</p>")]
+    public void RendersDefinitionLists(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.DefinitionLists | MarkdownExtensions.GenericAttributes });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DefinitionHasItsMarkerAndBlocks()
+    {
+        var item = MarkdownSyntaxTree.ParseText("T\n~   a\n\n    b\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.DefinitionLists }).GetRoot().DescendantNodes().OfType<MarkdownDefinitionItemSyntax>().Single();
+
+        Assert.Equal("~", item.MarkerToken.Text);
+        Assert.Equal("T", item.Terms.Single().GetPlainText());
+        Assert.Equal(["a", "b"], item.Blocks.Select(block => block.GetPlainText()).ToArray());
+    }
+
+    [Fact]
     public void AlertHasItsKind()
     {
         var alert = Assert.IsType<MarkdownAlertSyntax>(MarkdownSyntaxTree.ParseText("> [!Warning]  \n> Be *careful*\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts }).GetRoot().Blocks.Single());

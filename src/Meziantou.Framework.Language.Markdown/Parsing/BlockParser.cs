@@ -25,6 +25,9 @@ internal sealed class BlockParser
     private readonly List<Line> _lines;
     private readonly Dictionary<string, bool> _references = new(StringComparer.Ordinal);
     private readonly InlineParser _inlineParser;
+
+    // The definition that the line closes after it has been read
+    private Block? _closingDefinition;
     private readonly Block _document = new(SyntaxKind.Document, parent: null);
     private Block _tip;
     private Block _oldTip;
@@ -159,6 +162,7 @@ internal sealed class BlockParser
 
     private void IncorporateLine(int lineStart, int lineEnd, int eolEnd)
     {
+        _closingDefinition = null;
         var container = _document;
         _oldTip = _tip;
         _offset = lineStart;
@@ -221,7 +225,7 @@ internal sealed class BlockParser
 
         if (!_allClosed && !_blank && _tip.Kind == SyntaxKind.Paragraph)
         {
-            // A lazy continuation line of a paragraph
+            // A lazy continuation line of a paragraph, which keeps the blocks that the line does not continue open
             AddLine();
         }
         else
@@ -254,8 +258,9 @@ internal sealed class BlockParser
 
     private static bool CanContain(SyntaxKind parent, SyntaxKind child) => parent switch
     {
-        SyntaxKind.Document or SyntaxKind.BlockQuote or SyntaxKind.ListItem or SyntaxKind.FootnoteDefinition or SyntaxKind.CustomContainer => child != SyntaxKind.ListItem,
+        SyntaxKind.Document or SyntaxKind.BlockQuote or SyntaxKind.ListItem or SyntaxKind.FootnoteDefinition or SyntaxKind.CustomContainer or SyntaxKind.DefinitionItem => child is not (SyntaxKind.ListItem or SyntaxKind.DefinitionItem),
         SyntaxKind.List => child == SyntaxKind.ListItem,
+        SyntaxKind.DefinitionList => child == SyntaxKind.DefinitionItem,
         _ => false,
     };
 
@@ -263,7 +268,7 @@ internal sealed class BlockParser
 
     // Whether the line can start a block of an extension: a delimiter row under a paragraph, a row of a table, or the task
     // list item marker after the marker of a list item
-    private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || (c == ':' && HasExtension(MarkdownExtensions.CustomContainers)) || (c == '[' && IsFootnoteContainer(container)) || container.Kind switch
+    private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || (c == ':' && HasExtension(MarkdownExtensions.CustomContainers)) || (c is ':' or '~' && HasExtension(MarkdownExtensions.DefinitionLists)) || (c == '[' && IsFootnoteContainer(container)) || container.Kind switch
     {
         SyntaxKind.Paragraph => HasExtension(MarkdownExtensions.Tables) && c is '|' or ':',
         SyntaxKind.Table => true,
@@ -278,7 +283,7 @@ internal sealed class BlockParser
     {
         switch (block.Kind)
         {
-            case SyntaxKind.Document or SyntaxKind.List:
+            case SyntaxKind.Document or SyntaxKind.List or SyntaxKind.DefinitionList:
                 return 0;
 
             case SyntaxKind.BlockQuote:
@@ -356,6 +361,56 @@ internal sealed class BlockParser
                 }
 
                 return 0;
+
+            case SyntaxKind.DefinitionItem:
+            {
+                // As in Markdig: an indented line continues the definition, a marker starts the next one, a blank line leaves a
+                // blank line in the definition, and another line continues it after a paragraph only
+                if (_indent >= CodeIndent)
+                {
+                    AdvanceOffset(CodeIndent, columns: true);
+                    return 0;
+                }
+
+                if (Peek(_nextNonspace) is ':' or '~')
+                {
+                    if (GetDefinitionMarkerWidth() < 4 && block.LastIsBlankLine)
+                    {
+                        block.BlankLineCount--;
+                        block.LastIsBlankLine = false;
+                    }
+
+                    return 1;
+                }
+
+                if (_blank)
+                {
+                    if (!block.LastIsBlankLine && block.LastChild is not { Kind: SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock })
+                    {
+                        block.BlankLineCount++;
+                        block.LastIsBlankLine = true;
+                    }
+
+                    return 0;
+                }
+
+                if (!block.LastIsBlankLine && block.LastChild is { Kind: SyntaxKind.Paragraph })
+                {
+                    return 0;
+                }
+
+                if (block.LastIsBlankLine)
+                {
+                    block.BlankLineCount--;
+                    block.LastIsBlankLine = false;
+                }
+
+                // Markdig closes the definition, but its open blocks still read the line, and the next lines: the blocks that the line
+                // starts are after the definition, except the lists that its lists start. The line is read after its indentation.
+                _closingDefinition = block;
+                AdvanceNextNonspace();
+                return 0;
+            }
 
             case SyntaxKind.CustomContainer:
                 // As in Markdig: a fence of colons as long as the opening one closes the container and its blocks, even in a code
@@ -463,6 +518,13 @@ internal sealed class BlockParser
     private int TryStart(Block container)
     {
         var c = Peek(_nextNonspace);
+
+        // Definition, which Markdig tries first: a marker after a paragraph, whose lines are the terms, or after a definition. In
+        // a list item, a blank line after the paragraph is a block of the item for Markdig.
+        if (!_indented && c is ':' or '~' && HasExtension(MarkdownExtensions.DefinitionLists) && TryStartDefinition(container))
+        {
+            return 1;
+        }
 
         // Custom container, which Markdig tries first: its opening fence is the whole line
         if (!_indented && c == ':' && HasExtension(MarkdownExtensions.CustomContainers) && TryStartCustomContainer())
@@ -931,6 +993,128 @@ internal sealed class BlockParser
         return true;
     }
 
+    // The columns from the start of the line, after the containers, to the content after the marker of a definition: the marker,
+    // and the whitespace after it
+    private int GetDefinitionMarkerWidth()
+    {
+        var column = _nextNonspaceColumn + 1;
+        for (var i = _nextNonspace + 1; i < _lineEnd && _text[i] is ' ' or '\t'; i++)
+        {
+            column += _text[i] == '\t' ? 4 - (column % 4) : 1;
+        }
+
+        return column - _column;
+    }
+
+    private bool TryStartDefinition(Block container)
+    {
+        if (GetDefinitionMarkerWidth() < 4)
+        {
+            return false;
+        }
+
+        // The terms are the lines of the paragraph: Markdig does not read the link reference definitions of a paragraph that
+        // is still open, which are terms then
+        Block? paragraph = null;
+        if (container.Kind == SyntaxKind.Paragraph)
+        {
+            // As in Markdig, a paragraph whose link reference definitions were read for a setext underline has no terms
+            if (container.DefinitionsOrNull is not null)
+            {
+                return false;
+            }
+
+            paragraph = container;
+        }
+        else if (container.Kind == SyntaxKind.DefinitionList)
+        {
+            // The marker of the next definition, which the open one did not continue
+        }
+        else if (!_allClosed && _tip is { Kind: SyntaxKind.Paragraph, Open: true })
+        {
+            // A lazy line: Markdig reads the marker after the paragraph of the containers that the line does not continue, which
+            // stay open
+            paragraph = _tip;
+            _allClosed = true;
+        }
+        else if (container.LastChild is { Kind: SyntaxKind.Paragraph, Open: false, IsEmpty: false } closed && container.Kind is not (SyntaxKind.ListItem or SyntaxKind.DefinitionItem or SyntaxKind.FootnoteDefinition))
+        {
+            paragraph = closed;
+        }
+        else
+        {
+            return false;
+        }
+
+        var termLineStart = 0;
+        var termLineCount = 0;
+        var termsTrimmed = false;
+        if (paragraph is not null)
+        {
+            var parent = paragraph.Parent!;
+            termLineStart = paragraph.LineStart;
+            termLineCount = paragraph.LineCount;
+            termsTrimmed = !paragraph.Open;
+            if (paragraph.Open)
+            {
+                // The paragraph is not finalized: its link reference definitions are terms
+                paragraph.Open = false;
+                _tip = parent;
+                _oldTip = parent;
+                _lastMatchedContainer = parent;
+            }
+            else
+            {
+                CloseUnmatchedBlocks();
+            }
+
+            termLineStart += paragraph.DefinitionLineCount;
+            termLineCount -= paragraph.DefinitionLineCount;
+            if (paragraph.DefinitionsOrNull is null)
+            {
+                parent.Children.Remove(paragraph);
+            }
+            else
+            {
+                // The paragraph keeps its link reference definitions
+                paragraph.IsEmpty = true;
+            }
+
+            _tip = parent;
+            if (parent.LastChild is { Kind: SyntaxKind.DefinitionList } list && paragraph.DefinitionsOrNull is null)
+            {
+                // The terms after a definition list add a definition to it
+                list.Open = true;
+                _tip = list;
+            }
+            else
+            {
+                AddChild(SyntaxKind.DefinitionList);
+            }
+        }
+        else
+        {
+            CloseUnmatchedBlocks();
+        }
+
+        var item = AddChild(SyntaxKind.DefinitionItem);
+        item.TermLineStart = termLineStart;
+        item.TermLineCount = termLineCount;
+        item.TermsTrimmed = termsTrimmed;
+        item.MarkerPosition = _nextNonspace;
+
+        // The content starts four columns after the start of the line
+        var contentColumn = _column + 4;
+        AdvanceNextNonspace();
+        AdvanceOffset(1, columns: false);
+        if (contentColumn > _column)
+        {
+            AdvanceOffset(contentColumn - _column, columns: true);
+        }
+
+        return true;
+    }
+
     // A fence of three colons or more, then a name, which is the class of the container, and arguments
     private bool TryStartCustomContainer()
     {
@@ -1173,13 +1357,17 @@ internal sealed class BlockParser
 
     private Block AddChild(SyntaxKind kind)
     {
-        while (!CanContain(_tip.Kind, kind))
+        // A definition that Markdig closed only takes the list that replaces one of its lists, which the list starts in Markdig
+        var replacesList = false;
+        while (!CanContain(_tip.Kind, kind) || (_tip == _closingDefinition && !(kind == SyntaxKind.List && replacesList)))
         {
+            replacesList = _tip.Kind == SyntaxKind.List;
             Finalize(_tip);
         }
 
         var block = new Block(kind, _tip);
         _tip.Children.Add(block);
+        _tip.LastIsBlankLine = false;
         _tip = block;
         return block;
     }
@@ -1329,6 +1517,29 @@ internal sealed class BlockParser
             case SyntaxKind.Table:
                 output.Add(ConvertTable(block));
                 return;
+
+            case SyntaxKind.DefinitionItem:
+            {
+                // The terms, the marker, whose value is the number of blank lines that Markdig leaves in the definition, and the blocks
+                var node = new BuildNode(block.Kind, block.TermLineCount + 1 + block.Children.Count);
+                var terms = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_lines).Slice(block.TermLineStart, block.TermLineCount);
+                for (var i = 0; i < terms.Length; i++)
+                {
+                    // Markdig keeps the whitespace at the end of a term, except at the end of a paragraph that was closed
+                    var term = new BuildNode(SyntaxKind.DefinitionTerm);
+                    _inlineParser.Parse(Subject.FromLines(_text, [terms[i]]), 0, term.Children, trimEnd: block.TermsTrimmed && i == terms.Length - 1);
+                    node.Children.Add(term);
+                }
+
+                node.AddToken(SyntaxKind.DefinitionMarkerToken, block.MarkerPosition, block.MarkerPosition + 1, value: block.BlankLineCount);
+                foreach (var child in block.Children)
+                {
+                    Convert(child, node.Children);
+                }
+
+                output.Add(node);
+                return;
+            }
 
             case SyntaxKind.FencedCodeBlock or SyntaxKind.IndentedCodeBlock or SyntaxKind.HtmlBlock or SyntaxKind.FrontMatter or SyntaxKind.MathBlock:
             {
@@ -1606,6 +1817,20 @@ internal sealed class BlockParser
         public int FenceOffset { get; set; }
 
         public int HtmlBlockType { get; set; }
+
+        // A definition: its terms, which are lines of the paragraph before it, where its marker is, and the blank lines that Markdig
+        // leaves in it, the last one being after its last block
+        public int TermLineStart { get; set; }
+
+        public int TermLineCount { get; set; }
+
+        public bool TermsTrimmed { get; set; }
+
+        public int MarkerPosition { get; set; }
+
+        public int BlankLineCount { get; set; }
+
+        public bool LastIsBlankLine { get; set; }
 
         // A footnote whose last line is blank, which a line that is not indented ends
         public bool FootnoteLastLineBlank { get; set; }

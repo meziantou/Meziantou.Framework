@@ -271,6 +271,31 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
     }
 
+    [Theory]
+    [InlineData(false, "> [!Custom]\n> a\n", "<div class=\"markdown-alert markdown-alert-custom\">\n<p>a</p>\n</div>\n")]
+    [InlineData(false, "> [!NOTE]\n", "<div class=\"markdown-alert markdown-alert-note\">\n<p class=\"markdown-alert-title\">")]
+    [InlineData(false, "- > [!NOTE]\n", "<ul>\n<li>\n<blockquote>\n<p>[!NOTE]</p>\n</blockquote>\n</li>\n</ul>\n")]
+    [InlineData(true, "- > [!NOTE]\n", "<ul>\n<li>\n<div class=\"markdown-alert markdown-alert-note\">\n")]
+    [InlineData(true, "> [!NOTE]\n> > [!TIP]\n", "</p>\n<blockquote>\n<p>[!TIP]</p>\n</blockquote>\n</div>\n")]
+    [InlineData(false, "> [!NOTE] a\n> [!] b\n", "<blockquote>\n<p>[!NOTE] a\n[!] b</p>\n</blockquote>\n")]
+    public void RendersAlerts(bool allowNested, string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts, AllowNestedAlerts = allowNested });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AlertHasItsKind()
+    {
+        var alert = Assert.IsType<MarkdownAlertSyntax>(MarkdownSyntaxTree.ParseText("> [!Warning]  \n> Be *careful*\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts }).GetRoot().Blocks.Single());
+
+        Assert.Equal("Warning", alert.AlertKind);
+        Assert.Equal("[!Warning]", alert.KindToken.Text);
+        Assert.Equal("Be careful", alert.GetPlainText());
+    }
+
     [Fact]
     public void MathHasItsContent()
     {

@@ -46,6 +46,9 @@ public enum MarkdownExtensions
     /// <summary>Mathematics: inline math between <c>$</c> or <c>$$</c>, and math blocks between <c>$$</c> lines.</summary>
     Mathematics = 1 << 12,
 
+    /// <summary>The alerts of GitHub: a block quote whose first line is <c>[!NOTE]</c>, <c>[!TIP]</c>, <c>[!IMPORTANT]</c>, <c>[!WARNING]</c> or <c>[!CAUTION]</c>.</summary>
+    Alerts = 1 << 13,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

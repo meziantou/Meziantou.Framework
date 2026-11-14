@@ -9,7 +9,7 @@ public sealed class ExtensionSpecTests
 {
     private static readonly (string File, string Extensions)[] Specifications =
     [
-        ("AlertBlockSpecs.md", "advanced"),
+        ("AlertBlockSpecs.md", "alerts|advanced"),
         ("PipeTableSpecs.md", "pipetables|advanced"),
         ("PipeTableGfmSpecs.md", "gfm-pipetables"),
         ("GfmTableSpecs.md", "gfm-pipetables"),
@@ -50,6 +50,7 @@ public sealed class ExtensionSpecTests
         ["yaml"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.YamlFrontMatter },
         ["diagrams"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Diagrams },
         ["mathematics"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Mathematics },
+        ["alerts"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Alerts },
     };
 
     public static TheoryData<string, int, string> SupportedExamples()

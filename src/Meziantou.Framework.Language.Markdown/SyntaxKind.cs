@@ -60,6 +60,7 @@ public enum SyntaxKind
     MathLineToken,
     MathDelimiterToken,
     MathTextToken,
+    AlertKindToken,
     ExtendedAutolinkToken,
 
     // Blocks
@@ -82,6 +83,7 @@ public enum SyntaxKind
     TableCell,
     FrontMatter,
     MathBlock,
+    Alert,
 
     // Inlines
     Emphasis,

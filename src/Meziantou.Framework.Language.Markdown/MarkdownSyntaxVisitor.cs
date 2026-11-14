@@ -68,6 +68,9 @@ public abstract class MarkdownSyntaxVisitor
     /// <summary>Visits a <see cref="MarkdownMathInlineSyntax"/>.</summary>
     public virtual void VisitMarkdownMathInline(MarkdownMathInlineSyntax node) => DefaultVisit(node);
 
+    /// <summary>Visits a <see cref="MarkdownAlertSyntax"/>.</summary>
+    public virtual void VisitMarkdownAlert(MarkdownAlertSyntax node) => DefaultVisit(node);
+
     /// <summary>Visits a <see cref="MarkdownCodeSpanSyntax"/>.</summary>
     public virtual void VisitMarkdownCodeSpan(MarkdownCodeSpanSyntax node) => DefaultVisit(node);
 
@@ -146,6 +149,9 @@ public abstract class MarkdownSyntaxVisitor<TResult>
 
     /// <summary>Visits a <see cref="MarkdownMathInlineSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownMathInline(MarkdownMathInlineSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownAlertSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownAlert(MarkdownAlertSyntax node) => DefaultVisit(node);
 
     /// <summary>Visits a <see cref="MarkdownCodeSpanSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownCodeSpan(MarkdownCodeSpanSyntax node) => DefaultVisit(node);

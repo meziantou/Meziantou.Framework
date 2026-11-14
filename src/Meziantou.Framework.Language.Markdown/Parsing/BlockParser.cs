@@ -12,6 +12,12 @@ internal sealed class BlockParser
     private readonly string _text;
     private readonly MarkdownExtensions _extensions;
     private readonly bool _disableHtml;
+    private readonly bool _allowNestedAlerts;
+
+    // The alert being converted, which a quote in it cannot be, and the paragraph that starts with its kind
+    private bool _inAlert;
+    private Block? _alertParagraph;
+    private (int KindStart, int KindEnd, int ContentStart) _alertKind;
     private readonly List<TriviaSpan> _triviaSpans = [];
 
     // The lines of all the leaf blocks: a block has a range of them. Only the last open leaf block gets lines, so its lines
@@ -46,6 +52,7 @@ internal sealed class BlockParser
         _text = text;
         _extensions = options.Extensions;
         _disableHtml = options.DisableHtml;
+        _allowNestedAlerts = options.AllowNestedAlerts;
 
         // A block has at most every line of the text
         _lines = new List<Line>(text.AsSpan().Count('\n') + 1);
@@ -928,7 +935,16 @@ internal sealed class BlockParser
                     }
                 }
 
-                if (block.Kind == SyntaxKind.SetextHeading || !block.IsEmpty)
+                if (block == _alertParagraph)
+                {
+                    // The kind of the alert is the first token of the paragraph, and its content starts on the next line
+                    var node = new BuildNode(block.Kind);
+                    node.Children.Add(BuildElement.Token(SyntaxKind.AlertKindToken, block.Subject!.ToSourceStart(_alertKind.KindStart), block.Subject.ToSourceEnd(_alertKind.KindEnd)));
+                    _inlineParser.Parse(block.Subject, _alertKind.ContentStart, node.Children);
+                    output.Add(node);
+                    _alertParagraph = null;
+                }
+                else if (block.Kind == SyntaxKind.SetextHeading || !block.IsEmpty)
                 {
                     var node = new BuildNode(block.Kind);
                     _inlineParser.Parse(block.Subject!, block.ContentStart, node.Children);
@@ -975,18 +991,75 @@ internal sealed class BlockParser
 
             default:
             {
-                var node = new BuildNode(block.Kind, block.TokenCount + block.Children.Count);
+                // A block quote whose paragraph starts with [!KIND] on its own line is an alert
+                var alert = block.Kind == SyntaxKind.BlockQuote && HasExtension(MarkdownExtensions.Alerts) && !_inAlert && (_allowNestedAlerts || block.Parent == _document) && FindAlertParagraph(block);
+                var node = new BuildNode(alert ? SyntaxKind.Alert : block.Kind, block.TokenCount + block.Children.Count);
                 AddTokens(node, block.LeadingOrNull);
+                _inAlert |= alert;
                 foreach (var child in block.Children)
                 {
                     Convert(child, node.Children);
                 }
 
+                _inAlert &= !alert;
                 AddTokens(node, block.TrailingOrNull);
                 output.Add(node);
                 return;
             }
         }
+    }
+
+    // The first paragraph of the quote that starts with [!, letters, and ], followed by spaces and a line break or its end
+    private bool FindAlertParagraph(Block quote)
+    {
+        foreach (var child in quote.Children)
+        {
+            if (child.Kind != SyntaxKind.Paragraph || child.IsEmpty || child.Subject is not { } subject)
+            {
+                continue;
+            }
+
+            var text = subject.Text;
+            var start = child.ContentStart;
+            while (start < text.Length && text[start] is ' ' or '\t')
+            {
+                start++;
+            }
+
+            var position = start + 2;
+            if (position > text.Length || text[start] != '[' || text[start + 1] != '!')
+            {
+                continue;
+            }
+
+            while (position < text.Length && char.IsAsciiLetter(text[position]))
+            {
+                position++;
+            }
+
+            if (position == start + 2 || position >= text.Length || text[position] != ']')
+            {
+                continue;
+            }
+
+            var kindEnd = position + 1;
+            position = kindEnd;
+            while (position < text.Length && text[position] is ' ' or '\t')
+            {
+                position++;
+            }
+
+            if (position < text.Length && text[position] != '\n')
+            {
+                continue;
+            }
+
+            _alertParagraph = child;
+            _alertKind = (start, kindEnd, position);
+            return true;
+        }
+
+        return false;
     }
 
     private static void AddTokens(BuildNode node, List<BuildElement>? tokens)

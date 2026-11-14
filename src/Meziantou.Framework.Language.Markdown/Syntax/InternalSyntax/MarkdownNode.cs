@@ -73,6 +73,7 @@ internal sealed class MarkdownNode : GreenNode
             SyntaxKind.Strikethrough => new Markdown.MarkdownStrikethroughSyntax(this, parent, position),
             SyntaxKind.FrontMatter => new Markdown.MarkdownFrontMatterSyntax(this, parent, position),
             SyntaxKind.MathBlock => new Markdown.MarkdownMathBlockSyntax(this, parent, position),
+            SyntaxKind.Alert => new Markdown.MarkdownAlertSyntax(this, parent, position),
             SyntaxKind.MathInline => new Markdown.MarkdownMathInlineSyntax(this, parent, position),
             SyntaxKind.Subscript or SyntaxKind.Superscript or SyntaxKind.Inserted or SyntaxKind.Marked => new Markdown.MarkdownEmphasisExtraSyntax(this, parent, position),
             SyntaxKind.CodeSpan => new Markdown.MarkdownCodeSpanSyntax(this, parent, position),

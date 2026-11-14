@@ -32,6 +32,8 @@ public static partial class ImagingFuzzTargets
         new("imaging-inpainting", InpaintingTarget) { Seeds = GetInpaintingSeeds, Dictionary = Tokens },
         new("imaging-hough-lines", LinesTarget) { Seeds = GetLinesSeeds, Dictionary = Tokens },
         new("imaging-corners", CornersTarget) { Seeds = GetCornersSeeds, Dictionary = Tokens },
+        new("imaging-homography", HomographyTarget) { Seeds = GetHomographySeeds, Dictionary = Tokens },
+        new("imaging-skew", SkewTarget) { Seeds = GetSkewSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>

@@ -3767,6 +3767,60 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DeskewStraightensTheLinesOfText()
+    {
+        // Lines of words drawn on a page, scanned 4 degrees counterclockwise
+        var input = GetPath("skewed.png");
+        using (var page = new Image<Rgb24>(200, 160, new Rgb24(255, 255, 255)))
+        {
+            for (var line = 0; line < 7; line++)
+            {
+                for (var y = 20 + (line * 18); y < 26 + (line * 18); y++)
+                {
+                    for (var x = 20; x < 180; x++)
+                    {
+                        if (x % 21 < 16)
+                        {
+                            page.Frames[0][x, y] = new Rgb24(0, 0, 0);
+                        }
+                    }
+                }
+            }
+
+            page.Rotate(-4, new TransformOptions { CanvasMode = TransformCanvasMode.Keep, BackgroundColor = new Rgba64(65535, 65535, 65535, 65535) });
+            page.Save(input);
+        }
+
+        var output = GetPath("straight.png");
+        Assert.InRange(ProcessingExamples.StraightenScan(input, output), -4.1, -3.9);
+        using var result = Image.Load(output);
+        Assert.InRange(result.Frames[0].EstimateSkew(), -0.1, 0.1);
+    }
+
+    [Fact]
+    public void AlignToReferenceIgnoresTheWrongMatches()
+    {
+        var input = GetPath("photo.png");
+        using (var photo = new Image<Rgb24>(64, 48, new Rgb24(10, 120, 200)))
+        {
+            photo.Save(input);
+        }
+
+        // The photo is the reference moved by (5, 3), and one match of five is wrong
+        PointD[] photoPoints = [new(10, 10), new(50, 12), new(48, 40), new(12, 38), new(30, 25), new(20, 20)];
+        PointD[] referencePoints = [new(5, 7), new(45, 9), new(43, 37), new(7, 35), new(25, 22), new(60, 2)];
+        var output = GetPath("aligned.png");
+        var estimate = ProcessingExamples.AlignToReference(input, output, photoPoints, referencePoints, new Size(64, 48));
+
+        Assert.Equal(5, estimate.InlierCount);
+        Assert.False(estimate.Inliers[5]);
+        Assert.True(estimate.Transform.TryTransform(new PointD(30, 30), out var moved));
+        Assert.InRange(moved.DistanceTo(new PointD(25, 27)), 0, 1e-6);
+        using var result = Image.Load<Rgb24>(output);
+        Assert.Equal(new Rgb24(10, 120, 200), result.Frames[0][20, 20]);
+    }
+
+    [Fact]
     public void RotateAndFlipTransposesThePixels()
     {
         // A quarter turn clockwise then a horizontal mirror moves the pixel (x, y) to (y, x)

@@ -39,7 +39,7 @@ color conversion, and bounded-memory streaming.
   `RgbaHalf`) for scene-referred and high dynamic range data, and two CMYK ones (`Cmyk32`, `Cmyk64`) that keep the inks
   of print images
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
-  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions and resizing (seam carving), inpainting, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians, Canny), Hough line and corner detection (Harris, Shi-Tomasi, FAST), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, homography estimation (least squares and RANSAC), document deskew, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions and resizing (seam carving), inpainting, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians, Canny), Hough line and corner detection (Harris, Shi-Tomasi, FAST), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -529,8 +529,8 @@ scratch, charged to `MaxLiveAllocationBytes`, so a limit that fits one worker ma
 
 
 
-- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `SeamCarve`, `Pad`, `ExtendCanvas`, `Rotate`, `Skew`, `Transform`,
-  `AutoOrient`, `Inpaint` and `ApplyProcessor` apply to every
+- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `SeamCarve`, `Pad`, `ExtendCanvas`, `Rotate`, `Deskew`, `Skew`,
+  `Transform`, `AutoOrient`, `Inpaint` and `ApplyProcessor` apply to every
   frame and the poster in one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
   (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, cursor hotspots and
   metadata unchanged.
@@ -779,7 +779,8 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
 `Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `SeamCarve` (a
 content-aware resize, see [Content-aware resize](#content-aware-resize)), `Inpaint` (a mask filled from the pixels
-around it, see [Inpainting](#inpainting)), `DetectLines` and `DetectCorners` (analyses of one frame, see
+around it, see [Inpainting](#inpainting)), `Deskew` and `EstimateSkew` (see the perspective correction below),
+`DetectLines` and `DetectCorners` (analyses of one frame, see
 [Lines and corners](#lines-and-corners)), `Pad` (a border of a given
 width on each side), `ExtendCanvas` (a larger canvas, with the image at one of nine anchors), `Rotate` (exact 90/180/270
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
@@ -1034,6 +1035,40 @@ in stored-pixel coordinates, in order around it) become the corners of an uprigh
 of `ProjectiveTransform.CreateFromQuadrilateral`, sampled as `Transform` samples. Without a size, the canvas is the
 longer of the top and bottom edges by the longer of the left and right edges, rounded, as a scanner app gives it. The
 filter, background color and working space come from the `TransformOptions` (their canvas settings are not used).
+
+**Homography estimation**. `ProjectiveTransform.EstimateHomography(source, destination)` fits the homography that maps
+each source point onto its destination point (at least four pairs, no three of four points on a line) with the
+normalized direct linear transformation (Hartley and Zisserman, algorithm 4.2: centered and scaled points, the
+eigenvector of the smallest eigenvalue of `AᵀA` by the cyclic Jacobi method), scaled so that `W` is 1 at the centroid of
+the source points; degenerate points throw `ArgumentException`. `EstimateHomographyRobust(source, destination, options)`
+runs RANSAC (Fischler and Bolles, 1981): `HomographyRansacOptions.Iterations` samples of four pairs (1,000) drawn by a
+xorshift generator seeded by `Seed`, scored by their inliers within `Threshold` (3 pixels; ties by the sum of squared
+errors, then the earlier sample), refitted on the inliers; the `HomographyEstimate` gives the `Transform`, the
+`Inliers`, their count and their root mean square error. Both are deterministic and feed `Transform` (with
+`TransformCanvasMode.Explicit`, the canvas has the coordinates of the destination points).
+
+**Deskew**. `ImageFrame.EstimateSkew(options)` returns the angle of the lines of text of a document, in degrees, positive
+when they go down to the right, by projection profiles (Postl 1986, Baird 1987): the luma composited over white, split
+by the threshold of Otsu into paper and ink (the smaller class, so light text on dark paper works), the ink counted
+along the lines of every multiple of 0.5 degree up to `SkewEstimationOptions.MaxAngle` (15) then of `Precision` (0.05)
+near the best one, and the angle of the largest sum of squared counts wins (integer scores, ties to the angle nearest to
+0; a frame without contrast gives 0). `Image.Deskew(options, transformOptions)` estimates the skew of the first frame and
+rotates every frame by its opposite (`Rotate`, by default on a canvas of the same size with an opaque white background),
+transactionally, and returns the angle.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_Deskew;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static double StraightenScan(string inputPath, string outputPath)
+{
+    using var scan = Image.Load(inputPath);
+
+    // The angle of the lines of text is estimated, and the page rotated back; the corners it uncovers are white
+    var skew = scan.Deskew(new SkewEstimationOptions { MaxAngle = 10 });
+    scan.Save(outputPath);
+    return skew;
+}
+```
+<!-- endref -->
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_CorrectPerspective;format=md-fenced-code-block;dedent=true -->
 ```csharp

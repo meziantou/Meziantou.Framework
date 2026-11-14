@@ -32,6 +32,8 @@ public sealed class ApiSurfaceTests
         typeof(InpaintingOptions),
         typeof(HoughLineOptions),
         typeof(CornerDetectionOptions),
+        typeof(HomographyRansacOptions),
+        typeof(SkewEstimationOptions),
         typeof(RadialBlurOptions),
         typeof(ImageSimilarityOptions),
         typeof(DifferenceMapOptions),

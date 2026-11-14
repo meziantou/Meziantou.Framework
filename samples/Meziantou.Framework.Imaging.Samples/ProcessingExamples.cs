@@ -112,6 +112,41 @@ internal static class ProcessingExamples
     }
     #endregion
 
+    /// <summary>Straightens a page scanned at a slight angle.</summary>
+    #region Imaging_Deskew
+    public static double StraightenScan(string inputPath, string outputPath)
+    {
+        using var scan = Image.Load(inputPath);
+
+        // The angle of the lines of text is estimated, and the page rotated back; the corners it uncovers are white
+        var skew = scan.Deskew(new SkewEstimationOptions { MaxAngle = 10 });
+        scan.Save(outputPath);
+        return skew;
+    }
+    #endregion
+
+    /// <summary>Warps a photo onto the plane of matched points, ignoring the wrong matches.</summary>
+    #region Imaging_EstimateHomography
+    public static HomographyEstimate AlignToReference(string photoPath, string outputPath, PointD[] photoPoints, PointD[] referencePoints, Size referenceSize)
+    {
+        using var photo = Image.Load(photoPath);
+
+        // The points of the photo and the points of the reference they match, some of them wrong: RANSAC keeps the
+        // homography most of them agree on
+        var estimate = ProjectiveTransform.EstimateHomographyRobust(photoPoints, referencePoints, new HomographyRansacOptions { Threshold = 2 });
+
+        // The photo seen from the point of view of the reference
+        photo.Transform(estimate.Transform, new TransformOptions
+        {
+            CanvasMode = TransformCanvasMode.Explicit,
+            CanvasSize = referenceSize,
+            BackgroundColor = new Rgba64(0, 0, 0, 65535),
+        });
+        photo.Save(outputPath);
+        return estimate;
+    }
+    #endregion
+
     /// <summary>Quarter turns and mirrors: exact pixel permutations.</summary>
     #region Imaging_RotateAndFlip
     public static void RotateAndFlip(string inputPath, string outputPath)

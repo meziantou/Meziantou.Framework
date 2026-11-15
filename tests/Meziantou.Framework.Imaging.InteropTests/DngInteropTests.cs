@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.Imaging.TestHarness.Dng;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 
@@ -140,8 +141,8 @@ public sealed class DngInteropTests
     {
         var tool = await RequiredTools.DngSdkAsync();
         var data = DngScenes.Get(name).Build();
-        var path = await WriteAsync(name, data);
-        var rewritten = await tool.RewriteAsync(path, name + "-rewritten" + option, option.Length == 0 ? [] : [option], XunitCancellationToken);
+        var path = await WriteAsync(name, data, option);
+        var rewritten = await tool.RewriteAsync(path, path.NameWithoutExtension + "-rewritten", option.Length == 0 ? [] : [option], XunitCancellationToken);
         using var expected = Image.Load<RgbaFloat>(data);
         using var actual = Image.Load<RgbaFloat>(rewritten);
         Assert.Equal(expected.Size, actual.Size);
@@ -165,7 +166,7 @@ public sealed class DngInteropTests
         // A proxy is a linear raw image of a smaller size coded with lossy JPEG XL, and an OpcodeList2
         var tool = await RequiredTools.DngSdkAsync();
         var path = await WriteAsync(name, DngScenes.Get(name).Build());
-        var proxy = await tool.RewriteAsync(path, name + "-proxy", ["-proxy", "32"], XunitCancellationToken);
+        var proxy = await tool.RewriteAsync(path, path.NameWithoutExtension + "-proxy", ["-proxy", "32"], XunitCancellationToken);
         var (width, height, samples, stage2) = await tool.GetStageAsync(proxy, 2, XunitCancellationToken);
         using var raw = DngRawImage.Load(await File.ReadAllBytesAsync(proxy, XunitCancellationToken));
         Assert.False(raw.IsColorFilterArray);
@@ -191,9 +192,10 @@ public sealed class DngInteropTests
         return value <= 0.0031308 ? 12.92 * value : (1.055 * Math.Pow(value, 1 / 2.4)) - 0.055;
     }
 
-    private static async Task<FullPath> WriteAsync(string name, byte[] data)
+    /// <summary>Writes a scene to a file of its own: the test cases run in parallel, and Windows locks a file the DNG SDK reads.</summary>
+    private static async Task<FullPath> WriteAsync(string name, byte[] data, string variant = "", [CallerMemberName] string test = "")
     {
-        var path = InteropSettings.GetArtifactsDirectory("DngInteropTests") / (name + ".dng");
+        var path = InteropSettings.GetArtifactsDirectory("DngInteropTests") / (test + "-" + name + variant + ".dng");
         await File.WriteAllBytesAsync(path, data, XunitCancellationToken);
         return path;
     }

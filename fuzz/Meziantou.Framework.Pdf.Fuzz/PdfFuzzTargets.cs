@@ -63,6 +63,7 @@ public static class PdfFuzzTargets
         new("pdf-table", Table) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-header-footer", HeaderFooter) { Seeds = GetHeaderFooterSeeds, Dictionary = HeaderFooterTokens },
         new("pdf-accessibility", Accessibility) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-imposition", Imposition) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
     ];
 
     /// <summary>
@@ -452,6 +453,35 @@ public static class PdfFuzzTargets
             FuzzAssert.Equal(report.IsTagged, report.Issues.All(issue => issue.Kind != PdfAccessibilityIssueKind.MissingStructureTree), "A tagged document has no structure tree");
         }
         catch (PdfException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// The input is a PDF file: its 2-up sheets have half as many pages, rounded up, and splitting its spreads adds one
+    /// page per spread; both documents are written and read back.
+    /// </summary>
+    private static void Imposition(ReadOnlySpan<byte> data)
+    {
+        try
+        {
+            var document = PdfDocument.Open(data.ToArray(), ReadOptions);
+            var count = document.Pages.Count;
+            if (count > 16)
+                return;
+
+            var sheets = PdfImposition.CreateNUp(document, new PdfNUpOptions { Columns = 2, Rows = 1, SheetSize = PdfSize.A4.ToLandscape(), DrawBorders = true });
+            FuzzAssert.Equal((count + 1) / 2, sheets.Pages.Count, "The 2-up document does not have one sheet per two pages");
+            FuzzAssert.Equal((count + 1) / 2, PdfDocument.Open(sheets.ToByteArray()).Pages.Count, "The 2-up document lost sheets");
+
+            var split = PdfImposition.SplitSpreads(document, new PdfSpreadSplitOptions { OnlyLandscapePages = false });
+            FuzzAssert.Equal(count + split, document.Pages.Count, "Splitting the spreads did not add one page per spread");
+            FuzzAssert.Equal(count + split, PdfDocument.Open(document.ToByteArray()).Pages.Count, "The split document lost pages");
+        }
+        catch (PdfException)
+        {
+        }
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal))
         {
         }
     }

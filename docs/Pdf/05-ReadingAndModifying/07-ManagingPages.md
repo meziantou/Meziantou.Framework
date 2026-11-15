@@ -120,3 +120,38 @@ foreach (var page in document.Pages)
 The form is upright, with its lower-left corner at the origin and the size of the page as it is displayed, whatever the
 rotation of the page; paint it after a transformation to place it. It is stored once, however many pages paint it. The
 annotations of the page are not part of it.
+
+## Arrange pages on sheets (N-up)
+
+[PdfImposition.CreateNUp](cref:Meziantou.Framework.Pdf.PdfImposition.CreateNUp) creates a document whose sheets show several pages each, to print handouts or proofs:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfPageTests.cs;region=Pdf_NUp;format=md-fenced-code-block;dedent=true -->
+```csharp
+var sheets = PdfImposition.CreateNUp(source, new PdfNUpOptions { Columns = 2, Rows = 2, SheetSize = PdfSize.A4, Margin = 20, Spacing = 10, DrawBorders = true });
+```
+<!-- endref -->
+
+- [Columns](cref:Meziantou.Framework.Pdf.PdfNUpOptions.Columns) and [Rows](cref:Meziantou.Framework.Pdf.PdfNUpOptions.Rows) make the grid of a sheet; each page is scaled to fit its cell, keeping its
+  proportions, centered and upright whatever its rotation.
+- Without [SheetSize](cref:Meziantou.Framework.Pdf.PdfNUpOptions.SheetSize), a sheet is the grid of cells of the size of the first page.
+- [Order](cref:Meziantou.Framework.Pdf.PdfNUpOptions.Order) sets the order of the pages: by rows ([Horizontal](cref:Meziantou.Framework.Pdf.PdfNUpOrder.Horizontal)), by columns ([Vertical](cref:Meziantou.Framework.Pdf.PdfNUpOrder.Vertical)), or by rows
+  from the right ([HorizontalRightToLeft](cref:Meziantou.Framework.Pdf.PdfNUpOrder.HorizontalRightToLeft)).
+- The pages are copied as forms: their annotations, links and form fields are not on the sheets. The source document
+  does not change.
+
+## Split the spreads of a scanned book
+
+[PdfImposition.SplitSpreads](cref:Meziantou.Framework.Pdf.PdfImposition.SplitSpreads) turns each page that shows two pages side by side into two pages:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfPageTests.cs;region=Pdf_SplitSpreads;format=md-fenced-code-block;dedent=true -->
+```csharp
+var count = PdfImposition.SplitSpreads(document);
+```
+<!-- endref -->
+
+- The page keeps its left half, and a copy of it, inserted after it, shows its right half; with
+  [RightToLeft](cref:Meziantou.Framework.Pdf.PdfSpreadSplitOptions.RightToLeft), the right half comes first, for the books bound on the right.
+- Only the pages wider than tall are split, unless [OnlyLandscapePages](cref:Meziantou.Framework.Pdf.PdfSpreadSplitOptions.OnlyLandscapePages) is `false`. [Gutter](cref:Meziantou.Framework.Pdf.PdfSpreadSplitOptions.Gutter) removes a band
+  in the middle.
+- The halves are crop boxes of the page as it is displayed: the content stays in the file, and the text extraction still
+  reads the text of the whole spread.

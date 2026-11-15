@@ -829,6 +829,12 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32>? Decode() => throw null;
     }
 
+    public static class PdfImposition
+    {
+        public static Meziantou.Framework.Pdf.PdfDocument CreateNUp(Meziantou.Framework.Pdf.PdfDocument source, Meziantou.Framework.Pdf.PdfNUpOptions options) => throw null;
+        public static int SplitSpreads(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.PdfSpreadSplitOptions? options = null) => throw null;
+    }
+
     public sealed class PdfInteractiveForm
     {
         public Meziantou.Framework.Pdf.Objects.PdfDictionary? Dictionary { get => throw null; }
@@ -921,6 +927,24 @@ namespace Meziantou.Framework.Pdf
         #nullable restore
         public static bool operator ==(Meziantou.Framework.Pdf.PdfMeshVertex left, Meziantou.Framework.Pdf.PdfMeshVertex right) => throw null;
         public static bool operator !=(Meziantou.Framework.Pdf.PdfMeshVertex left, Meziantou.Framework.Pdf.PdfMeshVertex right) => throw null;
+    }
+
+    public sealed class PdfNUpOptions
+    {
+        public int Columns { get => throw null; init { } }
+        public bool DrawBorders { get => throw null; init { } }
+        public double Margin { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfNUpOrder Order { get => throw null; init { } }
+        public int Rows { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfSize? SheetSize { get => throw null; init { } }
+        public double Spacing { get => throw null; init { } }
+    }
+
+    public enum PdfNUpOrder
+    {
+        Horizontal = 0,
+        Vertical = 1,
+        HorizontalRightToLeft = 2,
     }
 
     public sealed class PdfOptimizationAction
@@ -1498,6 +1522,14 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfSoftMask None { get => throw null; }
         public static Meziantou.Framework.Pdf.PdfSoftMask FromAlpha(Meziantou.Framework.Pdf.PdfForm group, Meziantou.Framework.Pdf.PdfFunction? transfer = null) => throw null;
         public static Meziantou.Framework.Pdf.PdfSoftMask FromLuminosity(Meziantou.Framework.Pdf.PdfForm group, Meziantou.Framework.Pdf.PdfColor? backdrop = null, Meziantou.Framework.Pdf.PdfFunction? transfer = null) => throw null;
+    }
+
+    public sealed class PdfSpreadSplitOptions
+    {
+        public static Meziantou.Framework.Pdf.PdfSpreadSplitOptions Default { get => throw null; }
+        public double Gutter { get => throw null; init { } }
+        public bool OnlyLandscapePages { get => throw null; init { } }
+        public bool RightToLeft { get => throw null; init { } }
     }
 
     public enum PdfStandardFont

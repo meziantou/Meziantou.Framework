@@ -850,6 +850,22 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal("^^", Assert.IsType<MarkdownFooterSyntax>(MarkdownSyntaxTree.ParseText("^^ f\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Footers }).GetRoot().Blocks.Single()).MarkerToken.Text);
     }
 
+    // As cmark-gfm: once a table has completed its short rows with more than 0x80000 empty cells, its next line is a paragraph
+    [Theory]
+    [InlineData("x", 525)]
+    [InlineData("x|y", 526)]
+    public void GfmTableLimitsTheEmptyCellsOfItsShortRows(string row, int expectedRowCount)
+    {
+        var text = string.Join('|', Enumerable.Repeat("a", 1000)) + "\n" + string.Join('|', Enumerable.Repeat("-", 1000)) + "\n" + string.Concat(Enumerable.Repeat(row + "\n", 600));
+        var tree = MarkdownSyntaxTree.ParseText(text, MarkdownParseOptions.GitHubFlavored);
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        var blocks = tree.GetRoot().Blocks;
+        Assert.HasCount(2, blocks);
+        Assert.HasCount(expectedRowCount, Assert.IsType<MarkdownTableSyntax>(blocks[0]).Rows);
+        Assert.IsType<MarkdownParagraphSyntax>(blocks[1]);
+    }
+
     [Fact]
     public void ParsesPipeTables()
     {

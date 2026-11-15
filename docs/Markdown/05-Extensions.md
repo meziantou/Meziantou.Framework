@@ -61,6 +61,9 @@ The extensions keep every character too:
 
 - A table has a header row, a delimiter row, and its other rows. The pipes and the cells of the delimiter row (`:--:`)
   are tokens of the rows, and a cell holds its inlines. In a cell, `\|` is a pipe, even in a code span, as GFM says.
+  A row with fewer cells than the header is completed with empty cells. As in cmark-gfm, once a table has added more
+  than 524,288 empty cells, its next line is not a row but a paragraph, so that a short text cannot render as a huge
+  table.
 - The `[ ]` or `[x]` of a task list item is a token of the list item, after its marker.
 - A strikethrough has its tildes as tokens, as an emphasis has its delimiters.
 - An extended autolink (`www.example.com`, `https://example.com`, `user@example.com`) holds the tokens of its text.

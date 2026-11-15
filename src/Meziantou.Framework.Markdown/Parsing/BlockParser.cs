@@ -9,6 +9,11 @@ internal sealed class BlockParser
 {
     private const int CodeIndent = 4;
 
+    // The empty cells that complete the short rows of a GFM table, as cmark-gfm limits them: once a table has more, its next
+    // line is not a row. Without the limit, a header of many columns followed by many short rows makes the HTML grow
+    // quadratically with the text.
+    private const long MaximumAutocompletedCells = 0x80000;
+
     private readonly string _text;
     private readonly MarkdownExtensions _extensions;
     private readonly bool _disableHtml;
@@ -597,7 +602,7 @@ internal sealed class BlockParser
 
             case SyntaxKind.Table:
                 // A row has at least one cell: a line with only a pipe ends the table
-                return _blank || TableScanner.ScanRow(_text, _nextNonspace, _lineEnd, cells: null, pipes: null) == 0 ? 1 : 0;
+                return _blank || block.TableAutocompletedCells > MaximumAutocompletedCells || TableScanner.ScanRow(_text, _nextNonspace, _lineEnd, cells: null, pipes: null) == 0 ? 1 : 0;
 
             default:
                 return 1;
@@ -814,6 +819,7 @@ internal sealed class BlockParser
         // A row of a table
         if (container.Kind == SyntaxKind.Table && !_blank)
         {
+            container.TableAutocompletedCells += Math.Max(0, container.TableColumnCount - TableScanner.ScanRow(_text, _nextNonspace, _lineEnd, cells: null, pipes: null));
             AddLine(container, new Line(_nextNonspace, _lineEnd, _eolEnd, 0));
             _offset = _lineEnd;
             return 2;
@@ -1006,6 +1012,7 @@ internal sealed class BlockParser
 
         // The header row is the last line of the paragraph, so the delimiter row is next to it
         paragraph.Kind = SyntaxKind.Table;
+        paragraph.TableColumnCount = columns;
         paragraph.LineStart += paragraph.LineCount - 1;
         paragraph.LineCount = 1;
         AddLine(paragraph, new Line(_nextNonspace, _lineEnd, _eolEnd, 0));
@@ -2264,6 +2271,11 @@ internal sealed class BlockParser
 
         // A paragraph whose last line was not the header row of a table: GFM tries a paragraph once
         public bool TableVisited { get; set; }
+
+        // A table: the number of cells of its delimiter row, and the empty cells added to its short rows
+        public int TableColumnCount { get; set; }
+
+        public long TableAutocompletedCells { get; set; }
 
         // For a paragraph whose first lines are not a grid table, their number
         public int GridLineCount { get; set; } = -1;

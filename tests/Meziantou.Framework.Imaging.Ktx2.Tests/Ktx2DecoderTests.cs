@@ -679,7 +679,6 @@ public sealed class Ktx2DecoderTests
     }
 
     [Theory]
-    [InlineData(145u, "Format: BCn")]
     [InlineData(1000054000u, "Format: PVRTC")]
     [InlineData(1000156000u, "Format: YCbCr")]
     [InlineData(1000288000u, "Format: ASTC 3D")]

@@ -32,7 +32,7 @@ page per format: what is read, what is written, how to save with its encoder and
 | [DDS](21-Dds.md) | Textures: BC1 to BC7 and the common uncompressed formats, mipmaps, cube maps, arrays, volume textures | Not written | No (surfaces) |
 | [DPX](22-Dpx.md) | 1 to 16-bit and floating-point components, RGB, luma, Cb, Y, Cr, both byte orders | RGB, RGBA or luma, 8, 10, 12, 16 bits or 32-bit floats | No |
 | [Cineon](23-Cineon.md) | 10-bit (and 1 to 16-bit) RGB and gray film scans | No: saved as DPX | No |
-| [KTX 2.0](24-Ktx2.md) | GPU textures: levels, layers, cube faces and slices; uncompressed, ETC2, EAC, ASTC, ETC1S and UASTC; Zstandard and ZLIB | Not written | Read (`KTXanimData`), and every subresource as an entry |
+| [KTX 2.0](24-Ktx2.md) | GPU textures: levels, layers, cube faces and slices; uncompressed, BCn, ETC2, EAC, ASTC, ETC1S and UASTC; Zstandard and ZLIB | Not written | Read (`KTXanimData`), and every subresource as an entry |
 
 What a format cannot store is never dropped silently: saving an animation as JPEG, transparency to a format without
 it, 16-bit samples to an 8-bit format or metadata the format has no place for throws an

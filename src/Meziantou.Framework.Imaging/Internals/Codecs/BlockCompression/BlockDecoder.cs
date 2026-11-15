@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// The decoders of the blocks of 4×4 texels of the S3TC (BC1, BC2, BC3), RGTC (BC4, BC5) and BPTC (BC6H, BC7) formats,
 /// written from the Khronos Data Format Specification 1.3.1, sections 18 to 20, and the Direct3D 11.3 functional
-/// specification. They are independent of any container: DDS uses them, and a KTX2 codec can.
+/// specification. They are independent of any container: DDS and KTX 2.0 use them.
 /// </summary>
 /// <remarks>
 /// <para>

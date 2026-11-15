@@ -20,7 +20,8 @@ public static partial class ImagingFuzzTargets
         "KTXcubemapIncomplete\0", "KTXastcDecodeMode\0", "rd\0", "ru\0", "rdi\0", "rrr1\0", "rrrg\0", "000r\0", "unorm8\0",
         "\u0000\u0000\u0000\u0000", "\u0001\u0000\u0000\u0000", "\u0002\u0000\u0000\u0000", "\u0003\u0000\u0000\u0000", "\u0006\u0000\u0000\u0000",
         "(µ/ý", "x\u009C", "%\u0000\u0000\u0000", "+\u0000\u0000\u0000", "\u0093\u0000\u0000\u0000", "\u009D\u0000\u0000\u0000",
-        "¡", "¢", "£", "¦", "ü\u0001", "\u0017", "ÿÿÿÿ",
+        "\u0083\u0000\u0000\u0000", "\u0087\u0000\u0000\u0000", "\u008B\u0000\u0000\u0000", "\u008F\u0000\u0000\u0000", "\u0091\u0000\u0000\u0000",
+        "\u0080", "\u0082", "\u0083", "\u0085", "\u0086", "¡", "¢", "£", "¦", "ü\u0001", "\u0017", "ÿÿÿÿ",
     ];
 
     // Small textures: a file that declares a large one fails at the limits instead of allocating

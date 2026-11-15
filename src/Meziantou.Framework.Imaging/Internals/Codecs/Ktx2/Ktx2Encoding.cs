@@ -12,6 +12,9 @@ internal enum Ktx2Encoding
     /// <summary>EAC R11 or RG11 blocks, unsigned or signed.</summary>
     Eac,
 
+    /// <summary>BCn blocks: S3TC (BC1, BC2, BC3), RGTC (BC4, BC5) and BPTC (BC6H, BC7), unsigned or signed.</summary>
+    Bcn,
+
     /// <summary>ASTC blocks of two dimensions, LDR (UNORM, sRGB) or HDR (SFLOAT).</summary>
     Astc,
 

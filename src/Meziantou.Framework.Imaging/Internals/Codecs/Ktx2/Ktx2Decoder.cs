@@ -259,6 +259,9 @@ internal static class Ktx2Decoder
                 case Ktx2Encoding.Eac:
                     Etc2BlockDecoder.DecodeEac(format, block, destination, stripStride);
                     break;
+                case Ktx2Encoding.Bcn:
+                    Ktx2BcnBlocks.Decode(format, block, destination, stripStride);
+                    break;
                 case Ktx2Encoding.Astc:
                     AstcBlockDecoder.Decode(block, format.BlockWidth, format.BlockHeight, AstcBlockDecoder.GetProfile(format, precision), destination, stripStride);
                     break;

@@ -526,6 +526,344 @@
       ]
     },
     {
+      "file": "bcn-bc1-rgb-unorm.ktx2",
+      "sha256": "576d86c0849c556f61e56050bafd6c7a60c1ee4a4ded8598ef295a20da4269b7",
+      "description": "BC1_RGB_UNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc1-unorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "00ae1a1a5fde194e8f9d80d0e7f21fcba54030ab08a005f1e4034825d03c6b6c",
+          "reference": "The reference of the DDS fixture dds/random-bc1-unorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc1-rgba-unorm-odd-size.ktx2",
+      "sha256": "83a89d9e9b4dd584845996e77acd81234d7b708dfdf3506cc10781b1365164ea",
+      "description": "BC1_RGBA_UNORM_BLOCK: the 13x9 blocks of the DDS fixture dds/odd-size-bc1.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 13,
+          "height": 9,
+          "layout": "rgba8",
+          "sha256": "785764ecdfd74f7c9293a71a4de9a9ea27e7d2c3dbaab43714cf3a1d9ab2d0c7",
+          "reference": "The reference of the DDS fixture dds/odd-size-bc1 (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc1-rgba-srgb.ktx2",
+      "sha256": "ee4e3c6f8f9f01372b329a99caa4b65425b4f5c1a64abcae4f1bdad12bff22fd",
+      "description": "BC1_RGBA_SRGB_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc1-unorm-srgb.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "c669ef0e4c4e40a30022ac0b53a20ebe3203ece6399ceba7e4bf212de6d045e0",
+          "reference": "The reference of the DDS fixture dds/random-bc1-unorm-srgb (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc2-unorm.ktx2",
+      "sha256": "d4fc4bf21556c7672b7184747c0b1b46ac3caa765598c6556ea803f9d63118ac",
+      "description": "BC2_UNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc2-unorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "c940951a25608afca9f5e629065f966d82fab5de9bd25df397427e9a914acf22",
+          "reference": "The reference of the DDS fixture dds/random-bc2-unorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc3-srgb.ktx2",
+      "sha256": "f24096fbc0ae346f7fdb26f740d3fa2e2533e29b9db3b19f435b52e7a27b82c6",
+      "description": "BC3_SRGB_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc3-unorm-srgb.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "2409b7a095e85d709798cb67242fe11f0b20792b18da4729a621478625ee74b2",
+          "reference": "The reference of the DDS fixture dds/random-bc3-unorm-srgb (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc4-unorm.ktx2",
+      "sha256": "e50a0831783f261f8a5da7c34370a6de4bacbbe3d99378b5eead2e43e0bee141",
+      "description": "BC4_UNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc4-unorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "0ecf30b22555b7730ce968dc03c678aa4f17298f5e1cb1838e9f9380e5089afe",
+          "reference": "The reference of the DDS fixture dds/random-bc4-unorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc4-snorm.ktx2",
+      "sha256": "382853987d5f06182819c50f36d6c912c574d90cdaaa7d152c8dd6c99e3c64f7",
+      "description": "BC4_SNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc4-snorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgbaf32le",
+          "sha256": "f3156843fa086e8670620b9f99ad7f9249f6bb35ab1ce1a7a90a5d1c704220cf",
+          "reference": "The reference of the DDS fixture dds/random-bc4-snorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc5-unorm.ktx2",
+      "sha256": "89d7f646949ff6c83932ebbb9650dff5495a10144155697fde16a81f16511472",
+      "description": "BC5_UNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc5-unorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "52056bd1a8f4b8407a8d9bf146e0db6fceea074a6fbb122d75c078954c6a7774",
+          "reference": "The reference of the DDS fixture dds/random-bc5-unorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc5-snorm.ktx2",
+      "sha256": "6ebcb5a7e0e8e4ada65119723e14740ea5576978b968a5dc4dca61037aa2c911",
+      "description": "BC5_SNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc5-snorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgbaf32le",
+          "sha256": "1e4bdbb2abce05d572915112a354f75ee54511bfbfda7b5d1248b75735038dc6",
+          "reference": "The reference of the DDS fixture dds/random-bc5-snorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc6h-ufloat.ktx2",
+      "sha256": "0f6297794b83f47c2b8d5753baa08fd7bc353b531dcedc9f6cfe9f51092830fa",
+      "description": "BC6H_UFLOAT_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc6h-uf16.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgbaf16le",
+          "sha256": "94e33b528385d1f3e08849e5ba544ed96650aa08f9e11f375a50633506e4ea18",
+          "reference": "The reference of the DDS fixture dds/random-bc6h-uf16 (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc6h-sfloat.ktx2",
+      "sha256": "7b00178637b023c525a95b0e0e3be3036627f9a48169ec2a7a54e5a57ac80f93",
+      "description": "BC6H_SFLOAT_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc6h-sf16.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgbaf16le",
+          "sha256": "95953e901dcbb28bb5e865b15795116b1e3f59b119dbe0b8d817527785c1b810",
+          "reference": "The reference of the DDS fixture dds/random-bc6h-sf16 (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc7-unorm-odd-size.ktx2",
+      "sha256": "0650a4fb3c301c468f11ccb27afb69239c821be9a4b117f130540958da665795",
+      "description": "BC7_UNORM_BLOCK: the 5x3 blocks of the DDS fixture dds/odd-size-bc7.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 5,
+          "height": 3,
+          "layout": "rgba8",
+          "sha256": "73443fa88b562838ecc9b6873181dd3e60484b4593e9ced1fc59e610a1de3650",
+          "reference": "The reference of the DDS fixture dds/odd-size-bc7 (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc7-srgb.ktx2",
+      "sha256": "fcd71ba1e1dbde47e64de946bc04e6573e972d8cc5603c76abf28e0d9e9d67d4",
+      "description": "BC7_SRGB_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc7-unorm-srgb.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "66c3879d7942fb9842291ef65f0e56057efd94f96034136d03b4a300905743c9",
+          "reference": "The reference of the DDS fixture dds/random-bc7-unorm-srgb (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "file": "astc-4x4-srgb.ktx2",
       "sha256": "307c8f30e77007a5ed149605be96d6b05d17f39f6608a7ab8a89252e2f10af06",
       "description": "ASTC 4x4 sRGB from a pattern (ktx create, exhaustive quality).",

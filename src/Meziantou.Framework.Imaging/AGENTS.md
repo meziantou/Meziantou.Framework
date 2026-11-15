@@ -1010,8 +1010,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   4x4 blocks) into rows of `DdsPixelLayout.SourcePixelFormat`. A load and a full identification read the headers and the
   first surface only; `DdsCollectionReader` lists every surface (`ImageCollectionKind.TextureSurfaces`) and decodes one
   by giving the parser the headers followed by that surface. The block decoders (`Internals/Codecs/BlockCompression`:
-  `BlockDecoder`, `BptcTables`) are independent of the container, for a KTX2 codec to reuse. They follow the Khronos Data
-  Format Specification 1.3.1; the BPTC tables were extracted from its text by a script and checked against each other
+  `BlockDecoder`, `BptcTables`) are independent of the container: DDS and KTX 2.0 (`Ktx2BcnBlocks`) use them. They
+  follow the Khronos Data Format Specification 1.3.1; the BPTC tables were extracted from its text by a script and checked against each other
   (the bit layouts of the BC6H modes against Tables 123 and 124). BC7 and BC6H are exact; BC1 to BC5 are rounded once
   from the real numbers of the specification (8 bits, halves up; multiples of 1/127 for the signed formats, as
   DirectXTex rounds them). Writing DDS (and BCn encoding) is not implemented: `texconv` could verify an encoder.
@@ -1044,8 +1044,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   `Ktx2VkFormats`, the key/value data) before any texel is read; `Ktx2CollectionReader` gives the subresources
   (`ImageCollectionKind.TextureSurfaces`, ordered layer, face, level, slice) and `Image.Load` the first one, or the layers of a
   `KTXanimData` animation. The block decoders are per format (`Etc2BlockDecoder`, `AstcBlockDecoder`,
-  `UastcBlockDecoder`, `Etc1SIndices`); BCn is rejected until the DDS decoders of the BC1 to BC7 blocks can be reused
-  (`Ktx2VkFormats.GetRejection`). Decisions to keep:
+  `UastcBlockDecoder`, `Etc1SIndices`); BC1 to BC7 reuse the `BlockDecoder` of DDS through `Ktx2BcnBlocks`, which only
+  lays the texels out by the rules of KTX (BC4 red, BC5 red and green, `BC1_RGB` opaque). Decisions to keep:
   - The channels a format lacks are 0 and alpha 1, then `KTXswizzle` applies (section 5.4): an `R8` texture is red, a
     luminance texture is gray only with `rrr1`. `Ktx2Output` folds the green channel that UASTC RRRG and ETC1S RRR+GGG
     store in alpha into the mapping.
@@ -1881,7 +1881,8 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   `tests/Meziantou.Framework.Imaging.Ktx2.Tests/Files` holds files written by KTX-Software, astcenc and basisu, with the
   SHA-256 of the reference image of every subresource in `files.json`; the `ktx2` command of the corpus generator
   (`Ktx2Corpus.cs`, macOS only) writes them and asserts the cross-checks. The references: uncompressed patterns (and
-  `ktx extract --raw`), Apple ImageIO for ETC2 and EAC (it ignores the punchthrough bit and reads signed EAC as
+  `ktx extract --raw`), the references of the DDS fixtures for BCn (the generator wraps their blocks with `ktx create
+  --raw`), Apple ImageIO for ETC2 and EAC (it ignores the punchthrough bit and reads signed EAC as
   unsigned: those are covered by the spec examples of `Ktx2DecoderTests`), `ktx extract` and astcenc (`-ds`, `-dh` to
   a KTX 1 file of halves: its EXR output is premultiplied, and an RGB file when every alpha is 1) for ASTC, `ktx
   extract --transcode rgba8` and `basisu -unpack` for ETC1S and linear UASTC. `Ktx2DecoderTests` builds the other

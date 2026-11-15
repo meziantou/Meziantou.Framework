@@ -46,7 +46,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 | OpenEXR | The LJ2K compression, HTJ2K of FLOAT or UINT channels and chroma (RY, BY) channels are not read; deep data are flattened, never read as samples; the lower levels of mipmaps and the preview image are only read on request; a multi-part file, deep data, other channels than R, G, B, A and Y, and an overscan, need a part, the flattening, a layer or a window mode ([OpenExrDecodingOptions](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions)). Writing uses lossless scan-line compression, but alpha premultiplication and sample conversion can change source pixels. |
 | PSD | Only the composite image is read: layers, masks, adjustment layers and effects are not rendered, and a file saved without a composite is rejected. ZIP-compressed image data, multichannel documents, 32-bit CMYK, 16 and 32-bit Lab and 32-bit duotone are not read; duotone is read as gray; the thumbnail and IPTC data are not read. Not written. |
 | DDS | Read only. Premultiplied alpha (DXT2, DXT4), video, depth and stencil, integer and most signed formats, palettes, and the typeless formats without a single reading are not read. |
-| KTX 2.0 | Read only. BCn (S3TC, RGTC, BPTC) and PVRTC blocks, the YCbCr formats, 3D ASTC blocks, the depth, stencil, SNORM and integer formats, vendor supercompression and premultiplied alpha are not read; illegal ASTC blocks are rejected instead of decoded to magenta. |
+| KTX 2.0 | Read only. PVRTC blocks, the YCbCr formats, 3D ASTC blocks, the depth, stencil, integer and uncompressed SNORM formats, vendor supercompression and premultiplied alpha are not read; illegal ASTC blocks are rejected instead of decoded to magenta. |
 
 ## Drawing and text
 

@@ -56,7 +56,6 @@ internal static class Ktx2VkFormats
     /// <summary>Gets the reason a <c>VkFormat</c> the decoder does not read is rejected, and the feature it names.</summary>
     public static (string Reason, string Feature) GetRejection(int value) => value switch
     {
-        >= 131 and <= 146 => ("BCn (S3TC, RGTC and BPTC) blocks are not decoded yet.", "Format: BCn"),
         >= 1000054000 and <= 1000054007 => ("PVRTC blocks are not decoded.", "Format: PVRTC"),
         (>= 1000156000 and <= 1000156033) or (>= 1000330000 and <= 1000330003) => ("YCbCr formats (subsampled or multi-planar) are not decoded.", "Format: YCbCr"),
         >= 1000288000 and <= 1000288029 => ("3D ASTC blocks are not decoded.", "Format: ASTC 3D"),
@@ -165,6 +164,31 @@ internal static class Ktx2VkFormats
             [new(Red, 0, 11, Ktx2Format.QualifierFloat), new(Green, 11, 11, Ktx2Format.QualifierFloat), new(Blue, 22, 10, Ktx2Format.QualifierFloat)]));
         formats.Add(123, new Ktx2VkFormat(123, "E5B9G9R9_UFLOAT_PACK32", Ktx2Encoding.Uncompressed, 1, 1, 4, 4, Ktx2Format.ModelRgbsda, isSrgb: false, Ktx2NumericType.SharedExponent, Ktx2OutputPrecision.Half, isSigned: false, R | G | B,
             [new(Red, 0, 9, 0), new(Red, 27, 5, Ktx2Format.QualifierExponent), new(Green, 9, 9, 0), new(Green, 27, 5, Ktx2Format.QualifierExponent), new(Blue, 18, 9, 0), new(Blue, 27, 5, Ktx2Format.QualifierExponent)]));
+
+        // BCn (Khronos Data Format Specification, sections 18 to 20): one 64-bit sample per block, or an alpha (BC2, BC3)
+        // or green (BC5) sample before the color or red one; the samples KTX-Software 4.4 writes
+        void Bcn(int value, string name, int model, int bytes, bool srgb, Ktx2NumericType type, Ktx2OutputPrecision precision, bool signed, int mask, Ktx2Sample[] samples)
+            => formats.Add(value, new Ktx2VkFormat(value, name, Ktx2Encoding.Bcn, 4, 4, bytes, 1, model, srgb, type, precision, signed, mask, samples));
+
+        const int Signed = Ktx2Format.QualifierSigned;
+        const int Float = Ktx2Format.QualifierFloat;
+        const int Linear = Ktx2Format.QualifierLinear;
+        Bcn(131, "BC1_RGB_UNORM_BLOCK", Ktx2Format.ModelBc1A, 8, srgb: false, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R | G | B, [new(0, 0, 64, 0)]);
+        Bcn(132, "BC1_RGB_SRGB_BLOCK", Ktx2Format.ModelBc1A, 8, srgb: true, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R | G | B, [new(0, 0, 64, 0)]);
+        Bcn(133, "BC1_RGBA_UNORM_BLOCK", Ktx2Format.ModelBc1A, 8, srgb: false, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R | G | B | A, [new(1, 0, 64, 0)]);
+        Bcn(134, "BC1_RGBA_SRGB_BLOCK", Ktx2Format.ModelBc1A, 8, srgb: true, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R | G | B | A, [new(1, 0, 64, 0)]);
+        Bcn(135, "BC2_UNORM_BLOCK", Ktx2Format.ModelBc2, 16, srgb: false, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R | G | B | A, [new(15, 0, 64, 0), new(0, 64, 64, 0)]);
+        Bcn(136, "BC2_SRGB_BLOCK", Ktx2Format.ModelBc2, 16, srgb: true, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R | G | B | A, [new(15, 0, 64, Linear), new(0, 64, 64, 0)]);
+        Bcn(137, "BC3_UNORM_BLOCK", Ktx2Format.ModelBc3, 16, srgb: false, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R | G | B | A, [new(15, 0, 64, 0), new(0, 64, 64, 0)]);
+        Bcn(138, "BC3_SRGB_BLOCK", Ktx2Format.ModelBc3, 16, srgb: true, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R | G | B | A, [new(15, 0, 64, Linear), new(0, 64, 64, 0)]);
+        Bcn(139, "BC4_UNORM_BLOCK", Ktx2Format.ModelBc4, 8, srgb: false, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R, [new(0, 0, 64, 0)]);
+        Bcn(140, "BC4_SNORM_BLOCK", Ktx2Format.ModelBc4, 8, srgb: false, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Float, signed: true, R, [new(0, 0, 64, Signed)]);
+        Bcn(141, "BC5_UNORM_BLOCK", Ktx2Format.ModelBc5, 16, srgb: false, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R | G, [new(0, 0, 64, 0), new(1, 64, 64, 0)]);
+        Bcn(142, "BC5_SNORM_BLOCK", Ktx2Format.ModelBc5, 16, srgb: false, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Float, signed: true, R | G, [new(0, 0, 64, Signed), new(1, 64, 64, Signed)]);
+        Bcn(143, "BC6H_UFLOAT_BLOCK", Ktx2Format.ModelBc6H, 16, srgb: false, Ktx2NumericType.Ufloat, Ktx2OutputPrecision.Half, signed: false, R | G | B, [new(0, 0, 128, Float)]);
+        Bcn(144, "BC6H_SFLOAT_BLOCK", Ktx2Format.ModelBc6H, 16, srgb: false, Ktx2NumericType.Sfloat, Ktx2OutputPrecision.Half, signed: true, R | G | B, [new(0, 0, 128, Float | Signed)]);
+        Bcn(145, "BC7_UNORM_BLOCK", Ktx2Format.ModelBc7, 16, srgb: false, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R | G | B | A, [new(0, 0, 128, 0)]);
+        Bcn(146, "BC7_SRGB_BLOCK", Ktx2Format.ModelBc7, 16, srgb: true, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, signed: false, R | G | B | A, [new(0, 0, 128, 0)]);
 
         // ETC2 and EAC (Khronos Data Format Specification, section 22): the samples cover the 64-bit blocks of each channel
         void Block(int value, string name, Ktx2Encoding encoding, int bytes, bool srgb, bool signed, Ktx2OutputPrecision precision, int mask, Ktx2Sample[] samples)

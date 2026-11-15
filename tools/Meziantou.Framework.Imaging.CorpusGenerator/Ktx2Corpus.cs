@@ -24,6 +24,7 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// </para>
 /// <list type="bullet">
 /// <item><description>uncompressed texels: the pattern given to <c>ktx create --raw</c>, converted by the rules of the format (the channels a format lacks are 0, alpha 1); <c>ktx extract --raw</c> must give the stored texels back;</description></item>
+/// <item><description>BCn: the blocks of the DDS fixtures of the golden corpus, written by <c>ktx create --raw</c>; the reference is the one of the DDS fixture (texconv of DirectXTex and the exact S3TC reference of the DDS generator, cross-checked there), read by the rules of KTX (the channels a format lacks are 0, alpha 1; BC1 without alpha is opaque); <c>ktx extract --raw</c> must give the blocks back;</description></item>
 /// <item><description>ETC2 and EAC (random blocks): Apple ImageIO (<c>sips</c>, macOS); it reads the punchthrough and signed formats wrongly, which the unit tests cover;</description></item>
 /// <item><description>ASTC: <c>ktx extract</c> (sRGB, decode_unorm8) and astcenc (<c>-ds</c>, <c>-dh</c>: the halves of decode_float16), which must agree;</description></item>
 /// <item><description>ETC1S and UASTC: <c>ktx extract --transcode rgba8</c>, cross-checked with <c>basisu -unpack</c>; for the sRGB transfer function, the UASTC blocks transcoded losslessly to ASTC by basisu and decoded as ASTC sRGB by <c>ktx extract</c> (both tools decode UASTC with the linear expansion whatever the transfer function, which differs by 1 at most).</description></item>
@@ -145,6 +146,7 @@ internal static class Ktx2Corpus
         {
             BuildUncompressed();
             BuildEtc2();
+            BuildBcn();
             BuildAstc();
             BuildBasis();
         }
@@ -350,6 +352,110 @@ internal static class Ktx2Corpus
 
                 AddFile(file, $"{format}: 16x12 texels of random blocks.", [new Reference(0, 0, 0, 0, 0, 16, 12, layout, reference, "Apple ImageIO (sips, a 16-bit PNG file)", [])]);
             }
+        }
+
+        private void BuildBcn()
+        {
+            var fixtures = CorpusDriver.RepoRoot / "tests" / "Meziantou.Framework.Imaging.Fixtures" / "dds";
+            foreach (var (name, fixture, format, blockBytes, reference) in new[]
+            {
+                ("bc1-rgb-unorm", "random-bc1-unorm", "BC1_RGB_UNORM_BLOCK", 8, "rgba8"),
+                ("bc1-rgba-unorm-odd-size", "odd-size-bc1", "BC1_RGBA_UNORM_BLOCK", 8, "rgba8"),
+                ("bc1-rgba-srgb", "random-bc1-unorm-srgb", "BC1_RGBA_SRGB_BLOCK", 8, "rgba8"),
+                ("bc2-unorm", "random-bc2-unorm", "BC2_UNORM_BLOCK", 16, "rgba8"),
+                ("bc3-srgb", "random-bc3-unorm-srgb", "BC3_SRGB_BLOCK", 16, "rgba8"),
+                ("bc4-unorm", "random-bc4-unorm", "BC4_UNORM_BLOCK", 8, "gray8"),
+                ("bc4-snorm", "random-bc4-snorm", "BC4_SNORM_BLOCK", 8, "rgbaf32le"),
+                ("bc5-unorm", "random-bc5-unorm", "BC5_UNORM_BLOCK", 16, "rgba8"),
+                ("bc5-snorm", "random-bc5-snorm", "BC5_SNORM_BLOCK", 16, "rgbaf32le"),
+                ("bc6h-ufloat", "random-bc6h-uf16", "BC6H_UFLOAT_BLOCK", 16, "rgbaf32le"),
+                ("bc6h-sfloat", "random-bc6h-sf16", "BC6H_SFLOAT_BLOCK", 16, "rgbaf32le"),
+                ("bc7-unorm-odd-size", "odd-size-bc7", "BC7_UNORM_BLOCK", 16, "rgba8"),
+                ("bc7-srgb", "random-bc7-unorm-srgb", "BC7_SRGB_BLOCK", 16, "rgba8"),
+            })
+            {
+                // The DDS fixture has a DX10 header (148 bytes) and one surface: its blocks, row by row
+                var dds = File.ReadAllBytes(fixtures / (fixture + ".dds"));
+                Py.Assert(dds.AsSpan(84, 4).SequenceEqual("DX10"u8), fixture + ": the DDS fixture has a DX10 header");
+                var height = BinaryPrimitives.ReadInt32LittleEndian(dds.AsSpan(12));
+                var width = BinaryPrimitives.ReadInt32LittleEndian(dds.AsSpan(16));
+                var blocks = dds.AsSpan(148, ((width + 3) / 4) * ((height + 3) / 4) * blockBytes).ToArray();
+                var file = KtxRaw("bcn-" + name, format, width, height, [blocks], []);
+                var raw = scratch / "extract.raw";
+                Run(tools.Ktx, "extract", "--raw", file, raw);
+                Py.Assert(File.ReadAllBytes(raw).AsSpan().SequenceEqual(blocks), name + ": ktx extract --raw gives the blocks back");
+                File.Delete(raw);
+
+                var source = File.ReadAllBytes(fixtures / string.Create(CultureInfo.InvariantCulture, $"{fixture}.frame-0.{reference}.raw"));
+                var (layout, pixels) = ToKtxTexels(format, reference, source, width * height);
+                AddFile(file, $"{format}: the {width}x{height} blocks of the DDS fixture dds/{fixture}.", [new Reference(0, 0, 0, 0, 0, width, height, layout, pixels,
+                    $"The reference of the DDS fixture dds/{fixture} (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+                    [Check("ktx extract --raw", "exact", "The stored blocks are those of the DDS fixture.")])]);
+            }
+        }
+
+        /// <summary>
+        /// Converts the reference of a DDS fixture to the texels of the KTX 2.0 decoder: BC1 without alpha is opaque, BC4 is
+        /// red and BC5 red and green (blue 0, alpha 1), and BC6H is stored as halves (the floats of the DDS reference are
+        /// halves converted exactly).
+        /// </summary>
+        private static (string Layout, byte[] Pixels) ToKtxTexels(string format, string reference, byte[] source, int count)
+        {
+            if (reference == "gray8")
+            {
+                return ("rgba8", Expand(source, 1, [0, -1, -1]));
+            }
+
+            if (reference == "rgba8")
+            {
+                var pixels = source.ToArray();
+                for (var i = 0; i < count; i++)
+                {
+                    if (format.StartsWith("BC1_RGB_", StringComparison.Ordinal))
+                    {
+                        pixels[(i * 4) + 3] = 255;
+                    }
+                    else if (format.StartsWith("BC5_", StringComparison.Ordinal))
+                    {
+                        Py.Assert(pixels[(i * 4) + 2] == 0 && pixels[(i * 4) + 3] == 255, format + ": the DDS reference of BC5 has blue 0 and alpha 1");
+                    }
+                }
+
+                return ("rgba8", pixels);
+            }
+
+            var floats = new float[count * 4];
+            for (var i = 0; i < floats.Length; i++)
+            {
+                floats[i] = BinaryPrimitives.ReadSingleLittleEndian(source.AsSpan(i * 4));
+            }
+
+            if (format.StartsWith("BC6H_", StringComparison.Ordinal))
+            {
+                var halves = new byte[count * 8];
+                for (var i = 0; i < floats.Length; i++)
+                {
+                    var half = (Half)floats[i];
+                    Py.Assert((float)half == floats[i] || (float.IsNaN(floats[i]) && Half.IsNaN(half)), format + ": the DDS reference holds halves");
+                    BinaryPrimitives.WriteHalfLittleEndian(halves.AsSpan(i * 2), half);
+                }
+
+                return ("rgbaf16le", halves);
+            }
+
+            // Signed BC4 and BC5: red (and green), blue 0, alpha 1
+            var channels = format.StartsWith("BC5_", StringComparison.Ordinal) ? 2 : 1;
+            var texels = new byte[count * 16];
+            for (var i = 0; i < count; i++)
+            {
+                for (var c = 0; c < 4; c++)
+                {
+                    var value = c < channels ? floats[(i * 4) + c] : c == 3 ? 1f : 0f;
+                    BinaryPrimitives.WriteSingleLittleEndian(texels.AsSpan((i * 16) + (c * 4)), value);
+                }
+            }
+
+            return ("rgbaf32le", texels);
         }
 
         private void BuildAstc()

@@ -128,8 +128,8 @@ public enum ImageFormat
 
     /// <summary>
     /// KTX 2.0 (Khronos Texture): GPU textures with mip levels, array layers, cube faces and depth slices, uncompressed or
-    /// block-compressed (ETC2, EAC, ASTC, Basis Universal ETC1S and UASTC), optionally supercompressed (<c>.ktx2</c>).
-    /// Read only.
+    /// block-compressed (BC1 to BC7, ETC2, EAC, ASTC, Basis Universal ETC1S and UASTC), optionally supercompressed
+    /// (<c>.ktx2</c>). Read only.
     /// </summary>
     Ktx2 = 24,
 

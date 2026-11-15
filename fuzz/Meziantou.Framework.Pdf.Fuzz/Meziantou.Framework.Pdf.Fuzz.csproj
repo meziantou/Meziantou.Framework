@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Pdf. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The FDF and XFDF inputs of the unit tests, and the fixtures of the document structures -->
+    <EmbeddedResource Include="Seeds\*.fdf;Seeds\*.xfdf" LogicalName="%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Pdf.Fixtures\structure\*.pdf" LogicalName="%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+  </ItemGroup>
+</Project>

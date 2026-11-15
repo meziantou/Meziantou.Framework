@@ -40,7 +40,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), the reading order of the
   layout (`PdfTextReadingOrder.Layout`: columns and blocks found from the blank spaces of the page), image extraction
   (`PdfPage.GetImages`), content drawn over or under the content of a page (`PdfContentPlacement`), text watermarks
-  (`PdfDocument.AddWatermark`), interactive forms created, read, filled and flattened (`PdfDocument.Form`), redaction
+  (`PdfDocument.AddWatermark`), interactive forms created, read, filled and flattened (`PdfDocument.Form`), and their values exchanged as FDF
+  and XFDF (`PdfFormData`), redaction
   (`PdfPage.Redact`: the text, paths, image pixels and annotations of areas removed from the content, not hidden)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,

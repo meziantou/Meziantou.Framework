@@ -564,6 +564,28 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfContentBuilder CreateContentBuilder() => throw null;
     }
 
+    public sealed class PdfFormData
+    {
+        public System.Collections.Generic.IList<Meziantou.Framework.Pdf.PdfFormDataField> Fields { get => throw null; }
+        public string? SourceFile { get => throw null; set { } }
+        public static Meziantou.Framework.Pdf.PdfFormData ParseFdf(System.ReadOnlySpan<byte> data, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Pdf.PdfFormData ParseXfdf(System.IO.Stream stream) => throw null;
+        public static Meziantou.Framework.Pdf.PdfFormData ParseXfdf(string xml) => throw null;
+        public byte[] ToFdf() => throw null;
+        public string ToXfdf() => throw null;
+    }
+
+    public sealed class PdfFormDataField
+    {
+        public bool IsName { get => throw null; init { } }
+        public string Name { get => throw null; }
+        public string? Value { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Values { get => throw null; }
+        public PdfFormDataField(string name, System.Collections.Generic.IEnumerable<string> values) { }
+        public PdfFormDataField(string name, string? value) { }
+        public override string ToString() => throw null;
+    }
+
     public class PdfFormField
     {
         public string? AlternateName { get => throw null; set { } }
@@ -595,6 +617,13 @@ namespace Meziantou.Framework.Pdf
         public bool IsRequired { get => throw null; set { } }
         public bool SubsetFont { get => throw null; set { } }
         public Meziantou.Framework.Pdf.PdfColor? TextColor { get => throw null; set { } }
+    }
+
+    public sealed class PdfFormImportResult
+    {
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> RejectedFields { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> UnknownFields { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> UpdatedFields { get => throw null; }
     }
 
     public abstract class PdfFunction
@@ -675,9 +704,11 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfRadioButtonField AddRadioButtons(string name, System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfRadioButton> buttons, Meziantou.Framework.Pdf.PdfRadioButtonOptions? options = null) => throw null;
         public Meziantou.Framework.Pdf.PdfSignatureField AddSignatureField(Meziantou.Framework.Pdf.PdfPage page, string name, Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfFormFieldOptions? options = null) => throw null;
         public Meziantou.Framework.Pdf.PdfTextField AddTextField(Meziantou.Framework.Pdf.PdfPage page, string name, Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfTextFieldOptions? options = null) => throw null;
+        public Meziantou.Framework.Pdf.PdfFormData ExportData() => throw null;
         public Meziantou.Framework.Pdf.PdfFormField? FindField(string fullName) => throw null;
         public void Flatten() { }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfFormField> GetFields() => throw null;
+        public Meziantou.Framework.Pdf.PdfFormImportResult ImportData(Meziantou.Framework.Pdf.PdfFormData data) => throw null;
     }
 
     public enum PdfLineCap

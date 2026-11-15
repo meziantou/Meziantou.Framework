@@ -39,6 +39,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.Markdown.Fuzz", Markdown.Fuzz.MarkdownFuzzTargets.All),
         ("Meziantou.Framework.MediaTags.Fuzz", MediaTags.Fuzz.MediaTagsFuzzTargets.All),
         ("Meziantou.Framework.Ntp.Fuzz", Ntp.Fuzz.NtpFuzzTargets.All),
+        ("Meziantou.Framework.Pdf.Fuzz", Pdf.Fuzz.PdfFuzzTargets.All),
         ("Meziantou.Framework.Pdf.VectorGraphics.Fuzz", Pdf.VectorGraphics.Fuzz.PdfVectorGraphicsFuzzTargets.All),
         ("Meziantou.Framework.PublicApiGenerator.Fuzz", PublicApiGenerator.Fuzz.PublicApiGeneratorFuzzTargets.All),
         ("Meziantou.Framework.RobotsTxt.Fuzz", RobotsTxt.Fuzz.RobotsTxtFuzzTargets.All),

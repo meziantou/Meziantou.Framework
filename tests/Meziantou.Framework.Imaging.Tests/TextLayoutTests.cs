@@ -1048,6 +1048,21 @@ public sealed class TextLayoutTests
         optimal = TextLayout.Create(text, Style, new TextLayoutOptions { MaxWidth = 48, LineBreakStrategy = TextLineBreakStrategy.Optimal });
         Assert.True(GetRoom(optimal) < GetRoom(greedy));
 
+
+        // With less work allowed than the breaks of a paragraph need, the paragraph is broken greedily: "BBB BB", "BB",
+        // "BBBBB" instead of "BBB", "BB BB", "BBBBB"
+        var options = new TextLayoutOptions { MaxWidth = 48, LineBreakStrategy = TextLineBreakStrategy.Optimal };
+        Assert.Equal([0, 4, 10], TextLayout.Create("BBB BB BB BBBBB", Style, options).Lines.Select(line => line.Start));
+        Internals.TextLayoutEngine.OptimalWorkLimitOnCurrentThread = 10;
+        try
+        {
+            Assert.Equal([0, 7, 10], TextLayout.Create("BBB BB BB BBBBB", Style, options).Lines.Select(line => line.Start));
+        }
+        finally
+        {
+            Internals.TextLayoutEngine.OptimalWorkLimitOnCurrentThread = null;
+        }
+
         static double GetRoom(TextLayout layout) => layout.Lines.Take(layout.LineCount - 1).Sum(line => (48 - line.Width) * (48 - line.Width));
     }
 

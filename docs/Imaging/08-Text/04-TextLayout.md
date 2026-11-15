@@ -214,7 +214,7 @@ The breaks minimize the sum of the costs of the lines of the paragraph:
 
 - The places a line can end are those of greedy breaking: the break opportunities of the Unicode line breaking
   algorithm (with [WordBreak](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.WordBreak), [LineBreak](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineBreak) and the dictionaries of the scripts without spaces), the soft hyphens,
-  and the hyphenation points when [Hyphenation](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Hyphenation) is `Automatic`. A word wider than the line is cut or
+  and the hyphenation points when [Hyphenation](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Hyphenation) is [Automatic](cref:Meziantou.Framework.Imaging.Typography.TextHyphenation.Automatic). A word wider than the line is cut or
   overflows as with greedy breaking.
 - Right-to-left and mixed directions, several fonts and sizes, vertical lines, indents and tabulations are measured as
   greedy breaking measures them. A line never ends inside the base of a ruby.
@@ -228,9 +228,8 @@ The breaks minimize the sum of the costs of the lines of the paragraph:
 - [MaxLines](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxLines) and [MaxHeight](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxHeight) cut the lines afterwards: the breaks are not chosen to fit them. The spaces are not
   shrunk to fit more text on a line, and there are no fitness classes: a loose line can follow a tight one.
 
-Laying out a long paragraph takes about twice as long as with greedy breaking, and the lines of a paragraph depend on
-the text after them: a word added at its end can move the breaks of its first lines. That is why greedy breaking stays
-the default.
+Optimal breaking costs more than greedy breaking, and the lines of a paragraph depend on the text after them: a word
+added at its end can move the breaks of its first lines. That is why greedy breaking stays the default.
 
 ## Ruby
 

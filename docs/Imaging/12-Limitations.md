@@ -48,7 +48,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 ## Drawing and text
 
 - Lines are broken greedily by default. [Optimal line breaking](08-Text/04-TextLayout.md#optimal-line-breaking) is opt-in: it does not
-  shrink spaces, has no fitness classes, does not choose the breaks to fit `MaxLines` or `MaxHeight`, and breaks a
+  shrink spaces, has no fitness classes, does not choose the breaks to fit [MaxLines](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxLines) or [MaxHeight](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxHeight), and breaks a
   paragraph greedily from where comparing its breaks would take too much work.
 - Hinting and subpixel (LCD) rendering are opt-in. Subpixel rendering applies to a layout filled at a point with a
   solid color on an 8- or 16-bit RGB image; other text is drawn with grayscale antialiasing.

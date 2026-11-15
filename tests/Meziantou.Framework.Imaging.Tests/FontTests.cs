@@ -3986,6 +3986,10 @@ public sealed class FontTests
             var limited = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = pfbFile.Length - 1 } } };
             Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Font.LoadType1(path, metrics, limited)).Kind);
             Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Font.LoadType1(pfbFile, metrics, limited)).Kind);
+
+            // The bytes of the file are charged to the live allocations while the font is converted
+            var small = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = pfbFile.Length - 1 } } };
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, Assert.Throws<ImageResourceLimitException>(() => Font.LoadType1(path, metrics, small)).Kind);
             Assert.Throws<FileNotFoundException>(() => Font.LoadType1(directory / "missing.pfb", metrics));
         }
         finally

@@ -79,6 +79,20 @@ internal sealed partial class TextLayoutEngine
     /// <summary>The characters the optimal breaks of any paragraph may measure.</summary>
     private const long MinOptimalWork = 1_000_000;
 
+    /// <summary>
+    /// Gets or sets, on the current thread, the characters the optimal breaks of a paragraph may measure instead of
+    /// <see cref="MaxOptimalWorkPerCharacter"/> and <see cref="MinOptimalWork"/>: the tests use it to check that the
+    /// work is bounded.
+    /// </summary>
+    internal static long? OptimalWorkLimitOnCurrentThread
+    {
+        get => s_optimalWorkLimit;
+        set => s_optimalWorkLimit = value;
+    }
+
+    [ThreadStatic]
+    private static long? s_optimalWorkLimit;
+
     /// <summary>The fewest characters of the text after a line that are shaped again for the next line.</summary>
     private const int MinShapingLength = 64;
 
@@ -1273,7 +1287,7 @@ internal sealed partial class TextLayoutEngine
         }
 
         var length = paragraph.End - start;
-        var work = MinOptimalWork + ((long)MaxOptimalWorkPerCharacter * length);
+        var work = OptimalWorkLimitOnCurrentThread ?? (MinOptimalWork + ((long)MaxOptimalWorkPerCharacter * length));
         var isHyphenation = new bool[length + 1];
         if (_options.Hyphenation == TextHyphenation.Automatic)
         {

@@ -56,6 +56,7 @@ public static class PdfFuzzTargets
         new("pdf-round-trip", RoundTrip) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-optimizer", Optimizer) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-annotation-appearances", AnnotationAppearances) { Seeds = GetAppearanceSeeds, Dictionary = AppearanceTokens },
+        new("pdf-separations", Separations) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
     ];
 
     /// <summary>
@@ -274,6 +275,45 @@ public static class PdfFuzzTargets
         {
             using var image = Rendering.PdfRenderer.RenderPage(PdfDocument.Open(document.ToByteArray()).Pages[0], RenderOptions);
             FuzzAssert.Equal(50, image.Width, "The page was not rendered at the resolution of the options");
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// The input is a PDF file. The colorants of its first page, its print production report, the plate of each colorant
+    /// (gray) and the overprint simulation (opaque) are computed without throwing other exceptions than <see cref="PdfException"/>.
+    /// </summary>
+    private static void Separations(ReadOnlySpan<byte> data)
+    {
+        try
+        {
+            var document = PdfDocument.Open(data.ToArray(), ReadOptions);
+            var report = PdfPrintProductionReport.Create(document);
+            FuzzAssert.Equal(document.Pages.Count, report.Pages.Count, "The report does not have every page");
+            if (document.Pages.Count == 0)
+                return;
+
+            var page = document.Pages[0];
+            var colorants = PdfSeparations.GetColorants(page);
+            FuzzAssert.True(colorants.ProcessColorants.All(colorant => colorant is "Cyan" or "Magenta" or "Yellow" or "Black"), "A process colorant is not a process colorant");
+            foreach (var colorant in colorants.Colorants.Take(6))
+            {
+                using var plate = Rendering.PdfRenderer.RenderPage(page, new Rendering.PdfRenderOptions { Dpi = 9, MaxOperations = 200_000, UseSystemFonts = false, Plate = colorant });
+                var frame = plate.Frames[0];
+                for (var y = 0; y < plate.Height; y++)
+                {
+                    for (var x = 0; x < plate.Width; x++)
+                    {
+                        var pixel = frame[x, y];
+                        FuzzAssert.True(pixel.R == pixel.G && pixel.G == pixel.B, "A plate is not gray");
+                    }
+                }
+            }
+
+            using var preview = Rendering.PdfRenderer.RenderPage(page, new Rendering.PdfRenderOptions { Dpi = 9, MaxOperations = 200_000, UseSystemFonts = false, SimulateOverprint = true });
+            FuzzAssert.Equal(255, (int)preview.Frames[0][0, 0].A, "The overprint simulation is not opaque");
         }
         catch (PdfException)
         {

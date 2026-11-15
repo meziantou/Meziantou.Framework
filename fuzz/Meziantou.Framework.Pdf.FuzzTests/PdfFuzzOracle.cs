@@ -139,6 +139,12 @@ internal static class PdfFuzzOracle
             }
         });
         Tolerate(() => ReadStructureTree(document.StructureTree));
+        Tolerate(() =>
+        {
+            var report = PdfPrintProductionReport.Create(document);
+            if (report.Pages.Count != pageCount)
+                throw new InvalidOperationException("The print production report does not have every page");
+        });
 
         // Reading from a stream reads the same document
         using (var stream = new MemoryStream(data, writable: false))

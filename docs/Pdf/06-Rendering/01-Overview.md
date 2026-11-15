@@ -129,3 +129,5 @@ untrusted users, also bound the read: see [Errors and limits](../05-ReadingAndMo
 - [Layers, annotations and printing](04-LayersAndAnnotations.md): the layers, the annotations, and the rendering for
   printing.
 - [Halftones](05-Halftones.md): the halftone screens of the document, applied as a printer would.
+- [Print production](06-PrintProduction.md): simulate overprinting, render the plates of the colorants, and report the
+  page boxes and output intents.

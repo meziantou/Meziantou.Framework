@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The FDF and XFDF inputs of the unit tests, and the fixtures of the document structures -->
-    <EmbeddedResource Include="Seeds\*.fdf;Seeds\*.xfdf" LogicalName="%(FileName)%(Extension)" />
+    <!-- The FDF and XFDF inputs of the unit tests, the document of the overprint tests, and the fixtures of the document structures -->
+    <EmbeddedResource Include="Seeds\*.fdf;Seeds\*.xfdf;Seeds\*.pdf" LogicalName="%(FileName)%(Extension)" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Pdf.Fixtures\structure\*.pdf" LogicalName="%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
   </ItemGroup>
 

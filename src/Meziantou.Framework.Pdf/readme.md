@@ -46,7 +46,9 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
   Type 1 and Type 3 fonts and substituted fonts; every color space and image filter; functions, the seven shading types
-  and tiling patterns; transparency groups, soft masks and blend modes
+  and tiling patterns; transparency groups, soft masks and blend modes; the plates of the colorants
+  (`PdfRenderOptions.Plate`), an overprint simulation (`PdfRenderOptions.SimulateOverprint`), the colorants of a page
+  (`PdfSeparations`) and a print production report (`PdfPrintProductionReport`: page boxes, colorants, output intents)
 - **Signatures** (`Meziantou.Framework.Pdf.Signing`): PAdES baseline B-B, B-T, B-LT and B-LTA signatures (CAdES
   detached signatures, RFC 3161 time stamps, the document security store, document time stamps), certification and
   field locks, visible signatures, appended as incremental updates, and the verification of the signatures of a
@@ -622,5 +624,6 @@ specification says; a content stream that cannot be decoded throws when its data
 - The fields of a saved document whose default appearance names an embedded font are filled with that font only when
   it is given again (`PdfInteractiveForm.AddFont`); otherwise their values are drawn with Helvetica. The text boxes
   break the lines at the spaces, without the Unicode line breaking rules nor hyphenation.
-- The renderer composites in sRGB: overprint is not simulated, and the halftones are applied to the red, green and blue
-  components only, when `PdfRenderOptions.UseHalftones` asks for them.
+- The renderer composites in sRGB: overprinting is simulated with a simple model of the inks when
+  `PdfRenderOptions.SimulateOverprint` asks for it, and the halftones are applied to the red, green and blue components
+  only, when `PdfRenderOptions.UseHalftones` asks for them.

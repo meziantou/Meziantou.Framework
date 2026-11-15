@@ -1258,6 +1258,122 @@ public sealed class PdfRendererTests
         Assert.Contains("(plain) Tj", Encoding.Latin1.GetString(appearance.GetDecodedData()), StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Full cyan on the page, then magenta over its right half with the overprint parameters of the graphics state /GS0;
+    /// then a spot color, Gold (CMYK 0 0.2 1 0 at full tint), over the bottom left quarter, which overprints.
+    /// </summary>
+    private static PdfDocument CreateOverprintDocument(string overprint)
+    {
+        return OpenHandWritten(
+            "1 0 0 0 k 0 0 100 100 re f /GS0 gs 0 1 0 0 k 50 0 50 100 re f /GS1 gs /Spot cs 1 scn 0 0 50 50 re f",
+            resources: "<< /ExtGState << /GS0 << " + overprint + " >> /GS1 << /op true >> >> /ColorSpace << /Spot [/Separation /Gold /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [0 0.2 1 0] /N 1 >>] >> >>");
+    }
+
+    [Theory]
+    [InlineData("", "Cyan", 25, 75, 0)]
+    [InlineData("", "Cyan", 75, 75, 255)]
+    [InlineData("", "Magenta", 75, 75, 0)]
+    [InlineData("/op true", "Cyan", 75, 75, 255)]
+    [InlineData("/op true /OPM 1", "Cyan", 75, 75, 0)]
+    [InlineData("/OP true /OPM 1", "Cyan", 75, 75, 0)]
+    [InlineData("/OP true /op false /OPM 1", "Cyan", 75, 75, 255)]
+    [InlineData("", "Gold", 25, 25, 0)]
+    [InlineData("", "Gold", 25, 75, 255)]
+    [InlineData("", "Cyan", 25, 25, 0)]
+    [InlineData("", "Black", 25, 75, 255)]
+    public void PlatesAreRenderedWithTheOverprintParameters(string overprint, string plate, int x, int y, int gray)
+    {
+        // The magenta of the right half does not paint cyan: it erases the cyan plate, unless it overprints with the nonzero
+        // overprint mode; the spot color overprints, so the cyan stays under it
+        using var image = PdfRenderer.RenderPage(CreateOverprintDocument(overprint).Pages[0], new PdfRenderOptions { UseSystemFonts = false, Plate = plate });
+
+        AssertColor(Pixel(image, x, y), gray, gray, gray);
+    }
+
+    [Fact]
+    public void OverprintIsSimulated()
+    {
+        var document = CreateOverprintDocument("/op true /OPM 1");
+
+        #region Pdf_SimulateOverprint
+        using var preview = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { SimulateOverprint = true });
+        using var cyanPlate = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { Plate = "Cyan" });
+        #endregion
+
+        // Cyan alone; cyan and magenta overprinted: blue; magenta knocks out without overprint
+        AssertColor(Pixel(preview, 25, 75), 0, 255, 255);
+        AssertColor(Pixel(preview, 75, 75), 0, 0, 255);
+        AssertColor(Pixel(cyanPlate, 75, 75), 0, 0, 0);
+        using var knockout = PdfRenderer.RenderPage(CreateOverprintDocument("").Pages[0], new PdfRenderOptions { SimulateOverprint = true, UseSystemFonts = false });
+        AssertColor(Pixel(knockout, 75, 75), 255, 0, 255);
+
+        // The gold ink over cyan: both absorb
+        var gold = Pixel(preview, 25, 25);
+        Assert.True(gold.R < 10 && gold.B < 10 && gold.G > 150, gold.ToString());
+
+        // Without the simulation, the page is composited in RGB: the magenta covers the cyan
+        using var screen = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+        Assert.True(Pixel(screen, 75, 75).R > 200);
+    }
+
+    [Fact]
+    public void ColorantsAreListed()
+    {
+        var page = CreateOverprintDocument("/op true").Pages[0];
+
+        #region Pdf_ListColorants
+        var colorants = PdfSeparations.GetColorants(page);
+        #endregion
+
+        // The CMYK colors ink cyan and magenta only
+        Assert.Equal(["Cyan", "Magenta"], colorants.ProcessColorants);
+        Assert.Equal(["Gold"], colorants.SpotColorants);
+        Assert.Equal(["DeviceCMYK", "Separation"], colorants.ColorSpaces);
+        Assert.True(colorants.UsesOverprint);
+        Assert.Equal(["Cyan", "Magenta", "Gold"], colorants.Colorants);
+
+        var gray = OpenHandWritten("0.5 g 0 0 10 10 re f /Im Do", resources: "<< /XObject << /Im 5 0 R >> >>", objects: HandWrittenPdf.Stream("\u00FF", " /Type /XObject /Subtype /Image /Width 1 /Height 1 /BitsPerComponent 8 /ColorSpace [/DeviceN [/Cyan /Varnish] /DeviceCMYK << /FunctionType 2 /Domain [0 1 0 1] /C0 [0 0 0 0] /C1 [1 0 0 0] /N 1 >>]")).Pages[0];
+        var grayColorants = PdfSeparations.GetColorants(gray);
+        Assert.Equal(["Cyan", "Black"], grayColorants.ProcessColorants);
+        Assert.Equal(["Varnish"], grayColorants.SpotColorants);
+        Assert.False(grayColorants.UsesOverprint);
+    }
+
+    [Fact]
+    public void PrintProductionReport()
+    {
+        var document = OpenHandWritten(
+            "0 0 0 1 k 0 0 10 10 re f",
+            pageEntries: "/TrimBox [10 10 90 90] /BleedBox [5 5 95 95]",
+            catalogEntries: "/OutputIntents [<< /Type /OutputIntent /S /GTS_PDFX /OutputConditionIdentifier (FOGRA39) /RegistryName (http://www.color.org) /OutputCondition (Coated) >>]");
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        page.Dictionary[PdfName.Create("BleedBox")] = PdfArray.FromNumbers(0, 0, 50, 50);
+        page.Dictionary[PdfName.Create("TrimBox")] = PdfArray.FromNumbers(-5, 0, 60, 50);
+
+        #region Pdf_PrintProductionReport
+        var report = PdfPrintProductionReport.Create(document);
+        #endregion
+
+        var intent = Assert.Single(report.OutputIntents);
+        Assert.Equal("GTS_PDFX", intent.Subtype);
+        Assert.Equal("FOGRA39", intent.OutputConditionIdentifier);
+        Assert.Equal("Coated", intent.OutputCondition);
+        Assert.Null(intent.ProfileComponentCount);
+        Assert.HasCount(2, report.Pages);
+        Assert.Equal(new PdfRectangle(10, 10, 90, 90), report.Pages[0].TrimBox);
+        Assert.Equal(new PdfRectangle(5, 5, 95, 95), report.Pages[0].BleedBox);
+        Assert.Null(report.Pages[0].ArtBox);
+        Assert.Empty(report.Pages[0].Issues);
+        Assert.Equal(["Black"], report.Pages[0].Colorants.ProcessColorants);
+        Assert.Equal(
+            [
+                "The trim box [-5 0 60 50] extends outside the media box [0 0 100 100]",
+                "The trim box [-5 0 60 50] extends outside the bleed box [0 0 50 50]",
+            ],
+            report.Pages[1].Issues);
+        Assert.Empty(report.SpotColorants);
+    }
+
     [Fact]
     public void ShadingPatternsApplyTheirGraphicsState()
     {

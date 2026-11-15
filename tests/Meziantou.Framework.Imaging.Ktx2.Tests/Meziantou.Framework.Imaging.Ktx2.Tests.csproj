@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Files\**" CopyToOutputDirectory="PreserveNewest" LinkBase="Files" />
+    <None Include="Files\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Import Project="..\Meziantou.Framework.Imaging.Tests.Shared\Imaging.Tests.Shared.props" />

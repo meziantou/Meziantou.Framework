@@ -95,8 +95,9 @@ internal sealed class JpegXlFrameRenderer : IDisposable
     /// <param name="visibleFrameIndex">The number of frames that are shown up to this one, this one included: a seed of the noise.</param>
     /// <param name="invisibleFrameIndex">The number of frames that are not shown since the last frame that is shown, this one included.</param>
     /// <param name="isIntermediate">Whether the samples are those of a part of the sections of the frame: the frame is then not kept for the frames that refer to it.</param>
+    /// <param name="layerCapture">Called with the samples of a regular frame after its color transform, before it is blended, at the size of the frame; the buffer is only valid during the call.</param>
     /// <returns>The image to show, of the size of the image, which the caller disposes; <see langword="null"/> when the frame is not shown.</returns>
-    public JpegXlImageBuffer? Render(JpegXlDecodedFrame decoded, JpegXlFrameHeader frame, bool isDisplayed, uint visibleFrameIndex, uint invisibleFrameIndex, bool isIntermediate = false)
+    public JpegXlImageBuffer? Render(JpegXlDecodedFrame decoded, JpegXlFrameHeader frame, bool isDisplayed, uint visibleFrameIndex, uint invisibleFrameIndex, bool isIntermediate = false, Action<JpegXlImageBuffer>? layerCapture = null)
     {
         ArgumentNullException.ThrowIfNull(decoded);
         ArgumentNullException.ThrowIfNull(frame);
@@ -145,6 +146,11 @@ internal sealed class JpegXlFrameRenderer : IDisposable
             }
 
             ApplyColorTransform(buffer, frame);
+            if (frame.IsRegular)
+            {
+                layerCapture?.Invoke(buffer);
+            }
+
             if (NeedsBlending(frame))
             {
                 var canvas = Blend(buffer, frame);

@@ -1619,6 +1619,44 @@ namespace Meziantou.Framework.Imaging
         public int? QualityLayerLimit { get => throw null; init { } }
     }
 
+    public enum JpegXlBlendMode
+    {
+        Replace = 0,
+        Add = 1,
+        Blend = 2,
+        AlphaWeightedAdd = 3,
+        Multiply = 4,
+    }
+
+    public sealed class JpegXlLayer
+    {
+        public const int MaxNameLength = 1071;
+        public const int MaxOffset = 536870911;
+        public const int MinOffset = -536870912;
+        public Meziantou.Framework.Imaging.JpegXlBlendMode BlendMode { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Image Image { get => throw null; }
+        public string? Name { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Point Offset { get => throw null; set { } }
+    }
+
+    public sealed class JpegXlLayeredImage : System.IDisposable
+    {
+        public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.JpegXlLayer> Layers { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.ImageMetadata Metadata { get => throw null; }
+        public Meziantou.Framework.Imaging.Size Size { get => throw null; }
+        public JpegXlLayeredImage(int width, int height, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) { }
+        public Meziantou.Framework.Imaging.JpegXlLayer AddLayer(Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Point offset = default, Meziantou.Framework.Imaging.JpegXlBlendMode blendMode = Meziantou.Framework.Imaging.JpegXlBlendMode.Replace, string? name = null) => throw null;
+        public void Dispose() { }
+        public Meziantou.Framework.Imaging.JpegXlLayer InsertLayer(int index, Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Point offset = default, Meziantou.Framework.Imaging.JpegXlBlendMode blendMode = Meziantou.Framework.Imaging.JpegXlBlendMode.Replace, string? name = null) => throw null;
+        public static Meziantou.Framework.Imaging.JpegXlLayeredImage Load(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public static Meziantou.Framework.Imaging.JpegXlLayeredImage Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public static Meziantou.Framework.Imaging.JpegXlLayeredImage Load(string path, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public void RemoveLayerAt(int index) { }
+        public void Save(System.IO.Stream stream, Meziantou.Framework.Imaging.Formats.JpegXlEncoder? encoder = null) { }
+        public void Save(string path, Meziantou.Framework.Imaging.Formats.JpegXlEncoder? encoder = null) { }
+    }
+
     public sealed class JpegXlTranscodeOptions
     {
         public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; init { } }
@@ -3572,6 +3610,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
         public int Effort { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public bool OptimizeFrames { get => throw null; init { } }
         public bool Progressive { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
     }

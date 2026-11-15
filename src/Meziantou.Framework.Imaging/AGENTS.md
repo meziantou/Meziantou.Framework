@@ -486,6 +486,23 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   distribution is longer than a small group. The effort only selects what is searched; `jxl-quality` shows the sizes
   per effort. A change of the encoder is checked by the interop tests (djxl and jxl-oxide must read the file like the
   decoder of the library does).
+- **JPEG XL layers and optimized frames** (`JpegXlLayeredImage`, `JpegXlLayeredIO`, `JpegXlFrameLayout`,
+  `JpegXlEncoder.OptimizeFrames`). A frame is compressed from a rectangle of its source (a layer: the whole image of the
+  layer; an optimized frame: the bounding box of the bytes that differ from the previous frame, copied to an image of
+  its own for VarDCT) and written with its layout: crop, one blend mode for the colors and the alpha channel (alpha
+  weights from extra channel 0, no clamping), source slot, `save_as_reference` and name. `JpegXlHeaderWriter` writes
+  the fields the reader of the decoder reads, under the same conditions (`source` only when the mode is not replace or
+  the frame does not cover the image, `save_before_ct` only for a frame that can be referenced and replaces the whole
+  image). Layers: every layer but the last is saved to slot 0 once blended and every layer is blended with slot 0;
+  optimized animations save each frame to slot 1 and blend the next one over it with replace, which is exact for every
+  pixel format. The layers of a file are read by `JpegXlDecoder` in layer mode: the renderer hands over each regular
+  frame after its color transform, before blending (`layerCapture`), and the decoder checks that the chain of slots is
+  the one of a list of layers (`ValidateLayer`); anything else is `UnsupportedImageFeatureException`, never a guess.
+  djxl and jxl-oxide compose the layers exactly like the library for 8-bit samples; for 16-bit samples the three
+  decoders blend in single precision in their own order and differ by about 0.01 of a unit before rounding, so the
+  interop test accepts either rounding of a sample within 0.01 of a half. A 16-bit output sample is rounded from the
+  double product (`JpegXlDecoder.ToInteger`): the single-precision product, which keeps 1/512 of a unit, rounded 11 of
+  12 such samples the other way than both references.
   A lossy image labeled with an sRGB ICC profile keeps the profile, byte for byte, where cjxl replaces it with the
   enumerated sRGB encoding. The reference decoders read such a file differently from an enumerated one, and comparing
   their raw output with the library is wrong on both sides

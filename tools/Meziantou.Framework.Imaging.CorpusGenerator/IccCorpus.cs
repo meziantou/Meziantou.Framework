@@ -402,7 +402,7 @@ internal static partial class IccCorpus
             var destination = Profiles.Single(profile => profile.Id == transform.Destination);
             var isNamed = source.Features.Contains("icc.class=named-color", StringComparer.Ordinal);
             var names = isNamed ? GetColorNames(source) : null;
-            var samples = names is not null ? [.. Enumerable.Range(0, names.Length).Select(static index => (ushort)index)]
+            var samples = names is not null ? [.. Enumerable.Range(0, names.Length).Select(index => (ushort)index)]
                 : source.Channels == 4 && !transform.IccDev ? CreateGridPointSamples(File.ReadAllBytes(outDir / paths[source.Id]), transform.Intent)
                 : CreateSamples(source.Channels);
             var count = samples.Length / source.Channels;

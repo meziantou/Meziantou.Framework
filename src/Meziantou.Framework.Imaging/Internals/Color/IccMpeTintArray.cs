@@ -32,6 +32,7 @@ internal sealed class IccMpeTintArray : IccMpeElement
         if (count / outputs < 2)
             throw context.Invalid(string.Create(CultureInfo.InvariantCulture, $"the tint array element has {count} values, fewer than two vectors of {outputs} values."));
 
+        context.Allocate(count);
         var values = new double[count / outputs * outputs];
         for (var i = 0; i < values.Length; i++)
         {

@@ -244,7 +244,7 @@ public sealed class ColorProfileFuzzTests
                 return FuzzFailure.FromException("convert-named", exception);
             }
 
-            if (rgb.Any(static value => !(value >= 0f && value <= 1f)))
+            if (rgb.Any(value => !(value >= 0f && value <= 1f)))
                 return FuzzFailure.Property("named-range", "A converted named color is not in [0, 1].");
         }
 

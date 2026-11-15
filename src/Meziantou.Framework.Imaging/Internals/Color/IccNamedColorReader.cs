@@ -55,6 +55,10 @@ internal static class IccNamedColorReader
             throw Invalid(role, $"the profile connection space {IccReader.FormatSignature(header.ConnectionSpace)} is neither 'XYZ ' nor 'Lab '.");
         }
 
+        // The colors are in the connection space of custom viewing conditions, which are not converted to the standard ones
+        if (header.Version.Major >= 5 && (IccReader.TryGetTag(data, IccReader.TagCustomToStandardPcc, out _) || IccReader.TryGetTag(data, IccReader.TagStandardToCustomPcc, out _)))
+            throw new UnsupportedImageFeatureException($"The {role} ICC profile is an iccMAX profile with custom profile connection conditions ('c2sp', 's2cp'); only the standard D50 connection conditions are supported.", ImageFormat.Unknown, "ICC custom profile connection conditions");
+
         var isLab = header.ConnectionSpace == IccReader.SignatureLab;
         if (header.Version.Major >= 5)
             return ReadTagArray(data, header, isLab, role, out deviceChannelCount);
@@ -145,6 +149,12 @@ internal static class IccNamedColorReader
         var channels = GetDeviceChannelCount(header.DataColorSpace);
         var colors = new IccNamedColor[count - 1];
         deviceChannelCount = 0;
+
+        // Colors may share their tint values: the full tint of each tint array is found once. Only the vector at full tint
+        // of the other arrays is read, and the tint arrays read add up to a bounded size, so that colors that refer to the
+        // same or overlapping data many times do not read it again and again
+        var fullTints = new Dictionary<(long Offset, int Length), (int Vectors, int Index)>();
+        var tintBudget = tag.Length + (1L << 20);
         for (var i = 0; i < count; i++)
         {
             var element = GetPosition(tag, 16 + (8 * i), role, "'nmcl' tag");
@@ -164,12 +174,27 @@ internal static class IccNamedColorReader
                 throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"the element {i} of the 'nmcl' tag is not a namedColorStructure ('nmcl')."));
 
             var name = TryGetMember(element, MemberName, role, out var nameData) ? ReadUtf8(nameData, role) : throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"the named color {i} has no name."));
-            var tints = TryGetMember(element, MemberTint, role, out var tintData) ? ReadNumbers(tintData, role, "tint", allowIntegers: true) : null;
+            (int Vectors, int Index)? fullTint = null;
+            if (TryGetMember(element, MemberTint, role, out var tintData, out var tintOffset))
+            {
+                var key = ((long)IccReader.ReadUInt32(tag[(16 + (8 * i))..]) + tintOffset, tintData.Length);
+                if (!fullTints.TryGetValue(key, out var found))
+                {
+                    tintBudget -= tintData.Length;
+                    if (tintBudget < 0)
+                        throw new UnsupportedImageFeatureException($"The {role} ICC profile has more tint values than its 'nmcl' tag contains.", ImageFormat.Unknown, "ICC named colors too large to read");
+
+                    found = FindFullTint(tintData, role);
+                    fullTints[key] = found;
+                }
+
+                fullTint = found;
+            }
+
             if (!TryGetMember(element, MemberPcs, role, out var pcsData))
                 throw Invalid(role, $"the named color '{name}' has no PCS values.");
 
-            var pcs = ReadNumbers(pcsData, role, "PCS", allowIntegers: false);
-            var full = GetFullTint(pcs, 3, tints, name, role);
+            var full = ReadFullTint(pcsData, "PCS", allowIntegers: false, 3, fullTint, name, role);
             var (xyz, lab) = isLab ? FromLab(full[0], full[1], full[2]) : FromXyz(full[0], full[1], full[2]);
 
             var device = Array.Empty<double>();
@@ -178,7 +203,7 @@ internal static class IccNamedColorReader
                 if (channels is not { } deviceChannels)
                     throw new UnsupportedImageFeatureException($"The {role} ICC profile gives device values for the data color space {IccReader.FormatSignature(header.DataColorSpace)}; only gray, RGB and CMYK are supported.", ImageFormat.Unknown, "ICC profile data color space");
 
-                device = GetFullTint(ReadNumbers(deviceData, role, "device", allowIntegers: true), deviceChannels, tints, name, role);
+                device = ReadFullTint(deviceData, "device", allowIntegers: true, deviceChannels, fullTint, name, role);
                 deviceChannelCount = deviceChannels;
             }
 
@@ -192,29 +217,57 @@ internal static class IccNamedColorReader
         return colors;
     }
 
+    // The tint values of a named color: their number, and the index of the full tint (1.0)
+    private static (int Vectors, int Index) FindFullTint(ReadOnlySpan<byte> member, string role)
+    {
+        var values = GetNumbers(member, role, "tint", allowIntegers: true, out var type, out var size);
+        var count = values.Length / size;
+        var index = -1;
+        for (var i = 0; i < count; i++)
+        {
+            if (ReadNumber(values, type, size, i, role, "tint") == 1.0 && index < 0)
+            {
+                index = i;
+            }
+        }
+
+        return (count, index);
+    }
+
     // The values of a tint array (ICC.2:2023 section 4.2.9) at full tint: the vector whose tint is 1.0. Without tint
     // values, the vectors are equally spaced tints and the last one is the full tint (12.2.5.2.9)
-    private static double[] GetFullTint(double[] values, int channels, double[]? tints, string name, string role)
+    private static double[] ReadFullTint(ReadOnlySpan<byte> member, string what, bool allowIntegers, int channels, (int Vectors, int Index)? fullTint, string name, string role)
     {
-        if (values.Length == 0 || values.Length % channels != 0)
-            throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"the named color '{name}' has {values.Length} values, which are not vectors of {channels} values."));
+        var values = GetNumbers(member, role, what, allowIntegers, out var type, out var size);
+        var count = values.Length / size;
+        if (count == 0 || count % channels != 0)
+            throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"the named color '{name}' has {count} values, which are not vectors of {channels} values."));
 
-        var vectors = values.Length / channels;
+        var vectors = count / channels;
         var index = vectors - 1;
-        if (tints is not null)
+        if (fullTint is { } tint)
         {
-            if (tints.Length != vectors)
-                throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"the named color '{name}' has {tints.Length} tints for {vectors} vectors of values."));
+            if (tint.Vectors != vectors)
+                throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"the named color '{name}' has {tint.Vectors} tints for {vectors} vectors of values."));
 
-            index = Array.IndexOf(tints, 1.0);
+            index = tint.Index;
             if (index < 0)
                 throw new UnsupportedImageFeatureException($"The {role} ICC profile has no value at full tint (1.0) for the named color '{name}'.", ImageFormat.Unknown, "ICC named color without full tint");
         }
 
-        return values.AsSpan(index * channels, channels).ToArray();
+        var result = new double[channels];
+        for (var i = 0; i < channels; i++)
+        {
+            result[i] = ReadNumber(values, type, size, (index * channels) + i, role, what);
+        }
+
+        return result;
     }
 
-    private static bool TryGetMember(ReadOnlySpan<byte> element, uint signature, string role, out ReadOnlySpan<byte> member)
+    private static bool TryGetMember(ReadOnlySpan<byte> element, uint signature, string role, out ReadOnlySpan<byte> member) => TryGetMember(element, signature, role, out member, out _);
+
+    // The member and its offset in the structure
+    private static bool TryGetMember(ReadOnlySpan<byte> element, uint signature, string role, out ReadOnlySpan<byte> member, out uint offset)
     {
         var count = IccReader.ReadUInt32(element[12..]);
         if (16 + ((long)count * 12) > element.Length)
@@ -226,11 +279,13 @@ internal static class IccNamedColorReader
             if (IccReader.ReadUInt32(element[entry..]) == signature)
             {
                 member = GetPosition(element, entry + 4, role, "structure of the 'nmcl' tag");
+                offset = IccReader.ReadUInt32(element[(entry + 4)..]);
                 return true;
             }
         }
 
         member = default;
+        offset = 0;
         return false;
     }
 
@@ -263,18 +318,17 @@ internal static class IccNamedColorReader
         return Encoding.UTF8.GetString(text);
     }
 
-    // The numeric array types (ICC.2:2023 sections 10.2.9, 10.2.10, 10.2.27 and 10.2.30). Integers encode [0, 1] (4.2.10)
-    private static double[] ReadNumbers(ReadOnlySpan<byte> member, string role, string what, bool allowIntegers)
+    // The numeric array types (ICC.2:2023 sections 10.2.9, 10.2.10, 10.2.27 and 10.2.30): their values and their size
+    private static ReadOnlySpan<byte> GetNumbers(ReadOnlySpan<byte> member, string role, string what, bool allowIntegers, out uint type, out int size)
     {
         if (member.Length < 8)
             throw Invalid(role, $"the {what} values of a named color are not a numeric array.");
 
-        var type = IccReader.ReadUInt32(member);
-        var values = member[8..];
+        type = IccReader.ReadUInt32(member);
         if (!allowIntegers && type is TypeUInt8Array or TypeUInt16Array)
             throw new UnsupportedImageFeatureException($"The {role} ICC profile stores the {what} values of a named color as integers; only floating-point values are supported.", ImageFormat.Unknown, "ICC named color with integer PCS values");
 
-        var size = type switch
+        size = type switch
         {
             TypeUInt8Array => 1,
             TypeUInt16Array or TypeFloat16Array => 2,
@@ -282,21 +336,23 @@ internal static class IccNamedColorReader
             _ => throw Invalid(role, $"the {what} values of a named color are a {IccReader.FormatSignature(type)} instead of a numeric array."),
         };
 
-        var result = new double[values.Length / size];
-        for (var i = 0; i < result.Length; i++)
-        {
-            var value = values[(i * size)..];
-            result[i] = type switch
-            {
-                TypeUInt8Array => value[0] / 255.0,
-                TypeUInt16Array => BinaryPrimitives.ReadUInt16BigEndian(value) / 65535.0,
-                TypeFloat16Array => (double)BinaryPrimitives.ReadHalfBigEndian(value),
-                _ => BinaryPrimitives.ReadSingleBigEndian(value),
-            };
+        return member[8..];
+    }
 
-            if (!double.IsFinite(result[i]))
-                throw Invalid(role, $"the {what} values of a named color are not finite numbers.");
-        }
+    // A value of a numeric array. Integers encode [0, 1] (ICC.2:2023 section 4.2.10)
+    private static double ReadNumber(ReadOnlySpan<byte> values, uint type, int size, int index, string role, string what)
+    {
+        var value = values[(index * size)..];
+        double result = type switch
+        {
+            TypeUInt8Array => value[0] / 255.0,
+            TypeUInt16Array => BinaryPrimitives.ReadUInt16BigEndian(value) / 65535.0,
+            TypeFloat16Array => (double)BinaryPrimitives.ReadHalfBigEndian(value),
+            _ => BinaryPrimitives.ReadSingleBigEndian(value),
+        };
+
+        if (!double.IsFinite(result))
+            throw Invalid(role, $"the {what} values of a named color are not finite numbers.");
 
         return result;
     }

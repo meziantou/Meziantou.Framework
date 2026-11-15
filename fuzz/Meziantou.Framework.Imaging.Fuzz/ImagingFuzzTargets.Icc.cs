@@ -137,9 +137,9 @@ public static partial class ImagingFuzzTargets
         }
 
         var samples16 = new ushort[floats.Length];
-        transform.Convert(Array.ConvertAll(source, static value => (ushort)Math.Round(value * 65535, MidpointRounding.AwayFromZero)), samples16);
+        transform.Convert(Array.ConvertAll(source, value => (ushort)Math.Round(value * 65535, MidpointRounding.AwayFromZero)), samples16);
         var samples8 = new byte[floats.Length];
-        transform.Convert(Array.ConvertAll(source, static value => (byte)Math.Round(value * 255, MidpointRounding.AwayFromZero)), samples8);
+        transform.Convert(Array.ConvertAll(source, value => (byte)Math.Round(value * 255, MidpointRounding.AwayFromZero)), samples8);
     }
 
     private static IEnumerable<FuzzSeed> GetIccSeeds()

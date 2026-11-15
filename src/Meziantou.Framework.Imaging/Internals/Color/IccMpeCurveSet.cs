@@ -80,6 +80,7 @@ internal sealed class IccMpeCurveSet : IccMpeElement
         if (count == 0 || 12 + (4L * (count - 1)) > curve.Length)
             throw context.Invalid(string.Create(CultureInfo.InvariantCulture, $"a segmented curve declares {count} segments, which do not fit in it."));
 
+        context.Allocate(count - 1);
         var breakPoints = new double[count - 1];
         for (var i = 0; i < breakPoints.Length; i++)
         {
@@ -112,6 +113,7 @@ internal sealed class IccMpeCurveSet : IccMpeElement
                 if (position + 12 + (4 * parameterCount) > curve.Length)
                     throw context.Invalid("the parameters of a curve segment do not fit in its curve.");
 
+                context.Allocate(parameterCount);
                 var parameters = new double[parameterCount];
                 for (var j = 0; j < parameters.Length; j++)
                 {
@@ -131,6 +133,7 @@ internal sealed class IccMpeCurveSet : IccMpeElement
                 if (samples == 0 || position + 12 + (4L * samples) > curve.Length)
                     throw context.Invalid(string.Create(CultureInfo.InvariantCulture, $"a sampled curve segment declares {samples} entries, which do not fit in its curve."));
 
+                context.Allocate(samples);
                 var values = new double[samples];
                 for (var j = 0; j < values.Length; j++)
                 {
@@ -169,6 +172,7 @@ internal sealed class IccMpeCurveSet : IccMpeElement
         if (24 + ((long)count * size) > curve.Length)
             throw context.Invalid(string.Create(CultureInfo.InvariantCulture, $"a single sampled curve declares {count} entries, which do not fit in it."));
 
+        context.Allocate(count);
         var values = new double[count];
         for (var i = 0; i < values.Length; i++)
         {
@@ -200,9 +204,14 @@ internal sealed class IccMpeCurveSet : IccMpeElement
         if (IccMpeParser.ParseElement(curve[24..], context) is not IccMpeCalculator calculator || calculator.InputCount != 1 || calculator.OutputCount != 1)
             throw context.Invalid("the calculator element of a sampled calculator curve must have one input and one output.");
 
-        var values = new double[Math.Min(count, MaxCalculatorSamples)];
-        if (values.Length * calculator.Cost > IccMpeParseContext.MaxCost * 64)
-            throw context.Unsupported(string.Create(CultureInfo.InvariantCulture, $"sampling a calculator curve at {values.Length} points needs too many operations."), "ICC processing elements too costly to evaluate");
+        // The calculator curves of the tag are sampled within a bounded number of operations
+        var samples = (int)Math.Min(count, MaxCalculatorSamples);
+        context.SamplingCost += samples * calculator.Cost;
+        if (context.SamplingCost > IccMpeParseContext.MaxCost * 64)
+            throw context.Unsupported(string.Create(CultureInfo.InvariantCulture, $"sampling the calculator curves at {samples} points needs too many operations."), "ICC processing elements too costly to evaluate");
+
+        context.Allocate(samples + calculator.ScratchSize);
+        var values = new double[samples];
 
         Span<double> input = stackalloc double[1];
         Span<double> output = stackalloc double[1];

@@ -1881,6 +1881,7 @@ public sealed class IccColorTransformTests
         Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("name", Utf8("A")), ("tint", Floats("fl32", 0.5f)), ("pcs ", Floats("fl32", 75, 20, 10))))));
         Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("ui16", 0.5f, 0.5f, 0.5f))))));
         Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile("\0\0\0\0", Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10))))));
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile("Lab ", includeTintZero: true, [("c2sp", Mpe(3, 3, Element("bACS", 3, 3, U32(0))))], Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10))))));
 
         // Malformed: no name, values that are not vectors of the connection space, a first element that is not the tint zero
         Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("pcs ", Floats("fl32", 75, 20, 10))))));
@@ -1952,6 +1953,9 @@ public sealed class IccColorTransformTests
         Assert.Equal([30, 20, 40, 40], Calculate(4, "2 sel case:1 case:1 case:1 dflt:1 10 20 30 40 1.4 sel case:1 case:1 case:1 dflt:1 10 20 30 40 3 sel case:1 case:1 case:1 dflt:1 10 20 30 40 -1 sel case:1 case:1 case:1 dflt:1 10 20 30 40 out:0:3"));
         Assert.Equal([2, 9], Calculate(2, "9 1 sel case:2 case:2 pop 1 pop 2 9 5 sel case:2 case:2 pop 1 pop 2 out:0:1"));
 
+        // A selection nested in a case of another one: the outer selection runs its default or its case
+        Assert.Equal([0.75, 0.25], Calculate(2, "1 sel case:6 dflt:1 0 sel case:1 dflt:1 0.25 0.5 0.75 0 sel case:6 dflt:1 0 sel case:1 dflt:1 0.25 0.5 0.75 out:0:1"));
+
         // The CMM environment variables: 'true' is available with the value 1; the others are not available
         Assert.Equal([1, 1, 0, 0, 0, 0], Calculate(6, "env:true env:ndef env:zzzz out:0:5"));
     }
@@ -1977,11 +1981,44 @@ public sealed class IccColorTransformTests
     }
 
     [Fact]
+    public void RepeatedProcessingElementsAreReadOnce()
+    {
+        // A tint array of 65,536 values, which every element of a multiProcessElementsType refers to
+        var tint = Element("tint", 1, 1, U32(0), U32(0), Floats([.. Enumerable.Range(0, 65536).Select(i => i / 65535f)]));
+
+        // The same position many times: the element is read once
+        var context = new IccMpeParseContext("source", 0x41324231);
+        var stage = IccMpeParser.CreateStage(Stage(tint, [.. Enumerable.Repeat(tint.Length, 1000)]), 1, 1, context);
+        Assert.Equal(65536, context.Allocated);
+        var values = new double[16];
+        values[0] = 0.5;
+        stage.Apply(values);
+        Assert.Equal(0.5, values[0], 1e-6);
+
+        // Overlapping positions (the same offset, shorter sizes) are different elements, which would store the same data
+        // again and again
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(tint, [.. Enumerable.Range(0, 32).Select(i => tint.Length - (4 * i))]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
+
+        static byte[] Stage(byte[] element, int[] sizes)
+        {
+            var offset = 16 + (8 * sizes.Length);
+            var data = new List<byte>([.. "mpet"u8, 0, 0, 0, 0, .. U16(1), .. U16(1), .. U32((uint)sizes.Length)]);
+            foreach (var size in sizes)
+            {
+                data.AddRange([.. U32((uint)offset), .. U32((uint)size)]);
+            }
+
+            data.AddRange(element);
+            return [.. data];
+        }
+    }
+
+    [Fact]
     public void CalculatorFunctionsAreCheckedBeforeTheyRun()
     {
         // Malformed: the stack underflows, a channel does not exist, an operation of a structure is alone or goes beyond
         // the function, the streams of a condition leave different numbers of values
-        foreach (var function in new[] { "add out", "1 out:1", "in:1 out", "tget:0 out:0:1", "else:0 1 out", "case:0 1 out", "1 sel 1 out", "1 if:5 out", "1 if:1 else:0 5 out", "1 1 sel case:1 case:0 dflt:0 5 out", "1 2 3 4 solv:1:1 out" })
+        foreach (var function in new[] { "add out", "1 out:1", "in:1 out", "tget:0 out:0:1", "else:0 1 out", "case:0 1 out", "1 sel 1 out", "1 if:5 out", "1 if:1 else:0 5 out", "1 1 sel case:1 case:0 dflt:0 5 out", "1 2 3 4 solv:1:1 out", "tran:65535:65535 1 out" })
         {
             Assert.Throws<InvalidImageContentException>(() => Calculate(1, function));
         }
@@ -2162,11 +2199,13 @@ public sealed class IccColorTransformTests
     private static IccProfile IccMaxNamedProfile(string connectionSpace, params byte[][] colors) => IccMaxNamedProfile(connectionSpace, includeTintZero: true, colors);
 
     // A namedColorTag (ICC.2:2023 section 9.2.104): a tagArrayType of tagStructType elements
-    private static IccProfile IccMaxNamedProfile(string connectionSpace, bool includeTintZero, params byte[][] colors)
+    private static IccProfile IccMaxNamedProfile(string connectionSpace, bool includeTintZero, params byte[][] colors) => IccMaxNamedProfile(connectionSpace, includeTintZero, [], colors);
+
+    private static IccProfile IccMaxNamedProfile(string connectionSpace, bool includeTintZero, (string Signature, byte[] Data)[] otherTags, params byte[][] colors)
     {
         byte[][] elements = includeTintZero ? [Struct("tnt0", ("pcs ", Floats("fl32", 100, 0, 0))), .. colors] : colors;
         var array = Container("tary", "ncol", elements.Select(element => ((string?)null, element)).ToArray());
-        var data = IccTestProfiles.BuildBytes("CMYK", connectionSpace, [("wtpt", IccTestProfiles.Xyz(0.9642, 1, 0.8249)), ("nmcl", array)], header =>
+        var data = IccTestProfiles.BuildBytes("CMYK", connectionSpace, [("wtpt", IccTestProfiles.Xyz(0.9642, 1, 0.8249)), ("nmcl", array), .. otherTags], header =>
         {
             header[8] = 5;
             header[9] = 0;

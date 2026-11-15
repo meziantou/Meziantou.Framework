@@ -681,6 +681,7 @@ internal sealed class IccMpeCalculator : IccMpeElement
             _outputs = outputs;
             _subElements = subElements;
             _context = context;
+            context.Allocate(operations.Length / 8);
             Program = new Instruction[operations.Length / 8];
         }
 
@@ -755,9 +756,16 @@ internal sealed class IccMpeCalculator : IccMpeElement
 
                         var hasDefault = i + 1 + cases < end && Signature(i + 1 + cases) == 0x64666C74; // 'dflt'
                         var headers = cases + (hasDefault ? 1 : 0);
+                        // The boundaries of the streams are adjacent in the table: it is reserved before the streams,
+                        // whose nested selections add their own tables after it
                         var tableIndex = CaseBodies.Count;
                         long bodyStart = i + 1 + headers;
                         CaseBodies.Add((int)bodyStart);
+                        for (var k = 0; k < headers; k++)
+                        {
+                            CaseBodies.Add(0);
+                        }
+
                         int? bodyDepth = null;
                         long bodiesCost = 0;
                         for (var k = 0; k < headers; k++)
@@ -773,7 +781,7 @@ internal sealed class IccMpeCalculator : IccMpeElement
                             bodyDepth = result;
                             bodiesCost = Math.Max(bodiesCost, bodyCost);
                             Program[i + 1 + k] = new Instruction(OpCode.Placeholder, 0, 0, 0, 0, 0, 0);
-                            CaseBodies.Add((int)bodyEnd);
+                            CaseBodies[tableIndex + 1 + k] = (int)bodyEnd;
                             bodyStart = bodyEnd;
                         }
 
@@ -887,8 +895,8 @@ internal sealed class IccMpeCalculator : IccMpeElement
 
                 case 0x636F7079: // 'copy'
                     Need(depth, n, signature);
-                    Push(ref depth, n * (t + 1));
-                    cost = n * (t + 1);
+                    Push(ref depth, (long)n * (t + 1));
+                    cost = (long)n * (t + 1);
                     return Simple(OpCode.Copy, s, t);
 
                 case 0x726F746C or 0x726F7472: // 'rotl', 'rotr'
@@ -918,7 +926,7 @@ internal sealed class IccMpeCalculator : IccMpeElement
                     if (rows == columns && rows > MaxSolveSize)
                         throw _context.Unsupported(string.Create(CultureInfo.InvariantCulture, $"a 'solv' operation of a calculator element solves {rows} equations, more than the {MaxSolveSize} supported."), "ICC calculator system of equations too large");
 
-                    Pop(ref depth, (rows * columns) + rows, signature);
+                    Pop(ref depth, ((long)rows * columns) + rows, signature);
                     Push(ref depth, columns + 1);
                     cost = (long)rows * rows * rows;
                     return Simple(OpCode.Solv, s, t);
@@ -926,9 +934,10 @@ internal sealed class IccMpeCalculator : IccMpeElement
 
                 case 0x7472616E: // 'tran'
                 {
-                    var size = n * (t + 1);
+                    // Within the stack, so the product of the dimensions fits in an int
+                    var size = (long)n * (t + 1);
                     Need(depth, size, signature);
-                    TransposeSize = Math.Max(TransposeSize, size);
+                    TransposeSize = Math.Max(TransposeSize, (int)size);
                     cost = size;
                     return Simple(OpCode.Tran, s, t);
                 }

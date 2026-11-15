@@ -21,6 +21,7 @@ internal sealed class IccMpeMatrix : IccMpeElement
         if (12 + (4 * count) > element.Length)
             throw context.Invalid(string.Create(CultureInfo.InvariantCulture, $"the matrix element of {inputs} inputs and {outputs} outputs needs {count} numbers, which do not fit in its {element.Length} bytes."));
 
+        context.Allocate(count);
         var coefficients = new double[count];
         for (var i = 0; i < coefficients.Length; i++)
         {

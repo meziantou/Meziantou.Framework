@@ -758,9 +758,9 @@ internal static class IccProfileBuilder
             "Lab ",
             [
                 ("wtpt", Xyz(0.9642, 1, 0.8249)),
-                ("ncl2", NamedColor2("PMS ", " C", 4, [.. NamedColorSamples.Select(static color => (color.Name, ToUInt16(EncodeLabLegacy(color.Lab)), ToUInt16(color.Cmyk)))])),
+                ("ncl2", NamedColor2("PMS ", " C", 4, [.. NamedColorSamples.Select(color => (color.Name, ToUInt16(EncodeLabLegacy(color.Lab)), ToUInt16(color.Cmyk)))])),
             ],
-            static header =>
+            header =>
             {
                 header[8] = 2;
                 header[9] = 0x40;
@@ -777,12 +777,12 @@ internal static class IccProfileBuilder
             "XYZ ",
             [
                 ("wtpt", Xyz(0.9505, 1, 1.089)),
-                ("ncl2", NamedColor2("", "", 0, [.. NamedColorSamples.Select(static color => (color.Name, ToUInt16(EncodeXyz(LabToXyz(color.Lab))), Array.Empty<ushort>()))])),
+                ("ncl2", NamedColor2("", "", 0, [.. NamedColorSamples.Select(color => (color.Name, ToUInt16(EncodeXyz(LabToXyz(color.Lab))), Array.Empty<ushort>()))])),
             ],
-            static header => "nmcl"u8.CopyTo(header.AsSpan(12)));
+            header => "nmcl"u8.CopyTo(header.AsSpan(12)));
 
     /// <summary>Rounds normalized values to 16-bit numbers.</summary>
-    public static ushort[] ToUInt16(double[] values) => [.. values.Select(static value => (ushort)Math.Round(Math.Clamp(value, 0, 1) * 65535, MidpointRounding.AwayFromZero))];
+    public static ushort[] ToUInt16(double[] values) => [.. values.Select(value => (ushort)Math.Round(Math.Clamp(value, 0, 1) * 65535, MidpointRounding.AwayFromZero))];
 
     /// <summary>A monochrome display profile.</summary>
     public static byte[] Gray(byte[] curve, string connectionSpace = "XYZ ") => BuildBytes("GRAY", connectionSpace, [("kTRC", curve)]);

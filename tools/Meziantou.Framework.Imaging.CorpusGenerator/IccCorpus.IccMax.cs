@@ -67,7 +67,7 @@ internal static partial class IccCorpus
         {
             colors.Add(names is not null
                 ? new Obj { ["n"] = names[i], ["t"] = 1.0 }
-                : new Obj { ["v"] = samples.AsSpan(i * sourceChannels, sourceChannels).ToArray().Select(static sample => sample / 65535.0).ToList() });
+                : new Obj { ["v"] = samples.AsSpan(i * sourceChannels, sourceChannels).ToArray().Select(sample => sample / 65535.0).ToList() });
         }
 
         var sourceSpace = names is not null ? "nmcl" : sourceChannels switch { 1 => "GRAY", 3 => "RGB ", _ => "CMYK" };
@@ -96,8 +96,8 @@ internal static partial class IccCorpus
 
         // Each converted color is a line of values, then the source color after a semicolon
         var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(static line => line.Split(';')[0].Split(' ', StringSplitOptions.RemoveEmptyEntries))
-            .Where(static values => values.Length > 0 && double.TryParse(values[0], NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+            .Select(line => line.Split(';')[0].Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .Where(values => values.Length > 0 && double.TryParse(values[0], NumberStyles.Float, CultureInfo.InvariantCulture, out _))
             .ToList();
         if (lines.Count != count)
             throw new ToolException($"iccApplyNamedCmm printed {lines.Count} colors for {count}: {output}");

@@ -48,7 +48,7 @@ internal static class IccMaxProfileXml
         var white = new[] { 0.9642, 1.0, 0.8249 };
         var normalized = SrgbMatrix().Select((value, index) => value / white[index / 3]).ToArray();
         var inverse = Invert(normalized);
-        var identityClut = Clut([2, 2, 2], 3, static point => point);
+        var identityClut = Clut([2, 2, 2], 3, point => point);
         // 'solv' is left out: iccDEV 2.4.2.5 reports a failure for every system, even [2 0; 0 2] x = [2 2]
         var forward = Calculator(3, 3,
             [
@@ -164,7 +164,7 @@ internal static class IccMaxProfileXml
         var tags = new StringBuilder();
         foreach (var absolute in new[] { false, true })
         {
-            var scale = absolute ? PaperWhite.Select(static (value, index) => value / new[] { 0.9642, 1.0, 0.8249 }[index]).ToArray() : [1, 1, 1];
+            var scale = absolute ? PaperWhite.Select((value, index) => value / new[] { 0.9642, 1.0, 0.8249 }[index]).ToArray() : [1, 1, 1];
 
             // Device to PCS: an identity curve stored as a single sampled curve, and a segmented curve with a sampled
             // segment, then the table of the model
@@ -182,10 +182,10 @@ internal static class IccMaxProfileXml
                 return IccProfileBuilder.RgbOnPaperToCmyk(IccProfileBuilder.XyzToRgb([xyz[0] / scale[0], xyz[1] / scale[1], xyz[2] / scale[2]]));
             });
 
-            var linear = SingleSampledCurve(0, 1, [.. Enumerable.Range(0, 17).Select(static i => i / 16.0)]);
+            var linear = SingleSampledCurve(0, 1, [.. Enumerable.Range(0, 17).Select(i => i / 16.0)]);
             var sampled = SegmentedCurve(
                 ("-infinity", "0", 0, [1, 0, 0, 0]),
-                ("0", "1", -1, [.. Enumerable.Range(1, 8).Select(static i => i / 8.0)]),
+                ("0", "1", -1, [.. Enumerable.Range(1, 8).Select(i => i / 8.0)]),
                 ("1", "+infinity", 0, [1, 0, 1, 0]));
             tags.Append(Mpe(absolute ? "A2B3" : "A2B1", 4, 3, CurveSet(4, linear, sampled, linear, sampled), toPcs));
             tags.Append(Mpe(absolute ? "B2A3" : "B2A1", 3, 4, Matrix(3, 3, [0.01, 0, 0, 0, 1 / 255.0, 0, 0, 0, 1 / 255.0], [0, 128 / 255.0, 128 / 255.0]), fromPcs));
@@ -209,7 +209,7 @@ internal static class IccMaxProfileXml
         }
 
         segments.Append("          </SegmentedCurve>\n");
-        var inverse = SingleSampledCurve(0, 1, [.. Enumerable.Range(0, 257).Select(static i => InvertGrayCurve(i / 256.0))]);
+        var inverse = SingleSampledCurve(0, 1, [.. Enumerable.Range(0, 257).Select(i => InvertGrayCurve(i / 256.0))]);
         var tags = Mpe("A2B3", 1, 3, CurveSet(1, segments.ToString()), Matrix(1, 3, PaperWhite, null))
             + Mpe("B2A3", 3, 1, Matrix(3, 1, [0, 1 / PaperWhite[1], 0], null), CurveSet(1, inverse));
         return Profile("prtr", "GRAY", "XYZ ", "iccMAX gray output with absolute colorimetric tags", tags, PaperWhite);
@@ -286,7 +286,7 @@ internal static class IccMaxProfileXml
                         <nmclNameNmClrMbr> <utf8Type> <TextData><![CDATA[{name}]]></TextData> </utf8Type> </nmclNameNmClrMbr>
                         <nmclTintMbr> <float32ArrayType> <Data>0.5 1</Data> </float32ArrayType> </nmclTintMbr>
                         <nmclPcsDataMbr> <float32ArrayType> <Data>{Numbers([(100 + lab[0]) / 2, lab[1] / 2, lab[2] / 2, .. lab])}</Data> </float32ArrayType> </nmclPcsDataMbr>
-                        <nmclDeviceDataMbr> <float32ArrayType> <Data>{Numbers([.. cmyk.Select(static value => value / 2), .. cmyk])}</Data> </float32ArrayType> </nmclDeviceDataMbr>
+                        <nmclDeviceDataMbr> <float32ArrayType> <Data>{Numbers([.. cmyk.Select(value => value / 2), .. cmyk])}</Data> </float32ArrayType> </nmclDeviceDataMbr>
                       </MemberTags> </namedColorStructure>
                     </tagStructType>
 

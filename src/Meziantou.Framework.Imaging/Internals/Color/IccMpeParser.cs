@@ -37,14 +37,24 @@ internal static class IccMpeParser
         if (count == 0 || 16 + ((long)count * 8) > span.Length)
             throw context.Invalid(string.Create(CultureInfo.InvariantCulture, $"the multiProcessElementsType declares {count} processing elements, which do not fit in its {span.Length} bytes."));
 
+        // Elements with the same position are the same element. Each value of the data is stored at most once, plus the
+        // samples of the calculator curves; references to overlapping data would otherwise allocate it again and again
+        context.AllocationLimit = span.Length + (1L << 20);
         var elements = new IccMpeElement[count];
+        var cache = new Dictionary<(uint Offset, uint Size), IccMpeElement>();
         var channels = (int)inputCount;
         int widest = Math.Max(inputCount, outputCount);
         var scratch = 0;
         long cost = 0;
         for (var i = 0; i < elements.Length; i++)
         {
-            var element = ParseElement(GetPosition(tag, 16 + (8 * i), context), context);
+            var key = (IccReader.ReadUInt32(span[(16 + (8 * i))..]), IccReader.ReadUInt32(span[(20 + (8 * i))..]));
+            if (!cache.TryGetValue(key, out var element))
+            {
+                element = ParseElement(GetPosition(tag, 16 + (8 * i), context), context);
+                cache[key] = element;
+            }
+
             if (element.InputCount != channels)
                 throw context.Invalid(string.Create(CultureInfo.InvariantCulture, $"the processing element {i} has {element.InputCount} inputs, but the previous element gives {channels} values."));
 

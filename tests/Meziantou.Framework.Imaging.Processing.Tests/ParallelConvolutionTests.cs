@@ -374,6 +374,8 @@ public sealed class ParallelConvolutionTests
             image => image.OilPaint(levels: 20, radius: 3, Ct),
             image => image.OilPaint(levels: 8, radius: 40, Ct),
             image => image.Flatten(new Rgba64(0x1234, 0x8000, 0xFEDC, 0xFFFF), Ct),
+            image => image.ApplyColorMatrix(ColorMatrix.CreateSepia(), Ct),
+            image => image.ApplyColorMatrix(ColorMatrix.CreateOpacity(0.4).Then(ColorMatrix.CreateHueRotation(140)), Ct),
         ];
 
         foreach (var effect in effects)
@@ -396,6 +398,68 @@ public sealed class ParallelConvolutionTests
             effect(image);
             return CopyBytes(image);
         }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PixelConversionsDoNotDependOnTheWorkerCount()
+    {
+        var random = new Random(14);
+        var (width, height) = (300, 257);
+        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Rgba64, PixelFormat.RgbaFloat })
+        {
+            var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+            if (format is PixelFormat.RgbaFloat)
+            {
+                // Out of range samples, clipped by the options
+                for (var i = 0; i < bytes.Length; i += sizeof(float))
+                {
+                    BitConverter.TryWriteBytes(bytes.AsSpan(i), (random.NextSingle() * 1.4f) - 0.2f);
+                }
+            }
+            else
+            {
+                random.NextBytes(bytes);
+            }
+
+            var options = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip, BackgroundColor = new Rgba64(0x1234, 0x8000, 0xFEDC, 0xFFFF) };
+            Func<Image, Image>[] conversions =
+            [
+                image => image.CloneAs<Rgb24>(options),
+                image => image.CloneAs<Rgba64>(options),
+                image => image.CloneAs<Gray8>(options),
+                image => image.CloneAs<RgbaHalf>(options),
+            ];
+
+            foreach (var conversion in conversions)
+            {
+                var expected = Convert(conversion, workers: 1);
+                foreach (var workers in new[] { 2, 3, 16 })
+                {
+                    Assert.Equal(expected, Convert(conversion, workers));
+                }
+            }
+
+            byte[] Convert(Func<Image, Image> conversion, int workers)
+            {
+                using var image = Import(bytes, width, height, format, workers);
+                using var converted = conversion(image);
+                return CopyBytes(converted);
+            }
+        }
+
+        // A sample that cannot be stored fails with the error of the first one, as with one worker
+        var floats = new float[width * height * 4];
+        floats.AsSpan().Fill(0.5f);
+        floats[(200 * width * 4) + 13] = 2;
+        floats[(100 * width * 4) + 21] = -1;
+        var floatBytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(floats.AsSpan())).ToArray();
+        var messages = new[] { 1, 16 }.Select(workers =>
+        {
+            using var image = Import(floatBytes, width, height, PixelFormat.RgbaFloat, workers);
+            return Assert.Throws<UnsupportedImageFeatureException>(() => image.CloneAs<Rgba32>()).Message;
+        }).ToArray();
+        Assert.Equal(messages[0], messages[1]);
     }
 
     [Theory]

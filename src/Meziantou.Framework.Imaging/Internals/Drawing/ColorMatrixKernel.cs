@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -216,7 +217,8 @@ internal static class ColorMatrixKernel
             var columns = new MatrixColumns(m, byte.MaxValue);
             var isBlueFirst = typeof(TPixel) == typeof(Bgra32);
             var pixels = row.Slice(x * 4, count * 4);
-            for (var i = 0; i < count; i++)
+            var done = WideKernel.Apply(m, byte.MaxValue, pixels, isRgb24: false, destination, isBlueFirst);
+            for (var i = done; i < count; i++)
             {
                 var pixel = pixels.Slice(i * 4, 4);
                 var (red, blue) = isBlueFirst ? (pixel[2], pixel[0]) : (pixel[0], pixel[2]);
@@ -227,7 +229,8 @@ internal static class ColorMatrixKernel
         {
             var columns = new MatrixColumns(m, byte.MaxValue);
             var pixels = row.Slice(x * 3, count * 3);
-            for (var i = 0; i < count; i++)
+            var done = WideKernel.Apply(m, byte.MaxValue, pixels, isRgb24: true, destination, isBlueFirst: false);
+            for (var i = done; i < count; i++)
             {
                 columns.Transform(pixels[i * 3], pixels[(i * 3) + 1], pixels[(i * 3) + 2], byte.MaxValue, destination.Slice(i * 4, 4), isBlueFirst: false);
             }
@@ -236,7 +239,8 @@ internal static class ColorMatrixKernel
         {
             var columns = new MatrixColumns(m, ushort.MaxValue);
             var pixels = unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x * 4, count * 4);
-            for (var i = 0; i < count; i++)
+            var done = WideKernel.Apply64(m, ushort.MaxValue, pixels, destination);
+            for (var i = done; i < count; i++)
             {
                 var pixel = pixels.Slice(i * 4, 4);
                 columns.Transform(pixel[0], pixel[1], pixel[2], pixel[3], destination.Slice(i * 4, 4), isBlueFirst: false);
@@ -557,6 +561,352 @@ internal static class ColorMatrixKernel
         // Written so that a value that is not a number is zero, as in Row
         private static Vector128<double> Clamp(Vector128<double> value, Vector128<double> max)
             => Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(value, max), max, Vector128.ConditionalSelect(Vector128.GreaterThan(value, Vector128<double>.Zero), value, Vector128<double>.Zero));
+    }
+
+    /// <summary>
+    /// Computes the colors of several pixels at once, one pixel per lane (structure of arrays): each lane computes the
+    /// sum of a row with the same operations, in the same order, as <see cref="Row"/>, so the results are the same.
+    /// </summary>
+    private static class WideKernel
+    {
+        /// <summary>Computes the colors of 8-bit RGBA, BGRA or RGB pixels, as many as fit in whole groups; returns the number of pixels done.</summary>
+        public static int Apply(ReadOnlySpan<double> m, double max, ReadOnlySpan<byte> pixels, bool isRgb24, Span<ushort> destination, bool isBlueFirst)
+        {
+            var count = destination.Length / 4;
+            var bytesPerPixel = isRgb24 ? 3 : 4;
+            var done = 0;
+            if (Vector512.IsHardwareAccelerated && Avx512F.IsSupported && Avx2.IsSupported)
+            {
+                var c = new Coefficients512(m, max);
+                var mask = Vector256.Create(0xFFu);
+                for (; done + 8 <= count && (done * bytesPerPixel) + 32 <= pixels.Length; done += 8)
+                {
+                    var packed = isRgb24
+                        ? Vector256.Create(ExpandRgb24(Vector128.Create(pixels.Slice(done * 3, 16))), ExpandRgb24(Vector128.Create(pixels.Slice((done + 4) * 3, 16))))
+                        : Vector256.Create(pixels.Slice(done * 4, 32)).AsUInt32();
+                    var first = (packed & mask).AsInt32();
+                    var second = ((packed >> 8) & mask).AsInt32();
+                    var third = ((packed >> 16) & mask).AsInt32();
+                    var alpha = isRgb24 ? Vector256.Create((int)byte.MaxValue) : (packed >> 24).AsInt32();
+                    var (red, blue) = isBlueFirst ? (third, first) : (first, third);
+                    c.Compute(red, second, blue, alpha, out var o0, out var o1, out var o2, out var o3);
+                    Store(isBlueFirst ? o2 : o0, o1, isBlueFirst ? o0 : o2, o3, destination.Slice(done * 4, 32));
+                }
+            }
+
+            if (Avx.IsSupported || AdvSimd.Arm64.IsSupported)
+            {
+                var c = new Coefficients256(m, max);
+                var mask = Vector128.Create(0xFFu);
+                for (; done + 4 <= count && (done * bytesPerPixel) + 16 <= pixels.Length; done += 4)
+                {
+                    var bytes = Vector128.Create(pixels.Slice(done * bytesPerPixel, 16));
+                    var packed = isRgb24 ? ExpandRgb24(bytes) : bytes.AsUInt32();
+                    var first = (packed & mask).AsInt32();
+                    var second = ((packed >> 8) & mask).AsInt32();
+                    var third = ((packed >> 16) & mask).AsInt32();
+                    var alpha = isRgb24 ? Vector128.Create((int)byte.MaxValue) : (packed >> 24).AsInt32();
+                    var (red, blue) = isBlueFirst ? (third, first) : (first, third);
+                    c.Compute(red, second, blue, alpha, out var o0, out var o1, out var o2, out var o3);
+                    Store(isBlueFirst ? o2 : o0, o1, isBlueFirst ? o0 : o2, o3, destination.Slice(done * 4, 16));
+                }
+            }
+
+            return done;
+        }
+
+        /// <summary>Computes the colors of 16-bit RGBA pixels (four samples each), as many as fit in whole groups of four; returns the number of pixels done.</summary>
+        public static int Apply64(ReadOnlySpan<double> m, double max, ReadOnlySpan<ushort> samples, Span<ushort> destination)
+        {
+            var count = destination.Length / 4;
+            var done = 0;
+            if (Avx.IsSupported || AdvSimd.Arm64.IsSupported)
+            {
+                var c = new Coefficients256(m, max);
+                var mask = Vector128.Create(0xFFFFUL);
+                for (; done + 4 <= count; done += 4)
+                {
+                    var low = Vector128.Create(samples.Slice(done * 4, 8)).AsUInt64();
+                    var high = Vector128.Create(samples.Slice((done * 4) + 8, 8)).AsUInt64();
+                    var red = Vector128.Narrow(low & mask, high & mask).AsInt32();
+                    var green = Vector128.Narrow((low >> 16) & mask, (high >> 16) & mask).AsInt32();
+                    var blue = Vector128.Narrow((low >> 32) & mask, (high >> 32) & mask).AsInt32();
+                    var alpha = Vector128.Narrow(low >> 48, high >> 48).AsInt32();
+                    c.Compute(red, green, blue, alpha, out var o0, out var o1, out var o2, out var o3);
+                    Store(o0, o1, o2, o3, destination.Slice(done * 4, 16));
+                }
+            }
+
+            return done;
+        }
+
+        /// <summary>Spreads four RGB pixels (the first 12 bytes) to four 32-bit lanes; the fourth byte of each lane is to be ignored.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<uint> ExpandRgb24(Vector128<byte> bytes)
+            => Vector128.Shuffle(bytes, Vector128.Create((byte)0, 1, 2, 0, 3, 4, 5, 0, 6, 7, 8, 0, 9, 10, 11, 0)).AsUInt32();
+
+        /// <summary>Writes the four samples of four pixels (from 0 to 65535) in pixel order.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Store(Vector128<int> s0, Vector128<int> s1, Vector128<int> s2, Vector128<int> s3, Span<ushort> destination)
+        {
+            var first = (s0 | (s1 << 16)).AsUInt32();
+            var second = (s2 | (s3 << 16)).AsUInt32();
+            Vector128<uint> low;
+            Vector128<uint> high;
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                low = AdvSimd.Arm64.ZipLow(first, second);
+                high = AdvSimd.Arm64.ZipHigh(first, second);
+            }
+            else
+            {
+                low = Sse2.UnpackLow(first, second);
+                high = Sse2.UnpackHigh(first, second);
+            }
+
+            low.AsUInt16().CopyTo(destination);
+            high.AsUInt16().CopyTo(destination[8..]);
+        }
+
+        /// <summary>Writes the four samples of eight pixels (from 0 to 65535) in pixel order.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Store(Vector256<int> s0, Vector256<int> s1, Vector256<int> s2, Vector256<int> s3, Span<ushort> destination)
+        {
+            var first = (s0 | (s1 << 16)).AsUInt32();
+            var second = (s2 | (s3 << 16)).AsUInt32();
+
+            // Interleaved within each half: the pixels 0, 1, 4, 5, then 2, 3, 6, 7
+            var low = Avx2.UnpackLow(first, second);
+            var high = Avx2.UnpackHigh(first, second);
+            Avx2.Permute2x128(low, high, 0x20).AsUInt16().CopyTo(destination);
+            Avx2.Permute2x128(low, high, 0x31).AsUInt16().CopyTo(destination[16..]);
+        }
+
+        /// <summary>The coefficients of four pixels at once: 256-bit vectors of doubles on x64, two halves of 128 bits on Arm64.</summary>
+        [StructLayout(LayoutKind.Auto)]
+        private readonly struct Coefficients256
+        {
+            private readonly Vector256<double> _r0, _g0, _b0, _a0, _c0, _r1, _g1, _b1, _a1, _c1, _r2, _g2, _b2, _a2, _c2, _r3, _g3, _b3, _a3, _c3;
+            private readonly Vector256<double> _max;
+            private readonly bool _keepsAlpha;
+
+            public Coefficients256(ReadOnlySpan<double> m, double max)
+            {
+                _keepsAlpha = KeepsAlpha(m);
+                _r0 = Vector256.Create(m[0]);
+                _g0 = Vector256.Create(m[1]);
+                _b0 = Vector256.Create(m[2]);
+                _a0 = Vector256.Create(m[3]);
+                _c0 = Vector256.Create(m[4] * max);
+                _r1 = Vector256.Create(m[ColorMatrix.ColumnCount]);
+                _g1 = Vector256.Create(m[ColorMatrix.ColumnCount + 1]);
+                _b1 = Vector256.Create(m[ColorMatrix.ColumnCount + 2]);
+                _a1 = Vector256.Create(m[ColorMatrix.ColumnCount + 3]);
+                _c1 = Vector256.Create(m[ColorMatrix.ColumnCount + 4] * max);
+                _r2 = Vector256.Create(m[(2 * ColorMatrix.ColumnCount) + 0]);
+                _g2 = Vector256.Create(m[(2 * ColorMatrix.ColumnCount) + 1]);
+                _b2 = Vector256.Create(m[(2 * ColorMatrix.ColumnCount) + 2]);
+                _a2 = Vector256.Create(m[(2 * ColorMatrix.ColumnCount) + 3]);
+                _c2 = Vector256.Create(m[(2 * ColorMatrix.ColumnCount) + 4] * max);
+                _r3 = Vector256.Create(m[(3 * ColorMatrix.ColumnCount) + 0]);
+                _g3 = Vector256.Create(m[(3 * ColorMatrix.ColumnCount) + 1]);
+                _b3 = Vector256.Create(m[(3 * ColorMatrix.ColumnCount) + 2]);
+                _a3 = Vector256.Create(m[(3 * ColorMatrix.ColumnCount) + 3]);
+                _c3 = Vector256.Create(m[(3 * ColorMatrix.ColumnCount) + 4] * max);
+                _max = Vector256.Create(max);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Compute(Vector128<int> red, Vector128<int> green, Vector128<int> blue, Vector128<int> alpha, out Vector128<int> o0, out Vector128<int> o1, out Vector128<int> o2, out Vector128<int> o3)
+            {
+                if (Avx.IsSupported)
+                {
+                    var r = Avx.ConvertToVector256Double(red);
+                    var g = Avx.ConvertToVector256Double(green);
+                    var b = Avx.ConvertToVector256Double(blue);
+                    if (_keepsAlpha)
+                    {
+                        o0 = Avx.ConvertToVector128Int32WithTruncation(Sum(r, g, b, _r0, _g0, _b0, _c0, _max));
+                        o1 = Avx.ConvertToVector128Int32WithTruncation(Sum(r, g, b, _r1, _g1, _b1, _c1, _max));
+                        o2 = Avx.ConvertToVector128Int32WithTruncation(Sum(r, g, b, _r2, _g2, _b2, _c2, _max));
+                        o3 = alpha;
+                        return;
+                    }
+
+                    var a = Avx.ConvertToVector256Double(alpha);
+                    o0 = Avx.ConvertToVector128Int32WithTruncation(Sum(r, g, b, a, _r0, _g0, _b0, _a0, _c0, _max));
+                    o1 = Avx.ConvertToVector128Int32WithTruncation(Sum(r, g, b, a, _r1, _g1, _b1, _a1, _c1, _max));
+                    o2 = Avx.ConvertToVector128Int32WithTruncation(Sum(r, g, b, a, _r2, _g2, _b2, _a2, _c2, _max));
+                    o3 = Avx.ConvertToVector128Int32WithTruncation(Sum(r, g, b, a, _r3, _g3, _b3, _a3, _c3, _max));
+                }
+                else
+                {
+                    var rl = Vector128.ConvertToDouble(Vector128.WidenLower(red));
+                    var gl = Vector128.ConvertToDouble(Vector128.WidenLower(green));
+                    var bl = Vector128.ConvertToDouble(Vector128.WidenLower(blue));
+                    var rh = Vector128.ConvertToDouble(Vector128.WidenUpper(red));
+                    var gh = Vector128.ConvertToDouble(Vector128.WidenUpper(green));
+                    var bh = Vector128.ConvertToDouble(Vector128.WidenUpper(blue));
+                    if (_keepsAlpha)
+                    {
+                        o0 = Row(rl, gl, bl, rh, gh, bh, _r0, _g0, _b0, _c0, _max);
+                        o1 = Row(rl, gl, bl, rh, gh, bh, _r1, _g1, _b1, _c1, _max);
+                        o2 = Row(rl, gl, bl, rh, gh, bh, _r2, _g2, _b2, _c2, _max);
+                        o3 = alpha;
+                        return;
+                    }
+
+                    var al = Vector128.ConvertToDouble(Vector128.WidenLower(alpha));
+                    var ah = Vector128.ConvertToDouble(Vector128.WidenUpper(alpha));
+                    o0 = Row(rl, gl, bl, al, rh, gh, bh, ah, _r0, _g0, _b0, _a0, _c0, _max);
+                    o1 = Row(rl, gl, bl, al, rh, gh, bh, ah, _r1, _g1, _b1, _a1, _c1, _max);
+                    o2 = Row(rl, gl, bl, al, rh, gh, bh, ah, _r2, _g2, _b2, _a2, _c2, _max);
+                    o3 = Row(rl, gl, bl, al, rh, gh, bh, ah, _r3, _g3, _b3, _a3, _c3, _max);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static Vector128<int> Row(Vector128<double> rl, Vector128<double> gl, Vector128<double> bl, Vector128<double> al, Vector128<double> rh, Vector128<double> gh, Vector128<double> bh, Vector128<double> ah, Vector256<double> mr, Vector256<double> mg, Vector256<double> mb, Vector256<double> ma, Vector256<double> mc, Vector256<double> max)
+            {
+                var low = Sum(rl, gl, bl, al, mr.GetLower(), mg.GetLower(), mb.GetLower(), ma.GetLower(), mc.GetLower(), max.GetLower());
+                var high = Sum(rh, gh, bh, ah, mr.GetLower(), mg.GetLower(), mb.GetLower(), ma.GetLower(), mc.GetLower(), max.GetLower());
+                return Vector128.Narrow(Vector128.ConvertToInt64(low), Vector128.ConvertToInt64(high));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static Vector128<int> Row(Vector128<double> rl, Vector128<double> gl, Vector128<double> bl, Vector128<double> rh, Vector128<double> gh, Vector128<double> bh, Vector256<double> mr, Vector256<double> mg, Vector256<double> mb, Vector256<double> mc, Vector256<double> max)
+            {
+                var low = Sum(rl, gl, bl, mr.GetLower(), mg.GetLower(), mb.GetLower(), mc.GetLower(), max.GetLower());
+                var high = Sum(rh, gh, bh, mr.GetLower(), mg.GetLower(), mb.GetLower(), mc.GetLower(), max.GetLower());
+                return Vector128.Narrow(Vector128.ConvertToInt64(low), Vector128.ConvertToInt64(high));
+            }
+        }
+
+        /// <summary>The coefficients of eight pixels at once, in 512-bit vectors of doubles.</summary>
+        [StructLayout(LayoutKind.Auto)]
+        private readonly struct Coefficients512
+        {
+            private readonly Vector512<double> _r0, _g0, _b0, _a0, _c0, _r1, _g1, _b1, _a1, _c1, _r2, _g2, _b2, _a2, _c2, _r3, _g3, _b3, _a3, _c3;
+            private readonly Vector512<double> _max;
+            private readonly bool _keepsAlpha;
+
+            public Coefficients512(ReadOnlySpan<double> m, double max)
+            {
+                _keepsAlpha = KeepsAlpha(m);
+                _r0 = Vector512.Create(m[0]);
+                _g0 = Vector512.Create(m[1]);
+                _b0 = Vector512.Create(m[2]);
+                _a0 = Vector512.Create(m[3]);
+                _c0 = Vector512.Create(m[4] * max);
+                _r1 = Vector512.Create(m[ColorMatrix.ColumnCount]);
+                _g1 = Vector512.Create(m[ColorMatrix.ColumnCount + 1]);
+                _b1 = Vector512.Create(m[ColorMatrix.ColumnCount + 2]);
+                _a1 = Vector512.Create(m[ColorMatrix.ColumnCount + 3]);
+                _c1 = Vector512.Create(m[ColorMatrix.ColumnCount + 4] * max);
+                _r2 = Vector512.Create(m[(2 * ColorMatrix.ColumnCount) + 0]);
+                _g2 = Vector512.Create(m[(2 * ColorMatrix.ColumnCount) + 1]);
+                _b2 = Vector512.Create(m[(2 * ColorMatrix.ColumnCount) + 2]);
+                _a2 = Vector512.Create(m[(2 * ColorMatrix.ColumnCount) + 3]);
+                _c2 = Vector512.Create(m[(2 * ColorMatrix.ColumnCount) + 4] * max);
+                _r3 = Vector512.Create(m[(3 * ColorMatrix.ColumnCount) + 0]);
+                _g3 = Vector512.Create(m[(3 * ColorMatrix.ColumnCount) + 1]);
+                _b3 = Vector512.Create(m[(3 * ColorMatrix.ColumnCount) + 2]);
+                _a3 = Vector512.Create(m[(3 * ColorMatrix.ColumnCount) + 3]);
+                _c3 = Vector512.Create(m[(3 * ColorMatrix.ColumnCount) + 4] * max);
+                _max = Vector512.Create(max);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Compute(Vector256<int> red, Vector256<int> green, Vector256<int> blue, Vector256<int> alpha, out Vector256<int> o0, out Vector256<int> o1, out Vector256<int> o2, out Vector256<int> o3)
+            {
+                var r = Avx512F.ConvertToVector512Double(red);
+                var g = Avx512F.ConvertToVector512Double(green);
+                var b = Avx512F.ConvertToVector512Double(blue);
+                if (_keepsAlpha)
+                {
+                    o0 = Avx512F.ConvertToVector256Int32WithTruncation(Sum(r, g, b, _r0, _g0, _b0, _c0, _max));
+                    o1 = Avx512F.ConvertToVector256Int32WithTruncation(Sum(r, g, b, _r1, _g1, _b1, _c1, _max));
+                    o2 = Avx512F.ConvertToVector256Int32WithTruncation(Sum(r, g, b, _r2, _g2, _b2, _c2, _max));
+                    o3 = alpha;
+                    return;
+                }
+
+                var a = Avx512F.ConvertToVector512Double(alpha);
+                o0 = Avx512F.ConvertToVector256Int32WithTruncation(Sum(r, g, b, a, _r0, _g0, _b0, _a0, _c0, _max));
+                o1 = Avx512F.ConvertToVector256Int32WithTruncation(Sum(r, g, b, a, _r1, _g1, _b1, _a1, _c1, _max));
+                o2 = Avx512F.ConvertToVector256Int32WithTruncation(Sum(r, g, b, a, _r2, _g2, _b2, _a2, _c2, _max));
+                o3 = Avx512F.ConvertToVector256Int32WithTruncation(Sum(r, g, b, a, _r3, _g3, _b3, _a3, _c3, _max));
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether a matrix keeps the alpha of every pixel and gives colors that do not depend on
+        /// it: the alpha row is (0, 0, 0, 1, 0) and the alpha column of the color rows is 0. The alpha of a pixel is then
+        /// its own (<c>floor(A + 1/2 + 2^-20)</c> is <c>A</c>), and the sums of the colors are those of
+        /// <see cref="Row"/> without the term of the alpha: it is 0 (the alpha is finite), and adding 0 to a sum does
+        /// not change its value (only the sign of a zero, which the rounding down removes).
+        /// </summary>
+        private static bool KeepsAlpha(ReadOnlySpan<double> m)
+        {
+            const int Columns = ColorMatrix.ColumnCount;
+            return m[3] == 0 && m[Columns + 3] == 0 && m[(2 * Columns) + 3] == 0
+                && m[3 * Columns] == 0 && m[(3 * Columns) + 1] == 0 && m[(3 * Columns) + 2] == 0 && m[(3 * Columns) + 3] == 1 && m[(3 * Columns) + 4] == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<double> Sum(Vector128<double> r, Vector128<double> g, Vector128<double> b, Vector128<double> mr, Vector128<double> mg, Vector128<double> mb, Vector128<double> mc, Vector128<double> max)
+            => Clamp(Vector128.Floor(((((mr * r) + (mg * g)) + (mb * b)) + mc) + Vector128.Create(RoundingOffset)), max);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<double> Sum(Vector256<double> r, Vector256<double> g, Vector256<double> b, Vector256<double> mr, Vector256<double> mg, Vector256<double> mb, Vector256<double> mc, Vector256<double> max)
+            => Clamp(Vector256.Floor(((((mr * r) + (mg * g)) + (mb * b)) + mc) + Vector256.Create(RoundingOffset)), max);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<double> Sum(Vector512<double> r, Vector512<double> g, Vector512<double> b, Vector512<double> mr, Vector512<double> mg, Vector512<double> mb, Vector512<double> mc, Vector512<double> max)
+            => Clamp(Vector512.Floor(((((mr * r) + (mg * g)) + (mb * b)) + mc) + Vector512.Create(RoundingOffset)), max);
+
+        // The sum of Row, rounded down and kept between 0 and the largest sample; a value that is not a number gives 0
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<double> Sum(Vector128<double> r, Vector128<double> g, Vector128<double> b, Vector128<double> a, Vector128<double> mr, Vector128<double> mg, Vector128<double> mb, Vector128<double> ma, Vector128<double> mc, Vector128<double> max)
+            => Clamp(Vector128.Floor((((((mr * r) + (mg * g)) + (mb * b)) + (ma * a)) + mc) + Vector128.Create(RoundingOffset)), max);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<double> Sum(Vector256<double> r, Vector256<double> g, Vector256<double> b, Vector256<double> a, Vector256<double> mr, Vector256<double> mg, Vector256<double> mb, Vector256<double> ma, Vector256<double> mc, Vector256<double> max)
+            => Clamp(Vector256.Floor((((((mr * r) + (mg * g)) + (mb * b)) + (ma * a)) + mc) + Vector256.Create(RoundingOffset)), max);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<double> Sum(Vector512<double> r, Vector512<double> g, Vector512<double> b, Vector512<double> a, Vector512<double> mr, Vector512<double> mg, Vector512<double> mb, Vector512<double> ma, Vector512<double> mc, Vector512<double> max)
+            => Clamp(Vector512.Floor((((((mr * r) + (mg * g)) + (mb * b)) + (ma * a)) + mc) + Vector512.Create(RoundingOffset)), max);
+
+        // Keeps a whole number between 0 and the largest sample; a value that is not a number gives 0
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<double> Clamp(Vector128<double> floor, Vector128<double> max)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                // The largest of a number and a value that is not a number is the number
+                return AdvSimd.Arm64.MinNumber(AdvSimd.Arm64.MaxNumber(floor, Vector128<double>.Zero), max);
+            }
+
+            return Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(floor, max), max, Vector128.ConditionalSelect(Vector128.GreaterThan(floor, Vector128<double>.Zero), floor, Vector128<double>.Zero));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<double> Clamp(Vector256<double> floor, Vector256<double> max)
+        {
+            if (Avx.IsSupported)
+            {
+                // maxpd gives its second operand when one is not a number
+                return Avx.Min(Avx.Max(floor, Vector256<double>.Zero), max);
+            }
+
+            return Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(floor, max), max, Vector256.ConditionalSelect(Vector256.GreaterThan(floor, Vector256<double>.Zero), floor, Vector256<double>.Zero));
+        }
+
+        // vmaxpd gives its second operand when one is not a number
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<double> Clamp(Vector512<double> floor, Vector512<double> max)
+            => Avx512F.Min(Avx512F.Max(floor, Vector512<double>.Zero), max);
     }
 
     /// <summary>Converts whole numbers from 0 to 2^52, as <see cref="Vector128.ConvertToInt64(Vector128{double})"/> does.</summary>

@@ -43,6 +43,8 @@ public static partial class ImagingFuzzTargets
         new("imaging-resize", ResizeTarget) { Seeds = GetResizeSeeds, Dictionary = Tokens },
         new("imaging-icc-named-colors", IccNamedColorsTarget) { Seeds = GetIccSeeds, Dictionary = IccTokens },
         new("imaging-icc-conversion", IccProfileConversionTarget) { Seeds = GetIccSeeds, Dictionary = IccTokens },
+        new("imaging-color-matrix", ColorMatrixTarget) { Seeds = GetColorMatrixSeeds, Dictionary = Tokens },
+        new("imaging-resize-float", ResizeFloatTarget) { Seeds = GetResizeFloatSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>

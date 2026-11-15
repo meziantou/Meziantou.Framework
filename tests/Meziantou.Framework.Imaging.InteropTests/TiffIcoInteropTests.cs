@@ -8,8 +8,8 @@ namespace Meziantou.Framework.Imaging.InteropTests;
 
 /// <summary>
 /// TIFF/BigTIFF and ICO/CUR interoperability with independent readers and writers: FFmpeg's libavcodec
-/// <c>tiff</c> codec, and Apple ImageIO (<c>CGImageSource</c>), which reads multi-page TIFF documents and icon
-/// directories natively.
+/// <c>tiff</c> codec, Apple ImageIO (<c>CGImageSource</c>), which reads multi-page TIFF documents and icon
+/// directories natively, OpenImageIO (whose TIFF reader is libtiff) and ImageMagick.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
@@ -19,7 +19,8 @@ namespace Meziantou.Framework.Imaging.InteropTests;
 /// <item><description>Apple ImageIO decodes the bilevel pages exactly and the JPEG pages like the library does;</description></item>
 /// <item><description>Apple ImageIO decodes the pages of the TIFF encoder with horizontal differencing and in uncompressed, Deflate and LZW tiles (partial edge tiles included) exactly;</description></item>
 /// <item><description>Apple ImageIO sees the pages of a multi-page document, and the representations of an icon, as separate images with their own pixels;</description></item>
-/// <item><description>a cursor written by the library keeps the hotspot Apple ImageIO reports.</description></item>
+/// <item><description>a cursor written by the library keeps the hotspot Apple ImageIO reports;</description></item>
+/// <item><description>the pages the TIFF encoder writes in separate planes, every layout, lossless compression, predictor, byte order and offset size, in strips and tiles, decode to the samples of their source in OpenImageIO (libtiff) and ImageMagick.</description></item>
 /// </list>
 /// </remarks>
 public sealed class TiffIcoInteropTests
@@ -624,6 +625,223 @@ public sealed class TiffIcoInteropTests
             var path = await SaveAsync(image, new TiffEncoder { Compression = compression, RowsPerStrip = 4 }, $"encoder-float-{compression}-{(opaque ? "rgb" : "rgba")}.tif");
             var decoded = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, opaque ? "rgbf32le" : "rgbaf32le", Width, Height, XunitCancellationToken));
             Assert.Equal(expected.ToArray(), decoded);
+        }
+    }
+
+    public static TheoryData<string, TiffCompression, bool> SeparatePlaneCases()
+    {
+        var data = new TheoryData<string, TiffCompression, bool>();
+        foreach (var layout in new[] { "gray8", "la16", "rgb24", "rgba32", "gray16", "la32", "rgb48", "rgba64", "cmyk32", "cmyk64", "float1", "float2", "float3", "float4", "indexed", "bilevel" })
+        {
+            TiffCompression[] compressions = layout == "bilevel"
+                ? [TiffCompression.None, TiffCompression.PackBits, TiffCompression.CcittGroup4]
+                : [TiffCompression.None, TiffCompression.Deflate, TiffCompression.Lzw, TiffCompression.PackBits];
+            foreach (var compression in compressions)
+            {
+                foreach (var tiled in new[] { false, true })
+                {
+                    data.Add(layout, compression, tiled);
+                }
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(SeparatePlaneCases))]
+    public async Task SeparatePlanesDecodeExactlyInOpenImageIOAndImageMagick(string layout, TiffCompression compression, bool tiled)
+    {
+        // Strips of 8 rows or tiles of 16x16 pixels (the edges partial), with the predictors of Deflate and LZW, in both byte
+        // orders and both offset sizes. OpenImageIO reads them with libtiff 4.7.2; the samples are compared with the ones of
+        // the source image, not with the decoder of the library
+        const int PlaneWidth = 37;
+        const int PlaneHeight = 21;
+        var (image, channels, depth, map, expected) = CreateSeparatePlanePage(layout, PlaneWidth, PlaneHeight);
+        using (image)
+        {
+            var variant = (layout.Length + (int)compression + (tiled ? 1 : 0)) % 3;
+            var encoder = new TiffEncoder
+            {
+                Compression = compression,
+                Predictor = compression is TiffCompression.Deflate or TiffCompression.Lzw && layout is not ("indexed" or "bilevel") ? TiffPredictor.HorizontalDifferencing : TiffPredictor.None,
+                PixelLayout = layout switch
+                {
+                    "indexed" => TiffPixelLayout.Indexed,
+                    "bilevel" => TiffPixelLayout.Bilevel,
+                    _ => TiffPixelLayout.Auto,
+                },
+                BigEndian = variant == 1,
+                BigTiff = variant == 2,
+                // OpenImageIO reads CMYK pages one scanline at a time, which libtiff cannot do in the middle of a compressed
+                // strip of separate planes ("Compression algorithm does not support random access"): those strips have one row
+                RowsPerStrip = layout.StartsWith("cmyk", StringComparison.Ordinal) && compression != TiffCompression.None ? 1 : 8,
+                TileWidth = tiled ? 16 : 0,
+                TileHeight = tiled ? 16 : 0,
+                SeparatePlanes = true,
+            };
+
+            var path = await SaveAsync(image, encoder, $"planar-{layout}-{compression}-{(tiled ? "tiles" : "strips")}.tif");
+            var oiio = await RequiredTools.OpenImageIOAsync();
+            var dump = await oiio.DumpAsync(path, XunitCancellationToken);
+            Assert.Equal((PlaneWidth, PlaneHeight, channels), (dump.Width, dump.Height, dump.Channels));
+            Assert.Equal(expected, [.. dump.Samples]);
+
+            // ImageMagick 7.1.2-35 reads the alpha plane of a gray page with alpha as its gray samples
+            if (channels == 2)
+                return;
+
+            var magick = await RequiredTools.ImageMagickAsync();
+            var samples = await magick.ExportSamplesAsync(path, map, depth, XunitCancellationToken);
+            var bytes = new byte[expected.Length * (depth / 8)];
+            for (var i = 0; i < expected.Length; i++)
+            {
+                switch (depth)
+                {
+                    case 8:
+                        bytes[i] = (byte)expected[i];
+                        break;
+                    case 16:
+                        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(i * 2), (ushort)expected[i]);
+                        break;
+                    default:
+                        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(i * 4), (float)expected[i]);
+                        break;
+                }
+            }
+
+            Assert.Equal(bytes, samples);
+        }
+    }
+
+    /// <summary>
+    /// Creates a page of a layout of <see cref="SeparatePlaneCases"/>: the image, the samples of a pixel, the bits of a
+    /// sample and the raw format of ImageMagick for them, and the samples the page stores (a bilevel pixel as 0 or 255, a
+    /// palette pixel as its color). The floating-point values are multiples of 1/8, which OpenImageIO prints exactly.
+    /// </summary>
+    private static (Image Image, int Channels, int Depth, string Map, double[] Samples) CreateSeparatePlanePage(string layout, int width, int height)
+    {
+        var count = width * height;
+        int Sample(int i, int channel, int bits) => (int)((((uint)(i % width) * (uint)(37 + (channel * 74))) + ((uint)(i / width) * (uint)(101 + (channel * 13))) + (uint)(channel * 59) + (uint)(i * i * (channel + 1))) % (1u << bits));
+        double[] Samples(int channels, int bits) => [.. Enumerable.Range(0, count * channels).Select(index => (double)Sample(index / channels, index % channels, bits))];
+        switch (layout)
+        {
+            case "gray8":
+            case "la16":
+            case "rgb24":
+            case "rgba32":
+            case "cmyk32":
+            {
+                var channels = layout switch
+                {
+                    "gray8" => 1,
+                    "la16" => 2,
+                    "rgb24" => 3,
+                    _ => 4,
+                };
+                var samples = Samples(channels, 8);
+                var bytes = samples.Select(static value => (byte)value).ToArray();
+                Image image = layout switch
+                {
+                    "gray8" => Image.ImportPixelBytes<Gray8>(bytes, width, height),
+                    "la16" => Image.ImportPixelBytes<La16>(bytes, width, height),
+                    "rgb24" => Image.ImportPixelBytes<Rgb24>(bytes, width, height),
+                    "rgba32" => Image.ImportPixelBytes<Rgba32>(bytes, width, height),
+                    _ => Image.ImportPixelBytes<Cmyk32>(bytes, width, height),
+                };
+                return (image, channels, 8, layout switch
+                {
+                    "gray8" => "gray",
+                    "la16" => "graya",
+                    "rgb24" => "rgb",
+                    "rgba32" => "rgba",
+                    _ => "cmyk",
+                }, samples);
+            }
+
+            case "gray16":
+            case "la32":
+            case "rgb48":
+            case "rgba64":
+            case "cmyk64":
+            {
+                var channels = layout switch
+                {
+                    "gray16" => 1,
+                    "la32" => 2,
+                    "rgb48" => 3,
+                    _ => 4,
+                };
+                var samples = Samples(channels, 16);
+                var bytes = new byte[samples.Length * 2];
+                for (var i = 0; i < samples.Length; i++)
+                {
+                    BitConverter.TryWriteBytes(bytes.AsSpan(i * 2), (ushort)samples[i]);
+                }
+
+                Image image = layout switch
+                {
+                    "gray16" => Image.ImportPixelBytes<Gray16>(bytes, width, height),
+                    "la32" => Image.ImportPixelBytes<La32>(bytes, width, height),
+                    "rgb48" => Image.ImportPixelBytes<Rgb48>(bytes, width, height),
+                    "rgba64" => Image.ImportPixelBytes<Rgba64>(bytes, width, height),
+                    _ => Image.ImportPixelBytes<Cmyk64>(bytes, width, height),
+                };
+                return (image, channels, 16, layout switch
+                {
+                    "gray16" => "gray",
+                    "la32" => "graya",
+                    "rgb48" => "rgb",
+                    "rgba64" => "rgba",
+                    _ => "cmyk",
+                }, samples);
+            }
+
+            case "indexed":
+            {
+                // At most 8 x 4 x 8 colors
+                var colors = Enumerable.Range(0, count).Select(i => new Rgb24((byte)(Sample(i, 0, 8) & 0xE0), (byte)(Sample(i, 1, 8) & 0xC0), (byte)(Sample(i, 2, 8) & 0xE0))).ToArray();
+                return (Image.ImportPixelData<Rgb24>(colors, width, height), 3, 8, "rgb", [.. colors.SelectMany(static color => new double[] { color.R, color.G, color.B })]);
+            }
+
+            case "bilevel":
+            {
+                var levels = Enumerable.Range(0, count).Select(i => Sample(i, 0, 8) >= 128 ? (byte)255 : (byte)0).ToArray();
+                return (Image.ImportPixelBytes<Gray8>(levels, width, height), 1, 8, "gray", [.. levels.Select(static level => (double)level)]);
+            }
+
+            default:
+            {
+                // float1 to float4: the fewest samples that hold the page, gray when the three colors are the same and
+                // without alpha when every pixel is opaque
+                var channels = layout[^1] - '0';
+                var pixels = new RgbaFloat[count];
+                for (var i = 0; i < count; i++)
+                {
+                    float Value(int channel) => (Sample(i, channel, 8) - 128) / 8f;
+                    var gray = Value(0);
+                    pixels[i] = channels <= 2
+                        ? new RgbaFloat(gray, gray, gray, channels == 2 ? Value(3) : 1)
+                        : new RgbaFloat(Value(0), Value(1), Value(2), channels == 4 ? Value(3) : 1);
+                }
+
+                var image = Image.ImportPixelData<RgbaFloat>(pixels, width, height);
+                image.Metadata.TransferFunction = Metadata.ColorTransferFunction.Linear;
+                var samples = pixels.SelectMany(pixel => channels switch
+                {
+                    1 => new double[] { pixel.R },
+                    2 => [pixel.R, pixel.A],
+                    3 => [pixel.R, pixel.G, pixel.B],
+                    _ => [pixel.R, pixel.G, pixel.B, pixel.A],
+                }).ToArray();
+                return (image, channels, 32, channels switch
+                {
+                    1 => "gray",
+                    2 => "graya",
+                    3 => "rgb",
+                    _ => "rgba",
+                }, samples);
+            }
         }
     }
 

@@ -3,11 +3,11 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <summary>Immutable settings for TIFF and BigTIFF encoding.</summary>
 /// <remarks>
 /// <para>
-/// The container is the part of TIFF 6.0 that any reader accepts: little-endian by default, chunky samples, top-down
-/// strips, no predictor for integer samples. <see cref="Compression"/> selects no compression, Deflate (the default), LZW, PackBits, the
+/// The container is the part of TIFF 6.0 that any reader accepts: little-endian by default, chunky samples (unless
+/// <see cref="SeparatePlanes"/>), top-down strips, no predictor for integer samples. <see cref="Compression"/> selects no compression, Deflate (the default), LZW, PackBits, the
 /// CCITT facsimile compressions or JPEG. <see cref="Predictor"/> selects horizontal differencing for the integer samples
-/// of Deflate and LZW pages, and <see cref="TileWidth"/> and <see cref="TileHeight"/> write tiles instead of strips.
-/// Planar storage is never written.
+/// of Deflate and LZW pages, <see cref="TileWidth"/> and <see cref="TileHeight"/> write tiles instead of strips, and
+/// <see cref="SeparatePlanes"/> writes each sample in a plane of its own.
 /// </para>
 /// <para>
 /// By default (<see cref="TiffPixelLayout.Auto"/>) the sample layout follows the pixel format of the image, losslessly:
@@ -24,13 +24,16 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// do not store floating-point samples: <see cref="ImageEncoder.FloatingPointConversion"/> reduces them first. <see cref="PixelLayout"/> also selects a bilevel layout (one bit per pixel) and a palette
 /// layout, which store the image exactly or reject it: this encoder has no background color, no bit-depth-reduction
 /// switch and no color reduction. The only output that is not exact is the one of <see cref="TiffCompression.Jpeg"/>,
-/// which is lossy by nature and selected explicitly. CMYK data is never written.
+/// which is lossy by nature and selected explicitly. CMYK pixels are written as separated samples (<c>PhotometricInterpretation =
+/// 5</c>) with this layout and a lossless compression.
 /// </para>
 /// <para>
-/// <strong>The destination must be seekable.</strong> A TIFF directory stores the offsets of the strips it describes, so
-/// it can only be written once their compressed sizes are known; the encoder writes the pixel data first and then patches
-/// the header and the directory pointers. A non-seekable stream is rejected before anything is written. File destinations
-/// are always seekable.
+/// <strong>The destination must be seekable, unless the page is not compressed.</strong> A TIFF directory stores the
+/// offsets of the strips it describes, so the directory of a compressed page can only be written once their compressed
+/// sizes are known; the encoder writes the pixel data first and then patches the header and the directory pointers. A
+/// non-seekable stream is rejected before anything is written. The sizes of uncompressed strips
+/// (<see cref="TiffCompression.None"/>) are known up front: the directory of such a page is written before its strips, and
+/// a one-page document is written forward only, to any stream. File destinations are always seekable.
 /// </para>
 /// <para>
 /// One <see cref="Image.Save(string, ImageEncoder?)"/> writes a one-page document; use
@@ -219,6 +222,22 @@ public sealed class TiffEncoder : ImageEncoder
             field = value;
         }
     }
+
+    /// <summary>
+    /// Gets a value indicating whether the samples are written in separate planes (<c>PlanarConfiguration = 2</c>): the
+    /// strips or tiles of the first sample of every pixel (red, gray or cyan), then those of the second sample, and so on,
+    /// instead of the samples of a pixel side by side. Defaults to <see langword="false"/> (chunky samples,
+    /// <c>PlanarConfiguration = 1</c>), which more readers accept.
+    /// </summary>
+    /// <remarks>
+    /// Every layout, compression, predictor, strip and tile setting applies to each plane: a strip or a tile holds one sample
+    /// per pixel, and the predictors work on the samples of one plane, as TIFF 6.0 (section 14) and TIFF Technical Note 3
+    /// define them for planar data. A page of one sample per pixel (gray, bilevel, palette) has a single plane, for which TIFF
+    /// 6.0 makes the two configurations the same: it is written with <c>PlanarConfiguration = 1</c>, which more readers
+    /// accept. <see cref="TiffCompression.Jpeg"/> codes the YCbCr samples of a page in one interleaved datastream: saving
+    /// fails with an <see cref="ArgumentException"/> when it is combined with separate planes.
+    /// </remarks>
+    public bool SeparatePlanes { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the floating-point pixels are written as 32-bit floating-point samples: with

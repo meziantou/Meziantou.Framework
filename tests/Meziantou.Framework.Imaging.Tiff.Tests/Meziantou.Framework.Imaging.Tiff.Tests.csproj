@@ -1,8 +1,9 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
-  <!-- TIFF and the multi-image collections; the corpus has no TIFF fixture -->
+  <!-- TIFF and the multi-image collections; the corpus has no TIFF fixture. The save suites run the encoder in separate planes -->
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
+    <ImagingTestEncoders>tiff-planar</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

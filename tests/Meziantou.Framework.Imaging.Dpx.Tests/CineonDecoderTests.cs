@@ -167,12 +167,23 @@ public sealed class CineonDecoderTests
     }
 
     [Fact]
-    public void CineonFilesAreNotWritten()
+    public void CineonFilesAreSavedByTheirExtension()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => Formats.ImageEncoder.Create(ImageFormat.Cineon));
-        Assert.Throws<ArgumentException>(() => Formats.ImageEncoder.FromFileExtension(".cin"));
-        using var image = new Image<Rgb24>(1, 1);
-        Assert.Throws<ArgumentException>(() => image.Save(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cin")));
+        Assert.IsType<Formats.CineonEncoder>(Formats.ImageEncoder.Create(ImageFormat.Cineon));
+        Assert.IsType<Formats.CineonEncoder>(Formats.ImageEncoder.FromFileExtension(".cin"));
+        using var image = new Image<Rgb24>(1, 1, new Rgb24(1, 2, 3));
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cin");
+        try
+        {
+            image.Save(path);
+            using var decoded = Image.Load<Rgb24>(path);
+            Assert.Equal(ImageFormat.Cineon, decoded.Metadata.SourceFormat);
+            Assert.Equal(new Rgb24(1, 2, 3), decoded.Frames[0][0, 0]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     private static ushort Scale(uint value, int bits)

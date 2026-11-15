@@ -123,6 +123,47 @@ public sealed class DpxInteropTests
         Assert.Equal(expected.ToArray(), await tool.ReadWithOpenImageIOAsync(path, 32, XunitCancellationToken));
     }
 
+    public static TheoryData<string, int> CineonCases() => new()
+    {
+        { "rgb", 10 },
+        { "gray", 10 },
+        { "rgb", 8 },
+        { "gray", 8 },
+        { "rgb", 16 },
+        { "gray", 16 },
+    };
+
+    [Theory]
+    [MemberData(nameof(CineonCases))]
+    public async Task CineonEncoderOutputDecodesInOpenImageIO(string model, int bits)
+    {
+        var tool = await RequiredTools.DpxAsync();
+        var (path, expected) = await SaveCineonAsync(model, bits, "oiio");
+        Assert.Equal(expected, await tool.ReadWithOpenImageIOAsync(path, bits, XunitCancellationToken));
+    }
+
+    [Theory]
+    [MemberData(nameof(CineonCases))]
+    public async Task CineonEncoderOutputDecodesInImageMagick(string model, int bits)
+    {
+        // ImageMagick reads the code values as they are once the colorspace is set to sRGB, or Gray for one channel (it
+        // converts from log otherwise). FFmpeg has no Kodak Cineon decoder: its .cin files are Delphine CIN videos
+        var tool = await RequiredTools.DpxAsync();
+        var (path, expected) = await SaveCineonAsync(model, bits, "magick");
+        if (model == "gray" && bits == 10)
+        {
+            // ImageMagick reads the three 10-bit samples of a word of one channel from the least significant bits, as in a
+            // DPX luma element; the draft (left-justified cells), OpenImageIO and the library read them from the most
+            // significant bits
+            for (var i = 0; i + 2 < expected.Length; i += 3)
+            {
+                (expected[i], expected[i + 2]) = (expected[i + 2], expected[i]);
+            }
+        }
+
+        Assert.Equal(expected, await tool.ReadWithImageMagickAsync(path, model, bits, XunitCancellationToken, model == "gray" ? "Gray" : "sRGB"));
+    }
+
     // A line of 12 pixels ends on a 32-bit word at every depth: OpenImageIO does not skip the padding of the lines that
     // do not (dpx/rgb-8-be and dpx/rgb-16-be record it), nor read the last word of a luma line that is not full
     private const int Width = 12;
@@ -134,6 +175,17 @@ public sealed class DpxInteropTests
         "rgb" => 3,
         _ => 4,
     };
+
+    /// <summary>Saves the pattern of <see cref="SaveAsync"/> with the Cineon encoder and gives the code values it must hold.</summary>
+    private static async Task<(FullPath Path, uint[] Expected)> SaveCineonAsync(string model, int bits, string tool)
+    {
+        // The DPX file of the same pattern and depth holds the same code values
+        var (dpx, expected) = await SaveAsync(model, bits, bigEndian: true, tool + "-cin");
+        using var image = await Image.LoadAsync(dpx, cancellationToken: XunitCancellationToken);
+        var path = dpx.ChangeExtension(".cin");
+        await image.SaveAsync(path, new CineonEncoder { BitDepth = bits, AllowBitDepthReduction = true }, XunitCancellationToken);
+        return (path, expected);
+    }
 
     /// <summary>Saves a pattern with the encoder and gives the code values it must hold, in the order of the channels.</summary>
     private static async Task<(FullPath Path, uint[] Expected)> SaveAsync(string model, int bits, bool bigEndian, string tool)

@@ -239,6 +239,225 @@ public sealed class PsdInteropTests
 
     // What OpenImageIO 3.2.2 reads differently, measured on the fixtures. It reads the transparency index, the merged alpha of
     // the RGB composites (it removes the white matte into premultiplied colors) and the extra channels as the library does.
+    public static TheoryData<string> EncoderCases =>
+    [
+        "rgb8-raw",
+        "rgb8-rle",
+        "gray16-rle",
+        "rgba8-rle",
+        "rgba8-raw-psb",
+        "la8-raw",
+        "la16-rle",
+        "rgba16-rle",
+        "rgb16-raw-psb",
+        "cmyk8-rle",
+        "cmyk16-raw",
+        "rgbaf-rle",
+        "rgbf-raw",
+    ];
+
+    [Theory]
+    [MemberData(nameof(EncoderCases))]
+    public async Task EncoderOutputIsReadByPsdToolsAndImageMagick(string name)
+    {
+        var tools = await PsdTools.LocateAsync(XunitCancellationToken);
+        var directory = InteropSettings.GetArtifactsDirectory("PsdInteropTests") / ("encoder-" + name);
+        Directory.CreateDirectory(directory);
+        var (image, encoder) = CreateEncoderCase(name);
+        using (image)
+        {
+            var path = directory / (encoder.LargeDocument ? "out.psb" : "out.psd");
+            image.Save(path, encoder);
+            var data = await File.ReadAllBytesAsync(path, XunitCancellationToken);
+            var picture = ReferencePsd.Read(data);
+
+            // psd-tools gives the stored samples of the composite, and of the layer an image with transparency has
+            var dump = directory / "dump";
+            if (Directory.Exists(dump))
+            {
+                Directory.Delete(dump, recursive: true);
+            }
+
+            await tools.PsdToolsDumpAllAsync(path, dump, XunitCancellationToken);
+            var header = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(dump / "header.json", XunitCancellationToken)).RootElement;
+            Assert.Equal(picture.Version, header.GetProperty("version").GetInt32());
+            Assert.Equal(picture.Depth, header.GetProperty("depth").GetInt32());
+            Assert.Equal(picture.ChannelCount, header.GetProperty("channels").GetInt32());
+            Assert.True(header.GetProperty("hasComposite").GetBoolean());
+            Assert.Equal(picture.HasMergedAlpha, header.GetProperty("mergedAlpha").GetBoolean());
+            Assert.Equal(Interleave(picture.Channels, picture.Depth, picture.Width * picture.Height), await File.ReadAllBytesAsync(dump / "composite.raw", XunitCancellationToken));
+            var layers = header.GetProperty("layers");
+            Assert.Equal(picture.HasMergedAlpha ? 1 : 0, layers.GetArrayLength());
+            if (picture.HasMergedAlpha)
+            {
+                // The layer holds the colors as they are: its channels are red, green and blue (or gray), then the transparency
+                var layer = layers[0];
+                Assert.Equal("Layer 0", layer.GetProperty("name").GetString());
+                Assert.Equal(picture.Height, layer.GetProperty("bottom").GetInt32());
+                Assert.Equal(picture.Width, layer.GetProperty("right").GetInt32());
+                Assert.Equal(GetStraightSamples(image, picture), await File.ReadAllBytesAsync(dump / layer.GetProperty("file").GetString()!, XunitCancellationToken));
+            }
+
+            // ImageMagick reads the composite (it un-mattes it as the library does) and the layer, as 16-bit RGBA; it
+            // converts CMYK to RGB, and its floating-point composites are not compared
+            if (picture.Mode == 4 || picture.Depth == 32)
+                return;
+
+            // ImageMagick does not un-matte gray composites with transparency (PsdCorpus.MagickDifferences): it gives the
+            // stored samples
+            using var decoded = picture.Depth == 8 ? (Image)Image.Load<Rgba32>(data) : Image.Load<Rgba64>(data);
+            var composite = await tools.MagickDecodeAsync(path, picture.Depth, unblend: true, XunitCancellationToken);
+            Assert.Equal(picture.Mode == 1 && picture.HasMergedAlpha ? GetMattedGray(picture) : GetBytes(decoded), composite);
+            if (picture.HasMergedAlpha)
+            {
+                using var exact = picture.Depth == 8 ? (Image)image.CloneAs<Rgba32>() : image.CloneAs<Rgba64>();
+                var output = directory / "layer.rgba";
+                await tools.MagickAsync([path + "[1]", "-depth", picture.Depth.ToString(CultureInfo.InvariantCulture), "-endian", "LSB", "rgba:" + output], XunitCancellationToken);
+                Assert.Equal(GetBytes(exact), await File.ReadAllBytesAsync(output, XunitCancellationToken));
+            }
+        }
+    }
+
+    /// <summary>Gets the image and the settings of an encoder case: pixels, compression and container.</summary>
+    private static (Image Image, Formats.PsdEncoder Encoder) CreateEncoderCase(string name)
+    {
+        const int Width = 37;
+        const int Height = 9;
+        var parts = name.Split('-');
+        var transparent = parts[0] is "rgba8" or "la8" or "la16" or "rgba16" or "rgbaf";
+        using var pattern = new Image<Rgba64>(Width, Height);
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var alpha = transparent ? (ushort)(x * 65535 / (Width - 1)) : ushort.MaxValue;
+                pattern.Frames[0][x, y] = new Rgba64((ushort)(x * 1771), (ushort)(65535 - (y * 7000)), (ushort)(((x / 3) * 3000) + (y * 911)), alpha);
+            }
+        }
+
+        Image image = parts[0] switch
+        {
+            "rgb8" or "rgba8" => pattern.CloneAs<Rgba32>(),
+            "gray16" => pattern.CloneAs<Gray16>(),
+            "la8" => pattern.CloneAs<La16>(),
+            "la16" => pattern.CloneAs<La32>(),
+            "rgba16" => pattern.CloneAs<Rgba64>(),
+            "rgb16" => pattern.CloneAs<Rgb48>(),
+            "cmyk8" => CreateCmyk(pattern, is16Bit: false),
+            "cmyk16" => CreateCmyk(pattern, is16Bit: true),
+            _ => pattern.CloneAs<RgbaFloat>(),
+        };
+
+        if (image.PixelFormat == PixelFormat.RgbaFloat)
+        {
+            image.Metadata.TransferFunction = Metadata.ColorTransferFunction.Linear;
+        }
+
+        var encoder = new Formats.PsdEncoder
+        {
+            Compression = parts[1] == "rle" ? Formats.PsdCompression.RunLength : Formats.PsdCompression.None,
+            LargeDocument = parts.Length > 2 && parts[2] == "psb",
+        };
+
+        return (image, encoder);
+    }
+
+    private static Image CreateCmyk(Image<Rgba64> pattern, bool is16Bit)
+    {
+        Image image = is16Bit ? new Image<Cmyk64>(pattern.Width, pattern.Height) : new Image<Cmyk32>(pattern.Width, pattern.Height);
+        for (var y = 0; y < pattern.Height; y++)
+        {
+            for (var x = 0; x < pattern.Width; x++)
+            {
+                var p = pattern.Frames[0][x, y];
+                if (image is Image<Cmyk64> deep)
+                {
+                    deep.Frames[0][x, y] = new Cmyk64(p.R, p.G, p.B, (ushort)(x * 100));
+                }
+                else
+                {
+                    ((Image<Cmyk32>)image).Frames[0][x, y] = new Cmyk32((byte)(p.R >> 8), (byte)(p.G >> 8), (byte)(p.B >> 8), (byte)x);
+                }
+            }
+        }
+
+        image.Metadata.IccProfile = Metadata.IccProfile.Cgats001CompatibleCmyk;
+        return image;
+    }
+
+    /// <summary>Gets the stored samples of a gray composite with transparency as RGBA samples, little-endian: the gray repeated, then the transparency.</summary>
+    private static byte[] GetMattedGray(PsdPicture picture)
+    {
+        var size = picture.Depth / 8;
+        var count = picture.Width * picture.Height;
+        var result = new byte[count * 4 * size];
+        for (var i = 0; i < count; i++)
+        {
+            for (var c = 0; c < 4; c++)
+            {
+                var channel = picture.Channels[c == 3 ? 1 : 0];
+                for (var b = 0; b < size; b++)
+                {
+                    result[(((i * 4) + c) * size) + b] = channel[(i * size) + (size - 1 - b)];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Interleaves the stored (big-endian) samples of channels, as psd-tools dumps them: little-endian.</summary>
+    private static byte[] Interleave(IReadOnlyList<byte[]> channels, int depth, int count)
+    {
+        var size = depth / 8;
+        var result = new byte[count * channels.Count * size];
+        for (var i = 0; i < count; i++)
+        {
+            for (var c = 0; c < channels.Count; c++)
+            {
+                for (var b = 0; b < size; b++)
+                {
+                    result[(((i * channels.Count) + c) * size) + b] = channels[c][(i * size) + (size - 1 - b)];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Gets the straight samples of an image (gray or RGB, then alpha), little-endian, at the depth of the file.</summary>
+    private static byte[] GetStraightSamples(Image image, PsdPicture picture)
+    {
+        var colors = picture.ColorChannelCount;
+        var count = picture.Width * picture.Height;
+        var size = picture.Depth / 8;
+        var result = new byte[count * (colors + 1) * size];
+        using var floats = image.CloneAs<RgbaFloat>();
+        for (var i = 0; i < count; i++)
+        {
+            var pixel = floats.Frames[0][i % picture.Width, i / picture.Width];
+            float[] values = colors == 1 ? [pixel.R, pixel.A] : [pixel.R, pixel.G, pixel.B, pixel.A];
+            for (var c = 0; c < values.Length; c++)
+            {
+                var destination = result.AsSpan(((i * values.Length) + c) * size);
+                switch (picture.Depth)
+                {
+                    case 8:
+                        destination[0] = (byte)Math.Round(values[c] * 255, MidpointRounding.AwayFromZero);
+                        break;
+                    case 16:
+                        BinaryPrimitives.WriteUInt16LittleEndian(destination, (ushort)Math.Round(values[c] * 65535, MidpointRounding.AwayFromZero));
+                        break;
+                    default:
+                        BinaryPrimitives.WriteSingleLittleEndian(destination, values[c]);
+                        break;
+                }
+            }
+        }
+
+        return result;
+    }
+
     private static readonly string[] KnownOpenImageIODifferences =
     [
         "psd/duotone8: rejected", // "unsupported color mode 8"

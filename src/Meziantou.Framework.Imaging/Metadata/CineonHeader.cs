@@ -14,7 +14,8 @@ namespace Meziantou.Framework.Imaging.Metadata;
 /// <para>
 /// A field the file leaves undefined (the "undefined" value of its type: all bits set for unsigned numbers, 0x80000000 for
 /// signed ones, positive infinity for reals and an empty string for text) is <see langword="null"/>. No operation updates
-/// it, and every encoder ignores it.
+/// it. <see cref="Formats.CineonEncoder"/> copies its fields to the files it writes (the byte order and the packing are
+/// those of the encoder); the other encoders ignore it.
 /// </para>
 /// </remarks>
 public sealed class CineonHeader : IEquatable<CineonHeader>

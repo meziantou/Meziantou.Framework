@@ -468,11 +468,11 @@ public sealed class PsdDecoderTests
     }
 
     [Fact]
-    public void ImagesAreNotWritten()
+    public void TheExtensionsSelectTheEncoder()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => ImageEncoder.Create(ImageFormat.Psd));
-        Assert.Throws<ArgumentException>(() => ImageEncoder.FromFileExtension(".psd"));
-        Assert.Throws<ArgumentException>(() => ImageEncoder.FromFileExtension("PSB"));
+        Assert.IsType<PsdEncoder>(ImageEncoder.Create(ImageFormat.Psd));
+        Assert.False(Assert.IsType<PsdEncoder>(ImageEncoder.FromFileExtension(".psd")).LargeDocument);
+        Assert.True(Assert.IsType<PsdEncoder>(ImageEncoder.FromFileExtension("PSB")).LargeDocument);
     }
 
     private static byte[] GetBytes(Image image)

@@ -41,4 +41,18 @@ internal static class CineonFormat
         7 => ExifOrientation.RightBottom,
         _ => throw new ArgumentOutOfRangeException(nameof(code), code, "The Cineon orientation code is not valid."),
     };
+
+    /// <summary>Maps the orientation of the stored pixels to its orientation code (field 1.12), the inverse of <see cref="ToExifOrientation"/>.</summary>
+    public static byte FromExifOrientation(ExifOrientation orientation) => orientation switch
+    {
+        ExifOrientation.TopLeft => 0,
+        ExifOrientation.BottomLeft => 1,
+        ExifOrientation.TopRight => 2,
+        ExifOrientation.BottomRight => 3,
+        ExifOrientation.LeftTop => 4,
+        ExifOrientation.RightTop => 5,
+        ExifOrientation.LeftBottom => 6,
+        ExifOrientation.RightBottom => 7,
+        _ => throw new ArgumentOutOfRangeException(nameof(orientation), orientation, "The orientation is not valid."),
+    };
 }

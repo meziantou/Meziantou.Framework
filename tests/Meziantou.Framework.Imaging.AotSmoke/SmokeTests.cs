@@ -1326,6 +1326,39 @@ internal static class SmokeTests
         Check(info.Width == 2 && info.Height == 1 && info.PixelFormat == PixelFormat.Rgb24, "PSD identification");
         using var image = Image.Load<Rgb24>(file);
         Check(image.Frames[0][0, 0] == new Rgb24(255, 0, 128) && image.Frames[0][1, 0] == new Rgb24(10, 20, 30), "PSD pixels");
+
+        // The encoder: both compressions and the large document format; a transparent image gets a layer
+        using var still = CreatePattern(seed: 16);
+        using var opaque = still.CloneAs<Rgb24>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0, 65535) });
+        foreach (var encoder in new[] { new PsdEncoder(), new PsdEncoder { Compression = PsdCompression.None, LargeDocument = true } })
+        {
+            var encoded = Encode(opaque, encoder);
+            Check(Image.DetectFormat(encoded) == ImageFormat.Psd, "PSD encoder detection");
+            using var decoded = Image.Load<Rgb24>(encoded);
+            CheckEqual(opaque, decoded, "PSD encoder " + encoder.Compression.ToString());
+        }
+
+        var transparent = Encode(still, new PsdEncoder());
+        Check(Image.Identify(transparent).MayHaveTransparency == true, "PSD encoder transparency");
+    }
+
+    public static void Dng()
+    {
+        // Linear raw data: the stored samples are those of the image, and the rendering gives them back in linear light
+        using var still = CreatePattern(seed: 17);
+        using var rgb = still.CloneAs<Rgb48>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0, 65535) });
+        rgb.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        foreach (var compression in new DngCompression?[] { null, DngCompression.None })
+        {
+            var encoded = Encode(rgb, new DngEncoder { Compression = compression });
+            Check(Image.DetectFormat(encoded) == ImageFormat.Dng, "DNG detection");
+            using var raw = DngRawImage.Load(encoded);
+            var row = new float[Width * 3];
+            raw.CopyStoredRow(1, row);
+            Check(row[3] == rgb.Frames[0][1, 1].R && row[5] == rgb.Frames[0][1, 1].B, "DNG stored samples");
+            using var decoded = Image.Load<RgbaFloat>(encoded);
+            Check(Math.Abs(decoded.Frames[0][1, 1].G - (rgb.Frames[0][1, 1].G / 65535f)) < 1e-4, "DNG rendering");
+        }
     }
 
     public static void Dds()
@@ -1379,6 +1412,14 @@ internal static class SmokeTests
             using var decoded = Image.Load(encoded);
             Check(Encode(decoded, new DpxEncoder { BitDepth = bits, AllowBitDepthReduction = true, ByteOrder = bits == 12 ? DpxByteOrder.LittleEndian : DpxByteOrder.BigEndian }).AsSpan().SequenceEqual(encoded), "DPX " + (bits?.ToString(CultureInfo.InvariantCulture) ?? "default"));
         }
+
+        // Cineon: 8-bit samples come back exactly from 10 bits
+        using var opaque = still.CloneAs<Rgb24>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0, 65535) });
+        var cineon = Encode(opaque, new CineonEncoder());
+        Check(Image.DetectFormat(cineon) == ImageFormat.Cineon && Image.Identify(cineon).Metadata.CineonHeader?.BitsPerSample == 10, "Cineon encoder");
+        using var film = Image.Load(cineon);
+        using var filmPixels = film.CloneAs<Rgb24>();
+        CheckEqual(opaque, filmPixels, "Cineon encoder pixels");
     }
 
     public static void Radiance()

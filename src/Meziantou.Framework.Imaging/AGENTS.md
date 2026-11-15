@@ -2,8 +2,9 @@
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
-progressive), JPEG 2000, OpenEXR, Radiance HDR and DPX decoding and encoding, PSD decoding (the composite image),
-DNG decoding, DDS decoding (BC1 to BC7), Kodak Cineon decoding, KTX 2.0 decoding, lossless JPEG recompression
+progressive), JPEG 2000, OpenEXR, Radiance HDR, DPX and Kodak Cineon decoding and encoding, PSD decoding (the
+composite image) and encoding (flat documents), DNG decoding and encoding (linear raw data), DDS decoding (BC1 to BC7),
+KTX 2.0 decoding, lossless JPEG recompression
 (`JpegXlTranscoder`), animation-aware processing,
 vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
 readers and writers.
@@ -231,8 +232,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - A new format always adds an `ImageFormat` member, its name in `ImageFormatNames`, an `ImageCodec` in
   `ImageCodecRegistry`, a default pixel format in `DefaultPixelFormats`, and a row in the support matrix and a section in
   the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a
-  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (PSD,
-  DNG) makes `ImageEncoder.FromPath` reject its extensions with a message that says so, and `ImageEncoder.Create` reject
+  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (DDS,
+  KTX 2.0) makes `ImageEncoder.FromPath` reject its extensions with a message that says so, and `ImageEncoder.Create` reject
   its `ImageFormat` member.
 - **PNG `MinimumSize`** (`PngOptimizedEncoderSession`, a session of its own): the default session must keep writing the
   same bytes, so the search never goes through it. Candidates are compressed to a byte counter
@@ -969,8 +970,7 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   SharpFuzz target checks it). Header variables are metadata: one that cannot be read is skipped, never an error.
   XYZE is identified and rejected by a load, since converting XYZ to RGB would be an implicit color conversion.
   `MetadataWritePlan` treats it as linear light only, like OpenEXR.
-- **PSD** (`Internals/Codecs/Psd`). Written from the Adobe Photoshop File Formats Specification. Only read: no encoder.
-  Only the composite image (the image data section, written with "Maximize Compatibility") is decoded; the layer
+- **PSD** (`Internals/Codecs/Psd`). Written from the Adobe Photoshop File Formats Specification. Only the composite image (the image data section, written with "Maximize Compatibility") is decoded; the layer
   section is skipped, and a version info resource (1057) without real merged data is `UnsupportedImageFeatureException`
   (`No composite image`) from a load. `PsdStructureParser` walks the header, the color mode data (the color table of an
   indexed image; the duotone specification is skipped), the image resources (1005, 1039, 1047, 1057, 1058, 1060 read,
@@ -988,6 +988,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   `w` being the largest sample (no ink for the inverted CMYK samples), 128 for a* and b*. CMYK is loaded as inks
   (`Cmyk32`/`Cmyk64`) or through `CmykConversion`, Lab (8 bits) only through `CieLabConversion`, as for TIFF.
   Multichannel, 32-bit CMYK, 16 and 32-bit Lab and 32-bit duotone are rejected from the header, `Identify` included.
+  `PsdEncoderCodec` writes flat documents (gray, RGB, CMYK inverted; 8, 16, 32 bits; raw or PackBits through
+  `TiffPackBits`, PSB on request or above 30,000 pixels). An image with transparency needs a layer: the negative layer
+  count is the only flag of the merged alpha, so one layer holds the image (in `Lr16`/`Lr32` for 16/32 bits, as
+  Photoshop), the composite matted over white, the layer exact. `ValidateFrame` compresses every row of every plane once
+  to know the lengths the row tables and the layer record give first (no seekable destination, no copy of the image).
+  Oracles: `psd-tools dump` (composite and layer samples) and ImageMagick (composite and layer; it does not un-matte gray
+  composites).
 - **DNG** (`Internals/Codecs/Dng`). Written from the DNG specification 1.7.1.0, never from LibRaw, dcraw, rawspeed or
   the DNG SDK. DNG shares the signature of TIFF, so it has no codec of its own: `TiffCodec` reads the first directory and
   hands a file with `DNGVersion` to `DngDecoder` (results of `ImageFormat.Dng`; `GetDetectedFormat` tells DNG when the
@@ -1004,6 +1011,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   one. The canvas limits apply to the stored raw image, which the default crop makes smaller. Oracles: `dng_validate`
   of the DNG SDK (stages 1 and 2 exact; its rendering, with the identity `ProfileToneCurve` and `DefaultBlackRender` 1
   of the scenes, within a tolerance, the demosaicing differing) and LibRaw `unprocessed_raw` (stored samples).
+  `DngEncoderCodec` writes linear raw data only: `DngRawImage` gives no camera profile, so a CFA mosaic cannot be written
+  back faithfully. The camera space is linear BT.709 (`ColorMatrix1` and `ForwardMatrix1` from `DngColorProfile`'s own
+  matrices, so the decoder renders the image back), sRGB samples are stored as they are with a `LinearizationTable`,
+  floats above 1 get an integer `WhiteLevel` and the matching `BaselineExposure`, and lossless JPEG tiles go through
+  `JpegEncoderCodec` (one tile image, never larger than the image: LibRaw misreads wider tiles). The directory follows the
+  data (seekable destination). Oracles: `dng_validate` (no warning, stages 1 and 2, its rendering within 0.003 of sRGB)
+  and LibRaw `dcraw_emu -4 -o 0` (linear values; no float DNG, a gain of its own on monochrome data).
 - **DDS** (`Internals/Codecs/Dds`, read only). `DdsHeader` validates the headers and computes the size and the offset of
   every surface (never from `dwPitchOrLinearSize`, which strict mode only checks against them); `DdsPixelLayout` resolves
   the pixel format to the lossless representation it decodes to; `DdsRowDecoder` turns a stored row (of pixels or of
@@ -1036,6 +1050,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     (ImageMagick writes it; OpenImageIO does not skip it).
   - Only the first DPX image element is decoded. The encoder writes one element at offset 8,192, 10/12 bits filled with
     method A, and ignores `DpxHeader`.
+  - `CineonEncoderCodec` writes big-endian packing 5 (10-bit RGB one pixel per left-justified word, gray three per word
+    from the top; 8/16 bits as streams padded to a word, as ImageMagick) and copies `CineonHeader` (carried by
+    `MetadataWritePlan.CineonHeader`). ImageMagick reads gray 10-bit words from the bottom and converts Cineon from log
+    unless the colorspace is set (`sRGB`, `Gray` for one channel); FFmpeg has no Cineon decoder (its `.cin` is Delphine
+    CIN). Encoders that store separate components share `ComponentRowReader`.
 - **KTX 2.0** (`Internals/Codecs/Ktx2`), read only. Written from the KTX File Format Specification 2.0 (revision 4), the
   Khronos Data Format Specification 1.4 (sections 5, 21 to 23 and 25) and Appendices C and D of the KTX specification
   (BasisLZ), never from KTX-Software, astcenc or basisu. A random-access container, like TIFF and ICO

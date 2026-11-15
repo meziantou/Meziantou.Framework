@@ -184,6 +184,10 @@ internal sealed class ImageOutputCapabilities
         OpenExrEncoder exr => new ImageOutputCapabilities(ImageFormat.OpenExr, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: exr.Compression != OpenExrCompression.None),
         RadianceEncoder => new ImageOutputCapabilities(ImageFormat.Radiance, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
         DpxEncoder => new ImageOutputCapabilities(ImageFormat.Dpx, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
+        // The image file directory follows the raw image: the offset of the header is patched once it is written
+        DngEncoder => new ImageOutputCapabilities(ImageFormat.Dng, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: true),
+        CineonEncoder => new ImageOutputCapabilities(ImageFormat.Cineon, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
+        PsdEncoder => new ImageOutputCapabilities(ImageFormat.Psd, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: PsdFormat.MaxPsbDimension),
         CustomImageEncoder custom => throw new ArgumentException($"The {custom.FormatInfo.Name} encoder is a custom encoder: sequential writers and image collections do not use custom encoders. Use Image.Save or ImageFrame.Save.", nameof(encoder)),
         _ => throw new ArgumentException($"The encoder {encoder.GetType().Name} is not supported.", nameof(encoder)),
     };

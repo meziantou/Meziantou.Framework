@@ -1,6 +1,6 @@
 ---
 title: DNG
-description: Read DNG (Adobe Digital Negative) raw photos, render them to linear light, and get their raw mosaic before the demosaicing.
+description: Read DNG (Adobe Digital Negative) raw photos, render them to linear light, get their raw mosaic before the demosaicing, and save images as linear raw DNG files.
 ---
 
 DNG (Adobe Digital Negative, `.dng`) files store what the sensor of a camera measured: one sample per pixel behind a
@@ -8,7 +8,8 @@ color filter array (or every color of linear raw data), the black and white leve
 that says how the camera sees colors. Phones and cameras write DNG, and raw converters convert the raw files of other
 cameras to it. Loading a DNG file renders it: the samples become linear-light
 [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) pixels with the primaries of BT.709, the size of the image the
-camera framed. DNG files are read, not written.
+camera framed. [DngEncoder](cref:Meziantou.Framework.Imaging.Formats.DngEncoder) saves an image as linear raw data, a DNG
+file that raw converters open.
 
 ## Render a raw photo and read its mosaic
 
@@ -59,6 +60,45 @@ but not the same as, the rendering of a raw converter.
 
 The raw formats of camera vendors (CR2, CR3, NEF, ARW, RAF, ORF and others) are not read: they are not documented.
 Convert them to DNG first, for example with the free Adobe DNG Converter.
+
+## Save a DNG file
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DngSave;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveDng(Image image, string dngPath)
+{
+    // Linear raw data whose camera color space is linear BT.709: the samples are stored as they are, with a table that
+    // maps sRGB samples to linear values. Lossless JPEG tiles (Deflate for floating-point samples)
+    image.Save(dngPath, new DngEncoder { Compression = DngCompression.LosslessJpeg, TileSize = 256 });
+}
+```
+<!-- endref -->
+
+The encoder writes the image as linear raw data (`LinearRaw`): the image is already rendered, so there is no color filter
+array to interpolate. Its camera profile says that the camera sees linear RGB with the primaries of BT.709 and the D65
+white point, without tone curve, so DNG readers show the colors of the image, and
+[Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) renders it back to linear light.
+
+- Integer pixels are stored as they are, 8 or 16 bits per sample. The samples of an sRGB image are mapped to linear
+  values by a linearization table of the sRGB transfer function, with the 16-bit precision of DNG; an image labeled
+  linear light stores its linear values. [DngRawImage.CopyStoredRow](cref:Meziantou.Framework.Imaging.DngRawImage.CopyStoredRow)
+  gives the samples back exactly.
+- [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) pixels
+  are stored as 32-bit floats. They are linear light, so the image must be labeled linear (the default of
+  floating-point images), and their values must be finite and not negative. Highlights above 1 keep their values.
+- Gray pixel formats give a monochrome image of one sample per pixel.
+- The orientation and the XMP packet are written. An ICC profile, EXIF, a resolution and text entries follow
+  [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.MetadataHandling): rejected by default.
+- The image file directory follows the image data, so the destination stream must be seekable.
+
+| Option | What it does | Default |
+| --- | --- | --- |
+| [Compression](cref:Meziantou.Framework.Imaging.Formats.DngEncoder.Compression) | [DngCompression.LosslessJpeg](cref:Meziantou.Framework.Imaging.Formats.DngCompression.LosslessJpeg) for integer samples, [DngCompression.Deflate](cref:Meziantou.Framework.Imaging.Formats.DngCompression.Deflate) for floating-point ones, or [DngCompression.None](cref:Meziantou.Framework.Imaging.Formats.DngCompression.None) | Lossless JPEG, Deflate for floats |
+| [TileSize](cref:Meziantou.Framework.Imaging.Formats.DngEncoder.TileSize) | Tiles of this size (a multiple of 16), never larger than the image | 256 with lossless JPEG, strips otherwise |
+
+DNG raw images have no transparency: an image with a pixel that is not fully opaque is rejected, flatten it first. A
+[DngRawImage](cref:Meziantou.Framework.Imaging.DngRawImage) cannot be written back: it has no camera profile, so the
+colors of its mosaic would be lost.
 
 ## Errors
 

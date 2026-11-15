@@ -35,9 +35,10 @@ internal sealed class MetadataWritePlan
 
     private static readonly MetadataWritePlan Empty = new(null, null, null, [], null, ColorTransferFunction.Srgb);
 
-    private MetadataWritePlan(IccProfile? iccProfile, byte[]? exif, XmpProfile? xmpProfile, IReadOnlyList<ImageTextEntry> textEntries, ImageResolution? resolution, ColorTransferFunction transferFunction, ExifOrientation orientation = ExifOrientation.TopLeft, CicpColorDescription? cicp = null, ContentLightLevel? contentLightLevel = null, MasteringDisplayColorVolume? masteringDisplay = null, PixelAspectRatio? pixelAspectRatio = null, IReadOnlyList<PngChunk>? pngChunks = null)
+    private MetadataWritePlan(IccProfile? iccProfile, byte[]? exif, XmpProfile? xmpProfile, IReadOnlyList<ImageTextEntry> textEntries, ImageResolution? resolution, ColorTransferFunction transferFunction, ExifOrientation orientation = ExifOrientation.TopLeft, CicpColorDescription? cicp = null, ContentLightLevel? contentLightLevel = null, MasteringDisplayColorVolume? masteringDisplay = null, PixelAspectRatio? pixelAspectRatio = null, IReadOnlyList<PngChunk>? pngChunks = null, CineonHeader? cineonHeader = null)
     {
         PngChunks = pngChunks ?? [];
+        CineonHeader = cineonHeader;
         TransferFunction = transferFunction;
         Cicp = cicp;
         ContentLightLevel = contentLightLevel;
@@ -50,6 +51,12 @@ internal sealed class MetadataWritePlan
         Resolution = resolution;
         Orientation = orientation;
     }
+
+    /// <summary>
+    /// Gets the header fields a Cineon file copies (<see cref="ImageMetadata.CineonHeader"/>), or <see langword="null"/>: they
+    /// describe the film scan, and the Cineon encoder writes them unless the policy is <see cref="MetadataHandling.Strip"/>.
+    /// </summary>
+    public CineonHeader? CineonHeader { get; }
 
     /// <summary>
     /// Gets the orientation to write in the format's own orientation field (the TIFF <c>Orientation</c> tag), or
@@ -252,6 +259,12 @@ internal sealed class MetadataWritePlan
                     {
                         _ = ResolutionConversion.ToJp2Resolution(value);
                     }
+                    else if (format == ImageFormat.Psd)
+                    {
+                        // Fixed-point numbers of 16.16 bits: from 1/65536 to 32,767 pixels per inch
+                        if (!IsPsdResolution(value.HorizontalDpi) || !IsPsdResolution(value.VerticalDpi))
+                            throw new UnsupportedImageFeatureException("The resolution is outside the range of the PSD fields.", format, "Resolution");
+                    }
                     else
                     {
                         _ = ResolutionConversion.ToPngPhys(value);
@@ -371,8 +384,11 @@ internal sealed class MetadataWritePlan
             pngChunks = [.. metadata.PngChunks.Where(chunk => chunk.IsSafeToCopy || writeUnsafe)];
         }
 
-        return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation, storedCicp, contentLightLevel, masteringDisplay, pixelAspectRatio, pngChunks);
+        var cineonHeader = format == ImageFormat.Cineon ? metadata.CineonHeader : null;
+        return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation, storedCicp, contentLightLevel, masteringDisplay, pixelAspectRatio, pngChunks, cineonHeader);
     }
+
+    private static bool IsPsdResolution(double dpi) => Math.Round(dpi * 65536, MidpointRounding.AwayFromZero) is >= 1 and <= int.MaxValue;
 
     private static bool ContainsKeyword(List<ImageTextEntry> entries, string keyword)
     {
@@ -459,6 +475,17 @@ internal sealed class MetadataWritePlan
 
         // DPX stores the orientation and the pixel aspect ratio in its image headers, and the transfer characteristics
         // and colorimetric specifications of Tables 5A and 5B: linear light, BT.709 and the two BT.601 systems
+        // PSD stores its metadata as image resources; the samples of a 32-bit document without ICC profile are linear light
+        private static readonly FormatCapabilities Psd = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.None);
+        private static readonly FormatCapabilities PsdFloatingPoint = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.None, linearTransfer: true, impliesLinearTransfer: true);
+
+        // A DNG raw image stores linear values, labeled by a linearization table for integer samples
+        private static readonly FormatCapabilities Dng = new(icc: false, exif: false, xmp: true, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true);
+        private static readonly FormatCapabilities DngFloatingPoint = new(icc: false, exif: false, xmp: true, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, impliesLinearTransfer: true);
+
+        // Cineon stores the orientation of its pixels, and no other metadata (its header is copied from CineonHeader)
+        private static readonly FormatCapabilities Cineon = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, nativeOrientation: true);
+
         private static readonly FormatCapabilities Dpx = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, enumeratedCicp: true, pixelAspectRatio: true);
 
         private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false, bool cicpWithoutIcc = false, bool impliesLinearTransfer = false, bool linearOnly = false)
@@ -555,7 +582,13 @@ internal sealed class MetadataWritePlan
         /// <param name="pixelFormat">The pixel format of the written frames, or <see langword="null"/> when unknown.</param>
         /// <returns>The capabilities.</returns>
         public static FormatCapabilities Get(ImageFormat format, PixelFormat? pixelFormat)
-            => format == ImageFormat.Tiff && pixelFormat is { } written && PixelFormats.IsFloatingPoint(written) ? TiffFloatingPoint : Get(format);
+            => pixelFormat is { } written && PixelFormats.IsFloatingPoint(written) ? format switch
+            {
+                ImageFormat.Tiff => TiffFloatingPoint,
+                ImageFormat.Psd => PsdFloatingPoint,
+                ImageFormat.Dng => DngFloatingPoint,
+                _ => Get(format),
+            } : Get(format);
 
         public static FormatCapabilities Get(ImageFormat format) => format switch
         {
@@ -574,6 +607,9 @@ internal sealed class MetadataWritePlan
             ImageFormat.OpenExr => OpenExr,
             ImageFormat.Radiance => Radiance,
             ImageFormat.Dpx => Dpx,
+            ImageFormat.Psd => Psd,
+            ImageFormat.Dng => Dng,
+            ImageFormat.Cineon => Cineon,
             _ => None,
         };
 

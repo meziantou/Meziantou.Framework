@@ -36,8 +36,9 @@ public abstract class ImageEncoder
     /// <summary>
     /// Gets the conversion that reduces floating-point pixels (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) to 16-bit
     /// integer ones (<see cref="Rgba64"/>) before they are encoded, or <see langword="null"/> (the default) to reject them.
-    /// It only applies to the outputs that do not store floating-point samples: every format but OpenEXR and TIFF, and the
-    /// TIFF settings that cannot (<see cref="TiffEncoder"/>). <see cref="OpenExrEncoder"/> always stores them.
+    /// It only applies to the outputs that do not store floating-point samples: every format but OpenEXR, Radiance HDR, PSD,
+    /// DNG, DPX and TIFF, and the DPX and TIFF settings that cannot (<see cref="DpxEncoder"/>, <see cref="TiffEncoder"/>).
+    /// <see cref="OpenExrEncoder"/> always stores them.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -109,9 +110,7 @@ public abstract class ImageEncoder
     /// <remarks>This method is thread-safe. To change a setting, create the encoder type directly with an object initializer.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="format"/> is <see cref="ImageFormat.Unknown"/>, <see cref="ImageFormat.Custom"/> (use
-    /// <see cref="CustomImageCodec.CreateEncoder"/>), <see cref="ImageFormat.Psd"/>, <see cref="ImageFormat.Dng"/>, <see cref="ImageFormat.Dds"/>,
-    /// <see cref="ImageFormat.Cineon"/> (read only) or not a defined value.
-    /// <see cref="CustomImageCodec.CreateEncoder"/>), <see cref="ImageFormat.Ktx2"/> (read only) or not a defined value.
+    /// <see cref="CustomImageCodec.CreateEncoder"/>), <see cref="ImageFormat.Dds"/>, <see cref="ImageFormat.Ktx2"/> (read only) or not a defined value.
     /// </exception>
     public static ImageEncoder Create(ImageFormat format) => format switch
     {
@@ -133,11 +132,11 @@ public abstract class ImageEncoder
         ImageFormat.Jpeg2000 => new Jpeg2000Encoder(),
         ImageFormat.OpenExr => new OpenExrEncoder(),
         ImageFormat.Radiance => new RadianceEncoder(),
-        ImageFormat.Psd => throw new ArgumentOutOfRangeException(nameof(format), format, "Adobe Photoshop (PSD) files are read but not written: no encoder writes this format."),
-        ImageFormat.Dng => throw new ArgumentOutOfRangeException(nameof(format), format, "DNG files are read, never written: the library has no DNG encoder."),
+        ImageFormat.Psd => new PsdEncoder(),
+        ImageFormat.Dng => new DngEncoder(),
         ImageFormat.Dds => throw new ArgumentOutOfRangeException(nameof(format), format, "DDS files can be read but not written: the library has no DDS encoder."),
         ImageFormat.Dpx => new DpxEncoder(),
-        ImageFormat.Cineon => throw new ArgumentOutOfRangeException(nameof(format), format, "Cineon files are read, not written: save the image as DPX (ImageFormat.Dpx), the format that succeeded Cineon."),
+        ImageFormat.Cineon => new CineonEncoder(),
         ImageFormat.Ktx2 => throw new ArgumentOutOfRangeException(nameof(format), format, "KTX 2.0 files can be read but not written: the library has no KTX 2.0 encoder."),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is unknown or not a defined value."),
     };
@@ -156,7 +155,8 @@ public abstract class ImageEncoder
     /// <see cref="PnmPixelLayout.Bitmap"/> pixels, <c>.j2k</c>, <c>.j2c</c> and <c>.jpc</c> a <see cref="Jpeg2000Encoder"/>
     /// of a bare codestream (<see cref="Jpeg2000Container.Codestream"/>), and <c>.jph</c> and <c>.jhc</c> a
     /// <see cref="Jpeg2000Encoder"/> of the high-throughput block coder (<see cref="Jpeg2000BlockCoder.HighThroughput"/>),
-    /// which writes a JPH file or a bare codestream.
+    /// which writes a JPH file or a bare codestream, and <c>.psb</c> a <see cref="PsdEncoder"/> of the large document format
+    /// (<see cref="PsdEncoder.LargeDocument"/>).
     /// </returns>
     /// <remarks>
     /// The extensions are those of <see cref="ImageFormatInfo.FileExtensions"/>. This method is thread-safe.
@@ -164,8 +164,7 @@ public abstract class ImageEncoder
     /// <exception cref="ArgumentNullException"><paramref name="extension"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
     /// The extension is not recognized, or names files the library reads but does not write (<c>.jpx</c>, <c>.jpf</c>,
-    /// <c>.psd</c>, <c>.psb</c>, <c>.dng</c>, <c>.dds</c>, <c>.cin</c>).
-    /// <c>.ktx2</c>).
+    /// <c>.dds</c>, <c>.ktx2</c>).
     /// </exception>
     public static ImageEncoder FromFileExtension(string extension)
     {
@@ -226,17 +225,11 @@ public abstract class ImageEncoder
         if (extension.Equals(".jpx", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpf", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException($"JPEG 2000 files of the extended format ('{extension}') can be read but not written. Use the extension '.jp2', or specify an encoder explicitly.", parameterName);
 
-        if (extension.Equals(".psd", StringComparison.OrdinalIgnoreCase) || extension.Equals(".psb", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException($"Adobe Photoshop files ('{extension}') can be read but not written. Specify an encoder of another format.", parameterName);
-
-        if (extension.Equals(".dng", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException($"DNG files ('{extension}') can be read but not written. Specify an encoder of another format explicitly.", parameterName);
+        if (extension.Equals(".psb", StringComparison.OrdinalIgnoreCase))
+            return new PsdEncoder { LargeDocument = true };
 
         if (extension.Equals(".dds", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("DDS files can be read but not written: the library has no DDS encoder. Specify an encoder of another format explicitly.", parameterName);
-
-        if (extension.Equals(".cin", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Cineon files ('.cin') can be read but not written. Use the extension '.dpx' (DPX succeeded Cineon), or specify an encoder explicitly.", parameterName);
 
         if (extension.Equals(".ktx2", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException($"KTX 2.0 files ('{extension}') can be read but not written: the library has no KTX 2.0 encoder. Specify an encoder of another format explicitly.", parameterName);

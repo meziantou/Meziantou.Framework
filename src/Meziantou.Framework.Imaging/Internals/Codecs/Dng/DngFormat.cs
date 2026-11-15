@@ -49,6 +49,7 @@ internal static class DngFormat
     public const ushort CameraCalibrationSignatureTag = 50931;
     public const ushort ProfileCalibrationSignatureTag = 50932;
     public const ushort ProfileNameTag = 50936;
+    public const ushort ProfileToneCurveTag = 50940;
     public const ushort ForwardMatrix1Tag = 50964;
     public const ushort ForwardMatrix2Tag = 50965;
     public const ushort PreviewColorSpaceTag = 50970;
@@ -56,6 +57,7 @@ internal static class DngFormat
     public const ushort OpcodeList2Tag = 51009;
     public const ushort OpcodeList3Tag = 51022;
     public const ushort BaselineExposureOffsetTag = 51109;
+    public const ushort DefaultBlackRenderTag = 51110;
     public const ushort CalibrationIlluminant3Tag = 52529;
     public const ushort ColumnInterleaveFactorTag = 52547;
     public const ushort RowInterleaveFactorTag = 50975;

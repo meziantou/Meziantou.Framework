@@ -307,6 +307,13 @@ internal sealed class JpegEntropyReader : IDisposable
             return unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(fastLookup), (nint)(_bits >> (64 - JpegHuffmanTable.FastLookupBits))));
         }
 
+        /// <summary>
+        /// Gets the <see cref="JpegHuffmanTable.FastLookup"/> entry of the next bits from the first entry of the table, which
+        /// the caller reads once for a block (no null check per symbol).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly int Lookup(ref int fastLookup) => unsafe(Unsafe.Add(ref fastLookup, (nint)(_bits >> (64 - JpegHuffmanTable.FastLookupBits))));
+
         /// <summary>Consumes the bits of a <see cref="JpegHuffmanTable.FastLookup"/> entry (its bits 0 to 4).</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Consume(int entry)

@@ -196,7 +196,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private readonly bool _writesTilePartLengths;
         private readonly bool _writesPacketLengths;
         private readonly byte[]? _precinctSizes;
-        private readonly int[]? _tilePartCounts;
+        private readonly Av1PooledArray<byte>? _tilePartCounts;
         private readonly int _totalTileParts;
         private readonly long _packetsPerLayer;
         private readonly Jpeg2000Siz _siz;
@@ -324,7 +324,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 // The tile-parts of every tile and the packets of a layer, which the headers and the rate control count
                 if (_division != Jpeg2000TilePartDivision.None)
                 {
-                    _tilePartCounts = new int[_tileCount];
+                    _tilePartCounts = Av1PooledArray<byte>.Rent(_scope, _tileCount, clear: true, AllocationKind.Temporary);
                 }
 
                 for (var t = 0; t < _tileCount; t++)
@@ -338,7 +338,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
 
                     if (_tilePartCounts is not null)
                     {
-                        _tilePartCounts[t] = parts;
+                        _tilePartCounts.Span[t] = (byte)parts;
                     }
 
                     _totalTileParts += parts;
@@ -358,6 +358,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             catch
             {
                 _geometry.Dispose();
+                _tilePartCounts?.Dispose();
                 throw;
             }
 
@@ -415,6 +416,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             catch
             {
                 _geometry.Dispose();
+                _tilePartCounts?.Dispose();
                 blockEncoder?.Dispose();
                 highThroughputEncoder?.Dispose();
                 head?.Dispose();
@@ -565,6 +567,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 _highThroughputSets = null;
                 _tilePartLengths?.Dispose();
                 _tilePartLengths = null;
+                _tilePartCounts?.Dispose();
                 _packetLengths?.Dispose();
                 _packetLengths = null;
                 _batch?.Dispose();
@@ -656,6 +659,9 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
 
             return result;
         }
+
+        /// <summary>Gets the number of tile-parts of a tile.</summary>
+        private int GetTileParts(int tile) => _tilePartCounts is null ? 1 : _tilePartCounts.Span[tile];
 
         /// <summary>Gets the number of bytes of the index of a tile in the TLM marker segments (Ttlm): one for at most 256 tiles, two otherwise.</summary>
         private int GetTlmTileIndexLength() => _tileCount <= 256 ? 1 : 2;
@@ -1757,7 +1763,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 using var order = RentPacketOrder(tile.Geometry, out var count);
                 var packets = order.Span[..count];
                 var components = tile.Geometry.Components;
-                var parts = _tilePartCounts?[t] ?? 1;
+                var parts = GetTileParts(t);
                 var part = -1;
                 var header = 0;
                 var lengthPiece = -1;
@@ -2320,7 +2326,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 boxes.WriteByte((byte)((indexLength << 4) | 0x40));
                 for (var i = 0; i < count; i++)
                 {
-                    while (part == (_tilePartCounts?[tile] ?? 1))
+                    while (part == GetTileParts(tile))
                     {
                         tile++;
                         part = 0;

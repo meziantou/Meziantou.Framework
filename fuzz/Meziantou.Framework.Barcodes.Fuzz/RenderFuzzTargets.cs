@@ -222,7 +222,7 @@ internal static class RenderFuzzTargets
             var logo = scene.Root.Children.OfType<SceneImage>().Single();
             if (clearModules)
             {
-                cleared = GetClearedArea(logo, quietZone, moduleWidth, logoMargin, columns, rows);
+                cleared = GetClearedArea(GetLogoBounds(logo), quietZone, moduleWidth, logoMargin, columns, rows);
                 if (cleared is { } area)
                 {
                     AssertLosesTheArea(clearedQRCode, area);
@@ -269,7 +269,7 @@ internal static class RenderFuzzTargets
         if (!snap || gradient || noLight || hasText || (hasLogo && !clearModules))
             return;
 
-        var logoBounds = hasLogo ? scene.Root.Children.OfType<SceneImage>().Select(logo => new RectangleD(logo.X, logo.Y, logo.Width, logo.Height)).Single() : default;
+        var logoBounds = hasLogo ? GetLogoBounds(scene.Root.Children.OfType<SceneImage>().Single()) : default;
         var pixels = new Rgba32[image.Width * image.Height];
         image.Frames[0].CopyPixelDataTo(pixels);
         for (var row = 0; row < rows; row++)
@@ -453,7 +453,20 @@ internal static class RenderFuzzTargets
         }
     }
 
-    private static ModuleRectangle? GetClearedArea(SceneImage logo, int quietZone, double moduleSize, int margin, int columns, int rows)
+    // The pixels of the logo keep their proportions, centered in its square; the whole square when their size is unknown,
+    // or when Exif metadata can turn them (barcodes-logo-size checks the size against the decoder)
+    private static RectangleD GetLogoBounds(SceneImage logo)
+    {
+        if (!LogoImageSize.TryGetSize(logo.Data.Span, out var pixelWidth, out var pixelHeight))
+            return new RectangleD(logo.X, logo.Y, logo.Width, logo.Height);
+
+        var scale = Math.Min(logo.Width / pixelWidth, logo.Height / pixelHeight);
+        var width = pixelWidth * scale;
+        var height = pixelHeight * scale;
+        return new RectangleD(logo.X + ((logo.Width - width) / 2), logo.Y + ((logo.Height - height) / 2), width, height);
+    }
+
+    private static ModuleRectangle? GetClearedArea(RectangleD logo, int quietZone, double moduleSize, int margin, int columns, int rows)
     {
         var first = (int)Math.Clamp(Math.Floor((logo.X / moduleSize) - quietZone + 1e-9) - margin, 0, columns);
         var end = (int)Math.Clamp(Math.Ceiling(((logo.X + logo.Width) / moduleSize) - quietZone - 1e-9) + margin, 0, columns);
@@ -588,6 +601,17 @@ internal static class RenderFuzzTargets
         yield return new FuzzSeed("scene-0-logo-recovered", (byte[])[0, 1, 1, 6, 16, 0, 7, 2, .. longText, 0, .. GreenPng]);
         yield return new FuzzSeed("scene-0-logo-too-large", (byte[])[0, 1, 1, 6, 16, 0, 0, 0, .. longText, 0, .. GreenPng]);
         yield return new FuzzSeed("scene-0-logo-too-large-backdrop", (byte[])[0, 1, 1, 6, 16, 0, 0, 8, .. longText, 0, .. GreenPng]);
+
+        // Wide and tall logos clear the band of their square they cover (the unit tests of non-square logos)
+        foreach (var (width, height) in new[] { (64, 32), (32, 64), (50, 7) })
+        {
+            using var logoImage = new Image<Rgba32>(width, height, new Rgba32(0x25, 0x63, 0xeb));
+            using var stream = new MemoryStream();
+            logoImage.Save(stream, new PngEncoder());
+            var url = FuzzText.Encode(SeedTexts[15]);
+            yield return new FuzzSeed($"scene-15-logo-{width}x{height}", (byte[])[15, 2, 2, 6, 16, 0, 0, 0, .. url, 0, .. stream.ToArray()]);
+            yield return new FuzzSeed($"scene-15-logo-{width}x{height}-backdrop", (byte[])[15, 2, 2, 6, 16, 0, 0, 8 | 2, .. url, 0, .. stream.ToArray()]);
+        }
     }
 
     private static IEnumerable<FuzzSeed> GetConsoleSeeds()

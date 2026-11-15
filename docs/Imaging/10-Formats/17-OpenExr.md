@@ -1,23 +1,25 @@
 ---
 title: OpenEXR
-description: Read and write OpenEXR files of half or float samples, the linear-light HDR format of rendering and visual effects.
+description: Read and write OpenEXR files of half or float samples, scan lines or tiles with mipmaps, lossless or lossy, the linear-light HDR format of rendering and visual effects.
 ---
 
 OpenEXR stores scene-linear, high dynamic range images in 16-bit (half) or 32-bit floating-point samples, as rendering
 and visual-effects tools produce them. Files load as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) pixels, values above 1 included, and
-[OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) compresses the stored samples losslessly. Conversion between the library's straight colors and
-OpenEXR's premultiplied colors can round them; this is not a general bit-exact source-pixel round-trip guarantee.
+[OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) compresses the stored samples losslessly by default, as scan lines or as tiles with mipmap or ripmap levels;
+the lossy compressions of OpenEXR (PXR24, B44, B44A, DWAA, DWAB) are used only when they are chosen. Conversion between
+the library's straight colors and OpenEXR's premultiplied colors can round them; this is not a general bit-exact
+source-pixel round-trip guarantee.
 
 ## What is read and written
 
 | | Reading | Writing |
 | --- | --- | --- |
-| Files | Scan-line and tiled files (the full-resolution level of mipmaps and ripmaps); one part of a multi-part file; deep data, flattened | Single-part scan-line files |
+| Files | Scan-line and tiled files (the full-resolution level of mipmaps and ripmaps); one part of a multi-part file; deep data, flattened | Single-part scan-line or tiled files: any tile size, one level, or mipmap and ripmap levels generated from the image (levels rounded down or up); increasing or decreasing line order (random order for tiles) |
 | Samples | HALF, FLOAT and UINT | HALF or FLOAT |
 | Channels | `R`, `G`, `B`, `A`, or `Y` (luminance) with or without `A`; or one layer of a file with other channels | `R`, `G`, `B` (and `A` for pixel formats with alpha), or `Y` for gray pixel formats |
 | Windows | The display window; an overscan cropped to it, or the data window | Both windows are the image |
-| Compression | NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB, ZSTD | NONE, RLE, ZIPS, ZIP (default) or PIZ, all lossless |
-| Metadata | Chromaticities, the windows | Chromaticities |
+| Compression | NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB, ZSTD | NONE, RLE, ZIPS, ZIP (default) or PIZ, lossless; PXR24, B44, B44A, DWAA or DWAB, lossy, when chosen |
+| Metadata | Chromaticities, the windows | Chromaticities; `dwaCompressionLevel` for DWAA and DWAB |
 
 A file of half samples without an alpha channel loads as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf), any other as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), in linear light.
 The extra precision is used when dividing colors by alpha. Infinities and samples that are not numbers are kept,
@@ -49,6 +51,50 @@ Integer pixels cannot hold values above 1: loading an OpenEXR file as [Rgba32](c
 conversion clips them or compresses the highlights with a tone mapping, as in the example. The same applies to saving
 floating-point images to other formats, with [ImageEncoder.FloatingPointConversion](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FloatingPointConversion). See
 [Pixel formats](../04-Concepts/05-PixelFormats.md).
+
+## Write tiles, mipmaps and lossy files
+
+Renderers read textures by tiles, at the resolution a surface needs: a tiled file with mipmap levels lets them load only
+what they use. Review copies and plates whose exact samples do not matter can be several times smaller with a lossy
+compression:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_OpenExrTiledLossy;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveOpenExrTextureAndPreview(Image hdr, string texturePath, string reviewPath)
+{
+    // Tiles of 64x64 pixels, with the mipmap levels a renderer reads: the encoder generates them by area average
+    hdr.Save(texturePath, new OpenExrEncoder
+    {
+        Compression = OpenExrCompression.Zip,
+        Tiling = new OpenExrTiling { TileWidth = 64, TileHeight = 64, LevelMode = OpenExrLevelMode.MipmapLevels },
+    });
+
+    // A lossy compression is only used when it is chosen: DWAB codes the colors as DCT blocks (alpha stays exact);
+    // a larger level gives a smaller file and larger errors
+    hdr.Save(reviewPath, new OpenExrEncoder { Compression = OpenExrCompression.Dwab, DwaCompressionLevel = 45 });
+}
+```
+<!-- endref -->
+
+[Tiling](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder.Tiling) writes tiles instead of scan lines. Each tile is a chunk compressed on its own; the tiles at the
+right and bottom edges are clipped to the image. With [MipmapLevels](cref:Meziantou.Framework.Imaging.Formats.OpenExrLevelMode.MipmapLevels), the file also stores the
+image halved again and again down to one pixel; with [RipmapLevels](cref:Meziantou.Framework.Imaging.Formats.OpenExrLevelMode.RipmapLevels), every combination of
+halved widths and halved heights. The encoder generates the levels: each one is the area average of the previous one,
+computed on the stored samples (colors premultiplied by alpha, so that transparent pixels do not darken the edges), and
+rounded once to the sample type. [LevelRounding](cref:Meziantou.Framework.Imaging.Formats.OpenExrTiling.LevelRounding) says how odd sizes are halved: a level of 5 pixels is followed by 2 with
+[Down](cref:Meziantou.Framework.Imaging.Formats.OpenExrLevelRounding.Down), by 3 with [Up](cref:Meziantou.Framework.Imaging.Formats.OpenExrLevelRounding.Up). The library reads the full-resolution level back; renderers and
+OpenImageIO read the others.
+
+| Compression | Lines per chunk | What is lost |
+| --- | --- | --- |
+| [Pxr24](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Pxr24) | 16 | The 8 low bits of the mantissa of float samples (a relative error below 2<sup>-16</sup>); half samples are exact |
+| [B44](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.B44) | 32 | Half samples, alpha included, in blocks of 4×4 stored in 14 bytes: small errors for smooth blocks, larger ones for blocks of very different values (or whose values cross zero); infinities and values that are not numbers become 0. Float samples are stored as they are |
+| [B44A](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.B44A) | 32 | As B44, and a block of one value takes 3 bytes |
+| [Dwaa](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Dwaa) | 32 | The colors, coded as 8×8 DCT blocks of half values after a perceptual curve, at the level of [DwaCompressionLevel](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder.DwaCompressionLevel) (45 by default, as OpenEXR); float colors come back as half values. Alpha is stored without loss |
+| [Dwab](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Dwab) | 256 | As DWAA, in larger chunks: smaller files |
+
+OpenEXR decodes these files to the samples the library decodes, bit for bit. A chunk that a compression does not shrink
+is stored uncompressed.
 
 ## Read a layer of a renderer output
 
@@ -131,7 +177,10 @@ colors) and the chroma channels `RY` and `BY` are rejected with an [UnsupportedI
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| [Compression](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder.Compression) | [None](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.None), [Rle](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Rle), [Zips](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Zips), [Zip](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Zip) or [Piz](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Piz); PIZ is usually the smallest for photos and noisy images | [Zip](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Zip) |
+| [Compression](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder.Compression) | Lossless: [None](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.None), [Rle](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Rle), [Zips](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Zips), [Zip](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Zip) or [Piz](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Piz) (PIZ is usually the smallest for photos and noisy images); lossy: [Pxr24](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Pxr24), [B44](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.B44), [B44A](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.B44A), [Dwaa](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Dwaa) or [Dwab](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Dwab) | [Zip](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.Zip) |
+| [DwaCompressionLevel](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder.DwaCompressionLevel) | The level of DWAA and DWAB: larger is smaller and less exact; 0 keeps every coefficient a half value stores | 45 |
+| [Tiling](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder.Tiling) | Tiles of [TileWidth](cref:Meziantou.Framework.Imaging.Formats.OpenExrTiling.TileWidth)×[TileHeight](cref:Meziantou.Framework.Imaging.Formats.OpenExrTiling.TileHeight) pixels (64×64 by default) and the [LevelMode](cref:Meziantou.Framework.Imaging.Formats.OpenExrTiling.LevelMode): [OneLevel](cref:Meziantou.Framework.Imaging.Formats.OpenExrLevelMode.OneLevel), [MipmapLevels](cref:Meziantou.Framework.Imaging.Formats.OpenExrLevelMode.MipmapLevels) or [RipmapLevels](cref:Meziantou.Framework.Imaging.Formats.OpenExrLevelMode.RipmapLevels) | `null`: scan lines |
+| [LineOrder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder.LineOrder) | The order of the chunks in the file: [IncreasingY](cref:Meziantou.Framework.Imaging.Formats.OpenExrLineOrder.IncreasingY), [DecreasingY](cref:Meziantou.Framework.Imaging.Formats.OpenExrLineOrder.DecreasingY), or [RandomY](cref:Meziantou.Framework.Imaging.Formats.OpenExrLineOrder.RandomY) for tiles only | [IncreasingY](cref:Meziantou.Framework.Imaging.Formats.OpenExrLineOrder.IncreasingY) |
 | [PixelType](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder.PixelType) | [Half](cref:Meziantou.Framework.Imaging.Formats.OpenExrPixelType.Half) or [Float](cref:Meziantou.Framework.Imaging.Formats.OpenExrPixelType.Float); `null` chooses half for [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) and 8-bit pixels, float otherwise | `null` |
 | [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder.AllowBitDepthReduction) | Lets [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and 16-bit pixels be rounded to half samples when [PixelType](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder.PixelType) is [Half](cref:Meziantou.Framework.Imaging.Formats.OpenExrPixelType.Half) | `false` |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata OpenEXR cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
@@ -150,10 +199,14 @@ rounding and alpha conversion.
   profile follows [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects it by default: saving an 8-bit PNG as OpenEXR throws. A CICP
   description with linear transfer characteristics and BT.709, BT.2020, DCI-P3 or Display P3 primaries is written as
   chromaticities.
-- Compressed output needs a seekable destination (the offset table precedes the chunks); [None](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.None) does not.
+- Compressed output needs a seekable destination (the offset table precedes the chunks); [None](cref:Meziantou.Framework.Imaging.Formats.OpenExrCompression.None) does not, tiled or not.
+- A lossy compression changes the stored samples: B44 also changes alpha (and so the colors divided by it), and DWA
+  stores float colors as half values. Keep a lossless master.
+- [RandomY](cref:Meziantou.Framework.Imaging.Formats.OpenExrLineOrder.RandomY) is only valid for tiles: scan-line output with it throws an [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception).
+- The levels of a mipmap or a ripmap are always generated from the image; they cannot be given.
 - Half samples are limited to ±65,504: a larger finite value is rejected when it is written as half.
 - EXIF, XMP, an orientation, a resolution and text entries cannot be stored, and the attributes of a file other than its
-  windows and chromaticities are not read.
+  windows and chromaticities are not read. The encoder writes no UINT samples and no preview image.
 - The HTJ2K256, HTJ2K32 and LJ2K compressions, the chroma channels `RY` and `BY`, and, unless a layer is selected,
   channels other than `R`, `G`, `B`, `A` and `Y` (layers, depth) are rejected with an
   [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). So are multi-part files without

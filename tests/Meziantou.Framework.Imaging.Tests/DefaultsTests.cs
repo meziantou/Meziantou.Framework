@@ -131,6 +131,11 @@ public sealed class DefaultsTests
         var exr = new OpenExrEncoder();
         Assert.Equal(ImageFormat.OpenExr, exr.Format);
         Assert.Equal(OpenExrCompression.Zip, exr.Compression);
+        Assert.Null(exr.Tiling);
+        Assert.Equal(OpenExrLineOrder.IncreasingY, exr.LineOrder);
+        Assert.Equal(45f, exr.DwaCompressionLevel);
+        var tiling = new OpenExrTiling();
+        Assert.Equal((64, 64, OpenExrLevelMode.OneLevel, OpenExrLevelRounding.Down), (tiling.TileWidth, tiling.TileHeight, tiling.LevelMode, tiling.LevelRounding));
         Assert.Null(exr.PixelType);
         Assert.False(exr.AllowBitDepthReduction);
         Assert.Equal(MetadataHandling.Strict, exr.MetadataHandling);
@@ -180,7 +185,15 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Compression = (Jpeg2000Compression)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Container = (Jpeg2000Container)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { BlockCoder = (Jpeg2000BlockCoder)2 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { Compression = (OpenExrCompression)5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { Compression = (OpenExrCompression)10 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { LineOrder = (OpenExrLineOrder)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { DwaCompressionLevel = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { DwaCompressionLevel = float.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { DwaCompressionLevel = float.PositiveInfinity });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrTiling { TileWidth = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrTiling { TileHeight = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrTiling { LevelMode = (OpenExrLevelMode)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrTiling { LevelRounding = (OpenExrLevelRounding)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { PixelType = (OpenExrPixelType)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new RadianceEncoder { Compression = (RadianceCompression)2 });
         Assert.Throws<ArgumentException>(() => new RadianceEncoder { BackgroundColor = new Rgba64(0, 0, 0, 0) });

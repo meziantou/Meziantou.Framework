@@ -1283,11 +1283,19 @@ internal static class SmokeTests
         full.Frames[0][1, 2] = new RgbaFloat(42.5f, -1f, float.PositiveInfinity, 0.5f);
         full.Metadata.TransferFunction = ColorTransferFunction.Linear;
         using var half = full.CloneAs<RgbaHalf>();
-        foreach (var compression in Enum.GetValues<OpenExrCompression>())
+        foreach (var (compression, tiling) in new (OpenExrCompression, OpenExrTiling?)[]
+        {
+            (OpenExrCompression.None, null),
+            (OpenExrCompression.Rle, null),
+            (OpenExrCompression.Zips, null),
+            (OpenExrCompression.Zip, null),
+            (OpenExrCompression.Piz, null),
+            (OpenExrCompression.Zip, new OpenExrTiling { TileWidth = 3, TileHeight = 2, LevelMode = OpenExrLevelMode.RipmapLevels }),
+        })
         {
             foreach (var image in new Image[] { full, half })
             {
-                var encoded = Encode(image, new OpenExrEncoder { Compression = compression });
+                var encoded = Encode(image, new OpenExrEncoder { Compression = compression, Tiling = tiling });
                 Check(Image.DetectFormat(encoded) == ImageFormat.OpenExr, "OpenEXR detection");
                 var info = Image.Identify(encoded, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
                 Check(info.Width == Width && info.Height == Height && info.PixelFormat == PixelFormat.RgbaFloat, "OpenEXR identification");
@@ -1295,6 +1303,18 @@ internal static class SmokeTests
                 using var expected = image is Image<RgbaHalf> halfImage ? halfImage.CloneAs<RgbaFloat>() : ((Image<RgbaFloat>)image).CloneAs<RgbaFloat>();
                 CheckEqual(expected, decoded, "OpenEXR " + compression.ToString());
                 Check(decoded.Metadata.TransferFunction == ColorTransferFunction.Linear, "OpenEXR linear light");
+            }
+        }
+
+        // Lossy compressions: half samples of PXR24 are exact, the others decode to the size of the image
+        foreach (var compression in (OpenExrCompression[])[OpenExrCompression.Pxr24, OpenExrCompression.B44, OpenExrCompression.B44A, OpenExrCompression.Dwaa, OpenExrCompression.Dwab])
+        {
+            using var decoded = Image.Load(Encode(half, new OpenExrEncoder { Compression = compression, Tiling = compression == OpenExrCompression.Dwaa ? new OpenExrTiling() : null }));
+            Check(decoded.Width == Width && decoded.Height == Height, "OpenEXR " + compression.ToString());
+            if (compression == OpenExrCompression.Pxr24)
+            {
+                using var expected = half.CloneAs<RgbaFloat>();
+                CheckEqual(expected, decoded, "OpenEXR PXR24 half samples");
             }
         }
 

@@ -49,6 +49,8 @@ public static class PdfFuzzTargets
 
     private static readonly Rendering.PdfRenderOptions RenderOptions = new() { Dpi = 18, MaxOperations = 200_000, UseSystemFonts = false };
 
+    private static readonly string[] HeaderFooterTokens = ["{page}", "{pages}", "{label}", "{date}", "{bates}", "{{", "}}", "{", "}", "Page ", " of "];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("pdf-fdf", Fdf) { Seeds = () => GetSeeds(".fdf"), Dictionary = FdfTokens },
@@ -59,6 +61,7 @@ public static class PdfFuzzTargets
         new("pdf-separations", Separations) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-compare", Compare) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-table", Table) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-header-footer", HeaderFooter) { Seeds = GetHeaderFooterSeeds, Dictionary = HeaderFooterTokens },
     ];
 
     /// <summary>
@@ -389,6 +392,47 @@ public static class PdfFuzzTargets
         catch (PdfException)
         {
         }
+    }
+
+    /// <summary>
+    /// The input is a template: stamping it as a footer of a document of three pages either throws
+    /// <see cref="ArgumentException"/> and leaves the document unchanged, or writes a document whose pages read back.
+    /// </summary>
+    private static void HeaderFooter(ReadOnlySpan<byte> data)
+    {
+        var template = FuzzText.Decode(data);
+        var document = new PdfDocument();
+        for (var i = 0; i < 3; i++)
+        {
+            document.Pages.Add(PdfSize.A5).Rotation = i * 90;
+        }
+
+        var before = document.ToByteArray();
+        try
+        {
+            document.AddHeaderFooter(new PdfHeaderFooterOptions
+            {
+                FooterCenter = template,
+                HeaderRight = template,
+                Date = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
+                Bates = new PdfBatesNumbering { Prefix = "X" },
+            });
+        }
+        catch (ArgumentException)
+        {
+            FuzzAssert.True(document.ToByteArray().AsSpan().SequenceEqual(before), "A rejected template changed the document");
+            return;
+        }
+
+        FuzzAssert.Equal(3, PdfDocument.Open(document.ToByteArray()).Pages.Count, "The stamped document lost pages");
+    }
+
+    private static IEnumerable<FuzzSeed> GetHeaderFooterSeeds()
+    {
+        yield return FuzzSeed.FromText("page", "Page {page} of {pages}");
+        yield return FuzzSeed.FromText("date", "{date} {{label}} {label}");
+        yield return FuzzSeed.FromText("bates", "{bates}");
+        yield return FuzzSeed.FromText("invalid", "{unknown} }");
     }
 
     private static IEnumerable<FuzzSeed> GetAppearanceSeeds()

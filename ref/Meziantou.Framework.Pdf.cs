@@ -116,6 +116,30 @@ namespace Meziantou.Framework.Pdf
         Schema = 7,
     }
 
+    public static class PdfBates
+    {
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfBatesRange> Apply(System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfDocument> documents, Meziantou.Framework.Pdf.PdfHeaderFooterOptions options) => throw null;
+    }
+
+    public sealed class PdfBatesNumbering
+    {
+        public int Digits { get => throw null; init { } }
+        public string Prefix { get => throw null; init { } }
+        public long StartNumber { get => throw null; init { } }
+        public string Suffix { get => throw null; init { } }
+        public string Format(long number) => throw null;
+    }
+
+    public sealed class PdfBatesRange
+    {
+        public Meziantou.Framework.Pdf.PdfDocument Document { get => throw null; }
+        public string First { get => throw null; }
+        public long FirstNumber { get => throw null; }
+        public string Last { get => throw null; }
+        public long LastNumber { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
     public enum PdfBilevelCompression
     {
         CcittGroup4 = 0,
@@ -394,6 +418,7 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfStructureTree StructureTree { get => throw null; }
         public Meziantou.Framework.Pdf.Objects.PdfDictionary Trailer { get => throw null; }
         public Meziantou.Framework.Pdf.PdfVersion Version { get => throw null; set { } }
+        public void AddHeaderFooter(Meziantou.Framework.Pdf.PdfHeaderFooterOptions options) { }
         public void AddWatermark(string text, Meziantou.Framework.Pdf.PdfWatermarkOptions? options = null) { }
         public Meziantou.Framework.Pdf.PdfAConversionResult ConvertToPdfA(Meziantou.Framework.Pdf.PdfAConformance conformance, Meziantou.Framework.Pdf.PdfAConversionOptions? options = null) => throw null;
         public Meziantou.Framework.Pdf.PdfForm CreateForm(Meziantou.Framework.Pdf.PdfRectangle boundingBox, Meziantou.Framework.Pdf.PdfMatrix? matrix = null, Meziantou.Framework.Pdf.PdfTransparencyGroup? group = null) => throw null;
@@ -694,6 +719,28 @@ namespace Meziantou.Framework.Pdf
         #nullable restore
         public static bool operator ==(Meziantou.Framework.Pdf.PdfGlyph left, Meziantou.Framework.Pdf.PdfGlyph right) => throw null;
         public static bool operator !=(Meziantou.Framework.Pdf.PdfGlyph left, Meziantou.Framework.Pdf.PdfGlyph right) => throw null;
+    }
+
+    public sealed class PdfHeaderFooterOptions
+    {
+        public Meziantou.Framework.Pdf.PdfBatesNumbering? Bates { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfColor Color { get => throw null; init { } }
+        public System.DateTimeOffset? Date { get => throw null; init { } }
+        public string DateFormat { get => throw null; init { } }
+        public int FirstPageIndex { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfFont? Font { get => throw null; init { } }
+        public double FontSize { get => throw null; init { } }
+        public string? FooterCenter { get => throw null; init { } }
+        public string? FooterLeft { get => throw null; init { } }
+        public string? FooterRight { get => throw null; init { } }
+        public string? HeaderCenter { get => throw null; init { } }
+        public string? HeaderLeft { get => throw null; init { } }
+        public string? HeaderRight { get => throw null; init { } }
+        public int? LastPageIndex { get => throw null; init { } }
+        public double Margin { get => throw null; init { } }
+        public int? PageCount { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfContentPlacement Placement { get => throw null; init { } }
+        public int StartPageNumber { get => throw null; init { } }
     }
 
     public sealed class PdfImage

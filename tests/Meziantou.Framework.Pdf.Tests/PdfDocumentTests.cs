@@ -3436,6 +3436,84 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void HeadersAndFootersAreStamped()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Pages.Add(PdfSize.A4).Rotation = 90;
+        document.Pages.Add(PdfSize.A4);
+        document.PageLabels.Set(0, new PdfPageLabel(PdfPageLabelStyle.LowercaseRoman));
+
+        #region Pdf_HeaderFooter
+        document.AddHeaderFooter(new PdfHeaderFooterOptions
+        {
+            HeaderLeft = "Annual report",
+            HeaderRight = "{date}",
+            FooterCenter = "Page {page} of {pages}",
+            FooterRight = "{{{label}}}",
+            Date = new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero),
+            FontSize = 9,
+        });
+        #endregion
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var first = read.Pages[0].ExtractTextLayout().Lines;
+        Assert.Equal(["Annual report 2026-03-01", "Page 1 of 3 {i}"], first.Select(line => line.Text));
+
+        // The header is near the top of the page, the footer near its bottom
+        Assert.InRange(first[0].Bounds.Top, 842 - 37, 842 - 30);
+        Assert.InRange(first[1].Bounds.Bottom, 30, 37);
+        Assert.InRange(first[1].Words[^1].Bounds.Right, 595 - 37, 595 - 35);
+
+        // The rotated page: the texts are at the top and the bottom of the page as it is displayed
+        var rotated = read.Pages[1].ExtractTextLayout().Lines;
+        Assert.Equal(["Annual report 2026-03-01", "Page 2 of 3 {ii}"], rotated.Select(line => line.Text));
+        Assert.Equal(90, Math.Round(rotated[0].Glyphs[0].Angle, MidpointRounding.AwayFromZero));
+        Assert.Contains("/Artifact <</Type /Pagination /Subtype /Footer>> BDC", Encoding.Latin1.GetString(read.Pages[2].GetContentData()), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BatesNumbersAreContinuousAcrossDocuments()
+    {
+        var first = new PdfDocument();
+        first.Pages.Add(PdfSize.A4);
+        first.Pages.Add(PdfSize.A4);
+        var second = new PdfDocument();
+        second.Pages.Add(PdfSize.A4);
+
+        #region Pdf_BatesNumbering
+        var ranges = PdfBates.Apply([first, second], new PdfHeaderFooterOptions
+        {
+            FooterRight = "{bates}",
+            Bates = new PdfBatesNumbering { Prefix = "ABC", Digits = 6, StartNumber = 41 },
+        });
+        #endregion
+
+        Assert.Equal(["ABC000041 - ABC000042", "ABC000043 - ABC000043"], ranges.Select(range => range.ToString()));
+        Assert.Equal(43, ranges[1].FirstNumber);
+        Assert.Equal("ABC000042", PdfDocument.Open(first.ToByteArray()).Pages[1].ExtractText());
+        Assert.Equal("ABC000043", PdfDocument.Open(second.ToByteArray()).Pages[0].ExtractText());
+    }
+
+    [Theory]
+    [InlineData("{unknown}")]
+    [InlineData("{page")]
+    [InlineData("page}")]
+    [InlineData("{date}")]
+    [InlineData("{bates}")]
+    [InlineData("\u4E2D")]
+    public void InvalidHeaderFooterTextsAreRejected(string text)
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        var before = document.ToByteArray();
+
+        Assert.Throws<ArgumentException>(() => document.AddHeaderFooter(new PdfHeaderFooterOptions { FooterCenter = text }));
+        Assert.Equal(before, document.ToByteArray());
+        Assert.Throws<ArgumentException>(() => PdfBates.Apply([document], new PdfHeaderFooterOptions { FooterCenter = "{bates}" }));
+    }
+
+    [Fact]
     public void OptimizerPlansAndApplies()
     {
         var source = new PdfDocument();

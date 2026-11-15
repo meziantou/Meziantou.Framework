@@ -50,6 +50,43 @@ namespace Meziantou.Framework.Pdf
         public System.Collections.Generic.IReadOnlyList<string> Violations { get => throw null; }
     }
 
+    public static class PdfAccessibilityInspector
+    {
+        public static Meziantou.Framework.Pdf.PdfAccessibilityReport Inspect(Meziantou.Framework.Pdf.PdfDocument document) => throw null;
+    }
+
+    public sealed class PdfAccessibilityIssue
+    {
+        public Meziantou.Framework.Pdf.PdfAccessibilityIssueKind Kind { get => throw null; }
+        public string Message { get => throw null; }
+        public int? PageIndex { get => throw null; }
+        public string? StructureType { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum PdfAccessibilityIssueKind
+    {
+        MissingStructureTree = 0,
+        NotMarkedAsTagged = 1,
+        MissingLanguage = 2,
+        MissingTitle = 3,
+        TitleNotDisplayed = 4,
+        UntaggedContent = 5,
+        MissingAlternateText = 6,
+        UntaggedAnnotation = 7,
+        MissingTabOrder = 8,
+        ReadingOrder = 9,
+        UnknownStructureType = 10,
+        SkippedHeadingLevel = 11,
+    }
+
+    public sealed class PdfAccessibilityReport
+    {
+        public bool HasNoIssues { get => throw null; }
+        public bool IsTagged { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfAccessibilityIssue> Issues { get => throw null; }
+    }
+
     public class PdfAnnotation
     {
         public Meziantou.Framework.Pdf.PdfColor? Color { get => throw null; set { } }

@@ -22,7 +22,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   (`PdfDocument.PdfAConformance`), the conversion of existing documents to PDF/A-2 and PDF/A-3 (b, u)
   (`PdfDocument.ConvertToPdfA`: actions, appearances, substitute fonts, LZW, metadata), PDF/UA-1 and PDF/UA-2 (`PdfDocument.PdfUAConformance`), and Tagged PDF: a structure tree with a role map, alternate descriptions,
   languages and artifacts (`PdfDocument.StructureTree`, `PdfContentBuilder.BeginStructureElement`); the documents are
-  validated by veraPDF in the tests
+  validated by veraPDF in the tests, and an inspector of the accessibility issues of existing documents
+  (`PdfAccessibilityInspector`)
 - **Encryption**: the standard security handler, revisions 2 to 6 (RC4 with 40-bit and 128-bit keys, AES-128,
   AES-256), with crypt filters, for reading (`PdfReadOptions.Password`) and writing (`PdfDocument.Encryption`), and the
   public-key security handler for the RSA certificates of recipients (`PdfEncryptionRecipient`,

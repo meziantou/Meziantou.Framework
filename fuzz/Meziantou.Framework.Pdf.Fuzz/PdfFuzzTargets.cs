@@ -62,6 +62,7 @@ public static class PdfFuzzTargets
         new("pdf-compare", Compare) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-table", Table) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-header-footer", HeaderFooter) { Seeds = GetHeaderFooterSeeds, Dictionary = HeaderFooterTokens },
+        new("pdf-accessibility", Accessibility) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
     ];
 
     /// <summary>
@@ -433,6 +434,26 @@ public static class PdfFuzzTargets
         yield return FuzzSeed.FromText("date", "{date} {{label}} {label}");
         yield return FuzzSeed.FromText("bates", "{bates}");
         yield return FuzzSeed.FromText("invalid", "{unknown} }");
+    }
+
+    /// <summary>The input is a PDF file: the accessibility inspector reports issues of existing pages only, and does not change the document.</summary>
+    private static void Accessibility(ReadOnlySpan<byte> data)
+    {
+        try
+        {
+            var document = PdfDocument.Open(data.ToArray(), ReadOptions);
+            var report = PdfAccessibilityInspector.Inspect(document);
+            foreach (var issue in report.Issues)
+            {
+                FuzzAssert.True(issue.PageIndex is null || (issue.PageIndex >= 0 && issue.PageIndex < document.Pages.Count), "An issue is on a page the document does not have");
+                FuzzAssert.False(string.IsNullOrEmpty(issue.Message), "An issue has no message");
+            }
+
+            FuzzAssert.Equal(report.IsTagged, report.Issues.All(issue => issue.Kind != PdfAccessibilityIssueKind.MissingStructureTree), "A tagged document has no structure tree");
+        }
+        catch (PdfException)
+        {
+        }
     }
 
     private static IEnumerable<FuzzSeed> GetAppearanceSeeds()

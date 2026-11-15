@@ -3514,6 +3514,85 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void AccessibilityOfAConformingDocumentHasNoIssues()
+    {
+        var font = PdfFont.Load(File.ReadAllBytes(TestHarness.RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf"));
+        var document = new PdfDocument { PdfUAConformance = PdfUAConformance.PdfUA1, Language = "en-US" };
+        document.Information.Title = "Report";
+        var root = document.StructureTree.AddElement("Document");
+        var heading = root.AddElement("H1");
+        var figure = root.AddElement("Figure");
+        figure.AlternateDescription = "A blue square";
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+            .BeginStructureElement(heading).DrawText("Title", font, 24, 60, 760).EndMarkedContent()
+            .BeginStructureElement(figure).SetFillRgb(0, 0, 1).Rectangle(60, 600, 100, 100).Fill().EndMarkedContent()
+            .BeginArtifact(PdfArtifactType.Pagination).DrawText("1", font, 10, 300, 40).EndMarkedContent();
+        var file = document.ToByteArray();
+
+        #region Pdf_InspectAccessibility
+        var report = PdfAccessibilityInspector.Inspect(PdfDocument.Open(file));
+        foreach (var issue in report.Issues)
+        {
+            Assert.Fail(issue.ToString()); // such as "MissingAlternateText (page 1): A Figure has no alternate text (/Alt)"
+        }
+        #endregion
+
+        Assert.True(report.IsTagged);
+        Assert.True(report.HasNoIssues);
+    }
+
+    [Fact]
+    public void AccessibilityIssuesAreReported()
+    {
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        var document = new PdfDocument();
+        var root = document.StructureTree.AddElement("Document");
+        var paragraph = root.AddElement("P");
+        var heading = root.AddElement("H3");
+        var figure = root.AddElement("Figure");
+        root.AddElement("Custom");
+        var page = document.Pages.Add(PdfSize.A4);
+        page.CreateContentBuilder()
+            .BeginStructureElement(heading).DrawText("Heading", font, 24, 60, 760).EndMarkedContent()
+            .BeginStructureElement(paragraph).DrawText("Text", font, 12, 60, 720).EndMarkedContent()
+            .BeginStructureElement(figure).Rectangle(60, 600, 100, 100).Fill().EndMarkedContent()
+            .DrawText("Untagged", font, 12, 60, 500);
+        page.Annotations.AddLink(new PdfRectangle(10, 10, 50, 50), new Uri("https://www.meziantou.net/"));
+
+        var read = PdfDocument.Open(document.ToByteArray());
+
+        // The writer marks a document with a structure tree as tagged, and orders the annotations by the structure
+        read.Catalog.Remove(PdfName.Create("MarkInfo"));
+        read.Pages[0].Dictionary.Remove(PdfName.Create("Tabs"));
+        var report = PdfAccessibilityInspector.Inspect(read);
+
+        Assert.True(report.IsTagged);
+        Assert.Equal(
+            [
+                PdfAccessibilityIssueKind.NotMarkedAsTagged,
+                PdfAccessibilityIssueKind.MissingLanguage,
+                PdfAccessibilityIssueKind.MissingTitle,
+                PdfAccessibilityIssueKind.TitleNotDisplayed,
+                PdfAccessibilityIssueKind.SkippedHeadingLevel,
+                PdfAccessibilityIssueKind.MissingAlternateText,
+                PdfAccessibilityIssueKind.UnknownStructureType,
+                PdfAccessibilityIssueKind.UntaggedContent,
+                PdfAccessibilityIssueKind.ReadingOrder,
+                PdfAccessibilityIssueKind.UntaggedAnnotation,
+                PdfAccessibilityIssueKind.MissingTabOrder,
+            ],
+            report.Issues.Select(issue => issue.Kind));
+        Assert.Equal(0, report.Issues.Single(issue => issue.Kind == PdfAccessibilityIssueKind.UntaggedContent).PageIndex);
+        Assert.Equal("Figure", report.Issues.Single(issue => issue.Kind == PdfAccessibilityIssueKind.MissingAlternateText).StructureType);
+        Assert.Equal("Custom", report.Issues.Single(issue => issue.Kind == PdfAccessibilityIssueKind.UnknownStructureType).StructureType);
+
+        var untagged = PdfAccessibilityInspector.Inspect(PdfDocument.Open(HandWrittenPdf.CreateSimple().ToArray()));
+        Assert.False(untagged.IsTagged);
+        Assert.Equal(PdfAccessibilityIssueKind.MissingStructureTree, untagged.Issues[0].Kind);
+        Assert.DoesNotContain(PdfAccessibilityIssueKind.UntaggedContent, untagged.Issues.Select(issue => issue.Kind));
+    }
+
+    [Fact]
     public void OptimizerPlansAndApplies()
     {
         var source = new PdfDocument();

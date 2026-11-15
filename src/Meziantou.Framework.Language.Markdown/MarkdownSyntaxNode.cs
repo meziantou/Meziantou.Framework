@@ -154,6 +154,10 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
                 case SyntaxKind.EntityToken:
                     builder.Append(HtmlEntities.Decode(token.Text));
                     break;
+                case SyntaxKind.EmojiToken:
+                    var mapping = FirstAncestorOrSelf<MarkdownDocumentSyntax>()?.Options.EmojiMapping ?? MarkdownEmojiMapping.Default;
+                    builder.Append(mapping.TryGetEmoji(token.Text, out var emoji) ? emoji : token.Text);
+                    break;
                 case SyntaxKind.SmartyPantToken:
                     builder.Append(((MarkdownSmartyPant)(int)token.Value!) switch
                     {

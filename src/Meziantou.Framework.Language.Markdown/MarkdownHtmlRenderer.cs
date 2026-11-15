@@ -622,6 +622,9 @@ public static class MarkdownHtmlRenderer
                 case SyntaxKind.EntityToken:
                     AppendEscaped(HtmlEntities.Decode(token.Text));
                     break;
+                case SyntaxKind.EmojiToken:
+                    AppendEscaped(options.EmojiMapping.TryGetEmoji(token.Text, out var emoji) ? emoji : token.Text);
+                    break;
                 case SyntaxKind.SmartyPantToken:
                     var pant = (MarkdownSmartyPant)(int)token.Value!;
                     _output.Append(rendererOptions.SmartyPants.GetValueOrDefault(pant) ?? MarkdownHtmlRendererOptions.DefaultSmartyPants[pant]);

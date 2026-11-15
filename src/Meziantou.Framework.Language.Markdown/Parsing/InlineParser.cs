@@ -21,6 +21,11 @@ internal sealed class InlineParser
     private readonly bool _genericAttributes;
     private readonly bool _customContainers;
     private readonly bool _smartyPants;
+    private readonly MarkdownEmojiMapping? _emoji;
+
+    // The text before the end of an emoji whose last characters are a delimiter of emphasis, with the length of the emoji: it is
+    // an emoji when the emphasis leaves its delimiters as text
+    private readonly List<(InlineNode Node, int Length)> _pendingEmojis = [];
 
     // The quotes of SmartyPants, which are paired at the end of the inlines, where the inlines start, and whether there are dashes
     private readonly List<InlineNode> _smartQuotes = [];
@@ -58,6 +63,7 @@ internal sealed class InlineParser
         _genericAttributes = extensions.HasFlag(MarkdownExtensions.GenericAttributes);
         _customContainers = extensions.HasFlag(MarkdownExtensions.CustomContainers);
         _smartyPants = extensions.HasFlag(MarkdownExtensions.SmartyPants);
+        _emoji = extensions.HasFlag(MarkdownExtensions.Emoji) ? options.EmojiMapping : null;
         _autolinks = extensions.HasFlag(MarkdownExtensions.Autolinks);
     }
 
@@ -81,6 +87,7 @@ internal sealed class InlineParser
         _usedNodes = 0;
         _inlineStart = _pos;
         _smartQuotes.Clear();
+        _pendingEmojis.Clear();
         _attributesOutcomes = null;
         _root = NewNode(SyntaxKind.Paragraph, _pos, _pos);
         _delimiters = null;
@@ -91,10 +98,16 @@ internal sealed class InlineParser
         }
 
         ProcessEmphasis(stackBottom: null);
+
+        // As in Markdig: the dashes after the emphasis, then the emoji that end with a delimiter, then the quotes are paired
         if (_smartyPants)
         {
-            // As in Markdig: the dashes after the emphasis, then the quotes are paired
             MarkDashes(_root);
+        }
+
+        ResolvePendingEmojis();
+        if (_smartyPants)
+        {
             PairSmartQuotes();
         }
 
@@ -235,6 +248,13 @@ internal sealed class InlineParser
     private void ParseInline()
     {
         var c = _text[_pos];
+
+        // Markdig reads the emoji before the other inlines, except the escapes and the links
+        if (_emoji is not null && c != ']' && _emoji.IsFirstCharacter(c) && ParseEmoji())
+        {
+            return;
+        }
+
         switch (c)
         {
             case '\n':
@@ -350,9 +370,11 @@ internal sealed class InlineParser
         }
     }
 
+    // Text: the first character, which can be one where an extension did not start, then up to the next special character
     private void ParseString()
     {
         var start = _pos;
+        _pos++;
         while (_pos < _end && _text[_pos] is not ('\n' or '\\' or '`' or '*' or '_' or '[' or ']' or '!' or '<' or '&') && !IsExtensionCharacter(_text[_pos]))
         {
             _pos++;
@@ -364,6 +386,7 @@ internal sealed class InlineParser
     // The characters where a construct of an extension can start: a tilde, the colon of a URL, the start of www.
     private bool IsExtensionCharacter(char c) => c switch
     {
+        _ when _emoji is not null && _emoji.IsFirstCharacter(c) && !char.IsLetterOrDigit(_pos > _inlineStart ? _text[_pos - 1] : '\0') => true,
         '~' => _strikethrough || _subscript,
         '^' => _superscript,
         '+' => _inserted,
@@ -371,7 +394,7 @@ internal sealed class InlineParser
         '$' => _mathematics,
         '{' => _genericAttributes,
         ':' => _autolinks || _customContainers,
-        '\'' or '"' or '>' or '.' => _smartyPants,
+        '\'' or '"' or '>' or '.' when _smartyPants => true,
         'w' => _autolinks && _pos + 3 < _end && _text[_pos + 1] == 'w' && _text[_pos + 2] == 'w' && _text[_pos + 3] == '.',
         _ => false,
     };
@@ -953,6 +976,73 @@ internal sealed class InlineParser
 
     private char CharAt(int position) => position < _end ? _text[position] : '\0';
 
+    // An emoji, as Markdig reads it: the longest shortcode or smiley, which is not after a letter or a digit. When its last
+    // characters are a delimiter of emphasis, they are left to the emphasis, and the emoji is read after it.
+    private bool ParseEmoji()
+    {
+        if (char.IsLetterOrDigit(_pos > _inlineStart ? _text[_pos - 1] : '\0') || _emoji!.MatchLongest(_text.AsSpan(_pos, _end - _pos)) is not { } emoji)
+        {
+            return false;
+        }
+
+        var last = emoji[^1];
+        if (IsEmphasisCharacter(last))
+        {
+            var prefixLength = emoji.Length - 1;
+            while (prefixLength > 0 && emoji[prefixLength - 1] == last)
+            {
+                prefixLength--;
+            }
+
+            if (prefixLength > 0)
+            {
+                var pending = AppendText(_pos, _pos + prefixLength);
+                pending.IsDelimiterRun = true;
+                _pendingEmojis.Add((pending, emoji.Length));
+                _pos += prefixLength;
+                return true;
+            }
+        }
+
+        _root.Append(NewNode(SyntaxKind.EmojiToken, _pos, _pos + emoji.Length));
+        _pos += emoji.Length;
+        return true;
+    }
+
+    private bool IsEmphasisCharacter(char c) => c switch
+    {
+        '*' or '_' => true,
+        '~' => _strikethrough || _subscript,
+        '^' => _superscript,
+        '+' => _inserted,
+        '=' => _marked,
+        ':' => _customContainers,
+        _ => false,
+    };
+
+    // The emoji whose delimiters the emphasis left as text right after them
+    private void ResolvePendingEmojis()
+    {
+        foreach (var (node, length) in _pendingEmojis)
+        {
+            var end = node.Start + length;
+            if (node.Next is { Kind: SyntaxKind.TextToken } suffix && suffix.Start == node.End && suffix.End >= end)
+            {
+                node.ChangeKind(SyntaxKind.EmojiToken);
+                node.IsDelimiterRun = false;
+                node.End = end;
+                if (suffix.End == end)
+                {
+                    suffix.Unlink();
+                }
+                else
+                {
+                    suffix.Start = end;
+                }
+            }
+        }
+    }
+
     // SmartyPants, as Markdig reads it: a quote that can open or close as _ can, a pair of angle quotes, an ellipsis that ends a word
     private bool ParseSmartyPant()
     {
@@ -1269,18 +1359,19 @@ internal sealed class InlineParser
     private void ParseCloseBracket()
     {
         var closeStart = _pos;
-        _pos++;
         var opener = _brackets;
         if (opener is null)
         {
-            AppendText(closeStart, _pos);
+            AppendCloseBracketOrEmoji(closeStart);
             return;
         }
 
+        _pos++;
+
         if (!opener.Active)
         {
-            AppendText(closeStart, _pos);
             RemoveBracket();
+            AppendCloseBracketOrEmoji(closeStart);
             return;
         }
 
@@ -1379,9 +1470,7 @@ internal sealed class InlineParser
         if (!matched)
         {
             RemoveBracket();
-            _pos = closeStart;
-            AppendText(closeStart, closeStart + 1);
-            _pos = closeStart + 1;
+            AppendCloseBracketOrEmoji(closeStart);
             return;
         }
 
@@ -1418,6 +1507,17 @@ internal sealed class InlineParser
                     bracket.Active = false;
                 }
             }
+        }
+    }
+
+    // A bracket that closes no link is text, unless Markdig reads an emoji there, such as ]:)
+    private void AppendCloseBracketOrEmoji(int closeStart)
+    {
+        _pos = closeStart;
+        if (_emoji is null || !_emoji.IsFirstCharacter(']') || !ParseEmoji())
+        {
+            AppendText(closeStart, closeStart + 1);
+            _pos = closeStart + 1;
         }
     }
 

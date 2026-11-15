@@ -380,11 +380,30 @@ Assert.Equal("<p>\u00AB\u00A0Wait&hellip;\u00A0\u00BB &ndash; it is &lsquo;done&
 ```
 <!-- endref -->
 
+- [Emoji](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Emoji): shortcodes such as `:rocket:`, and smileys
+  such as `:)` or `<3`, are written as their emoji when they are not after a letter or a digit. Each one is a token of kind
+  [EmojiToken](cref:Meziantou.Framework.Language.Markdown.SyntaxKind.EmojiToken).
+  [EmojiMapping](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.EmojiMapping) chooses the shortcodes and
+  the smileys: [MarkdownEmojiMapping.Default](cref:Meziantou.Framework.Language.Markdown.MarkdownEmojiMapping.Default) has the
+  ones of Markdig, [DefaultWithoutSmileys](cref:Meziantou.Framework.Language.Markdown.MarkdownEmojiMapping.DefaultWithoutSmileys)
+  only its shortcodes, and a mapping can be made from dictionaries.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_Emoji;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Emoji };
+Assert.Equal("<p>Ship it \U0001F680 :)</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("Ship it :rocket: :)\n", options with { EmojiMapping = MarkdownEmojiMapping.DefaultWithoutSmileys })));
+
+// A mapping of its own: shortcodes, and smileys for them
+var mapping = new MarkdownEmojiMapping(new Dictionary<string, string> { [":ok:"] = "\u2705" }, new Dictionary<string, string> { ["(y)"] = ":ok:" });
+Assert.Equal("<p>\u2705 \u2705 :rocket:</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(":ok: (y) :rocket:\n", options with { EmojiMapping = mapping })));
+```
+<!-- endref -->
+
 [DisableHtml](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.DisableHtml) reads HTML as text: the
 renderer escapes it, and autolinks such as `<https://example.com>` are still links.
 
 ## Limitations of the prototype
 
-- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no grid tables, emoji, figures...
+- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no grid tables, figures, media links...
 - Inserting and removing blocks parses the whole text again.
 - Parsing allocates more and is slower than [Meziantou.Framework.Markdown](../Markdown/01-Introduction.md).

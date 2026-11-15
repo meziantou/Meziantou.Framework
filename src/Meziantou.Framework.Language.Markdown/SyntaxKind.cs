@@ -72,6 +72,7 @@ public enum SyntaxKind
     CustomContainerArgumentsToken,
     DefinitionMarkerToken,
     SmartyPantToken,
+    EmojiToken,
 
     // Blocks
     Document,

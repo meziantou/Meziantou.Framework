@@ -73,6 +73,9 @@ public enum MarkdownExtensions
     /// <summary>SmartyPants: quotes, <c>&lt;&lt;</c>, <c>&gt;&gt;</c>, <c>...</c>, <c>--</c> and <c>---</c> are written as typographic characters, such as <c>&amp;ldquo;</c> or <c>&amp;mdash;</c>.</summary>
     SmartyPants = 1 << 21,
 
+    /// <summary>Emoji: shortcodes such as <c>:smile:</c> and smileys such as <c>:)</c>, which are not after a letter or a digit, are written as their emoji, as configured by <see cref="MarkdownParseOptions.EmojiMapping"/>.</summary>
+    Emoji = 1 << 22,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

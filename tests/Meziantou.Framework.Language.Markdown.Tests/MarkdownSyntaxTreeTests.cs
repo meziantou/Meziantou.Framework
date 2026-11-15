@@ -759,6 +759,46 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void ReadmeExample_Emoji()
+    {
+        #region MarkdownSyntaxTree_Emoji
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Emoji };
+        Assert.Equal("<p>Ship it \U0001F680 :)</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("Ship it :rocket: :)\n", options with { EmojiMapping = MarkdownEmojiMapping.DefaultWithoutSmileys })));
+
+        // A mapping of its own: shortcodes, and smileys for them
+        var mapping = new MarkdownEmojiMapping(new Dictionary<string, string> { [":ok:"] = "\u2705" }, new Dictionary<string, string> { ["(y)"] = ":ok:" });
+        Assert.Equal("<p>\u2705 \u2705 :rocket:</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(":ok: (y) :rocket:\n", options with { EmojiMapping = mapping })));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("a :) and :angry:\n", "<p>a \U0001F603 and \U0001F620</p>\n")]
+    [InlineData("not:) x:angry:x\n", "<p>not:) x:angry:x</p>\n")]
+    [InlineData("]:) []:) [a]:)\n", "<p>\U0001F608 [\U0001F608 [a]\U0001F603</p>\n")]
+    [InlineData("<3 -> <=> `:)` \\:)\n", "<p>\u2764\uFE0F \u2192 \u21D4 <code>:)</code> :)</p>\n")]
+    [InlineData("a :* b *c :* d*\n", "<p>a \U0001F617 b <em>c :</em> d*</p>\n")]
+    [InlineData("*:)*\n", "<p><em>\U0001F603</em></p>\n")]
+    public void RendersEmoji(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Emoji });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
+    public void EmojiIsAToken()
+    {
+        var paragraph = MarkdownSyntaxTree.ParseText("a :smile:\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Emoji }).GetRoot().Blocks.Single();
+
+        Assert.Equal(":smile:", paragraph.ChildTokens().Single(token => token.RawKind == (int)SyntaxKind.EmojiToken).Text);
+        Assert.Equal("a \U0001F604", paragraph.GetPlainText());
+        Assert.True(MarkdownEmojiMapping.Default.TryGetEmoji(":)", out var emoji));
+        Assert.Equal("\U0001F603", emoji);
+        Assert.Throws<ArgumentException>(() => new MarkdownEmojiMapping(new Dictionary<string, string>(), new Dictionary<string, string> { [":)"] = ":missing:" }));
+    }
+
+    [Fact]
     public void AlertHasItsKind()
     {
         var alert = Assert.IsType<MarkdownAlertSyntax>(MarkdownSyntaxTree.ParseText("> [!Warning]  \n> Be *careful*\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts }).GetRoot().Blocks.Single());

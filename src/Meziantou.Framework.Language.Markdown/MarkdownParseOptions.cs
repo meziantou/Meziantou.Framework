@@ -15,6 +15,9 @@ public sealed record MarkdownParseOptions
     /// <summary>Gets how <see cref="MarkdownExtensions.AutoIdentifiers"/> makes the identifiers of the headings.</summary>
     public MarkdownAutoIdentifierOptions AutoIdentifierOptions { get; init; } = MarkdownAutoIdentifierOptions.Default;
 
+    /// <summary>Gets the shortcodes and the smileys that <see cref="MarkdownExtensions.Emoji"/> reads: by default, the ones of Markdig.</summary>
+    public MarkdownEmojiMapping EmojiMapping { get; init; } = MarkdownEmojiMapping.Default;
+
     /// <summary>Gets a value indicating whether a block quote in a container, such as a list item, can be an alert. By default, only the block quotes of the document are.</summary>
     public bool AllowNestedAlerts { get; init; }
 

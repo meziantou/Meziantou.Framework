@@ -199,12 +199,15 @@ public sealed class PsdDecoderTests
         float[] gray = [0f, 0.5f, 1f, 7.25f];
         var data = new PsdFileBuilder(2, 2, 32, Grayscale, PsdFileBuilder.Planes32(gray, 1)) { Compression = 1 }.Build();
         using var image = Image.Load(data);
-        var floats = Assert.IsType<Image<RgbaFloat>>(image);
-        Assert.Equal(new RgbaFloat(0.5f, 0.5f, 0.5f, 1f), floats.Frames[0][1, 0]);
-        Assert.Equal(new RgbaFloat(7.25f, 7.25f, 7.25f, 1f), floats.Frames[0][1, 1]);
+        // A grayscale document loads as floating-point gray levels
+        var floats = Assert.IsType<Image<GrayFloat>>(image);
+        Assert.Equal(new GrayFloat(0.5f), floats.Frames[0][1, 0]);
+        Assert.Equal(new GrayFloat(7.25f), floats.Frames[0][1, 1]);
         Assert.Equal(ColorTransferFunction.Linear, image.Metadata.TransferFunction);
         var info = Image.Identify(data);
-        Assert.Equal(PixelFormat.RgbaFloat, info.PixelFormat);
+        Assert.Equal(PixelFormat.GrayFloat, info.PixelFormat);
+        using var colors = Image.Load<RgbaFloat>(data);
+        Assert.Equal(new RgbaFloat(7.25f, 7.25f, 7.25f, 1f), colors.Frames[0][1, 1]);
         Assert.Equal(32, info.BitsPerComponent);
 
         // Values above 1 are rejected by a conversion to integers, as for every floating-point image

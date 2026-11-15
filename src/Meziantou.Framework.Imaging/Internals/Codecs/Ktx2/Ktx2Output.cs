@@ -106,10 +106,10 @@ internal sealed class Ktx2Output
         int bits;
         if (precision is Ktx2OutputPrecision.Half or Ktx2OutputPrecision.Float)
         {
-            defaultFormat = DefaultPixelFormats.ForKtx2(isGray: false, hasAlpha: true, precision);
+            // A gray texture (a single channel swizzled to the three colors) keeps its gray level, a color one its alpha
+            defaultFormat = DefaultPixelFormats.ForKtx2(isGray, hasAlpha, precision);
             bits = precision == Ktx2OutputPrecision.Half ? 16 : 32;
-            isGray = false;
-            hasAlpha = true;
+            hasAlpha |= !isGray;
         }
         else
         {

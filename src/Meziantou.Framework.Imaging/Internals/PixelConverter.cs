@@ -216,6 +216,18 @@ internal static partial class PixelConverter
             case PixelFormat.Rgba1010102:
                 ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgba1010102>(source)), destinationFormat, destination, background, format, floats);
                 break;
+            case PixelFormat.GrayFloat:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, GrayFloat>(source)), destinationFormat, destination, background, format, floats);
+                break;
+            case PixelFormat.GrayHalf:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, GrayHalf>(source)), destinationFormat, destination, background, format, floats);
+                break;
+            case PixelFormat.LaFloat:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, LaFloat>(source)), destinationFormat, destination, background, format, floats);
+                break;
+            case PixelFormat.LaHalf:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, LaHalf>(source)), destinationFormat, destination, background, format, floats);
+                break;
             default:
                 throw new UnreachableException();
         }
@@ -253,6 +265,8 @@ internal static partial class PixelConverter
         PixelFormat.Argb32 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, Argb32>(row))),
         PixelFormat.Abgr32 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, Abgr32>(row))),
         PixelFormat.Rgba1010102 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, Rgba1010102>(row))),
+        PixelFormat.LaFloat => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, LaFloat>(row))),
+        PixelFormat.LaHalf => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, LaHalf>(row))),
         _ => PixelFormats.HasAlpha(format) ? throw new UnreachableException() : -1,
     };
 
@@ -408,6 +422,18 @@ internal static partial class PixelConverter
                 break;
             case PixelFormat.Rgba1010102:
                 ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgba1010102>(destination)), background, format, floats);
+                break;
+            case PixelFormat.GrayFloat:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, GrayFloat>(destination)), background, format, floats);
+                break;
+            case PixelFormat.GrayHalf:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, GrayHalf>(destination)), background, format, floats);
+                break;
+            case PixelFormat.LaFloat:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, LaFloat>(destination)), background, format, floats);
+                break;
+            case PixelFormat.LaHalf:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, LaHalf>(destination)), background, format, floats);
                 break;
             default:
                 throw new UnreachableException();

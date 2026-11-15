@@ -6,7 +6,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Runs the filtering kernels (resize, transform, convolution, blurs, median) on the pixel formats they do not handle
 /// themselves: <see cref="La16"/>, <see cref="A8"/>, <see cref="Argb32"/> and <see cref="Abgr32"/> are processed as
 /// <see cref="Rgba32"/>, <see cref="Bgr565"/> as <see cref="Rgb24"/>, and <see cref="La32"/> and <see cref="Rgba1010102"/>
-/// as <see cref="Rgba64"/>, in a temporary copy of the frame charged to the scope of the image.
+/// as <see cref="Rgba64"/>, and the floating-point gray formats as the floating-point color format of their precision
+/// (<see cref="GrayFloat"/> and <see cref="LaFloat"/> as <see cref="RgbaFloat"/>, <see cref="GrayHalf"/> and
+/// <see cref="LaHalf"/> as <see cref="RgbaHalf"/>), in a temporary copy of the frame charged to the scope of the image.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -32,11 +34,11 @@ internal static class ProcessingBridge
 
     /// <summary>Gets a value indicating whether the kernels process <typeparamref name="TPixel"/> through a working copy.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsBridged<TPixel>() => typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(A8) || typeof(TPixel) == typeof(Argb32) || typeof(TPixel) == typeof(Abgr32) || typeof(TPixel) == typeof(Bgr565) || typeof(TPixel) == typeof(Rgba1010102);
+    public static bool IsBridged<TPixel>() => typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(A8) || typeof(TPixel) == typeof(Argb32) || typeof(TPixel) == typeof(Abgr32) || typeof(TPixel) == typeof(Bgr565) || typeof(TPixel) == typeof(Rgba1010102) || PixelConverter.IsFloatGray<TPixel>();
 
     /// <summary>Gets a value indicating whether the working copy of <typeparamref name="TPixel"/> has three equal colors: a gray format, or <see cref="A8"/> (black).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool HasGrayColors<TPixel>() => typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(A8);
+    public static bool HasGrayColors<TPixel>() => typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(A8) || PixelConverter.IsFloatGray<TPixel>();
 
     /// <summary>Gets the pixel format the kernels work in for a pixel format.</summary>
     public static PixelFormat GetKernelFormat(PixelFormat format) => format switch
@@ -44,6 +46,8 @@ internal static class ProcessingBridge
         PixelFormat.La16 or PixelFormat.A8 or PixelFormat.Argb32 or PixelFormat.Abgr32 => PixelFormat.Rgba32,
         PixelFormat.Bgr565 => PixelFormat.Rgb24,
         PixelFormat.La32 or PixelFormat.Rgba1010102 => PixelFormat.Rgba64,
+        PixelFormat.GrayFloat or PixelFormat.LaFloat => PixelFormat.RgbaFloat,
+        PixelFormat.GrayHalf or PixelFormat.LaHalf => PixelFormat.RgbaHalf,
         _ => format,
     };
 

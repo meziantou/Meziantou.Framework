@@ -107,7 +107,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     public ImageMetadata Metadata => _metadata.Metadata;
 
     /// <summary>Gets the default working representation: <see cref="PixelFormat.RgbaHalf"/> when every channel is HALF and there is no alpha, otherwise <see cref="PixelFormat.RgbaFloat"/>.</summary>
-    public PixelFormat DefaultPixelFormat => DefaultPixelFormats.ForOpenExr(Header.UsesHalfPixels);
+    public PixelFormat DefaultPixelFormat => DefaultPixelFormats.ForOpenExr(Header.UsesHalfPixels, Header.IsLuminance, Header.HasAlpha);
 
     public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
     {

@@ -17,7 +17,7 @@ internal static class SuiteReaders
         ImageFormat.OpenExr or ImageFormat.Radiance or ImageFormat.Dng => true,
 
         // 32-bit PSD documents
-        ImageFormat.Psd => Image.Identify(data).PixelFormat == PixelFormat.RgbaFloat,
+        ImageFormat.Psd => PixelFormats.IsFloatingPoint(Image.Identify(data).PixelFormat),
         ImageFormat.Dds => IsFloatingPointDds(data),
 
         // A DPX element of 32 or 64-bit components (the bit depth of the first image element, field 21.9)
@@ -29,7 +29,7 @@ internal static class SuiteReaders
     {
         try
         {
-            return Image.Identify(data).PixelFormat is PixelFormat.RgbaFloat or PixelFormat.RgbaHalf;
+            return PixelFormats.IsFloatingPoint(Image.Identify(data).PixelFormat);
         }
         catch (Exception ex) when (ex is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
         {

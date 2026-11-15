@@ -78,6 +78,6 @@ public sealed class DpxEncoder : ImageEncoder
     /// <summary>Gets a value indicating whether floating-point samples are stored without reduction to integer pixels: when <see cref="BitDepth"/> is not an integer depth.</summary>
     internal override bool StoresFloatingPointSamples => BitDepth is null or 32;
 
-    /// <summary>Gray and 16-bit RGB pixels are written as luma and RGB elements, not widened to RGBA.</summary>
-    internal override bool StoresPixelFormat(PixelFormat format) => format == PixelFormat.Rgb48 || base.StoresPixelFormat(format);
+    /// <summary>Gray and 16-bit RGB pixels are written as luma and RGB elements, not widened to RGBA; the floating-point gray formats without alpha as floating-point luma elements.</summary>
+    internal override bool StoresPixelFormat(PixelFormat format) => format is PixelFormat.Rgb48 or PixelFormat.GrayFloat or PixelFormat.GrayHalf || base.StoresPixelFormat(format);
 }

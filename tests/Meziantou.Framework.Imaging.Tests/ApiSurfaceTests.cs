@@ -74,7 +74,8 @@ public sealed class ApiSurfaceTests
     public void ExtensibilityIsClosed(Type type)
     {
         // The base types of the model cannot be derived outside the library: the extension points are their own types
-        // (CustomImageCodec, CustomImageEncoder, the pixel operations), and there is no custom pixel or frame contract
+        // (CustomImageCodec, CustomImageEncoder, the pixel operations, ICustomPixel and ImageBufferAllocator), and there
+        // is no custom frame contract
         var accessibleConstructors = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .Where(constructor => constructor.IsPublic || constructor.IsFamily || constructor.IsFamilyOrAssembly);
         Assert.Empty(accessibleConstructors);
@@ -481,6 +482,37 @@ public sealed class ApiSurfaceTests
         var property = GetDeclaredProperty(typeof(ImageMetadata), nameof(ImageMetadata.Ktx2Header));
         Assert.Equal(header, property.PropertyType);
         Assert.NotNull(property.GetSetMethod());
+    }
+
+    [Fact]
+    public void PixelFormatAndAllocatorAdditionsHaveTheirPublicShape()
+    {
+        // New pixel formats are appended: the values of the existing members never change
+        Assert.Equal(18, (int)PixelFormat.Cmyk64);
+        Assert.Equal([19, 20, 21, 22], new[] { PixelFormat.GrayFloat, PixelFormat.GrayHalf, PixelFormat.LaFloat, PixelFormat.LaHalf }.Select(format => (int)format));
+        Assert.Equal(22, Enum.GetValues<PixelFormat>().Max(format => (int)format));
+        foreach (var type in new[] { typeof(GrayFloat), typeof(GrayHalf), typeof(LaFloat), typeof(LaHalf) })
+        {
+            Assert.True(type.IsValueType && type.IsPublic && type.IsLayoutSequential);
+        }
+
+        // A custom pixel type: static members only, constrained to unmanaged implementations of the interface
+        var customPixel = typeof(ICustomPixel<>);
+        Assert.True(customPixel.IsInterface);
+        Assert.All(customPixel.GetMethods(), method => Assert.True(method.IsStatic && method.IsAbstract, method.Name));
+        Assert.Equal(
+            [nameof(ICustomPixel<>.FromStorage), nameof(ICustomPixel<>.ToStorage), "get_" + nameof(ICustomPixel<>.StorageFormat)],
+            customPixel.GetMethods().Select(method => method.Name).Order(StringComparer.Ordinal));
+        Assert.True(typeof(CustomPixelRowAction<>).IsSubclassOf(typeof(Delegate)));
+
+        // The allocator: an abstract class with a protected constructor, set on the immutable configuration
+        var allocator = typeof(ImageBufferAllocator);
+        Assert.True(allocator.IsPublic && allocator.IsAbstract && !allocator.IsSealed);
+        Assert.True(Assert.Single(allocator.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)).IsFamily);
+        Assert.True(allocator.GetMethod(nameof(ImageBufferAllocator.GetBufferLength))!.IsVirtual);
+        var property = GetDeclaredProperty(typeof(ImageConfiguration), nameof(ImageConfiguration.BufferAllocator));
+        Assert.Equal(allocator, property.PropertyType);
+        Assert.True(property.GetSetMethod()!.ReturnParameter.GetRequiredCustomModifiers().Contains(typeof(System.Runtime.CompilerServices.IsExternalInit)));
     }
 
     [Theory]

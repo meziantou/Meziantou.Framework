@@ -1416,7 +1416,7 @@ internal sealed partial class DrawingSession : IDisposable
 
         if (brush is SolidBrush solid)
         {
-            if (solid.FloatColor is { } floatColor && _frames[0].PixelFormat is PixelFormat.RgbaFloat or PixelFormat.RgbaHalf)
+            if (solid.FloatColor is { } floatColor && PixelFormats.IsFloatingPoint(_frames[0].PixelFormat))
             {
                 var floatPaint = _floatSolidPaint ??= new FloatSolidEvaluator(_image.Owner.Scope);
                 floatPaint.Prepare(floatColor, Width);

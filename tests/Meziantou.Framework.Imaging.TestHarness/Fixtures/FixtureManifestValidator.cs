@@ -47,7 +47,7 @@ public static partial class FixtureManifestValidator
     public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2", "exr", "hdr", "psd", "dng", "dds", "dpx", "cin" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.PixelFormat"/> (library <c>PixelFormat</c> names).</summary>
-    public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf", "La16", "La32", "Rgb48", "A8", "Argb32", "Abgr32", "Bgr565", "Rgba1010102", "Cmyk32", "Cmyk64" };
+    public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf", "La16", "La32", "Rgb48", "A8", "Argb32", "Abgr32", "Bgr565", "Rgba1010102", "Cmyk32", "Cmyk64", "GrayFloat", "GrayHalf", "LaFloat", "LaHalf" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.ColorModel"/> (library <c>ImageColorModel</c> names).</summary>
     public static IReadOnlySet<string> AllowedColorModels { get; } = new HashSet<string>(StringComparer.Ordinal) { "Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck", "CieLab" };
@@ -590,7 +590,7 @@ public static partial class FixtureManifestValidator
             }
 
             if (decoding.Buffer is not { } buffer || decoding.Reference is not { } reference || decoding.Comparison is not { } comparison
-                || decoding.Width is not > 0 || decoding.Height is not > 0 || decoding.PixelFormat is not ("RgbaHalf" or "RgbaFloat")
+                || decoding.Width is not > 0 || decoding.Height is not > 0 || decoding.PixelFormat is not ("RgbaHalf" or "RgbaFloat" or "GrayHalf" or "GrayFloat" or "LaFloat")
                 || decoding.ColorModel is not ("Grayscale" or "GrayscaleAlpha" or "Rgb" or "Rgba") || decoding.BitsPerComponent is not (16 or 32))
             {
                 errors.Add($"{decodingName}: a decoding declares its pixels (rgbaf32le), their reference, an exact comparison, the size, the pixel format, the color model and the bits per component, or an expectedError.");

@@ -76,8 +76,9 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         _structure = structure;
         _header = structure.Header;
         _planes = LinePlanes.Create(_header);
+        // The chunks are written to a staging image of RGBA samples: a luminance image has its level in the three colors
         var format = structure.DefaultPixelFormat;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.OpenExr, structure.Size, format, format, structure.Metadata.IccProfile);
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.OpenExr, structure.Size, format, PixelFormatWidening.GetWidenedFormat(format), structure.Metadata.IccProfile);
         _workers = GetWorkerCount(_context.Configuration.MaxDegreeOfParallelism, _header);
         if (_workers > 1)
         {

@@ -78,7 +78,7 @@ internal readonly record struct PixelStorageLayout
 
     /// <summary>Computes the bytes charged for all the slabs of this layout when rented from <paramref name="pool"/>.</summary>
     /// <returns><see langword="false"/> if the total overflows <see cref="long"/>.</returns>
-    public bool TryGetCapacity(SlabPool pool, out long capacity)
+    public bool TryGetCapacity(IBufferPool pool, out long capacity)
     {
         var full = pool.GetRentCapacity(FullSlabLength);
         var last = pool.GetRentCapacity(LastSlabLength);

@@ -72,7 +72,14 @@ internal sealed class DpxRowReader
     public static PixelFormat GetDefaultPixelFormat(DpxDescriptor descriptor, int bitDepth)
     {
         if (bitDepth >= 32)
-            return PixelFormat.RgbaFloat;
+        {
+            return descriptor switch
+            {
+                DpxDescriptor.Alpha => PixelFormat.LaFloat,
+                DpxDescriptor.Red or DpxDescriptor.Green or DpxDescriptor.Blue or DpxDescriptor.Luma => PixelFormat.GrayFloat,
+                _ => PixelFormat.RgbaFloat,
+            };
+        }
 
         var wide = bitDepth > 8;
         return descriptor switch

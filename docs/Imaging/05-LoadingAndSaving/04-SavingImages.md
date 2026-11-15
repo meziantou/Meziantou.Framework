@@ -130,7 +130,8 @@ yourself is rejected when you save. Which format stores what is described in
 [sample type and alpha conversion](../10-Formats/17-OpenExr.md) of OpenEXR, and by the TIFF encoder as 32-bit
 floats (with [TiffPixelLayout.Auto](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Auto) and a compression other than JPEG). Every other encoder rejects them before writing,
 unless [ImageEncoder.FloatingPointConversion](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FloatingPointConversion) gives the options of their reduction to 16-bit integers: a tone mapping
-for the highlights, or clipping. See
+for the highlights, or clipping. The floating-point gray formats are stored the same way, and are reduced to
+[Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [La32](cref:Meziantou.Framework.Imaging.La32) (widened to [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) for an encoder that does not store them). See
 [Pixel formats](../04-Concepts/05-PixelFormats.md#floating-point-and-high-dynamic-range).
 
 ## Files are published atomically

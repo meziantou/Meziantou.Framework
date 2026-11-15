@@ -34,8 +34,11 @@ public abstract class ImageEncoder
     private MetadataHandling _metadataHandling;
 
     /// <summary>
-    /// Gets the conversion that reduces floating-point pixels (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) to 16-bit
-    /// integer ones (<see cref="Rgba64"/>) before they are encoded, or <see langword="null"/> (the default) to reject them.
+    /// Gets the conversion that reduces floating-point pixels (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>, and the gray
+    /// formats <see cref="GrayFloat"/>, <see cref="GrayHalf"/>, <see cref="LaFloat"/>, <see cref="LaHalf"/>) to 16-bit integer
+    /// ones (<see cref="Rgba64"/>, or <see cref="Gray16"/> and <see cref="La32"/> for gray pixels, widened to
+    /// <see cref="Rgba64"/> for an encoder that does not store them) before they are encoded, or <see langword="null"/> (the
+    /// default) to reject them.
     /// It only applies to the outputs that do not store floating-point samples: every format but OpenEXR and TIFF, and the
     /// TIFF settings that cannot (<see cref="TiffEncoder"/>). <see cref="OpenExrEncoder"/> always stores them.
     /// </summary>
@@ -46,7 +49,7 @@ public abstract class ImageEncoder
     /// <see cref="PixelConversionOptions.OutOfRangeSamples"/> clips them or <see cref="PixelConversionOptions.ToneMapping"/>
     /// compresses the highlights first. The peak of the tone mapping of an eager save is the one of all its frames; a
     /// sequential writer takes the one of each frame, unless the options give it. The reduced pixels are then encoded like
-    /// any <see cref="Rgba64"/> pixels, with the rules of the encoder (an 8-bit format also needs its
+    /// any 16-bit integer pixels, with the rules of the encoder (an 8-bit format also needs its
     /// <c>AllowBitDepthReduction</c>), and the labels of the image (such as
     /// <see cref="Metadata.ColorTransferFunction.Linear"/>) follow <see cref="MetadataHandling"/>.
     /// </para>

@@ -5107,6 +5107,36 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void CustomPixelExampleConvertsThroughTheStorageFormat()
+    {
+        var path = GetPath("colors.png");
+        using (var source = new Image<Rgba32>(2, 1, new Rgba32(255, 255, 255)))
+        {
+            source.Frames[0][1, 0] = new Rgba32(255, 0, 0, 0);
+            source.Save(path);
+        }
+
+        // The transparent pixel is flattened onto white: both pixels are white, whose chroma is neutral
+        var pixels = ExtensibilityExamples.ToYuv(path);
+        Assert.Equal([new ExtensibilityExamples.Yuv8(255, 128, 128), new ExtensibilityExamples.Yuv8(255, 128, 128)], pixels);
+    }
+
+    [Fact]
+    public void BufferAllocatorExampleReturnsEveryArray()
+    {
+        var input = GetPath("allocator-input.png");
+        using (var source = new Image<Rgb24>(128, 96, new Rgb24(10, 20, 30)))
+        {
+            source.Save(input);
+        }
+
+        Assert.Equal(0, ExtensibilityExamples.ResizeWithPinnedMemory(input, GetPath("allocator-output.png")));
+        // The resize keeps the aspect ratio of the 128x96 image
+        using var output = Image.Load(GetPath("allocator-output.png"));
+        Assert.Equal(new Size(64, 48), output.Size);
+    }
+
+    [Fact]
     public void CustomOperationExamplesProcessEveryPixelFormat()
     {
         using var image = new Image<Rgba32>(4, 4, new Rgba32(200, 100, 0, 255));

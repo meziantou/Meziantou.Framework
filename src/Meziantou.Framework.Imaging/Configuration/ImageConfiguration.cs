@@ -112,6 +112,31 @@ public sealed class ImageConfiguration
         }
     } = [];
 
+    /// <summary>
+    /// Gets the allocator of the byte arrays of the images and operations of this configuration (pixels, decoders,
+    /// encoders and scratch memory), or <see langword="null"/> (the default) for the process-wide pool,
+    /// <see cref="ImageBufferPool"/>.
+    /// </summary>
+    /// <remarks>
+    /// The allocator replaces the pool for every image created, loaded, imported or cloned with this configuration, and for
+    /// the readers, writers and operations that use it; the resource limits are charged as with the pool, before the
+    /// allocator is asked for an array. The images an operation creates from an image (a clone, a conversion, a frame
+    /// extraction) keep the configuration of their source. <see cref="Image.WrapMemory(PixelFormat, Memory{byte}, int, int, int, Action?, ImageConfiguration?)"/>
+    /// wraps memory of the caller, which never comes from the allocator.
+    /// </remarks>
+    public ImageBufferAllocator? BufferAllocator
+    {
+        get;
+        init
+        {
+            field = value;
+            BufferPool = value is null ? null : new Internals.AllocatorBufferPool(value);
+        }
+    }
+
+    /// <summary>Gets the buffers of the scopes of this configuration: the adapter of <see cref="BufferAllocator"/>, or <see langword="null"/> for the shared pool.</summary>
+    internal Internals.IBufferPool? BufferPool { get; private set; }
+
     /// <summary>Gets the registry of the custom codecs followed by the built-in ones, or <see langword="null"/> without custom codecs.</summary>
     internal Internals.ImageCodecRegistry? CodecRegistry { get; private set; }
 

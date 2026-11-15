@@ -32,7 +32,7 @@ internal sealed class AllocationScope : FontAllocator
     private long _totalAllocations;
     private long _rejectedRequests;
 
-    public AllocationScope(ImageResourceLimits limits, SlabPool? pool = null, string? name = null)
+    public AllocationScope(ImageResourceLimits limits, IBufferPool? pool = null, string? name = null)
     {
         ArgumentNullException.ThrowIfNull(limits);
         Limits = limits;
@@ -49,7 +49,8 @@ internal sealed class AllocationScope : FontAllocator
 
     public ImageResourceLimits Limits { get; }
 
-    public SlabPool Pool { get; }
+    /// <summary>Gets the source of the buffers: the shared pool, or the allocator of the configuration.</summary>
+    public IBufferPool Pool { get; }
 
     /// <summary>Gets the configured live-byte limit.</summary>
     public override long Limit => Limits.MaxLiveAllocationBytes;
@@ -71,7 +72,8 @@ internal sealed class AllocationScope : FontAllocator
     {
         // Test-only ambient hook (fault injection and leak audits through the public API); null in production
         var tracking = AllocationTracking.Current;
-        var scope = new AllocationScope((configuration ?? ImageConfiguration.Default).Limits, tracking?.Pool, name);
+        configuration ??= ImageConfiguration.Default;
+        var scope = new AllocationScope(configuration.Limits, (IBufferPool?)tracking?.Pool ?? configuration.BufferPool, name);
         tracking?.Register(scope);
         return scope;
     }

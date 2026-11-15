@@ -272,8 +272,8 @@ internal static partial class DngCorpus
         {
             ["width"] = rendering.Width,
             ["height"] = rendering.Height,
-            ["pixelFormat"] = "RgbaFloat",
-            ["colorModel"] = "Rgb",
+            ["pixelFormat"] = IsMonochrome(builder) ? "GrayFloat" : "RgbaFloat",
+            ["colorModel"] = IsMonochrome(builder) ? "Grayscale" : "Rgb",
             ["bitsPerComponent"] = 32,
             ["orientation"] = builder.Orientation,
             ["iccProfile"] = "none",
@@ -496,6 +496,9 @@ internal static partial class DngCorpus
     }
 
     /// <summary>Copies the samples and the levels of a builder, with another color matrix or DNG version.</summary>
+    /// <summary>Gets a value indicating whether a raw image is monochrome: one linear raw sample per pixel, whose rendering is a gray level.</summary>
+    private static bool IsMonochrome(DngFileBuilder builder) => builder.Photometric != 32803 && builder.SamplesPerPixel == 1;
+
     private static DngFileBuilder Copy(DngFileBuilder builder, double[]? colorMatrix1 = null, byte[]? dngVersion = null) => new()
     {
         Width = builder.Width,

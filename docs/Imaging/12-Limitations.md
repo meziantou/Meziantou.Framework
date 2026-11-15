@@ -9,10 +9,14 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 ## General
 
-- **No custom pixel types.** Images use the built-in pixel formats; the buffer pool has settings
-  ([ImageBufferPool](cref:Meziantou.Framework.Imaging.ImageBufferPool)) but cannot be replaced by an allocator of yours.
-- **No floating-point grayscale.** [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) are the floating-point formats. OpenEXR and TIFF read and
-  write them, JPEG XL and PSD read them; the other encoders need an explicit reduction to 16 bits.
+- **Custom pixel types go through a built-in format.** An image always stores one of the built-in pixel formats. A
+  pixel type of yours ([ICustomPixel\<TSelf\>](cref:Meziantou.Framework.Imaging.ICustomPixel{TSelf})) converts from and to one of them, to import, copy and edit
+  pixels; [Image\<TPixel\>](cref:Meziantou.Framework.Imaging.Image{TPixel}), the codecs, the readers and writers and the processing operations take
+  the built-in types only. See [Pixel formats](04-Concepts/05-PixelFormats.md#custom-pixel-types).
+- **Floating-point pixels are linear light, RGBA or gray.** [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf), [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat), [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf), [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) and [LaHalf](cref:Meziantou.Framework.Imaging.LaHalf) are the
+  floating-point formats. OpenEXR, TIFF and DPX read and write them, JPEG XL, PSD, DNG, DDS and KTX 2.0 read them; the
+  other encoders need an explicit reduction to 16 bits. DDS loads its single-channel floating-point textures as
+  [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), and Netpbm has no PFM support.
 - **Scaled and region decoding are limited to some formats.** JPEG and JPEG 2000 decode at a reduced size, lossy JPEG XL
   at 1/8, interlaced PNG at 1/2, 1/4 or 1/8, TIFF from the reduced-resolution images it stores, and JPEG,
   JPEG 2000, TIFF, AVIF and HEIC decode an area; the other formats are decoded whole: resize or crop the image afterward.

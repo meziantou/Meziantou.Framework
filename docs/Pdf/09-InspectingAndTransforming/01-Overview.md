@@ -10,3 +10,5 @@ application can decide what to do with them.
 
 - [Round-trip validation](02-RoundTripValidation.md): check that a document is written the same way every time, and
   that writing it keeps its pages.
+- [Optimizing documents](03-Optimizing.md): plan and apply the changes that make a document smaller or remove what
+  it does not need, and repair harmless issues of a file.

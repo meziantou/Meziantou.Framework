@@ -753,6 +753,73 @@ namespace Meziantou.Framework.Pdf
         public static bool operator !=(Meziantou.Framework.Pdf.PdfMeshVertex left, Meziantou.Framework.Pdf.PdfMeshVertex right) => throw null;
     }
 
+    public sealed class PdfOptimizationAction
+    {
+        public string Description { get => throw null; }
+        public bool IsEnabled { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfOptimizationActionKind Kind { get => throw null; }
+        public int? ObjectNumber { get => throw null; }
+        public int? PageIndex { get => throw null; }
+        public string? ResourceName { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum PdfOptimizationActionKind
+    {
+        RemoveDocumentInformation = 0,
+        RemoveXmpMetadata = 1,
+        RemoveJavaScript = 2,
+        RemoveEmbeddedFiles = 3,
+        RemoveFileAttachmentAnnotation = 4,
+        RemovePageThumbnail = 5,
+        RemoveComment = 6,
+        RemoveOpenAction = 7,
+        RemoveXfa = 8,
+        RemoveFormFields = 9,
+        RemoveBookmarks = 10,
+        FlattenOptionalContent = 11,
+        RemoveOptionalContentProperties = 12,
+        PruneUnusedResource = 13,
+        PruneUnreachableObject = 14,
+        CompressStream = 15,
+        DownsampleImage = 16,
+    }
+
+    public sealed class PdfOptimizationOptions
+    {
+        public bool AllowSignatureInvalidation { get => throw null; init { } }
+        public bool CompressStreams { get => throw null; init { } }
+        public bool FlattenOptionalContent { get => throw null; init { } }
+        public double? MaxImageResolution { get => throw null; init { } }
+        public bool PruneUnreachableObjects { get => throw null; init { } }
+        public bool PruneUnusedResources { get => throw null; init { } }
+        public bool RemoveAttachments { get => throw null; init { } }
+        public bool RemoveBookmarks { get => throw null; init { } }
+        public bool RemoveComments { get => throw null; init { } }
+        public bool RemoveFormFields { get => throw null; init { } }
+        public bool RemoveJavaScript { get => throw null; init { } }
+        public bool RemoveMetadata { get => throw null; init { } }
+        public bool RemoveOpenAction { get => throw null; init { } }
+        public bool RemovePageThumbnails { get => throw null; init { } }
+        public bool RemoveXfa { get => throw null; init { } }
+    }
+
+    public sealed class PdfOptimizationPlan
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfOptimizationAction> Actions { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfDocument Document { get => throw null; }
+        public bool HasSignatures { get => throw null; }
+        public bool InvalidatesSignatures { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfOptimizationOptions Options { get => throw null; }
+        public string ToJson(bool indented = false) => throw null;
+    }
+
+    public static class PdfOptimizer
+    {
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfOptimizationAction> Apply(Meziantou.Framework.Pdf.PdfOptimizationPlan plan) => throw null;
+        public static Meziantou.Framework.Pdf.PdfOptimizationPlan CreatePlan(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.PdfOptimizationOptions options) => throw null;
+    }
+
     public sealed class PdfOutlineCollection : System.Collections.Generic.ICollection<Meziantou.Framework.Pdf.PdfOutlineItem>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfOutlineItem>, System.Collections.Generic.IList<Meziantou.Framework.Pdf.PdfOutlineItem>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Pdf.PdfOutlineItem>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfOutlineItem>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
@@ -1059,6 +1126,29 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfRoundTripResult Validate(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Pdf.PdfReadOptions? readOptions = null, Meziantou.Framework.Pdf.PdfSaveOptions? saveOptions = null) => throw null;
     }
 
+    public sealed class PdfSanitizationResult
+    {
+        public bool HasChanges { get => throw null; }
+        public System.ReadOnlyMemory<byte> Output { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfSanitizerRepair> Repairs { get => throw null; }
+    }
+
+    public sealed class PdfSanitizerRepair
+    {
+        public string Description { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfSanitizerRepairKind Kind { get => throw null; }
+        public int? PageIndex { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum PdfSanitizerRepairKind
+    {
+        DanglingOutlineRoot = 0,
+        EmptyOutlineRoot = 1,
+        DegenerateCropBox = 2,
+        CropBoxOutsideMediaBox = 3,
+    }
+
     public sealed class PdfSaveOptions
     {
         public bool CompressStreams { get => throw null; init { } }
@@ -1067,6 +1157,11 @@ namespace Meziantou.Framework.Pdf
         public bool UseObjectStreams { get => throw null; init { } }
         public Meziantou.Framework.Pdf.PdfVersion? Version { get => throw null; init { } }
         public int XmpPadding { get => throw null; init { } }
+    }
+
+    public static class PdfSaveSanitizer
+    {
+        public static Meziantou.Framework.Pdf.PdfSanitizationResult Sanitize(System.ReadOnlyMemory<byte> file, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
     }
 
     public abstract class PdfShading

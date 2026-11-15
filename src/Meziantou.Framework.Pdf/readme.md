@@ -51,7 +51,10 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   field locks, visible signatures, appended as incremental updates, and the verification of the signatures of a
   document and of the changes made after them
 - **Tools**: a round-trip validator that checks that the writer is deterministic and keeps the pages of a document
-  (`PdfRoundTripValidator`, with structural summaries of documents: `PdfDocumentSummary`)
+  (`PdfRoundTripValidator`, with structural summaries of documents: `PdfDocumentSummary`), an optimizer that plans
+  then applies its changes (`PdfOptimizer`: metadata, JavaScript, attachments, thumbnails, comments, forms, bookmarks,
+  layers, unused resources and objects, stream compression, image downsampling), and a sanitizer that repairs harmless
+  issues in one incremental update (`PdfSaveSanitizer`)
 
 ## Create a document
 

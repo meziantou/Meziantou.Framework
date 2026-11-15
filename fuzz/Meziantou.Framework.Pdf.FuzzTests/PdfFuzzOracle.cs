@@ -154,6 +154,8 @@ internal static class PdfFuzzOracle
         CheckReadBack(document.ToByteArray(), options, pageCount, "default options");
         CheckReadBack(document.ToByteArray(new PdfSaveOptions { CompressStreams = false, UseObjectStreams = false }), options, pageCount, "uncompressed streams, no object streams");
         CheckRoundTrip(PdfDocument.Open(data, options), options);
+        CheckOptimizer(PdfDocument.Open(data, options), options, pageCount);
+        CheckSanitizer(data, options, pageCount);
         if (pageCount > 0)
         {
             CheckRedaction(PdfDocument.Open(data, options), options, pageCount);
@@ -184,6 +186,87 @@ internal static class PdfFuzzOracle
 
         if (!result.Succeeded)
             throw new InvalidOperationException($"The round trip of the document failed: {result.Failure}");
+    }
+
+    /// <summary>
+    /// Plans every change of the optimizer: the plan is valid JSON, applying it keeps the pages, and the document is
+    /// written and read back.
+    /// </summary>
+    private static void CheckOptimizer(PdfDocument document, PdfReadOptions options, int pageCount)
+    {
+        try
+        {
+            var plan = PdfOptimizer.CreatePlan(document, new PdfOptimizationOptions
+            {
+                RemoveMetadata = true,
+                RemoveJavaScript = true,
+                RemoveAttachments = true,
+                RemovePageThumbnails = true,
+                RemoveComments = true,
+                RemoveOpenAction = true,
+                RemoveXfa = true,
+                RemoveFormFields = true,
+                RemoveBookmarks = true,
+                FlattenOptionalContent = true,
+                PruneUnusedResources = true,
+                PruneUnreachableObjects = true,
+                CompressStreams = true,
+                MaxImageResolution = 36,
+                AllowSignatureInvalidation = true,
+            });
+            using (System.Text.Json.JsonDocument.Parse(plan.ToJson()))
+            {
+            }
+
+            PdfOptimizer.Apply(plan);
+            if (document.Pages.Count != pageCount)
+                throw new InvalidOperationException($"The optimizer changed the number of pages from {pageCount} to {document.Pages.Count}");
+
+            CheckReadBack(document.ToByteArray(), options, pageCount, "after an optimization");
+        }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+        {
+        }
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal))
+        {
+        }
+    }
+
+    /// <summary>The sanitizer keeps the bytes of the file, keeps the pages, and has nothing left to repair in its output.</summary>
+    private static void CheckSanitizer(byte[] data, PdfReadOptions options, int pageCount)
+    {
+        PdfSanitizationResult result;
+        try
+        {
+            result = PdfSaveSanitizer.Sanitize(data, options);
+        }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+        {
+            return;
+        }
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal) || ex.Message.Contains("rebuilt", StringComparison.Ordinal))
+        {
+            // A damaged file cannot be updated incrementally
+            return;
+        }
+
+        if (!result.HasChanges)
+        {
+            if (!result.Output.Span.SequenceEqual(data))
+                throw new InvalidOperationException("The sanitizer changed a file it did not repair");
+
+            return;
+        }
+
+        if (!result.Output.Span.StartsWith(data))
+            throw new InvalidOperationException("The sanitizer did not keep the bytes of the file");
+
+        var again = PdfSaveSanitizer.Sanitize(result.Output, options);
+        if (again.HasChanges)
+            throw new InvalidOperationException($"The output of the sanitizer still needs repairs: {string.Join(", ", again.Repairs)}");
+
+        if (PdfDocument.Open(result.Output, options).Pages.Count != pageCount)
+            throw new InvalidOperationException("The sanitizer changed the number of pages");
     }
 
     /// <summary>

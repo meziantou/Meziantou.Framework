@@ -3347,6 +3347,222 @@ public sealed class PdfDocumentTests
         public override void SetLength(long value) => _length = value;
     }
 
+    [Fact]
+    public void OptimizerPlansAndApplies()
+    {
+        var source = new PdfDocument();
+        source.Information.Title = "Draft";
+        var sourcePage = source.Pages.Add(PdfSize.A5);
+        sourcePage.CreateContentBuilder().DrawText("Hello", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 50, 500);
+        sourcePage.Annotations.AddNote(new PdfPoint(10, 10), "A comment");
+        sourcePage.Annotations.AddLink(new PdfRectangle(10, 10, 50, 50), new Uri("https://www.meziantou.net/"));
+        sourcePage.Dictionary[PdfName.Create("Thumb")] = source.Objects.Add(new PdfStream(new PdfDictionary(), "thumbnail"u8));
+        source.Outlines.Add("Chapter", PdfDestination.Fit(sourcePage));
+        source.EmbeddedFiles.Add("data.txt", "data"u8);
+        source.Catalog[PdfName.Create("OpenAction")] = new PdfDictionary { [PdfNames.S] = PdfName.Create("JavaScript"), [PdfName.Create("JS")] = PdfString.FromText("app.alert(1)") };
+        var file = source.ToByteArray();
+
+        #region Pdf_OptimizeDocument
+        var document = PdfDocument.Open(file);
+        var plan = PdfOptimizer.CreatePlan(document, new PdfOptimizationOptions
+        {
+            RemoveMetadata = true,
+            RemoveJavaScript = true,
+            RemoveAttachments = true,
+            RemovePageThumbnails = true,
+            RemoveComments = true,
+            RemoveBookmarks = true,
+            PruneUnusedResources = true,
+            PruneUnreachableObjects = true,
+        });
+
+        // Inspect the plan, and leave out what must be kept
+        var json = plan.ToJson(indented: true);
+        foreach (var action in plan.Actions.Where(action => action.Kind == PdfOptimizationActionKind.RemoveBookmarks))
+        {
+            action.IsEnabled = false;
+        }
+
+        var applied = PdfOptimizer.Apply(plan);
+        var optimized = document.ToByteArray();
+        #endregion
+
+        Assert.Contains("\"kind\": \"RemoveComment\"", json, StringComparison.Ordinal);
+        Assert.Equal(
+            [
+                PdfOptimizationActionKind.RemoveDocumentInformation,
+                PdfOptimizationActionKind.RemoveJavaScript,
+                PdfOptimizationActionKind.RemoveEmbeddedFiles,
+                PdfOptimizationActionKind.RemovePageThumbnail,
+                PdfOptimizationActionKind.RemoveComment,
+                PdfOptimizationActionKind.PruneUnreachableObject,
+            ],
+            applied.Select(action => action.Kind));
+        Assert.False(plan.HasSignatures);
+
+        var read = PdfDocument.Open(optimized);
+        Assert.Null(read.Information.Title);
+        Assert.Empty(read.EmbeddedFiles);
+        Assert.False(read.Catalog.ContainsKey(PdfName.Create("OpenAction")));
+        Assert.False(read.Pages[0].Dictionary.ContainsKey(PdfName.Create("Thumb")));
+        Assert.Equal(["Link"], read.Pages[0].Annotations.Select(annotation => annotation.Subtype));
+        Assert.Equal(["Chapter"], read.Outlines.Select(item => item.Title));
+        Assert.Equal("Hello", read.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void OptimizerPrunesUnusedResources()
+    {
+        var document = new PdfDocument();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Courier);
+        var first = document.Pages.Add(PdfSize.A5);
+        first.CreateContentBuilder().DrawText("One", font, 12, 10, 10);
+        var second = document.Pages.Add(PdfSize.A5);
+        second.CreateContentBuilder().DrawText("Two", font, 12, 10, 10);
+        var fonts = (PdfDictionary)first.Resources!.GetResolved(PdfNames.Font)!;
+        fonts[PdfName.Create("Unused")] = fonts.First().Value;
+        var read = PdfDocument.Open(document.ToByteArray());
+
+        var plan = PdfOptimizer.CreatePlan(read, new PdfOptimizationOptions { PruneUnusedResources = true });
+
+        var action = Assert.Single(plan.Actions);
+        Assert.Equal(PdfOptimizationActionKind.PruneUnusedResource, action.Kind);
+        Assert.Equal("Unused", action.ResourceName);
+        Assert.Equal(0, action.PageIndex);
+        Assert.Single(PdfOptimizer.Apply(plan));
+        Assert.Single((PdfDictionary)read.Pages[0].Resources!.GetResolved(PdfNames.Font)!);
+        Assert.Equal("One", read.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void OptimizerFlattensOptionalContent()
+    {
+        var document = new PdfDocument();
+        var hidden = document.Objects.Add(new PdfDictionary { [PdfNames.Type] = PdfName.Create("OCG"), [PdfNames.Name] = PdfString.FromText("Hidden") });
+        var visible = document.Objects.Add(new PdfDictionary { [PdfNames.Type] = PdfName.Create("OCG"), [PdfNames.Name] = PdfString.FromText("Visible") });
+        document.Catalog[PdfName.Create("OCProperties")] = new PdfDictionary
+        {
+            [PdfName.Create("OCGs")] = new PdfArray(hidden, visible),
+            [PdfNames.D] = new PdfDictionary { [PdfName.Create("OFF")] = new PdfArray(hidden) },
+        };
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        page.CreateContentBuilder().AppendRawContent("/OC /H BDC 1 0 0 rg 0 0 50 100 re f EMC /OC /V BDC 0 0 1 rg 50 0 50 100 re f EMC"u8);
+        page.Dictionary[PdfNames.Resources] = new PdfDictionary { [PdfNames.Properties] = new PdfDictionary { [PdfName.Create("H")] = hidden, [PdfName.Create("V")] = visible } };
+
+        var applied = PdfOptimizer.Apply(PdfOptimizer.CreatePlan(document, new PdfOptimizationOptions { FlattenOptionalContent = true }));
+
+        Assert.Equal([PdfOptimizationActionKind.FlattenOptionalContent, PdfOptimizationActionKind.RemoveOptionalContentProperties], applied.Select(action => action.Kind));
+        var content = Encoding.Latin1.GetString(PdfDocument.Open(document.ToByteArray()).Pages[0].GetContentData());
+        Assert.DoesNotContain("1 0 0 rg", content, StringComparison.Ordinal);
+        Assert.Contains("0 0 1 rg", content, StringComparison.Ordinal);
+        Assert.Contains("/OC BMC", content, StringComparison.Ordinal);
+        Assert.False(document.Catalog.ContainsKey(PdfName.Create("OCProperties")));
+    }
+
+    [Fact]
+    public void OptimizerDownsamplesImages()
+    {
+        using var image = new Image<Rgba32>(400, 200);
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+
+        // 400 pixels on 100 points: 288 pixels per inch
+        page.CreateContentBuilder().DrawImage(PdfImage.FromImage(image), 10, 10, 100, 50);
+        var read = PdfDocument.Open(document.ToByteArray());
+
+        var plan = PdfOptimizer.CreatePlan(read, new PdfOptimizationOptions { MaxImageResolution = 144 });
+        var action = Assert.Single(plan.Actions);
+        Assert.Equal(PdfOptimizationActionKind.DownsampleImage, action.Kind);
+        PdfOptimizer.Apply(plan);
+
+        var resampled = Assert.Single(PdfDocument.Open(read.ToByteArray()).Pages[0].GetImages());
+        Assert.Equal(200, resampled.Width);
+        Assert.Equal(100, resampled.Height);
+        Assert.Empty(PdfOptimizer.CreatePlan(read, new PdfOptimizationOptions { MaxImageResolution = 144 }).Actions);
+    }
+
+    [Fact]
+    public void OptimizerCompressesStreams()
+    {
+        var source = new PdfDocument();
+        source.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawText(new string('a', 200), PdfFont.GetStandardFont(PdfStandardFont.Courier), 8, 10, 10);
+        var document = PdfDocument.Open(source.ToByteArray(new PdfSaveOptions { CompressStreams = false }));
+
+        var applied = PdfOptimizer.Apply(PdfOptimizer.CreatePlan(document, new PdfOptimizationOptions { CompressStreams = true }));
+
+        Assert.Equal(PdfOptimizationActionKind.CompressStream, Assert.Single(applied).Kind);
+        var content = (PdfStream)document.Pages[0].Dictionary.GetResolved(PdfNames.Contents)!;
+        Assert.Equal([PdfNames.FlateDecode], content.Filters);
+        Assert.Equal(new string('a', 200), document.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void OptimizerRefusesToInvalidateSignatures()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A5);
+        var field = document.Form.AddSignatureField(page, "signature", new PdfRectangle(10, 10, 100, 50));
+        field.Dictionary[PdfName.Create("V")] = new PdfDictionary();
+        document.Information.Title = "Signed";
+
+        var plan = PdfOptimizer.CreatePlan(document, new PdfOptimizationOptions { RemoveMetadata = true });
+
+        Assert.True(plan.HasSignatures);
+        Assert.True(plan.InvalidatesSignatures);
+        Assert.Throws<InvalidOperationException>(() => PdfOptimizer.Apply(plan));
+        plan.Actions[0].IsEnabled = false;
+        Assert.False(plan.InvalidatesSignatures);
+        Assert.Empty(PdfOptimizer.Apply(plan));
+
+        var allowed = PdfOptimizer.CreatePlan(document, new PdfOptimizationOptions { RemoveMetadata = true, AllowSignatureInvalidation = true });
+        Assert.Single(PdfOptimizer.Apply(allowed));
+    }
+
+    [Fact]
+    public void SanitizerRepairsHarmlessIssues()
+    {
+        var data = CreateSanitizerInput("/Outlines 9 0 R", "/CropBox [-10 -10 300 300]").ToArray();
+
+        #region Pdf_SanitizeFile
+        var result = PdfSaveSanitizer.Sanitize(data);
+        var repaired = result.Output;
+        #endregion
+
+        Assert.Equal([PdfSanitizerRepairKind.DanglingOutlineRoot, PdfSanitizerRepairKind.CropBoxOutsideMediaBox], result.Repairs.Select(repair => repair.Kind));
+        Assert.True(repaired.Span.StartsWith(data));
+        var read = PdfDocument.Open(repaired);
+        Assert.Equal(new PdfRectangle(0, 0, 300, 300), read.Pages[0].CropBox);
+        Assert.False(read.Catalog.ContainsKey(PdfName.Create("Outlines")));
+
+        // A file without issues is returned as it is
+        var again = PdfSaveSanitizer.Sanitize(repaired);
+        Assert.False(again.HasChanges);
+        Assert.True(again.Output.Span.SequenceEqual(repaired.Span));
+    }
+
+    [Theory]
+    [InlineData("[100 100 100 300]")]
+    [InlineData("[700 700 800 800]")]
+    public void SanitizerRemovesDegenerateCropBoxes(string cropBox)
+    {
+        var file = CreateSanitizerInput("/Outlines 9 0 R", "/CropBox " + cropBox).Add(9, "<< /Type /Outlines /Count 0 >>");
+
+        var result = PdfSaveSanitizer.Sanitize(file.ToArray());
+
+        Assert.Equal([PdfSanitizerRepairKind.EmptyOutlineRoot, PdfSanitizerRepairKind.DegenerateCropBox], result.Repairs.Select(repair => repair.Kind));
+        Assert.Equal(new PdfRectangle(0, 0, 612, 792), PdfDocument.Open(result.Output).Pages[0].CropBox);
+    }
+
+    private static HandWrittenPdf CreateSanitizerInput(string catalogEntries, string pageEntries)
+    {
+        return new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R " + catalogEntries + " >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] " + pageEntries + " /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream("BT /F1 12 Tf 72 720 Td (Hello) Tj ET"));
+    }
+
     private sealed class TestStream : Stream
     {
         private readonly (long Offset, byte[] Data)[] _segments;

@@ -12,3 +12,4 @@ application can decide what to do with them.
   that writing it keeps its pages.
 - [Optimizing documents](03-Optimizing.md): plan and apply the changes that make a document smaller or remove what
   it does not need, and repair harmless issues of a file.
+- [Comparing documents](04-ComparingDocuments.md): compare what the pages of two documents show, by kind of change.

@@ -160,6 +160,7 @@ internal static class PdfFuzzOracle
         CheckReadBack(document.ToByteArray(), options, pageCount, "default options");
         CheckReadBack(document.ToByteArray(new PdfSaveOptions { CompressStreams = false, UseObjectStreams = false }), options, pageCount, "uncompressed streams, no object streams");
         CheckRoundTrip(PdfDocument.Open(data, options), options);
+        CheckComparison(document, options);
         CheckOptimizer(PdfDocument.Open(data, options), options, pageCount);
         CheckSanitizer(data, options, pageCount);
         if (pageCount > 0)
@@ -192,6 +193,30 @@ internal static class PdfFuzzOracle
 
         if (!result.Succeeded)
             throw new InvalidOperationException($"The round trip of the document failed: {result.Failure}");
+    }
+
+    /// <summary>The document written and read back shows the same elements as the document (<see cref="PdfDocumentComparer"/>).</summary>
+    private static void CheckComparison(PdfDocument document, PdfReadOptions options)
+    {
+        if (document.Pages.Count > MaxPages)
+            return;
+
+        byte[] written;
+        try
+        {
+            written = document.ToByteArray();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Tolerate(() =>
+        {
+            var comparison = PdfDocumentComparer.Compare(document, PdfDocument.Open(written, options));
+            if (!comparison.AreEquivalent)
+                throw new InvalidOperationException("The document written does not show the same elements: " + comparison);
+        });
     }
 
     /// <summary>

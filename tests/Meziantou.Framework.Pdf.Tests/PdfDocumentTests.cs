@@ -3348,6 +3348,94 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void DocumentsAreComparedByTheirElements()
+    {
+        static byte[] Create(bool changed)
+        {
+            using var pixels = new Image<Rgba32>(4, 4);
+            var document = new PdfDocument();
+            var page = document.Pages.Add(new PdfSize(200, 200));
+            var builder = page.CreateContentBuilder()
+                .DrawText("Title", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 10, 180)
+                .DrawText(changed ? "Second line changed" : "Second line", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 10, 160)
+                .SetFillRgb(1, 0, 0)
+                .Rectangle(changed ? 60 : 50, 50, 40, 40)
+                .Fill();
+            if (changed)
+            {
+                builder.SetStrokeGray(0).MoveTo(0, 0).LineTo(200, 200).Stroke();
+            }
+            else
+            {
+                builder.DrawImage(PdfImage.FromImage(pixels), 100, 100, 20, 20);
+            }
+
+            if (changed)
+            {
+                document.Pages.Add(new PdfSize(200, 200));
+            }
+
+            return document.ToByteArray(new PdfSaveOptions { UseObjectStreams = changed });
+        }
+
+        var expectedFile = Create(changed: false);
+        var actualFile = Create(changed: true);
+
+        #region Pdf_CompareDocuments
+        var expected = PdfDocument.Open(expectedFile);
+        var actual = PdfDocument.Open(actualFile);
+        var comparison = PdfDocumentComparer.Compare(expected, actual);
+        var diff = comparison.ToString();
+        #endregion
+
+        Assert.False(comparison.AreEquivalent);
+        Assert.HasCount(2, comparison.Pages);
+        Assert.Equal(PdfPageChangeKinds.Text | PdfPageChangeKinds.Images | PdfPageChangeKinds.Paths, comparison.Pages[0].Changes);
+        Assert.Equal(PdfPageChangeKinds.Added, comparison.Pages[1].Changes);
+        Assert.Null(comparison.Pages[1].ExpectedPageIndex);
+        Assert.Contains("- text \"Second line\"", diff, StringComparison.Ordinal);
+        Assert.Contains("+ text \"Second line changed\"", diff, StringComparison.Ordinal);
+        Assert.Contains("- image 4x4", diff, StringComparison.Ordinal);
+        Assert.Contains("+ stroke 0 G [0 0 200 200]", diff, StringComparison.Ordinal);
+        Assert.Contains("~ fill 1 0 0 rg [50 50 90 90] -> [60 50 100 90]", diff, StringComparison.Ordinal);
+        Assert.StartsWith("Page 1: Text, Images, Paths\n", diff, StringComparison.Ordinal);
+        Assert.Contains("Page 2: Added\n  + page\n", diff, StringComparison.Ordinal);
+
+        // The same document, written another way, is equivalent
+        var same = PdfDocumentComparer.Compare(expected, PdfDocument.Open(expected.ToByteArray(new PdfSaveOptions { Linearize = true })));
+        Assert.True(same.AreEquivalent, same.ToString());
+        Assert.Equal("", same.ToString());
+    }
+
+    [Fact]
+    public void PageElementsFollowTheTransformations()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        var form = document.CreateForm(new PdfRectangle(0, 0, 10, 10));
+        form.CreateContentBuilder().Rectangle(0, 0, 10, 10).Fill();
+        page.CreateContentBuilder()
+            .SaveGraphicsState().Translate(100, 50).Scale(2, 2).DrawForm(form).RestoreGraphicsState()
+            .PaintShading(PdfShading.Axial(PdfDeviceColorSpace.Rgb, 0, 0, 100, 0, PdfFunction.Exponential(PdfColor.FromRgb(0, 0, 0), PdfColor.FromRgb(1, 1, 1))))
+            .MoveTo(0, 0).LineTo(10, 0).EndPath()
+            .SetFillCmyk(0, 1, 0, 0).SetStrokeRgb(0, 0, 1).Rectangle(5, 5, 10, 10).FillAndStroke();
+        var read = PdfDocument.Open(document.ToByteArray());
+
+        var elements = PdfPageElements.Create(read.Pages[0]);
+
+        Assert.Equal(
+            [
+                new PdfPathElement(new PdfRectangle(100, 50, 120, 70), PdfPathPaint.Fill, null, null),
+                new PdfPathElement(new PdfRectangle(5, 5, 15, 15), PdfPathPaint.FillAndStroke, "0 1 0 0 k", "0 0 1 RG"),
+            ],
+            elements.Paths);
+        var shading = Assert.Single(elements.Shadings);
+        Assert.Equal(2, shading.ShadingType);
+        Assert.Equal(200, elements.Width);
+        Assert.Equal(200, elements.Height);
+    }
+
+    [Fact]
     public void OptimizerPlansAndApplies()
     {
         var source = new PdfDocument();

@@ -57,6 +57,7 @@ public static class PdfFuzzTargets
         new("pdf-optimizer", Optimizer) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-annotation-appearances", AnnotationAppearances) { Seeds = GetAppearanceSeeds, Dictionary = AppearanceTokens },
         new("pdf-separations", Separations) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-compare", Compare) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
     ];
 
     /// <summary>
@@ -314,6 +315,44 @@ public static class PdfFuzzTargets
 
             using var preview = Rendering.PdfRenderer.RenderPage(page, new Rendering.PdfRenderOptions { Dpi = 9, MaxOperations = 200_000, UseSystemFonts = false, SimulateOverprint = true });
             FuzzAssert.Equal(255, (int)preview.Frames[0][0, 0].A, "The overprint simulation is not opaque");
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// The input is a PDF file: a document compared with itself, and with the document written and read back, shows the
+    /// same elements; the diff of an equivalent comparison is empty.
+    /// </summary>
+    private static void Compare(ReadOnlySpan<byte> data)
+    {
+        PdfDocument document;
+        byte[] written;
+        try
+        {
+            document = PdfDocument.Open(data.ToArray(), ReadOptions);
+            if (document.Pages.Count > 8)
+                return;
+
+            written = document.ToByteArray();
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            var self = PdfDocumentComparer.Compare(document, document);
+            FuzzAssert.True(self.AreEquivalent, "A document differs from itself: " + self);
+            var rewritten = PdfDocumentComparer.Compare(document, PdfDocument.Open(written, ReadOptions));
+            FuzzAssert.True(rewritten.AreEquivalent, "A document differs from the document written: " + rewritten);
+            FuzzAssert.Equal("", rewritten.ToString(), "The diff of equivalent documents is not empty");
         }
         catch (PdfException)
         {

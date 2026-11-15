@@ -57,7 +57,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   (`PdfRoundTripValidator`, with structural summaries of documents: `PdfDocumentSummary`), an optimizer that plans
   then applies its changes (`PdfOptimizer`: metadata, JavaScript, attachments, thumbnails, comments, forms, bookmarks,
   layers, unused resources and objects, stream compression, image downsampling), and a sanitizer that repairs harmless
-  issues in one incremental update (`PdfSaveSanitizer`)
+  issues in one incremental update (`PdfSaveSanitizer`), and a structural comparison of documents
+  (`PdfDocumentComparer`, `PdfPageElements`: text and its geometry, images, paths, shadings)
 
 ## Create a document
 

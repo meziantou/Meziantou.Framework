@@ -49,7 +49,7 @@ public sealed class VectorizedKernelTests
     public void PngFiltersMatchTheScalarReference(int bytesPerPixel)
     {
         var random = new Random(bytesPerPixel);
-        int[] lengths = [0, 1, bytesPerPixel, 15, 16, 17, 31, 32, 33, 47, 63, 64, 65, 100, 255, 1000, 4099];
+        int[] lengths = [0, 1, bytesPerPixel, 15, 16, 17, 31, 32, 33, 47, 63, 64, 65, 100, 255, 256, 271, 480, 495, 496, 1000, 4099];
         foreach (var length in lengths)
         {
             for (var round = 0; round < 8; round++)
@@ -99,6 +99,45 @@ public sealed class VectorizedKernelTests
                     Assert.Equal(reference, reconstructed);
                 }
             }
+        }
+    }
+
+    [Theory]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(6)]
+    [InlineData(8)]
+    public void PngPaethUnfilterReconstructsEveryTriple(int bytesPerPixel)
+    {
+        // The pixels at odd indices have every (above, upper left) pair in the row above; the rows give every left byte to
+        // each pair (one value per channel and row)
+        var length = 2 * 256 * 256 * bytesPerPixel;
+        var previous = new byte[length];
+        for (var pair = 0; pair < 256 * 256; pair++)
+        {
+            for (var channel = 0; channel < bytesPerPixel; channel++)
+            {
+                previous[(((2 * pair) + 0) * bytesPerPixel) + channel] = (byte)(pair >> 8);
+                previous[(((2 * pair) + 1) * bytesPerPixel) + channel] = (byte)pair;
+            }
+        }
+
+        var expected = new byte[length];
+        var filtered = new byte[length];
+        for (var round = 0; round < (256 + bytesPerPixel - 1) / bytesPerPixel; round++)
+        {
+            for (var pair = 0; pair < 256 * 256; pair++)
+            {
+                for (var channel = 0; channel < bytesPerPixel; channel++)
+                {
+                    expected[(((2 * pair) + 0) * bytesPerPixel) + channel] = (byte)(pair + (round * bytesPerPixel) + channel);
+                    expected[(((2 * pair) + 1) * bytesPerPixel) + channel] = (byte)(pair * 7);
+                }
+            }
+
+            PngFilters.FilterScalar(PngFilters.Paeth, expected, previous, bytesPerPixel, filtered);
+            PngFilters.Unfilter(PngFilters.Paeth, filtered, previous, bytesPerPixel);
+            Assert.True(expected.AsSpan().SequenceEqual(filtered), $"The Paeth reconstruction differs from the row in round {round}.");
         }
     }
 
@@ -3507,6 +3546,7 @@ public sealed class VectorizedKernelTests
         // with every intermediate precision the weights allow
         var random = new Random(channels + 40);
         var lanes = FixedPointResampler.GetLanes(channels);
+        var bytesChecked = 0;
         (int Source, int Output)[] sizes = [(1, 1), (2, 5), (7, 3), (37, 11), (37, 80), (101, 100), (300, 7), (64, 129), (3, 30), (1000, 9), (5, 23)];
         foreach (var filter in new[] { ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
         {
@@ -3553,6 +3593,17 @@ public sealed class VectorizedKernelTests
                 Assert.Equal(expected, actual[..expected.Length]);
                 Assert.All(actual[expected.Length..], value => Assert.Equal(-1, value));
 
+                // 4-sample pixels read from their bytes (x64), when no padded window reads after the row
+                if (FixedPointResampler.CanResampleBytes(table, channels, bytes.Length))
+                {
+                    var fromBytes = new short[(outputLength * lanes) + 8];
+                    fromBytes.AsSpan(expected.Length).Fill(-1);
+                    FixedPointResampler.ResampleHorizontalBytes(bytes, fromBytes.AsSpan(0, expected.Length), table, shift);
+                    Assert.Equal(expected, fromBytes[..expected.Length]);
+                    Assert.All(fromBytes[expected.Length..], value => Assert.Equal(-1, value));
+                    bytesChecked++;
+                }
+
                 // Each window adds up to exactly 1 in fixed point
                 for (var d = 0; d < outputLength; d++)
                 {
@@ -3560,6 +3611,8 @@ public sealed class VectorizedKernelTests
                 }
             }
         }
+
+        Assert.Equal(channels is 4 && FixedPointResampler.IsByteRowAccelerated, bytesChecked > 0);
     }
 
     [Fact]

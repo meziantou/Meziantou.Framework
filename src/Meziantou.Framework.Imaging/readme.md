@@ -181,7 +181,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | Format | Decoding | Encoding | `Save(path)` extensions |
 | --- | --- | --- | --- |
 | PNG / APNG | Every color type and bit depth, palettes, Adam7, APNG animations and poster frames, Apple CgBI (iOS-optimized) files | Gray, gray+alpha, RGB and RGBA at 8/16 bits, exact palettes at 1/2/4/8 bits, Adam7, APNG with full-canvas frames and posters, or the regions that change with `PngEncoder.OptimizeFrames`; sub-byte grayscale, and the smallest layout and regions with `PngOptimization.MinimumSize` | `.png` (APNG when animated), `.apng` |
-| GIF | GIF87a/89a, animations, interlacing, transparency, comments | GIF89a, deterministic quantization per frame or to a shared palette, optional dithering, animations with unknown frame counts, full-canvas frames or the regions that change (`GifEncoder.OptimizeFrames`) | `.gif` |
+| GIF | GIF87a/89a, animations, interlacing, transparency, comments | GIF89a, deterministic quantization per frame or to a shared palette, optional dithering, optional lossy compression (`GifEncoder.LossyTolerance`), animations with unknown frame counts, full-canvas frames or the regions that change (`GifEncoder.OptimizeFrames`) | `.gif` |
 | JPEG | Baseline, extended sequential and progressive, Huffman or arithmetic coded, 8-bit or 12-bit samples; lossless (Huffman coded), 2-bit to 16-bit samples; gray, YCbCr, RGB, and CMYK/YCCK as CMYK pixels or with a color conversion; any integral sampling | Baseline or progressive, 8-bit or 12-bit, Huffman or arithmetic coded, gray or YCbCr, 4:4:4/4:2:2/4:2:0; lossless, 2-bit to 16-bit, gray or RGB; 8-bit baseline Huffman CMYK (Adobe, 4:4:4) | `.jpg`, `.jpeg` |
 | WebP | Lossless, lossy, alpha, animations, ICC/EXIF/XMP | Lossless and lossy, alpha, animations (seekable destination) of full-canvas frames or of the regions that change (`WebPEncoder.OptimizeFrames`) | `.webp` (lossless by default) |
 | QOI | Every chunk form, 3 or 4 channels, colorspace label | Lossless 8-bit RGB/RGBA | `.qoi` |
@@ -528,7 +528,8 @@ images of at least 65,536 pixels:
   such rows for its large still images), and the post-processing filters of AVIF images (by row bands);
 - drawn: the shapes, images and layers whose rows may cover at least 131,072 pixels, composited by batches of rows while
   the calling thread computes the coverages of the next rows (texts, clip masks, shadows, blurs and filters stay
-  sequential).
+  sequential, and so do the shapes of an opaque solid color, or of a solid color with `CompositeMode.Source`, without
+  clip or opacity: they are written as fast as their coverages would be handed to the workers).
 
 The results are identical to the sequential ones: the same pixels, the same encoded bytes, and the same error (the one
 of the first unit that fails, a cancellation first). A worker writes only its own rows, and the floating-point sums of
@@ -748,7 +749,7 @@ without the `#`), which `ToHexString` writes back. An `Rgba32` converts implicit
 | sRGB-encoded samples, an ICC profile or a non-linear CICP description, when encoding OpenEXR (it stores linear light only) | `ImageEncoder.MetadataHandling` (the samples are written as they are), or convert the image to linear light first |
 | Negative colors, infinities and samples that are not numbers, when encoding Radiance HDR | None: they are rejected (clamp the colors first); the 8-bit mantissas of RGBE are the format itself, like a lossy compression |
 | sRGB-encoded samples, an ICC profile or a non-linear CICP description, when encoding Radiance HDR (it stores linear light only) | `ImageEncoder.MetadataHandling` (the samples are written as they are), or convert the image to linear light first |
-| Colors beyond 256 per frame, when encoding GIF | Lossy by design: deterministic quantization (`GifEncoder.Quantization`: `MaxColors`, a fixed `Palette`, `Dithering`) |
+| Colors beyond 256 per frame, when encoding GIF | Lossy by design: deterministic quantization (`GifEncoder.Quantization`: `MaxColors`, a fixed `Palette`, `Dithering`), and an opt-in error tolerance for smaller files (`GifEncoder.LossyTolerance`) |
 | Colors beyond the palette, when encoding indexed BMP (2, 16 or 256 entries, `MaxColors`, or a fixed palette) | `BmpEncoder.AllowColorReduction` (the same deterministic quantization, `BmpEncoder.Quantization`); an image whose colors fit is always stored exactly |
 | Colors beyond 256 (or the fixed palette), or 16-bit samples that 8 bits cannot represent, when encoding indexed PNG (`PngPixelLayout.Indexed`) | `PngEncoder.AllowColorReduction` (the same deterministic quantization, `PngEncoder.Quantization`); without it the image is rejected, never quantized, dithered or rounded |
 | Colors beyond a palette, on request | `Quantize` (see [Processing](#processing)) |
@@ -3184,7 +3185,10 @@ public static void MarkAnimation(string inputPath, string outputPath)
   hotspots and everything else are kept.
 
 **Cost**. The coverages of a shape are computed on the calling thread; with `MaxDegreeOfParallelism` above 1, a large
-shape is composited by several workers (see [Thread safety](#thread-safety)). A shape rents working storage from the allocation scope of the image (proportional to
+shape is composited by several workers (see [Thread safety](#thread-safety)). A rectangle on whole pixels (and `Fill`
+or `Clear` of the canvas) painted with an opaque solid color, or a solid color with `CompositeMode.Source`, without
+clip or opacity, has its first row composited and copied to its other rows: it costs about what writing its pixels
+costs. A shape rents working storage from the allocation scope of the image (proportional to
 the width and height of the canvas, and to the number of edges of the shape), and each `Draw` call allocates a few small
 objects; the shapes themselves allocate nothing once that storage has grown to the largest of them, so reuse brushes,
 pens and paths and use the overloads with a state and a static callback. A pattern brush is the exception: drawing
@@ -4962,7 +4966,7 @@ public static Image LoadLeniently(string path)
   the cursor hotspots (see the example below).
 - **Wrapped memory.** `Image.WrapMemory` creates an image over a `Memory<byte>` or a pointer, with a stride and a pixel
   format, without copying it (see the ownership table).
-- **Buffer pool.** `ImageBufferPool.MaxRetainedBytes` bounds the bytes the process-wide pool keeps for reuse (32 MiB by
+- **Buffer pool.** `ImageBufferPool.MaxRetainedBytes` bounds the bytes the process-wide pool keeps for reuse (64 MiB by
   default, 0 disables retention, lowering it releases buffers); `ImageBufferPool.Trim` releases them all.
 
 A custom processor that changes the size of every frame:

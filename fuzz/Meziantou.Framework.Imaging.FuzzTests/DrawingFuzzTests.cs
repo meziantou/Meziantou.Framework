@@ -130,6 +130,222 @@ public sealed class DrawingFuzzTests
             Assert.Fail($"{failures.Count} fuzz failure(s):{Environment.NewLine}{string.Join(Environment.NewLine + Environment.NewLine, failures)}");
     }
 
+    [Fact]
+    public void StrokesPaintLikeTheirSeparatePieces()
+    {
+        // The pieces of a stroke that go to edges share the halves of their sides around each vertex, which cancel
+        // (EdgeBuilder.CancelOpposites), and the round joins of a curve that the bodies of its chords contain are not made
+        // (Stroker.CanDeferSmoothJoin). The union of the pieces is the same: the pixels must be those of the pieces kept
+        // apart, whatever the path, the pen, its dashes, the transformation and the antialiasing.
+        var random = new FuzzRandom(FuzzSettings.Seed ^ 0x5374726F6B655069UL);
+        var stopwatch = Stopwatch.StartNew();
+        var iterations = Math.Max(FuzzSettings.Iterations / 5, 1);
+        var failures = new List<string>();
+        var executed = 0;
+        for (var iteration = 0; iteration < iterations && failures.Count < 4; iteration++)
+        {
+            if (FuzzSettings.Duration is { } budget && stopwatch.Elapsed > budget)
+                break;
+
+            var caseSeed = random.NextUInt64();
+            executed++;
+            var failure = CheckStrokeAgainstSeparatePieces(caseSeed);
+            if (failure is not null)
+            {
+                failures.Add($"case seed {caseSeed}: {failure}");
+            }
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(FormattableString.Invariant($"strokes and their separate pieces: {executed} cases (base seed {FuzzSettings.Seed}) in {stopwatch.Elapsed.TotalSeconds:F1} s"));
+        if (failures.Count > 0)
+            Assert.Fail($"{failures.Count} fuzz failure(s):{Environment.NewLine}{string.Join(Environment.NewLine + Environment.NewLine, failures)}");
+    }
+
+    private static string? CheckStrokeAgainstSeparatePieces(ulong seed)
+    {
+        var random = new FuzzRandom(seed);
+        var width = random.Next(1, 48);
+        var height = random.Next(1, 48);
+        using var sprite = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 2, 2, random.Next);
+        var context = new FuzzContext(sprite.Frames[0], Erases: false);
+        using var merged = DrawingTestSupport.Create(PixelFormat.Rgba32, width, height, new ImageConfiguration { MaxDegreeOfParallelism = 1 });
+        using var separate = DrawingTestSupport.Create(PixelFormat.Rgba32, width, height, new ImageConfiguration { MaxDegreeOfParallelism = 1 });
+        var drawSeed = random.NextUInt64();
+        try
+        {
+            merged.Draw(canvas => Draw(canvas, new FuzzRandom(drawSeed), context));
+            Stroker.KeepsPiecesApartOnCurrentThread = true;
+            try
+            {
+                separate.Draw(canvas => Draw(canvas, new FuzzRandom(drawSeed), context));
+            }
+            finally
+            {
+                Stroker.KeepsPiecesApartOnCurrentThread = false;
+            }
+        }
+        catch (Exception exception) when (exception is ArgumentOutOfRangeException or UnsupportedImageFeatureException or ImageResourceLimitException)
+        {
+            // The stroke goes beyond the largest coordinate, what the session rejects, or edges beyond the allocation limit
+            // (the pieces kept apart have more of them)
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return $"exception: {exception}";
+        }
+
+        var expected = DrawingTestSupport.ReadSamples(separate.Frames[0]);
+        var actual = DrawingTestSupport.ReadSamples(merged.Frames[0]);
+        if (expected.AsSpan().SequenceEqual(actual))
+            return null;
+
+        var differences = 0;
+        var largest = 0;
+        for (var i = 0; i < expected.Length; i++)
+        {
+            if (expected[i] != actual[i])
+            {
+                differences++;
+                largest = Math.Max(largest, Math.Abs(expected[i] - actual[i]));
+            }
+        }
+
+        return FormattableString.Invariant($"the stroke and its separate pieces differ on {differences} samples (at most {largest}) in {width}x{height}");
+
+        static void Draw(DrawingCanvas canvas, FuzzRandom random, FuzzContext context)
+        {
+            // The pens far wider than the canvas cost seconds a case, twice: their strokes are fuzzed by Paint
+            var pen = random.Chance(25) ? CreateDashedPen(random, canvas, context) : CreatePen(random, canvas, context, widest: false);
+            if (pen.Width > 200)
+            {
+                pen = CreatePen(random, canvas, context, widest: false);
+            }
+
+            var path = random.Chance(30) ? CreatePolyline(random, canvas) : CreatePath(random, canvas);
+            var antialiasing = !random.Chance(20);
+            var transform = random.Chance(30) ? CreateTransform(random, canvas) : (AffineTransform?)null;
+            canvas.Antialiasing(antialiasing, canvas =>
+            {
+                if (transform is { } value)
+                {
+                    canvas.Transform(value, canvas => canvas.Stroke(pen, path));
+                }
+                else
+                {
+                    canvas.Stroke(pen, path);
+                }
+            });
+        }
+    }
+
+    [Fact]
+    public void TheSweepSkipsOnlyWhatCannotChange()
+    {
+        // After the events of a height, the sweep passes quickly over the edges whose winding number did not change and
+        // computes again only the crossings of the pairs of neighbors that are new or that cross
+        // (CoverageRasterizer.WalksEveryEdge): the coverages must be those of the walk that updates every edge and every
+        // pair it passes, bit for bit. The contours are on grids of few heights, as the glyphs of a line of text share
+        // their baseline and their x-height, or anywhere, crossing each other or not
+        var random = new FuzzRandom(FuzzSettings.Seed ^ 0x5377656570577BCAUL);
+        var stopwatch = Stopwatch.StartNew();
+        var iterations = Math.Max(FuzzSettings.Iterations / 10, 1);
+        var failures = new List<string>();
+        var executed = 0;
+        for (var iteration = 0; iteration < iterations && failures.Count < 4; iteration++)
+        {
+            if (FuzzSettings.Duration is { } budget && stopwatch.Elapsed > budget)
+                break;
+
+            var caseSeed = random.NextUInt64();
+            executed++;
+            var failure = CheckSweepWalk(caseSeed);
+            if (failure is not null)
+            {
+                failures.Add($"case seed {caseSeed}: {failure}");
+            }
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(FormattableString.Invariant($"sweep walks: {executed} cases (base seed {FuzzSettings.Seed}) in {stopwatch.Elapsed.TotalSeconds:F1} s"));
+        if (failures.Count > 0)
+            Assert.Fail($"{failures.Count} fuzz failure(s):{Environment.NewLine}{string.Join(Environment.NewLine + Environment.NewLine, failures)}");
+    }
+
+    private static string? CheckSweepWalk(ulong seed)
+    {
+        var random = new FuzzRandom(seed);
+        var width = random.Next(1, 200);
+        var height = random.Next(1, 60);
+        var fillRule = random.Chance(50) ? FillRule.NonZero : FillRule.EvenOdd;
+        var isAliased = random.Chance(10);
+
+        // 0: a row of small contours on a few heights in eighths of a pixel, as glyphs; 1: anywhere in the frame;
+        // 2: anywhere, beyond the frame too
+        var kind = random.Next(3);
+        var levels = new double[random.Next(2, 6)];
+        for (var i = 0; i < levels.Length; i++)
+        {
+            levels[i] = random.Next(-8, (height * 8) + 8) / 8.0;
+        }
+
+        var contours = new List<(double X, double Y)[]>();
+        for (var count = random.Next(1, 40); count > 0; count--)
+        {
+            var points = new (double X, double Y)[random.Next(3, 9)];
+            var left = random.Next(-4, width + 4);
+            for (var i = 0; i < points.Length; i++)
+            {
+                points[i] = kind switch
+                {
+                    0 => (left + (random.Next(0, 80) / 8.0), levels[random.Next(levels.Length)]),
+                    1 => (random.Next(0, width * 64) / 64.0, random.Next(0, height * 64) / 64.0),
+                    _ => ((random.NextUInt64() % 1_000_000 / 1_000_000.0 * (width + 40)) - 20, (random.NextUInt64() % 1_000_000 / 1_000_000.0 * (height + 40)) - 20),
+                };
+            }
+
+            contours.Add(points);
+        }
+
+        var exhaustive = Rasterize(contours, width, height, fillRule, isAliased, walksEveryEdge: true);
+        var skipping = Rasterize(contours, width, height, fillRule, isAliased, walksEveryEdge: false);
+        if (exhaustive.Count != skipping.Count)
+            return $"{skipping.Count} runs instead of {exhaustive.Count} ({width}x{height}, {fillRule})";
+
+        for (var i = 0; i < exhaustive.Count; i++)
+        {
+            if (exhaustive[i] != skipping[i])
+                return $"run {i} differs: {skipping[i]} instead of {exhaustive[i]} ({width}x{height}, {fillRule})";
+        }
+
+        return null;
+
+        static List<string> Rasterize(List<(double X, double Y)[]> contours, int width, int height, FillRule fillRule, bool isAliased, bool walksEveryEdge)
+        {
+            var scope = AllocationScope.Create(configuration: null);
+            using var edges = new EdgeBuilder(scope, width, height);
+            foreach (var points in contours)
+            {
+                for (var i = 0; i < points.Length; i++)
+                {
+                    var next = points[(i + 1) % points.Length];
+                    edges.Add(points[i].X, points[i].Y, next.X, next.Y);
+                }
+            }
+
+            using var rasterizer = new CoverageRasterizer(scope, width, height) { WalksEveryEdge = walksEveryEdge };
+            var runs = new List<string>();
+            if (!rasterizer.Begin(edges, fillRule, isAliased, CancellationToken.None))
+                return runs;
+
+            while (rasterizer.MoveNext())
+            {
+                runs.Add(FormattableString.Invariant($"{rasterizer.Y}:{rasterizer.X}:{string.Join(',', rasterizer.Coverage.ToArray())}"));
+            }
+
+            return runs;
+        }
+    }
+
     private static string? CheckWholePixelRectangle(ulong seed)
     {
         var random = new FuzzRandom(seed);
@@ -148,6 +364,15 @@ public sealed class DrawingFuzzTests
         using var polygon = DrawingTestSupport.Create(format, width, height, configuration);
         DrawingTestSupport.WriteSamples(rectangle.Frames[0], samples);
         DrawingTestSupport.WriteSamples(polygon.Frames[0], samples);
+
+        // Several frames receive every row of the rectangle: the rows that copy the first one are copied on each frame
+        var hasSecondFrame = random.Chance(20);
+        if (hasSecondFrame)
+        {
+            rectangle.AppendFrame();
+            polygon.AppendFrame();
+        }
+
         var context = new FuzzContext(sprite.Frames[0], erases);
         var drawSeed = random.NextUInt64();
         try
@@ -164,7 +389,13 @@ public sealed class DrawingFuzzTests
             return $"exception: {exception}";
         }
 
-        return DrawingTestSupport.ReadSamples(rectangle.Frames[0]).AsSpan().SequenceEqual(DrawingTestSupport.ReadSamples(polygon.Frames[0])) ? null : $"the rectangle and the polygon differ on {format} {width}x{height}";
+        for (var i = 0; i < rectangle.Frames.Count; i++)
+        {
+            if (!DrawingTestSupport.ReadSamples(rectangle.Frames[i]).AsSpan().SequenceEqual(DrawingTestSupport.ReadSamples(polygon.Frames[i])))
+                return $"the rectangle and the polygon differ on frame {i} of {format} {width}x{height}";
+        }
+
+        return null;
 
         static void Draw(DrawingCanvas canvas, FuzzRandom random, FuzzContext context, bool asPolygon)
         {
@@ -172,7 +403,11 @@ public sealed class DrawingFuzzTests
             var top = random.Next(-5, canvas.Height + 5);
             var right = left + random.Next(0, canvas.Width + 5);
             var bottom = top + random.Next(0, canvas.Height + 5);
-            var brush = CreateBrush(random, canvas, context);
+            // An opaque color, or a color that replaces the pixels: the first row of a rectangle is copied to the others
+            // (DrawingSession.TryPaintUniformRectangle)
+            var brush = random.Chance(25)
+                ? new SolidBrush(CreateColor(random) with { A = random.Chance(70) ? ushort.MaxValue : (ushort)random.Next(65536) }) { CompositeMode = random.Chance(50) ? CompositeMode.SourceOver : CompositeMode.Source }
+                : CreateBrush(random, canvas, context);
             var antialiasing = !random.Chance(30);
             var clip = random.Next(3) switch
             {

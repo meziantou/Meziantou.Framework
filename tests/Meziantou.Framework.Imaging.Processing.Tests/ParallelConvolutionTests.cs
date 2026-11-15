@@ -686,6 +686,57 @@ public sealed class ParallelConvolutionTests
         Assert.Equal(PixelStorageBytes(image), image.Owner.Scope.LiveBytes);
     }
 
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(7, 3)]
+    [InlineData(50, 8)]
+    [InlineData(3, 16)]
+    public void ItemsRunOnceEachOnAtMostTheWorkers(int items, int workers)
+    {
+        var runs = new int[items];
+        var usedWorkers = new ConcurrentDictionary<int, bool>();
+        RowBands.RunParallelInItemOrder(items, workers, (item, worker) =>
+        {
+            Interlocked.Increment(ref runs[item]);
+            usedWorkers[worker] = true;
+        });
+
+        Assert.All(runs, count => Assert.Equal(1, count));
+        Assert.All(usedWorkers.Keys, worker => Assert.InRange(worker, 0, Math.Min(items, workers) - 1));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TheFailureOfItemsIsTheOneOfASequentialRun(bool canceled)
+    {
+        // Every item runs, and the exception is the one of the first item that failed, a cancellation first
+        var runs = 0;
+        var exception = Record.Exception(() => RowBands.RunParallelInItemOrder(40, 6, (item, _) =>
+        {
+            Interlocked.Increment(ref runs);
+            switch (item)
+            {
+                case 9:
+                    throw new InvalidOperationException("first");
+                case 30:
+                    throw new InvalidOperationException("second");
+                case 35 when canceled:
+                    throw new OperationCanceledException();
+            }
+        }));
+
+        Assert.Equal(40, runs);
+        if (canceled)
+        {
+            Assert.IsType<OperationCanceledException>(exception);
+        }
+        else
+        {
+            Assert.Equal("first", Assert.IsType<InvalidOperationException>(exception).Message);
+        }
+    }
+
     private static Image<Rgba32> CreateImage(int width, int height, int workers, long? limit = null)
     {
         var configuration = new ImageConfiguration

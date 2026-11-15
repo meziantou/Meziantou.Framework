@@ -85,6 +85,48 @@ public sealed class GifEncoderInteropTests
         }
     }
 
+    [Theory]
+    [InlineData(DitheringMode.None, false, false, 100)]
+    [InlineData(DitheringMode.None, true, false, 300)]
+    [InlineData(DitheringMode.FloydSteinberg, false, false, 100)]
+    [InlineData(DitheringMode.FloydSteinberg, true, true, 100)]
+    [InlineData(DitheringMode.None, false, true, 300)]
+    [InlineData(DitheringMode.None, true, true, GifEncoder.MaxLossyTolerance)]
+    public async Task LossyAnimationsDecodeLikeTheReferenceReader(DitheringMode dithering, bool interlaced, bool optimizeFrames, int tolerance)
+    {
+        // The lossy compression writes longer index sequences: FFmpeg must read the same displayed frames as the reference
+        // reader (interlaced or not, with regions and transparency when the frames are optimized), from a smaller file
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateLossyAnimation();
+        var quantization = new QuantizeOptions { Dithering = dithering };
+        var lossless = new GifEncoder { Interlaced = interlaced, OptimizeFrames = optimizeFrames, Quantization = quantization };
+        var encoder = new GifEncoder { Interlaced = interlaced, OptimizeFrames = optimizeFrames, Quantization = quantization, LossyTolerance = tolerance };
+        var name = $"lossy-{dithering}-{(interlaced ? "interlaced" : "progressive")}-{(optimizeFrames ? "optimized" : "full")}-{tolerance}";
+        var losslessPath = await SaveAsync(image, lossless, name + "-lossless");
+        var path = await SaveAsync(image, encoder, name);
+        Assert.True(new FileInfo(path).Length < new FileInfo(losslessPath).Length, $"{name}: {new FileInfo(path).Length} bytes, the lossless file has {new FileInfo(losslessPath).Length}");
+
+        var verification = GifOutputVerifier.Verify(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, encoder, context: name);
+        var decoded = await ffmpeg.DecodeToRawFramesAsync(path, "rgba", image.Width, image.Height, ignoreLoop: true, XunitCancellationToken);
+        AssertFrames(verification.Displayed, decoded, $"{name} decoded by FFmpeg {ffmpeg.Version}");
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public async Task LossyAnimationsDecodeLikeTheReferenceReaderWithAppleImageIO(bool interlaced, bool optimizeFrames)
+    {
+        // Apple ImageIO exists only on macOS: skipped elsewhere locally; required (never skipped) in the CI interop job (macOS)
+        _ = RequiredTools.AppleImageIO();
+        using var image = CreateLossyAnimation();
+        var encoder = new GifEncoder { Interlaced = interlaced, OptimizeFrames = optimizeFrames, LossyTolerance = 200 };
+        var name = $"imageio-lossy-{(interlaced ? "interlaced" : "progressive")}-{(optimizeFrames ? "optimized" : "full")}";
+        var path = await SaveAsync(image, encoder, name);
+        var verification = GifOutputVerifier.Verify(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, encoder, context: name);
+        var decoded = await RequiredTools.DecodeWithAppleImageIOAsync(path, image.Width, image.Height, binaryAlpha: true);
+        AssertFrames(verification.Displayed, [.. decoded.Select(frame => frame.Span.ToArray())], $"{name} decoded by Apple ImageIO");
+    }
+
     [Fact]
     public async Task UnknownCountWriterOutputDecodesWithFFmpeg()
     {
@@ -303,4 +345,38 @@ public sealed class GifEncoderInteropTests
         return image;
     }
 
+    /// <summary>
+    /// The photo-like animation, where the second frame changes only in a rectangle and the third gets a transparent band,
+    /// so that optimized frames have regions and transparent entries.
+    /// </summary>
+    private static Image<Rgba32> CreateLossyAnimation()
+    {
+        var image = CreatePhotoAnimation(96, 64);
+        var first = new Rgba32[image.Width * image.Height];
+        image.Frames[0].CopyPixelDataTo(first);
+        image.Frames[1].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    if (x < 20 || x >= 70 || y < 10 || y >= 50)
+                    {
+                        row[x] = first[(y * pixels.Width) + x];
+                    }
+                }
+            }
+        });
+
+        image.Frames[2].ProcessPixelRows(pixels =>
+        {
+            for (var y = 24; y < 36; y++)
+            {
+                pixels.GetRowSpan(y)[8..60].Clear();
+            }
+        });
+
+        return image;
+    }
 }

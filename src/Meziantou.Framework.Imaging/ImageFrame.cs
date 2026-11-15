@@ -285,6 +285,9 @@ public abstract class ImageFrame
     /// </summary>
     internal abstract void CompositePixels(PixelStorage storage, int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source);
 
+    /// <summary>Gets a value indicating whether <see cref="CompositePixels"/> writes the same samples to every pixel of a run of full coverage, whatever they were (see <see cref="DrawingKernels.IsUniformOverFullCoverage{TPixel}"/>).</summary>
+    internal abstract bool IsUniformOverFullCoverage(scoped in DrawingSource source, int length);
+
     /// <summary>Computes the colors a color matrix gives to pixels of a row, as paint colors (see <see cref="ColorMatrixKernel"/>). The caller holds the lease of the storage.</summary>
     internal abstract void ApplyColorMatrix(PixelStorage storage, int y, int x, ColorMatrix matrix, Span<ushort> destination);
 

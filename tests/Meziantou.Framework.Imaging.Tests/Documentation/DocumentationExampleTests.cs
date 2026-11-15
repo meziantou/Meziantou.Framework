@@ -4783,6 +4783,44 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveSmallerGifTradesErrorForSize()
+    {
+        // A photo-like image with more than 256 colors
+        var input = GetPath("photo.png");
+        using (var image = new Image<Rgb24>(96, 64))
+        {
+            image.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb24((byte)(128 + (100 * Math.Sin(x / 7d)) + ((x * y) % 9)), (byte)(255 * y / 64), (byte)(128 + (90 * Math.Cos((x + y) / 11d))));
+                    }
+                }
+            });
+
+            image.Save(input);
+        }
+
+        var gifPath = GetPath("smaller.gif");
+        FormatExamples.SaveSmallerGif(input, gifPath);
+
+        var losslessPath = GetPath("lossless.gif");
+        using (var image = Image.Load(input))
+        {
+            image.Save(losslessPath, new GifEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported });
+        }
+
+        using var gif = Image.Load<Rgba32>(gifPath);
+        Assert.Equal(ImageFormat.Gif, gif.Metadata.SourceFormat);
+        var smallerSize = new FileInfo(gifPath).Length;
+        var losslessSize = new FileInfo(losslessPath).Length;
+        Assert.True(smallerSize < losslessSize, $"{smallerSize} bytes with the tolerance, {losslessSize} without");
+    }
+
+    [Fact]
     public void SavePngWithPrivateChunkReadsTheChunkBack()
     {
         var chunk = FormatExamples.SavePngWithPrivateChunk(GetPath("private-chunk.png"));

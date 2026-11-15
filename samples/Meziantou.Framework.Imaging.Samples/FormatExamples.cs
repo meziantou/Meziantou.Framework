@@ -32,6 +32,22 @@ internal static class FormatExamples
     }
     #endregion
 
+    /// <summary>GIF output: a lossy compression for smaller files.</summary>
+    #region Imaging_SaveSmallerGif
+    public static void SaveSmallerGif(string inputPath, string gifPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // A pixel may take a palette entry that is up to 100 farther (squared RGB distance) from its color than the entry
+        // the color reduction chose, when that entry continues the sequence being compressed
+        image.Save(gifPath, new GifEncoder
+        {
+            LossyTolerance = 100,
+            MetadataHandling = MetadataHandling.DiscardUnsupported,
+        });
+    }
+    #endregion
+
     /// <summary>PNG output: the chunks of other applications are kept.</summary>
     #region Imaging_PngPrivateChunks
     public static PngChunk SavePngWithPrivateChunk(string outputPath)

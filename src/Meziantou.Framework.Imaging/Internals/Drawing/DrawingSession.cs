@@ -1196,6 +1196,9 @@ internal sealed partial class DrawingSession : IDisposable
     {
         RemoveStaleThumbnail();
         var rasterizer = _rasterizer!;
+        if (evaluator is null && opacity == CoverageRasterizer.FullCoverage && _clipDepth == 0 && rasterizer.IsFullyCovered && TryPaintUniformRectangle(new DrawingSource(color, mode, blend, _transfer, _curves) { IsFullyCovered = true }))
+            return;
+
         if (TryPaintRowsInParallel(color, evaluator, mode, blend, opacity, alphaFactor))
             return;
 
@@ -1203,6 +1206,59 @@ internal sealed partial class DrawingSession : IDisposable
         {
             PaintSpan(worker: null, color, evaluator, mode, blend, opacity, rasterizer.Y, rasterizer.X, rasterizer.Coverage, alphaFactor, rasterizer.IsFullyCovered);
         }
+    }
+
+    /// <summary>
+    /// Paints a rectangle of whole pixels with a paint that gives every pixel it covers the same samples, whatever they
+    /// were: the first row is composited, and its pixels are copied to the other rows. The pixels are those the rows
+    /// would get one by one, without the cost of a composition per row; the rows are written on the calling thread, as
+    /// fast as the memory takes them, which workers would not speed up.
+    /// </summary>
+    /// <returns><see langword="false"/> when the paint gives the pixels samples that depend on them: nothing was done.</returns>
+    private bool TryPaintUniformRectangle(scoped in DrawingSource source)
+    {
+        var rasterizer = _rasterizer!;
+        var length = rasterizer.Count;
+        for (var i = 0; i < _frames.Length; i++)
+        {
+            if (!_frames[i].IsUniformOverFullCoverage(source, length))
+                return false;
+        }
+
+        if (!rasterizer.MoveNext())
+            return true;
+
+        var top = rasterizer.Y;
+        var x = rasterizer.X;
+        CompositeRun(worker: null, top, x, rasterizer.Coverage, source);
+        var (bottom, end) = rasterizer.TakeRemainingRectangleRows();
+        try
+        {
+            // The rows go by groups between two checks of the cancellation, each on every frame
+            const int Check = ProcessingKernels.RowsPerCancellationCheck;
+            while (bottom < end)
+            {
+                if (bottom % Check == 0)
+                {
+                    _cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                var next = Math.Min(end, ((bottom / Check) + 1) * Check);
+                for (var i = 0; i < _storages.Length; i++)
+                {
+                    DrawingKernels.ReplicateUniformRun(_storages[i], top, bottom, next, x, length);
+                }
+
+                bottom = next;
+            }
+        }
+        finally
+        {
+            // The rows written before a cancellation are drawn
+            MarkDrawn(x, top, x + length, bottom);
+        }
+
+        return true;
     }
 
     private void RemoveStaleThumbnail()

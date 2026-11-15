@@ -328,6 +328,11 @@ internal static class FuzzOracle
         if (format == ImageFormat.Jpeg && CheckJpegRegion(input, image, variant) is { Length: > 0 } region)
             return region;
 
+        // A color JPEG file loaded as Rgba32 has the samples of its Rgb24 decode with an opaque alpha: the color conversion
+        // writes RGBA pixels with a kernel of its own (the same arithmetic as the RGB one)
+        if (format == ImageFormat.Jpeg && CheckJpegRgba(input, image) is { Length: > 0 } rgba)
+            return rgba;
+
         // An area of an AVIF or HEIC image has the pixels of the full decode: whatever the decoders skip (the tiles of a grid,
         // the rows below the area, the AV1 tiles far from it) or decode again whole (an item that is not a single intra
         // picture), it succeeds when the full decode does
@@ -617,6 +622,30 @@ internal static class FuzzOracle
     }
 
     /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckJpegRgba(byte[] input, Image image)
+    {
+        if (image.PixelFormat != PixelFormat.Rgb24 || image.Frames.Count != 1)
+            return string.Empty;
+
+        using var rgba = Image.Load<Rgba32>(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+        if (rgba.Size != image.Size || rgba.Frames.Count != 1)
+            return $"jpeg-rgba-geometry: the Rgba32 decode is {rgba.Size} with {rgba.Frames.Count} frame(s), the Rgb24 decode is {image.Size}";
+
+        var pixelCount = image.Width * image.Height;
+        var rgb = new byte[pixelCount * 3];
+        image.Frames[0].CopyPixelBytesTo(rgb);
+        var pixels = new byte[pixelCount * 4];
+        rgba.Frames[0].CopyPixelBytesTo(pixels);
+        for (var i = 0; i < pixelCount; i++)
+        {
+            if (pixels[4 * i] != rgb[3 * i] || pixels[(4 * i) + 1] != rgb[(3 * i) + 1] || pixels[(4 * i) + 2] != rgb[(3 * i) + 2] || pixels[(4 * i) + 3] != 255)
+                return $"jpeg-rgba-pixels: pixel {i % image.Width}, {i / image.Width} of the Rgba32 decode is not the Rgb24 pixel with an opaque alpha";
+        }
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
     private static string CheckLossyHeic(Image image, int variant)
     {
         // A corner of the first frame, at an effort and a quality of the variant: the efforts from 3 search the sample
@@ -695,6 +724,43 @@ internal static class FuzzOracle
 
         if (FrameSummary.Capture(expected.Frames[0]).PixelHash != FrameSummary.Capture(reloaded.Frames[0]).PixelHash)
             return $"lossless-round-trip-pixels: the {pixelFormat} image of {expected.Width}x{expected.Height} written as {encoder.Format} ({encoder.GetType().Name}, variant {variant}) does not decode to the same pixels";
+
+        if (encoder is TiffEncoder { Compression: TiffCompression.Deflate or TiffCompression.Lzw } tiff)
+            return CheckTiffWorkers(expected, tiff, variant);
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// Returns an empty string, or "name: description" for a violated property; throws for exceptions. The corner repeated
+    /// over a page large enough for several workers (65,536 pixels) is written by 2 to 8 workers as by one: the batches of
+    /// strips the workers compress change neither the bytes nor the order of the strips.
+    /// </summary>
+    private static string CheckTiffWorkers(Image<Rgba64> corner, TiffEncoder encoder, int variant)
+    {
+        const int Side = 256;
+        var colors = new Rgba64[corner.Width * corner.Height];
+        corner.Frames[0].CopyPixelDataTo(colors);
+        var pixels = new Rgba64[Side * Side];
+        for (var y = 0; y < Side; y++)
+        {
+            for (var x = 0; x < Side; x++)
+            {
+                pixels[(y * Side) + x] = colors[((y % corner.Height) * corner.Width) + (x % corner.Width)];
+            }
+        }
+
+        var workers = 2 + (variant % 7);
+        byte[] Save(int maxDegreeOfParallelism)
+        {
+            using var page = Image.ImportPixelData<Rgba64>(pixels, Side, Side, configuration: new ImageConfiguration { MaxDegreeOfParallelism = maxDegreeOfParallelism });
+            using var output = new MemoryStream();
+            page.Save(output, encoder);
+            return output.ToArray();
+        }
+
+        if (!Save(1).AsSpan().SequenceEqual(Save(workers)))
+            return $"tiff-workers: the {Side}x{Side} page written as {encoder.Compression} TIFF ({encoder.RowsPerStrip} rows per strip) by {workers} workers differs from the file of one worker";
 
         return string.Empty;
     }

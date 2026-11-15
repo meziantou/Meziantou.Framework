@@ -1072,7 +1072,7 @@ namespace Meziantou.Framework.Imaging
 
     public static class ImageBufferPool
     {
-        public const long DefaultMaxRetainedBytes = 33554432L;
+        public const long DefaultMaxRetainedBytes = 67108864L;
         public static long MaxRetainedBytes { get => throw null; set { } }
         public static long RetainedBytes { get => throw null; }
         public static void Trim() { }
@@ -3393,6 +3393,7 @@ namespace Meziantou.Framework.Imaging.Formats
 
     public sealed class GifEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
+        public const int MaxLossyTolerance = 195075;
         public Meziantou.Framework.Imaging.Formats.GifAlphaMode AlphaMode { get => throw null; init { } }
         public byte AlphaThreshold { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
@@ -3401,6 +3402,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public bool Interlaced { get => throw null; init { } }
+        public int LossyTolerance { get => throw null; init { } }
         [System.Obsolete("Use Quantization.MaxColors.")]
         public int MaxColors { get => throw null; init { } }
         public bool OptimizeFrames { get => throw null; init { } }

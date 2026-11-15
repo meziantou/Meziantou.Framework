@@ -249,7 +249,7 @@ internal sealed class PngImageDataEncoder : IDisposable
             throw new InvalidOperationException("The previous PNG datastream is not complete.");
 
         _chunks.Reset(frameData, sequenceNumber, count);
-        _zlib = new ZLibStream(_chunks, _compressionLevel, leaveOpen: true);
+        _zlib = PngZlib.Create(_chunks, _compressionLevel, leaveOpen: true);
         _pass = -1;
         _started = true;
         StartNextPass();

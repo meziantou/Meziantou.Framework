@@ -1094,8 +1094,21 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     the largest number of edges on one row. Two vertical edges of opposite directions on whole columns and between the
     same whole rows (a rectangle of whole pixels: `FillRectangle`, `Fill` and `Clear` of the canvas) are not swept:
     every row is the same run of full coverage (`TryGetWholePixelRectangle`), which `IsFullyCovered` hands to the
-    kernels so that they do not search it (`DrawingSource.IsFullyCovered`).
+    kernels so that they do not search it (`DrawingSource.IsFullyCovered`). When the paint gives every pixel of such a
+    run the same samples whatever they were (`DrawingKernels.IsUniformOverFullCoverage`: an opaque color, or a color
+    with `CompositeMode.Source`, through `TryCompositeFullRuns`), `DrawingSession.TryPaintUniformRectangle` composites
+    the first row and copies its pixel to the other rows (`ReplicateUniformRun`), checking the cancellation every
+    `RowsPerCancellationCheck` rows as the sweep does. The same paints never go to the parallel workers
+    (`IsWrittenFasterThanCopied`): copying the coverages to a batch costs what writing the pixels costs.
     `DrawingFuzzTests.WholePixelRectanglesPaintLikeTheirPolygons` compares it with the sweep of the same rectangle.
+  - The glyphs of a line of text share their baseline and their x-height: the events of one height are spread over the
+    whole sweep line, and the walk that follows them spans it. The walk passes quickly over the edges whose winding
+    number did not change, and computes again only the crossings of the pairs of neighbors that are new or that
+    already cross (`NeighborChanged`): a pair that did not cross still does not, whatever the height. That halved the
+    instructions of a paragraph and the coverages are the same bit for bit: `WalksEveryEdge` brings back the
+    exhaustive walk, which `DrawingFuzzTests.TheSweepSkipsOnlyWhatCannotChange` and
+    `DrawingReferenceTests.TheSweepOfAParagraphIsTheSweepThatWalksEveryEdge` compare with. The spans of the sweep
+    are taken once per row (`SweepSpans`), not at each access.
   - Compositing is exact integer source-over (`ulong`), the generalization of `AnimationCompositor.BlendOver8/16` to a
     fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules). A floating-point frame is
     composited by `FloatDrawingKernels` instead (the same formulas in double precision, not rounded to a grid).
@@ -1188,6 +1201,16 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   models the same definition: change both together. `Offset` and the emboldening of glyphs (`Configure(width, join,
   miterLimit)`) keep the rectangles: they need the Minkowski band, and the folded lobes meet at points that the grid of
   `PathCombiner` parts into slivers.
+- On a canvas, the stroker merges its pieces without changing their union, which is most of the cost of a narrow stroke
+  (each piece crossed its neighbors in the sweep): the sides of a body across the ends of its chord are cut at those
+  ends, so that the halves a body shares with the join, the cap or the body next to it are exact reverses and cancel
+  (`EdgeBuilder.CancelOpposites`, among the edges of the few pieces before, only while nothing else added edges in
+  between), and the round join at a vertex of a curve is left out when both bodies around it contain it (a single turn
+  and an arc that is not cut, `CanDeferSmoothJoin`). The orientation of a body is still decided on its points without
+  the cut points: the body of a chord where a curve turns back crosses itself, its shoelace sum is almost zero, and
+  its sign must stay what it was. A widened path (`Widen`) and `StrokeContains` keep every piece as it is.
+  `DrawingFuzzTests.StrokesPaintLikeTheirSeparatePieces` compares the pixels with the pieces kept apart
+  (`Stroker.KeepsPiecesApartOnCurrentThread`); they must be the same.
 - Dashes are cut before the stroker (`Dasher`), which strokes each dash as an open contour. The first dash of a contour
   is held back until the contour ends, because the last dash of a closed contour continues with it. On a canvas, only
   the parts of a segment whose dashes can change a pixel are cut (the canvas seen along the segment, plus the reach of
@@ -1624,7 +1647,10 @@ thin public types over its `FontFace`.
     one worker. Uncompressed and PackBits blocks (a copy) and JPEG and JPEG 2000 blocks stay on the calling thread. The
     encoder compresses LZW and Deflate strips into outputs pre-grown to a proven bound (`TiffLzwEncoder.GetMaxEncodedLength`,
     9/8 for Deflate) and appends them one per `EncodeStrip` call, so the bytes and the flushes are those of one worker
-    (`BlocksDecodedByWorkersHaveThePixelsOfOneWorker`, `StripsCompressedByWorkersAreTheFileOfOneWorker`).
+    (`BlocksDecodedByWorkersHaveThePixelsOfOneWorker`, `StripsCompressedByWorkersAreTheFileOfOneWorker`). Its batches hold
+    up to `BlocksPerWorker` (4) strips per worker, as many as the live bytes left allow, split evenly over the page, and
+    each worker takes the next strip of the batch (`RowBands.RunParallelInItemOrder`): with one strip per worker, waiting
+    for the slowest strip of each batch and a last batch of a few strips cost a 1080p Deflate page 25% on 24 threads.
   - OpenEXR (`ExrDecoder`, `ExrEncoderCodec`): a chunk is compressed on its own and covers pixels no other chunk covers
     (one offset per index, and a chunk carries its coordinates). The chunks are copied to a batch (at least 2 chunks and
     1 MiB per worker) that the workers decode, each with its own `ExrChunkDecompressor`. The structure parser has the

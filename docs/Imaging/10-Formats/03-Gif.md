@@ -67,11 +67,45 @@ public static void SaveGif(string inputPath, string gifPath, string flattenedGif
 | [AlphaThreshold](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.AlphaThreshold) | The alpha (8-bit scale) below which a pixel becomes transparent | 128 |
 | [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.BackgroundColor) | The opaque color [Flatten](cref:Meziantou.Framework.Imaging.Formats.GifAlphaMode.Flatten) composites over | `null` |
 | [Quantization](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.Quantization) | The number of colors per frame (2 to 256, the transparent entry included), the dithering, or a fixed palette for every frame | 256 colors, no dithering |
+| [LossyTolerance](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.LossyTolerance) | How much error the compression may add to each pixel of a frame whose colors are reduced, to make the file smaller (see below) | 0 |
 | [Interlaced](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.Interlaced) | Writes interlaced frames | `false` |
 | [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.DurationRounding) | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds durations to the nearest hundredth of a second (ties up); [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) throws | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata GIF cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 [Dithering](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.Dithering) and [MaxColors](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.MaxColors) are obsolete aliases of `Quantization.Dithering` and `Quantization.MaxColors`.
+
+## Make files smaller
+
+A photo reduced to 256 colors compresses poorly: neighboring pixels often get different palette entries, and the LZW
+compression of GIF only shortens sequences of indices it has already seen. [LossyTolerance](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.LossyTolerance) lets the encoder give a
+pixel another entry that continues such a sequence when that entry is at most the tolerance farther from the color of
+the pixel than the entry the color reduction chose. The distance is the sum of the squares of the differences of the
+red, green and blue samples (8-bit scale):
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/FormatExamples.cs;region=Imaging_SaveSmallerGif;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveSmallerGif(string inputPath, string gifPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // A pixel may take a palette entry that is up to 100 farther (squared RGB distance) from its color than the entry
+    // the color reduction chose, when that entry continues the sequence being compressed
+    image.Save(gifPath, new GifEncoder
+    {
+        LossyTolerance = 100,
+        MetadataHandling = MetadataHandling.DiscardUnsupported,
+    });
+}
+```
+<!-- endref -->
+
+To choose a tolerance, start around 100, then raise it while the result still looks right to you, or lower it if fine
+detail smears horizontally: larger tolerances make smaller files and lose more quality. Compare the output with the
+source at the size it will be shown, ideally with a metric such as PSNR. At the same file size, a tolerance usually keeps
+more quality than fewer colors. Dithered frames benefit most, because the tolerance is measured against the source
+color, not the dithered one.
+A frame whose colors fit its palette is still written exactly, transparent pixels stay transparent, and the output is
+deterministic.
 
 ## Share one palette between frames
 

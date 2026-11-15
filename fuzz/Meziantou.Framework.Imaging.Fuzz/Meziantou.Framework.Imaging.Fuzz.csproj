@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec and the processing operations. The other codecs
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec, the image data of PNG files, the lossy GIF compression, the processing operations and the strokes. The other codecs
     are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
   -->
   <PropertyGroup>

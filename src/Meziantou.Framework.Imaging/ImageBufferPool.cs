@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Imaging;
 /// <para>
 /// A disposed image, or a finished operation, returns its buffers to the pool, which keeps some of them for the next
 /// rentals instead of leaving them to the garbage collector. Retention is bounded per buffer size and in total bytes
-/// (<see cref="MaxRetainedBytes"/>, 32 MiB by default), and buffers larger than 8 MiB are never retained. The retained
+/// (<see cref="MaxRetainedBytes"/>, 64 MiB by default), and buffers larger than 8 MiB are never retained. The retained
 /// buffers are not part of any <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/> budget.
 /// </para>
 /// <para>
@@ -21,7 +21,7 @@ namespace Meziantou.Framework.Imaging;
 /// </remarks>
 public static class ImageBufferPool
 {
-    /// <summary>The default value of <see cref="MaxRetainedBytes"/> (32 MiB).</summary>
+    /// <summary>The default value of <see cref="MaxRetainedBytes"/> (64 MiB).</summary>
     public const long DefaultMaxRetainedBytes = SlabPoolOptions.DefaultMaxRetainedBytes;
 
     /// <summary>

@@ -39,7 +39,7 @@ internal static class FormatExamples
         using var image = Image.Load(inputPath);
 
         // A pixel may take a palette entry that is up to 100 farther (squared RGB distance) from its color than the entry
-        // the color reduction chose, when that entry continues the sequence being compressed: a photo gets about 25% smaller
+        // the color reduction chose, when that entry continues the sequence being compressed
         image.Save(gifPath, new GifEncoder
         {
             LossyTolerance = 100,

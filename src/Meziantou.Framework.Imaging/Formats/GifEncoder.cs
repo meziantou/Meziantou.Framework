@@ -128,9 +128,8 @@ public sealed class GifEncoder : ImageEncoder
     /// red, green and blue samples (8-bit scale) to the color of its source pixel, after the alpha reduction. While it compresses a frame,
     /// the encoder may give a pixel another palette entry that continues the sequence of indices it is writing, when that
     /// entry is at most this much farther from the color of the pixel than the entry the color reduction (and the dithering)
-    /// chose. Longer sequences make the file smaller. Values from 30 to 300 are typical: on a photo reduced to 256 colors, 100 makes the
-    /// file about 25% smaller for a loss of about 1 dB of PSNR, and 300 about 45% smaller for a loss of about 3 dB. The loss shows as
-    /// horizontal smearing of fine detail.
+    /// chose. Longer sequences make the file smaller. Values from 30 to 300 are typical: larger values make smaller files and
+    /// lose more quality. The loss shows as horizontal smearing of fine detail.
     /// </para>
     /// <para>
     /// A frame whose colors fit its palette is still reproduced exactly, and transparent pixels stay transparent. The output

@@ -89,7 +89,7 @@ public static void SaveSmallerGif(string inputPath, string gifPath)
     using var image = Image.Load(inputPath);
 
     // A pixel may take a palette entry that is up to 100 farther (squared RGB distance) from its color than the entry
-    // the color reduction chose, when that entry continues the sequence being compressed: a photo gets about 25% smaller
+    // the color reduction chose, when that entry continues the sequence being compressed
     image.Save(gifPath, new GifEncoder
     {
         LossyTolerance = 100,
@@ -99,19 +99,11 @@ public static void SaveSmallerGif(string inputPath, string gifPath)
 ```
 <!-- endref -->
 
-On a 1920x1080 photo, measured against the source:
-
-| Setting | Size | PSNR |
-| --- | ---: | ---: |
-| 256 colors (the default) | 988 KB | 37.8 dB |
-| `LossyTolerance = 30` | 862 KB | 37.7 dB |
-| `LossyTolerance = 100` | 727 KB | 36.8 dB |
-| `LossyTolerance = 300` | 554 KB | 34.7 dB |
-| 64 colors, no tolerance | 542 KB | 33.6 dB |
-
-At the same size, a tolerance keeps more quality than fewer colors. Large tolerances smear fine detail horizontally.
-Dithered frames benefit most: with Floyd–Steinberg dithering, a tolerance of 100 takes the same photo from 1,231 KB to
-789 KB, because the tolerance is measured against the source color, not the dithered one.
+To choose a tolerance, start around 100, then raise it while the result still looks right to you, or lower it if fine
+detail smears horizontally: larger tolerances make smaller files and lose more quality. Compare the output with the
+source at the size it will be shown, ideally with a metric such as PSNR. At the same file size, a tolerance usually keeps
+more quality than fewer colors. Dithered frames benefit most, because the tolerance is measured against the source
+color, not the dithered one.
 A frame whose colors fit its palette is still written exactly, transparent pixels stay transparent, and the output is
 deterministic.
 

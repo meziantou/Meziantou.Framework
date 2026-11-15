@@ -1767,6 +1767,16 @@ public class QRCodeTests
         Assert.Equal("caf\u00E9", QRCodeDecoder.Decode(QRCode.Create([0x63, 0x61, 0x66, 0xE9])).Text);
     }
 
+    [Theory]
+    [InlineData(new byte[] { 0x47, 0x6F, 0x6F, 0x67, 0x6C, 0x65, 0x20, 0x83, 0x82, 0x83, 0x6F, 0x83, 0x43, 0x83, 0x8B }, "Google \u30E2\u30D0\u30A4\u30EB")] // Katakana of 2 bytes, whose first byte is a C1 control character in ISO/IEC 8859-1
+    [InlineData(new byte[] { 0xC3, 0xDE, 0xBB, 0xDE, 0xB2, 0xDD, 0x51, 0x52 }, "\uFF83\uFF9E\uFF7B\uFF9E\uFF72\uFF9DQR")] // Half-width katakana
+    [InlineData(new byte[] { 0x93, 0xFA, 0x96, 0x7B }, "\u65E5\u672C")]
+    [InlineData(new byte[] { 0x63, 0x61, 0x66, 0xE9, 0x20, 0xE0, 0x20, 0xC0 }, "caf\u00E9 \u00E0 \u00C0")] // Not Shift JIS: no katakana word, no C1 byte
+    public void Decode_NoEci_ShiftJisIsGuessed(byte[] bytes, string expected)
+    {
+        Assert.Equal(expected, QRCodeDecoder.Decode(QRCode.Create(bytes)).Text);
+    }
+
     [Fact]
     public void Decode_StructuredAppend()
     {

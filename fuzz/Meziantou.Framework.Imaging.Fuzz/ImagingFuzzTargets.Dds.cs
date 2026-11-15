@@ -114,6 +114,7 @@ public static partial class ImagingFuzzTargets
                 {
                     Image<RgbaFloat> floats => (floats.Frames[0][x, y].R, floats.Frames[0][x, y].G, floats.Frames[0][x, y].B, floats.Frames[0][x, y].A),
                     Image<RgbaHalf> halves => ((float)halves.Frames[0][x, y].R, (float)halves.Frames[0][x, y].G, (float)halves.Frames[0][x, y].B, (float)halves.Frames[0][x, y].A),
+                    Image<GrayFloat> grays => (grays.Frames[0][x, y].Value, grays.Frames[0][x, y].Value, grays.Frames[0][x, y].Value, 1f),
                     _ => (0f, 0f, 0f, 1f),
                 };
 

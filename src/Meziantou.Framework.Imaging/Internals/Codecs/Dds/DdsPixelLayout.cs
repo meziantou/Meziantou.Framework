@@ -13,8 +13,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// BMP bit fields are. A single channel (red, luminance) is gray, two channels (red and green) are RGB with a blue of 0,
 /// and a missing alpha is opaque, as the Khronos Data Format Specification gives the RGBA value of these formats.
 /// Floating-point formats and BC6H decode to <see cref="PixelFormat.RgbaHalf"/> when every value is a half
-/// (R11G11B10_FLOAT and R9G9B9E5_SHAREDEXP are), otherwise to <see cref="PixelFormat.RgbaFloat"/>; the signed BC4 and
-/// BC5 formats to <see cref="PixelFormat.RgbaFloat"/> values in [-1, 1].
+/// (R11G11B10_FLOAT and R9G9B9E5_SHAREDEXP are), otherwise to <see cref="PixelFormat.RgbaFloat"/>, and the formats of
+/// one channel to <see cref="PixelFormat.GrayHalf"/> or <see cref="PixelFormat.GrayFloat"/>; the signed BC4 and BC5
+/// formats to <see cref="PixelFormat.GrayFloat"/> and <see cref="PixelFormat.RgbaFloat"/> values in [-1, 1].
 /// </para>
 /// <para>
 /// The masks are read as they are written. Some writers (D3DX among them) swap the red and blue masks of the 10:10:10:2
@@ -120,8 +121,8 @@ internal sealed class DdsPixelLayout
     /// <summary>Gets the precision of a decoded component: 8, 16 or 32 bits.</summary>
     public int BitsPerComponent => DefaultPixelFormat switch
     {
-        PixelFormat.RgbaFloat => 32,
-        PixelFormat.RgbaHalf => 16,
+        PixelFormat.RgbaFloat or PixelFormat.GrayFloat => 32,
+        PixelFormat.RgbaHalf or PixelFormat.GrayHalf => 16,
         _ => IsWide ? 16 : 8,
     };
 

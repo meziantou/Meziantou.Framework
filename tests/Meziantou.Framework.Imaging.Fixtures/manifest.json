@@ -34198,7 +34198,7 @@
       "expected": {
         "width": 5,
         "height": 3,
-        "pixelFormat": "RgbaHalf",
+        "pixelFormat": "GrayHalf",
         "colorModel": "Grayscale",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -34280,7 +34280,7 @@
       "expected": {
         "width": 5,
         "height": 3,
-        "pixelFormat": "RgbaFloat",
+        "pixelFormat": "GrayFloat",
         "colorModel": "Grayscale",
         "bitsPerComponent": 32,
         "orientation": 1,
@@ -37902,7 +37902,7 @@
       "expected": {
         "width": 7,
         "height": 5,
-        "pixelFormat": "RgbaHalf",
+        "pixelFormat": "GrayHalf",
         "colorModel": "Grayscale",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -38403,7 +38403,7 @@
       "expected": {
         "width": 7,
         "height": 5,
-        "pixelFormat": "RgbaFloat",
+        "pixelFormat": "GrayFloat",
         "colorModel": "Grayscale",
         "bitsPerComponent": 32,
         "orientation": 1,
@@ -39858,7 +39858,7 @@
       "expected": {
         "width": 24,
         "height": 24,
-        "pixelFormat": "RgbaFloat",
+        "pixelFormat": "GrayFloat",
         "colorModel": "Grayscale",
         "bitsPerComponent": 32,
         "orientation": 1,
@@ -40035,7 +40035,7 @@
       "expected": {
         "width": 24,
         "height": 24,
-        "pixelFormat": "RgbaFloat",
+        "pixelFormat": "GrayFloat",
         "colorModel": "Grayscale",
         "bitsPerComponent": 32,
         "orientation": 1,
@@ -44318,7 +44318,7 @@
       "expected": {
         "width": 20,
         "height": 12,
-        "pixelFormat": "RgbaFloat",
+        "pixelFormat": "GrayFloat",
         "colorModel": "Grayscale",
         "bitsPerComponent": 32,
         "orientation": 1,

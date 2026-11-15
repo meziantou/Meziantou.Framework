@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
 /// <summary>
 /// A small, independent container walker that reads the raw timing, loop and metadata fields of PNG/APNG, GIF, JPEG, WebP,
-/// QOI, BMP, TGA, Netpbm, AVIF and HEIC fixture inputs. It never uses the library under test, so tests can check that (1) the manifest agrees with the encoded
+/// QOI, BMP, TGA, Netpbm, AVIF, HEIC, JPEG XL, JPEG 2000, OpenEXR, Radiance HDR, DPX and Cineon fixture inputs. It never uses the library under test, so tests can check that (1) the manifest agrees with the encoded
 /// bytes and (2) the library's conversions of these raw fields produce the expected exact values. It only parses
 /// container structure (chunks, blocks, marker segments, RIFF chunks); it never decodes pixels.
 /// </summary>
@@ -36,6 +36,8 @@ public static class EncodedFieldInspector
         "jp2" => InspectJpeg2000(data),
         "exr" => InspectOpenExr(data),
         "hdr" => InspectRadiance(data),
+        "dpx" => InspectDpx(data),
+        "cin" => InspectCineon(data),
         _ => throw new ArgumentException($"Unknown fixture format '{format}'.", nameof(format)),
     };
 
@@ -45,6 +47,84 @@ public static class EncodedFieldInspector
     /// variable, with the standard primaries of Radiance or with those of BT.709, the linear transfer function; with those
     /// of BT.2020 or P3, the CICP description with the linear transfer characteristics.
     /// </summary>
+    private static EncodedFields InspectDpx(ReadOnlySpan<byte> data)
+    {
+        // SMPTE ST 268: the orientation code (field 17), the transfer characteristic and colorimetric specification of the
+        // first image element (21.7, 21.8) and the pixel aspect ratio (field 41), in the byte order of the magic number
+        var bigEndian = data[..4].SequenceEqual("SDPX"u8);
+        if (!bigEndian && !data[..4].SequenceEqual("XPDS"u8))
+            throw new InvalidDataException("The DPX magic number is missing.");
+
+        uint U32(ReadOnlySpan<byte> bytes, int offset) => bigEndian ? BinaryPrimitives.ReadUInt32BigEndian(bytes[offset..]) : BinaryPrimitives.ReadUInt32LittleEndian(bytes[offset..]);
+        var orientation = bigEndian ? BinaryPrimitives.ReadUInt16BigEndian(data[768..]) : BinaryPrimitives.ReadUInt16LittleEndian(data[768..]);
+        var result = new EncodedFields
+        {
+            TransformOrientation = orientation switch
+            {
+                0 => 1,
+                1 => 2,
+                2 => 4,
+                3 => 3,
+                4 => 5,
+                5 => 6,
+                6 => 8,
+                7 => 7,
+                _ => throw new InvalidDataException("The DPX orientation code is reserved."),
+            },
+        };
+        var (transfer, colorimetric) = (data[801], data[802]);
+        if (transfer == 2)
+        {
+            result.TransferFunction = "linear";
+        }
+        else
+        {
+            (int Primaries, int Transfer)? code = (transfer, colorimetric) switch
+            {
+                (5 or 6, 5 or 6) => (1, 1),
+                (7, 7) => (5, 6),
+                (8, 8) => (6, 6),
+                _ => null,
+            };
+            if (code is { } value)
+            {
+                result.ContainerCicp = new CicpExpectation { ColorPrimaries = value.Primaries, TransferCharacteristics = value.Transfer, MatrixCoefficients = 0, FullRange = true };
+            }
+        }
+
+        var horizontal = U32(data, 1628);
+        var vertical = U32(data, 1632);
+        if (horizontal is not (0 or uint.MaxValue) && vertical is not (0 or uint.MaxValue) && horizontal != vertical)
+        {
+            result.PixelAspectRatio = new PixelAspectRatioExpectation { HorizontalSpacing = horizontal, VerticalSpacing = vertical };
+        }
+
+        return result;
+    }
+
+    private static EncodedFields InspectCineon(ReadOnlySpan<byte> data)
+    {
+        // The Cineon 4.5 draft: the orientation code (field 1.12); the format has no color label
+        if (BinaryPrimitives.ReadUInt32BigEndian(data) != 0x802A5FD7 && BinaryPrimitives.ReadUInt32LittleEndian(data) != 0x802A5FD7)
+            throw new InvalidDataException("The Cineon magic number is missing.");
+
+        return new EncodedFields
+        {
+            TransformOrientation = data[192] switch
+            {
+                0 => 1,
+                1 => 4,
+                2 => 2,
+                3 => 3,
+                4 => 5,
+                5 => 6,
+                6 => 8,
+                7 => 7,
+                _ => throw new InvalidDataException("The Cineon orientation code is not defined."),
+            },
+        };
+    }
+
     private static EncodedFields InspectRadiance(ReadOnlySpan<byte> data)
     {
         var picture = Radiance.ReferenceRadiance.Read(data);

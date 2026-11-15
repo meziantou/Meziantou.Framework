@@ -12,6 +12,38 @@ internal static class ErrorFixtureStages
 {
     private static readonly HashSet<string> HeaderDefects = new(StringComparer.Ordinal)
     {
+        // DPX: the generic headers and the first image element structure
+        "invalid/dpx/bit-depth-7",
+        "invalid/dpx/cbycr-float",
+        "invalid/dpx/cbycry-odd-width",
+        "invalid/dpx/data-in-generic-header",
+        "invalid/dpx/data-sign-2",
+        "invalid/dpx/descriptor-depth",
+        "invalid/dpx/descriptor-user-defined",
+        "invalid/dpx/encrypted",
+        "invalid/dpx/nine-elements",
+        "invalid/dpx/no-element",
+        "invalid/dpx/orientation-8",
+        "invalid/dpx/packing-3",
+        "invalid/dpx/run-length",
+        "invalid/dpx/signed",
+        "invalid/dpx/truncated-header",
+        "invalid/dpx/zero-width",
+        "limit/dpx/frame-pixels-over-limit",
+        "limit/dpx/width-over-limit",
+
+        // Cineon: the generic section
+        "invalid/cin/bit-fields",
+        "invalid/cin/bits-32",
+        "invalid/cin/cell-smaller-than-sample",
+        "invalid/cin/channel-sizes",
+        "invalid/cin/line-interleave",
+        "invalid/cin/no-channel",
+        "invalid/cin/orientation-9",
+        "invalid/cin/signed",
+        "invalid/cin/truncated-header",
+        "invalid/cin/two-channels",
+
         // Radiance HDR: the information header and the resolution string
         "invalid/hdr/format-other",
         "invalid/hdr/resolution-lowercase",
@@ -273,6 +305,10 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> StructureDefects = new(StringComparer.Ordinal)
     {
+        // DPX and Cineon: the lines, read by a full scan
+        "invalid/dpx/truncated-data",
+        "invalid/cin/truncated-data",
+
         // Radiance HDR: the scanlines, read by a full scan
         "invalid/hdr/old-rle-repetition-first",
         "invalid/hdr/old-rle-repetition-past-end",
@@ -420,6 +456,9 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> PixelDefects = new(StringComparer.Ordinal)
     {
+        // DPX: a 64-bit component that single precision does not hold is found when the components are read
+        "invalid/dpx/float64-inexact",
+
         // Radiance HDR: XYZE samples are identified, and rejected by a load
         "invalid/hdr/xyze",
         "invalid/hdr/xyze-columns",

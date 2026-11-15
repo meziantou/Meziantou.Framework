@@ -133,6 +133,7 @@ public sealed class CorpusManifestTests
                 "jp2" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs",
                 "exr" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs",
                 "hdr" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs",
+                "dpx" or "cin" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/DpxCorpus.cs",
                 _ => "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs",
             };
             Assert.StartsWith(generator, fixture.Provenance.Generator);

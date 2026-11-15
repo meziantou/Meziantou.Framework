@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <!-- `verify` re-decodes the corpus with the tools of the interop tests: keep the same version as the TestHarness project -->
-    <PackageReference Include="Meziantou.Prebuilt" Version="3.14.0" />
+    <PackageReference Include="Meziantou.Prebuilt" Version="3.15.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -54,6 +54,8 @@
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\ExternalTools\PgxImage.cs" LinkBase="TestHarness\ExternalTools" />
     <!-- The builder of Radiance HDR files and the independent reader of their pixels -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Radiance\*.cs" LinkBase="TestHarness\Radiance" />
+    <!-- The builders of DPX and Cineon files -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Dpx\*.cs" LinkBase="TestHarness\Dpx" />
   </ItemGroup>
 
   <ItemGroup>

@@ -326,7 +326,7 @@ internal sealed class MetadataWritePlan
             storedCicp = capabilities.Cicp || (capabilities.CicpWithoutIcc && icc is null) ? metadata.Cicp : null;
             if (storedCicp is null && metadata.Cicp is { } cicp && icc is null && !IsSrgbEquivalent(cicp) && !(metadata.TransferFunction == ColorTransferFunction.Linear && cicp.TransferCharacteristics is 8))
             {
-                if (capabilities.EnumeratedCicp && JpegXlEncoderColor.FromCicp(cicp) is not null)
+                if (capabilities.EnumeratedCicp && (format == ImageFormat.Dpx ? DpxFormat.FromCicp(cicp) is not null : JpegXlEncoderColor.FromCicp(cicp) is not null))
                 {
                     storedCicp = cicp;
                 }
@@ -457,6 +457,10 @@ internal sealed class MetadataWritePlan
         private static readonly FormatCapabilities OpenExr = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, linearOnly: true);
         private static readonly FormatCapabilities Radiance = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, linearOnly: true);
 
+        // DPX stores the orientation and the pixel aspect ratio in its image headers, and the transfer characteristics
+        // and colorimetric specifications of Tables 5A and 5B: linear light, BT.709 and the two BT.601 systems
+        private static readonly FormatCapabilities Dpx = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, enumeratedCicp: true, pixelAspectRatio: true);
+
         private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false, bool cicpWithoutIcc = false, bool impliesLinearTransfer = false, bool linearOnly = false)
         {
             ImpliesLinearTransfer = impliesLinearTransfer;
@@ -569,6 +573,7 @@ internal sealed class MetadataWritePlan
             ImageFormat.Jpeg2000 => Jp2,
             ImageFormat.OpenExr => OpenExr,
             ImageFormat.Radiance => Radiance,
+            ImageFormat.Dpx => Dpx,
             _ => None,
         };
 

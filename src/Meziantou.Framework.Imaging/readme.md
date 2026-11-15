@@ -4,7 +4,7 @@ A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG
 (still and animated, lossless and lossy), QOI, BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and animated
 cursor (ANI), AVIF and HEIC (still and animated, lossless and lossy), JPEG XL (still and animated, lossless and
 lossy, progressive), JPEG 2000 (lossless and lossy), OpenEXR and Radiance HDR (high dynamic range, floating-point
-samples) decoding and encoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC
+samples) and DPX (film scans and video frames) decoding and encoding, Kodak Cineon decoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC
 color conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive/lossless JPEG, WebP (still and animated, lossless and lossy), QOI,
@@ -27,6 +27,10 @@ color conversion, and bounded-memory streaming.
 - Radiance HDR (RGBE) decoding and encoding: flat and run-length encoded scanlines, the eight orientations, the header
   variables reported (exposure, color correction, primaries, view), loaded as `RgbaFloat` pixels; run-length encoded or
   flat output
+- DPX (SMPTE ST 268) decoding and encoding: 1 to 16-bit and floating-point components, RGB, RGBA, ABGR, luma, alpha and
+  Cb, Y, Cr (4:4:4 and 4:2:2), every packing in both byte orders, the film and television headers reported (time code,
+  edge code, frame rate), the transfer characteristic reported and never applied; 8, 10, 12, 16-bit and floating-point
+  output. Kodak Cineon decoding: 10-bit (and 1 to 16-bit) gray and RGB film scans
 - AVIF decoding and encoding with a fully managed AV1 decoder and a fully managed AV1 encoder: still images and
   animations, lossless and lossy, 8, 10 and 12 bits, alpha; grids and film grain are decoded
 - HEIC decoding and encoding with a fully managed HEVC (H.265) decoder and a fully managed HEVC encoder: the photos of
@@ -110,6 +114,8 @@ copied from code that compiles, and most of them also run in the test suite.
   - [JPEG 2000](#jpeg-2000)
   - [OpenEXR](#openexr)
   - [Radiance HDR](#radiance-hdr)
+  - [DPX](#dpx)
+  - [Cineon](#cineon)
 - [Limitations](#limitations)
 
 ## Quick start
@@ -196,6 +202,8 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | JPEG 2000 | JP2 files (also JPX and JPH files of one codestream) and bare codestreams; reversible and irreversible wavelet transformations; tiles, layers, every progression order and code-block style, regions of interest; the high-throughput block coder (HTJ2K); 1 to 16 bits; opacity, palettes, sYCC, CMYK with a color conversion; ICC/EXIF/XMP and resolution | Lossless and lossy, every pixel format at its own depth, lossless opacity, a JP2 file or a codestream, the high-throughput block coder (a JPH file), ICC/EXIF/XMP and resolution | `.jp2` (lossless), `.j2k`, `.j2c`, `.jpc` (a codestream), `.jph`, `.jhc` (HTJ2K) |
 | OpenEXR | Scan-line and tiled files (the full-resolution level of mipmaps and ripmaps), one part of a multi-part file (`OpenExrDecodingOptions.Part`), deep data flattened (`OpenExrDecodingOptions.DeepData`); HALF, FLOAT and UINT samples; R, G, B, A and Y (luminance) channels, or one layer of a file with other channels (`OpenExrDecodingOptions.Layer`); NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB and ZSTD; data and display windows, an overscan cropped or decoded whole (`OpenExrDecodingOptions.WindowMode`); chromaticities | Single-part scan-line files of half or float samples, lossless: NONE, RLE, ZIPS, ZIP (default) or PIZ (seekable destination when compressed); chromaticities | `.exr` |
 | Radiance HDR | RGBE pictures (`#?RADIANCE` or `#?RGBE`); flat, "old" and "new" run-length encoded scanlines, mixed; the eight orientations of the resolution string; the header variables reported in `Metadata.RadianceHeader` (never applied); the primaries as a color label. XYZE pictures are identified and rejected by a load | RGBE pictures in the standard orientation, new run-length encoding (default) or flat; the primaries | `.hdr`, `.pic` |
+| DPX | The first image element: R, G, B, A or Y alone, RGB, RGBA, ABGR, Cb, Y, Cr 4:4:4 and 4:2:2 with or without alpha (converted to RGB); 1, 8, 10, 12 and 16-bit integers, 32 and 64-bit floats; filled (methods A and B) and packed components; both byte orders, versions 1.0 and 2.0; the orientation and the pixel aspect ratio; the headers in `Metadata.DpxHeader` (time code, edge code, frame rate, creator); linear and television transfers as labels. Run-length encoded and encrypted elements are rejected | One RGB, RGBA or luma element of 8, 10 or 12 (filled with method A), 16-bit or 32-bit floating-point components, big-endian (default) or little-endian; the orientation, the pixel aspect ratio, the transfer and colorimetric codes | `.dpx` |
+| Cineon | Gray and RGB images of 1 to 16-bit samples, pixel interleaved, in every cell packing; both byte orders; the orientation; the header in `Metadata.CineonHeader` | Not written: save as DPX | `.cin` (read only) |
 | ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
 
 ## Usage guide
@@ -679,13 +687,14 @@ public static void KeepCmykInks(string jpegPath, string tiffPath, string preview
 linear light where 1 is the reference white of a standard dynamic range: a color component may be above 1 (a highlight)
 or negative (outside the gamut of the primaries), and alpha is a coverage from 0 to 1. A new image of these types is
 labeled `ColorTransferFunction.Linear`; a conversion never converts colors, so `CloneAs` and typed loads keep the label of
-their source (an sRGB `Rgba64` image becomes sRGB-encoded floats). OpenEXR and Radiance HDR files and the floating-point
-pages of TIFF decode to them: OpenEXR files load as `RgbaHalf` or `RgbaFloat` in linear light, Radiance HDR files as
-`RgbaFloat`, and untyped `Load` of a TIFF page picks
+their source (an sRGB `Rgba64` image becomes sRGB-encoded floats). OpenEXR and Radiance HDR files, the floating-point
+pages of TIFF and floating-point DPX elements decode to them: OpenEXR files load as `RgbaHalf` or `RgbaFloat` in linear
+light, Radiance HDR files and DPX elements as `RgbaFloat` (a DPX element is labeled linear light only when its transfer
+characteristic says so), and untyped `Load` of a TIFF page picks
 `RgbaHalf` for half-precision samples and `RgbaFloat` for the others, labeled linear light unless an ICC profile
 describes them. JPEG XL files of floating-point samples load the same way (`RgbaHalf` when every sample is a
 half-precision number), and so do its integer samples of 17 to 24 bits as `RgbaFloat`, labeled with the color encoding
-of the file. `OpenExrEncoder` stores them as they are, and so does `TiffEncoder` (as 32-bit floats); `RadianceEncoder`
+of the file. `OpenExrEncoder` stores them as they are, and so do `TiffEncoder` and `DpxEncoder` (as 32-bit floats); `RadianceEncoder`
 rounds them to RGBE pixels (see [Radiance HDR](#radiance-hdr)); for every other
 file, `Load<RgbaFloat>` converts the decoded samples.
 
@@ -740,11 +749,13 @@ without the `#`), which `ToHexString` writes back. An `Rgba32` converts implicit
 | Gray levels and colors, when encoding a portable bitmap (`PnmPixelLayout.Bitmap`, `.pbm`) | None: pixels that are not exactly black or white are rejected, never thresholded or dithered |
 | Partial alpha, when encoding GIF (GIF has one transparent index) | `GifEncoder.AlphaMode`: `Threshold` (default, `AlphaThreshold` 128) or `Flatten` with `BackgroundColor` |
 | 16-bit precision, when encoding JPEG, WebP, QOI, BMP or TGA | `AllowBitDepthReduction` on the encoder |
+| 16-bit precision, when encoding DPX with 8, 10 or 12-bit components (`DpxEncoder.BitDepth`) | `DpxEncoder.AllowBitDepthReduction` |
+| 64-bit floating-point DPX components that single precision does not hold, when decoding | None: they are rejected (`UnsupportedImageFeatureException`), never rounded |
 | 16-bit precision, when encoding AVIF or HEIC (at most 12 bits) | `BitDepth` (10 or 12) of `AvifEncoder` or `HeicEncoder`, or `AllowBitDepthReduction` (12 bits) |
 | 8-bit precision, when encoding 16-bit BMP (`Bgr565`, `Bgr555`: 5 or 6 bits per channel) | `BmpEncoder.AllowBitDepthReduction` |
 | 16-bit precision, when loading or converting | Request the narrower type explicitly (`Load<Rgba32>`, `CloneAs<Gray8>`) |
 | Floating-point samples outside the range of the destination (outside [0, 1] for integers, beyond ±65,504 for `RgbaHalf`) | `PixelConversionOptions.OutOfRangeSamples` (`Clip`), or `PixelConversionOptions.ToneMapping` for the highlights; samples that are not numbers are always rejected |
-| Floating-point samples, when encoding a format that does not store them (all but OpenEXR, Radiance HDR and TIFF, and the TIFF palette, bilevel and JPEG settings) | `ImageEncoder.FloatingPointConversion`: the options of the reduction to `Rgba64`, after which the rules of the encoder apply (`AllowBitDepthReduction` for an 8-bit format) |
+| Floating-point samples, when encoding a format that does not store them (all but OpenEXR, Radiance HDR, DPX and TIFF, and the TIFF palette, bilevel and JPEG settings, and DPX with integer components) | `ImageEncoder.FloatingPointConversion`: the options of the reduction to `Rgba64`, after which the rules of the encoder apply (`AllowBitDepthReduction` for an 8-bit format) |
 | Float and 16-bit precision, when encoding OpenEXR half samples | `OpenExrEncoder.AllowBitDepthReduction` (with `PixelType = Half`); samples beyond ±65,504 are rejected, after the multiplication of the colors by alpha |
 | sRGB-encoded samples, an ICC profile or a non-linear CICP description, when encoding OpenEXR (it stores linear light only) | `ImageEncoder.MetadataHandling` (the samples are written as they are), or convert the image to linear light first |
 | Negative colors, infinities and samples that are not numbers, when encoding Radiance HDR | None: they are rejected (clamp the colors first); the 8-bit mantissas of RGBE are the format itself, like a lossy compression |
@@ -4067,8 +4078,8 @@ the Unicode Consortium.
 
 ### Metadata, color profiles and orientation
 
-`Image.Metadata` holds the source format, the windows of an OpenEXR file and the header of a Radiance HDR file
-(informational only), the EXIF orientation, the
+`Image.Metadata` holds the source format, the windows of an OpenEXR file and the headers of a Radiance HDR, DPX or
+Cineon file (informational only), the EXIF orientation, the
 resolution, the pixel aspect ratio, ICC/EXIF/XMP profiles (byte-for-byte payloads), the CICP color description, the
 content light level, the mastering display color volume and text entries.
 
@@ -4820,9 +4831,9 @@ public static void StreamingWithReusedBuffer(string inputPath, string outputPath
 `.bmp`/`.dib`, `.tga`/`.icb`/`.vda`/`.vst`, `.pnm`/`.pam`/`.ppm`/`.pgm`, `.pbm` (a portable bitmap, from black and white
 pixels only), `.tif`/`.tiff`, `.ico`, `.cur`, `.ani`, `.avif`/`.avifs` (lossless by default), `.heic`/`.heif`/`.heics`/`.heifs` (lossless by default), `.jxl` (lossless by default), `.jp2` (a JP2 file,
 lossless by default), `.j2k`/`.j2c`/`.jpc` (a JPEG 2000 codestream, lossless by default), `.jph`/`.jhc` (a JPH file or
-a codestream of the high-throughput block coder, lossless by default), `.exr` (OpenEXR, ZIP) and `.hdr`/`.pic` (Radiance
-HDR, run-length encoded); anything else throws
-`ArgumentException`, the `.jpx` and `.jpf` extensions included (these files are read, not written). An eager save validates the whole image against the output (animation, poster,
+a codestream of the high-throughput block coder, lossless by default), `.exr` (OpenEXR, ZIP), `.hdr`/`.pic` (Radiance
+HDR, run-length encoded) and `.dpx` (big-endian DPX at the depth of the pixels); anything else throws
+`ArgumentException`, the `.jpx`, `.jpf` and `.cin` extensions included (these files are read, not written). An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
 `ImageEncoder.FromFileExtension` returns the encoder `Save(path)` selects for an extension (`.png` or `png`), and
@@ -6201,6 +6212,87 @@ declares another length, a run or a repetition past its end, a repetition withou
 pixels). A typed load into an integer pixel format converts the whole image like `CloneAs`: highlights are rejected
 unless the conversion clips or tone maps them.
 
+### DPX
+
+DPX files (`.dpx`, SMPTE ST 268, "File Format for Digital Moving-Picture Exchange") hold the frames of film scans and of
+video in post-production and visual effects. The codec is written from SMPTE ST 268:2014 (DPX 2.0) and reads the files
+of 268M-2003 (DPX 1.0) too, whose layout is the same. The magic number (`SDPX` or `XPDS`) gives the byte order of every
+field and of the image data. The first image element is decoded; the others are counted in
+`Metadata.DpxHeader.ImageElementCount` and not read (an element is not a page of a collection: elements share one
+picture, such as an alpha element after a color one).
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Dpx;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static (string? TimeCode, DpxTransferCharacteristic Transfer) ConvertDpx(string dpxPath, string outputPath)
+{
+    // 10-bit components load as Rgb48: each code value v is the 16-bit sample round(v × 65535 / 1023)
+    using var scan = Image.Load(dpxPath);
+
+    // The headers are reported: the time code, the film edge code, the frame rate, and how the code values encode
+    // light (printing densities are logarithmic: they are never converted implicitly)
+    var header = scan.Metadata.DpxHeader!;
+
+    // 10-bit components filled to 32-bit words with method A, big-endian; the orientation and the linear or BT.709
+    // labels are written too
+    scan.Save(outputPath, new DpxEncoder { BitDepth = 10, AllowBitDepthReduction = true });
+    return (header.TimeCode, header.Transfer);
+}
+```
+<!-- endref -->
+
+| | Reading | Writing |
+| --- | --- | --- |
+| Descriptors | R, G, B, Y (`Gray8`, `Gray16`), A (`La16`, `La32`: black with alpha), RGB (`Rgb24`, `Rgb48`), RGBA and ABGR (`Rgba32`, `Rgba64`), Cb, Y, Cr 4:4:4 and 4:2:2 with or without alpha (converted to RGB), floating point as `RgbaFloat`. Other descriptors (depth, composite video, color difference alone, user defined) are `UnsupportedImageFeatureException` | Y for gray pixel formats, RGB for opaque images, RGBA otherwise |
+| Components | 1, 8, 10, 12 and 16-bit integers scaled to the samples of the pixel format (`round(v × 65535 / max)` for 10 and 12 bits, 0 and 255 for 1 bit); 32-bit floats; 64-bit floats when single precision holds them exactly | 8, 10, 12, 16-bit integers (`round(v × (2^n - 1) / max)`), 32-bit floats; `BitDepth` (8-bit pixels: 8, 16-bit pixels: 16, floats: 32 by default) |
+| Packing | Every line starts on a 32-bit word. 1 bit: from the least significant bit of each word (Table 3B, note 1); 8 bits: bytes; 16 bits: 16-bit words; 12 bits filled: one per 16-bit word, method A (padding bits at the bottom) or B (at the top); 10 bits filled: three per 32-bit word, method A or B, the first component of a word at its top for a multi-component element and at its bottom for a single-component one (figure C.3); 10 and 12 bits packed: from the least significant bit of each word | 10 bits filled with method A, 12 bits in 16-bit words with method A; big-endian (default) or little-endian (`DpxEncoder.ByteOrder`) |
+| Cb, Y, Cr | The BT.709 matrix for the colorimetric specifications SMPTE ST 274 and BT.709, the BT.601 one otherwise; full range when the reference code values are 0 and `2^n - 1`, the nominal range of BT.601 otherwise; the chroma of a 4:2:2 element at the even columns, the odd ones the mean of their neighbors | Not written |
+| Transfer | `Metadata.DpxHeader.Transfer` and `Colorimetric`; the linear transfer (2) is labeled `ColorTransferFunction.Linear`, the BT.709 and BT.601 transfers with their colorimetry as a CICP description; printing density and the other transfers have no label: the code values are never converted to linear light | Linear light as transfer 2, the CICP descriptions of BT.709 and BT.601 as their codes, other images as user defined (0) with the BT.709 primaries; other descriptions follow `MetadataHandling` |
+| Orientation | The eight orientation codes, reported as `Metadata.Orientation` and never applied | `Metadata.Orientation` |
+| Headers | `Metadata.DpxHeader`: version, byte order, element count, descriptor, depth, packing, transfer, colorimetry, reference code values and quantities, file name, creation time, creator, project, copyright, source and input device; with the industry-specific headers (data after byte 2,048), the film edge code, format, frame position, sequence length, held count, frame rate, shutter angle, frame identification, slate, the SMPTE time code (`hh:mm:ss:ff`), user bits, interlace, field number, video signal standard, frame rate and gamma of the television header. The pixel aspect ratio is `Metadata.PixelAspectRatio` | The generic and industry-specific headers, the data at the 8 KiB offset the standard recommends; `Meziantou.Framework.Imaging` as creator, the other fields undefined; `Metadata.DpxHeader` is ignored |
+
+The data of the first element start at its offset (or at the offset of field 2 when it is undefined), after the generic
+headers; the user-defined data before it and the end-of-line padding are skipped, and the bytes after the last line
+are not read. Run-length encoded and encrypted elements, signed components, reserved packings and encodings, and 1-bit
+or floating-point Cb, Y, Cr components are `UnsupportedImageFeatureException`; an orientation code above 7, a number of
+elements outside 1 to 8, an empty image, a bit depth outside Table 3A, a 4:2:2 element of an odd width, data that start
+inside the generic headers and truncation are `InvalidImageContentException`. There is no lenient repair.
+
+What the reference decoders do differently (each is a fixture of the corpus, cross-checked with FFmpeg, ImageMagick and
+OpenImageIO): Table 1 of the standard says that the first datum of an RGB element is blue, but every writer stores red
+first, and the library reads red first; OpenImageIO pads no line of 8, 12 or 16-bit components to a 32-bit word, and
+ImageMagick none of 12 and 16-bit ones, so their files of odd widths decode to shifted lines; ImageMagick reads and
+writes 1-bit components from the most significant bit; no reference decoder reads run-length encoded elements.
+
+### Cineon
+
+Kodak Cineon files (`.cin`, "Image File Format Proposal for Digital Pictures", draft 4.5) hold film scans, almost
+always three channels of 10-bit printing densities. They are read, not written: DPX succeeded the format.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Cineon;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static int ConvertCineonToDpx(string cinPath, string dpxPath)
+{
+    // Cineon files are read only: their 10-bit printing densities load as Rgb48, as stored
+    using var scan = Image.Load(cinPath);
+    var bits = scan.Metadata.CineonHeader!.BitsPerSample;
+    scan.Save(dpxPath, new DpxEncoder { BitDepth = bits == 10 ? 10 : null, AllowBitDepthReduction = true });
+    return bits;
+}
+```
+<!-- endref -->
+
+| | Reading |
+| --- | --- |
+| Channels | One (`Gray8`, `Gray16`) or three (`Rgb24`, `Rgb48`) of the same size and depth, pixel interleaved; three channels are placed by their designators when they are the red, green and blue of one metric, in the order of the file otherwise |
+| Samples | 1 to 16 bits, scaled to the samples of the pixel format; cells of 8, 16 or 32 bits (packing 1 to 6), left or right justified, one pixel per cell or, with the high bit of the packing, shared by consecutive pixels; every line starts on a new cell. 8 and 16-bit samples are a stream of bytes and of 16-bit words whose lines end on a cell boundary, as ImageMagick writes them |
+| Orientation | The eight orientation codes, reported as `Metadata.Orientation` and never applied |
+| Header | `Metadata.CineonHeader`: version, byte order, designators, depth, minimum and maximum code values and quantities, chromaticities, packing, image sense, label, file name and dates, offsets, source, device and pitch, gamma; with the motion-picture section, the KEYKODE edge code, format, frame position and rate, frame attribute, slate |
+
+The image data start at the offset of field 1.2, after the generic section. Images of 2 or 4 to 8 channels, line or
+channel interleaving, channels of different sizes or depths, signed samples, samples of more than 16 bits and bit fields
+(packing 0) of samples other than 8 and 16 bits are `UnsupportedImageFeatureException`. Printing densities are never
+converted to linear light, and a negative image is not inverted (`CineonHeader.IsNegative`).
+
 ## Limitations
 
 Everything below is rejected explicitly (never decoded or encoded approximately) or documented as lossy.
@@ -6234,6 +6326,8 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | JPEG recompression | `JpegXlTranscoder.RecompressJpeg` rejects with `UnsupportedImageFeatureException` what a JPEG XL frame cannot hold: four components (CMYK, YCCK), a sampling factor other than 1 or 2 (4:1:1), subsampled RGB components, arithmetic, lossless, hierarchical and 12-bit files, restart intervals of several lengths (the description of the file has one), a quantization table that no component uses unless it repeats the table defined before it, a Huffman table that uses the code of all ones, more than 65,535 bytes between two markers or 4,260,096 bytes after the end of image, and entropy-coded data that would not be rebuilt byte for byte (the output is always checked). The whole file is held in memory, with two bytes per coefficient. The reconstruction data (`jbrd`) are read wherever the container has them: every encoder writes them before the codestream; when they follow it, the frame is held as it is coded until they are read, and `HasJpegReconstructionData` reads the file to its end |
 | JPEG 2000 | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the headers tell): samples of more than 16 bits, signed palette indexes, components of different depths, a sub-sampled first component and sub-sampled components that are not the chrominances of an image of three components, more than four components without color specification, a premultiplied opacity, several opacity channels, an opacity of one color, channels that are not defined, the extensions of ISO/IEC 15444-2 (other wavelet filters, other component transformations, other regions of interest), files of the `jpm ` and `mjp2` brands, files of several codestreams or of a fragmented codestream, more than 30 bit-planes in a sub-band; for the high-throughput block coder: tile-components that mix both block coders, a code-block with several HT sets, and placeholder passes in another packet than the HT cleanup pass. CMYK is loaded only with `CmykConversion`. Not read: the intellectual property and XML boxes, the comments of the codestream. Signed samples are read offset by half their range; `Jpeg2000DecodingOptions.QualityLayerLimit` decodes the first quality layers only. Not available: a region decode reads the whole compressed data of each tile it meets. Encoding: no precincts and one tile-part per tile, no HTJ2K, no palette, no sub-sampling, no CMYK, no animation; a codestream stores no metadata |
 | OpenEXR | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): multi-part files unless `OpenExrDecodingOptions.Part` selects a part, deep data unless `OpenExrDecodingOptions.DeepData` flattens them (and deep data without `Z` or `A`), the HTJ2K256, HTJ2K32 and LJ2K compressions, channels other than R, G, B, A and Y (layers, depth, `RY`/`BY` chroma, extra channels: they would be lost) unless `OpenExrDecodingOptions.Layer` selects a layer, the chroma channels `RY` and `BY` also in a layer, sub-sampled color channels (a sub-sampled channel that a layer ignores is fine), a data window that leaves the display window (its pixels would be lost) unless `OpenExrDecodingOptions.WindowMode` crops it or decodes the data window, UINT samples that a float cannot hold exactly, and versions other than 2. Not decoded: the lower levels of mipmaps and ripmaps, the preview image and the attributes other than the windows and the chromaticities. Encoding: one still image, scan lines only (no tiles), half or float samples (no UINT), no lossy compression (PXR24, B44, DWA), no attributes other than the required ones and the chromaticities, linear light only
+| DPX | Decoding: the first image element only (the others are counted, not read); run-length encoded and encrypted elements (no reference decoder reads the first), signed components, the depth, composite, color difference and user-defined descriptors, 1-bit and floating-point Cb, Y, Cr; 64-bit components single precision does not hold exactly; the transfer characteristic is reported, never applied (no implicit log-to-linear conversion; no logarithmic conversion helper). Encoding: one uncompressed RGB, RGBA or luma element, no Cb, Y, Cr, no 1-bit components, no packed (method 0) or method B output, no run-length encoding; the headers of a source file (`Metadata.DpxHeader`: time code, edge code, ...) are not written again |
+| Cineon | Decoding only (saved as DPX); gray and RGB images of 1 to 16-bit samples, pixel interleaved: other channel counts, line and channel interleaving, channels of different sizes or depths, signed samples and bit fields of samples other than 8 and 16 bits are rejected; printing densities are never converted to linear light |
 | Radiance HDR | Decoding: XYZE pictures (identified, rejected by a load: no conversion of their CIE XYZ samples to RGB), `FORMAT` values other than RGBE and XYZE (hyperspectral pictures, other data); the exposure and the color correction are reported, never applied. Encoding: RGBE only, one still image in the standard orientation, no alpha (a background composites it), no negative or non-finite colors, no exposure, color correction, view or other header variable but the primaries, linear light only; the precision is that of RGBE, 8 bits of mantissa shared by the three colors |
 | Text | In vertical lines, no compression of punctuation; ruby annotations only over their base, without overhang; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; greedy line breaking by default, optimal (total-fit) breaking without fitness classes; justification without kashida and without priorities; no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), without the variations of the control values (`cvar`) and without the hints of CFF outlines; subpixel (LCD) rendering is opt-in (`TextLayoutOptions.SubpixelRendering`), for layouts filled at a point with a solid color on 8- and 16-bit RGB images; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hints of CFF outlines; see [Fonts](#fonts) |

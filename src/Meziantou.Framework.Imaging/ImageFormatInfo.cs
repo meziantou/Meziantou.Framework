@@ -51,6 +51,8 @@ public sealed class ImageFormatInfo
         new(ImageFormat.Jpeg2000, ["image/jp2", "image/jpx", "image/jph"], [".jp2", ".j2k", ".j2c", ".jpc", ".jpx", ".jpf", ".jph", ".jhc"]),
         new(ImageFormat.OpenExr, ["image/x-exr"], [".exr"]),
         new(ImageFormat.Radiance, ["image/vnd.radiance", "image/x-hdr"], [".hdr", ".pic"]),
+        new(ImageFormat.Dpx, ["image/dpx", "image/x-dpx"], [".dpx"]),
+        new(ImageFormat.Cineon, ["image/cineon", "image/x-cineon"], [".cin"]),
     ];
 
     private static readonly ReadOnlyCollection<ImageFormatInfo> AllFormats = Array.AsReadOnly(Formats);

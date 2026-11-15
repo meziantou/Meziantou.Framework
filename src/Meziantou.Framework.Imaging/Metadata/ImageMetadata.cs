@@ -128,6 +128,21 @@ public sealed class ImageMetadata
     /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
     public RadianceHeader? RadianceHeader { get; set; }
 
+    /// <summary>
+    /// Gets or sets the fields of the headers of the DPX file the image was decoded from, or <see langword="null"/> for the
+    /// other formats. This is informational only, like <see cref="SourceFormat"/>: it describes the file, not the pixels (the
+    /// transfer characteristic it reports is not applied).
+    /// </summary>
+    /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
+    public DpxHeader? DpxHeader { get; set; }
+
+    /// <summary>
+    /// Gets or sets the fields of the header of the Cineon file the image was decoded from, or <see langword="null"/> for the
+    /// other formats. This is informational only, like <see cref="SourceFormat"/>: it describes the file, not the pixels.
+    /// </summary>
+    /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
+    public CineonHeader? CineonHeader { get; set; }
+
     /// <summary>Gets or sets the EXIF profile, or <see langword="null"/> if none.</summary>
     public ExifProfile? ExifProfile { get; set; }
 
@@ -165,6 +180,8 @@ public sealed class ImageMetadata
             PixelAspectRatio = PixelAspectRatio,
             OpenExrWindows = OpenExrWindows,
             RadianceHeader = RadianceHeader,
+            DpxHeader = DpxHeader,
+            CineonHeader = CineonHeader,
             ExifProfile = ExifProfile,
             XmpProfile = XmpProfile,
         };

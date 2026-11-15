@@ -27,6 +27,8 @@ is read, what is written, how to save with its encoder and its options, and the 
 | [JPEG 2000](16-Jpeg2000.md) | JP2 files and codestreams, up to 16 bits, HTJ2K | Lossless (default) or lossy, up to 16 bits | No |
 | [OpenEXR](17-OpenExr.md) | Half, float and integer samples, most compressions | Lossless half or float samples | No |
 | [Radiance HDR](18-Radiance.md) | RGBE pictures, flat and run-length encoded, every orientation | RGBE pictures, run-length encoded (default) or flat | No |
+| [DPX](19-Dpx.md) | 1 to 16-bit and floating-point components, RGB, luma, Cb, Y, Cr, both byte orders | RGB, RGBA or luma, 8, 10, 12, 16 bits or 32-bit floats | No |
+| [Cineon](20-Cineon.md) | 10-bit (and 1 to 16-bit) RGB and gray film scans | No: saved as DPX | No |
 
 What a format cannot store is never dropped silently: saving an animation as JPEG, transparency to a format without
 it, 16-bit samples to an 8-bit format or metadata the format has no place for throws an
@@ -72,9 +74,10 @@ recognized from its whole header, and checked last. Data that no format recogniz
 | `.jhc` | `Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Container = Jpeg2000Container.Codestream }` | Lossless HTJ2K codestream |
 | `.exr` | [OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) | ZIP-compressed OpenEXR |
 | `.hdr`, `.pic` | [RadianceEncoder](cref:Meziantou.Framework.Imaging.Formats.RadianceEncoder) | Run-length encoded Radiance HDR |
+| `.dpx` | [DpxEncoder](cref:Meziantou.Framework.Imaging.Formats.DpxEncoder) | Big-endian DPX at the depth of the pixels |
 
-Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf`: those JPEG 2000 files are read, not
-written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
+Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf`, whose JPEG 2000 files are read, not
+written, and `.cin`, whose Cineon files are read, not written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
 files from photos: pass an encoder with lossy compression for them.
 
 ## Choosing a format
@@ -120,3 +123,5 @@ To convert files from one format to another, see [Converting between formats](..
 - [JPEG 2000](16-Jpeg2000.md): lossless and lossy images for archives and imaging pipelines.
 - [OpenEXR](17-OpenExr.md): linear-light, floating-point images for rendering and visual effects.
 - [Radiance HDR](18-Radiance.md): RGBE pictures of lighting simulations and HDRI environment maps.
+- [DPX](19-Dpx.md): film scans and video frames of post-production, with their time codes.
+- [Cineon](20-Cineon.md): the Kodak film scans that preceded DPX, read only.

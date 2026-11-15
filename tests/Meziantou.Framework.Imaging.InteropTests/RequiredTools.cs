@@ -37,6 +37,9 @@ internal static class RequiredTools
 
     public static Task<RadianceTool> RadianceAsync() => RadianceTool.LocateAsync(XunitCancellationToken);
 
+    /// <summary>Gets the DPX and Cineon readers of OpenImageIO and ImageMagick.</summary>
+    public static Task<DpxTool> DpxAsync() => DpxTool.LocateAsync(XunitCancellationToken);
+
     /// <summary>Gets the <c>jpeg</c> tool of the ISO JPEG reference codec, which shares no code with libjpeg-turbo.</summary>
     public static Task<IsoJpegTool> IsoJpegAsync() => IsoJpegTool.LocateAsync(XunitCancellationToken);
 

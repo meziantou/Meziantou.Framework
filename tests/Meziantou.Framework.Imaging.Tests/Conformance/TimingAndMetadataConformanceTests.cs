@@ -63,7 +63,10 @@ public sealed class TimingAndMetadataConformanceTests
         {
             Assert.Null(expected.ContentLightLevel);
             Assert.Null(expected.MasteringDisplay);
-            Assert.Null(expected.PixelAspectRatio);
+            if (fixture.Entry.Format is not "dpx")
+            {
+                Assert.Null(expected.PixelAspectRatio);
+            }
         }
 
         if (fixture.Entry.Format is "avif" or "heic")
@@ -84,6 +87,13 @@ public sealed class TimingAndMetadataConformanceTests
         {
             // The orientation of a JPEG XL image is a field of its image header, and its enumerated color encoding, when
             // ITU-T H.273 has code points for it, is its color description
+            Assert.Equal(expected.Orientation, fields.TransformOrientation);
+            Assert.Equal(expected.Cicp?.ToString(), fields.ContainerCicp?.ToString());
+        }
+        else if (fixture.Entry.Format is "dpx" or "cin")
+        {
+            // The orientation code of a DPX or Cineon image header, and the television transfer and colorimetry of a DPX
+            // image element, when ITU-T H.273 has code points for them, as its color description
             Assert.Equal(expected.Orientation, fields.TransformOrientation);
             Assert.Equal(expected.Cicp?.ToString(), fields.ContainerCicp?.ToString());
         }

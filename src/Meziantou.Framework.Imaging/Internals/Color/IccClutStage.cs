@@ -92,6 +92,20 @@ internal sealed class IccClutStage : IccStage
         }
     }
 
+    /// <summary>Initializes a new instance of the <see cref="IccClutStage"/> class with the table of another stage and none of its decoded entries.</summary>
+    private IccClutStage(IccClutStage other)
+    {
+        _data = other._data;
+        _multilinear = other._multilinear;
+        _inputs = other._inputs;
+        _outputs = other._outputs;
+        _bytesPerEntry = other._bytesPerEntry;
+        _gridPoints = other._gridPoints;
+        _strides = other._strides;
+        _entryCount = other._entryCount;
+        _vertexEntryOffsets = other._vertexEntryOffsets;
+    }
+
     /// <summary>The largest number of entries that <see cref="Reserve"/> decodes (2 MiB of doubles): a 17x17x17x17 CMYK table to 3 outputs fits.</summary>
     internal const int MaxDecodedEntries = 1 << 18;
 
@@ -150,6 +164,9 @@ internal sealed class IccClutStage : IccStage
             charge?.Dispose();
         }
     }
+
+    /// <summary>Creates a stage of the same table whose entries are decoded on their own (<see cref="IccPipeline.BindLookupTables"/>).</summary>
+    public IccClutStage CloneWithoutEntries() => new(this);
 
     /// <summary>Releases the decoded entries and their charge: the next colors read the entries in place, until <see cref="Reserve"/> decodes them again.</summary>
     public void Release()

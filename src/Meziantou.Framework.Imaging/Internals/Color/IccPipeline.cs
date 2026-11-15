@@ -95,6 +95,23 @@ internal sealed class IccPipeline
         }
     }
 
+    /// <summary>Initializes a copy of a pipeline with other stages: the lookup tables of an owner (<see cref="BindLookupTables"/>).</summary>
+    private IccPipeline(IccPipeline other, IccStage[] stages, AllocationScope scope)
+    {
+        _stages = stages;
+        SourceChannelCount = other.SourceChannelCount;
+        DestinationChannelCount = other.DestinationChannelCount;
+        IsIdentity = other.IsIdentity;
+        HasLookupTable = other.HasLookupTable;
+        ByteInputTables = other.ByteInputTables;
+        _inputCurves = other._inputCurves;
+        _inputDecode = other._inputDecode;
+        _outputCurves = other._outputCurves;
+        _outputCurveColors = Interlocked.Read(ref other._outputCurveColors);
+        _byteOutputTables = Volatile.Read(ref other._byteOutputTables);
+        _lookupTableScope = scope;
+    }
+
     /// <summary>
     /// Gets, when the first stage is one curve per source channel, the value of that stage for each 8-bit sample of each
     /// channel; <see langword="null"/> otherwise. See <see cref="ApplyAfterInputCurves"/>.
@@ -108,20 +125,24 @@ internal sealed class IccPipeline
     public bool HasLookupTable { get; }
 
     /// <summary>
-    /// Lets the lookup tables decode their entries once enough colors use them (<see cref="IccClutStage.Reserve"/>),
-    /// charged to <paramref name="scope"/>: the owner of the conversion calls <see cref="ReleaseLookupTables"/> once it is
-    /// done. A pipeline that is not bound reads the entries in place.
+    /// Gets the conversion of one owner, whose lookup tables decode their entries once enough colors use them
+    /// (<see cref="IccClutStage.Reserve"/>), charged to <paramref name="scope"/>: the owner converts with the returned
+    /// pipeline and calls its <see cref="ReleaseLookupTables"/> once it is done. A pipeline may be shared (the transform of
+    /// an assumed CMYK profile), so the returned one has lookup tables of its own; a pipeline that is not bound reads the
+    /// entries in place.
     /// </summary>
     /// <param name="scope">The scope of the owner of the conversion.</param>
-    public void BindLookupTables(AllocationScope scope)
+    /// <returns>The pipeline of the owner: this one when it has no lookup table.</returns>
+    public IccPipeline BindLookupTables(AllocationScope scope)
     {
-        if (HasLookupTable)
-        {
-            Volatile.Write(ref _lookupTableScope, scope);
-        }
+        if (!HasLookupTable)
+            return this;
+
+        var stages = Array.ConvertAll(_stages, stage => stage is IccClutStage table ? table.CloneWithoutEntries() : stage);
+        return new IccPipeline(this, stages, scope);
     }
 
-    /// <summary>Releases the decoded entries of the lookup tables and their charges, after the last conversion of the owner that bound them (<see cref="BindLookupTables"/>).</summary>
+    /// <summary>Releases the decoded entries of the lookup tables and their charges, after the last conversion of the owner of a pipeline returned by <see cref="BindLookupTables"/>.</summary>
     public void ReleaseLookupTables()
     {
         if (Interlocked.Exchange(ref _lookupTableScope, null) is null)

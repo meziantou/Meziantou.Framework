@@ -289,7 +289,7 @@ public sealed class ColorProfileFuzzTests
         }
 
         var scope = new Internals.AllocationScope(new ImageResourceLimits());
-        all.Pipeline.BindLookupTables(scope);
+        var pipeline = all.Pipeline.BindLookupTables(scope);
         try
         {
             var expectedBytes = new byte[Colors * destinationChannels];
@@ -302,8 +302,8 @@ public sealed class ColorProfileFuzzTests
 
             var actualBytes = new byte[expectedBytes.Length];
             var actualWords = new ushort[expectedWords.Length];
-            all.Convert(bytes, actualBytes);
-            all.Convert(words, actualWords);
+            Internals.ColorConversionKernels.Convert<byte, Internals.IccByteSample>(pipeline, bytes, actualBytes, sourceChannels, destinationChannels);
+            Internals.ColorConversionKernels.Convert<ushort, Internals.IccUInt16Sample>(pipeline, words, actualWords, sourceChannels, destinationChannels);
             if (!actualBytes.AsSpan().SequenceEqual(expectedBytes))
                 return FuzzFailure.Property("batch-bytes", "Colors converted in one call differ from colors converted one at a time.");
 
@@ -316,7 +316,7 @@ public sealed class ColorProfileFuzzTests
         }
         finally
         {
-            all.Pipeline.ReleaseLookupTables();
+            pipeline.ReleaseLookupTables();
         }
 
         if (scope.LiveBytes != 0)

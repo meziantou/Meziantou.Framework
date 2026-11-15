@@ -10788,7 +10788,7 @@ public sealed class VectorizedKernelTests
         {
             var pipeline = IccPipeline.Create(source, destination, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: true);
             var scope = new AllocationScope(new ImageResourceLimits());
-            pipeline.BindLookupTables(scope);
+            pipeline = pipeline.BindLookupTables(scope);
             pipeline.ReserveLookupTables(int.MaxValue);
             Assert.True(scope.LiveBytes > 0);
             var sourceChannels = pipeline.SourceChannelCount;
@@ -10830,9 +10830,9 @@ public sealed class VectorizedKernelTests
     [Fact]
     public void DecodedLookupTablesAreChargedToTheBoundScope()
     {
-        // The decoded entries of a lookup table are charged to the scope the pipeline is bound to, until it is released; a
-        // pipeline that is not bound, or whose scope refuses the charge (once: it is not asked again), reads the entries in
-        // place with the same results
+        // The decoded entries of a lookup table are charged to the scope of the pipeline bound to it, until it is released;
+        // the pipeline it was bound from (which may be shared) is unchanged, and a pipeline that is not bound, or whose scope
+        // refuses the charge (once: it is not asked again), reads the entries in place with the same results
         var source = IccTestProfiles.CmykLabLut16();
         var samples = new byte[4000 * 4];
         for (var i = 0; i < samples.Length; i++)
@@ -10847,20 +10847,33 @@ public sealed class VectorizedKernelTests
         ColorConversionKernels.Convert<byte, IccByteSample>(unbound, samples, actual, 4, 3);
         Assert.Equal(expected, actual);
 
-        var bound = IccPipeline.Create(source, Metadata.IccProfile.Srgb, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: true);
         var scope = new AllocationScope(new ImageResourceLimits());
-        bound.BindLookupTables(scope);
+        var otherScope = new AllocationScope(new ImageResourceLimits());
+        var bound = unbound.BindLookupTables(scope);
+        var otherBound = unbound.BindLookupTables(otherScope);
+        Assert.NotSame(unbound, bound);
         actual.AsSpan().Clear();
         ColorConversionKernels.Convert<byte, IccByteSample>(bound, samples, actual, 4, 3);
         Assert.Equal(expected, actual);
         Assert.True(scope.LiveBytes > 0);
         Assert.Equal(scope.LiveBytes, scope.GetLiveBytes(AllocationKind.Temporary));
+        Assert.Equal(0, otherScope.LiveBytes);
+        actual.AsSpan().Clear();
+        ColorConversionKernels.Convert<byte, IccByteSample>(otherBound, samples, actual, 4, 3);
+        Assert.Equal(expected, actual);
+        Assert.Equal(scope.LiveBytes, otherScope.LiveBytes);
         bound.ReleaseLookupTables();
         Assert.Equal(0, scope.LiveBytes);
+        Assert.True(otherScope.LiveBytes > 0);
+        otherBound.ReleaseLookupTables();
+        Assert.Equal(0, otherScope.LiveBytes);
+        unbound.ReleaseLookupTables();
+        actual.AsSpan().Clear();
+        ColorConversionKernels.Convert<byte, IccByteSample>(unbound, samples, actual, 4, 3);
+        Assert.Equal(expected, actual);
 
-        var refused = IccPipeline.Create(source, Metadata.IccProfile.Srgb, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: true);
         var smallScope = new AllocationScope(new ImageResourceLimits { MaxLiveAllocationBytes = 64 });
-        refused.BindLookupTables(smallScope);
+        var refused = unbound.BindLookupTables(smallScope);
         actual.AsSpan().Clear();
         ColorConversionKernels.Convert<byte, IccByteSample>(refused, samples, actual, 4, 3);
         ColorConversionKernels.Convert<byte, IccByteSample>(refused, samples, actual, 4, 3);

@@ -315,8 +315,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             // profile, which is the one that labels the image
             var transform = conversion.CreateTransform(profile) ?? throw Unsupported("The CMYK JPEG image has no CMYK color profile and CmykConversionOptions.AssumedSourceProfile is null.", "JPEG CMYK without color profile");
             _inkConversion?.ReleaseLookupTables();
-            _inkConversion = transform.Pipeline;
-            _inkConversion.BindLookupTables(_context.Scope);
+            _inkConversion = transform.Pipeline.BindLookupTables(_context.Scope);
             profile = conversion.DestinationProfile;
         }
         else if (components.Length == 4)

@@ -750,14 +750,14 @@ public abstract partial class Image
             // after the replacements are reserved, and released with the conversion)
             var colors = PixelFormats.GetBitsPerComponent(KernelPixelFormat) == 16 && !PixelFormats.IsFloatingPoint(KernelPixelFormat) ? (long)_size.Width * _size.Height * GetAllFrames().Length : 0;
             using var scratch = new ColorConversionScratch();
-            pipeline.BindLookupTables(Owner.Scope);
+            var boundPipeline = pipeline.BindLookupTables(Owner.Scope);
             try
             {
-                ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(pipeline, colors, scratch), cancellationToken);
+                ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(boundPipeline, colors, scratch), cancellationToken);
             }
             finally
             {
-                pipeline.ReleaseLookupTables();
+                boundPipeline.ReleaseLookupTables();
             }
         }
 

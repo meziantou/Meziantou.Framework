@@ -996,7 +996,7 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   sizes), read color lookup tables in place (`ReadOnlyMemory<byte>`, no copy) so that a transform only copies
   one-dimensional curves, and allocate nothing per conversion (`PerformanceContractTests`). The one copy of a table is its decoded entries
   (`IccClutStage.Reserve`), made only for a pipeline bound to the scope of its owner (`IccPipeline.BindLookupTables`, a
-  decoder or an image operation), charged before it is allocated and released with the owner
+  decoder or an image operation: a copy with lookup tables of its own, since a pipeline may be shared), charged before it is allocated and released with the owner
   (`ReleaseLookupTables`); when the scope refuses it, the entries stay read in place. A malformed profile is `InvalidImageContentException`; a valid profile that is not
   supported or cannot be a destination is `UnsupportedImageFeatureException`. Nothing else may escape
   (`ColorProfileFuzzTests`).

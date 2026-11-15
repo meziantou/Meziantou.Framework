@@ -72,8 +72,7 @@ internal sealed class TiffRowExpander : IDisposable
         ArgumentOutOfRangeException.ThrowIfGreaterThan(width, page.Size.Width);
         _page = page;
         _width = width;
-        _inkConversion = inkConversion;
-        inkConversion?.BindLookupTables(scope);
+        _inkConversion = inkConversion?.BindLookupTables(scope);
         _nativeInks = nativeInks;
         SourcePixelFormat = nativeInks ? GetCmykPixelFormat(page) : page.SourcePixelFormat;
         if (page.IsPalette)

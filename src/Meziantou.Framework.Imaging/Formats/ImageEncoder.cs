@@ -109,7 +109,8 @@ public abstract class ImageEncoder
     /// <remarks>This method is thread-safe. To change a setting, create the encoder type directly with an object initializer.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="format"/> is <see cref="ImageFormat.Unknown"/>, <see cref="ImageFormat.Custom"/> (use
-    /// <see cref="CustomImageCodec.CreateEncoder"/>), <see cref="ImageFormat.Psd"/> (read only) or not a defined value.
+    /// <see cref="CustomImageCodec.CreateEncoder"/>), <see cref="ImageFormat.Psd"/>, <see cref="ImageFormat.Dng"/> (read only) or not a defined
+    /// value.
     /// </exception>
     public static ImageEncoder Create(ImageFormat format) => format switch
     {
@@ -132,6 +133,7 @@ public abstract class ImageEncoder
         ImageFormat.OpenExr => new OpenExrEncoder(),
         ImageFormat.Radiance => new RadianceEncoder(),
         ImageFormat.Psd => throw new ArgumentOutOfRangeException(nameof(format), format, "Adobe Photoshop (PSD) files are read but not written: no encoder writes this format."),
+        ImageFormat.Dng => throw new ArgumentOutOfRangeException(nameof(format), format, "DNG files are read, never written: the library has no DNG encoder."),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is unknown or not a defined value."),
     };
 
@@ -157,7 +159,7 @@ public abstract class ImageEncoder
     /// <exception cref="ArgumentNullException"><paramref name="extension"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
     /// The extension is not recognized, or names files the library reads but does not write (<c>.jpx</c>, <c>.jpf</c>,
-    /// <c>.psd</c>, <c>.psb</c>).
+    /// <c>.psd</c>, <c>.psb</c>, <c>.dng</c>).
     /// </exception>
     public static ImageEncoder FromFileExtension(string extension)
     {
@@ -220,6 +222,9 @@ public abstract class ImageEncoder
 
         if (extension.Equals(".psd", StringComparison.OrdinalIgnoreCase) || extension.Equals(".psb", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException($"Adobe Photoshop files ('{extension}') can be read but not written. Specify an encoder of another format.", parameterName);
+
+        if (extension.Equals(".dng", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException($"DNG files ('{extension}') can be read but not written. Specify an encoder of another format explicitly.", parameterName);
 
         if (extension.Length > 1 && ImageFormatInfo.TryGetByFileExtension(extension, out var info))
             return Create(info.Format);

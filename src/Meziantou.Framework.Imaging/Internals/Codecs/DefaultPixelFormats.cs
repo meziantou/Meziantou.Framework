@@ -104,6 +104,12 @@ internal static class DefaultPixelFormats
     /// </summary>
     public static PixelFormat ForPsdFloatingPoint => PixelFormat.RgbaFloat;
 
+    /// <summary>
+    /// Gets the default pixel format of a DNG image: the rendering of its raw samples is scene-referred linear light, whose
+    /// highlights and colors outside the gamut of the output primaries are values outside [0, 1].
+    /// </summary>
+    public static PixelFormat Dng => PixelFormat.RgbaFloat;
+
     /// <summary>Selects the default pixel format of a BMP image.</summary>
     /// <param name="hasAlphaMask">Whether the DIB layout defines a real (non-padding) alpha channel.</param>
     /// <returns><see cref="PixelFormat.Rgba32"/> for layouts with an alpha mask, otherwise <see cref="PixelFormat.Rgb24"/>.</returns>

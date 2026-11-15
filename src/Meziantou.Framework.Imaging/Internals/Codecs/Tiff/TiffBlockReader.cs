@@ -147,7 +147,7 @@ internal sealed class TiffBlockReader : IDisposable
             bytes += scope.GetChargedSize(changesLength);
         }
 
-        if (page.Predictor == TiffFormat.PredictorFloatingPoint)
+        if (page.HasFloatingPointPredictor)
         {
             bytes += scope.GetChargedSize(page.BlockRowLength);
         }
@@ -238,11 +238,11 @@ internal sealed class TiffBlockReader : IDisposable
         var page = _page;
         var storedRows = block.StoredRows;
         var stored = GetStored(storedRows, workspace);
-        if (page.Predictor == TiffFormat.PredictorHorizontalDifferencing)
+        if (page.HasHorizontalDifferencing)
         {
             UndoHorizontalDifferencing(stored, storedRows);
         }
-        else if (page.Predictor == TiffFormat.PredictorFloatingPoint)
+        else if (page.HasFloatingPointPredictor)
         {
             UndoFloatingPointDifferencing(stored, storedRows, workspace);
         }
@@ -576,7 +576,9 @@ internal sealed class TiffBlockReader : IDisposable
     private void UndoHorizontalDifferencing(Span<byte> block, int rowCount)
     {
         var rowLength = _page.BlockRowLength;
-        var samplesPerPixel = _page.BlockSamplesPerPixel;
+
+        // The predictors of DNG difference with the sample 2 or 4 pixels to the left: pixels of 2 or 4 times as many samples
+        var samplesPerPixel = _page.BlockSamplesPerPixel * _page.PredictorDistance;
         var is8Bit = _page.BitsPerSample == 8;
         var bigEndian = _page.IsBigEndian;
         for (var row = 0; row < rowCount; row++)
@@ -678,7 +680,7 @@ internal sealed class TiffBlockReader : IDisposable
         var scratch = workspace.GetPredictorRow(rowLength).Span[..rowLength];
         for (var row = 0; row < rowCount; row++)
         {
-            UndoFloatingPointDifferencing(block.Slice(row * rowLength, rowLength), scratch, page.BlockSamplesPerPixel, page.BitsPerSample / 8, page.IsBigEndian);
+            UndoFloatingPointDifferencing(block.Slice(row * rowLength, rowLength), scratch, page.BlockSamplesPerPixel * page.PredictorDistance, page.BitsPerSample / 8, page.IsBigEndian);
         }
     }
 
@@ -741,7 +743,9 @@ internal sealed class TiffBlockReader : IDisposable
         receiver.Begin(index, rowCount, buffer, handler, _jpegRow?.RawBuffer);
         try
         {
-            using var decoder = new JpegDecoder(_source.Context, receiver, page.IsYCbCr ? ImageColorModel.YCbCr : ImageColorModel.Rgb);
+            // The lossy JPEG of DNG codes three samples of linear raw data as JFIF does, in YCbCr
+            var isYCbCr = page.IsYCbCr || (page.Compression == TiffFormat.CompressionDngLossyJpeg && page.SamplesPerPixel == 3);
+            using var decoder = new JpegDecoder(_source.Context, receiver, isYCbCr ? ImageColorModel.YCbCr : ImageColorModel.Rgb);
             if (page.JpegTables is { } tables)
             {
                 LoadJpegTables(decoder, tables);
@@ -981,7 +985,7 @@ internal sealed class TiffBlockReader : IDisposable
                 _ = GetChangeLists(TiffCcittDecoder.GetChangeListLength(page.BlockWidth), limits);
             }
 
-            if (page.Predictor == TiffFormat.PredictorFloatingPoint)
+            if (page.HasFloatingPointPredictor)
             {
                 _ = GetPredictorRow(page.BlockRowLength);
             }
@@ -1141,6 +1145,8 @@ internal sealed class TiffBlockReader : IDisposable
         private byte[]? _row;
         private int _index;
         private int _rowCount;
+        private int _frameRowLength;
+        private long _bytesReceived;
 
         public JpegBlockReceiver(TiffPage page)
         {
@@ -1149,6 +1155,15 @@ internal sealed class TiffBlockReader : IDisposable
         }
 
         public int RowsReceived { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether the samples are taken as the datastream stores them: a lossless datastream of a DNG
+        /// raw image holds the values of the sensor, in a frame of any shape that holds as many samples as the block.
+        /// </summary>
+        public override bool ReceivesStoredSamples => _page.IsDngRaw;
+
+        /// <summary>Gets a value indicating whether the frame is read as a sequence of samples (a lossless datastream of a DNG raw image).</summary>
+        private bool IsSampleSequence => _page.IsDngRaw && _page.Compression == TiffFormat.CompressionJpeg;
 
         /// <param name="index">The index of the block.</param>
         /// <param name="rowCount">The number of rows of the block that belong to the page.</param>
@@ -1172,8 +1187,40 @@ internal sealed class TiffBlockReader : IDisposable
             _row = null;
         }
 
+        /// <summary>Copies a row of a frame read as a sequence of samples to its place in the rows of the block.</summary>
+        private void ReceiveSamples(int y, ReadOnlySpan<byte> bytes)
+        {
+            var buffer = _buffer ?? throw new InvalidOperationException("The samples of a DNG raw image are decoded into a buffer.");
+            var length = (long)_rowCount * _page.BlockRowLength;
+            var offset = (long)y * _frameRowLength;
+            if (offset >= length)
+                return;
+
+            var count = (int)Math.Min(bytes.Length, length - offset);
+            bytes[..count].CopyTo(buffer.AsSpan((int)offset, count));
+            _bytesReceived = Math.Max(_bytesReceived, offset + count);
+            RowsReceived = (int)(_bytesReceived / _page.BlockRowLength);
+        }
+
         public override void OnFrame(int width, int height, int componentCount, int precision)
         {
+            if (IsSampleSequence)
+            {
+                // "For lossless JPEG, the internal width/length/components in the JPEG stream are not required to match the
+                // strip or tile's width/length/components. Only the total sample counts need to match" (DNG 1.7.1, chapter 3)
+                if (precision != _page.BitsPerSample)
+                    throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The lossless JPEG data of the block {_index} of the raw image of the DNG file has samples of {precision} bits; the raw image declares {_page.BitsPerSample}."), ImageFormat.Dng);
+
+                var blockSamples = (long)_page.BlockWidth * _page.BlockSamplesPerPixel;
+                var frameSamples = (long)width * componentCount * height;
+                if (frameSamples != blockSamples * _rowCount && frameSamples != blockSamples * _page.BlockHeight)
+                    throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The lossless JPEG data of the block {_index} of the raw image of the DNG file is a {width}x{height} frame of {componentCount} component(s), {frameSamples} samples; the block holds {blockSamples * _rowCount}."), ImageFormat.Dng);
+
+                _frameRowLength = width * componentCount * (_page.DecodedBitsPerSample / 8);
+                _bytesReceived = 0;
+                return;
+            }
+
             if (componentCount != _componentCount)
                 throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {_index} of page {_page.Index} has {componentCount} component(s); a block of the page holds {_componentCount} sample(s) per pixel."));
 
@@ -1188,6 +1235,12 @@ internal sealed class TiffBlockReader : IDisposable
 
         public override void OnRow(int y, ReadOnlySpan<byte> samples)
         {
+            if (IsSampleSequence)
+            {
+                ReceiveSamples(y, samples);
+                return;
+            }
+
             if (y >= _rowCount)
                 return;
 
@@ -1205,6 +1258,32 @@ internal sealed class TiffBlockReader : IDisposable
 
         public override void OnDeepRow(int y, ReadOnlySpan<ushort> samples)
         {
+            if (IsSampleSequence)
+            {
+                // The samples of a block are in the byte order of the file; a frame taller than the rows of the page ends
+                // in samples that are not kept
+                var buffer = _buffer ?? throw new InvalidOperationException("The samples of a DNG raw image are decoded into a buffer.");
+                var length = (long)_rowCount * _page.BlockRowLength;
+                var offset = (long)y * _frameRowLength;
+                var count = (int)Math.Clamp((length - offset) / sizeof(ushort), 0, samples.Length);
+                if (count == 0)
+                    return;
+
+                var target = buffer.AsSpan((int)offset, count * sizeof(ushort));
+                if (_page.IsBigEndian)
+                {
+                    SampleEndianness.WriteBigEndian(samples[..count], target);
+                }
+                else
+                {
+                    SampleEndianness.WriteLittleEndian(samples[..count], target);
+                }
+
+                _bytesReceived = Math.Max(_bytesReceived, offset + target.Length);
+                RowsReceived = (int)(_bytesReceived / _page.BlockRowLength);
+                return;
+            }
+
             if (y >= _rowCount)
                 return;
 

@@ -37,6 +37,7 @@ public static class EncodedFieldInspector
         "exr" => InspectOpenExr(data),
         "hdr" => InspectRadiance(data),
         "psd" => InspectPsd(data),
+        "dng" => InspectDng(data),
         _ => throw new ArgumentException($"Unknown fixture format '{format}'.", nameof(format)),
     };
 
@@ -77,6 +78,28 @@ public static class EncodedFieldInspector
         if (picture.Resources.TryGetValue(1060, out var xmp))
         {
             result.Xmp = xmp;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// DNG: the XMP packet of IFD 0 (<see cref="Dng.TiffFile"/>) and the EXIF profile the decoder assembles from the EXIF IFD
+    /// (<see cref="Dng.DngExifReference"/>); the rendering is linear light.
+    /// </summary>
+    private static EncodedFields InspectDng(ReadOnlySpan<byte> data)
+    {
+        var file = new Dng.TiffFile(data.ToArray());
+        var ifd0 = file.ReadDirectory(file.FirstDirectory);
+        var result = new EncodedFields { TransferFunction = "linear" };
+        if (ifd0.TryBytes(700) is { } xmp)
+        {
+            result.Xmp = xmp;
+        }
+
+        if (Dng.DngExifReference.Build(data.ToArray()) is { } exif)
+        {
+            result.Exif = exif;
         }
 
         return result;

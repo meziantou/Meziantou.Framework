@@ -724,6 +724,34 @@ namespace Meziantou.Framework.Imaging
         Bayer8x8 = 11,
     }
 
+    public sealed class DngRawImage : System.IDisposable
+    {
+        public Meziantou.Framework.Imaging.Rectangle ActiveArea { get => throw null; }
+        public int BitsPerSample { get => throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<double>? BlackLevelDeltaH { get => throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<double>? BlackLevelDeltaV { get => throw null; }
+        public int BlackLevelRepeatColumns { get => throw null; }
+        public int BlackLevelRepeatRows { get => throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<double> BlackLevels { get => throw null; }
+        public int CfaPatternColumns { get => throw null; }
+        public int CfaPatternRows { get => throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<byte> CfaPlaneColors { get => throw null; }
+        public Meziantou.Framework.Imaging.Rectangle DefaultCrop { get => throw null; }
+        public bool IsColorFilterArray { get => throw null; }
+        public bool IsFloatingPoint { get => throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<ushort>? LinearizationTable { get => throw null; }
+        public int SamplesPerPixel { get => throw null; }
+        public Meziantou.Framework.Imaging.Size Size { get => throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<double> WhiteLevels { get => throw null; }
+        public void CopyLinearRow(int y, System.Span<float> destination) { }
+        public void CopyStoredRow(int y, System.Span<float> destination) { }
+        public void Dispose() { }
+        public byte GetCfaColor(int x, int y) => throw null;
+        public static Meziantou.Framework.Imaging.DngRawImage Load(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public static Meziantou.Framework.Imaging.DngRawImage Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public static Meziantou.Framework.Imaging.DngRawImage Load(string path, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+    }
+
     public enum EdgeDetector
     {
         Sobel = 0,
@@ -1208,6 +1236,7 @@ namespace Meziantou.Framework.Imaging
         OpenExr = 17,
         Radiance = 18,
         Psd = 19,
+        Dng = 20,
         Custom = 1000,
     }
 
@@ -3808,6 +3837,24 @@ namespace Meziantou.Framework.Imaging.Metadata
         public override string ToString() => throw null;
     }
 
+    public sealed class DngProperties : System.IEquatable<Meziantou.Framework.Imaging.Metadata.DngProperties>
+    {
+        public System.Version BackwardVersion { get => throw null; }
+        public double BaselineExposure { get => throw null; }
+        public string? CameraSerialNumber { get => throw null; }
+        public string? LocalizedCameraModel { get => throw null; }
+        public string? Make { get => throw null; }
+        public string? Model { get => throw null; }
+        public string? ProfileName { get => throw null; }
+        public string? UniqueCameraModel { get => throw null; }
+        public System.Version Version { get => throw null; }
+        public DngProperties(System.Version version, System.Version backwardVersion, string? uniqueCameraModel, string? localizedCameraModel, string? make, string? model, string? cameraSerialNumber, string? profileName, double baselineExposure) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.DngProperties? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
     public enum ExifOrientation
     {
         TopLeft = 1,
@@ -3911,6 +3958,7 @@ namespace Meziantou.Framework.Imaging.Metadata
     {
         public Meziantou.Framework.Imaging.Metadata.CicpColorDescription? Cicp { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ContentLightLevel? ContentLightLevel { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Metadata.DngProperties? DngProperties { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ExifProfile? ExifProfile { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.IccProfile? IccProfile { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.MasteringDisplayColorVolume? MasteringDisplay { get => throw null; set { } }

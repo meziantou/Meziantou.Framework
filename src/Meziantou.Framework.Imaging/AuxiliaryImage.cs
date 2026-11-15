@@ -58,6 +58,8 @@ public sealed class AuxiliaryImage
     /// <summary>Gets the 8-bit RGBA pixels of the preview image of an OpenEXR file (its <c>preview</c> attribute).</summary>
     internal byte[]? OpenExrPreview { get; init; }
 
+    internal int? DngDirectoryIndex { get; init; }
+
     internal (int Offset, int Length)? JpegRange { get; init; }
 
     internal byte? AlternatePrimaries { get; set; }

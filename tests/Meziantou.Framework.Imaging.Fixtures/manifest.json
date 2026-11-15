@@ -31328,6 +31328,3180 @@
       }
     },
     {
+      "id": "dng/8-bit",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/8-bit.dng",
+        "sha256": "6af715501f90122e90f8ba72e3d6672be900b1ac0bc0246766a812fbfad6c873",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "8-bit"
+        }
+      },
+      "features": [
+        "dng.bits=8",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 32x16 RGGB mosaic of 8-bit samples. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 3,
+            "meanAbsoluteError": 0.0529,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 2.17, mean 0.0529. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 32,
+        "height": 16,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/8-bit.frame-0.rgbaf32le.raw",
+                "sha256": "b61b7c45d2882a581b910410a5553d8a30c609c03e65e2c0d8ee10b9e7947593",
+                "layout": "rgbaf32le",
+                "width": 32,
+                "height": 16,
+                "rowBytes": 512,
+                "byteLength": 8192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/active-area-crop",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/active-area-crop.dng",
+        "sha256": "3f15af3e9c70b4002003e3a6668c9e23547f8c2795ae9319fcfcfa2dd2cc2cf0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "active-area-crop"
+        }
+      },
+      "features": [
+        "dng.active-area",
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 52x36 mosaic whose active area is (2, 4, 34, 50) and whose default crop is 40x28 at (3, 2) of it: the masked pixels hold the black level. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0077,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 0.37, mean 0.0077. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 28,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/active-area-crop.frame-0.rgbaf32le.raw",
+                "sha256": "37fe116ece15e61eb253e1e08c3a3fc2a83f13de33b8a5bb98a69a9600183ef3",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 28,
+                "rowBytes": 640,
+                "byteLength": 17920,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/baseline-exposure",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/baseline-exposure.dng",
+        "sha256": "c082e88078de056c2c40695429241fb246ac5866a969a6cd84674fac4082d109",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "baseline-exposure"
+        }
+      },
+      "features": [
+        "dng.baseline-exposure",
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "BaselineExposure 1.5 and BaselineExposureOffset -0.5: the rendering is one stop brighter, its highlights above 1. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 148,
+            "meanAbsoluteError": 5.6109,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 147.23, mean 5.6109. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 32,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/baseline-exposure.frame-0.rgbaf32le.raw",
+                "sha256": "7a02cdb36965d0834528f7073c16bfed34881435259834268e08746f1f5392e2",
+                "layout": "rgbaf32le",
+                "width": 32,
+                "height": 24,
+                "rowBytes": 512,
+                "byteLength": 12288,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/bayer-bggr",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/bayer-bggr.dng",
+        "sha256": "08c4e2ba19479c07b39496a5769e3f67efc4312105b410cea3227151ee86bb6d",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "bayer-bggr"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 40x24 BGGR mosaic of 16-bit samples, uncompressed. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 7,
+            "meanAbsoluteError": 0.031,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 6.74, mean 0.031. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/bayer-bggr.frame-0.rgbaf32le.raw",
+                "sha256": "36556925a1fc84c9da72c166b30fed8faa72b343edbf3a438c7f65ea1aeab799",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/bayer-gbrg",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/bayer-gbrg.dng",
+        "sha256": "971cd2fdcae953c2cd733ae13ada247c4b714192c429c94f32ef9f11cd978aa0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "bayer-gbrg"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 40x24 GBRG mosaic of 16-bit samples, uncompressed. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 2,
+            "meanAbsoluteError": 0.0293,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 1.95, mean 0.0293. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/bayer-gbrg.frame-0.rgbaf32le.raw",
+                "sha256": "9f6397c4181bc90e416d05e51ae467dc9d4fa89e66d936532c9fc3d6aa5102c3",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/bayer-grbg",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/bayer-grbg.dng",
+        "sha256": "df1b3690ecd4afae6f7a3c08d88c01b7feffcda9d21a5c4b3614e74f57942850",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "bayer-grbg"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 40x24 GRBG mosaic of 16-bit samples, uncompressed. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 3,
+            "meanAbsoluteError": 0.0293,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 2.25, mean 0.0293. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/bayer-grbg.frame-0.rgbaf32le.raw",
+                "sha256": "46e4eaddd603cd49579e406ce1da1f6161d4d966f3d708df28c4366d2ec4b972",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/bayer-rggb",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/bayer-rggb.dng",
+        "sha256": "337907b28f38f65ccdb57a5886b7daa474d8e31ce53ded3967d6ea920f765aa0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "bayer-rggb"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 48x32 RGGB mosaic of 16-bit samples, uncompressed, little-endian, one strip; a black level of 256 and a white level of 4000; ColorMatrix1 (D65) and AsShotNeutral. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 4,
+            "meanAbsoluteError": 0.0208,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 3.12, mean 0.0208. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 48,
+        "height": 32,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/bayer-rggb.frame-0.rgbaf32le.raw",
+                "sha256": "e0126ed8497868d03e79e8b0229d287186ed13c4689c9714b8c1f11b2b294e4d",
+                "layout": "rgbaf32le",
+                "width": 48,
+                "height": 32,
+                "rowBytes": 768,
+                "byteLength": 24576,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/big-endian-12-bit-packed",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/big-endian-12-bit-packed.dng",
+        "sha256": "97645c76360395209b890f052ceda35adc5812d51d9a1986a912f07d1848dc52",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "big-endian-12-bit-packed"
+        }
+      },
+      "features": [
+        "dng.big-endian",
+        "dng.bits=12",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 36x20 RGGB mosaic of 12-bit samples packed most significant bit first, in a big-endian file, strips of 7 rows. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 4,
+            "meanAbsoluteError": 0.0381,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 3.13, mean 0.0381. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 36,
+        "height": 20,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/big-endian-12-bit-packed.frame-0.rgbaf32le.raw",
+                "sha256": "218e70b0c211a76227c5223b24ef3ff24a0f92119f393aefa9de5081da7ddab0",
+                "layout": "rgbaf32le",
+                "width": 36,
+                "height": 20,
+                "rowBytes": 576,
+                "byteLength": 11520,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/black-level-pattern",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/black-level-pattern.dng",
+        "sha256": "bfa5ed11e8034832d316a4e7955de0ca54fa77a7dbf7b3f7ec007b7aedc5c4b8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "black-level-pattern"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.black-level-pattern",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 40x24 mosaic whose black level is a 2x2 repeating pattern (BlackLevelRepeatDim) plus BlackLevelDeltaH of each column and BlackLevelDeltaV of each row. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 1.682 units of 1/65535: the DNG SDK rounds the black levels of BlackLevelDeltaH and BlackLevelDeltaV differently."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 2,
+            "meanAbsoluteError": 0.0294,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 1.42, mean 0.0294. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/black-level-pattern.frame-0.rgbaf32le.raw",
+                "sha256": "367639438eecbe979299f45fbdf400fd15a51e0f9202d6409f292a554801bd9f",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/cfa-6x6",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/cfa-6x6.dng",
+        "sha256": "cb3c276223a40e5abc8131c77f44ef13d197fc899f78aafe9ef189fc2f45bf2f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "cfa-6x6"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=6x6",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 6x6 repeating pattern of red, green and blue (a pattern of the X-Trans kind): the colors missing around a pixel come from larger windows. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 75,
+            "meanAbsoluteError": 2.3627,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 75, mean 2.3627. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 42,
+        "height": 30,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/cfa-6x6.frame-0.rgbaf32le.raw",
+                "sha256": "8173410911fa3b9133cb65e9b40dfb3dea0a53ab3b8a7788262a610e26b54ebe",
+                "layout": "rgbaf32le",
+                "width": 42,
+                "height": 30,
+                "rowBytes": 672,
+                "byteLength": 20160,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/cfa-cmyg",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/cfa-cmyg.dng",
+        "sha256": "5273509bd5ceb61a0585a8cd4919fa43cb3e1b4d7dfe00d3c5e3d40f6ca5a532",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "cfa-cmyg"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 2x2 pattern of cyan, magenta, yellow and green (CFAPlaneColor 3, 4, 5, 1): four camera planes, converted by the pseudo-inverse of a 4x3 ColorMatrix1. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 26,
+            "meanAbsoluteError": 10.3862,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 25.22, mean 10.3862. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/cfa-cmyg.frame-0.rgbaf32le.raw",
+                "sha256": "1072b9b61830a1f4fd803278d6058197854c45d709c98127a70012ee6d27056d",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/color-matrices-white-xy",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/color-matrices-white-xy.dng",
+        "sha256": "e08fbcb04b92275ed8ea3aff0de9b3c4ac848d333ad1f5982b8e7d8edd085ef8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "color-matrices-white-xy"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa",
+        "dng.two-illuminants",
+        "dng.white-xy"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Two calibrations (standard light A and D65) without forward matrices, white balanced by AsShotWhiteXY (0.36, 0.37): Bradford adaptation to D50. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 2,
+            "meanAbsoluteError": 0.2194,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 1.84, mean 0.2194. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/color-matrices-white-xy.frame-0.rgbaf32le.raw",
+                "sha256": "4443e89b2dcce8da20ccd92acfcc8280922edace1e122be6a9a996dcf6485d6c",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/deflate-predictor",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/deflate-predictor.dng",
+        "sha256": "50dc1356732aa518f0812f97bc029bb0b7ec258c3ffaa22ed5d2720beef56a9f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "deflate-predictor"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=deflate",
+        "dng.photometric=cfa",
+        "dng.predictor=2"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 48x32 RGGB mosaic of 16-bit samples compressed with Deflate after horizontal differencing (predictor 2), strips of 8 rows. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 4,
+            "meanAbsoluteError": 0.0206,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 3.14, mean 0.0206. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 48,
+        "height": 32,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/deflate-predictor.frame-0.rgbaf32le.raw",
+                "sha256": "fdb71724b7879b1a018c66e09f026c1eaa6e847089e8aa01aa859ea489ebc8cb",
+                "layout": "rgbaf32le",
+                "width": 48,
+                "height": 32,
+                "rowBytes": 768,
+                "byteLength": 24576,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/deflate-predictor-x2",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/deflate-predictor-x2.dng",
+        "sha256": "af9c076e3280960c3d8964d8c7a7f93bd1c135838c755a41571270612d5cb771",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "deflate-predictor-x2"
+        }
+      },
+      "features": [
+        "dng.big-endian",
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=deflate",
+        "dng.photometric=cfa",
+        "dng.predictor=34892"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 48x32 RGGB mosaic of 16-bit samples, Deflate with the Horizontal Difference X2 predictor of DNG (34892), big-endian. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 4,
+            "meanAbsoluteError": 0.0206,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 3.14, mean 0.0206. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 48,
+        "height": 32,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/deflate-predictor-x2.frame-0.rgbaf32le.raw",
+                "sha256": "fdb71724b7879b1a018c66e09f026c1eaa6e847089e8aa01aa859ea489ebc8cb",
+                "layout": "rgbaf32le",
+                "width": 48,
+                "height": 32,
+                "rowBytes": 768,
+                "byteLength": 24576,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/deflate-predictor-x4-8-bit",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/deflate-predictor-x4-8-bit.dng",
+        "sha256": "a5a8337aaddeefd7b14948c4fa2764de21903d007c9dbe2b625a46284fa978c1",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "deflate-predictor-x4-8-bit"
+        }
+      },
+      "features": [
+        "dng.bits=8",
+        "dng.cfa=2x2",
+        "dng.compression=deflate",
+        "dng.photometric=cfa",
+        "dng.predictor=34893"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 40x16 RGGB mosaic of 8-bit samples, Deflate with the Horizontal Difference X4 predictor (34893). The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 3,
+            "meanAbsoluteError": 0.054,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 2.08, mean 0.054. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 16,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/deflate-predictor-x4-8-bit.frame-0.rgbaf32le.raw",
+                "sha256": "cab54517d6177713361af7afe9936e111b8714d05b5ee01d77f5d4e016fa3bb1",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 16,
+                "rowBytes": 640,
+                "byteLength": 10240,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/deflate-tiles",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/deflate-tiles.dng",
+        "sha256": "47196d801a33154fd913b6287d0b00436cdeebd31918e1d5e61654590a23b4f6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "deflate-tiles"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=deflate",
+        "dng.photometric=cfa",
+        "dng.predictor=2",
+        "dng.tiles"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 40x36 RGGB mosaic of 16-bit samples in 32x32 Deflate tiles with horizontal differencing. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.018,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 0.97, mean 0.018. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 36,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/deflate-tiles.frame-0.rgbaf32le.raw",
+                "sha256": "ab98e4bb4687faa71c4c1b853468b9dc1135c248eca3e35f40114f0250d4d922",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 36,
+                "rowBytes": 640,
+                "byteLength": 23040,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/float-16-cfa",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/float-16-cfa.dng",
+        "sha256": "247c3d039b88b1e357c28d0ffc0f32f82bdf180ae94562aeee74b6fefc68739e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "float-16-cfa"
+        }
+      },
+      "features": [
+        "dng.bits=16-float",
+        "dng.cfa=2x2",
+        "dng.compression=deflate",
+        "dng.photometric=cfa",
+        "dng.predictor=34894"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "An RGGB mosaic of 16-bit floating-point samples (half precision), Deflate with the Floating Point X2 predictor of DNG (34894). The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0 units of 1/65535."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 2,
+            "meanAbsoluteError": 0.028,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 1.44, mean 0.028. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/float-16-cfa.frame-0.rgbaf32le.raw",
+                "sha256": "b7425f22c0947aa100d7b11adf4b078b52337ae2be4fb13e17d04c05ef3d10fc",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/float-32",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/float-32.dng",
+        "sha256": "476534b3a115acaf828e15d1783614950e373efe07128e8e35e49c67d54b0b26",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "float-32"
+        }
+      },
+      "features": [
+        "dng.bits=32-float",
+        "dng.compression=deflate",
+        "dng.photometric=linear-raw",
+        "dng.predictor=3"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Linear raw data of three 32-bit floating-point samples, Deflate with the floating-point predictor (3): values up to 0.85 of the white level 1. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0 units of 1/65535."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0079,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 0.41, mean 0.0079. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 32,
+        "height": 20,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/float-32.frame-0.rgbaf32le.raw",
+                "sha256": "0200ddaa41972c7eabbf8a51ef9015588c1131b11570f0cfba6b5e09bc4ba805",
+                "layout": "rgbaf32le",
+                "width": 32,
+                "height": 20,
+                "rowBytes": 512,
+                "byteLength": 10240,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/forward-matrices",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/forward-matrices.dng",
+        "sha256": "4a7d994a1b2329ff4dd66aade8a10adca36982cc29fcf4ab6579c1b832fc24b0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "forward-matrices"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.forward-matrix",
+        "dng.photometric=cfa",
+        "dng.two-illuminants"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Two calibrations (standard light A and D65) with ForwardMatrix1/2, CameraCalibration1/2 and AnalogBalance, interpolated for the AsShotNeutral of about 4700 K. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 2,
+            "meanAbsoluteError": 0.0324,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 1.12, mean 0.0324. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/forward-matrices.frame-0.rgbaf32le.raw",
+                "sha256": "b13976f91cc396436bef0e44b1c314f529ea8182a679ac996544a772df10104f",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/linear-raw-rgb",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/linear-raw-rgb.dng",
+        "sha256": "e9273137d584cfe67e55b5eb8505f1d55b29fe943ab55ff159adbe8f9e0ae5c8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "linear-raw-rgb"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.compression=none",
+        "dng.photometric=linear-raw"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Linear raw data of three 16-bit samples per pixel (a demosaiced image), 40x24. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.008,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 0.42, mean 0.008. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/linear-raw-rgb.frame-0.rgbaf32le.raw",
+                "sha256": "a190281bfb561985ca8b8dea6eb0107e353402c05bf4b7f05dff37cf919227bd",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/linearization-table",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/linearization-table.dng",
+        "sha256": "b92eadb229242871b729d437074cc66e74f8ebbca8d557bf673f31e8e7933757",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "linearization-table"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.linearization",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 40x24 mosaic of 12-bit values stored through a square-root curve, mapped back by a LinearizationTable of 4096 entries, white level 60000. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0006,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 0.09, mean 0.0006. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/linearization-table.frame-0.rgbaf32le.raw",
+                "sha256": "b90ef878a0b8291172350c07bbcc4ab4cfc04973582069679ec37b1b0679acd8",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/monochrome",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/monochrome.dng",
+        "sha256": "96ab8e176c5a1e0f5d3758b69158b2318be63d5323294766b5b4b79e2eaf4eea",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "monochrome"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.compression=none",
+        "dng.photometric=linear-raw"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Linear raw data of one 16-bit sample per pixel without color matrix: a monochrome camera, rendered as gray. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.501 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 54,
+            "meanAbsoluteError": 43.9424,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 53.44, mean 43.9424. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 36,
+        "height": 20,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/monochrome.frame-0.rgbaf32le.raw",
+                "sha256": "3b838c38782360a6f19cadd423833ad419b34edb79047f7717f5acccdc72fbcb",
+                "layout": "rgbaf32le",
+                "width": 36,
+                "height": 20,
+                "rowBytes": 576,
+                "byteLength": 11520,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/opcodes-list1",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/opcodes-list1.dng",
+        "sha256": "3a907264d071c388d66a8371ecbf71ec5335c3f185dbf99841d9722d04d19b56",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "opcodes-list1"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.opcodes=1",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "OpcodeList1: FixBadPixelsConstant (the value 65535), FixBadPixelsList (a point and a 2x2 rectangle), then MapTable on the stored values of the right half. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "Opcode list 1 changes the stored samples. Its stage 2 differs from the linear values of the reference by at most 5220 units of 1/65535: the DNG SDK repairs bad pixels with its own interpolation, which the specification leaves to the reader (the library uses the mean of the good neighbors of the same color)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 71,
+            "meanAbsoluteError": 0.217,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 70.12, mean 0.217. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/opcodes-list1.frame-0.rgbaf32le.raw",
+                "sha256": "d6670d34c9d018c1618d265e9539e164b86831121a17c0318bf440e1b96ba539",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/opcodes-list2",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/opcodes-list2.dng",
+        "sha256": "1596b76427d267547d6ac9dd0c8ccaf8e4260c6c62056c47ad619f6f2f56d83b",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "opcodes-list2"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.opcodes=2",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "OpcodeList2: a GainMap of 3x4 points over the red pixels (pitch 2), ScalePerRow and DeltaPerColumn on one plane, MapPolynomial of degree 2, and an optional WarpFisheye that is skipped. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 1201.495 units of 1/65535: dng_validate 1.7.1 leaves the samples unchanged with DeltaPerRow and DeltaPerColumn (measured with each opcode alone), where the specification adds the deltas; the other opcodes of the list agree."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 10,
+            "meanAbsoluteError": 1.0294,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 9.13, mean 1.0294. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/opcodes-list2.frame-0.rgbaf32le.raw",
+                "sha256": "e6f163457cd55803bbf38bb7414c720134206f78946262a47f7da2497336629e",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 24,
+                "rowBytes": 640,
+                "byteLength": 15360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/opcodes-list3",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/opcodes-list3.dng",
+        "sha256": "fd855c0e99e1de825ecef3c7ce91229cf86fce75963b8e63344f443f56806c4d",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "opcodes-list3"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.opcodes=3",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "OpcodeList3 on the demosaiced image: FixVignetteRadial, a WarpRectilinear with one radial and tangential set, and ScalePerColumn on the blue plane. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 46,
+            "meanAbsoluteError": 0.9049,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 45.95, mean 0.9049. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 28,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/opcodes-list3.frame-0.rgbaf32le.raw",
+                "sha256": "d34a6bb1c6167bd104175e09b3a1d8540fa4bcb4ee0162581b93f691efbd31eb",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 28,
+                "rowBytes": 640,
+                "byteLength": 17920,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/packed-10-bit",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/packed-10-bit.dng",
+        "sha256": "fb9903098128087f20c7c2fd89f571ebba098495608533b74f1f85e3efe00c18",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "packed-10-bit"
+        }
+      },
+      "features": [
+        "dng.bits=10",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 30x18 RGGB mosaic of 10-bit packed samples (rows end on a byte). The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.498 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 2,
+            "meanAbsoluteError": 0.0448,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 1.64, mean 0.0448. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 30,
+        "height": 18,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/packed-10-bit.frame-0.rgbaf32le.raw",
+                "sha256": "2ad093626c7fcc170fad15384ddf6e96670d64fe61cd1db30953618f59ca0c17",
+                "layout": "rgbaf32le",
+                "width": 30,
+                "height": 18,
+                "rowBytes": 480,
+                "byteLength": 8640,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/packed-14-bit",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/packed-14-bit.dng",
+        "sha256": "03a6ed55bbdd205af6072e1686f52f95b41996070c540e64a395d8339070fcca",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "packed-14-bit"
+        }
+      },
+      "features": [
+        "dng.bits=14",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 28x16 RGGB mosaic of 14-bit packed samples. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 11,
+            "meanAbsoluteError": 0.0607,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 10.05, mean 0.0607. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 28,
+        "height": 16,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/packed-14-bit.frame-0.rgbaf32le.raw",
+                "sha256": "f9ea57b9f25434eef0d0f2ba408f6dadc3e864ffa725539f5b1d5ce51309d137",
+                "layout": "rgbaf32le",
+                "width": 28,
+                "height": 16,
+                "rowBytes": 448,
+                "byteLength": 7168,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/sdk-jpeg-xl",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/sdk-jpeg-xl.dng",
+        "sha256": "f9a3754d09b6947d5f2ba852010d182fbabcae7703fe8631fc4c6443b18adcce",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildRewritten)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check, encoder)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "bayer-rggb"
+        },
+        "commands": [
+          "dng_validate -losslessJXL -dng {output} {bayer-rggb}"
+        ]
+      },
+      "features": [
+        "dng.compression=jpeg-xl",
+        "dng.interleave",
+        "dng.preview",
+        "dng.cfa=2x2",
+        "dng.bits=16",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The scene bayer-rggb rewritten by the DNG SDK with -losslessJXL: DNG 1.7.1, a lossless JPEG XL tile whose CFA is stored as four sub-images (RowInterleaveFactor and ColumnInterleaveFactor 2), a JPEG preview in IFD 0. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 4,
+            "meanAbsoluteError": 0.0197,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 3.08, mean 0.0197. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 48,
+        "height": 32,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": {
+            "sha256": "11a553978b6e732124ed55c42fc15efa08e62790c2bb9323afcfa4d549f3adae",
+            "length": 152
+          },
+          "xmp": {
+            "sha256": "8f448e4a5d36dd3215ae99e6535ade9d383395d74258d58653b8394c92429763",
+            "length": 4484
+          }
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/sdk-jpeg-xl.frame-0.rgbaf32le.raw",
+                "sha256": "45e8cd76234071e6d29d7496818bcf74e4f4b4428e2c1f538451da97a321ec1f",
+                "layout": "rgbaf32le",
+                "width": 48,
+                "height": 32,
+                "rowBytes": 768,
+                "byteLength": 24576,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/sdk-lossless-jpeg",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/sdk-lossless-jpeg.dng",
+        "sha256": "4fc461bdcef2ed80ae529f1221a3153bbeb9099e969a750244c5928c273d3c01",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildRewritten)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check, encoder)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "bayer-rggb"
+        },
+        "commands": [
+          "dng_validate -dng {output} {bayer-rggb}"
+        ]
+      },
+      "features": [
+        "dng.compression=lossless-jpeg",
+        "dng.preview",
+        "dng.cfa=2x2",
+        "dng.bits=16",
+        "dng.photometric=cfa"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The scene bayer-rggb rewritten by the DNG SDK (dng_validate -dng): lossless JPEG tiles of two components, an 8-bit RGB preview in IFD 0. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 4,
+            "meanAbsoluteError": 0.0197,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 3.08, mean 0.0197. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 48,
+        "height": 32,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": {
+            "sha256": "11a553978b6e732124ed55c42fc15efa08e62790c2bb9323afcfa4d549f3adae",
+            "length": 152
+          },
+          "xmp": {
+            "sha256": "8f448e4a5d36dd3215ae99e6535ade9d383395d74258d58653b8394c92429763",
+            "length": 4484
+          }
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/sdk-lossless-jpeg.frame-0.rgbaf32le.raw",
+                "sha256": "45e8cd76234071e6d29d7496818bcf74e4f4b4428e2c1f538451da97a321ec1f",
+                "layout": "rgbaf32le",
+                "width": 48,
+                "height": 32,
+                "rowBytes": 768,
+                "byteLength": 24576,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/thumbnail-exif-xmp",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/thumbnail-exif-xmp.dng",
+        "sha256": "ab3b28c0c4629c9766c81b59da3f247958d0047cdeb590ae8ce02e61422c176c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "thumbnail-exif-xmp"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.orientation",
+        "dng.photometric=cfa",
+        "dng.preview",
+        "dng.xmp"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "IFD 0 is a 16x12 RGB thumbnail (NewSubFileType 1) whose SubIFD is the raw image; IFD 0 also points to an EXIF IFD and holds an XMP packet, a serial number, a profile name and the orientation 6. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "The DNG SDK applies the orientation of the file to its rendering, which the library reports and does not apply: not compared pixel by pixel."
+          }
+        ]
+      },
+      "expected": {
+        "width": 32,
+        "height": 24,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 6,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": {
+            "sha256": "7d9874b7ce60647682b22a745863acce4381354ab343269d79ddde464754b40f",
+            "length": 148
+          },
+          "xmp": {
+            "sha256": "05c03da7295687609231d6f5bd09e82f8bd76cf9168aaa973ecaa930949077ac",
+            "length": 223
+          }
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/thumbnail-exif-xmp.frame-0.rgbaf32le.raw",
+                "sha256": "e3e60fa1fb5089562ff7b3309f1baee1ca00659dd51c91a02b79dd0e1534655e",
+                "layout": "rgbaf32le",
+                "width": 32,
+                "height": 24,
+                "rowBytes": 512,
+                "byteLength": 12288,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "dng/tiles",
+      "kind": "valid",
+      "format": "dng",
+      "input": {
+        "path": "dng/tiles.dng",
+        "sha256": "2198858becd22dbc23e9ebd01eb90f355b409b9cfdfac4a197f670f595aa9f2f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (DngScenes)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "scene": "tiles"
+        }
+      },
+      "features": [
+        "dng.bits=16",
+        "dng.cfa=2x2",
+        "dng.compression=none",
+        "dng.photometric=cfa",
+        "dng.tiles"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 40x40 RGGB mosaic of 16-bit samples in 16x16 tiles (the last ones padded), uncompressed. The reference is the rendering of the default crop to scene-referred linear light: the linear values of chapter 5, the opcodes, the bilinear demosaicing, and the camera to XYZ (D50) transform of chapter 6 adapted to linear BT.709 (D65) by Bradford, with the baseline exposure; an alpha of 1.",
+        "crossChecks": [
+          {
+            "decoder": "ReferenceDng (test harness: an independent implementation of the processing model of the DNG specification 1.7.1)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "notes": "The reference renders the samples of the scene with the tags of the file."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
+            "excludedFromTolerance": true,
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
+          },
+          {
+            "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
+            "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0162,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 0.9, mean 0.0162. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+          }
+        ]
+      },
+      "expected": {
+        "width": 40,
+        "height": 40,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "dng/tiles.frame-0.rgbaf32le.raw",
+                "sha256": "ea4ff94aebb2065a0093c4f736c81cd8b36a629aeea445ae0a6e3844942a9f34",
+                "layout": "rgbaf32le",
+                "width": 40,
+                "height": 40,
+                "rowBytes": 640,
+                "byteLength": 25600,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
       "id": "exr/b44-float-rgb",
       "kind": "valid",
       "format": "exr",
@@ -63325,6 +66499,381 @@
         "format": "Bmp"
       },
       "notes": "biWidth is 0; a positive width is required."
+    },
+    {
+      "id": "invalid/dng/active-area-outside",
+      "kind": "invalid",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/active-area-outside.dng",
+        "sha256": "4363dec0d3f8925802aa28247b054e704550d55eed6b5b55ba245d1a2a054d19",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Dng"
+      },
+      "notes": "An ActiveArea of 40 rows in an image of 32."
+    },
+    {
+      "id": "invalid/dng/backward-version",
+      "kind": "unsupported",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/backward-version.dng",
+        "sha256": "4060218984bd068bf20789455591d5f5498a3aff1bf03907a6e42eeb278fb868",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildUnsupported)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Dng",
+        "feature": "DNGBackwardVersion: 2.0.0.0"
+      },
+      "notes": "A DNGBackwardVersion of 2.0.0.0: the file needs a newer reader."
+    },
+    {
+      "id": "invalid/dng/cfa-layout-staggered",
+      "kind": "unsupported",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/cfa-layout-staggered.dng",
+        "sha256": "d1833966cd5faef8a03df44b2804e779b76cf69c8b67612a066cea7804b63ab6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildUnsupported)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Dng",
+        "feature": "CFALayout: 2"
+      },
+      "notes": "A staggered color filter array (CFALayout 2, the Fujifilm SuperCCD), which is not interpolated."
+    },
+    {
+      "id": "invalid/dng/cfa-pattern-color-unlisted",
+      "kind": "invalid",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/cfa-pattern-color-unlisted.dng",
+        "sha256": "dbe26a361d20485b862517f4b562dd371cda72a6c3e22367e8c48cd060dbe307",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Dng"
+      },
+      "notes": "The CFAPattern uses the color 2 (blue), which CFAPlaneColor (0, 1, 3) does not list."
+    },
+    {
+      "id": "invalid/dng/color-matrix-singular",
+      "kind": "invalid",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/color-matrix-singular.dng",
+        "sha256": "d8f88fcfce3f4de8ea89df491fb883b175120a9a286e4da5faed33e7ee9cb0bf",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Dng"
+      },
+      "notes": "A ColorMatrix1 whose rows are not independent: it cannot be inverted."
+    },
+    {
+      "id": "invalid/dng/default-crop-outside",
+      "kind": "invalid",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/default-crop-outside.dng",
+        "sha256": "ecca3cbe87d4de37b5a7953443d4982f039b9965e2976f0f20c36b8a8cace7d6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Dng"
+      },
+      "notes": "A DefaultCropSize wider than the active area."
+    },
+    {
+      "id": "invalid/dng/default-scale",
+      "kind": "unsupported",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/default-scale.dng",
+        "sha256": "b036f779af1625d9af39b49f8fd30aca88b23a69af13e126e7e292b5c6e364c7",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildUnsupported)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Dng",
+        "feature": "DefaultScale"
+      },
+      "notes": "Non-square pixels (DefaultScale 2, 1), which are not resampled."
+    },
+    {
+      "id": "invalid/dng/dng-version-zero",
+      "kind": "invalid",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/dng-version-zero.dng",
+        "sha256": "eef1c78a8929a2766fd7f0d7e4185398d4125238f235fb0f58f411b65f99ef99",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Dng"
+      },
+      "notes": "A DNGVersion of 0.0.0.0."
+    },
+    {
+      "id": "invalid/dng/missing-cfa-pattern",
+      "kind": "invalid",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/missing-cfa-pattern.dng",
+        "sha256": "18404720fa148211961233e881dca84c5c2c18221e1b40ff154ea4333df92ec8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Dng"
+      },
+      "notes": "A color filter array without its CFAPattern tag."
+    },
+    {
+      "id": "invalid/dng/opcode-list-truncated",
+      "kind": "invalid",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/opcode-list-truncated.dng",
+        "sha256": "c09d8ccb066c795f3a54356e4fcb6ab84b9b37a8e18a5d1fb1fc750a25824a1e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Dng"
+      },
+      "notes": "An OpcodeList2 whose opcode declares 256 bytes of parameters, which the list does not have."
+    },
+    {
+      "id": "invalid/dng/required-opcode",
+      "kind": "unsupported",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/required-opcode.dng",
+        "sha256": "ffc4e62167cf10acd5471f14d7299f04f2111555bcf0373ec4c98c55bc999c24",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildUnsupported)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Dng",
+        "feature": "Opcode: TrimBounds"
+      },
+      "notes": "An OpcodeList3 with a required TrimBounds opcode, which is not implemented (a lenient decoding skips it)."
+    },
+    {
+      "id": "invalid/dng/signed-samples",
+      "kind": "unsupported",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/signed-samples.dng",
+        "sha256": "0b05d9ddd1c3de9643c8900f62e9f17d6d0a019d79bed4f70d822f76c32261aa",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildUnsupported)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Dng",
+        "feature": "SampleFormat: signed integers in a raw IFD"
+      },
+      "notes": "Signed integer samples, which DNG does not use."
+    },
+    {
+      "id": "invalid/dng/third-illuminant",
+      "kind": "unsupported",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/third-illuminant.dng",
+        "sha256": "897348d280879b5f913163a8b3245970ee204adc5655dcb523fe72930bff25f3",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildUnsupported)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Dng",
+        "feature": "CalibrationIlluminant3"
+      },
+      "notes": "A third calibration (CalibrationIlluminant3, DNG 1.6)."
+    },
+    {
+      "id": "invalid/dng/truncated-samples",
+      "kind": "invalid",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/truncated-samples.dng",
+        "sha256": "b6c19e7cc26edab7373ac2fa3cf16fcc0d1f84b83c7238159c63dac163d1ea75",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Dng"
+      },
+      "notes": "The strip of the raw image starts 100 bytes before the end of the file, which it runs past."
+    },
+    {
+      "id": "invalid/dng/white-below-black",
+      "kind": "invalid",
+      "format": "dng",
+      "input": {
+        "path": "invalid/dng/white-below-black.dng",
+        "sha256": "66375f55be59d1cf9dcf419bd5b74dfc7f493da60e85b8f709ae5a4d2260ff8d",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildInvalid)",
+        "tools": [
+          "Adobe DNG SDK 1.7.1 (dng_validate, cross-check)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Dng"
+      },
+      "notes": "A black level of 5000 above the white level of 4000."
     },
     {
       "id": "invalid/exr/chunk-coordinates",
@@ -100882,6 +104431,64 @@
         }
       },
       "notes": "Reuses the 7x3 bmp/palette8-partial-gap input with MaxWidth = 5 (checked from the DIB header, before the palette and the pixel data are read)."
+    },
+    {
+      "id": "limit/dng/frame-pixels-over-limit",
+      "kind": "limit",
+      "format": "dng",
+      "input": {
+        "path": "limit/dng/frame-pixels-over-limit.dng",
+        "sha256": "337907b28f38f65ccdb57a5886b7daa474d8e31ce53ded3967d6ea920f765aa0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildLimits)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "ImageResourceLimitException",
+        "limitKind": "FramePixels"
+      },
+      "decodeOptions": {
+        "limits": {
+          "MaxFramePixels": 1535
+        }
+      },
+      "notes": "The raw image has 1,536 pixels."
+    },
+    {
+      "id": "limit/dng/metadata-bytes-over-limit",
+      "kind": "limit",
+      "format": "dng",
+      "input": {
+        "path": "limit/dng/metadata-bytes-over-limit.dng",
+        "sha256": "b5a11c6f23bdd52cfe80aaf1865cd20978b3b9b2f82cbabdce3d7563ad0e79b0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs (BuildLimits)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "ImageResourceLimitException",
+        "limitKind": "MetadataBytes"
+      },
+      "decodeOptions": {
+        "limits": {
+          "MaxMetadataBytes": 65536
+        }
+      },
+      "notes": "An OpcodeList2 of 131,124 bytes (a MapTable of 65,536 entries)."
     },
     {
       "id": "limit/exr/frame-pixels-over-limit",

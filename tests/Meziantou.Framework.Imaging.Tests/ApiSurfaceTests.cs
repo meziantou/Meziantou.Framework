@@ -351,11 +351,23 @@ public sealed class ApiSurfaceTests
     }
 
     [Fact]
-    public void PsdIsTheLastFormat()
+    public void PsdKeepsItsValue()
     {
         // A new format is appended: the values of the existing members never change. PSD is read only: no public type of its own
         Assert.Equal(19, (int)ImageFormat.Psd);
-        Assert.Equal(19, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
+    }
+
+    [Fact]
+    public void DngAdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(20, (int)ImageFormat.Dng);
+
+        var type = typeof(DngRawImage);
+        Assert.Equal("Meziantou.Framework.Imaging", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && typeof(IDisposable).IsAssignableFrom(type));
+        Assert.True(typeof(DngProperties).IsPublic && typeof(DngProperties).IsSealed);
+        Assert.Equal(typeof(DngProperties), typeof(ImageMetadata).GetProperty(nameof(ImageMetadata.DngProperties))!.PropertyType);
     }
 
     [Fact]

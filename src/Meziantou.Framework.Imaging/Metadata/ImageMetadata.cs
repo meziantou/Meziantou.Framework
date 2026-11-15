@@ -128,6 +128,14 @@ public sealed class ImageMetadata
     /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
     public RadianceHeader? RadianceHeader { get; set; }
 
+    /// <summary>
+    /// Gets or sets the properties of the DNG file the image was rendered from (its version and the camera that wrote it),
+    /// or <see langword="null"/> for the other formats. This is informational only, like <see cref="SourceFormat"/>: it
+    /// describes the file, not the pixels.
+    /// </summary>
+    /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
+    public DngProperties? DngProperties { get; set; }
+
     /// <summary>Gets or sets the EXIF profile, or <see langword="null"/> if none.</summary>
     public ExifProfile? ExifProfile { get; set; }
 
@@ -165,6 +173,7 @@ public sealed class ImageMetadata
             PixelAspectRatio = PixelAspectRatio,
             OpenExrWindows = OpenExrWindows,
             RadianceHeader = RadianceHeader,
+            DngProperties = DngProperties,
             ExifProfile = ExifProfile,
             XmpProfile = XmpProfile,
         };

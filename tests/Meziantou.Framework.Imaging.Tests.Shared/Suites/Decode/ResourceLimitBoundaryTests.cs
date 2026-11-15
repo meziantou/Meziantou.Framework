@@ -30,7 +30,11 @@ public sealed class ResourceLimitBoundaryTests
 
                 foreach (var context in Contexts)
                 {
-                    data.Add(id, context);
+                    // A random-access container is not read sequentially (FixtureTraits.IsReadByRandomAccessOnly)
+                    if (context != "reader" || !FixtureTraits.IsReadByRandomAccessOnly(GoldenCorpus.Default.Get(id)))
+                    {
+                        data.Add(id, context);
+                    }
                 }
             }
 

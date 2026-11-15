@@ -22,10 +22,11 @@ internal static class TiffDirectoryChain
     /// <param name="source">The input.</param>
     /// <param name="header">The file header.</param>
     /// <param name="limits">The limits bounding the number of directories.</param>
+    /// <param name="first">The first directory when it is already read, or <see langword="null"/>.</param>
     /// <returns>The directories, in file order.</returns>
     /// <exception cref="InvalidImageContentException">The chain has a cycle, overlaps itself, or references bytes outside the input.</exception>
     /// <exception cref="ImageResourceLimitException">The document has more directories than <see cref="ImageResourceLimits.MaxFrames"/>.</exception>
-    public static IEnumerable<TiffDirectory> Enumerate(RandomAccessSource source, TiffHeader header, ImageResourceLimits limits)
+    public static IEnumerable<TiffDirectory> Enumerate(RandomAccessSource source, TiffHeader header, ImageResourceLimits limits, TiffDirectory? first = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(limits);
@@ -41,7 +42,7 @@ internal static class TiffDirectoryChain
             if (count >= limits.MaxFrames)
                 throw new ImageResourceLimitException(ImageResourceLimitKind.Frames, limits.MaxFrames, (long)limits.MaxFrames + 1);
 
-            var directory = TiffDirectory.Read(source, header, offset);
+            var directory = count == 0 && first is not null ? first : TiffDirectory.Read(source, header, offset);
             var start = (long)offset;
             var end = start + directory.Length;
             foreach (var (otherStart, otherEnd) in ranges)

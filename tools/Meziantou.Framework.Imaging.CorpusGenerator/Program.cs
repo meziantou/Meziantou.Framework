@@ -39,6 +39,10 @@ const string Usage = """
         exr           OpenEXR fixtures: every compression, sample type, tiles and levels, windows, line orders and
                       chromaticities, malformed, unsupported and over-limit files (exr-from-raw and exr-to-raw, built with
                       OpenEXR, and the ffmpeg of the pinned meziantou/prebuilt release; the sample images of OpenEXR)
+        dng           DNG fixtures: color filter arrays and linear raw data, bit depths, compressions, predictors, tiles,
+                      the mapping to linear values, camera profiles, opcode lists, files rewritten by the DNG SDK,
+                      malformed, unsupported and over-limit files (assembled from the specification, and dng_validate of
+                      the pinned meziantou/prebuilt release; any OS)
         hdr           Radiance HDR fixtures: flat, old and new run-length encoded scanlines, the eight orientations,
                       header variables and primaries, XYZE, malformed and over-limit files (assembled from the
                       specification, and the ffmpeg of the pinned meziantou/prebuilt release; any OS)
@@ -186,6 +190,8 @@ try
             return RadianceCorpus.Run(options);
         case "psd":
             return PsdCorpus.Run(options);
+        case "dng":
+            return DngCorpus.Run(options);
         case "icc":
             if (iccProfiles is null)
             {

@@ -4,8 +4,9 @@ A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG
 (still and animated, lossless and lossy), QOI, BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and animated
 cursor (ANI), AVIF and HEIC (still and animated, lossless and lossy), JPEG XL (still and animated, lossless and
 lossy, progressive), JPEG 2000 (lossless and lossy), OpenEXR and Radiance HDR (high dynamic range, floating-point
-samples) decoding and encoding, PSD/PSB (the composite image of Adobe Photoshop documents) decoding, lossless JPEG
-recompression, animation-aware processing, vector drawing, ICC color conversion, and bounded-memory streaming.
+samples) decoding and encoding, PSD/PSB (the composite image of Adobe Photoshop documents) decoding, DNG (raw camera
+images) decoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC color conversion, and
+bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive/lossless JPEG, WebP (still and animated, lossless and lossy), QOI,
   BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline and progressive
@@ -30,6 +31,10 @@ recompression, animation-aware processing, vector drawing, ICC color conversion,
 - PSD and PSB (Adobe Photoshop) decoding of the composite image Photoshop stores next to the layers: bitmap,
   grayscale, duotone, indexed, RGB, CMYK and Lab documents of 1 to 32 bits, raw and RLE image data, merged alpha
   (un-matted), resolution, ICC/EXIF/XMP; the layers are not rendered, and no encoder writes the format
+- DNG (Adobe Digital Negative) decoding: color filter arrays of any pattern and linear raw data, 8 to 16-bit and
+  floating-point samples, uncompressed, Deflate, lossless JPEG, lossy JPEG and JPEG XL; the processing of the
+  specification (linearization, black and white levels, opcode lists, camera profiles), a documented bilinear
+  demosaicing, rendered to scene-referred linear light; the raw mosaic through `DngRawImage`; previews as auxiliary images
 - AVIF decoding and encoding with a fully managed AV1 decoder and a fully managed AV1 encoder: still images and
   animations, lossless and lossy, 8, 10 and 12 bits, alpha; grids and film grain are decoded
 - HEIC decoding and encoding with a fully managed HEVC (H.265) decoder and a fully managed HEVC encoder: the photos of
@@ -114,6 +119,7 @@ copied from code that compiles, and most of them also run in the test suite.
   - [OpenEXR](#openexr)
   - [Radiance HDR](#radiance-hdr)
   - [PSD](#psd)
+  - [DNG](#dng)
 - [Limitations](#limitations)
 
 ## Quick start
@@ -201,6 +207,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | OpenEXR | Scan-line and tiled files (any level of mipmaps and ripmaps, `OpenExrDecodingOptions.LevelX` and `LevelY`; the levels and the preview image listed by `AuxiliaryImageCollection`), one part of a multi-part file (`OpenExrDecodingOptions.Part`), deep data flattened (`OpenExrDecodingOptions.DeepData`); HALF, FLOAT and UINT samples; R, G, B, A and Y (luminance) channels, or one layer of a file with other channels (`OpenExrDecodingOptions.Layer`); NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB and ZSTD, HTJ2K256 and HTJ2K32 of HALF channels; data and display windows, an overscan cropped or decoded whole (`OpenExrDecodingOptions.WindowMode`); chromaticities | Single-part scan-line files of half or float samples, lossless: NONE, RLE, ZIPS, ZIP (default) or PIZ (seekable destination when compressed); chromaticities | `.exr` |
 | Radiance HDR | RGBE pictures (`#?RADIANCE` or `#?RGBE`); flat, "old" and "new" run-length encoded scanlines, mixed; the eight orientations of the resolution string; the header variables reported in `Metadata.RadianceHeader` (never applied); the primaries as a color label. XYZE pictures are identified and rejected by a load | RGBE pictures in the standard orientation, new run-length encoding (default) or flat; the primaries | `.hdr`, `.pic` |
 | PSD | The composite image of PSD (version 1) and PSB (version 2) files, not the layers; bitmap, grayscale, duotone (as gray), indexed, RGB, CMYK (as CMYK pixels or with a color conversion) and Lab (with a color conversion) documents, 1, 8, 16 and 32-bit samples; raw and RLE (PackBits) image data; the merged alpha channel, un-matted; resolution, ICC/EXIF/XMP | Not written | None (read only) |
+| DNG | Raw images of DNG 1.0 to 1.7.1 (a TIFF profile, both byte orders, BigTIFF): color filter arrays of rectangular patterns up to 16x16 (Bayer, CMYG, X-Trans kind) and linear raw data of 1 to 4 samples; integer samples of 8 to 16 bits and floating-point ones of 16, 24 and 32 bits; strips and tiles; uncompressed, Deflate (with the predictors of DNG), lossless JPEG, lossy JPEG and JPEG XL; the linearization, black and white levels, active area, default crop, camera profiles of one or two illuminants, baseline exposure and the common opcodes; rendered to `RgbaFloat` linear light (BT.709 primaries), demosaiced bilinearly; the raw mosaic through `DngRawImage`; previews as auxiliary images; EXIF, XMP, orientation (reported) | Not supported (`ImageEncoder.Create` and `Save(path)` reject DNG) | None |
 | ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
 
 ## Usage guide
@@ -686,8 +693,8 @@ linear light where 1 is the reference white of a standard dynamic range: a color
 or negative (outside the gamut of the primaries), and alpha is a coverage from 0 to 1. A new image of these types is
 labeled `ColorTransferFunction.Linear`; a conversion never converts colors, so `CloneAs` and typed loads keep the label of
 their source (an sRGB `Rgba64` image becomes sRGB-encoded floats). OpenEXR and Radiance HDR files and the floating-point
-pages of TIFF decode to them: OpenEXR files load as `RgbaHalf` or `RgbaFloat` in linear light, Radiance HDR files as
-`RgbaFloat`, and untyped `Load` of a TIFF page picks
+pages of TIFF decode to them: OpenEXR files load as `RgbaHalf` or `RgbaFloat` in linear light, Radiance HDR and DNG files
+as `RgbaFloat`, and untyped `Load` of a TIFF page picks
 `RgbaHalf` for half-precision samples and `RgbaFloat` for the others, labeled linear light unless an ICC profile
 describes them. JPEG XL files of floating-point samples load the same way (`RgbaHalf` when every sample is a
 half-precision number), and so do its integer samples of 17 to 24 bits as `RgbaFloat`, labeled with the color encoding
@@ -4081,7 +4088,8 @@ the Unicode Consortium.
 
 ### Metadata, color profiles and orientation
 
-`Image.Metadata` holds the source format, the windows of an OpenEXR file and the header of a Radiance HDR file
+`Image.Metadata` holds the source format, the windows of an OpenEXR file, the header of a Radiance HDR file and the
+properties of a DNG file
 (informational only), the EXIF orientation, the
 resolution, the pixel aspect ratio, ICC/EXIF/XMP profiles (byte-for-byte payloads), the CICP color description, the
 content light level, the mastering display color volume and text entries.
@@ -4548,8 +4556,9 @@ public static (string Lab, double Difference, Rgba32[] Palette, Rgba32 Tint, Rgb
 ### Auxiliary images and HDR gain maps
 
 Phone photos store more than one image: the thumbnails, depth maps, segmentation mattes and gain maps of HEIC and AVIF
-files, and the gain map that follows the primary image of an Ultra HDR JPEG file. OpenEXR files store a preview image and,
-when they are tiled with mipmap or ripmap levels, the lower resolution levels of their image. `Image.Load` and `Image.Identify`
+files, the gain map that follows the primary image of an Ultra HDR JPEG file, and the previews, depth maps and
+semantic masks of a DNG file (each decoded as a TIFF page). OpenEXR files store a preview image and, when they are
+tiled with mipmap or ripmap levels, the lower resolution levels of their image. `Image.Load` and `Image.Identify`
 never read them: decoding a photo gives the same image as for a file without them. `AuxiliaryImageCollection.Load`
 lists them, from the structure of the file, and decodes each one on request.
 
@@ -4838,8 +4847,8 @@ pixels only), `.tif`/`.tiff`, `.ico`, `.cur`, `.ani`, `.avif`/`.avifs` (lossless
 lossless by default), `.j2k`/`.j2c`/`.jpc` (a JPEG 2000 codestream, lossless by default), `.jph`/`.jhc` (a JPH file or
 a codestream of the high-throughput block coder, lossless by default), `.exr` (OpenEXR, ZIP) and `.hdr`/`.pic` (Radiance
 HDR, run-length encoded); anything else throws
-`ArgumentException`, the `.jpx`, `.jpf`, `.psd` and `.psb` extensions included (these files are read, not written; and
-`ImageEncoder.Create(ImageFormat.Psd)` throws `ArgumentOutOfRangeException`). An eager save validates the whole image against the output (animation, poster,
+`ArgumentException`, the `.jpx`, `.jpf`, `.psd`, `.psb` and `.dng` extensions included (these files are read, not
+written; and `ImageEncoder.Create` throws `ArgumentOutOfRangeException` for `ImageFormat.Psd` and `ImageFormat.Dng`). An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
 `ImageEncoder.FromFileExtension` returns the encoder `Save(path)` selects for an extension (`.png` or `png`), and
@@ -4955,6 +4964,7 @@ public static Image LoadLeniently(string path)
 | TIFF | More `BitsPerSample` or `SampleFormat` values than samples | The values past the number of samples are ignored, even when they differ |
 | TIFF | More `StripByteCounts` or `TileByteCounts` values than blocks | The values past the number of blocks are ignored |
 | TIFF | A page of one uncompressed strip or tile (not YCbCr) without byte counts, or one strip whose byte count is smaller than its rows | The block is read for the length of its rows (a full tile); a block that runs past the end of the file is still rejected |
+| DNG | A required opcode the decoder does not implement (WarpFisheye, TrimBounds, WarpRectilinear2, an ID of a later version) | Skipped, as the optional ones always are: the image is rendered without it |
 | OpenEXR | An offset table with entries before its own end (zeros, typically: a writer that stopped before patching the table) | The table is rebuilt from the chunks, which must follow it without a gap: scan lines in their line order (increasing for random order), tiles in any order; the valid entries must give the offsets of their chunks, and a missing, repeated or truncated chunk is still rejected |
 
 ### Extension points
@@ -6245,6 +6255,79 @@ Eager loads, `Identify` and sequential readers (one frame) share one parser. The
 and no lenient repair: a truncated file, an image resource or a tagged block past the end of its section, an RLE row
 of another length and an unknown compression are `InvalidImageContentException`. A typed load converts the decoded
 image like `CloneAs`.
+### DNG
+
+DNG (Adobe Digital Negative, `.dng`) stores the raw samples of a camera sensor in a TIFF profile, with what a reader
+needs to turn them into colors: the levels of the sensor, the color filter array, a camera profile and corrections. The
+decoder is written from the DNG specification 1.7.1.0 and reuses the TIFF reader of the library for the directories, the
+strips and tiles, Deflate and the predictors, lossless JPEG (through the JPEG decoder) and JPEG XL (through the JPEG XL
+decoder). A DNG file is recognized by the `DNGVersion` tag of its first directory: `Image.DetectFormat` reports
+`ImageFormat.Dng` when the prefix holds that directory (`ImageFormat.Tiff` otherwise), and `Identify` and `Load` always
+tell. `Load` renders the raw image to `RgbaFloat` pixels of scene-referred linear light, the primaries of BT.709 and the
+D65 white point (`ColorTransferFunction.Linear`), the size of the default crop; `ImageMetadata.DngProperties` holds the
+version, the camera and the baseline exposure. DNG is not written, and `ImageCollection` rejects it (a single raw image);
+a sequential `ImageReader` rejects it like a TIFF file.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Dng;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static (Image<RgbaFloat> Rendering, Image<Rgba32> Display, string? Camera, float FirstLinearValue) ReadDng(string dngPath)
+{
+    // DNG files render to RgbaFloat: scene-referred linear light (BT.709 primaries), the size of the default crop
+    var rendering = Image.Load<RgbaFloat>(dngPath);
+    var camera = rendering.Metadata.DngProperties?.UniqueCameraModel;
+
+    // The raw image before the demosaicing: the stored samples, the levels, the pattern and the linear values
+    using var raw = DngRawImage.Load(dngPath);
+    var row = new float[raw.ActiveArea.Width * raw.SamplesPerPixel];
+    raw.CopyLinearRow(0, row);
+
+    // The highlights are above 1: a display version tone maps them into 8-bit sRGB
+    var display = Image.Load<Rgba32>(dngPath, new ImageDecodeOptions
+    {
+        Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
+    });
+    return (rendering, display, camera, row[0]);
+}
+```
+<!-- endref -->
+
+The rendering follows the processing model of the specification, each stage in single precision computed in double
+precision:
+
+1. The stored samples (stage 1), and opcode list 1.
+2. The linear values of the active area (stage 2): the linearization table, then `(value - black) / (white - maxBlack)`,
+   the black level of a pixel being its entry of the repeating `BlackLevel` pattern (whose origin is the top-left corner
+   of the active area) plus `BlackLevelDeltaH` of its column and `BlackLevelDeltaV` of its row; clipped to [0, 1]. Then
+   opcode list 2.
+3. The demosaicing (stage 3): the color of a pixel is its sample; another color is the mean of the samples of that color
+   in the smallest square window centered on the pixel (3x3, 5x5, ...) that holds at least one of them inside the active
+   area. For a Bayer pattern this is the bilinear interpolation. Linear raw data is its own stage 3. Then opcode list 3.
+4. The default crop, then the camera to XYZ (D50) transform of chapter 6 of the specification, adapted to linear BT.709
+   (D65) with Bradford, times 2 to the power of `BaselineExposure` plus `BaselineExposureOffset`.
+
+The demosaicing of the DNG SDK and of LibRaw are their own: no reader gives the pixels of another one. `DngRawImage`
+gives what precedes the demosaicing, which does not depend on the reader: the stored samples (`CopyStoredRow`), the
+linear values (`CopyLinearRow`), the pattern, the levels and the areas. Its stages 1 and 2 are those of `dng_validate`
+(the DNG SDK) to within its 16-bit rounding, and the rendering differs from the one of `dng_validate` (with an identity
+tone curve) by up to 12 levels of 8-bit sRGB, 0.3 on average, on the test scenes.
+
+| | Reading |
+| --- | --- |
+| Structure | The SubIFD tree of the first directory (at most 64 directories, no cycle); the raw image is its first directory of `NewSubFileType` 0; a `DNGBackwardVersion` newer than 1.7.1 is `UnsupportedImageFeatureException` |
+| Samples | `CFA` (one sample per pixel, any rectangular `CFAPattern` up to 16x16 and `CFAPlaneColor` of 1 to 4 colors) and `LinearRaw` (1 to 4 samples); integers of 8 to 16 bits (packed most significant bit first, whatever the byte order of the file) and floats of 16, 24 and 32 bits; strips and tiles of any size; `RowInterleaveFactor` and `ColumnInterleaveFactor` |
+| Compression | None; Deflate (8) with no predictor, horizontal differencing (2) or the floating-point predictor (3), and their X2 and X4 variants (34892 to 34895); lossless JPEG (7), whose frames may have another shape and two components ("only the total sample counts need to match"); lossy JPEG (34892) of 8-bit linear raw data; JPEG XL (52546) |
+| Levels | `LinearizationTable`, `BlackLevelRepeatDim`, `BlackLevel`, `BlackLevelDeltaH`, `BlackLevelDeltaV`, `WhiteLevel` |
+| Geometry | `ActiveArea`; `DefaultCropOrigin` and `DefaultCropSize` (fractions rounded to whole pixels); `DefaultScale` other than 1 is rejected; the orientation is reported (`Metadata.Orientation`), never applied |
+| Color | `ColorMatrix1/2`, `ForwardMatrix1/2` (used when both calibrations have one), `CameraCalibration1/2` (when `CameraCalibrationSignature` equals `ProfileCalibrationSignature`), `AnalogBalance`, `ReductionMatrix` not needed (the pseudo-inverse serves 4 colors); the white balance of `AsShotNeutral` (found by the iteration of chapter 6) or `AsShotWhiteXY` (D50 without either); two calibrations interpolated in inverse correlated color temperature (Robertson's method; the nominal temperatures of the EXIF light sources); without forward matrices, the Bradford adaptation from the white to D50, the neutral mapped to Y = 1; a monochrome image without color matrix is gray |
+| Opcodes | WarpRectilinear (bilinear resampling), FixVignetteRadial, FixBadPixelsConstant and FixBadPixelsList (the mean of the good pixels of the same color two pixels away in the four directions, and for green the four diagonal neighbors), MapTable, MapPolynomial, GainMap (sampled at the center of each pixel), DeltaPerRow, DeltaPerColumn, ScalePerRow and ScalePerColumn; list 1 works on the stored values divided by 65,535 and rounds back; the warps and the vignette use the continuous coordinates of the image, as the DNG SDK does; the others are skipped when optional, and rejected otherwise |
+| Metadata | `DngProperties` (`DNGVersion`, `DNGBackwardVersion`, `UniqueCameraModel`, `LocalizedCameraModel`, `Make`, `Model`, `CameraSerialNumber`, `ProfileName`, `BaselineExposure`); the XMP packet of the first directory; an EXIF profile assembled from the EXIF IFD and the make, model, software, date, artist, copyright and description of the first directory; the ICC profiles of the file describe its previews, not the rendering |
+| Previews | `AuxiliaryImageCollection` lists the previews (`Thumbnail`), alternate previews, transparency masks, depth maps (`Depth`), the enhanced image and the semantic masks (`Matte`), each decoded as a TIFF page |
+
+Differences with the DNG SDK, measured with `dng_validate` 1.7.1 on the test scenes: it repairs bad pixels with an
+interpolation of its own (the specification leaves it to the reader), it leaves the samples unchanged with DeltaPerRow
+and DeltaPerColumn in opcode list 2 (the specification adds the deltas, as the library does), and its BlackLevelDeltaH
+and BlackLevelDeltaV give linear values within 2 units of 1/65535. Region decoding renders the whole image and crops it;
+a scaled decode is at full resolution (an exact scale is rejected).
 
 ## Limitations
 
@@ -6281,6 +6364,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | OpenEXR | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): multi-part files unless `OpenExrDecodingOptions.Part` selects a part, deep data unless `OpenExrDecodingOptions.DeepData` flattens them (and deep data without `Z` or `A`), the LJ2K compression, the HTJ2K256 and HTJ2K32 compressions of FLOAT or UINT channels, channels other than R, G, B, A and Y (layers, depth, `RY`/`BY` chroma, extra channels: they would be lost) unless `OpenExrDecodingOptions.Layer` selects a layer, the chroma channels `RY` and `BY` also in a layer, sub-sampled color channels (a sub-sampled channel that a layer ignores is fine), a data window that leaves the display window (its pixels would be lost) unless `OpenExrDecodingOptions.WindowMode` crops it or decodes the data window, UINT samples that a float cannot hold exactly, and versions other than 2. The lower levels of mipmaps and ripmaps are decoded only on request (`OpenExrDecodingOptions.LevelX` and `LevelY`, `AuxiliaryImageCollection`), and the preview image by `AuxiliaryImageCollection` only. Not decoded: the attributes other than the windows, the chromaticities and the preview. Encoding: one still image, scan lines only (no tiles), half or float samples (no UINT), no lossy compression (PXR24, B44, DWA), no attributes other than the required ones and the chromaticities, linear light only
 | Radiance HDR | Decoding: XYZE pictures (identified, rejected by a load: no conversion of their CIE XYZ samples to RGB), `FORMAT` values other than RGBE and XYZE (hyperspectral pictures, other data); the exposure and the color correction are reported, never applied. Encoding: RGBE only, one still image in the standard orientation, no alpha (a background composites it), no negative or non-finite colors, no exposure, color correction, view or other header variable but the primaries, linear light only; the precision is that of RGBE, 8 bits of mantissa shared by the three colors |
 | PSD | Decoding: the composite image only (layers, masks, adjustment layers, effects and blend modes are not rendered); a file without composite (`No composite image`), ZIP-compressed image data, multichannel documents, 32-bit CMYK, 16 and 32-bit Lab and 32-bit duotone are `UnsupportedImageFeatureException` (all but the first two also from `Identify`); duotone documents are read as gray; CMYK needs a typed CMYK load or `CmykConversion`, and `CmykConversion` with transparency; Lab needs `CieLabConversion`; the extra channels that are not the merged alpha are skipped; the thumbnail, IPTC and the other image resources are not read; no scaled or region decoding. Encoding: none (read only) |
+| DNG | Decoding only. Vendor raw formats (CR2/CR3, NEF, ARW, RAF, ORF, ...) are not read: they are not documented. Rejected with `UnsupportedImageFeatureException` (also from `Identify`): staggered color filter arrays (`CFALayout` other than 1), non-square pixels (`DefaultScale`), a third calibration and custom illuminants (DNG 1.6), signed and 17- to 32-bit integer samples, planar raw data, `SubTileBlockSize`, a `DNGBackwardVersion` newer than 1.7.1, and the required opcodes WarpFisheye, TrimBounds, WarpRectilinear2 and those of later versions (skipped when optional, and in [lenient decoding](#lenient-decoding)). The rendering is colorimetric: the hue/saturation maps, look table, tone curve and gain table map of the profile, the default user crop and the noise and sharpening hints are not applied. The demosaicing is bilinear (documented, deterministic): it matches no other reader pixel for pixel (the DNG SDK differs by up to 12 levels of 8-bit sRGB at the edges and in the gradients of the test scenes, LibRaw more); the stages before it are exact (`DngRawImage`). The previews are decoded as TIFF pages without their `PreviewColorSpace`. Lossless JPEG frames of DNG 1.0 (the 16-bit deviation of their encoder) are read as the JPEG specification codes them |
 | Text | In vertical lines, no compression of punctuation; ruby annotations only over their base, without overhang; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; greedy line breaking by default, optimal (total-fit) breaking without fitness classes; justification without kashida and without priorities; no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), without the variations of the control values (`cvar`) and without the hints of CFF outlines; subpixel (LCD) rendering is opt-in (`TextLayoutOptions.SubpixelRendering`), for layouts filled at a point with a solid color on 8- and 16-bit RGB images; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hints of CFF outlines; see [Fonts](#fonts) |
 | API | No custom pixel type and no replaceable allocator (the buffer pool has settings, `ImageBufferPool`); the extension points are custom codecs and encoders and custom pixel operations ([Extension points](#extension-points)); implementation types are internal |

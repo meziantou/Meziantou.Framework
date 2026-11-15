@@ -297,6 +297,7 @@ jobs:
             "tests/Meziantou.Framework.Imaging.Qoi.Tests/Meziantou.Framework.Imaging.Qoi.Tests.csproj" = 36
             "tests/Meziantou.Framework.Imaging.Radiance.Tests/Meziantou.Framework.Imaging.Radiance.Tests.csproj" = 36
             "tests/Meziantou.Framework.Imaging.Psd.Tests/Meziantou.Framework.Imaging.Psd.Tests.csproj" = 30
+            "tests/Meziantou.Framework.Imaging.Dng.Tests/Meziantou.Framework.Imaging.Dng.Tests.csproj" = 36
             "tests/Meziantou.Framework.Imaging.VectorGraphics.Tests/Meziantou.Framework.Imaging.VectorGraphics.Tests.csproj" = 6
             "tests/Meziantou.Framework.Imaging.Barcodes.Tests/Meziantou.Framework.Imaging.Barcodes.Tests.csproj" = 4
             "tests/Meziantou.Framework.Imaging.Ico.Tests/Meziantou.Framework.Imaging.Ico.Tests.csproj" = 1

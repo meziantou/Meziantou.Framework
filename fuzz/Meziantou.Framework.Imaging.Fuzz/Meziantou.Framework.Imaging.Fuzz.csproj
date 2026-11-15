@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR and PSD codecs, the image data of PNG files, the lossy GIF compression, the processing operations and the strokes. The other codecs
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR and PSD codecs, the DNG decoder, the image data of PNG files, the lossy GIF compression, the processing operations and the strokes. The other codecs
     are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
   -->
   <PropertyGroup>
@@ -16,6 +16,9 @@
     <!-- The seeds of imaging-psd: the PSD and PSB files of the golden corpus, valid, invalid and unsupported (PSB files are embedded with the extension .psd) -->
     <SeedDocument Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\psd\*.psd;..\..\tests\Meziantou.Framework.Imaging.Fixtures\psd\*.psb;..\..\tests\Meziantou.Framework.Imaging.Fixtures\invalid\psd\*.psd" />
     <EmbeddedResource Include="@(SeedDocument)" LogicalName="Seeds/psd/%(Filename).psd" Link="Seeds\psd\%(Filename)%(Extension)" />
+    <!-- The seeds of imaging-dng: the DNG files of the golden corpus, valid, invalid, unsupported and over the limits -->
+    <SeedDng Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\dng\*.dng;..\..\tests\Meziantou.Framework.Imaging.Fixtures\invalid\dng\*.dng;..\..\tests\Meziantou.Framework.Imaging.Fixtures\limit\dng\*.dng" />
+    <EmbeddedResource Include="@(SeedDng)" LogicalName="Seeds/dng/%(Filename)%(Extension)" Link="Seeds\dng\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

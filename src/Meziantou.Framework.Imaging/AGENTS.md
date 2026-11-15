@@ -3,7 +3,7 @@
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
 progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, PSD decoding (the composite image),
-lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
+DNG decoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
 vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
@@ -230,8 +230,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - A new format always adds an `ImageFormat` member, its name in `ImageFormatNames`, an `ImageCodec` in
   `ImageCodecRegistry`, a default pixel format in `DefaultPixelFormats`, and a row in the support matrix and a section in
   the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a
-  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (PSD)
-  makes `ImageEncoder.FromPath` reject its extensions with a message that says so, and `ImageEncoder.Create` reject
+  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (PSD,
+  DNG) makes `ImageEncoder.FromPath` reject its extensions with a message that says so, and `ImageEncoder.Create` reject
   its `ImageFormat` member.
 - **PNG `MinimumSize`** (`PngOptimizedEncoderSession`, a session of its own): the default session must keep writing the
   same bytes, so the search never goes through it. Candidates are compressed to a byte counter
@@ -987,6 +987,22 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   `w` being the largest sample (no ink for the inverted CMYK samples), 128 for a* and b*. CMYK is loaded as inks
   (`Cmyk32`/`Cmyk64`) or through `CmykConversion`, Lab (8 bits) only through `CieLabConversion`, as for TIFF.
   Multichannel, 32-bit CMYK, 16 and 32-bit Lab and 32-bit duotone are rejected from the header, `Identify` included.
+- **DNG** (`Internals/Codecs/Dng`). Written from the DNG specification 1.7.1.0, never from LibRaw, dcraw, rawspeed or
+  the DNG SDK. DNG shares the signature of TIFF, so it has no codec of its own: `TiffCodec` reads the first directory and
+  hands a file with `DNGVersion` to `DngDecoder` (results of `ImageFormat.Dng`; `GetDetectedFormat` tells DNG when the
+  prefix holds that directory). The TIFF reader is reused, never duplicated: `TiffPage.ResolveDngRaw` resolves the raw
+  IFD (CFA and LinearRaw, packed 9 to 15-bit samples, the X2/X4 predictors, tiles of any size, compressions 34892 and
+  52546), `TiffBlockReader` decompresses its blocks, and a lossless JPEG block whose frame has another shape or two
+  components is read as a sequence of samples (`JpegSampleReceiver.ReceivesStoredSamples`: unscaled, never color
+  converted). JPEG XL tiles go through `JpegXlCodec` with `ImageCodecContext.ForEmbeddedDatastream` (the scope of the
+  file, a tracker of their own). `DngPipeline` holds the stages (stored values, linear values, demosaicing) as
+  `DngPlanes`, single precision computed in double; `DngOpcodeList` and `DngColorProfile` document the choices the
+  specification leaves open, and `ReferenceDng` of the test harness mirrors them: the corpus compares the two exactly,
+  so a change of a stage changes both, and the generator (`DngCorpus.cs`) is rerun. A directory or a tag value is never
+  read twice (`TiffDirectory.CachesValues`): reads of a seekable stream are charged to the encoded-byte limit one by
+  one. The canvas limits apply to the stored raw image, which the default crop makes smaller. Oracles: `dng_validate`
+  of the DNG SDK (stages 1 and 2 exact; its rendering, with the identity `ProfileToneCurve` and `DefaultBlackRender` 1
+  of the scenes, within a tolerance, the demosaicing differing) and LibRaw `unprocessed_raw` (stored samples).
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -1800,6 +1816,10 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   `ArabicPresentationForms.g.cs` (`arabic-forms`) are written by commands of the corpus generator from sources that
   are not committed and are pinned by a hash: run the command without `--write` to check that a table is what its
   sources give, after downloading them from the addresses the command names.
+- **DNG fixtures are random-access inputs.** They are the first format of the corpus that a sequential `ImageReader`
+  rejects: `FixtureTraits.IsReadByRandomAccessOnly` removes the reader cases of the shared suites for them, a DNG file
+  with a preview may end with bytes a load never reads (`FixtureTraits.HasPreview`), and its header identification
+  reads the whole input (the first directory follows the samples).
 - **TIFF has no corpus.** The decoder tests assemble files (`TiffFileBuilder`) whose compressed strips never come from
   the library: the reference encoders of the tests (`TiffReferenceCodecs`, the floating-point predictor included), the
   examples of the specifications, fax strips written by libtiff and kept as literals, whole signed and floating-point

@@ -56,6 +56,8 @@
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Radiance\*.cs" LinkBase="TestHarness\Radiance" />
     <!-- The builder of PSD files and the independent reader of their composite image -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Psd\*.cs" LinkBase="TestHarness\Psd" />
+    <!-- The builder of DNG files, their scenes and the independent renderer of their references -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Dng\*.cs" LinkBase="TestHarness\Dng" />
   </ItemGroup>
 
   <ItemGroup>

@@ -251,7 +251,7 @@ public sealed class DefaultsTests
     [Fact]
     public void PublicEncoderSelectionMatchesTheSelectionOfSave()
     {
-        string[] readOnly = [".jpx", ".jpf", ".psd", ".psb"];
+        string[] readOnly = [".jpx", ".jpf", ".psd", ".psb", ".dng"];
         foreach (var info in ImageFormatInfo.All)
         {
             foreach (var extension in info.FileExtensions)
@@ -289,13 +289,16 @@ public sealed class DefaultsTests
     [Fact]
     public void EveryFormatHasADefaultEncoder()
     {
-        // PSD is read only
-        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Psd)))
+        // PSD and DNG are read only
+        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Psd or ImageFormat.Dng)))
         {
             var encoder = ImageEncoder.Create(format);
             Assert.Equal(format, encoder.Format);
             Assert.NotSame(encoder, ImageEncoder.Create(format));
         }
+
+        // DNG files are read, never written
+        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Dng));
 
         // The defaults are those of the encoder types: the variants of an extension are not applied
         Assert.Equal(PngAnimationMode.Auto, Assert.IsType<PngEncoder>(ImageEncoder.Create(ImageFormat.Png)).AnimationMode);

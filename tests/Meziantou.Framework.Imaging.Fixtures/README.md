@@ -8,7 +8,7 @@ Independent reference data for the conformance and interop tests, extended with 
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
   color conversion vectors: `icc`, `IccCorpus.cs`; the AV1 conformance vectors of the `av1Vectors` section: `avif`,
   `AvifCorpus.cs`; AVIF entries: `avif-container`, `AvifCorpus.Container.cs`; HEIC entries: `heic-container`,
-  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; Radiance HDR entries: `hdr`, `RadianceCorpus.cs`; PSD entries: `psd`, `PsdCorpus.cs`; the HEVC
+  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; Radiance HDR entries: `hdr`, `RadianceCorpus.cs`; PSD entries: `psd`, `PsdCorpus.cs`; DNG entries: `dng`, `DngCorpus.cs`; the HEVC
   conformance vectors of the `hevcVectors` section: `hevc`, `HevcCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
   its SHA-256 hash, provenance and license.
 - The tests read this folder from the Git repository root (`FixtureRoot.GetDirectory()`). They never download anything
@@ -23,7 +23,7 @@ Independent reference data for the conformance and interop tests, extended with 
 
 ```
 tests/Meziantou.Framework.Imaging.Fixtures/
-  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/   hdr/   psd/
+  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/   hdr/   psd/   dng/
                                       encoded inputs and their raw references
   invalid/<format>/                   malformed, unsupported or over-limit inputs (expected errors, no expected pixels)
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
@@ -40,7 +40,8 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   (`png` for PNG and APNG, `gif`, `jpeg`, `webp`, `qoi`, `bmp`, `tga`, `pnm` for every Netpbm variant, `avif` for AVIF
   still images and image sequences, `heic` for HEIC still images and image sequences, `jxl` for JPEG XL codestreams and
   containers, `jp2` for JPEG 2000 codestreams and files of the JP2 family, whatever their block coder, `exr` for OpenEXR
-  files, `hdr` for Radiance HDR files, `psd` for PSD and PSB files). The expected frames of an OpenEXR, a Radiance HDR or a 32-bit PSD fixture are `rgbaf32le`
+  files, `hdr` for Radiance HDR files, `psd` for PSD and PSB files, `dng` for DNG files). The expected frames of an
+  OpenEXR, a Radiance HDR, a 32-bit PSD or a DNG fixture are `rgbaf32le`
   buffers: the 32-bit floats of its `RgbaHalf` or `RgbaFloat` pixels (a half converts to a float exactly), compared bit
   for bit; they are no source of the encoder suites.
 - Kinds: `valid` (expected pixels and metadata), `invalid` (malformed: expected exception), `unsupported` (recognized but
@@ -819,6 +820,7 @@ follows it, so keep both headings unique in this file.
 | --- | --- | --- | --- | --- |
 | avif | 189 | 45 | 28 | 12 |
 | bmp | 24 | 21 | 2 | 2 |
+| dng | 31 | 9 | 6 | 2 |
 | exr | 59 | 7 | 35 | 2 |
 | gif | 24 | 13 | 1 | 2 |
 | hdr | 27 | 15 | 3 | 2 |
@@ -1597,6 +1599,42 @@ follows it, so keep both headings unique in this file.
 | PSD files of psd-tools | `psd.writer=psd-tools` | 24 | 0 | 0 | 3 |
 | PSD files of ImageMagick | `psd.writer=magick` | 5 | 0 | 0 | 0 |
 | PSD files assembled from the specification | `psd.writer=builder` | 2 | 0 | 0 | 1 |
+| DNG color filter array (CFA) | `dng.photometric=cfa` | 28 | 0 | 0 | 0 |
+| DNG linear raw data (LinearRaw) | `dng.photometric=linear-raw` | 3 | 0 | 0 | 0 |
+| DNG 2x2 repeating pattern | `dng.cfa=2x2` | 27 | 0 | 0 | 0 |
+| DNG 6x6 repeating pattern | `dng.cfa=6x6` | 1 | 0 | 0 | 0 |
+| DNG 8-bit samples | `dng.bits=8` | 2 | 0 | 0 | 0 |
+| DNG 10-bit packed samples | `dng.bits=10` | 1 | 0 | 0 | 0 |
+| DNG 12-bit packed samples | `dng.bits=12` | 1 | 0 | 0 | 0 |
+| DNG 14-bit packed samples | `dng.bits=14` | 1 | 0 | 0 | 0 |
+| DNG 16-bit samples | `dng.bits=16` | 24 | 0 | 0 | 0 |
+| DNG 16-bit floating-point samples | `dng.bits=16-float` | 1 | 0 | 0 | 0 |
+| DNG 32-bit floating-point samples | `dng.bits=32-float` | 1 | 0 | 0 | 0 |
+| DNG uncompressed raw image | `dng.compression=none` | 23 | 0 | 0 | 0 |
+| DNG Deflate compression | `dng.compression=deflate` | 6 | 0 | 0 | 0 |
+| DNG lossless JPEG compression | `dng.compression=lossless-jpeg` | 1 | 0 | 0 | 0 |
+| DNG JPEG XL compression | `dng.compression=jpeg-xl` | 1 | 0 | 0 | 0 |
+| DNG horizontal differencing | `dng.predictor=2` | 2 | 0 | 0 | 0 |
+| DNG floating-point predictor | `dng.predictor=3` | 1 | 0 | 0 | 0 |
+| DNG horizontal difference X2 | `dng.predictor=34892` | 1 | 0 | 0 | 0 |
+| DNG horizontal difference X4 | `dng.predictor=34893` | 1 | 0 | 0 | 0 |
+| DNG floating point X2 | `dng.predictor=34894` | 1 | 0 | 0 | 0 |
+| DNG tiles | `dng.tiles` | 2 | 0 | 0 | 0 |
+| DNG big-endian file | `dng.big-endian` | 2 | 0 | 0 | 0 |
+| DNG LinearizationTable | `dng.linearization` | 1 | 0 | 0 | 0 |
+| DNG black level pattern and deltas | `dng.black-level-pattern` | 1 | 0 | 0 | 0 |
+| DNG ActiveArea and default crop | `dng.active-area` | 1 | 0 | 0 | 0 |
+| DNG two calibrations, interpolated | `dng.two-illuminants` | 2 | 0 | 0 | 0 |
+| DNG ForwardMatrix | `dng.forward-matrix` | 1 | 0 | 0 | 0 |
+| DNG AsShotWhiteXY | `dng.white-xy` | 1 | 0 | 0 | 0 |
+| DNG BaselineExposure | `dng.baseline-exposure` | 1 | 0 | 0 | 0 |
+| DNG OpcodeList1 | `dng.opcodes=1` | 1 | 0 | 0 | 0 |
+| DNG OpcodeList2 | `dng.opcodes=2` | 1 | 0 | 0 | 0 |
+| DNG OpcodeList3 | `dng.opcodes=3` | 1 | 0 | 0 | 0 |
+| DNG preview in IFD 0 | `dng.preview` | 3 | 0 | 0 | 0 |
+| DNG orientation other than 1 | `dng.orientation` | 1 | 0 | 0 | 0 |
+| DNG RowInterleaveFactor and ColumnInterleaveFactor | `dng.interleave` | 1 | 0 | 0 | 0 |
+| DNG XMP packet | `dng.xmp` | 1 | 0 | 0 | 0 |
 
 Not covered by fixtures, and verified elsewhere: encoder outputs (independent readers, FFmpeg and Apple ImageIO), malformed-input robustness beyond the error
 fixtures (`FuzzTests/MutationFuzzTests`, `Tests.Shared/Suites/Decode/TruncationTests`), and limits at every boundary (`Tests.Shared/Suites/Decode/ResourceLimitBoundaryTests`).
@@ -2712,6 +2750,27 @@ tool version to see what changes; the interop CI job runs it on every build to d
   ```shell
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- exr --openexr-images <checkout>          # check
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- exr --openexr-images <checkout> --write  # replace the OpenEXR fixtures, then review the diff
+  ```
+
+- `dng` (`DngCorpus.cs`) generates the DNG fixtures; it replaces only the entries of format `dng` and their files (`dng/`,
+  `invalid/dng/`, `limit/dng/`). The files are the scenes of the test harness (`DngScenes`, assembled by `DngFileBuilder`
+  from the DNG specification 1.7.1): smooth color fields seen through a color filter array or as linear raw data, with
+  one feature each (bit depths, Deflate and its predictors, tiles, the byte orders, linearization, black levels, active
+  area and crop, camera profiles, opcode lists, a preview). Two more are the scene `bayer-rggb` rewritten by
+  `dng_validate` of the Adobe DNG SDK (pinned in `PinnedDngSdk`, currently 1.7.1, by the meziantou/prebuilt release of
+  the `Meziantou.Prebuilt` package) with lossless JPEG and with JPEG XL tiles; the generator runs it in UTC and replaces
+  the dates it writes with a fixed one of the same length, so that its output is reproducible. The reference of a file is
+  its rendering by `ReferenceDng`, an independent renderer of the harness (its own TIFF reader, the mapping of chapter 5,
+  the opcodes, a bilinear demosaicing, the color transform of chapter 6 to linear BT.709), compared exactly. Every valid
+  file is cross-checked with `dng_validate`: its stage 1 must be the samples of the scene and its stage 2 the linear
+  values of the reference to within its 16-bit rounding, unless a documented opcode differs (bad pixel repair,
+  DeltaPerRow/Column), and its sRGB rendering (made colorimetric by the identity `ProfileToneCurve` and
+  `DefaultBlackRender` 1 of the scenes) is measured against the reference and recorded, excluded from the tolerance: the
+  demosaicing algorithms differ:
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dng          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dng --write  # replace the DNG fixtures, then review the diff
   ```
 
 - `hdr` (`RadianceCorpus.cs`) generates the Radiance HDR fixtures; it replaces only the entries of format `hdr` and their

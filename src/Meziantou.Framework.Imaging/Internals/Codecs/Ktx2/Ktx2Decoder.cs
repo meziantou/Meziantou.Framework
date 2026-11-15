@@ -93,8 +93,20 @@ internal static class Ktx2Decoder
         context.Limits.EnsureCanvasWithinLimits(size.Width, size.Height);
         using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Ktx2, size, output.DefaultPixelFormat, output.SourcePixelFormat, iccProfile: null);
         using var level = Ktx2LevelData.Open(source, texture, subresource.MipLevel, context);
-        sink.BeginFrame(FrameDuration.Zero);
-        WriteImage(sink, texture, output, level, subresource, previousIndices: null, context);
+        if (NeedsStaging(sink, output))
+        {
+            using var staging = CreateStaging(output, size, context);
+            WriteImage(sink, texture, output, level, subresource, previousIndices: null, context, staging.FrameCore(0))?.Dispose();
+            WriteStaged(sink, [staging.FrameCore(0)], FrameDuration.Zero);
+        }
+        else
+        {
+            sink.BeginFrame(FrameDuration.Zero);
+
+            // The ETC1S indices are the reference of a next P-frame only: a still image releases them
+            WriteImage(sink, texture, output, level, subresource, previousIndices: null, context)?.Dispose();
+        }
+
         sink.EndImage();
         return sink.Build(metadata, animation: null);
     }
@@ -108,6 +120,36 @@ internal static class Ktx2Decoder
         using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Ktx2, size, output.DefaultPixelFormat, output.SourcePixelFormat, iccProfile: null);
         using var level = Ktx2LevelData.Open(source, texture, 0, context);
         var duration = new FrameDuration(animation.Duration, animation.Timescale);
+        if (NeedsStaging(sink, output))
+        {
+            // The floating-point frames are converted together, as CloneAs converts them: the peak of the tone mapping is
+            // the one of the whole animation (the frames of floating-point formats are never P-frames)
+            var count = Math.Min(texture.Layers, request.FrameLimit ?? int.MaxValue);
+            var stagings = new List<Image>(count);
+            try
+            {
+                for (var layer = 0; layer < count; layer++)
+                {
+                    context.CancellationToken.ThrowIfCancellationRequested();
+                    var staging = CreateStaging(output, size, context);
+                    stagings.Add(staging);
+                    WriteImage(sink, texture, output, level, new Ktx2Subresource(0, layer, 0, 0), previousIndices: null, context, staging.FrameCore(0))?.Dispose();
+                }
+
+                WriteStaged(sink, [.. stagings.Select(staging => staging.FrameCore(0))], duration);
+            }
+            finally
+            {
+                foreach (var staging in stagings)
+                {
+                    staging.Dispose();
+                }
+            }
+
+            sink.EndImage();
+            return sink.Build(metadata, CreateAnimationMetadata(animation));
+        }
+
         Etc1SIndices? previous = null;
         try
         {
@@ -174,9 +216,36 @@ internal static class Ktx2Decoder
     private static AnimationMetadata CreateAnimationMetadata(Ktx2Animation animation)
         => new() { TotalPlays = animation.LoopCount == 0 ? null : (int)Math.Min(animation.LoopCount, int.MaxValue) };
 
-    /// <summary>Writes the rows of one image to the current frame of the sink.</summary>
+    /// <summary>
+    /// Determines whether the texels are decoded to a staging image first: floating-point texels converted to another
+    /// format, whose conversion needs the peak of the whole image (tone mapping) and validates every sample before a row is
+    /// converted (<see cref="Image.PrepareConversion"/>), as <c>CloneAs</c> does.
+    /// </summary>
+    private static bool NeedsStaging(DecodedFrameSink sink, Ktx2Output output) => !sink.Plan.IsIdentity && output.Precision is Ktx2OutputPrecision.Half or Ktx2OutputPrecision.Float;
+
+    private static Image CreateStaging(Ktx2Output output, Size size, ImageCodecContext context) => output.Precision == Ktx2OutputPrecision.Half
+        ? new Image<RgbaHalf>(context.Configuration, size, context.Scope, layoutOptions: null)
+        : new Image<RgbaFloat>(context.Configuration, size, context.Scope, layoutOptions: null);
+
+    /// <summary>Prepares the conversion of the staged frames (the peak, the validation), then writes them to the sink, one frame each.</summary>
+    private static void WriteStaged(DecodedFrameSink sink, IReadOnlyList<ImageFrame> frames, FrameDuration duration)
+    {
+        Image.PrepareConversion(sink.Plan, frames);
+        foreach (var frame in frames)
+        {
+            sink.BeginFrame(duration);
+            using var source = frame.GetStorage().AcquireLease();
+            using var destination = sink.LeaseCurrentFrame();
+            for (var y = 0; y < source.Height; y++)
+            {
+                sink.WriteRow(destination, y, source.GetRowBytes(y));
+            }
+        }
+    }
+
+    /// <summary>Writes the rows of one image to the current frame of the sink, or to a staging frame of the source layout.</summary>
     /// <returns>The ETC1S indices of a BasisLZ image (the reference of the next P-frame), or <see langword="null"/>.</returns>
-    private static Etc1SIndices? WriteImage(DecodedFrameSink sink, Ktx2Texture texture, Ktx2Output output, Ktx2LevelData level, Ktx2Subresource subresource, Etc1SIndices? previousIndices, ImageCodecContext context)
+    private static Etc1SIndices? WriteImage(DecodedFrameSink sink, Ktx2Texture texture, Ktx2Output output, Ktx2LevelData level, Ktx2Subresource subresource, Etc1SIndices? previousIndices, ImageCodecContext context, ImageFrame? staging = null)
     {
         var format = texture.Format!;
         var width = texture.GetLevelWidth(subresource.MipLevel);
@@ -196,7 +265,7 @@ internal static class Ktx2Decoder
             }
 
             var imageOffset = format.Encoding == Ktx2Encoding.Etc1S ? 0 : texture.GetImageIndex(subresource) * texture.GetImageLength(subresource.MipLevel);
-            using var lease = sink.LeaseCurrentFrame();
+            using var lease = staging is null ? sink.LeaseCurrentFrame() : staging.GetStorage().AcquireLease();
             var rowLength = width * 4 * componentLength;
             for (var row = 0; row < rows; row++)
             {
@@ -224,7 +293,14 @@ internal static class Ktx2Decoder
                         ApplySwizzle(texels, output.Mapping, output.Precision);
                     }
 
-                    sink.WriteRow(lease, imageRow, texels);
+                    if (staging is null)
+                    {
+                        sink.WriteRow(lease, imageRow, texels);
+                    }
+                    else
+                    {
+                        texels.CopyTo(lease.GetRowBytes(imageRow));
+                    }
                 }
             }
 

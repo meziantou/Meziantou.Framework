@@ -139,11 +139,15 @@ internal sealed class Etc1SIndices : IDisposable
         var selectorCount = codebooks.SelectorCount;
         var historySize = codebooks.SelectorHistorySize;
         var historyRleSymbol = selectorCount + historySize;
-        Span<int> history = historySize <= 1024 ? stackalloc int[historySize] : new int[historySize];
+        // The state of a wide slice is rented from the scope, charged like the other buffers of the decoder
+        using var historyBuffer = historySize <= 1024 ? null : context.Scope.Rent(historySize * sizeof(int), AllocationKind.DecoderState, clear: true);
+        using var predictionsBuffer = columns <= 1024 ? null : context.Scope.Rent(2 * columns * sizeof(ushort), AllocationKind.DecoderState, clear: true);
+        using var predictionBitsBuffer = columns <= 2048 ? null : context.Scope.Rent((columns + 1) >> 1, AllocationKind.DecoderState, clear: true);
+        Span<int> history = historyBuffer is null ? stackalloc int[historySize] : unsafe(MemoryMarshal.Cast<byte, int>(historyBuffer.Span));
         history.Clear();
         var rover = historySize / 2;
-        Span<ushort> predictions = columns <= 1024 ? stackalloc ushort[2 * columns] : new ushort[2 * columns];
-        Span<byte> predictionBits = columns <= 2048 ? stackalloc byte[(columns + 1) >> 1] : new byte[(columns + 1) >> 1];
+        Span<ushort> predictions = predictionsBuffer is null ? stackalloc ushort[2 * columns] : unsafe(MemoryMarshal.Cast<byte, ushort>(predictionsBuffer.Span));
+        Span<byte> predictionBits = predictionBitsBuffer is null ? stackalloc byte[(columns + 1) >> 1] : predictionBitsBuffer.Span;
         var selectorRunCount = 0;
         var currentPredBits = 0;
         var previousPredSymbol = 0;

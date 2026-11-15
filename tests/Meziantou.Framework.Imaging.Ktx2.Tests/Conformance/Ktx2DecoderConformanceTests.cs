@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using Meziantou.Framework.Imaging.Tests.Conformance.Hardening;
 
 namespace Meziantou.Framework.Imaging.Tests.Conformance;
 
@@ -90,6 +91,47 @@ public sealed class Ktx2DecoderConformanceTests
 
         var first = entries.Single(entry => entry.GetProperty("index").GetInt32() == 0);
         Assert.Equal(first.GetProperty("sha256").GetString(), Hash(image, 0, first.GetProperty("layout").GetString()!));
+    }
+
+    [Theory]
+    [MemberData(nameof(FileNames))]
+    public void DecodingReleasesEveryBuffer(string name)
+    {
+        var data = File.ReadAllBytes(Path.Combine(FilesDirectory, name));
+        using var audit = new PoolAudit();
+        using (Image.Load(data))
+        {
+        }
+
+        using (var collection = ImageCollection.Load(data))
+        {
+            for (var i = 0; i < collection.Count; i++)
+            {
+                using var image = collection[i].Decode();
+            }
+        }
+
+        audit.AssertClean(name);
+    }
+
+    [Theory]
+    [InlineData("rgba32f-cube.ktx2")]
+    [InlineData("rgba16f-array.ktx2")]
+    [InlineData("bcn-bc6h-ufloat.ktx2")]
+    [InlineData("astc-4x4-hdr.ktx2")]
+    public void ATypedLoadToneMapsLikeCloneAs(string name)
+    {
+        // The peak of the tone mapping is the brightest sample of the image, whether the conversion runs at load or after it
+        var data = File.ReadAllBytes(Path.Combine(FilesDirectory, name));
+        var conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions(), OutOfRangeSamples = OutOfRangeSampleHandling.Clip };
+        using var floats = Image.Load(data);
+        using var expected = floats.CloneAs<Rgba64>(conversion);
+        using var actual = Image.Load<Rgba64>(data, new ImageDecodeOptions { Conversion = conversion });
+        var expectedPixels = new Rgba64[expected.Width * expected.Height];
+        var actualPixels = new Rgba64[actual.Width * actual.Height];
+        expected.Frames[0].CopyPixelDataTo(expectedPixels);
+        actual.Frames[0].CopyPixelDataTo(actualPixels);
+        Assert.Equal(expectedPixels, actualPixels);
     }
 
     private static string Hash(Image image, int frame, string layout)

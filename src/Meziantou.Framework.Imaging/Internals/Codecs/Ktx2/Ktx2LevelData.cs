@@ -103,7 +103,14 @@ internal sealed class Ktx2LevelData : IDisposable
             }
             else
             {
-                InflateZlib(compressed, destination);
+                // The ZLIB stream reads a buffer: a copy rented from the scope when the input is a span
+                if (copy is null)
+                {
+                    copy = context.Scope.Rent(compressed.Length, AllocationKind.DecoderState, clear: false);
+                    compressed.CopyTo(copy.Span);
+                }
+
+                InflateZlib(copy, destination);
             }
         }
         finally
@@ -112,14 +119,15 @@ internal sealed class Ktx2LevelData : IDisposable
         }
     }
 
-    private void InflateZlib(ReadOnlySpan<byte> compressed, Span<byte> destination)
+    private void InflateZlib(PooledBuffer stored, Span<byte> destination)
     {
+        var compressed = stored.Span;
         if (compressed.Length < 6)
             throw Ktx2Format.Invalid(string.Create(CultureInfo.InvariantCulture, $"the ZLIB data of the level {_level} are truncated."));
 
         try
         {
-            using var input = new MemoryStream(compressed.ToArray(), writable: false);
+            using var input = new MemoryStream(stored.RawBuffer, 0, stored.Length, writable: false);
             using var zlib = new ZLibStream(input, CompressionMode.Decompress);
             var written = 0;
             while (written < destination.Length)

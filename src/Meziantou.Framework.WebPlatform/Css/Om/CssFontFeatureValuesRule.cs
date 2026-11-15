@@ -145,14 +145,14 @@ public sealed class CssFontFeatureValuesRule : CssRule
             var significant = ValueMatcher.RemoveWhitespace(entry);
             if (significant is [CssPreservedToken { Type: CssTokenType.String } stringToken])
             {
-                families.Add(stringToken.Token.Value);
+                families.Add(stringToken.Value);
                 continue;
             }
 
-            if (significant.Count == 0 || !significant.TrueForAll(component => component is CssPreservedToken { Type: CssTokenType.Ident } ident && !ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Token.Value)) && !InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "default")))
+            if (significant.Count == 0 || !significant.TrueForAll(component => component is CssPreservedToken { Type: CssTokenType.Ident } ident && !ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Value)) && !InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "default")))
                 return null;
 
-            var name = string.Join(' ', significant.Select(component => ((CssPreservedToken)component).Token.Value));
+            var name = string.Join(' ', significant.Select(component => ((CssPreservedToken)component).Value));
             if (significant.Count == 1 && FontFace.IsGenericFamily(InfraAscii.ToAsciiLowercase(name)))
                 return null;
 

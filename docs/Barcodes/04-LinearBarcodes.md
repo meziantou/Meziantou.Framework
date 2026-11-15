@@ -193,11 +193,12 @@ Assert.Equal("04252614", fromUpcA.Text);
 // A UPC-A number without these zeros has no UPC-E form
 Assert.Throws<ArgumentException>("data", () => Barcode.CreateUpcE("03600029145"));
 
-using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60 });
+// The number system and check digits are printed outside the bars, the 6 digits under them
+using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
 ```
 <!-- endref -->
 
-![A UPC-E barcode](images/UpcE.png)
+![A UPC-E barcode: its number system and check digits printed outside the bars, its 6 digits under them](images/UpcE.png)
 
 The check digit is the one of the UPC-A number. Each UPC-A number with a UPC-E form has a single one: other digits that
 stand for the same UPC-A number, such as `0182433` for `01820000043` (written `0180432`), throw an `ArgumentException`.
@@ -283,15 +284,17 @@ next to the barcode of a book:
 var barcode = Barcode.CreateEan13("978020137962", extension: "52499");
 Assert.Equal("9780201379624 52499", barcode.Text); // the check digit is added
 
-using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60 });
+// The digits of the add-on are printed above its bars
+using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
 ```
 <!-- endref -->
 
-![An EAN-13 barcode followed by a 5-digit add-on](images/Ean13WithAddOn.png)
+![An EAN-13 barcode followed by a 5-digit add-on, whose digits are printed above its bars](images/Ean13WithAddOn.png)
 
 [Text](cref:Meziantou.Framework.Barcodes.Barcode.Text) is what is printed under the bars, when you set
 [BarcodeRenderOptions.Text](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.Text) (see
-[Print the text under a barcode](06-SvgImagesAndPdf.md#print-the-text-under-a-barcode)): it includes the characters the barcode adds (the check digit, then a space
+[Print the text under a barcode](06-SvgImagesAndPdf.md#print-the-text-under-a-barcode); EAN and UPC print their digits
+in groups between longer guard bars, and the add-on above its bars): it includes the characters the barcode adds (the check digit, then a space
 and the add-on; the Mod 43 check character of Code 39 when it is included; the start and stop characters of Codabar),
 and not the start and stop characters of Code 39 and Code 93.
 

@@ -54,6 +54,36 @@ public sealed class FuzzHarnessSelfTests
     }
 
     [Fact]
+    public void TheOldJpegTiffSeedsDecodeWithThePrecisionOfTheirSamples()
+    {
+        // No encoder writes old-style JPEG: the builder seeds must decode, so that their mutations reach the decoder
+        var seeds = FuzzSeeds.Get("tiff").Where(seed => seed.Id.StartsWith("tiff/builder-ojpeg", StringComparison.Ordinal)).ToList();
+        Assert.HasCount(5, seeds);
+        foreach (var seed in seeds)
+        {
+            using var image = Image.Load(seed.Data, cancellationToken: TestContext.Current.CancellationToken);
+            var isTwelveBit = seed.Id.StartsWith("tiff/builder-ojpeg12", StringComparison.Ordinal);
+            Assert.Equal(isTwelveBit ? 12 : 8, Image.Identify(seed.Data).BitsPerComponent);
+            Assert.Equal(isTwelveBit, image.PixelFormat is PixelFormat.Gray16 or PixelFormat.Rgb48);
+        }
+
+        // The header assembled from the table tags decodes the scan of the file like the header of the file itself
+        foreach (var (tables, interchange) in new[] { ("tiff/builder-ojpeg12-ycbcr420-table-tags", "tiff/builder-ojpeg12-ycbcr420-interchange-whole"), ("tiff/builder-ojpeg12-gray-table-tags", "tiff/builder-ojpeg12-gray-interchange-strip") })
+        {
+            using var fromTables = Image.Load(seeds.Single(seed => seed.Id == tables).Data, cancellationToken: TestContext.Current.CancellationToken);
+            using var fromInterchange = Image.Load(seeds.Single(seed => seed.Id == interchange).Data, cancellationToken: TestContext.Current.CancellationToken);
+            Assert.Equal(GetPixelBytes(fromInterchange), GetPixelBytes(fromTables));
+        }
+
+        static byte[] GetPixelBytes(Image image)
+        {
+            var bytes = new byte[image.Width * image.Height * PixelFormats.GetBytesPerPixel(image.PixelFormat)];
+            image.Frames[0].CopyPixelBytesTo(bytes);
+            return bytes;
+        }
+    }
+
+    [Fact]
     public void TheOpenExrSeedsReachEveryCompressionAndLevelMode()
     {
         // The encoder of the library writes scan lines without PXR24 or B44: the corpus files written by OpenEXR and the

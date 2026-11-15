@@ -700,6 +700,21 @@ internal static class PngFilters
                 StorePixel<TSize>(ref unsafe(Unsafe.Add(ref current, i)), Vector128.Narrow(left, left));
             }
         }
+        else if (AdvSimd.IsSupported && Vector<byte>.Count == Vector128<byte>.Count)
+        {
+            // The predictor in byte lanes (PaethVector): no widening, and no reduction modulo 256 on the chain of "left".
+            // The first pixel has a = c = 0, which selects b, as below. The lanes past the pixel are never stored.
+            var a = Vector128<byte>.Zero;
+            var c = Vector128<byte>.Zero;
+            for (; i <= last; i += step)
+            {
+                var b = unsafe(Vector128.LoadUnsafe(ref above, i));
+                var x = unsafe(Vector128.LoadUnsafe(ref current, i));
+                a = x + PaethVector(a.AsVector(), b.AsVector(), c.AsVector()).AsVector128();
+                c = b;
+                StorePixel<TSize>(ref unsafe(Unsafe.Add(ref current, i)), a);
+            }
+        }
         else
         {
             // With p = a + b - c: |p - a| = |b - c|, |p - b| = |a - c| and |p - c| = |(a - c) + (b - c)|; ties prefer a, then b.

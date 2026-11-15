@@ -149,6 +149,55 @@ public sealed class PdfPrintTests : IDisposable
     }
 
     [Fact]
+    public void PrintToPdf_ColorGlyphsAreRasterized()
+    {
+        // The emoji of Noto Color Emoji are PNG images (CBDT), and the glyphs of the font of the tests of Imaging are SVG
+        // documents: PDF draws neither, so they are images of the page
+        _pages.Resources["/emoji.ttf"] = (File.ReadAllBytes(RepositoryPaths.Root / "tests" / "Meziantou.Framework.WebPlatform.Imaging.Tests" / "TestData" / "NotoColorEmoji-subset.ttf"), "font/ttf");
+        _pages.Resources["/svg.ttf"] = (Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.SvgBoxes().Build(), "font/ttf");
+        var context = _pages.Load(PageStyle + """
+            <style>
+              @font-face { font-family: Emoji; src: url(/emoji.ttf) }
+              @font-face { font-family: Svg; src: url(/svg.ttf) }
+              p { margin: 10px; color: blue }
+            </style>
+            <p style='font: 32px/1 Emoji'>😀</p>
+            <p style='font: 32px/1 Svg'>ABE</p>
+            """);
+
+        var pdf = Reopen(context.PrintToPdf());
+
+        var xobjects = pdf.Pages[0].Resources!.Get<PdfDictionary>(PdfName.Create("XObject"));
+        Assert.NotNull(xobjects);
+        Assert.NotEmpty(xobjects.Keys);
+        AssertRendersAsTheRasterizer(context, pdf);
+    }
+
+    [Fact]
+    public void PrintToPdf_ColorGlyphsThatOverhangAreNotClipped()
+    {
+        // The SVG document of A draws a red rectangle of half an em left of the origin of the glyph, and from the baseline to
+        // half an em below it: outside of the advance and of the descent of the font
+        var builder = Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.SvgBoxes();
+        builder.RawTables["SVG "] = Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.WriteSvgTable([(
+            Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.SvgA,
+            Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.SvgA,
+            System.Text.Encoding.UTF8.GetBytes("<svg xmlns='http://www.w3.org/2000/svg'><rect id='glyph2' x='-512' y='-256' width='512' height='768' fill='red'/></svg>"))]);
+        _pages.Resources["/svg.ttf"] = (builder.Build(), "font/ttf");
+        var context = _pages.Load(PageStyle + """
+            <style>@font-face { font-family: Svg; src: url(/svg.ttf) }</style>
+            <p style='position: absolute; left: 60px; top: 20px; margin: 0; font: 64px/1 Svg'>A</p>
+            """);
+
+        var pdf = Reopen(context.PrintToPdf());
+
+        // At 64px, the rectangle is 32px wide from x = 28, and 48px high from 16px above the baseline
+        using var page = PdfRenderer.RenderPage(pdf.Pages[0], new PdfRenderOptions { Dpi = 96, UseSystemFonts = false });
+        Assert.Equal(new Rgba32(255, 0, 0, 255), page.Frames[0][40, 85]);
+        AssertRendersAsTheRasterizer(context, pdf);
+    }
+
+    [Fact]
     public void PrintToPdf_TextIsEmbeddedAndExtractable()
     {
         var context = _pages.Load(PageStyle + LoadFont() + "<style>p { font: 14px Noto; margin: 0 }</style><p>office hours</p><p>Café — 1€</p>");

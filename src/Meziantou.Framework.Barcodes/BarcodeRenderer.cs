@@ -39,7 +39,7 @@ public static class BarcodeRenderer
             SymbolSceneBuilder.ThrowIfNegativeOrNotFinite(text.Spacing, nameof(options.Text.Spacing));
         }
 
-        return SymbolSceneBuilder.Create(new SymbolSceneContent(
+        var content = new SymbolSceneContent(
             barcode.Modules,
             moduleWidth,
             moduleHeight,
@@ -49,9 +49,15 @@ public static class BarcodeRenderer
             options.LightPaint,
             options.SnapToPixels,
             text,
-            barcode.Text,
+            PrintableText.Create(barcode.Text),
             Logo: null,
-            nameof(options.ModuleWidth)));
+            nameof(options.ModuleWidth));
+
+        // EAN and UPC print their digits in groups between the guards, which extend below the other bars
+        if (text is not null && barcode.EanUpcLayout is { } layout)
+            return EanUpcSceneBuilder.Create(content, layout);
+
+        return SymbolSceneBuilder.Create(content);
     }
 
     /// <summary>Renders the barcode as an SVG document.</summary>

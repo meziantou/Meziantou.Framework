@@ -35,8 +35,50 @@ public static class EncodedFieldInspector
         "jxl" => InspectJpegXl(data),
         "jp2" => InspectJpeg2000(data),
         "exr" => InspectOpenExr(data),
+        "hdr" => InspectRadiance(data),
         _ => throw new ArgumentException($"Unknown fixture format '{format}'.", nameof(format)),
     };
+
+    /// <summary>
+    /// Radiance HDR: the <c>PRIMARIES</c> variables of the header (<see cref="Radiance.ReferenceRadiance"/>), the last one of
+    /// the primaries the fixtures use (the others are values the decoder skips). The samples are linear light: without the
+    /// variable, with the standard primaries of Radiance or with those of BT.709, the linear transfer function; with those
+    /// of BT.2020 or P3, the CICP description with the linear transfer characteristics.
+    /// </summary>
+    private static EncodedFields InspectRadiance(ReadOnlySpan<byte> data)
+    {
+        var picture = Radiance.ReferenceRadiance.Read(data);
+        var code = 1;
+        foreach (var line in picture.HeaderLines.Where(line => line.StartsWith("PRIMARIES=", StringComparison.Ordinal)))
+        {
+            var values = line["PRIMARIES=".Length..].Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
+            if (values.Length != 8)
+                continue;
+
+            var primaries = values.Select(value => (float)double.Parse(value, CultureInfo.InvariantCulture)).ToArray();
+            code = primaries switch
+            {
+                _ when primaries.SequenceEqual([0.640f, 0.330f, 0.290f, 0.600f, 0.150f, 0.060f, 0.333f, 0.333f]) => 1,
+                _ when primaries.SequenceEqual([0.64f, 0.33f, 0.30f, 0.60f, 0.15f, 0.06f, 0.3127f, 0.3290f]) => 1,
+                _ when primaries.SequenceEqual([0.708f, 0.292f, 0.170f, 0.797f, 0.131f, 0.046f, 0.3127f, 0.3290f]) => 9,
+                _ when primaries.SequenceEqual([0.680f, 0.320f, 0.265f, 0.690f, 0.150f, 0.060f, 0.314f, 0.351f]) => 11,
+                _ when primaries.SequenceEqual([0.680f, 0.320f, 0.265f, 0.690f, 0.150f, 0.060f, 0.3127f, 0.3290f]) => 12,
+                _ => code,
+            };
+        }
+
+        var result = new EncodedFields();
+        if (code == 1)
+        {
+            result.TransferFunction = "linear";
+        }
+        else
+        {
+            result.ContainerCicp = new CicpExpectation { ColorPrimaries = code, TransferCharacteristics = 8, MatrixCoefficients = 0, FullRange = true };
+        }
+
+        return result;
+    }
 
     /// <summary>
     /// OpenEXR: the attributes of the header, read from the OpenEXR File Layout. The samples are linear light: the

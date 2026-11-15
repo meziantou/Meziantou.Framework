@@ -256,7 +256,7 @@ internal sealed class CustomPropertySyntax
         for (var i = 0; i < values.Count; i++)
         {
             var expectsComma = component.Multiplier == '#' && i % 2 == 1;
-            if (expectsComma ? values[i] is not CssPreservedToken { Type: CssTokenType.Comma } : values[i] is not CssPreservedToken { Type: CssTokenType.Ident } ident || ident.Token.Value != component.Name)
+            if (expectsComma ? values[i] is not CssPreservedToken { Type: CssTokenType.Comma } : values[i] is not CssPreservedToken { Type: CssTokenType.Ident } ident || ident.Value != component.Name)
                 return false;
         }
 
@@ -278,7 +278,7 @@ internal sealed class CustomPropertySyntax
         if (!TryMatch(values, out _))
             return false;
 
-        if (ValueMatcher.RemoveWhitespace(values) is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Token.Value)))
+        if (ValueMatcher.RemoveWhitespace(values) is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Value)))
             return false;
 
         return IsComputationallyIndependent(values, checkUnits: !IsUniversal);
@@ -290,7 +290,7 @@ internal sealed class CustomPropertySyntax
         {
             switch (value)
             {
-                case CssPreservedToken { Type: CssTokenType.Dimension } dimension when checkUnits && DependentUnits.Contains(InfraAscii.ToAsciiLowercase(dimension.Token.Value)):
+                case CssPreservedToken { Type: CssTokenType.Dimension } dimension when checkUnits && DependentUnits.Contains(InfraAscii.ToAsciiLowercase(dimension.Value)):
                     return false;
                 case CssFunction function:
                     if (InfraAscii.ToAsciiLowercase(function.Name) is "var" or "attr" || !IsComputationallyIndependent(function.Value, checkUnits))
@@ -309,7 +309,7 @@ internal sealed class CustomPropertySyntax
 
         return true;
 
-        static bool IsFixedRandomFunction(CssFunction function) => ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken first, ..] && first.Token.IsIdent("fixed");
+        static bool IsFixedRandomFunction(CssFunction function) => ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken first, ..] && first.IsIdent("fixed");
     }
 
     /// <summary>Returns the computed value of a value of a registered custom property, or null when the value does not match the syntax.</summary>
@@ -408,7 +408,7 @@ internal sealed class CustomPropertySyntax
     public static CssSyntaxDefinition? ParseSyntax(List<CssComponentValue> values)
     {
         var significant = ValueMatcher.RemoveWhitespace(values);
-        if (significant is [CssPreservedToken universal] && universal.Token.IsDelim('*'))
+        if (significant is [CssPreservedToken universal] && universal.IsDelim('*'))
             return CssSyntaxDefinition.Universal;
 
         var components = new List<string>();
@@ -423,14 +423,14 @@ internal sealed class CustomPropertySyntax
             if (token.IsDelim('<'))
             {
                 // <data-type-name>, without whitespace
-                if (index + 2 >= values.Count || values[index + 1] is not CssPreservedToken { Type: CssTokenType.Ident } name || values[index + 2] is not CssPreservedToken close || !close.Token.IsDelim('>'))
+                if (index + 2 >= values.Count || values[index + 1] is not CssPreservedToken { Type: CssTokenType.Ident } name || values[index + 2] is not CssPreservedToken close || !close.IsDelim('>'))
                     return null;
 
-                if (!SupportedNames.Contains(name.Token.Value))
+                if (!SupportedNames.Contains(name.Value))
                     return null;
 
-                component = "<" + name.Token.Value + ">";
-                isTransformList = name.Token.Value == "transform-list";
+                component = "<" + name.Value + ">";
+                isTransformList = name.Value == "transform-list";
                 index += 3;
             }
             else if (token.Type == CssTokenType.Ident)
@@ -449,12 +449,12 @@ internal sealed class CustomPropertySyntax
             }
 
             // The multiplier follows the component without whitespace; <transform-list> is already a list
-            if (index < values.Count && values[index] is CssPreservedToken multiplier && (multiplier.Token.IsDelim('+') || multiplier.Token.IsDelim('#')))
+            if (index < values.Count && values[index] is CssPreservedToken multiplier && (multiplier.IsDelim('+') || multiplier.IsDelim('#')))
             {
                 if (isTransformList)
                     return null;
 
-                component += multiplier.Token.Value;
+                component += multiplier.Value;
                 index++;
             }
 
@@ -463,7 +463,7 @@ internal sealed class CustomPropertySyntax
             if (index >= values.Count)
                 break;
 
-            if (values[index] is not CssPreservedToken bar || !bar.Token.IsDelim('|'))
+            if (values[index] is not CssPreservedToken bar || !bar.IsDelim('|'))
                 return null;
 
             index = SkipWhitespace(values, index + 1);
@@ -488,7 +488,7 @@ internal sealed class CustomPropertySyntax
         if (syntax.IsUniversal)
             return true;
 
-        return ValueMatcher.RemoveWhitespace(values).Count > 0 && (Parse(syntax.Text) is not { } parsed || parsed.TryMatch(values, out _));
+        return !ValueMatcher.IsEmptyOrWhitespace(values) && (Parse(syntax.Text) is not { } parsed || parsed.TryMatch(values, out _));
     }
 
     /// <summary>

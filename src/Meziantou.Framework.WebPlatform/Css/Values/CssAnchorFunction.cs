@@ -117,12 +117,12 @@ internal sealed class CssAnchorFunction
         CssComponentValue? sideValue = null;
         foreach (var value in ValueMatcher.RemoveWhitespace(arguments[0]))
         {
-            if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.Value.StartsWith("--", StringComparison.Ordinal))
+            if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Value.StartsWith("--", StringComparison.Ordinal))
             {
                 if (name is not null)
                     return null;
 
-                name = ident.Token.Value;
+                name = ident.Value;
                 continue;
             }
 
@@ -136,7 +136,7 @@ internal sealed class CssAnchorFunction
                 if (value is not CssPreservedToken { Type: CssTokenType.Ident } keyword)
                     return null;
 
-                size = InfraAscii.ToAsciiLowercase(keyword.Token.Value) switch
+                size = InfraAscii.ToAsciiLowercase(keyword.Value) switch
                 {
                     "width" => AnchorSizeKeyword.Width,
                     "height" => AnchorSizeKeyword.Height,
@@ -169,7 +169,7 @@ internal sealed class CssAnchorFunction
         switch (value)
         {
             case CssPreservedToken { Type: CssTokenType.Ident } keyword:
-                side = InfraAscii.ToAsciiLowercase(keyword.Token.Value) switch
+                side = InfraAscii.ToAsciiLowercase(keyword.Value) switch
                 {
                     "inside" => AnchorSide.Inside,
                     "outside" => AnchorSide.Outside,
@@ -194,7 +194,7 @@ internal sealed class CssAnchorFunction
 
             case CssPreservedToken { Type: CssTokenType.Percentage } token:
                 side = AnchorSide.Percentage;
-                percentage = token.Token.NumericValue;
+                percentage = token.NumericValue;
                 return true;
 
             // A math function of <percentage> (e.g. calc(50%))
@@ -220,9 +220,9 @@ internal sealed class CssAnchorFunction
             case CssPreservedToken { Type: CssTokenType.Percentage }:
                 return true;
             case CssPreservedToken { Type: CssTokenType.Number } number:
-                return number.Token.NumericValue == 0;
+                return number.NumericValue == 0;
             case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
-                return CssCalc.TryConvertToCanonicalUnit(0, InfraAscii.ToAsciiLowercase(dimension.Token.Value), out _, out var unit) ? unit == "px" : CssCalc.IsRelativeUnit(InfraAscii.ToAsciiLowercase(dimension.Token.Value)) && ValueMatcher.IsKnownUnit(InfraAscii.ToAsciiLowercase(dimension.Token.Value));
+                return CssCalc.TryConvertToCanonicalUnit(0, InfraAscii.ToAsciiLowercase(dimension.Value), out _, out var unit) ? unit == "px" : CssCalc.IsRelativeUnit(InfraAscii.ToAsciiLowercase(dimension.Value)) && ValueMatcher.IsKnownUnit(InfraAscii.ToAsciiLowercase(dimension.Value));
             case CssFunction function when CssCalc.GetAnchorFunction(function.Name) is not null:
                 return IsValid(function, allowed);
             case CssFunction function when CssCalc.IsMathFunction(function.Name):

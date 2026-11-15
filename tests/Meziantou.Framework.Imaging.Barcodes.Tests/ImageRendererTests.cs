@@ -110,7 +110,7 @@ public sealed class ImageRendererTests
             ModuleHeight = 60,
             QuietZoneModules = 9,
             DarkPaint = new SceneColor(0x00, 0x33, 0x66),
-            Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 24 }, // prints barcode.Text, "5901234123457", under the bars
+            Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 24 }, // prints the digits of barcode.Text in groups under the bars
         };
 
         var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
@@ -586,13 +586,13 @@ public sealed class ImageRendererTests
     public void DrawBarcode_WithFont_DrawsTheTextUnderTheBars()
     {
         var font = LoadAhem();
-        var barcode = Barcode.CreateEan8("5512345");
-        var options = new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 40, QuietZoneModules = 7, Text = new BarcodeTextOptions { Fonts = LoadAhemFonts(), FontSize = 10, Spacing = 3 } };
+        var barcode = Barcode.CreateCode39("AB");
+        var options = new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 40, QuietZoneModules = 7, Text = new BarcodeTextOptions { Fonts = LoadAhemFonts(), FontSize = 10, Spacing = 3 } };
         var text = TextLayout.Create(barcode.Text, font, 10);
-        Assert.Equal("55123457", barcode.Text);
+        Assert.Equal("AB", barcode.Text);
 
         var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
-        Assert.Equal((67 + 14) * 2, size.Width); // the text (8 boxes of 10 pixels) is narrower than the bars
+        Assert.Equal(barcode.Width + 14, size.Width); // the text (2 boxes of 10 pixels) is narrower than the bars
         Assert.Equal(40 + 3 + text.Height, size.Height);
 
         using var actual = new Image<Rgba32>(200, 100, Colors.Red);
@@ -605,6 +605,26 @@ public sealed class ImageRendererTests
         Assert.Equal(Colors.White, pixels[((textTop - 1) * actual.Width) + textLeft + 2]); // the spacing
         Assert.Equal(Colors.Black, pixels[((textTop + (int)text.Baseline - 2) * actual.Width) + textLeft + 2]); // inside the first box
         Assert.Equal(Colors.Red, pixels[((4 + (int)size.Height + 1) * actual.Width) + 20]); // under the drawing
+    }
+
+    [Fact]
+    public void DrawBarcode_Ean8WithFont_GroupsTheDigitsBetweenTheLongerGuards()
+    {
+        var barcode = Barcode.CreateEan8("5512345");
+        var options = new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 40, QuietZoneModules = 7, Text = new BarcodeTextOptions { Fonts = LoadAhemFonts(), FontSize = 10, Spacing = 3 } };
+
+        // The guards extend 5 modules (10 pixels) below the data bars; each group, 4 boxes of 10 pixels, is centered in 28 modules
+        var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
+        Assert.Equal(((67 + 14) * 2, 43 + 10), (size.Width, size.Height));
+
+        using var actual = new Image<Rgba32>(200, 100, Colors.Red);
+        DrawOn(actual, (barcode, options), static (canvas, state) => canvas.DrawBarcode(state.barcode, new PointD(4, 4), state.options));
+        var pixels = GetPixels(actual);
+        var groupLeft = 4 + 14 + (3 * 2) + (((28 * 2) - 40) / 2);
+        Assert.Equal(Colors.Black, pixels[((4 + 45) * actual.Width) + 4 + 14]); // the start guard, below the data bars
+        Assert.Equal(Colors.White, pixels[((4 + 41) * actual.Width) + groupLeft + 2]); // under the data bars, above the digits
+        Assert.Equal(Colors.Black, pixels[((4 + 48) * actual.Width) + groupLeft + 2]); // inside the first box of "5512"
+        Assert.Equal(Colors.White, pixels[((4 + 48) * actual.Width) + groupLeft - 2]); // left of the group
     }
 
     [Fact]
@@ -623,6 +643,31 @@ public sealed class ImageRendererTests
         Assert.Equal(Colors.White, pixels[5 + (barsLeft - 1)]); // left of the centered bars
         Assert.Equal(Colors.Black, pixels[(5 * actual.Width) + barsLeft]); // Code 128 starts with a bar
         Assert.Equal(Colors.Blue, pixels[(30 * actual.Width) + 5]); // the text brush
+    }
+
+    [Fact]
+    public void DrawBarcode_TextWithANewLine_StaysInTheMeasuredBounds()
+    {
+        // Code 128 encodes the new line: the text is still one line, drawn inside the measured rectangle
+        var barcode = Barcode.CreateCode128("AB\nCD");
+        var options = new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 10, QuietZoneModules = 2, Text = new BarcodeTextOptions { Fonts = LoadAhemFonts(), FontSize = 10 } };
+        var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
+
+        using var actual = new Image<Rgba32>((int)size.Width + 20, (int)size.Height + 40, Colors.Red);
+        DrawOn(actual, (barcode, options), static (canvas, state) => canvas.DrawBarcode(state.barcode, new PointD(10, 10), state.options));
+
+        var pixels = GetPixels(actual);
+        for (var y = 0; y < actual.Height; y++)
+        {
+            for (var x = 0; x < actual.Width; x++)
+            {
+                var inside = x >= 10 && x < 10 + size.Width && y >= 10 && y < 10 + size.Height;
+                if (!inside && pixels[(y * actual.Width) + x] != Colors.Red)
+                {
+                    Assert.Fail($"Pixel ({x}, {y}) is outside the measured bounds {size} but was painted.");
+                }
+            }
+        }
     }
 
     [Fact]

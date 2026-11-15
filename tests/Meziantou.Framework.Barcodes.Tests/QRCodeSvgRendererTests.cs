@@ -524,7 +524,10 @@ public class QRCodeSvgRendererTests
         using var image = barcode.ToImage(options);
         #endregion
 
-        Assert.Contains(">5901234123457</text>", svg, StringComparison.Ordinal);
+        // The first digit left of the bars, then two groups of 6 digits between the guards
+        Assert.Contains(">5</text>", svg, StringComparison.Ordinal);
+        Assert.Contains(">901234</text>", svg, StringComparison.Ordinal);
+        Assert.Contains(">123457</text>", svg, StringComparison.Ordinal);
         Assert.Contains("@font-face", svg, StringComparison.Ordinal);
         XDocument.Parse(svg);
         DocumentationImages.AssertPng("BarcodeText", PngRendering.Encode(image));
@@ -585,6 +588,212 @@ public class QRCodeSvgRendererTests
         Assert.Same(gradient, painted.Fill);
     }
 
+    [Fact]
+    public void CreateScene_Ean13_GroupsTheDigitsBetweenTheGuards()
+    {
+        var barcode = Barcode.CreateEan13("590123412345");
+        var scene = barcode.CreateScene(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 40, QuietZoneModules = 10, Text = new BarcodeTextOptions { FontSize = 10, Spacing = 3 } });
+        var texts = GetTexts(scene);
+        var bars = GetBars(scene);
+
+        Assert.Equal(["5", "901234", "123457"], texts.Select(text => text.Text));
+        Assert.Equal((95 + 20) * 2, scene.Width);
+
+        // The guard bars (modules 0-3, 45-50, 92-95) extend 5 modules below the data bars
+        Assert.Equal((20d, 0d, 22d, 50d), bars[0]); // start guard
+        Assert.Equal((24d, 0d, 26d, 50d), bars[1]);
+        Assert.Equal(40, bars[2].Bottom); // the first data bar
+        Assert.Equal([50d, 50d], bars.Where(bar => bar.Left >= 20 + (45 * 2) && bar.Right <= 20 + (50 * 2)).Select(bar => bar.Bottom));
+        Assert.Equal(50, bars[^1].Bottom); // end guard
+
+        // The first digit is left of the bars, the groups are centered between the guards, under the data bars
+        Assert.True(texts[0].X + texts[0].MeasuredWidth <= 20 - 2);
+        Assert.Equal(Math.Floor(20 + (3 * 2) + (((42 * 2) - texts[1].MeasuredWidth) / 2)), texts[1].X);
+        Assert.Equal(Math.Floor(20 + (50 * 2) + (((42 * 2) - texts[2].MeasuredWidth) / 2)), texts[2].X);
+        Assert.All(texts, text => Assert.Equal(43, text.Y));
+        Assert.All(texts, text => Assert.Equal(10, text.Font.Size));
+        Assert.Equal(43 + Measure(texts[1]).Height, scene.Height);
+    }
+
+    [Fact]
+    public void CreateScene_Ean8_GroupsTheDigitsByFour()
+    {
+        var barcode = Barcode.CreateEan8("5512345");
+        var scene = barcode.CreateScene(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 40, QuietZoneModules = 7, Text = new BarcodeTextOptions { FontSize = 10 } });
+        var texts = GetTexts(scene);
+
+        Assert.Equal(["5512", "3457"], texts.Select(text => text.Text));
+        Assert.Equal((67 + 14) * 2, scene.Width);
+        Assert.Equal(Math.Floor(14 + (3 * 2) + (((28 * 2) - texts[0].MeasuredWidth) / 2)), texts[0].X);
+        Assert.Equal(Math.Floor(14 + (36 * 2) + (((28 * 2) - texts[1].MeasuredWidth) / 2)), texts[1].X);
+        Assert.Equal([50d, 50d, 50d, 50d, 50d, 50d], GetBars(scene).Where(bar => bar.Bottom > 40).Select(bar => bar.Bottom)); // 2 bars per guard
+    }
+
+    [Fact]
+    public void CreateScene_UpcA_PrintsTheNumberSystemAndCheckDigitsSmallerOutsideTheBars()
+    {
+        var barcode = Barcode.CreateUpcA("03600029145");
+        var scene = barcode.CreateScene(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 40, QuietZoneModules = 9, Text = new BarcodeTextOptions { FontSize = 10 } });
+        var texts = GetTexts(scene);
+        var bars = GetBars(scene);
+
+        Assert.Equal(["0", "36000", "29145", "2"], texts.Select(text => text.Text));
+        Assert.Equal([8d, 10d, 10d, 8d], texts.Select(text => text.Font.Size));
+        Assert.True(texts[0].X + texts[0].MeasuredWidth <= 18 - 2);
+        Assert.Equal(18 + (95 * 2) + 2, texts[3].X);
+        Assert.Equal(Math.Floor(18 + (10 * 2) + (((35 * 2) - texts[1].MeasuredWidth) / 2)), texts[1].X);
+
+        // The small digits stand on the baseline of the others
+        Assert.Equal(texts[1].Y + Measure(texts[1]).Ascent, texts[0].Y + Measure(texts[0]).Ascent, 1e-9);
+
+        // The bars of the first and last characters extend like the guards
+        Assert.All(bars.Where(bar => bar.Right <= 18 + (10 * 2) || bar.Left >= 18 + (85 * 2)), bar => Assert.Equal(50, bar.Bottom));
+        Assert.All(bars.Where(bar => bar.Left >= 18 + (10 * 2) && bar.Right <= 18 + (45 * 2)), bar => Assert.Equal(40, bar.Bottom));
+    }
+
+    [Fact]
+    public void CreateScene_UpcE_PrintsSixDigitsUnderTheBars()
+    {
+        var barcode = Barcode.CreateUpcE("0425261");
+        var scene = barcode.CreateScene(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 40, QuietZoneModules = 9, Text = new BarcodeTextOptions { FontSize = 10 } });
+        var texts = GetTexts(scene);
+
+        Assert.Equal(["0", "425261", "4"], texts.Select(text => text.Text));
+        Assert.Equal(Math.Floor(18 + (3 * 2) + (((42 * 2) - texts[1].MeasuredWidth) / 2)), texts[1].X);
+        Assert.Equal([50d, 50d, 50d, 50d, 50d], GetBars(scene).Where(bar => bar.Bottom > 40).Select(bar => bar.Bottom)); // "101" and "010101"
+    }
+
+    [Fact]
+    public void CreateScene_Ean13WithAddOn_PrintsTheAddOnAboveItsShorterBars()
+    {
+        var barcode = Barcode.CreateEan13("978020137962", "52499");
+        var scene = barcode.CreateScene(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 40, QuietZoneModules = 10, Text = new BarcodeTextOptions { FontSize = 10, Spacing = 3 } });
+        var texts = GetTexts(scene);
+        var addOnLeft = 20 + ((95 + 7) * 2);
+        var addOnBars = GetBars(scene).Where(bar => bar.Left >= addOnLeft).ToArray();
+        var addOnBarsTop = Math.Ceiling(Measure(texts[^1]).Height + 3);
+
+        Assert.Equal(["9", "780201", "379624", "52499"], texts.Select(text => text.Text));
+        Assert.Equal(0, texts[^1].Y);
+        Assert.Equal(Math.Floor(addOnLeft + (((47 * 2) - texts[^1].MeasuredWidth) / 2)), texts[^1].X);
+        Assert.All(addOnBars, bar => Assert.Equal((addOnBarsTop, 50d), (bar.Top, bar.Bottom)));
+        Assert.Equal((95 + 7 + 47 + 20) * 2, scene.Width);
+    }
+
+    [Fact]
+    public void CreateScene_UpcAWithAddOn_PrintsTheCheckDigitInTheGap()
+    {
+        var barcode = Barcode.CreateUpcA("03600029145", "12");
+        var scene = barcode.CreateScene(new BarcodeRenderOptions { ModuleWidth = 2, Text = new BarcodeTextOptions() });
+        var texts = GetTexts(scene);
+
+        Assert.Equal(["0", "36000", "29145", "2", "12"], texts.Select(text => text.Text));
+        Assert.True(texts[3].X + texts[3].MeasuredWidth <= 20 + ((95 + 9) * 2) - 2);
+        Assert.Equal((95 + 9 + 20 + 20) * 2, scene.Width); // the quiet zone after the add-on is not widened
+        AssertLayoutIsValid(scene);
+    }
+
+    [Fact]
+    public void CreateScene_Ean13_NoQuietZone_WidensTheLeftSideForTheFirstDigit()
+    {
+        var barcode = Barcode.CreateEan13("590123412345");
+        var scene = barcode.CreateScene(new BarcodeRenderOptions { ModuleWidth = 2, QuietZoneModules = 0, Text = new BarcodeTextOptions() });
+        var texts = GetTexts(scene);
+        var bars = GetBars(scene);
+        var left = Math.Ceiling(texts[0].MeasuredWidth + 2);
+
+        Assert.Equal(left, bars[0].Left);
+        Assert.Equal(left + (95 * 2), scene.Width);
+        Assert.Equal(0, texts[0].X);
+    }
+
+    [Fact]
+    public void CreateScene_Ean13_LargeFont_ShrinksTheDigitsToFitBetweenTheGuards()
+    {
+        var barcode = Barcode.CreateEan13("590123412345", "12");
+        var scene = barcode.CreateScene(new BarcodeRenderOptions { ModuleWidth = 1, Text = new BarcodeTextOptions { FontSize = 100 } });
+        var texts = GetTexts(scene);
+
+        Assert.All(texts, text => Assert.True(text.Font.Size < 100));
+        Assert.Equal(42, Math.Max(texts[1].MeasuredWidth, texts[2].MeasuredWidth), 1e-9); // the widest group fills its range
+        AssertLayoutIsValid(scene);
+    }
+
+    [Fact]
+    public void CreateScene_Ean13WithoutText_DrawsBarsOfOneHeight()
+    {
+        var scene = Barcode.CreateEan13("590123412345").CreateScene(new BarcodeRenderOptions { ModuleHeight = 40 });
+
+        Assert.All(GetBars(scene), bar => Assert.Equal((0d, 40d), (bar.Top, bar.Bottom)));
+        Assert.Empty(GetTexts(scene));
+    }
+
+    [Theory]
+    [InlineData(BarcodeType.Ean8, "5512345", null)]
+    [InlineData(BarcodeType.Ean8, "5512345", "12")]
+    [InlineData(BarcodeType.Ean13, "590123412345", null)]
+    [InlineData(BarcodeType.Ean13, "590123412345", "52495")]
+    [InlineData(BarcodeType.UpcA, "03600029145", null)]
+    [InlineData(BarcodeType.UpcA, "03600029145", "52495")]
+    [InlineData(BarcodeType.UpcE, "0425261", null)]
+    [InlineData(BarcodeType.UpcE, "0425261", "12")]
+    public void CreateScene_EanUpc_DigitsDoNotOverlapTheBarsNorEachOther(BarcodeType type, string data, string? addOn)
+    {
+        var barcode = type switch
+        {
+            BarcodeType.Ean8 => Barcode.CreateEan8(data, addOn),
+            BarcodeType.Ean13 => Barcode.CreateEan13(data, addOn),
+            BarcodeType.UpcA => Barcode.CreateUpcA(data, addOn),
+            _ => Barcode.CreateUpcE(data, addOn),
+        };
+
+        foreach (var (moduleWidth, quietZone, fontSize, snap) in new[] { (2d, 10, 14d, true), (1d, 0, 30d, true), (0.7, 3, 9d, false), (3d, 1, 200d, false) })
+        {
+            var scene = barcode.CreateScene(new BarcodeRenderOptions { ModuleWidth = moduleWidth, ModuleHeight = 30, QuietZoneModules = quietZone, SnapToPixels = snap, Text = new BarcodeTextOptions { FontSize = fontSize } });
+
+            Assert.Equal(barcode.Text.Replace(" ", "", StringComparison.Ordinal), string.Concat(GetTexts(scene).Select(text => text.Text)));
+            AssertLayoutIsValid(scene);
+        }
+    }
+
+    // The digits are inside the drawing, and their boxes overlap neither the bars nor each other
+    private static void AssertLayoutIsValid(Scene scene)
+    {
+        const double Tolerance = 1e-9;
+        var boxes = GetTexts(scene).Select(text => (Left: text.X, Top: text.Y, Right: text.X + text.MeasuredWidth, Bottom: text.Y + Measure(text).Height)).ToArray();
+        var bars = GetBars(scene);
+        for (var i = 0; i < boxes.Length; i++)
+        {
+            var box = boxes[i];
+            Assert.True(box.Left >= -Tolerance && box.Top >= -Tolerance && box.Right <= scene.Width + Tolerance && box.Bottom <= scene.Height + Tolerance, $"Text {i} {box} is outside the scene ({scene.Width}x{scene.Height})");
+            Assert.DoesNotContain(bars, bar => Overlap(box, bar));
+            for (var j = i + 1; j < boxes.Length; j++)
+            {
+                Assert.False(Overlap(box, boxes[j]), $"Texts {i} and {j} overlap");
+            }
+        }
+
+        static bool Overlap((double Left, double Top, double Right, double Bottom) a, (double Left, double Top, double Right, double Bottom) b)
+            => a.Left < b.Right - Tolerance && b.Left < a.Right - Tolerance && a.Top < b.Bottom - Tolerance && b.Top < a.Bottom - Tolerance;
+    }
+
+    private static SceneText[] GetTexts(Scene scene) => scene.Root.Children.OfType<SceneText>().ToArray();
+
+    private static TextMetrics Measure(SceneText text) => new FontFaceTextMeasurer(BarcodeFonts.OcrB).Measure(text.Text, text.Font);
+
+    // Each run of dark modules is a rectangle: a move, three lines and a close
+    private static (double Left, double Top, double Right, double Bottom)[] GetBars(Scene scene)
+    {
+        var commands = scene.Root.Children.OfType<ScenePath>().Single().Data.Commands;
+        var bars = new (double Left, double Top, double Right, double Bottom)[commands.Count / 5];
+        for (var i = 0; i < bars.Length; i++)
+        {
+            bars[i] = (commands[i * 5].X, commands[i * 5].Y, commands[(i * 5) + 2].X, commands[(i * 5) + 2].Y);
+        }
+
+        return bars;
+    }
+
     [Theory]
     [InlineData(0, 2)]
     [InlineData(double.NaN, 2)]
@@ -622,5 +831,17 @@ public class QRCodeSvgRendererTests
         Assert.Equal("Meziantou OCR-A", BarcodeFonts.OcrA.DefaultFamily);
         Assert.Equal("Meziantou OCR-B", BarcodeFonts.OcrB.DefaultFamily);
         Assert.Same(BarcodeFonts.OcrB, BarcodeFonts.OcrB);
+    }
+
+    [Fact]
+    public void CreateScene_Barcode_ControlCharactersOfTheTextAreEscaped()
+    {
+        // Code 128 encodes every ASCII character: the text is one line, as it is measured
+        var barcode = Barcode.CreateCode128("AB\nCD\u001b");
+        var scene = barcode.CreateScene(new BarcodeRenderOptions { Text = new BarcodeTextOptions() });
+        var text = Assert.IsType<SceneText>(scene.Root.Children[^1]);
+
+        Assert.Equal("AB?CD?", text.Text);
+        Assert.Equal(new FontFaceTextMeasurer(BarcodeFonts.OcrB).Measure("AB?CD?", text.Font).Width, text.MeasuredWidth);
     }
 }

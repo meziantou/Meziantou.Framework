@@ -1311,6 +1311,26 @@ internal static class SmokeTests
         }
     }
 
+    public static void Radiance()
+    {
+        // RGBE pixels round trip through both scanline encodings: a mantissa is read as the middle of its interval, so the
+        // pixels written again give the same bytes
+        using var still = CreatePattern(seed: 14);
+        using var floats = still.CloneAs<RgbaFloat>();
+        floats.Frames[0][1, 2] = new RgbaFloat(42.5f, 0f, 1e20f, 1f);
+        floats.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        foreach (var compression in Enum.GetValues<RadianceCompression>())
+        {
+            var encoded = Encode(floats, new RadianceEncoder { Compression = compression, BackgroundColor = new Rgba64(0, 0, 0, 65535) });
+            Check(Image.DetectFormat(encoded) == ImageFormat.Radiance, "Radiance HDR detection");
+            var info = Image.Identify(encoded, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+            Check(info.Width == Width && info.Height == Height && info.PixelFormat == PixelFormat.RgbaFloat, "Radiance HDR identification");
+            using var decoded = Image.Load<RgbaFloat>(encoded);
+            Check(Encode(decoded, new RadianceEncoder { Compression = compression }).AsSpan().SequenceEqual(encoded), "Radiance HDR " + compression.ToString());
+            Check(decoded.Metadata.TransferFunction == ColorTransferFunction.Linear && decoded.Metadata.RadianceHeader?.ScanOrder == "-Y +X", "Radiance HDR metadata");
+        }
+    }
+
     private static byte[] Encode(Image image, ImageEncoder encoder)
     {
         using var stream = new MemoryStream();

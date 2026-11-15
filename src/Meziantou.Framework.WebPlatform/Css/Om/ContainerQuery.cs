@@ -127,9 +127,9 @@ internal sealed class ContainerQueryParser
 
         string? name = null;
         var index = 0;
-        if (tokens[0] is CssPreservedToken { Type: CssTokenType.Ident } ident && IsContainerName(ident.Token.Value))
+        if (tokens[0] is CssPreservedToken { Type: CssTokenType.Ident } ident && IsContainerName(ident.Value))
         {
-            name = ident.Token.Value;
+            name = ident.Value;
             index = 1;
         }
 
@@ -190,7 +190,7 @@ internal sealed class ContainerQueryParser
         if (index >= tokens.Count)
             return null;
 
-        if (tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } not && not.Token.IsIdent("not"))
+        if (tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } not && not.IsIdent("not"))
         {
             if (index + 1 >= tokens.Count || parseInParens(tokens[index + 1]) is not { } negated)
                 return null;
@@ -206,10 +206,10 @@ internal sealed class ContainerQueryParser
         var builder = new StringBuilder(first.Text);
         string? combinator = null;
         index++;
-        while (index < tokens.Count && tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } word && InfraAscii.ToAsciiLowercase(word.Token.Value) is "and" or "or")
+        while (index < tokens.Count && tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } word && InfraAscii.ToAsciiLowercase(word.Value) is "and" or "or")
         {
             // "and" and "or" cannot be mixed at the same level
-            var keyword = InfraAscii.ToAsciiLowercase(word.Token.Value);
+            var keyword = InfraAscii.ToAsciiLowercase(word.Value);
             if (combinator is not null && combinator != keyword)
                 return null;
 
@@ -319,7 +319,7 @@ internal sealed class ContainerQueryParser
 
         if (tokens[0] is CssPreservedToken { Type: CssTokenType.Ident } nameToken)
         {
-            var name = InfraAscii.ToAsciiLowercase(nameToken.Token.Value);
+            var name = InfraAscii.ToAsciiLowercase(nameToken.Value);
 
             // <mf-boolean>
             if (tokens.Count == 1)
@@ -401,7 +401,7 @@ internal sealed class ContainerQueryParser
         if (part is not [CssPreservedToken { Type: CssTokenType.Ident } ident])
             return null;
 
-        var name = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+        var name = InfraAscii.ToAsciiLowercase(ident.Value);
         return SizeFeatures.TryGetValue(name, out var feature) && feature.Feature != ContainerSizeFeature.Orientation ? (feature.Feature, feature.Axes, name) : null;
     }
 
@@ -412,7 +412,7 @@ internal sealed class ContainerQueryParser
             return false;
 
         if (feature == ContainerSizeFeature.Orientation)
-            return value is [CssPreservedToken { Type: CssTokenType.Ident } ident] && InfraAscii.ToAsciiLowercase(ident.Token.Value) is "portrait" or "landscape";
+            return value is [CssPreservedToken { Type: CssTokenType.Ident } ident] && InfraAscii.ToAsciiLowercase(ident.Value) is "portrait" or "landscape";
 
         if (ValueMatcher.ContainsSubstitutionFunction(value))
             return value.Count == 1 || (feature == ContainerSizeFeature.AspectRatio && value.Count == 3);
@@ -474,7 +474,7 @@ internal sealed class ContainerQueryParser
         if (tokens.Exists(IsComparisonDelim))
             return ParseStyleRange(tokens);
 
-        if (tokens[0] is not CssPreservedToken { Type: CssTokenType.Ident } nameToken || GetStyleFeatureName(nameToken.Token.Value) is not { } name)
+        if (tokens[0] is not CssPreservedToken { Type: CssTokenType.Ident } nameToken || GetStyleFeatureName(nameToken.Value) is not { } name)
             return null;
 
         var serializedName = CssSerializer.SerializeIdentifier(name);
@@ -492,7 +492,7 @@ internal sealed class ContainerQueryParser
 
         // The value of a declaration can end with !important
         var significant = ValueMatcher.RemoveWhitespace(value);
-        if (significant is [.., CssPreservedToken bang, CssPreservedToken { Type: CssTokenType.Ident } important] && bang.Token.IsDelim('!') && important.Token.IsIdent("important"))
+        if (significant is [.., CssPreservedToken bang, CssPreservedToken { Type: CssTokenType.Ident } important] && bang.IsDelim('!') && important.IsIdent("important"))
         {
             value = value[..value.IndexOf(bang)];
         }
@@ -545,10 +545,10 @@ internal sealed class ContainerQueryParser
                 builder.Append(' ').Append(Serialize(comparisons[i - 1])).Append(' ');
             }
 
-            if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && CssPropertyRegistry.IsCustomProperty(ident.Token.Value))
+            if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && CssPropertyRegistry.IsCustomProperty(ident.Value))
             {
-                operands[i] = new ContainerStyleRangeOperand(CustomPropertyName: ident.Token.Value, Value: null);
-                builder.Append(CssSerializer.SerializeIdentifier(ident.Token.Value));
+                operands[i] = new ContainerStyleRangeOperand(CustomPropertyName: ident.Value, Value: null);
+                builder.Append(CssSerializer.SerializeIdentifier(ident.Value));
             }
             else
             {
@@ -611,16 +611,16 @@ internal sealed class ContainerQueryParser
         if (tokens[0] is not CssPreservedToken { Type: CssTokenType.Ident } nameToken)
             return null;
 
-        var name = InfraAscii.ToAsciiLowercase(nameToken.Token.Value);
+        var name = InfraAscii.ToAsciiLowercase(nameToken.Value);
         if (!ScrollStateFeatures.TryGetValue(name, out var feature))
             return null;
 
         if (tokens.Count == 1)
             return (new ContainerScrollStateFeatureNode(feature.Feature, value: null), name);
 
-        if (tokens is [_, CssPreservedToken { Type: CssTokenType.Colon }, CssPreservedToken { Type: CssTokenType.Ident } valueToken] && feature.Values.Contains(InfraAscii.ToAsciiLowercase(valueToken.Token.Value), StringComparer.Ordinal))
+        if (tokens is [_, CssPreservedToken { Type: CssTokenType.Colon }, CssPreservedToken { Type: CssTokenType.Ident } valueToken] && feature.Values.Contains(InfraAscii.ToAsciiLowercase(valueToken.Value), StringComparer.Ordinal))
         {
-            var value = InfraAscii.ToAsciiLowercase(valueToken.Token.Value);
+            var value = InfraAscii.ToAsciiLowercase(valueToken.Value);
             return (new ContainerScrollStateFeatureNode(feature.Feature, value), name + ": " + value);
         }
 
@@ -678,7 +678,7 @@ internal sealed class ContainerQueryParser
     /// </summary>
     private static (ContainerQueryNode Node, string Text)? ParseAnchoredFeature(List<CssComponentValue> tokens)
     {
-        if (tokens[0] is not CssPreservedToken { Type: CssTokenType.Ident } nameToken || !nameToken.Token.IsIdent("fallback"))
+        if (tokens[0] is not CssPreservedToken { Type: CssTokenType.Ident } nameToken || !nameToken.IsIdent("fallback"))
             return null;
 
         if (tokens.Count == 1)
@@ -697,7 +697,7 @@ internal sealed class ContainerQueryParser
             if (token is not CssPreservedToken { Type: CssTokenType.Ident } ident)
                 return null;
 
-            keywords.Add(ident.Token.Value.StartsWith("--", StringComparison.Ordinal) ? ident.Token.Value : InfraAscii.ToAsciiLowercase(ident.Token.Value));
+            keywords.Add(ident.Value.StartsWith("--", StringComparison.Ordinal) ? ident.Value : InfraAscii.ToAsciiLowercase(ident.Value));
         }
 
         var text = string.Join(' ', keywords.Select(keyword => CssSerializer.SerializeIdentifier(keyword)));
@@ -720,7 +720,7 @@ internal sealed class ContainerQueryParser
             if (tokens[i] is CssPreservedToken { Token: { Type: CssTokenType.Delim } delim } delimToken && delim.Value is "<" or ">" or "=")
             {
                 var orEqual = false;
-                if (delim.Value is "<" or ">" && i + 1 < tokens.Count && tokens[i + 1] is CssPreservedToken equals && equals.Token.IsDelim('=') && equals.Start == delimToken.End)
+                if (delim.Value is "<" or ">" && i + 1 < tokens.Count && tokens[i + 1] is CssPreservedToken equals && equals.IsDelim('=') && equals.Start == delimToken.End)
                 {
                     orEqual = true;
                     i++;

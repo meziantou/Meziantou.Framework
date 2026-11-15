@@ -59,7 +59,7 @@ internal static class CssRandom
         if (significant.Count == 0)
             return null;
 
-        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } single] && single.Token.IsIdent("auto"))
+        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } single] && single.IsIdent("auto"))
             return CssRandomSharing.Auto;
 
         string? dashedIdent = null;
@@ -71,7 +71,7 @@ internal static class CssRandom
             if (value is not CssPreservedToken { Type: CssTokenType.Ident } ident)
                 return null;
 
-            var name = ident.Token.Value;
+            var name = ident.Value;
             var lower = InfraAscii.ToAsciiLowercase(name);
             if (name.StartsWith("--", StringComparison.Ordinal))
             {
@@ -115,7 +115,7 @@ internal static class CssRandom
     /// keyword starts a calculation (e.g. a channel keyword of a relative color, as in <c>rgb(from blue random(g, 10) 0 0)</c>).
     /// </summary>
     public static bool IsSharingArgument(List<CssComponentValue> significant) =>
-        significant is [CssPreservedToken { Type: CssTokenType.Ident } first, ..] && (first.Token.IsIdent("fixed") || ParseSharing(significant) is not null);
+        significant is [CssPreservedToken { Type: CssTokenType.Ident } first, ..] && (first.IsIdent("fixed") || ParseSharing(significant) is not null);
 
     /// <summary>
     /// Replaces the auto, property-scoped and property-index-scoped sharing of the random() functions of the value of a property by
@@ -235,7 +235,7 @@ internal static class CssRandom
                     CssRandomSharing? sharing = null;
                     if (IsSharingArgument(first))
                     {
-                        if (first[0] is CssPreservedToken firstToken && firstToken.Token.IsIdent("fixed"))
+                        if (first[0] is CssPreservedToken firstToken && firstToken.IsIdent("fixed"))
                         {
                             copy.Value.AddRange(Assign(property, arguments[0], invocation, ref index, AssignMode.Rewrite, splices: null));
                             copy.Value.Add(new CssPreservedToken(new CssToken { Type = CssTokenType.Comma }));

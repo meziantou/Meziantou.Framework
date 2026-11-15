@@ -74,7 +74,7 @@ internal static partial class CssPropertyRules
         var numbers = 0;
         foreach (var value in significant)
         {
-            if (value is CssPreservedToken { Type: CssTokenType.Number } number && ++numbers == 3 && number.Token.NumericValue != 0)
+            if (value is CssPreservedToken { Type: CssTokenType.Number } number && ++numbers == 3 && number.NumericValue != 0)
                 return false;
         }
 
@@ -96,8 +96,8 @@ internal static partial class CssPropertyRules
             if (ValueMatcher.RemoveWhitespace(function.Value) is not [CssPreservedToken { Type: CssTokenType.Ident } name])
                 return null;
 
-            var isInline = significant.Exists(static other => other is CssPreservedToken { Type: CssTokenType.Ident } keyword && keyword.Token.Value.Equals("inline", StringComparison.OrdinalIgnoreCase));
-            return CssDisplay.SerializeLayoutFunction(name.Token.Value, isInline);
+            var isInline = significant.Exists(static other => other is CssPreservedToken { Type: CssTokenType.Ident } keyword && keyword.Value.Equals("inline", StringComparison.OrdinalIgnoreCase));
+            return CssDisplay.SerializeLayoutFunction(name.Value, isInline);
         }
 
         return CssDisplay.Canonicalize(InfraAscii.ToAsciiLowercase(Serialize(significant, separator: " ")));
@@ -115,7 +115,7 @@ internal static partial class CssPropertyRules
             if (value is not CssPreservedToken { Type: CssTokenType.Ident } ident)
                 return null;
 
-            keywords.Add(InfraAscii.ToAsciiLowercase(ident.Token.Value));
+            keywords.Add(InfraAscii.ToAsciiLowercase(ident.Value));
         }
 
         if (keywords is ["normal"])
@@ -367,11 +367,11 @@ internal static partial class CssPropertyRules
 
     /// <summary>https://drafts.csswg.org/css-view-transitions-2/#view-transition-class-prop: <c>none</c> is not a class (<c>none | &lt;custom-ident&gt;+</c>).</summary>
     private static bool IsValidViewTransitionClass(CssPropertyDefinition property, List<CssComponentValue> significant)
-        => significant.Count <= 1 || !significant.Exists(static value => value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent("none"));
+        => significant.Count <= 1 || !significant.Exists(static value => value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.IsIdent("none"));
 
     /// <summary>https://drafts.csswg.org/css-view-transitions-2/#view-transition-name-prop: the keywords are serialized in lowercase (the names are case-sensitive).</summary>
     private static string? CanonicalizeViewTransitionName(List<CssComponentValue> significant)
-        => significant is [CssPreservedToken { Type: CssTokenType.Ident } ident] && InfraAscii.ToAsciiLowercase(ident.Token.Value) is ("none" or "auto" or "match-element") and var keyword ? keyword : null;
+        => significant is [CssPreservedToken { Type: CssTokenType.Ident } ident] && InfraAscii.ToAsciiLowercase(ident.Value) is ("none" or "auto" or "match-element") and var keyword ? keyword : null;
 
     /// <summary>
     /// aspect-ratio (https://drafts.csswg.org/css-sizing-4/#aspect-ratio): <c>auto</c> first, and a &lt;ratio&gt; of a single number
@@ -384,11 +384,11 @@ internal static partial class CssPropertyRules
         var numbers = new List<CssComponentValue>(2);
         foreach (var value in significant)
         {
-            if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent("auto"))
+            if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.IsIdent("auto"))
             {
                 hasAuto = true;
             }
-            else if (!(value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.Token.IsDelim('/')))
+            else if (!(value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.IsDelim('/')))
             {
                 numbers.Add(value);
             }
@@ -424,7 +424,7 @@ internal static partial class CssPropertyRules
 
     private static string Serialize(List<CssComponentValue> significant, string separator) => string.Join(separator, significant.Select(value => CssSerializer.SerializeValue([value], property: null)));
 
-    private static bool IsIdent(CssComponentValue value, string keyword) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent(keyword);
+    private static bool IsIdent(CssComponentValue value, string keyword) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.IsIdent(keyword);
 
     /// <summary>https://svgwg.org/svg2-draft/painting.html#MarkerShorthand: none or a url() for the three marker properties.</summary>
     private static Dictionary<string, string>? ExpandMarker(CssPropertyDefinition shorthand, List<CssComponentValue> significant)
@@ -557,7 +557,7 @@ internal static partial class CssPropertyRules
                     legacy = true;
                     break;
                 default:
-                    ellipsis = value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : CssSerializer.SerializeValue([value], property: null);
+                    ellipsis = value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : CssSerializer.SerializeValue([value], property: null);
                     break;
             }
         }

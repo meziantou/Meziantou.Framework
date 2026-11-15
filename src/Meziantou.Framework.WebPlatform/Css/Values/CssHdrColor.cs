@@ -60,7 +60,7 @@ internal static class CssHdrColor
     public static double? EvaluateHeadroom(CssComponentValue? headroom, CssCalcContext context) => headroom switch
     {
         null => 0,
-        CssPreservedToken { Type: CssTokenType.Number } number => number.Token.NumericValue,
+        CssPreservedToken { Type: CssTokenType.Number } number => number.NumericValue,
         CssFunction math when CssCalc.Evaluate(math, context) is { IsNumeric: true, Unit: "" } result => double.IsNaN(result.Value) ? 0 : Math.Max(0, result.Value),
         _ => null,
     };
@@ -84,7 +84,7 @@ internal static class CssHdrColor
     // <number [0,∞]>: a non-negative number, or a math function that resolves to a number
     private static bool IsHeadroom(CssComponentValue value) => value switch
     {
-        CssPreservedToken { Type: CssTokenType.Number } number => number.Token.NumericValue >= 0,
+        CssPreservedToken { Type: CssTokenType.Number } number => number.NumericValue >= 0,
         CssFunction math when CssCalc.IsMathFunction(math.Name) => CssCalc.Evaluate(math, new CssCalcContext { KeepRelativeUnits = true }) is { TypeUnit: "" },
         _ => false,
     };

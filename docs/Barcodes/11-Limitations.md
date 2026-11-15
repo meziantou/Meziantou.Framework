@@ -33,7 +33,6 @@ description: What the barcode packages do not do.
 - **Logos on QR codes only**, from the bytes of a PNG, JPEG, GIF or WebP file: not an SVG image, nor a URL. The logo
   is centered: it cannot be placed elsewhere, and the area it clears is a rectangle. The check of the cleared area
   assumes a perfect print: it does not measure how well a scanner reads the result.
-- **The human-readable text is one centered line**: the digits of EAN and UPC barcodes are not split into groups
-  around the guard bars, and the guard bars are not longer than the other bars. In the terminal, the text is written
-  in the font of the terminal.
+- **The human-readable text in the terminal is one centered line**, written in the font of the terminal: the digits of
+  EAN and UPC barcodes are grouped around longer guard bars in SVG, images and PDF only.
 - **Larger SVG documents than a hand-written path**: each run of dark modules is a rectangle of absolute coordinates.

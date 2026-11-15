@@ -20,6 +20,8 @@
   <ItemGroup>
     <!-- The helper that creates the script engine of the tests -->
     <Compile Include="..\Meziantou.Framework.WebPlatform.Tests\Scripting\TestScriptEngines.cs" Link="TestScriptEngines.cs" />
+    <!-- The writer of the fonts of the tests of Meziantou.Framework.Imaging: the fonts with SVG glyphs -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\Font*.cs" Exclude="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontWoff2*.cs" LinkBase="Shared" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

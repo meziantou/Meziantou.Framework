@@ -920,8 +920,9 @@ public sealed class DecodeInteropTests
         if (variant is "ToImageScaled")
             return barcode.ToPngBytes(new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 30 }, new SceneImageOptions { Scale = 2 });
 
+        // With the text: the digits of EAN and UPC are between longer guards, and the bars of an add-on are shorter
         if (variant is "ToImage")
-            return barcode.ToPngBytes(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 60 });
+            return barcode.ToPngBytes(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 60, Text = new BarcodeTextOptions() });
 
         var options = variant switch
         {

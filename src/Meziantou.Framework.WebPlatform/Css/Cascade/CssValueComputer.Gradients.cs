@@ -196,6 +196,6 @@ internal static partial class CssValueComputer
             ? CssColor.FormatNumber(token.NumericValue) + "deg"
             : CssSerializer.SerializeValue([value], property: null);
 
-        static string? GetIdent(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : null;
+        static string? GetIdent(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : null;
     }
 }

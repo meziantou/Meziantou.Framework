@@ -29,7 +29,7 @@ internal static class CssTransforms
         is2D = true;
         var significant = ValueMatcher.RemoveWhitespace(values);
         double[] result = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
-        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ident.Token.IsIdent("none"))
+        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ident.IsIdent("none"))
             return result;
 
         if (significant.Count == 0)
@@ -245,7 +245,7 @@ internal static class CssTransforms
 
             case "perspective" when arguments is [var argument]:
             {
-                if (argument is [CssPreservedToken { Type: CssTokenType.Ident } none] && none.Token.IsIdent("none"))
+                if (argument is [CssPreservedToken { Type: CssTokenType.Ident } none] && none.IsIdent("none"))
                     return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
                 // The lengths less than 1px are treated as 1px (https://drafts.csswg.org/css-transforms-2/#funcdef-perspective)
@@ -335,21 +335,21 @@ internal static class CssTransforms
         switch (value)
         {
             case CssPreservedToken { Type: CssTokenType.Number } number:
-                return (number.Token.NumericValue, "");
+                return (number.NumericValue, "");
 
             case CssPreservedToken { Type: CssTokenType.Percentage } percentage:
                 if (context.PercentageBasis is { } basis && percentageUnit is not null && basis.Unit == percentageUnit)
-                    return (percentage.Token.NumericValue / 100 * basis.Value, basis.Unit);
+                    return (percentage.NumericValue / 100 * basis.Value, basis.Unit);
 
-                return (percentage.Token.NumericValue, "%");
+                return (percentage.NumericValue, "%");
 
             case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
             {
-                var unit = InfraAscii.ToAsciiLowercase(dimension.Token.Value);
-                if (CssCalc.TryConvertToCanonicalUnit(dimension.Token.NumericValue, unit, out var canonical, out var canonicalUnit))
+                var unit = InfraAscii.ToAsciiLowercase(dimension.Value);
+                if (CssCalc.TryConvertToCanonicalUnit(dimension.NumericValue, unit, out var canonical, out var canonicalUnit))
                     return (canonical, canonicalUnit);
 
-                return context.ResolveDimension?.Invoke(dimension.Token.NumericValue, unit) is { } resolved ? (resolved.Value, resolved.Unit) : (null, null);
+                return context.ResolveDimension?.Invoke(dimension.NumericValue, unit) is { } resolved ? (resolved.Value, resolved.Unit) : (null, null);
             }
 
             case CssFunction function when CssCalc.IsMathFunction(function.Name):

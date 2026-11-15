@@ -66,7 +66,8 @@ public class BarCodeAdditionalTypesTests
         var barcode = Barcode.CreateEan13("978020137962", extension: "52499");
         Assert.Equal("9780201379624 52499", barcode.Text); // the check digit is added
 
-        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60 });
+        // The digits of the add-on are printed above its bars
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
         #endregion
 
         DocumentationImages.AssertPng("Ean13WithAddOn", PngRendering.Encode(image));
@@ -458,6 +459,42 @@ public class BarCodeAdditionalTypesTests
     }
 
     [Fact]
+    public void ToSvg_Ean13WithAddOn_Text_Snapshot()
+    {
+        var barcode = Barcode.CreateEan13("978020137962", "52499");
+        var svg = barcode.ToSvg(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
+    public void ToSvg_Ean8_Text_Snapshot()
+    {
+        var barcode = Barcode.CreateEan8("5512345");
+        var svg = barcode.ToSvg(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
+    public void ToSvg_UpcAWithAddOn_Text_Snapshot()
+    {
+        var barcode = Barcode.CreateUpcA("03600029145", "12");
+        var svg = barcode.ToSvg(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
+    public void ToSvg_UpcE_Text_Snapshot()
+    {
+        var barcode = Barcode.CreateUpcE("0425261");
+        var svg = barcode.ToSvg(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
     public void ToSvg_Codabar_SmallData_Snapshot()
     {
         var barcode = Barcode.CreateCodabar(CodabarSmallData);
@@ -544,7 +581,8 @@ public class BarCodeAdditionalTypesTests
         // A UPC-A number without these zeros has no UPC-E form
         Assert.Throws<ArgumentException>("data", () => Barcode.CreateUpcE("03600029145"));
 
-        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60 });
+        // The number system and check digits are printed outside the bars, the 6 digits under them
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
         #endregion
 
         DocumentationImages.AssertPng("UpcE", PngRendering.Encode(image));

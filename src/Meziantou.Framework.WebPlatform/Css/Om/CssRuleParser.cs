@@ -130,9 +130,13 @@ internal sealed partial class CssRuleParser
     /// <summary>Parses the rules of a style sheet (https://drafts.csswg.org/cssom/#parse-a-css-stylesheet).</summary>
     public List<CssRule> ParseStylesheet(string text, bool allowImport = true)
     {
-        var values = CssParser.ParseListOfComponentValues(text, out _source);
-        var nodes = CssParser.ConsumeStylesheetContents(new CssComponentValueStream(values), reportErrors: false);
-        var rules = new List<CssRule>();
+        // The component values and the rules of the syntax are only used to create the rules: their lists are reused
+        var values = ListPool<CssComponentValue>.Rent();
+        var nodes = ListPool<CssSyntaxNode>.Rent();
+        CssParser.ParseListOfComponentValues(text, values, out _source);
+        CssParser.ConsumeStylesheetContents(new CssComponentValueStream(values), nodes, reportErrors: false);
+        ListPool<CssComponentValue>.Return(values);
+        var rules = new List<CssRule>(nodes.Count);
         foreach (var node in nodes)
         {
             var rule = ConvertRule(node, CssRuleContext.TopLevel);
@@ -154,6 +158,7 @@ internal sealed partial class CssRuleParser
             rules.Add(rule);
         }
 
+        ListPool<CssSyntaxNode>.Return(nodes);
         return rules;
     }
 
@@ -350,17 +355,24 @@ internal sealed partial class CssRuleParser
         var declarations = new List<CssDeclarationEntry>();
         var styleRule = new CssStyleRule(selectors, declarations);
 
+        // The declarations are collected in a list that is reused, then copied to a list of their final size: the list is
+        // kept by the rule, and a list that grows by doubling its capacity allocates about as much again in discarded arrays
+        var parsedDeclarations = ListPool<CssDeclarationEntry>.Rent();
+
         // The rules nested in a style rule are relative to the style rule, not to the scoping root
         _inScopeRule = false;
         try
         {
-            ParseNestedBlock(rule.Block.Value, styleRule, declarations);
+            ParseNestedBlock(rule.Block.Value, styleRule, parsedDeclarations);
         }
         finally
         {
             _inScopeRule = scoped;
         }
 
+        declarations.Capacity = parsedDeclarations.Count;
+        declarations.AddRange(parsedDeclarations);
+        ListPool<CssDeclarationEntry>.Return(parsedDeclarations);
         return styleRule;
     }
 
@@ -375,7 +387,7 @@ internal sealed partial class CssRuleParser
     public SelectorList? ParseStyleRuleSelector(List<CssComponentValue> prelude, bool nested, bool scoped = false, string? source = null)
     {
         // An empty selector or a selector containing a {} block is invalid
-        if (ValueMatcher.RemoveWhitespace(prelude).Count == 0)
+        if (ValueMatcher.IsEmptyOrWhitespace(prelude))
             return null;
 
         if (!nested)
@@ -390,7 +402,8 @@ internal sealed partial class CssRuleParser
     /// </summary>
     private void ParseNestedBlock(List<CssComponentValue> block, CssGroupingRule parent, List<CssDeclarationEntry>? declarations)
     {
-        var nodes = CssParser.ConsumeBlockContents(new CssComponentValueStream(block));
+        var nodes = ListPool<CssSyntaxNode>.Rent();
+        CssParser.ConsumeBlockContents(new CssComponentValueStream(block), nodes);
         List<CssDeclarationEntry>? nested = null;
         foreach (var node in nodes)
         {
@@ -421,6 +434,8 @@ internal sealed partial class CssRuleParser
                 parent.AddChildRule(child);
             }
         }
+
+        ListPool<CssSyntaxNode>.Return(nodes);
 
         // Remove the empty nested declarations (e.g. only invalid declarations)
         parent.ChildRules.RemoveAll(r => r is CssNestedDeclarations { Style.Length: 0 });
@@ -560,7 +575,8 @@ internal sealed partial class CssRuleParser
             return;
         }
 
-        var nodes = CssParser.ConsumeStylesheetContents(new CssComponentValueStream(block.Value), reportErrors: false, topLevel: false);
+        var nodes = ListPool<CssSyntaxNode>.Rent();
+        CssParser.ConsumeStylesheetContents(new CssComponentValueStream(block.Value), nodes, reportErrors: false, topLevel: false);
         foreach (var node in nodes)
         {
             if (ConvertRule(node, CssRuleContext.Grouping) is { } child)
@@ -568,6 +584,8 @@ internal sealed partial class CssRuleParser
                 parent.AddChildRule(child);
             }
         }
+
+        ListPool<CssSyntaxNode>.Return(nodes);
     }
 
     private List<CssDeclarationEntry> ParseDescriptors(CssSimpleBlock block, string atRule)
@@ -723,7 +741,7 @@ internal sealed partial class CssRuleParser
                     {
                         CssStyleDeclaration.AppendDeclaration(declaration, _source, declarations, "@page");
                     }
-                    else if (node is CssAtRule { Block: not null } marginRule && IsMarginRuleName(InfraAscii.ToAsciiLowercase(marginRule.Name)) && ValueMatcher.RemoveWhitespace(marginRule.Prelude).Count == 0)
+                    else if (node is CssAtRule { Block: not null } marginRule && IsMarginRuleName(InfraAscii.ToAsciiLowercase(marginRule.Name)) && ValueMatcher.IsEmptyOrWhitespace(marginRule.Prelude))
                     {
                         var marginName = InfraAscii.ToAsciiLowercase(marginRule.Name);
                         pageRule.AddChildRule(new CssMarginRule(marginName, ParseDescriptors(marginRule.Block, "@" + marginName)));
@@ -833,7 +851,7 @@ internal sealed partial class CssRuleParser
             // other contents of the block (rules, at-rules) are ignored
             case "position-try" when rule.Block is not null && IsTopLevelContext(context):
             {
-                if (prelude is not [CssPreservedToken { Type: CssTokenType.Ident } positionTryName] || !positionTryName.Token.Value.StartsWith("--", StringComparison.Ordinal))
+                if (prelude is not [CssPreservedToken { Type: CssTokenType.Ident } positionTryName] || !positionTryName.Value.StartsWith("--", StringComparison.Ordinal))
                     return null;
 
                 var declarations = new List<CssDeclarationEntry>();
@@ -845,25 +863,25 @@ internal sealed partial class CssRuleParser
                     }
                 }
 
-                return new CssPositionTryRule(positionTryName.Token.Value, declarations);
+                return new CssPositionTryRule(positionTryName.Value, declarations);
             }
 
             case "color-profile" when rule.Block is not null && context is CssRuleContext.TopLevel or CssRuleContext.Grouping:
             {
                 // https://drafts.csswg.org/css-color-5/#at-profile: a dashed identifier or device-cmyk
-                if (prelude is not [CssPreservedToken { Type: CssTokenType.Ident } profileName] || !(profileName.Token.Value.StartsWith("--", StringComparison.Ordinal) || profileName.Token.IsIdent("device-cmyk")))
+                if (prelude is not [CssPreservedToken { Type: CssTokenType.Ident } profileName] || !(profileName.Value.StartsWith("--", StringComparison.Ordinal) || profileName.IsIdent("device-cmyk")))
                     return null;
 
-                var profile = profileName.Token.Value.StartsWith("--", StringComparison.Ordinal) ? profileName.Token.Value : "device-cmyk";
+                var profile = profileName.Value.StartsWith("--", StringComparison.Ordinal) ? profileName.Value : "device-cmyk";
                 return new CssColorProfileRule(profile, ParseDescriptors(rule.Block, "@color-profile").ToDictionary(d => d.Name, d => d.Value.Value, StringComparer.Ordinal));
             }
 
             case "font-palette-values" when rule.Block is not null && context is CssRuleContext.TopLevel or CssRuleContext.Grouping:
             {
-                if (prelude is not [CssPreservedToken { Type: CssTokenType.Ident } paletteName] || !paletteName.Token.Value.StartsWith("--", StringComparison.Ordinal))
+                if (prelude is not [CssPreservedToken { Type: CssTokenType.Ident } paletteName] || !paletteName.Value.StartsWith("--", StringComparison.Ordinal))
                     return null;
 
-                return new CssFontPaletteValuesRule(paletteName.Token.Value, ParseDescriptors(rule.Block, "@font-palette-values").ToDictionary(d => d.Name, d => d.Value.Value, StringComparer.Ordinal));
+                return new CssFontPaletteValuesRule(paletteName.Value, ParseDescriptors(rule.Block, "@font-palette-values").ToDictionary(d => d.Name, d => d.Value.Value, StringComparer.Ordinal));
             }
 
             default:
@@ -889,7 +907,7 @@ internal sealed partial class CssRuleParser
             {
                 CssStyleDeclaration.AppendDeclaration(declaration, _source, descriptors, "@font-feature-values");
             }
-            else if (node is CssAtRule { Block: { } featureBlock } atRule && ValueMatcher.RemoveWhitespace(atRule.Prelude).Count == 0 && CssFontFeatureValuesRule.GetFeatureType(atRule.Name) is { } featureType)
+            else if (node is CssAtRule { Block: { } featureBlock } atRule && ValueMatcher.IsEmptyOrWhitespace(atRule.Prelude) && CssFontFeatureValuesRule.GetFeatureType(atRule.Name) is { } featureType)
             {
                 var map = rule.GetMapForBlock(featureType);
                 foreach (var item in CssParser.ConsumeBlockContents(new CssComponentValueStream(featureBlock.Value)))
@@ -967,9 +985,9 @@ internal sealed partial class CssRuleParser
         string? modifiers = null;
         string? href = values[0] switch
         {
-            CssPreservedToken { Type: CssTokenType.Url or CssTokenType.String } token => token.Token.Value,
+            CssPreservedToken { Type: CssTokenType.Url or CssTokenType.String } token => token.Value,
             CssFunction { Name: var functionName } function when InfraAscii.EqualsIgnoreAsciiCase(functionName, "url") && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } url, .. var urlModifiers]
-                && (modifiers = CssUrlModifiers.Canonicalize(urlModifiers)) is not null => url.Token.Value,
+                && (modifiers = CssUrlModifiers.Canonicalize(urlModifiers)) is not null => url.Value,
             _ => null,
         };
 
@@ -978,7 +996,7 @@ internal sealed partial class CssRuleParser
 
         var index = 1;
         string? layerName = null;
-        if (index < values.Count && values[index] is CssPreservedToken { Type: CssTokenType.Ident } layerKeyword && layerKeyword.Token.IsIdent("layer"))
+        if (index < values.Count && values[index] is CssPreservedToken { Type: CssTokenType.Ident } layerKeyword && layerKeyword.IsIdent("layer"))
         {
             layerName = "";
             index++;
@@ -1053,21 +1071,21 @@ internal sealed partial class CssRuleParser
     private static CssCustomMediaRule? ParseCustomMedia(List<CssComponentValue> prelude)
     {
         var start = prelude.FindIndex(v => v is not CssPreservedToken { Type: CssTokenType.Whitespace });
-        if (start < 0 || prelude[start] is not CssPreservedToken { Type: CssTokenType.Ident } nameToken || !nameToken.Token.Value.StartsWith("--", StringComparison.Ordinal))
+        if (start < 0 || prelude[start] is not CssPreservedToken { Type: CssTokenType.Ident } nameToken || !nameToken.Value.StartsWith("--", StringComparison.Ordinal))
             return null;
 
         var query = prelude[(start + 1)..];
-        if (ValueMatcher.RemoveWhitespace(query) is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && InfraAscii.ToAsciiLowercase(keyword.Token.Value) is "true" or "false")
-            return new CssCustomMediaRule(nameToken.Token.Value, InfraAscii.EqualsIgnoreAsciiCase(keyword.Token.Value, "true"));
+        if (ValueMatcher.RemoveWhitespace(query) is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && InfraAscii.ToAsciiLowercase(keyword.Value) is "true" or "false")
+            return new CssCustomMediaRule(nameToken.Value, InfraAscii.EqualsIgnoreAsciiCase(keyword.Value, "true"));
 
         // The "true" and "false" keywords can only be the whole query
         foreach (var value in query)
         {
-            if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Token.Value) is "true" or "false")
+            if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Value) is "true" or "false")
                 return null;
         }
 
-        return new CssCustomMediaRule(nameToken.Token.Value, new MediaList(query));
+        return new CssCustomMediaRule(nameToken.Value, new MediaList(query));
     }
 
     /// <summary>https://drafts.csswg.org/css-namespaces/#syntax</summary>
@@ -1077,7 +1095,7 @@ internal sealed partial class CssRuleParser
         var index = 0;
         if (prelude.Count == 2 && prelude[0] is CssPreservedToken { Type: CssTokenType.Ident } prefixToken)
         {
-            prefix = prefixToken.Token.Value;
+            prefix = prefixToken.Value;
             index = 1;
         }
 
@@ -1086,8 +1104,8 @@ internal sealed partial class CssRuleParser
 
         string? uri = prelude[index] switch
         {
-            CssPreservedToken { Type: CssTokenType.Url or CssTokenType.String } token => token.Token.Value,
-            CssFunction { Name: var functionName } function when InfraAscii.EqualsIgnoreAsciiCase(functionName, "url") && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } url] => url.Token.Value,
+            CssPreservedToken { Type: CssTokenType.Url or CssTokenType.String } token => token.Value,
+            CssFunction { Name: var functionName } function when InfraAscii.EqualsIgnoreAsciiCase(functionName, "url") && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } url] => url.Value,
             _ => null,
         };
 
@@ -1113,13 +1131,13 @@ internal sealed partial class CssRuleParser
 
                     break;
                 case CssPreservedToken { Type: CssTokenType.Ident } ident when expectIdent && !sawWhitespaceInName:
-                    if (ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Token.Value)))
+                    if (ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Value)))
                         return null;
 
-                    current.Append(CssSerializer.SerializeIdentifier(ident.Token.Value));
+                    current.Append(CssSerializer.SerializeIdentifier(ident.Value));
                     expectIdent = false;
                     break;
-                case CssPreservedToken dot when dot.Token.IsDelim('.') && !expectIdent && !sawWhitespaceInName:
+                case CssPreservedToken dot when dot.IsDelim('.') && !expectIdent && !sawWhitespaceInName:
                     current.Append('.');
                     expectIdent = true;
                     break;
@@ -1171,7 +1189,7 @@ internal sealed partial class CssRuleParser
             index++;
         }
 
-        if (index < values.Count && values[index] is CssPreservedToken { Type: CssTokenType.Ident } to && to.Token.IsIdent("to"))
+        if (index < values.Count && values[index] is CssPreservedToken { Type: CssTokenType.Ident } to && to.IsIdent("to"))
         {
             if (index + 1 >= values.Count || values[index + 1] is not CssSimpleBlock { AssociatedToken: CssTokenType.LeftParenthesis } endBlock)
                 return false;
@@ -1217,7 +1235,7 @@ internal sealed partial class CssRuleParser
     /// <summary>https://drafts.css-houdini.org/css-properties-values-api/#at-property-rule</summary>
     private CssPropertyRule? ParsePropertyRule(List<CssComponentValue> prelude, CssSimpleBlock block)
     {
-        if (prelude is not [CssPreservedToken { Type: CssTokenType.Ident } nameToken] || !CssPropertyRegistry.IsCustomProperty(nameToken.Token.Value))
+        if (prelude is not [CssPreservedToken { Type: CssTokenType.Ident } nameToken] || !CssPropertyRegistry.IsCustomProperty(nameToken.Value))
             return null;
 
         string? syntax = null;
@@ -1232,10 +1250,10 @@ internal sealed partial class CssRuleParser
             switch (InfraAscii.ToAsciiLowercase(declaration.Name))
             {
                 case "syntax" when values is [CssPreservedToken { Type: CssTokenType.String } syntaxToken]:
-                    syntax = syntaxToken.Token.Value;
+                    syntax = syntaxToken.Value;
                     break;
-                case "inherits" when values is [CssPreservedToken { Type: CssTokenType.Ident } inheritsToken] && (inheritsToken.Token.IsIdent("true") || inheritsToken.Token.IsIdent("false")):
-                    inherits = inheritsToken.Token.IsIdent("true");
+                case "inherits" when values is [CssPreservedToken { Type: CssTokenType.Ident } inheritsToken] && (inheritsToken.IsIdent("true") || inheritsToken.IsIdent("false")):
+                    inherits = inheritsToken.IsIdent("true");
                     break;
                 case "initial-value":
                     initialValue = declaration.Value.Count == 0 ? "" : CssSerializer.SerializeValue(declaration.Value, property: null);
@@ -1251,7 +1269,7 @@ internal sealed partial class CssRuleParser
         if (initialValue is null ? !syntaxDefinition.IsUniversal : !syntaxDefinition.IsValidInitialValue(initialValue))
             return null;
 
-        return new CssPropertyRule(nameToken.Token.Value, syntax, syntaxDefinition, inherits.Value, initialValue);
+        return new CssPropertyRule(nameToken.Value, syntax, syntaxDefinition, inherits.Value, initialValue);
     }
 
     /// <summary>
@@ -1273,7 +1291,7 @@ internal sealed partial class CssRuleParser
         var significant = ValueMatcher.RemoveWhitespace(rest);
         if (significant.Count > 0)
         {
-            if (significant[0] is not CssPreservedToken { Type: CssTokenType.Ident } returns || !returns.Token.IsIdent("returns"))
+            if (significant[0] is not CssPreservedToken { Type: CssTokenType.Ident } returns || !returns.IsIdent("returns"))
                 return null;
 
             var type = ParseCssType(rest[(rest.IndexOf(significant[0]) + 1)..]);
@@ -1294,8 +1312,8 @@ internal sealed partial class CssRuleParser
     {
         switch (ValueMatcher.RemoveWhitespace(prelude))
         {
-            case [CssPreservedToken { Type: CssTokenType.Ident } ident] when ident.Token.Value.StartsWith("--", StringComparison.Ordinal):
-                return new CssMixinRule(ident.Token.Value, []);
+            case [CssPreservedToken { Type: CssTokenType.Ident } ident] when ident.Value.StartsWith("--", StringComparison.Ordinal):
+                return new CssMixinRule(ident.Value, []);
 
             case [CssFunction function] when function.Name.StartsWith("--", StringComparison.Ordinal):
                 return ParseFunctionParameters(function.Value) is { } parameters ? new CssMixinRule(function.Name, parameters) : null;
@@ -1314,13 +1332,13 @@ internal sealed partial class CssRuleParser
     {
         switch (ValueMatcher.RemoveWhitespace(prelude))
         {
-            case [CssPreservedToken { Type: CssTokenType.Ident } ident] when ident.Token.Value.StartsWith("--", StringComparison.Ordinal):
-                return new CssApplyPrelude(ident.Token.Value, []);
+            case [CssPreservedToken { Type: CssTokenType.Ident } ident] when ident.Value.StartsWith("--", StringComparison.Ordinal):
+                return new CssApplyPrelude(ident.Value, []);
 
             case [CssFunction function] when function.Name.StartsWith("--", StringComparison.Ordinal):
             {
                 var arguments = new List<string>();
-                if (ValueMatcher.RemoveWhitespace(function.Value).Count > 0)
+                if (!ValueMatcher.IsEmptyOrWhitespace(function.Value))
                 {
                     foreach (var argument in ValueMatcher.SplitAtCommas(function.Value))
                     {
@@ -1377,7 +1395,7 @@ internal sealed partial class CssRuleParser
     private CssPrivateDeclaration? ParsePrivateDeclaration(List<CssComponentValue> values)
     {
         var declaration = ValueMatcher.TrimWhitespace(values);
-        if (declaration is not [CssPreservedToken { Type: CssTokenType.Ident } nameToken, ..] || !CssPropertyRegistry.IsCustomProperty(nameToken.Token.Value))
+        if (declaration is not [CssPreservedToken { Type: CssTokenType.Ident } nameToken, ..] || !CssPropertyRegistry.IsCustomProperty(nameToken.Value))
             return null;
 
         var colon = declaration.FindIndex(v => v is CssPreservedToken { Type: CssTokenType.Colon });
@@ -1386,7 +1404,7 @@ internal sealed partial class CssRuleParser
 
         var type = CssSyntaxDefinition.Universal;
         var typeValues = declaration[1..colon];
-        if (ValueMatcher.RemoveWhitespace(typeValues).Count > 0)
+        if (!ValueMatcher.IsEmptyOrWhitespace(typeValues))
         {
             if (ParseCssType(typeValues) is not { } parsedType)
                 return null;
@@ -1395,7 +1413,7 @@ internal sealed partial class CssRuleParser
         }
 
         var value = declaration[(colon + 1)..];
-        if (ValueMatcher.RemoveWhitespace(value).Count == 0 || !CssShorthands.IsValidDeclarationValue(value, topLevel: true))
+        if (ValueMatcher.IsEmptyOrWhitespace(value) || !CssShorthands.IsValidDeclarationValue(value, topLevel: true))
             return null;
 
         if (ValueMatcher.ContainsSubstitutionFunction(value))
@@ -1408,7 +1426,7 @@ internal sealed partial class CssRuleParser
             return null;
         }
 
-        return new CssPrivateDeclaration(nameToken.Token.Value, type, GetOriginalText(value));
+        return new CssPrivateDeclaration(nameToken.Value, type, GetOriginalText(value));
     }
 
     /// <summary>
@@ -1418,24 +1436,24 @@ internal sealed partial class CssRuleParser
     private List<CssFunctionParameterDefinition>? ParseFunctionParameters(List<CssComponentValue> values)
     {
         var result = new List<CssFunctionParameterDefinition>();
-        if (ValueMatcher.RemoveWhitespace(values).Count == 0)
+        if (ValueMatcher.IsEmptyOrWhitespace(values))
             return result;
 
         foreach (var argument in ValueMatcher.SplitAtCommas(values))
         {
             var parameter = ValueMatcher.TrimWhitespace(argument);
-            if (parameter is not [CssPreservedToken { Type: CssTokenType.Ident } nameToken, ..] || !CssPropertyRegistry.IsCustomProperty(nameToken.Token.Value))
+            if (parameter is not [CssPreservedToken { Type: CssTokenType.Ident } nameToken, ..] || !CssPropertyRegistry.IsCustomProperty(nameToken.Value))
                 return null;
 
             // The same name more than once makes the rule invalid
-            var name = nameToken.Token.Value;
+            var name = nameToken.Value;
             if (result.Exists(p => p.Name == name))
                 return null;
 
             var colon = parameter.FindIndex(v => v is CssPreservedToken { Type: CssTokenType.Colon });
             var typeValues = parameter[1..(colon < 0 ? parameter.Count : colon)];
             var type = CssSyntaxDefinition.Universal;
-            if (ValueMatcher.RemoveWhitespace(typeValues).Count > 0)
+            if (!ValueMatcher.IsEmptyOrWhitespace(typeValues))
             {
                 if (ParseCssType(typeValues) is not { } parsedType)
                     return null;
@@ -1448,7 +1466,7 @@ internal sealed partial class CssRuleParser
             {
                 // The default value is a <declaration-value> that matches the type (unless it contains arbitrary substitution functions)
                 var defaultValues = parameter[(colon + 1)..];
-                if (ValueMatcher.RemoveWhitespace(defaultValues).Count == 0 || !CssShorthands.IsValidDeclarationValue(defaultValues, topLevel: true))
+                if (ValueMatcher.IsEmptyOrWhitespace(defaultValues) || !CssShorthands.IsValidDeclarationValue(defaultValues, topLevel: true))
                     return null;
 
                 if (ValueMatcher.ContainsSubstitutionFunction(defaultValues))
@@ -1495,12 +1513,12 @@ internal sealed partial class CssRuleParser
         if (ValueMatcher.RemoveWhitespace(values) is not [CssPreservedToken { Type: CssTokenType.Ident } ident])
             return null;
 
-        var lower = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+        var lower = InfraAscii.ToAsciiLowercase(ident.Value);
         if (lower is "none" or "default" || ValueMatcher.CssWideKeywords.Contains(lower))
             return null;
 
         // The predefined counter styles are case-insensitive and serialized in lowercase
-        return !allowReserved && Cascade.CounterStyle.IsNonOverridableName(lower) ? null : ident.Token.Value;
+        return !allowReserved && Cascade.CounterStyle.IsNonOverridableName(lower) ? null : ident.Value;
     }
 
     /// <summary>https://drafts.csswg.org/css-animations/#typedef-keyframes-name</summary>
@@ -1509,8 +1527,8 @@ internal sealed partial class CssRuleParser
         return prelude switch
         {
             // The empty string is not a valid name (like the empty string of animation-name)
-            [CssPreservedToken { Type: CssTokenType.String } str] when str.Token.Value.Length > 0 => str.Token.Value,
-            [CssPreservedToken { Type: CssTokenType.Ident } ident] when InfraAscii.ToAsciiLowercase(ident.Token.Value) is not ("none" or "default") && !ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Token.Value)) => ident.Token.Value,
+            [CssPreservedToken { Type: CssTokenType.String } str] when str.Value.Length > 0 => str.Value,
+            [CssPreservedToken { Type: CssTokenType.Ident } ident] when InfraAscii.ToAsciiLowercase(ident.Value) is not ("none" or "default") && !ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Value)) => ident.Value,
             _ => null,
         };
     }
@@ -1550,10 +1568,10 @@ internal sealed partial class CssRuleParser
 
             result.Add(key switch
             {
-                [var from] when from is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent("from") => "0%",
+                [var from] when from is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.IsIdent("from") => "0%",
                 [var to] when to is CssPreservedToken { Type: CssTokenType.Ident } => "100%",
-                [CssPreservedToken { Type: CssTokenType.Percentage } percentage] => CssSerializer.SerializeNumber(percentage.Token.NumericValue) + "%",
-                [CssPreservedToken { Type: CssTokenType.Ident } name, var offset] => InfraAscii.ToAsciiLowercase(name.Token.Value) + " " + CssSerializer.SerializeValue([offset], property: null),
+                [CssPreservedToken { Type: CssTokenType.Percentage } percentage] => CssSerializer.SerializeNumber(percentage.NumericValue) + "%",
+                [CssPreservedToken { Type: CssTokenType.Ident } name, var offset] => InfraAscii.ToAsciiLowercase(name.Value) + " " + CssSerializer.SerializeValue([offset], property: null),
                 _ => CssSerializer.SerializeValue(key, property: null),
             });
         }
@@ -1589,15 +1607,15 @@ internal sealed partial class CssRuleParser
                     index++;
                     continue;
                 case CssPreservedToken { Type: CssTokenType.Ident } ident when !hasContent:
-                    current.Append(CssSerializer.SerializeIdentifier(ident.Token.Value));
+                    current.Append(CssSerializer.SerializeIdentifier(ident.Value));
                     hasContent = true;
                     index++;
                     continue;
                 case CssPreservedToken { Type: CssTokenType.Colon }:
                     if (index + 1 < significant.Count && significant[index + 1] is CssPreservedToken { Type: CssTokenType.Ident } pseudo
-                        && InfraAscii.ToAsciiLowercase(pseudo.Token.Value) is "left" or "right" or "first" or "blank")
+                        && InfraAscii.ToAsciiLowercase(pseudo.Value) is "left" or "right" or "first" or "blank")
                     {
-                        current.Append(':').Append(InfraAscii.ToAsciiLowercase(pseudo.Token.Value));
+                        current.Append(':').Append(InfraAscii.ToAsciiLowercase(pseudo.Value));
                         hasContent = true;
                         index += 2;
                         continue;
@@ -1649,7 +1667,7 @@ internal sealed partial class CssRuleParser
         if (index >= values.Count)
             return null;
 
-        if (values[index] is CssPreservedToken { Type: CssTokenType.Ident } not && not.Token.IsIdent("not"))
+        if (values[index] is CssPreservedToken { Type: CssTokenType.Ident } not && not.IsIdent("not"))
         {
             var inner = EvaluateSupportsInParens(values, index + 1, quirks, namespaces);
             if (inner is null)
@@ -1665,9 +1683,9 @@ internal sealed partial class CssRuleParser
 
         index++;
         string? combinator = null;
-        while (index < values.Count && values[index] is CssPreservedToken { Type: CssTokenType.Ident } word && InfraAscii.ToAsciiLowercase(word.Token.Value) is "and" or "or")
+        while (index < values.Count && values[index] is CssPreservedToken { Type: CssTokenType.Ident } word && InfraAscii.ToAsciiLowercase(word.Value) is "and" or "or")
         {
-            var keyword = InfraAscii.ToAsciiLowercase(word.Token.Value);
+            var keyword = InfraAscii.ToAsciiLowercase(word.Value);
             if (combinator is not null && combinator != keyword)
                 return null;
 
@@ -1727,22 +1745,22 @@ internal sealed partial class CssRuleParser
 
                 // https://drafts.csswg.org/css-conditional-5/#support-definition-at-rules: an at-rule recognized by the parser
                 if (name == "at-rule")
-                    return ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.AtKeyword } atKeyword] && IsSupportedAtRule(atKeyword.Token.Value);
+                    return ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.AtKeyword } atKeyword] && IsSupportedAtRule(atKeyword.Value);
 
                 // https://drafts.csswg.org/css-conditional-5/#typedef-supports-font-format-fn: the font formats that can be loaded
                 // (https://drafts.csswg.org/css-fonts-4/#font-format-definitions)
                 if (name == "font-format")
-                    return ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } format] && InfraAscii.ToAsciiLowercase(format.Token.Value) is "collection" or "opentype" or "truetype" or "woff" or "woff2";
+                    return ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } format] && InfraAscii.ToAsciiLowercase(format.Value) is "collection" or "opentype" or "truetype" or "woff" or "woff2";
 
                 // https://drafts.csswg.org/css-conditional-5/#typedef-supports-font-tech-fn: the font technologies of the
                 // browsers (https://drafts.csswg.org/css-fonts-4/#font-tech-definitions)
                 if (name == "font-tech")
-                    return ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } tech] && InfraAscii.ToAsciiLowercase(tech.Token.Value) is "features-opentype" or "color-colrv0" or "color-colrv1" or "color-sbix" or "color-cbdt" or "variations" or "palettes";
+                    return ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } tech] && InfraAscii.ToAsciiLowercase(tech.Value) is "features-opentype" or "color-colrv0" or "color-colrv1" or "color-sbix" or "color-cbdt" or "variations" or "palettes";
 
                 // https://drafts.csswg.org/css-conditional-5/#support-definition-named-features: the anchor positioning takes the
                 // transforms of the anchors into account (https://drafts.csswg.org/css-anchor-position-1/#determining)
                 if (name == "named-feature")
-                    return ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } feature] && InfraAscii.ToAsciiLowercase(feature.Token.Value) is "anchor-position-follows-transforms";
+                    return ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } feature] && InfraAscii.ToAsciiLowercase(feature.Value) is "anchor-position-follows-transforms";
 
                 // <general-enclosed>
                 return false;
@@ -1772,7 +1790,7 @@ internal sealed partial class CssRuleParser
             switch (InfraAscii.ToAsciiLowercase(declaration.Name))
             {
                 case "navigation":
-                    if (values is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && InfraAscii.ToAsciiLowercase(keyword.Token.Value) is ("auto" or "none") and var value)
+                    if (values is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && InfraAscii.ToAsciiLowercase(keyword.Value) is ("auto" or "none") and var value)
                     {
                         navigation = value;
                     }
@@ -1781,7 +1799,7 @@ internal sealed partial class CssRuleParser
 
                 case "types":
                 {
-                    if (values is [CssPreservedToken { Type: CssTokenType.Ident } none] && InfraAscii.EqualsIgnoreAsciiCase(none.Token.Value, "none"))
+                    if (values is [CssPreservedToken { Type: CssTokenType.Ident } none] && InfraAscii.EqualsIgnoreAsciiCase(none.Value, "none"))
                     {
                         types = [];
                         hasTypes = true;
@@ -1791,15 +1809,15 @@ internal sealed partial class CssRuleParser
                     var parsed = new List<string>();
                     foreach (var item in values)
                     {
-                        if (item is not CssPreservedToken { Type: CssTokenType.Ident } type || InfraAscii.EqualsIgnoreAsciiCase(type.Token.Value, "none")
-                            || type.Token.Value.StartsWith("-ua-", StringComparison.Ordinal) || InfraAscii.EqualsIgnoreAsciiCase(type.Token.Value, "default")
-                            || ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(type.Token.Value)))
+                        if (item is not CssPreservedToken { Type: CssTokenType.Ident } type || InfraAscii.EqualsIgnoreAsciiCase(type.Value, "none")
+                            || type.Value.StartsWith("-ua-", StringComparison.Ordinal) || InfraAscii.EqualsIgnoreAsciiCase(type.Value, "default")
+                            || ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(type.Value)))
                         {
                             parsed = null;
                             break;
                         }
 
-                        parsed.Add(type.Token.Value);
+                        parsed.Add(type.Value);
                     }
 
                     if (parsed is { Count: > 0 })
@@ -1838,7 +1856,7 @@ internal sealed partial class CssRuleParser
         return AtRuleFunctionRegex().Replace(text, match =>
         {
             var values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(match.Groups["value"].Value, out _));
-            return values is [CssPreservedToken { Type: CssTokenType.AtKeyword } atKeyword] ? match.Groups["name"].Value + "(@" + CssSerializer.SerializeIdentifier(atKeyword.Token.Value) + ")" : match.Value;
+            return values is [CssPreservedToken { Type: CssTokenType.AtKeyword } atKeyword] ? match.Groups["name"].Value + "(@" + CssSerializer.SerializeIdentifier(atKeyword.Value) + ")" : match.Value;
         });
     }
 
@@ -1872,8 +1890,8 @@ internal sealed partial class CssRuleParser
                 case CssFunction function:
                     if (InfraAscii.EqualsIgnoreAsciiCase(function.Name, "attr")
                         && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } prefix, CssPreservedToken bar, CssPreservedToken { Type: CssTokenType.Ident }, ..]
-                        && bar.Token.IsDelim('|')
-                        && namespaces.ResolvePrefix?.Invoke(prefix.Token.Value) is null)
+                        && bar.IsDelim('|')
+                        && namespaces.ResolvePrefix?.Invoke(prefix.Value) is null)
                     {
                         return true;
                     }

@@ -22,7 +22,16 @@ internal sealed class ParsedValueCache
     [ThreadStatic]
     private static ParsedValueCache? s_serializedShorthands;
 
-    private readonly Dictionary<(string? AtRule, string Name, string Text), List<CssLonghandValue>?> _values = [];
+    private readonly Dictionary<Key, List<CssLonghandValue>?> _values;
+
+    /// <summary>Looks up the values by a span of text, so that a hit does not allocate the text.</summary>
+    private readonly Dictionary<Key, List<CssLonghandValue>?>.AlternateLookup<SpanKey> _lookup;
+
+    private ParsedValueCache()
+    {
+        _values = new(KeyComparer.Instance);
+        _lookup = _values.GetAlternateLookup<SpanKey>();
+    }
 
     /// <summary>The values of the declarations of the style sheets and of the style attributes, by their text without the leading and trailing whitespace.</summary>
     public static ParsedValueCache Declarations => s_declarations ??= new ParsedValueCache();
@@ -33,7 +42,7 @@ internal sealed class ParsedValueCache
     /// <summary>The values of the shorthands serialized from their longhands, parsed back to check that they round-trip, by text.</summary>
     public static ParsedValueCache SerializedShorthands => s_serializedShorthands ??= new ParsedValueCache();
 
-    public bool TryGetValue(string? atRule, string name, string text, out List<CssLonghandValue>? longhands) => _values.TryGetValue((atRule, name, text), out longhands);
+    public bool TryGetValue(string? atRule, string name, ReadOnlySpan<char> text, out List<CssLonghandValue>? longhands) => _lookup.TryGetValue(new SpanKey(atRule, name, text), out longhands);
 
     public void Add(string? atRule, string name, string text, List<CssLonghandValue>? longhands)
     {
@@ -42,6 +51,34 @@ internal sealed class ParsedValueCache
             _values.Clear();
         }
 
-        _values[(atRule, name, text)] = longhands;
+        _values[new Key(atRule, name, text)] = longhands;
+    }
+
+    private readonly record struct Key(string? AtRule, string Name, string Text);
+
+    private readonly ref struct SpanKey(string? atRule, string name, ReadOnlySpan<char> text)
+    {
+        public string? AtRule { get; } = atRule;
+
+        public string Name { get; } = name;
+
+        public ReadOnlySpan<char> Text { get; } = text;
+    }
+
+    private sealed class KeyComparer : IEqualityComparer<Key>, IAlternateEqualityComparer<SpanKey, Key>
+    {
+        public static KeyComparer Instance { get; } = new();
+
+        public bool Equals(Key x, Key y) => x.AtRule == y.AtRule && x.Name == y.Name && x.Text == y.Text;
+
+        public int GetHashCode(Key obj) => GetHashCode(obj.AtRule, obj.Name, obj.Text);
+
+        public bool Equals(SpanKey alternate, Key other) => alternate.AtRule == other.AtRule && alternate.Name == other.Name && alternate.Text.SequenceEqual(other.Text);
+
+        public int GetHashCode(SpanKey alternate) => GetHashCode(alternate.AtRule, alternate.Name, alternate.Text);
+
+        public Key Create(SpanKey alternate) => new(alternate.AtRule, alternate.Name, alternate.Text.ToString());
+
+        private static int GetHashCode(string? atRule, string name, ReadOnlySpan<char> text) => HashCode.Combine(atRule is null ? 0 : string.GetHashCode(atRule, StringComparison.Ordinal), string.GetHashCode(name, StringComparison.Ordinal), string.GetHashCode(text, StringComparison.Ordinal));
     }
 }

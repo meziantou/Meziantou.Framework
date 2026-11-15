@@ -300,7 +300,7 @@ internal static partial class CssSerializer
             switch (value)
             {
                 case CssPreservedToken { Token.Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension } token
-                    when SerializeNumber(token.Token.NumericValue) != token.Token.NumericValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture):
+                    when SerializeNumber(token.NumericValue) != token.NumericValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture):
                     return true;
                 case CssFunction function when ContainsRoundedNumber(function.Value):
                     return true;
@@ -389,7 +389,7 @@ internal static partial class CssSerializer
     {
         // An <opacity-value> percentage is serialized as a number (https://drafts.csswg.org/css-color-4/#typedef-opacity-opacity-value)
         if (property?.Grammar is "<opacity-value>" or "<'opacity'>" && ValueMatcher.RemoveWhitespace(values) is [CssPreservedToken { Type: CssTokenType.Percentage } percentage])
-            return SerializeNumber(percentage.Token.NumericValue / 100);
+            return SerializeNumber(percentage.NumericValue / 100);
 
         var keywords = property is null ? null : GetKeywords(property);
         if (property?.Name == "font-family")
@@ -424,14 +424,14 @@ internal static partial class CssSerializer
             var significant = ValueMatcher.RemoveWhitespace(entry);
             if (significant is [CssPreservedToken { Type: CssTokenType.String } family])
             {
-                families.Add(Om.FontFace.SerializeFamilyName(family.Token.Value));
+                families.Add(Om.FontFace.SerializeFamilyName(family.Value));
                 continue;
             }
 
             // A family name of several identifiers
             if (significant.Count > 1 && significant.TrueForAll(component => component is CssPreservedToken { Type: CssTokenType.Ident }))
             {
-                families.Add(string.Join(' ', significant.Select(component => SerializeIdentifier(((CssPreservedToken)component).Token.Value))));
+                families.Add(string.Join(' ', significant.Select(component => SerializeIdentifier(((CssPreservedToken)component).Value))));
                 continue;
             }
 
@@ -505,7 +505,7 @@ internal static partial class CssSerializer
                 continue;
             }
 
-            if (value is CssPreservedToken slash && slash.Token.IsDelim('/'))
+            if (value is CssPreservedToken slash && slash.IsDelim('/'))
             {
                 TrimEnd(builder);
                 builder.Append(builder.Length > 0 ? " / " : "/ ");
@@ -597,7 +597,7 @@ internal static partial class CssSerializer
                 // The request URL modifiers are serialized in their canonical order
                 if (name is "url" or "src" && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } url, _, ..] urlArguments && CssUrlModifiers.Canonicalize(urlArguments[1..]) is { } modifiers)
                 {
-                    builder.Append(CssUrlModifiers.Serialize(name, url.Token.Value, modifiers));
+                    builder.Append(CssUrlModifiers.Serialize(name, url.Value, modifiers));
                     return;
                 }
 
@@ -612,7 +612,7 @@ internal static partial class CssSerializer
 
                 // The default counter style of counter() and counters() is omitted (https://drafts.csswg.org/css-lists-3/#counter-functions)
                 var arguments = function.Value;
-                if (name is "counter" or "counters" && ValueMatcher.RemoveWhitespace(arguments) is [.., CssPreservedToken { Type: CssTokenType.Comma }, CssPreservedToken { Type: CssTokenType.Ident } style] && InfraAscii.EqualsIgnoreAsciiCase(style.Token.Value, "decimal"))
+                if (name is "counter" or "counters" && ValueMatcher.RemoveWhitespace(arguments) is [.., CssPreservedToken { Type: CssTokenType.Comma }, CssPreservedToken { Type: CssTokenType.Ident } style] && InfraAscii.EqualsIgnoreAsciiCase(style.Value, "decimal"))
                 {
                     arguments = arguments[..arguments.FindLastIndex(argument => argument is CssPreservedToken { Type: CssTokenType.Comma })];
                 }
@@ -630,7 +630,7 @@ internal static partial class CssSerializer
                 }
 
                 // symbolic is the default type of symbols(), which is omitted (https://drafts.csswg.org/css-counter-styles-3/#symbols-function)
-                if (name == "symbols" && arguments.FindIndex(argument => argument is not CssPreservedToken { Type: CssTokenType.Whitespace }) is var typeIndex && typeIndex >= 0 && arguments[typeIndex] is CssPreservedToken { Type: CssTokenType.Ident } type && InfraAscii.EqualsIgnoreAsciiCase(type.Token.Value, "symbolic"))
+                if (name == "symbols" && arguments.FindIndex(argument => argument is not CssPreservedToken { Type: CssTokenType.Whitespace }) is var typeIndex && typeIndex >= 0 && arguments[typeIndex] is CssPreservedToken { Type: CssTokenType.Ident } type && InfraAscii.EqualsIgnoreAsciiCase(type.Value, "symbolic"))
                 {
                     arguments = arguments[(typeIndex + 1)..];
                 }

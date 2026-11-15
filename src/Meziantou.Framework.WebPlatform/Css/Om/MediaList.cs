@@ -186,7 +186,7 @@ internal static class MediaQueries
 
         var index = 0;
         string? modifier = null;
-        var first = InfraAscii.ToAsciiLowercase(((CssPreservedToken)tokens[0]).Token.Value);
+        var first = InfraAscii.ToAsciiLowercase(((CssPreservedToken)tokens[0]).Value);
         if (first is "not" or "only")
         {
             // "not (...)" is a condition
@@ -200,7 +200,7 @@ internal static class MediaQueries
         if (index >= tokens.Count || tokens[index] is not CssPreservedToken { Type: CssTokenType.Ident } typeToken)
             return null;
 
-        var type = InfraAscii.ToAsciiLowercase(typeToken.Token.Value);
+        var type = InfraAscii.ToAsciiLowercase(typeToken.Value);
         if (type is "only" or "not" or "and" or "or" or "layer")
             return null;
 
@@ -208,7 +208,7 @@ internal static class MediaQueries
         string? typeCondition = null;
         if (index < tokens.Count)
         {
-            if (!(tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } and && and.Token.IsIdent("and")))
+            if (!(tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } and && and.IsIdent("and")))
                 return null;
 
             typeCondition = ParseCondition(tokens, index + 1, allowOr: false, out var end);
@@ -247,7 +247,7 @@ internal static class MediaQueries
         if (index >= tokens.Count)
             return null;
 
-        if (tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } not && not.Token.IsIdent("not"))
+        if (tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } not && not.IsIdent("not"))
         {
             var inner = ParseInParens(tokens, index + 1);
             if (inner is null)
@@ -264,9 +264,9 @@ internal static class MediaQueries
         var builder = new StringBuilder(first);
         index++;
         string? combinator = null;
-        while (index < tokens.Count && tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } word && InfraAscii.ToAsciiLowercase(word.Token.Value) is "and" or "or")
+        while (index < tokens.Count && tokens[index] is CssPreservedToken { Type: CssTokenType.Ident } word && InfraAscii.ToAsciiLowercase(word.Value) is "and" or "or")
         {
-            var keyword = InfraAscii.ToAsciiLowercase(word.Token.Value);
+            var keyword = InfraAscii.ToAsciiLowercase(word.Value);
             if ((combinator is not null && combinator != keyword) || (keyword == "or" && !allowOr))
                 return null;
 
@@ -408,7 +408,7 @@ internal static class MediaQueries
         // <mf-boolean> and <mf-plain>
         if (tokens[0] is CssPreservedToken { Type: CssTokenType.Ident } nameToken)
         {
-            var name = InfraAscii.ToAsciiLowercase(nameToken.Token.Value);
+            var name = InfraAscii.ToAsciiLowercase(nameToken.Value);
             if (tokens.Count == 1)
                 return GetFeature(name, out var prefixed) is not null && !prefixed ? "(" + name + ")" : null;
 
@@ -430,7 +430,7 @@ internal static class MediaQueries
             if (tokens[i] is CssPreservedToken { Token: { Type: CssTokenType.Delim } delim } && delim.Value is "<" or ">" or "=")
             {
                 var comparison = delim.Value;
-                if (delim.Value is "<" or ">" && i + 1 < tokens.Count && tokens[i + 1] is CssPreservedToken equals && equals.Token.IsDelim('=')
+                if (delim.Value is "<" or ">" && i + 1 < tokens.Count && tokens[i + 1] is CssPreservedToken equals && equals.IsDelim('=')
                     && equals.Start == ((CssPreservedToken)tokens[i]).End)
                 {
                     comparison += "=";
@@ -451,11 +451,11 @@ internal static class MediaQueries
 
         if (comparisons.Count == 1)
         {
-            if (parts[0] is [CssPreservedToken { Type: CssTokenType.Ident } left] && IsRangeName(InfraAscii.ToAsciiLowercase(left.Token.Value)) && IsValidValue(InfraAscii.ToAsciiLowercase(left.Token.Value), parts[1], allowPrefix: false))
-                return "(" + InfraAscii.ToAsciiLowercase(left.Token.Value) + " " + comparisons[0] + " " + SerializeValue(parts[1]) + ")";
+            if (parts[0] is [CssPreservedToken { Type: CssTokenType.Ident } left] && IsRangeName(InfraAscii.ToAsciiLowercase(left.Value)) && IsValidValue(InfraAscii.ToAsciiLowercase(left.Value), parts[1], allowPrefix: false))
+                return "(" + InfraAscii.ToAsciiLowercase(left.Value) + " " + comparisons[0] + " " + SerializeValue(parts[1]) + ")";
 
-            if (parts[1] is [CssPreservedToken { Type: CssTokenType.Ident } right] && IsRangeName(InfraAscii.ToAsciiLowercase(right.Token.Value)) && IsValidValue(InfraAscii.ToAsciiLowercase(right.Token.Value), parts[0], allowPrefix: false))
-                return "(" + SerializeValue(parts[0]) + " " + comparisons[0] + " " + InfraAscii.ToAsciiLowercase(right.Token.Value) + ")";
+            if (parts[1] is [CssPreservedToken { Type: CssTokenType.Ident } right] && IsRangeName(InfraAscii.ToAsciiLowercase(right.Value)) && IsValidValue(InfraAscii.ToAsciiLowercase(right.Value), parts[0], allowPrefix: false))
+                return "(" + SerializeValue(parts[0]) + " " + comparisons[0] + " " + InfraAscii.ToAsciiLowercase(right.Value) + ")";
 
             return null;
         }
@@ -470,7 +470,7 @@ internal static class MediaQueries
             if (parts[1] is not [CssPreservedToken { Type: CssTokenType.Ident } middle])
                 return null;
 
-            var name = InfraAscii.ToAsciiLowercase(middle.Token.Value);
+            var name = InfraAscii.ToAsciiLowercase(middle.Value);
             if (!IsRangeName(name) || !IsValidValue(name, parts[0], allowPrefix: false) || !IsValidValue(name, parts[2], allowPrefix: false))
                 return null;
 
@@ -530,7 +530,7 @@ internal static class MediaQueries
         }
 
         // A <resolution> is not negative (https://drafts.csswg.org/css-values-4/#resolution)
-        if (tokens is [CssPreservedToken { Type: CssTokenType.Dimension } dimension] && dimension.Token.NumericValue < 0 && feature.Grammar.Contains("<resolution>", StringComparison.Ordinal))
+        if (tokens is [CssPreservedToken { Type: CssTokenType.Dimension } dimension] && dimension.NumericValue < 0 && feature.Grammar.Contains("<resolution>", StringComparison.Ordinal))
             return false;
 
         return CssPropertyRegistry.GetGrammar(feature) is not { } grammar || ValueMatcher.Matches(grammar, tokens);

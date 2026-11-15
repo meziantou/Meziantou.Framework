@@ -303,8 +303,8 @@ public sealed class MetadataWritePlanTests
     {
         foreach (var format in FormatsWithoutHighDynamicRangeFields)
         {
-            // OpenEXR stores linear light only: an sRGB label would be the first item it cannot store
-            var transfer = format == ImageFormat.OpenExr ? ColorTransferFunction.Linear : ColorTransferFunction.Srgb;
+            // OpenEXR and Radiance HDR store linear light only: an sRGB label would be the first item they cannot store
+            var transfer = format is ImageFormat.OpenExr or ImageFormat.Radiance ? ColorTransferFunction.Linear : ColorTransferFunction.Srgb;
             var lightLevel = new ImageMetadata { ContentLightLevel = new ContentLightLevel(1000, 400), TransferFunction = transfer };
             var display = new ImageMetadata { MasteringDisplay = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50), TransferFunction = transfer };
             var wide = new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(2, 1), TransferFunction = transfer };
@@ -323,25 +323,27 @@ public sealed class MetadataWritePlanTests
         }
     }
 
-    [Fact]
-    public void OpenExrStoresLinearLightOnly()
+    [Theory]
+    [InlineData(ImageFormat.OpenExr, "OpenEXR")]
+    [InlineData(ImageFormat.Radiance, "Radiance HDR")]
+    public void LinearOnlyFormatsStoreLinearLightOnly(ImageFormat format, string name)
     {
         // The samples are linear light: the transfer function of another label would change their meaning
-        var plan = MetadataWritePlan.Create(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear }, ImageFormat.OpenExr, MetadataHandling.Strict, Canvas);
+        var plan = MetadataWritePlan.Create(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear }, format, MetadataHandling.Strict, Canvas);
         Assert.Equal(ColorTransferFunction.Linear, plan.TransferFunction);
         Assert.Null(plan.Cicp);
-        AssertUnsupported(new ImageMetadata(), ImageFormat.OpenExr, "sRGB transfer function (OpenEXR stores linear-light samples: sRGB-encoded samples would be read as linear light)");
-        AssertUnsupported(new ImageMetadata { Cicp = new CicpColorDescription(9, 16, 0, fullRange: true) }, ImageFormat.OpenExr, "CICP color description other than linear BT.709, BT.2020 or P3 primaries (OpenEXR stores linear-light samples)");
-        AssertUnsupported(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear, IccProfile = IccProfile.Srgb }, ImageFormat.OpenExr, "ICC color profile");
+        AssertUnsupported(new ImageMetadata(), format, $"sRGB transfer function ({name} stores linear-light samples: sRGB-encoded samples would be read as linear light)");
+        AssertUnsupported(new ImageMetadata { Cicp = new CicpColorDescription(9, 16, 0, fullRange: true) }, format, $"CICP color description other than linear BT.709, BT.2020 or P3 primaries ({name} stores linear-light samples)");
+        AssertUnsupported(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear, IccProfile = IccProfile.Srgb }, format, "ICC color profile");
 
         // Linear BT.2020, DCI-P3 and Display P3 are written as chromaticities, whatever the transfer function label
         foreach (byte primaries in new byte[] { 9, 11, 12 })
         {
             var cicp = new CicpColorDescription(primaries, 8, 0, fullRange: true);
-            Assert.Same(cicp, MetadataWritePlan.Create(new ImageMetadata { Cicp = cicp }, ImageFormat.OpenExr, MetadataHandling.Strict, Canvas).Cicp);
+            Assert.Same(cicp, MetadataWritePlan.Create(new ImageMetadata { Cicp = cicp }, format, MetadataHandling.Strict, Canvas).Cicp);
         }
 
-        Assert.Null(MetadataWritePlan.Create(new ImageMetadata(), ImageFormat.OpenExr, MetadataHandling.DiscardUnsupported, Canvas).Cicp);
+        Assert.Null(MetadataWritePlan.Create(new ImageMetadata(), format, MetadataHandling.DiscardUnsupported, Canvas).Cicp);
     }
 
     [Fact]

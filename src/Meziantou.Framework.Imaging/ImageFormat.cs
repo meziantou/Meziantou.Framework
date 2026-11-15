@@ -91,6 +91,12 @@ public enum ImageFormat
     OpenExr = 17,
 
     /// <summary>
+    /// Radiance HDR (RGBE): high dynamic range linear-light images whose pixels share an exponent between their three
+    /// colors, stored flat or run-length encoded (<c>.hdr</c>, <c>.pic</c>).
+    /// </summary>
+    Radiance = 18,
+
+    /// <summary>
     /// A format read or written by a <see cref="CustomImageCodec"/> of <see cref="ImageConfiguration.Codecs"/>, not by the
     /// library itself. <see cref="ImageInfo.FormatInfo"/> and <see cref="Formats.CustomImageEncoder.FormatInfo"/> tell which one.
     /// </summary>

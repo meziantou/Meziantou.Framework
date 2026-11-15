@@ -50,6 +50,7 @@ public sealed class ImageFormatInfo
         new(ImageFormat.Heic, ["image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"], [".heic", ".heif", ".heics", ".heifs"]),
         new(ImageFormat.Jpeg2000, ["image/jp2", "image/jpx", "image/jph"], [".jp2", ".j2k", ".j2c", ".jpc", ".jpx", ".jpf", ".jph", ".jhc"]),
         new(ImageFormat.OpenExr, ["image/x-exr"], [".exr"]),
+        new(ImageFormat.Radiance, ["image/vnd.radiance", "image/x-hdr"], [".hdr", ".pic"]),
     ];
 
     private static readonly ReadOnlyCollection<ImageFormatInfo> AllFormats = Array.AsReadOnly(Formats);

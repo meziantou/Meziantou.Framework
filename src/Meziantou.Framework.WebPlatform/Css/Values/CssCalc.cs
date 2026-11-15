@@ -428,7 +428,7 @@ internal static class CssCalc
             if (kind == CssCalcFunctionKind.Progress)
             {
                 var first = SkipWhitespace(values, 0, values.Count);
-                if (first < values.Count && values[first] is CssPreservedToken noClampKeyword && noClampKeyword.Token.IsIdent("no-clamp"))
+                if (first < values.Count && values[first] is CssPreservedToken noClampKeyword && noClampKeyword.IsIdent("no-clamp"))
                 {
                     noClamp = true;
                     values = values[(first + 1)..];
@@ -491,7 +491,7 @@ internal static class CssCalc
             var first = ValueMatcher.RemoveWhitespace(arguments[0]);
             if (CssRandom.IsSharingArgument(first))
             {
-                if (first[0] is CssPreservedToken fixedKeyword && fixedKeyword.Token.IsIdent("fixed"))
+                if (first[0] is CssPreservedToken fixedKeyword && fixedKeyword.IsIdent("fixed"))
                 {
                     if (first.Count != 2)
                         return null;
@@ -502,7 +502,7 @@ internal static class CssCalc
                         return null;
 
                     // A literal number must be in the range [0,1]; a math function is clamped (the base value is less than 1)
-                    if (first[1] is CssPreservedToken { Type: CssTokenType.Number } number && number.Token.NumericValue is < 0 or > 1)
+                    if (first[1] is CssPreservedToken { Type: CssTokenType.Number } number && number.NumericValue is < 0 or > 1)
                         return null;
 
                     fixedIsMathFunction = first[1] is CssFunction;
@@ -599,7 +599,7 @@ internal static class CssCalc
             switch (basis)
             {
                 case [CssPreservedToken { Type: CssTokenType.Ident } keyword]:
-                    basisKeyword = InfraAscii.ToAsciiLowercase(keyword.Token.Value);
+                    basisKeyword = InfraAscii.ToAsciiLowercase(keyword.Value);
                     if (basisKeyword is "size" or "e" or "pi" or "infinity" or "-infinity" or "nan")
                         return null;
 
@@ -651,10 +651,10 @@ internal static class CssCalc
                 CssCalcNode? weightNode = null;
                 if (argument[end] is CssPreservedToken { Type: CssTokenType.Percentage } percentage && ValueMatcher.RemoveWhitespace(argument).Count > 1)
                 {
-                    if (percentage.Token.NumericValue is < 0 or > 100)
+                    if (percentage.NumericValue is < 0 or > 100)
                         return null;
 
-                    weight = percentage.Token.NumericValue;
+                    weight = percentage.NumericValue;
                     weightNode = new CssCalcNumericNode(weight.Value, "%");
                 }
                 else if (argument[end] is CssFunction weightFunction && GetKind(weightFunction.Name) is { } weightKind and not CssCalcFunctionKind.CalcSize && ValueMatcher.RemoveWhitespace(argument).Count > 1
@@ -816,7 +816,7 @@ internal static class CssCalc
             if (start == end || values[start] is not CssPreservedToken { Type: CssTokenType.Ident } ident)
                 return null;
 
-            return SkipWhitespace(values, start + 1, end) == end ? ident.Token.Value : null;
+            return SkipWhitespace(values, start + 1, end) == end ? ident.Value : null;
         }
 
         private static int SkipWhitespace(List<CssComponentValue> values, int index, int end)
@@ -829,7 +829,7 @@ internal static class CssCalc
             return index;
         }
 
-        private static bool IsDelim(CssComponentValue value, char c) => value is CssPreservedToken token && token.Token.IsDelim(c);
+        private static bool IsDelim(CssComponentValue value, char c) => value is CssPreservedToken token && token.IsDelim(c);
 
         /// <summary>&lt;calc-sum&gt; = &lt;calc-product&gt; [ [ '+' | '-' ] &lt;calc-product&gt; ]*, with whitespace required on both sides of + and -.</summary>
         private CssCalcNode? ParseSum(List<CssComponentValue> values, int start, int end, int depth)

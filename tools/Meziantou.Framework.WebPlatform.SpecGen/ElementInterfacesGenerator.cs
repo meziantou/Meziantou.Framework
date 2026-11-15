@@ -298,10 +298,11 @@ internal static class ElementInterfacesGenerator
         using (writer.Block("internal static partial class ElementFactory"))
         {
             writer.Line($"/// <summary>Creates an element of the {family.Name} namespace using the element interface of the local name, or null for an unknown local name.</summary>");
-            using (writer.Block($"private static {ClrNames.ToClrName(family.BaseInterface)}? Create{family.Name}ElementOrNull(Document document, string localName, string? prefix)"))
+            // HTML names are atoms: switch on the tag id of the local name (the parser knows it)
+            var tagIdParameter = family.Name == "Html" ? " TagId tagId," : "";
+            using (writer.Block($"private static {ClrNames.ToClrName(family.BaseInterface)}? Create{family.Name}ElementOrNull(Document document, string localName,{tagIdParameter} string? prefix)"))
             {
-                // HTML names are atoms: switch on the tag id
-                writer.Line(family.Name == "Html" ? "return TagNames.GetTagId(localName) switch" : "return localName switch");
+                writer.Line(family.Name == "Html" ? "return tagId switch" : "return localName switch");
                 writer.Line("{");
                 {
                     foreach (var (name, interfaceName) in elements.OrderBy(e => e.Name, StringComparer.Ordinal))

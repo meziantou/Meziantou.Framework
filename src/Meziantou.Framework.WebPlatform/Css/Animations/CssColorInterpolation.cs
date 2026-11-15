@@ -117,7 +117,7 @@ internal static class CssColorInterpolation
         return CssGenericInterpolation.Parse(currentColor) is [var component] ? CssColor.Parse(component) : null;
     }
 
-    private static bool IsCurrentColor(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "currentcolor");
+    private static bool IsCurrentColor(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "currentcolor");
 
     private static string Format(double? value) => value is { } v ? CssGenericInterpolation.FormatNumber(v) : "none";
 }

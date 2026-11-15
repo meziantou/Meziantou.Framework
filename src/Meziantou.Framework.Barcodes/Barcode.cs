@@ -9,8 +9,9 @@ public sealed class Barcode
 {
     private readonly bool[,] _modules;
 
-    internal Barcode(bool[,] modules, BarcodeType type, string text, bool isStacked = false)
+    internal Barcode(bool[,] modules, BarcodeType type, string text, bool isStacked = false, EanUpcLayout? eanUpcLayout = null)
     {
+        EanUpcLayout = eanUpcLayout;
         _modules = modules;
         Type = type;
         Text = text;
@@ -55,6 +56,9 @@ public sealed class Barcode
 
     /// <summary>Gets the modules, without copying them: the callers must not modify them.</summary>
     internal bool[,] Modules => _modules;
+
+    /// <summary>Gets the human-readable layout of an EAN or UPC symbol, or <see langword="null"/> for the other symbologies.</summary>
+    internal EanUpcLayout? EanUpcLayout { get; }
 
     /// <summary>
     /// Creates a Code 39 barcode from the specified data.

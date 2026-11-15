@@ -120,6 +120,14 @@ public sealed class ImageMetadata
     /// </remarks>
     public OpenExrWindows? OpenExrWindows { get; set; }
 
+    /// <summary>
+    /// Gets or sets the variables of the header of the Radiance HDR file the image was decoded from, or
+    /// <see langword="null"/> for the other formats. This is informational only, like <see cref="SourceFormat"/>: it
+    /// describes the file, not the pixels (the exposure and the color correction it reports are not applied).
+    /// </summary>
+    /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
+    public RadianceHeader? RadianceHeader { get; set; }
+
     /// <summary>Gets or sets the EXIF profile, or <see langword="null"/> if none.</summary>
     public ExifProfile? ExifProfile { get; set; }
 
@@ -156,6 +164,7 @@ public sealed class ImageMetadata
             MasteringDisplay = MasteringDisplay,
             PixelAspectRatio = PixelAspectRatio,
             OpenExrWindows = OpenExrWindows,
+            RadianceHeader = RadianceHeader,
             ExifProfile = ExifProfile,
             XmpProfile = XmpProfile,
         };

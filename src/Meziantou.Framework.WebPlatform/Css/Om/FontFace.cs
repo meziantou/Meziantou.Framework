@@ -705,10 +705,10 @@ public sealed class FontFace
         {
             var arguments = ValueMatcher.RemoveWhitespace(function.Value);
             if (arguments is [CssPreservedToken { Type: CssTokenType.String } name])
-                return name.Token.Value;
+                return name.Value;
 
             return arguments.Count > 0 && arguments.TrueForAll(argument => argument is CssPreservedToken { Type: CssTokenType.Ident })
-                ? string.Join(' ', arguments.Select(argument => ((CssPreservedToken)argument).Token.Value))
+                ? string.Join(' ', arguments.Select(argument => ((CssPreservedToken)argument).Value))
                 : null;
         }
     }

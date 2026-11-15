@@ -438,15 +438,15 @@ internal static partial class CssValueComputer
             if (specified[i] is not CssFunction function || !CssCalc.IsMathFunction(function.Name) || FindRange(grammar, token.Token, depth: 0) is not { } range)
                 continue;
 
-            var clamped = Math.Clamp(token.Token.NumericValue, range.Min ?? double.NegativeInfinity, range.Max ?? double.PositiveInfinity);
-            if (clamped == token.Token.NumericValue)
+            var clamped = Math.Clamp(token.NumericValue, range.Min ?? double.NegativeInfinity, range.Max ?? double.PositiveInfinity);
+            if (clamped == token.NumericValue)
                 continue;
 
             changed = true;
-            parts[i] = SerializeNumber(clamped) + token.Token.Type switch
+            parts[i] = SerializeNumber(clamped) + token.Type switch
             {
                 CssTokenType.Percentage => "%",
-                CssTokenType.Dimension => token.Token.Value,
+                CssTokenType.Dimension => token.Value,
                 _ => "",
             };
         }
@@ -632,7 +632,7 @@ internal static partial class CssValueComputer
                     // https://drafts.csswg.org/css-anchor-position-1/#anchor-pos: the function is kept (its fallback is computed)
                     return Raw(SerializeAnchorFunction(function, context));
                 }
-                else if (name is "sibling-index" or "sibling-count" && ValueMatcher.RemoveWhitespace(function.Value).Count == 0)
+                else if (name is "sibling-index" or "sibling-count" && ValueMatcher.IsEmptyOrWhitespace(function.Value))
                 {
                     // https://drafts.csswg.org/css-values-5/#tree-counting
                     return Raw(SerializeNumber(ResolveTreeCountingFunction(name, context.Style.Element) ?? 1));
@@ -648,7 +648,7 @@ internal static partial class CssValueComputer
                     // https://drafts.csswg.org/css-color-5/#light-dark: computes to the color or image of the used color scheme (also
                     // when the color cannot be resolved yet, e.g. currentcolor in a relative color), and none to image(transparent)
                     var selected = GetUsedColorScheme(context.Style) == "dark" ? dark : light;
-                    return selected is CssPreservedToken { Type: CssTokenType.Ident } none && none.Token.IsIdent("none") ? Raw("image(rgba(0, 0, 0, 0))") : Transform(selected, context);
+                    return selected is CssPreservedToken { Type: CssTokenType.Ident } none && none.IsIdent("none") ? Raw("image(rgba(0, 0, 0, 0))") : Transform(selected, context);
                 }
                 else if (context.HasColors && IsColorFunction(name))
                 {
@@ -664,12 +664,12 @@ internal static partial class CssValueComputer
                 else if (name is "url" or "src" && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } url])
                 {
                     // The computed src() is serialized as a url() (https://drafts.csswg.org/cssom/#serialize-a-url)
-                    return Raw(CssSerializer.SerializeUrl(ResolveUrl(url.Token.Value, context)));
+                    return Raw(CssSerializer.SerializeUrl(ResolveUrl(url.Value, context)));
                 }
                 else if (name is "url" or "src" && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } modifiedUrl, .. var urlModifiers] && CssUrlModifiers.Canonicalize(urlModifiers) is { } modifiers)
                 {
                     // https://drafts.csswg.org/css-values-5/#request-url-modifiers
-                    return Raw(CssUrlModifiers.Serialize("url", ResolveUrl(modifiedUrl.Token.Value, context), modifiers));
+                    return Raw(CssUrlModifiers.Serialize("url", ResolveUrl(modifiedUrl.Value, context), modifiers));
                 }
                 else if (name is "image-set" or "-webkit-image-set" && ComputeImageSet(function, context) is { } imageSet)
                 {
@@ -683,7 +683,7 @@ internal static partial class CssValueComputer
                     var image = new CssFunction(function.Name);
                     foreach (var argument in function.Value)
                     {
-                        image.Value.Add(argument is CssPreservedToken { Type: CssTokenType.String } source ? Raw(CssSerializer.SerializeUrl(ResolveUrl(source.Token.Value, context))) : Transform(argument, context));
+                        image.Value.Add(argument is CssPreservedToken { Type: CssTokenType.String } source ? Raw(CssSerializer.SerializeUrl(ResolveUrl(source.Value, context))) : Transform(argument, context));
                     }
 
                     return image;
@@ -761,9 +761,9 @@ internal static partial class CssValueComputer
             {
                 case CssPreservedToken { Type: CssTokenType.Whitespace }:
                     continue;
-                case CssPreservedToken { Type: CssTokenType.Ident } ident when ident.Token.IsIdent("at") || ident.Token.IsIdent("from") || ident.Token.IsIdent("in")
-                    || ident.Token.IsIdent("circle") || ident.Token.IsIdent("ellipse") || ident.Token.IsIdent("closest-side") || ident.Token.IsIdent("closest-corner")
-                    || ident.Token.IsIdent("farthest-side") || ident.Token.IsIdent("farthest-corner"):
+                case CssPreservedToken { Type: CssTokenType.Ident } ident when ident.IsIdent("at") || ident.IsIdent("from") || ident.IsIdent("in")
+                    || ident.IsIdent("circle") || ident.IsIdent("ellipse") || ident.IsIdent("closest-side") || ident.IsIdent("closest-corner")
+                    || ident.IsIdent("farthest-side") || ident.IsIdent("farthest-corner"):
                     return true;
                 case CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension }:
                 case CssFunction math when CssCalc.IsMathFunction(InfraAscii.ToAsciiLowercase(math.Name)):
@@ -833,7 +833,7 @@ internal static partial class CssValueComputer
                 return null;
 
             var image = option[0] is CssPreservedToken { Type: CssTokenType.String } url
-                ? CssSerializer.SerializeUrl(ResolveUrl(url.Token.Value, context))
+                ? CssSerializer.SerializeUrl(ResolveUrl(url.Value, context))
                 : CssSerializer.SerializeValue([Transform(option[0], context)], property: null);
             string? resolution = null;
             string? type = null;
@@ -967,7 +967,7 @@ internal static partial class CssValueComputer
             switch (value)
             {
                 case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
-                    return GetUnitCategory(InfraAscii.ToAsciiLowercase(dimension.Token.Value)) ?? "px";
+                    return GetUnitCategory(InfraAscii.ToAsciiLowercase(dimension.Value)) ?? "px";
                 case CssFunction nested when GetPercentageUnit(nested) is { } unit:
                     return unit;
                 case CssSimpleBlock block:
@@ -1272,11 +1272,11 @@ internal static partial class CssValueComputer
         switch (single)
         {
             case CssPreservedToken { Type: CssTokenType.Percentage } percentage:
-                return percentage.Token.NumericValue * percentageBasis / 100;
+                return percentage.NumericValue * percentageBasis / 100;
             case CssPreservedToken { Type: CssTokenType.Number, Token.NumericValue: 0 }:
                 return 0;
             case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
-                return ConvertDimension(dimension.Token.NumericValue, InfraAscii.ToAsciiLowercase(dimension.Token.Value), context) is { Unit: "px" } converted ? converted.Value : null;
+                return ConvertDimension(dimension.NumericValue, InfraAscii.ToAsciiLowercase(dimension.Value), context) is { Unit: "px" } converted ? converted.Value : null;
             case CssFunction function when CssCalc.IsMathFunction(function.Name):
                 return CssCalc.Evaluate(function, CreateCalcContext(context, "px", (percentageBasis, "px"))) is { IsResolved: true, Unit: "px" } result ? result.Value : null;
             default:
@@ -1367,7 +1367,7 @@ internal static partial class CssValueComputer
 
         var values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
         if (values is [CssPreservedToken { Type: CssTokenType.Number } number])
-            return SerializeNumber(Math.Max(0, number.Token.NumericValue));
+            return SerializeNumber(Math.Max(0, number.NumericValue));
 
         var context = new ComputationContext(style, hasColors: false, baseUrl: null) { LineHeightContext = true };
         if (values is [CssFunction function] && CssCalc.IsMathFunction(function.Name)
@@ -2149,8 +2149,8 @@ internal static partial class CssValueComputer
         var values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
         double? number = values switch
         {
-            [CssPreservedToken { Type: CssTokenType.Number } token] => token.Token.NumericValue,
-            [CssPreservedToken { Type: CssTokenType.Percentage } token] => token.Token.NumericValue / 100,
+            [CssPreservedToken { Type: CssTokenType.Number } token] => token.NumericValue,
+            [CssPreservedToken { Type: CssTokenType.Percentage } token] => token.NumericValue / 100,
             [CssFunction function] when CssCalc.IsMathFunction(function.Name) => CssCalc.Evaluate(function, CreateCalcContext(new ComputationContext(style, hasColors: false, baseUrl: null), percentageUnit: "", (1, ""))) is { IsResolved: true, Unit: "" } result ? result.Value : null,
             _ => null,
         };
@@ -2171,9 +2171,9 @@ internal static partial class CssValueComputer
         var values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
         double? number = values switch
         {
-            [CssPreservedToken { Type: CssTokenType.Ident } token] when token.Token.IsIdent("normal") => 1,
-            [CssPreservedToken { Type: CssTokenType.Number } token] => token.Token.NumericValue,
-            [CssPreservedToken { Type: CssTokenType.Percentage } token] => token.Token.NumericValue / 100,
+            [CssPreservedToken { Type: CssTokenType.Ident } token] when token.IsIdent("normal") => 1,
+            [CssPreservedToken { Type: CssTokenType.Number } token] => token.NumericValue,
+            [CssPreservedToken { Type: CssTokenType.Percentage } token] => token.NumericValue / 100,
             [CssFunction function] when CssCalc.IsMathFunction(function.Name) => CssCalc.Evaluate(function, CreateCalcContext(new ComputationContext(style, hasColors: false, baseUrl: null), percentageUnit: "", (1, ""))) is { IsResolved: true, Unit: "" } result ? result.Value : null,
             _ => null,
         };
@@ -2281,7 +2281,7 @@ internal static partial class CssValueComputer
             case CssPreservedToken { Type: CssTokenType.Hash }:
                 return true;
             case CssPreservedToken { Type: CssTokenType.Ident } ident:
-                return ident.Token.IsIdent("transparent") || CssColor.IsNamedColor(ident.Token.Value);
+                return ident.IsIdent("transparent") || CssColor.IsNamedColor(ident.Value);
             case CssFunction function when InfraAscii.ToAsciiLowercase(function.Name) is "rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch" or "oklab" or "oklch":
                 foreach (var argument in function.Value)
                 {
@@ -2379,7 +2379,7 @@ internal static partial class CssValueComputer
     {
         // currentcolor is kept in the computed value of the other properties (it is resolved in the used value), and in the
         // computed value of the color of the highlight pseudo-elements (https://drafts.csswg.org/css-pseudo-4/#highlight-cascade)
-        if ((!isColorProperty || style.IsHighlight) && value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent("currentcolor"))
+        if ((!isColorProperty || style.IsHighlight) && value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.IsIdent("currentcolor"))
             return "currentcolor";
 
         // https://drafts.csswg.org/css-color-hdr-1/#hdr-color-function: the actual color depends on the HDR headroom, which
@@ -2423,7 +2423,7 @@ internal static partial class CssValueComputer
         {
             case CssPreservedToken { Type: CssTokenType.Ident } ident:
             {
-                var name = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+                var name = InfraAscii.ToAsciiLowercase(ident.Value);
                 if (name == "currentcolor")
                     return isColorProperty ? ParseColor(GetInheritedColor(style)) : null;
 
@@ -2551,7 +2551,7 @@ internal static partial class CssValueComputer
             {
                 case CssPreservedToken { Type: CssTokenType.Ident } ident:
                 {
-                    var name = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+                    var name = InfraAscii.ToAsciiLowercase(ident.Value);
                     if (name == "currentcolor")
                         return ParseColor(LightSystemColors["canvastext"]);
 

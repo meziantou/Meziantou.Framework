@@ -17,6 +17,32 @@ internal static class FontFiles
         }
     }
 
+    public static FontFace LoadType1(ReadOnlySpan<byte> data, AfmFontMetrics? metrics, FontLoadOptions options)
+    {
+        try
+        {
+            return FontLoader.LoadType1(data, metrics, options.Configuration.FontEnvironment);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+    }
+
+    public static FontFace LoadType1(string path, AfmFontMetrics? metrics, FontLoadOptions options)
+    {
+        using var stream = ImageIO.OpenFile(path, asynchronous: false);
+
+        // The file is checked against the limit before it is read
+        var limit = options.Configuration.Limits.MaxEncodedBytes;
+        if (stream.Length > limit)
+            throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, limit, stream.Length);
+
+        var data = new byte[stream.Length];
+        stream.ReadExactly(data);
+        return LoadType1(data, metrics, options);
+    }
+
     public static FontFace[] Load(string path, FontLoadOptions options)
     {
         using var stream = ImageIO.OpenFile(path, asynchronous: false);

@@ -5,6 +5,7 @@ using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.Samples;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
+using Meziantou.Framework.Imaging.TestHarness.Ktx2;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -1527,6 +1528,27 @@ public sealed class DocumentationExampleTests : IDisposable
             Assert.InRange(pixel.G, 120, 135);
             Assert.True(preview.Frames[0][0, 0].B < 255);
         }
+    }
+
+    [Fact]
+    public void ExportKtx2LevelsWritesTheBaseImageAndEveryLevel()
+    {
+        // An sRGB texture of 4x2 and 2x1 texels, assembled from the KTX 2.0 specification
+        var builder = new Ktx2FileBuilder { VkFormat = 43, PixelWidth = 4, PixelHeight = 2, Dfd = Ktx2FileBuilder.Rgba8Dfd(true, 0, 1, 2, 15) };
+        builder.Levels.Add([.. Enumerable.Range(0, 32).Select(i => (byte)(i * 8))]);
+        builder.Levels.Add([255, 0, 0, 255, 0, 0, 255, 255]);
+        var path = GetPath("texture.ktx2");
+        File.WriteAllBytes(path, builder.Build());
+        var directory = Path.GetDirectoryName(path)!;
+
+        var files = Examples.ExportKtx2Levels(path, directory);
+        Assert.HasCount(2, files);
+        using var baseImage = Image.Load<Rgba32>(Path.Combine(directory, "base.png"));
+        Assert.Equal(new Size(4, 2), baseImage.Size);
+        Assert.Equal(new Rgba32(32, 40, 48, 56), baseImage.Frames[0][1, 0]);
+        using var level = Image.Load<Rgba32>(files[1]);
+        Assert.Equal(new Size(2, 1), level.Size);
+        Assert.Equal(new Rgba32(0, 0, 255, 255), level.Frames[0][1, 0]);
     }
 
     [Fact]

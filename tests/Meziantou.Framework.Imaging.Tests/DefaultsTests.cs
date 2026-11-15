@@ -251,7 +251,7 @@ public sealed class DefaultsTests
     [Fact]
     public void PublicEncoderSelectionMatchesTheSelectionOfSave()
     {
-        string[] readOnly = [".jpx", ".jpf"];
+        string[] readOnly = [".jpx", ".jpf", ".ktx2"];
         foreach (var info in ImageFormatInfo.All)
         {
             foreach (var extension in info.FileExtensions)
@@ -289,7 +289,8 @@ public sealed class DefaultsTests
     [Fact]
     public void EveryFormatHasADefaultEncoder()
     {
-        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom)))
+        // KTX 2.0 is read only
+        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Ktx2)))
         {
             var encoder = ImageEncoder.Create(format);
             Assert.Equal(format, encoder.Format);
@@ -304,6 +305,7 @@ public sealed class DefaultsTests
         Assert.Equal(IconKind.Cursor, Assert.IsType<IcoEncoder>(ImageEncoder.Create(ImageFormat.Cur)).Kind);
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Unknown));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Custom));
+        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Ktx2));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create((ImageFormat)999));
     }
 

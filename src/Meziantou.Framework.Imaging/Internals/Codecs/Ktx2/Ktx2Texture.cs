@@ -625,6 +625,9 @@ internal sealed class Ktx2Texture
                 ValidateBasisSamples(dfd, 16, allowAlphaPlane: false, [Ktx2Format.UastcChannelRgb, Ktx2Format.UastcChannelRgba, Ktx2Format.UastcChannelRrr, Ktx2Format.UastcChannelRrrg, Ktx2Format.UastcChannelRg]);
                 break;
             default:
+                if (dfd.ColorModel == Ktx2Format.ModelUastcHdr && format.Encoding == Ktx2Encoding.Astc)
+                    throw Ktx2Format.Unsupported("The KTX 2.0 file stores UASTC HDR blocks (the color model 167 of basisu, which the KTX 2.0 specification does not define).", "Format: UASTC HDR");
+
                 if (dfd.ColorModel != format.ColorModel)
                     throw Ktx2Format.Invalid(string.Create(CultureInfo.InvariantCulture, $"the data format descriptor has the color model {dfd.ColorModel}; {format.ColorModel} is expected for {format.Name}."));
 

@@ -2,7 +2,7 @@
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
-progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
+progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, KTX 2.0 decoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
 vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
@@ -963,6 +963,30 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   SharpFuzz target checks it). Header variables are metadata: one that cannot be read is skipped, never an error.
   XYZE is identified and rejected by a load, since converting XYZ to RGB would be an implicit color conversion.
   `MetadataWritePlan` treats it as linear light only, like OpenEXR.
+- **KTX 2.0** (`Internals/Codecs/Ktx2`), read only. Written from the KTX File Format Specification 2.0 (revision 4), the
+  Khronos Data Format Specification 1.4 (sections 5, 21 to 23 and 25) and Appendices C and D of the KTX specification
+  (BasisLZ), never from KTX-Software, astcenc or basisu. A random-access container, like TIFF and ICO
+  (`RequiresRandomAccess`): `Ktx2Texture.Read` validates the whole structure (sections located by the index and checked
+  against each other, the levels from the smallest one, the data format descriptor against the samples of
+  `Ktx2VkFormats`, the key/value data) before any texel is read; `Ktx2CollectionReader` gives the subresources
+  (`ImageCollectionKind.Surfaces`, ordered layer, face, level, slice) and `Image.Load` the first one, or the layers of a
+  `KTXanimData` animation. The block decoders are per format (`Etc2BlockDecoder`, `AstcBlockDecoder`,
+  `UastcBlockDecoder`, `Etc1SIndices`); BCn is rejected until the DDS decoders of the BC1 to BC7 blocks can be reused
+  (`Ktx2VkFormats.GetRejection`). Decisions to keep:
+  - The channels a format lacks are 0 and alpha 1, then `KTXswizzle` applies (section 5.4): an `R8` texture is red, a
+    luminance texture is gray only with `rrr1`. `Ktx2Output` folds the green channel that UASTC RRRG and ETC1S RRR+GGG
+    store in alpha into the mapping.
+  - ASTC UNORM decodes to halves (decode_float16, the default of KTX section 5.7), to 8 bits with `KTXastcDecodeMode`
+    `unorm8`; sRGB to 8 bits; SFLOAT to halves. The error color (illegal blocks, HDR data in an LDR format) and the
+    reserved UASTC mode are `InvalidImageContentException`.
+  - UASTC with the sRGB transfer function expands its endpoints with 0x80 (section 25.7.2.8). KTX-Software and basisu
+    always use the linear expansion (basisu says so in its log): they differ by 1. The exact oracle is basisu's
+    lossless transcoding to ASTC 4x4, decoded as ASTC sRGB by `ktx extract`.
+  - ETC1S blocks are ETC1 blocks (section 21.1): their texels are computed from the codebooks directly, the selector
+    value indexing the modifiers in the order -b, -a, +a, +b. P-frames of a video need the indices of the previous
+    frame: a collection entry decodes the frames before it without pixels (charged as hidden pixels).
+  - Premultiplied alpha is rejected, never un-premultiplied. The color model 167 that basisu 2 writes for UASTC HDR
+    (not in the specification) is `UnsupportedImageFeatureException`.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -1732,7 +1756,7 @@ thin public types over its `FontFace`.
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
 | `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
 | `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`, `Ktx2`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
 | `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |
@@ -1776,6 +1800,15 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   `ArabicPresentationForms.g.cs` (`arabic-forms`) are written by commands of the corpus generator from sources that
   are not committed and are pinned by a hash: run the command without `--write` to check that a table is what its
   sources give, after downloading them from the addresses the command names.
+- **KTX 2.0 has no corpus** (a random-access container: the corpus suites read every fixture sequentially).
+  `tests/Meziantou.Framework.Imaging.Ktx2.Tests/Files` holds files written by KTX-Software, astcenc and basisu, with the
+  SHA-256 of the reference image of every subresource in `files.json`; the `ktx2` command of the corpus generator
+  (`Ktx2Corpus.cs`, macOS only) writes them and asserts the cross-checks. The references: uncompressed patterns (and
+  `ktx extract --raw`), Apple ImageIO for ETC2 and EAC (it ignores the punchthrough bit and reads signed EAC as
+  unsigned: those are covered by the spec examples of `Ktx2DecoderTests`), `ktx extract` and astcenc (`-ds`, `-dh` to
+  a KTX 1 file of halves: its EXR output is premultiplied, and an RGB file when every alpha is 1) for ASTC, `ktx
+  extract --transcode rgba8` and `basisu -unpack` for ETC1S and linear UASTC. `Ktx2DecoderTests` builds the other
+  files with `TestHarness/Ktx2/Ktx2FileBuilder`. The fuzz target `imaging-ktx2` is seeded with `Files/`.
 - **TIFF has no corpus.** The decoder tests assemble files (`TiffFileBuilder`) whose compressed strips never come from
   the library: the reference encoders of the tests (`TiffReferenceCodecs`, the floating-point predictor included), the
   examples of the specifications, fax strips written by libtiff and kept as literals, whole signed and floating-point

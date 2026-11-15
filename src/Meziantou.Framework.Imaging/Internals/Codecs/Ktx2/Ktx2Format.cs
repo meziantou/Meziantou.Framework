@@ -74,6 +74,9 @@ internal static class Ktx2Format
     public const int ModelPvrtc2 = 165;
     public const int ModelUastc = 166;
 
+    /// <summary>The color model basisu 2 writes for its UASTC HDR blocks, which the KTX 2.0 specification does not define.</summary>
+    public const int ModelUastcHdr = 167;
+
     // Section 5.7: the color primaries
     public const int PrimariesUnspecified = 0;
     public const int PrimariesBt709 = 1;

@@ -44,6 +44,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 | JPEG XL | Premultiplied alpha and integer samples of more than 24 bits are not read; lossy decoding is close to, not identical with, the reference decoder. Writing has no layers or blending. |
 | JPEG 2000 | More than 16 bits and Part 2 extensions are not read; a region decode reads the whole compressed data of each tile it meets. Writing has no precincts and no tile-parts beyond one per tile; HTJ2K output has one quality layer and no HT refinement passes. |
 | OpenEXR | HTJ2K and LJ2K compressions and chroma (RY, BY) channels are not read; deep data are flattened, never read as samples; a multi-part file, deep data, other channels than R, G, B, A and Y, and an overscan, need a part, the flattening, a layer or a window mode ([OpenExrDecodingOptions](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions)). Writing uses lossless scan-line compression, but alpha premultiplication and sample conversion can change source pixels. |
+| KTX 2.0 | Read only. BCn (S3TC, RGTC, BPTC) and PVRTC blocks, the YCbCr formats, 3D ASTC blocks, the depth, stencil, SNORM and integer formats, vendor supercompression and premultiplied alpha are not read; illegal ASTC blocks are rejected instead of decoded to magenta. |
 
 ## Drawing and text
 

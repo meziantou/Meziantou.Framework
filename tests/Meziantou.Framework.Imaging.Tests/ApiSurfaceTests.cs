@@ -355,7 +355,6 @@ public sealed class ApiSurfaceTests
     {
         // A new format is appended: the values of the existing members never change
         Assert.Equal(18, (int)ImageFormat.Radiance);
-        Assert.Equal(18, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
 
         var type = typeof(RadianceEncoder);
         Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
@@ -368,6 +367,34 @@ public sealed class ApiSurfaceTests
         Assert.Equal(typeof(Rgba64?), GetDeclaredProperty(type, nameof(RadianceEncoder.BackgroundColor)).PropertyType);
         Assert.Equal([nameof(RadianceCompression.None), nameof(RadianceCompression.RunLength)], Enum.GetNames<RadianceCompression>());
         Assert.Equal([0, 1], Enum.GetValues<RadianceCompression>().Select(value => (int)value));
+    }
+
+    [Fact]
+    public void Ktx2AdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(19, (int)ImageFormat.Ktx2);
+        Assert.Equal(19, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
+        Assert.Equal(3, (int)ImageCollectionKind.Surfaces);
+
+        // The subresource of a texture entry: a value with value equality
+        var subresource = typeof(TextureSubresource);
+        Assert.True(subresource.IsPublic && subresource.IsValueType);
+        Assert.Equal(
+            [nameof(TextureSubresource.ArrayLayer), nameof(TextureSubresource.DepthSlice), nameof(TextureSubresource.Face), nameof(TextureSubresource.MipLevel)],
+            subresource.GetProperties(BindingFlags.Instance | BindingFlags.Public).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(TextureSubresource?), GetDeclaredProperty(typeof(ImageCollectionEntry), nameof(ImageCollectionEntry.TextureSubresource)).PropertyType);
+
+        // The header of the file: immutable, created by the decoder only, attached to the metadata like the other labels
+        var header = typeof(Ktx2Header);
+        Assert.Equal("Meziantou.Framework.Imaging.Metadata", header.Namespace);
+        Assert.True(header.IsPublic && header.IsSealed && header.IsClass);
+        Assert.True(typeof(IEquatable<Ktx2Header>).IsAssignableFrom(header));
+        Assert.Empty(header.GetConstructors());
+        Assert.All(header.GetProperties(BindingFlags.Instance | BindingFlags.Public), property => Assert.Null(property.GetSetMethod(nonPublic: false)));
+        var property = GetDeclaredProperty(typeof(ImageMetadata), nameof(ImageMetadata.Ktx2Header));
+        Assert.Equal(header, property.PropertyType);
+        Assert.NotNull(property.GetSetMethod());
     }
 
     [Theory]

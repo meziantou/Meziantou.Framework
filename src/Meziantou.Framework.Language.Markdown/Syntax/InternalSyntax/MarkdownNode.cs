@@ -68,6 +68,7 @@ internal sealed class MarkdownNode : GreenNode
             SyntaxKind.LinkReferenceDefinition => new Markdown.MarkdownLinkReferenceDefinitionSyntax(this, parent, position),
             SyntaxKind.Table or SyntaxKind.PipeTable => new Markdown.MarkdownTableSyntax(this, parent, position),
             SyntaxKind.GridTable => new Markdown.MarkdownGridTableSyntax(this, parent, position),
+            SyntaxKind.JiraLink => new Markdown.MarkdownJiraLinkSyntax(this, parent, position),
             SyntaxKind.TableHeaderRow or SyntaxKind.TableDelimiterRow or SyntaxKind.TableRow => new Markdown.MarkdownTableRowSyntax(this, parent, position),
             SyntaxKind.TableCell => new Markdown.MarkdownTableCellSyntax(this, parent, position),
             SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis => new Markdown.MarkdownEmphasisSyntax(this, parent, position),
@@ -91,7 +92,7 @@ internal sealed class MarkdownNode : GreenNode
             SyntaxKind.Subscript or SyntaxKind.Superscript or SyntaxKind.Inserted or SyntaxKind.Marked or SyntaxKind.CustomContainerInline or SyntaxKind.Citation => new Markdown.MarkdownEmphasisExtraSyntax(this, parent, position),
             SyntaxKind.CodeSpan => new Markdown.MarkdownCodeSpanSyntax(this, parent, position),
             SyntaxKind.Link or SyntaxKind.Image => new Markdown.MarkdownLinkSyntax(this, parent, position),
-            SyntaxKind.Autolink or SyntaxKind.ExtendedAutolink => new Markdown.MarkdownAutolinkSyntax(this, parent, position),
+            SyntaxKind.Autolink or SyntaxKind.ExtendedAutolink or SyntaxKind.MarkdigAutolink => new Markdown.MarkdownAutolinkSyntax(this, parent, position),
             SyntaxKind.RawHtml => new Markdown.MarkdownRawHtmlSyntax(this, parent, position),
             _ => throw new InvalidOperationException($"The kind {(SyntaxKind)RawKind} is not a node."),
         };

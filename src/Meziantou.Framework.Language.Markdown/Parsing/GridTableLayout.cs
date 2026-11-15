@@ -146,6 +146,10 @@ internal sealed class GridTableLayout
     {
         public bool IsHeader { get; set; }
 
+        // The line where Markdig starts the row: the first line of its first cell in the order of the columns, which can be a cell
+        // of a row above that spans it
+        public int Line { get; set; } = -1;
+
         public List<Cell> Cells { get; } = [];
     }
 
@@ -259,7 +263,7 @@ internal sealed class GridTableLayout
             {
                 if (column.CurrentCell is { } cell)
                 {
-                    row ??= new Row();
+                    row ??= new Row { Line = cell.Segments.Count > 0 ? cell.Segments[0].Line : -1 };
                     if (!cell.IsInRow)
                     {
                         cell.IsInRow = true;

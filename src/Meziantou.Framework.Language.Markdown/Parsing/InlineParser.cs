@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace Meziantou.Framework.Language.Markdown.Parsing;
@@ -37,6 +38,9 @@ internal sealed class InlineParser
     private int _attributesOutcomesStart;
     private long _abbreviationExpansion;
     private readonly bool _autolinks;
+    private readonly MarkdownAutolinkOptions? _markdigAutolinks;
+    private readonly bool _jiraLinks;
+    private readonly bool _cjkFriendly;
     private readonly bool _disableHtml;
     private Subject _subject = null!;
     private string _text = "";
@@ -89,7 +93,11 @@ internal sealed class InlineParser
         _smartyPants = extensions.HasFlag(MarkdownExtensions.SmartyPants);
         _citations = extensions.HasFlag(MarkdownExtensions.Citations);
         _emoji = extensions.HasFlag(MarkdownExtensions.Emoji) ? options.EmojiMapping : null;
-        _autolinks = extensions.HasFlag(MarkdownExtensions.Autolinks);
+        // The autolinks of Markdig replace the ones of GFM
+        _autolinks = extensions.HasFlag(MarkdownExtensions.Autolinks) && !extensions.HasFlag(MarkdownExtensions.MarkdigAutolinks);
+        _jiraLinks = extensions.HasFlag(MarkdownExtensions.JiraLinks);
+        _cjkFriendly = extensions.HasFlag(MarkdownExtensions.CjkFriendlyEmphasis);
+        _markdigAutolinks = extensions.HasFlag(MarkdownExtensions.MarkdigAutolinks) ? options.AutolinkOptions : null;
     }
 
     /// <summary>Parses the inlines of the subject from <paramref name="start"/>, without the whitespace around them, or only before them.</summary>
@@ -777,12 +785,16 @@ internal sealed class InlineParser
         // The generic attributes of the row are for the table: Markdig does not add them to the inlines
         var lineStart = delimiters[lineBreakIndex].End;
         char[]? withoutAttributes = null;
+        char[]? columnsText = null;
         for (var node = delimiters[lineBreakIndex].Next; node is not null && node.Kind is not (SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken); node = node.Next)
         {
             if (node.Kind == SyntaxKind.GenericAttributes)
             {
+                // The text of the row must be the one of a delimiter row, and the columns are read after the attributes
                 withoutAttributes ??= _text.ToCharArray();
-                PipeTableScanner.BlankAttributes(withoutAttributes, lineStart, node.Start, node.End);
+                withoutAttributes.AsSpan(node.Start, node.End - node.Start).Fill(' ');
+                (columnsText ??= _text.ToCharArray()).AsSpan(node.Start, node.End - node.Start).Fill(' ');
+                PipeTableScanner.BlankAttributes(columnsText, lineStart, node.Start, node.End);
             }
             else if (node.Kind is not (SyntaxKind.PipeToken or SyntaxKind.TextToken or SyntaxKind.EscapedCharacterToken) || (node.Kind == SyntaxKind.TextToken && node.IsDelimiterRun))
             {
@@ -806,7 +818,7 @@ internal sealed class InlineParser
         }
 
         var hasLineEnd = index < count;
-        return PipeTableScanner.ReadColumns(text, lineStart, hasLineEnd ? delimiters[index].Start : lineEnd, pipes, hasLineEnd);
+        return PipeTableScanner.ReadColumns(columnsText is null ? text : new string(columnsText), lineStart, hasLineEnd ? delimiters[index].Start : lineEnd, pipes, hasLineEnd);
     }
 
     private void Begin(Subject subject, int start, int end, bool trimEnd)
@@ -976,6 +988,12 @@ internal sealed class InlineParser
         }
 
         // Markdig reads the emoji before the other inlines, except the escapes and the links
+        // Markdig reads its autolinks first
+        if (_markdigAutolinks is not null && c is 'h' or 'f' or 'm' or 't' or 'w' && IsMarkdigAutolinkStart(_pos) && ParseMarkdigAutolink())
+        {
+            return;
+        }
+
         if (_emoji is not null && c != ']' && _emoji.IsFirstCharacter(c) && ParseEmoji())
         {
             return;
@@ -1074,6 +1092,13 @@ internal sealed class InlineParser
             case ']':
                 ParseCloseBracket();
                 break;
+            case >= 'A' and <= 'Z' when _jiraLinks && IsJiraLinkStart(_pos):
+                if (!ParseJiraLink())
+                {
+                    ParseString();
+                }
+
+                break;
             case '"' when _citations && CharAt(_pos + 1) == '"':
                 HandleDelimiter(c);
                 break;
@@ -1120,6 +1145,271 @@ internal sealed class InlineParser
         AppendText(start, _pos);
     }
 
+    // An autolink of Markdig starts with a scheme or www., after whitespace or a valid previous character
+    private bool IsMarkdigAutolinkStart(int position)
+    {
+        var previous = position > _inlineStart ? _text[position - 1] : '\0';
+        if (previous != '\0' && !Scanners.IsUnicodeWhitespace(GetRuneBefore(position)) && !_markdigAutolinks!.ValidPreviousCharacters.Contains(previous, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var text = _text.AsSpan(position, _end - position);
+        return text.Length >= 4 && text[0] switch
+        {
+            'h' => text.StartsWith("https://", StringComparison.Ordinal) || text.StartsWith("http://", StringComparison.Ordinal),
+            'w' => text.StartsWith("www.", StringComparison.Ordinal),
+            'f' => text.StartsWith("ftp://", StringComparison.Ordinal),
+            'm' => text.StartsWith("mailto:", StringComparison.Ordinal),
+            _ => text.StartsWith("tel:", StringComparison.Ordinal),
+        };
+    }
+
+    // An autolink of Markdig: the URL up to whitespace, a control character, <, an entity, or trailing punctuation, whose
+    // parentheses are balanced, without the characters of the delimiters of emphasis that are open
+    private bool ParseMarkdigAutolink()
+    {
+        var start = _pos;
+
+        // Not in a link, or after an <a> that is not closed
+        for (var bracket = _brackets; bracket is not null; bracket = bracket.Previous)
+        {
+            if (bracket.Active)
+            {
+                return false;
+            }
+        }
+
+        for (var previous = _root.LastChild; previous is not null; previous = previous.Previous)
+        {
+            if (previous.Kind == SyntaxKind.RawHtml)
+            {
+                var html = _text.AsSpan(previous.Start, previous.End - previous.Start);
+                if (html.StartsWith("</a", StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+
+                if (html.StartsWith("<a", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+        }
+
+        var position = start;
+        var depth = 0;
+        var closing = -1;
+        while (true)
+        {
+            var c = position < _end ? _text[position] : '\0';
+            if (c == '(')
+            {
+                depth++;
+            }
+            else if (c == ')')
+            {
+                depth--;
+                if (depth < 0 && closing < 0)
+                {
+                    closing = position;
+                }
+            }
+            else if (IsMarkdigUrlEnd(position, c))
+            {
+                break;
+            }
+
+            position++;
+        }
+
+        var urlEnd = closing >= 0 ? closing : depth == 0 ? position : -1;
+        if (urlEnd < 0)
+        {
+            return false;
+        }
+
+        var end = urlEnd;
+        var trimmed = urlEnd;
+        while (trimmed > start && IsPendingDelimiter(_text[trimmed - 1]))
+        {
+            trimmed--;
+        }
+
+        if (trimmed > start)
+        {
+            end = trimmed;
+        }
+
+        var link = _text.AsSpan(start, end - start);
+        int domainOffset;
+        switch (link[0])
+        {
+            case 'h':
+                if (link is "http://" or "https://")
+                {
+                    return false;
+                }
+
+                domainOffset = link[4] == 's' ? 8 : 7;
+                break;
+            case 'w':
+                domainOffset = 4;
+                break;
+            case 'f':
+                if (link is "ftp://")
+                {
+                    return false;
+                }
+
+                domainOffset = 6;
+                break;
+            case 't':
+                if (link.Length <= 4)
+                {
+                    return false;
+                }
+
+                domainOffset = -1;
+                break;
+            default:
+                var at = link.IndexOf('@');
+                if (at is -1 or 7)
+                {
+                    return false;
+                }
+
+                domainOffset = at + 1;
+                break;
+        }
+
+        if (domainOffset >= 0 && !IsValidMarkdigDomain(link, domainOffset, _markdigAutolinks!.AllowDomainWithoutPeriod))
+        {
+            return false;
+        }
+
+        var node = NewNode(SyntaxKind.MarkdigAutolink, start, end);
+        node.Append(NewNode(SyntaxKind.ExtendedAutolinkToken, start, end));
+        _root.Append(node);
+        _pos = end;
+        return true;
+
+        bool IsPendingDelimiter(char c)
+        {
+            for (var delimiter = _delimiters; delimiter is not null; delimiter = delimiter.Previous)
+            {
+                if (delimiter.Character == c)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    private bool IsMarkdigUrlEnd(int position, char c)
+    {
+        if (IsMarkdigEndOfUri(c))
+        {
+            return true;
+        }
+
+        if (c == '&' && Scanners.EntityRegex().Match(_text, position, _end - position) is { Success: true, Index: var index } && index == position)
+        {
+            return true;
+        }
+
+        return c is '?' or '!' or '.' or ',' or ':' or '*' or '_' or '~' && IsMarkdigEndOfUri(position + 1 < _end ? _text[position + 1] : '\0');
+
+        static bool IsMarkdigEndOfUri(char c) => c is '\0' or ' ' or '\t' or '<' || char.IsControl(c);
+    }
+
+    // A domain of segments of letters, digits, hyphens and underscores separated by periods, with at least one period, and no
+    // underscore in its last two segments. Markdig accepts the characters that are not ASCII and not punctuation or spaces.
+    private static bool IsValidMarkdigDomain(ReadOnlySpan<char> link, int start, bool allowDomainWithoutPeriod)
+    {
+        var segmentCount = 1;
+        var segmentHasCharacters = false;
+        var lastUnderscoreSegment = -1;
+        for (var i = start; i < link.Length; i++)
+        {
+            var c = link[i];
+            if (!char.IsAsciiLetterOrDigit(c))
+            {
+                if (c == '.')
+                {
+                    if (!segmentHasCharacters)
+                    {
+                        return false;
+                    }
+
+                    segmentCount++;
+                    segmentHasCharacters = false;
+                    continue;
+                }
+
+                if (c is '/' or '?' or '#' or ':')
+                {
+                    break;
+                }
+
+                if (c == '_')
+                {
+                    lastUnderscoreSegment = segmentCount;
+                }
+                else if (c != '-' && IsSpaceOrPunctuation(c))
+                {
+                    return false;
+                }
+            }
+
+            segmentHasCharacters = true;
+        }
+
+        return (segmentCount != 1 || allowDomainWithoutPeriod) && segmentHasCharacters && segmentCount - lastUnderscoreSegment >= 2;
+
+        static bool IsSpaceOrPunctuation(char c) => c <= 127
+            ? c is '\0' or '\t' or '\n' or '\f' or '\r' or ' ' || Scanners.IsEscapable(c)
+            : CharUnicodeInfo.GetUnicodeCategory(c) is UnicodeCategory.ConnectorPunctuation or UnicodeCategory.DashPunctuation or UnicodeCategory.OpenPunctuation or UnicodeCategory.ClosePunctuation or UnicodeCategory.InitialQuotePunctuation or UnicodeCategory.FinalQuotePunctuation or UnicodeCategory.OtherPunctuation or UnicodeCategory.SpaceSeparator;
+    }
+
+    // A reference to a Jira issue starts after whitespace or (
+    private bool IsJiraLinkStart(int position) => position <= _inlineStart || _text[position - 1] == '(' || Scanners.IsUnicodeWhitespace(GetRuneBefore(position));
+
+    // A reference to a Jira issue: uppercase letters and digits that start with a letter, a hyphen and digits, before whitespace
+    // or )
+    private bool ParseJiraLink()
+    {
+        var position = _pos;
+        while (position < _end && (char.IsAsciiLetterUpper(_text[position]) || char.IsAsciiDigit(_text[position])))
+        {
+            position++;
+        }
+
+        if (CharAt(position) != '-' || !char.IsAsciiDigit(CharAt(position + 1)))
+        {
+            return false;
+        }
+
+        position++;
+        while (position < _end && char.IsAsciiDigit(_text[position]))
+        {
+            position++;
+        }
+
+        if (position < _end && _text[position] != ')' && !Scanners.IsUnicodeWhitespace(GetRuneAt(position)))
+        {
+            return false;
+        }
+
+        var link = NewNode(SyntaxKind.JiraLink, _pos, position);
+        link.Append(NewNode(SyntaxKind.JiraLinkToken, _pos, position));
+        _root.Append(link);
+        _pos = position;
+        return true;
+    }
+
     // The characters where a construct of an extension can start: a tilde, the colon of a URL, the start of www.
     private bool IsExtensionCharacter(char c) => c switch
     {
@@ -1131,6 +1421,8 @@ internal sealed class InlineParser
         '$' => _mathematics,
         '{' => _genericAttributes,
         ':' => _autolinks || _customContainers,
+        >= 'A' and <= 'Z' when _jiraLinks => IsJiraLinkStart(_pos),
+        'h' or 'f' or 'm' or 't' or 'w' when _markdigAutolinks is not null => IsMarkdigAutolinkStart(_pos),
         '\'' or '"' or '>' or '.' when _smartyPants => true,
         '"' when _citations => true,
         'w' => _autolinks && _pos + 3 < _end && _text[_pos + 1] == 'w' && _text[_pos + 2] == 'w' && _text[_pos + 3] == '.',
@@ -1301,6 +1593,106 @@ internal sealed class InlineParser
         return match.Success ? match.Length : 0;
     }
 
+    // The rules of markdown-cjk-friendly, as Markdig applies them: a delimiter next to a CJK character can open or close even
+    // after or before punctuation. withinWord: whether the delimiter can open or close in a word, which _ cannot.
+    private void GetCjkFriendlyFlanking(int start, Rune before, Rune after, bool withinWord, out bool canOpen, out bool canClose)
+    {
+        var beforeIsWhitespace = Scanners.IsUnicodeWhitespace(before);
+        var afterIsWhitespace = Scanners.IsUnicodeWhitespace(after);
+        if (beforeIsWhitespace || afterIsWhitespace)
+        {
+            canOpen = !afterIsWhitespace;
+            canClose = !beforeIsWhitespace;
+            return;
+        }
+
+        // A variation selector belongs to the character before it
+        var main = before;
+        var isVariation = before.Value is >= 0xFE00 and <= 0xFE0E;
+        if (isVariation)
+        {
+            var mainEnd = start - before.Utf16SequenceLength;
+            main = mainEnd > 0 ? GetRuneBefore(mainEnd) : new Rune('\n');
+        }
+
+        var beforeIsPunctuation = Scanners.IsUnicodePunctuation(main);
+        var afterIsPunctuation = Scanners.IsUnicodePunctuation(after);
+        canOpen = beforeIsPunctuation;
+        canClose = afterIsPunctuation;
+        if (!withinWord)
+        {
+            return;
+        }
+
+        var beforeIsCjk = IsCjk(main) || (isVariation ? before.Value == 0xFE01 && main.Value is 0x2018 or 0x2019 or 0x201C or 0x201D : main.Value is >= 0xE0100 and <= 0xE01EF);
+        var eitherIsCjk = beforeIsCjk || IsCjk(after);
+        canOpen |= eitherIsCjk || !afterIsPunctuation;
+        canClose |= eitherIsCjk || !beforeIsPunctuation;
+    }
+
+    // The CJK characters of markdown-cjk-friendly, as of Unicode 17
+    private static bool IsCjk(Rune rune) => rune.Value is >= 0x1100 and (
+        <= 0x11ff
+        or 0x20a9
+        or >= 0x2329 and <= 0x232a
+        or >= 0x2630 and <= 0x2637
+        or >= 0x268a and <= 0x268f
+        or >= 0x2e80 and <= 0x2e99
+        or >= 0x2e9b and <= 0x2ef3
+        or >= 0x2f00 and <= 0x2fd5
+        or >= 0x2ff0 and <= 0x303e
+        or >= 0x3041 and <= 0x3096
+        or >= 0x3099 and <= 0x30ff
+        or >= 0x3105 and <= 0x312f
+        or >= 0x3131 and <= 0x318e
+        or >= 0x3190 and <= 0x31e5
+        or >= 0x31ef and <= 0x321e
+        or >= 0x3220 and <= 0x3247
+        or >= 0x3250 and <= 0xa48c
+        or >= 0xa490 and <= 0xa4c6
+        or >= 0xa960 and <= 0xa97c
+        or >= 0xac00 and <= 0xd7a3
+        or >= 0xd7b0 and <= 0xd7c6
+        or >= 0xd7cb and <= 0xd7fb
+        or >= 0xf900 and <= 0xfaff
+        or >= 0xfe10 and <= 0xfe19
+        or >= 0xfe30 and <= 0xfe52
+        or >= 0xfe54 and <= 0xfe66
+        or >= 0xfe68 and <= 0xfe6b
+        or >= 0xff01 and <= 0xffbe
+        or >= 0xffc2 and <= 0xffc7
+        or >= 0xffca and <= 0xffcf
+        or >= 0xffd2 and <= 0xffd7
+        or >= 0xffda and <= 0xffdc
+        or >= 0xffe0 and <= 0xffe6
+        or >= 0xffe8 and <= 0xffee
+        or >= 0x16fe0 and <= 0x16fe4
+        or >= 0x16ff0 and <= 0x16ff6
+        or >= 0x17000 and <= 0x18cd5
+        or >= 0x18cff and <= 0x18d1e
+        or >= 0x18d80 and <= 0x18df2
+        or >= 0x1aff0 and <= 0x1aff3
+        or >= 0x1aff5 and <= 0x1affb
+        or >= 0x1affd and <= 0x1affe
+        or >= 0x1b000 and <= 0x1b122
+        or 0x1b132
+        or >= 0x1b150 and <= 0x1b152
+        or 0x1b155
+        or >= 0x1b164 and <= 0x1b167
+        or >= 0x1b170 and <= 0x1b2fb
+        or >= 0x1d300 and <= 0x1d356
+        or >= 0x1d360 and <= 0x1d376
+        or 0x1f200
+        or 0x1f202
+        or >= 0x1f210 and <= 0x1f219
+        or >= 0x1f21b and <= 0x1f22e
+        or >= 0x1f230 and <= 0x1f231
+        or 0x1f237
+        or 0x1f23b
+        or >= 0x1f240 and <= 0x1f248
+        or >= 0x1f260 and <= 0x1f265
+        or >= 0x20000 and <= 0x3fffd);
+
     private void HandleDelimiter(char c)
     {
         var start = _pos;
@@ -1330,8 +1722,12 @@ internal sealed class InlineParser
         var rightFlanking = !beforeIsWhitespace && (!(beforeIsPunctuation && !(extra && IsPunctuationException(before))) || afterIsWhitespace || Scanners.IsUnicodePunctuation(after));
         bool canOpen;
         bool canClose;
+        if (_cjkFriendly)
+        {
+            GetCjkFriendlyFlanking(start, before, after, c is not ('_' or '"'), out canOpen, out canClose);
+        }
         // As in Markdig, the quotes of a citation cannot open or close in a word, as _, whatever the punctuation around them
-        if (c is '_' or '"')
+        else if (c is '_' or '"')
         {
             canOpen = leftFlanking && (!rightFlanking || beforeIsPunctuation);
             canClose = rightFlanking && (!leftFlanking || Scanners.IsUnicodePunctuation(after));

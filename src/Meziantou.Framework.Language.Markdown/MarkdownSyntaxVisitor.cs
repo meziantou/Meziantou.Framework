@@ -80,6 +80,9 @@ public abstract class MarkdownSyntaxVisitor
     /// <summary>Visits a <see cref="MarkdownGridTableSyntax"/>.</summary>
     public virtual void VisitMarkdownGridTable(MarkdownGridTableSyntax node) => DefaultVisit(node);
 
+    /// <summary>Visits a <see cref="MarkdownJiraLinkSyntax"/>.</summary>
+    public virtual void VisitMarkdownJiraLink(MarkdownJiraLinkSyntax node) => DefaultVisit(node);
+
     /// <summary>Visits a <see cref="MarkdownFigureCaptionSyntax"/>.</summary>
     public virtual void VisitMarkdownFigureCaption(MarkdownFigureCaptionSyntax node) => DefaultVisit(node);
 
@@ -200,6 +203,9 @@ public abstract class MarkdownSyntaxVisitor<TResult>
 
     /// <summary>Visits a <see cref="MarkdownGridTableSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownGridTable(MarkdownGridTableSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownJiraLinkSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownJiraLink(MarkdownJiraLinkSyntax node) => DefaultVisit(node);
 
     /// <summary>Visits a <see cref="MarkdownFigureCaptionSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownFigureCaption(MarkdownFigureCaptionSyntax node) => DefaultVisit(node);

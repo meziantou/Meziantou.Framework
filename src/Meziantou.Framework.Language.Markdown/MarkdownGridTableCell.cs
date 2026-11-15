@@ -8,8 +8,9 @@ public sealed class MarkdownGridTableCell
 
     private readonly bool _isClosed;
 
-    internal MarkdownGridTableCell(int columnIndex, int columnSpan, int rowSpan, string text, MarkdownSyntaxTree? table, bool isClosed)
+    internal MarkdownGridTableCell(int columnIndex, int columnSpan, int rowSpan, string text, MarkdownSyntaxTree? table, bool isClosed, int lineIndex)
     {
+        LineIndex = lineIndex;
         _isClosed = isClosed;
         ColumnIndex = columnIndex;
         ColumnSpan = columnSpan;
@@ -17,6 +18,9 @@ public sealed class MarkdownGridTableCell
         Text = text;
         _table = table;
     }
+
+    // The index of the first line of the cell in the lines of the table, or -1
+    internal int LineIndex { get; }
 
     /// <summary>Gets the index of the first column of the cell.</summary>
     public int ColumnIndex { get; }

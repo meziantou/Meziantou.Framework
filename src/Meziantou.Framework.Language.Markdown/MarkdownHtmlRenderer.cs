@@ -41,6 +41,16 @@ public static class MarkdownHtmlRenderer
             writer.CollectAttributes(tree.GetRoot());
         }
 
+        if (tree.Options.Extensions.HasFlag(MarkdownExtensions.Bootstrap) || tree.Options.Extensions.HasFlag(MarkdownExtensions.Globalization))
+        {
+            writer.CollectExtraAttributes(tree.GetRoot());
+        }
+
+        if (options?.PragmaLines is true)
+        {
+            writer.CollectPragmaLines(tree);
+        }
+
         writer.WriteBlocks(tree.GetRoot().Blocks);
         if (tree.Options.Extensions.HasFlag(MarkdownExtensions.Footnotes))
         {
@@ -64,6 +74,7 @@ public static class MarkdownHtmlRenderer
         private readonly bool _hardLineBreaks = options.Extensions.HasFlag(MarkdownExtensions.HardLineBreaks);
         private readonly bool _diagrams = options.Extensions.HasFlag(MarkdownExtensions.Diagrams);
         private readonly bool _autoIdentifiers = options.Extensions.HasFlag(MarkdownExtensions.AutoIdentifiers);
+        private readonly bool _mediaLinks = options.Extensions.HasFlag(MarkdownExtensions.MediaLinks);
 
         // Whether the next block is the first of a custom container or of a definition
         private bool _firstInContainer;
@@ -85,6 +96,369 @@ public static class MarkdownHtmlRenderer
         private string? _backLinks;
 
         public override string ToString() => _output.ToString();
+
+        // The classes and the properties that Bootstrap and the direction of the text add after the generic attributes
+        private Dictionary<SyntaxNode, (List<string> Classes, List<KeyValuePair<string, string?>> Properties)>? _extraAttributes;
+
+        public void CollectExtraAttributes(MarkdownDocumentSyntax document)
+        {
+            _extraAttributes = [];
+            var bootstrap = options.Extensions.HasFlag(MarkdownExtensions.Bootstrap);
+            var globalization = options.Extensions.HasFlag(MarkdownExtensions.Globalization);
+            var directions = new Dictionary<SyntaxNode, bool>();
+            foreach (var node in document.DescendantNodesAndSelf())
+            {
+                if (bootstrap)
+                {
+                    switch (node)
+                    {
+                        case MarkdownLinkSyntax { IsImage: true }:
+                            AddClass(node, "img-fluid");
+                            break;
+                        case MarkdownTableSyntax or MarkdownGridTableSyntax:
+                            AddClass(node, "table");
+                            break;
+                        case MarkdownAlertSyntax alert:
+                            AddClass(node, "alert");
+                            if (alert.AlertKind.Length <= 16)
+                            {
+                                AddClass(node, alert.AlertKind.ToUpperInvariant() switch
+                                {
+                                    "NOTE" => "alert-primary",
+                                    "TIP" => "alert-success",
+                                    "IMPORTANT" => "alert-info",
+                                    "WARNING" => "alert-warning",
+                                    "CAUTION" => "alert-danger",
+                                    _ => "alert-dark",
+                                });
+                            }
+
+                            AddProperty(node, "role", "alert");
+                            if (alert.DescendantNodes().OfType<MarkdownParagraphSyntax>().LastOrDefault() is { } last)
+                            {
+                                AddClass(last, "mb-0");
+                            }
+
+                            break;
+                        case MarkdownBlockQuoteSyntax:
+                            AddClass(node, "blockquote");
+                            break;
+                        case MarkdownFigureSyntax:
+                            AddClass(node, "figure");
+                            break;
+                        case MarkdownFigureCaptionSyntax:
+                            AddClass(node, "figure-caption");
+                            break;
+                    }
+                }
+
+                if (globalization && node is not (MarkdownTableRowSyntax or MarkdownTableCellSyntax or MarkdownListItemSyntax) && IsRightToLeft(node, directions))
+                {
+                    AddProperty(node, "dir", "rtl");
+                    if (node is MarkdownTableSyntax)
+                    {
+                        AddProperty(node, "align", "right");
+                    }
+                }
+            }
+
+            void AddClass(SyntaxNode node, string cssClass) => Get(node).Classes.Add(cssClass);
+
+            void AddProperty(SyntaxNode node, string name, string value)
+            {
+                var properties = Get(node).Properties;
+                if (!properties.Exists(property => string.Equals(property.Key, name, StringComparison.Ordinal)))
+                {
+                    properties.Add(new(name, value));
+                }
+            }
+
+            (List<string> Classes, List<KeyValuePair<string, string?>> Properties) Get(SyntaxNode node)
+            {
+                if (!_extraAttributes.TryGetValue(node, out var extra))
+                {
+                    extra = ([], []);
+                    _extraAttributes[node] = extra;
+                }
+
+                return extra;
+            }
+        }
+
+        // As in Markdig, the direction of a node is the one of its first child, down to text, whose first strong character
+        // gives it. The nodes of the chain of first children have the same direction.
+        private bool IsRightToLeft(SyntaxNode node, Dictionary<SyntaxNode, bool> directions)
+        {
+            var chain = new List<SyntaxNode>();
+            bool result;
+            SyntaxNodeOrToken current = node;
+            while (true)
+            {
+                if (current.AsNode() is { } currentNode)
+                {
+                    if (directions.TryGetValue(currentNode, out result))
+                    {
+                        break;
+                    }
+
+                    chain.Add(currentNode);
+                    if (currentNode is MarkdownCodeSpanSyntax or MarkdownAutolinkSyntax { IsExtended: false } or MarkdownRawHtmlSyntax or MarkdownMathInlineSyntax or MarkdownFootnoteReferenceSyntax or MarkdownAbbreviationSyntax or MarkdownCodeBlockSyntax or MarkdownHtmlBlockSyntax or MarkdownThematicBreakSyntax or MarkdownMathBlockSyntax or MarkdownGridTableSyntax or MarkdownLinkReferenceDefinitionSyntax or MarkdownJiraLinkSyntax)
+                    {
+                        result = false;
+                        break;
+                    }
+
+                    var first = GetFirstContent(currentNode);
+                    if (first.RawKind == 0)
+                    {
+                        result = false;
+                        break;
+                    }
+
+                    current = first;
+                    continue;
+                }
+
+                var token = current.AsToken();
+                result = (SyntaxKind)token.RawKind switch
+                {
+                    SyntaxKind.TextToken or SyntaxKind.EscapedCharacterToken => StartsWithRightToLeft(token),
+                    SyntaxKind.EmojiToken or SyntaxKind.ExtendedAutolinkToken => TextDirection.StartsWithRightToLeft(token.Text),
+                    _ => false,
+                };
+                break;
+            }
+
+            foreach (var item in chain)
+            {
+                directions[item] = result;
+            }
+
+            return result;
+        }
+
+        // Markdig merges the literal of a construct that it does not parse, such as ], ! or a backslash, with the text that follows
+        // it, but not an emphasis delimiter that can open or close, nor the text before an escaped character: when the text has no
+        // character with a direction, the direction is the one of the text that follows it.
+        private bool StartsWithRightToLeft(SyntaxToken token)
+        {
+            var direction = TextDirection.GetDirection((SyntaxKind)token.RawKind is SyntaxKind.EscapedCharacterToken ? token.Text.AsSpan(1) : token.Text);
+            if (direction is not null || token.Parent is not { } parent)
+            {
+                return direction ?? false;
+            }
+
+            var siblings = new List<SyntaxNodeOrToken>(parent.ChildNodesAndTokens());
+            var index = siblings.FindIndex(child => child.IsToken && child.SpanStart == token.SpanStart && child.RawKind == token.RawKind);
+            if (index < 0 || IsDelimiterRun(siblings, index))
+            {
+                return false;
+            }
+
+            for (var i = index + 1; i < siblings.Count && siblings[i].IsToken && (SyntaxKind)siblings[i].RawKind is SyntaxKind.TextToken && siblings[i].SpanStart == siblings[i - 1].Span.End && !IsDelimiterRun(siblings, i); i++)
+            {
+                direction = TextDirection.GetDirection(siblings[i].AsToken().Text);
+                if (direction is not null)
+                {
+                    return direction.Value;
+                }
+            }
+
+            return false;
+        }
+
+        // Whether a text token is a run of emphasis delimiters that can open or close, from the characters around it (inserted and
+        // marked text need two delimiters), or a pipe, which the pipe tables of Markdig replace by a literal when it is not in a table
+        private bool IsDelimiterRun(List<SyntaxNodeOrToken> siblings, int index)
+        {
+            var token = siblings[index];
+            if (options.Extensions.HasFlag(MarkdownExtensions.PipeTables) && (SyntaxKind)token.RawKind is SyntaxKind.TextToken && token.AsToken().Text is ['|', ..])
+            {
+                return true;
+            }
+
+            if ((SyntaxKind)token.RawKind is not SyntaxKind.TextToken || token.AsToken().Text is not [var delimiter and ('*' or '_' or '~' or '^' or '+' or '='), ..] text || text.AsSpan().ContainsAnyExcept(delimiter) || (delimiter is '+' or '=' && text.Length < 2))
+            {
+                return false;
+            }
+
+            var previous = index > 0 && siblings[index - 1] is { IsToken: true } before && before.Span.End == token.SpanStart && before.AsToken().Text is [.., var last] ? last : ' ';
+            var next = index + 1 < siblings.Count && siblings[index + 1] is { IsToken: true } after && after.SpanStart == token.Span.End && after.AsToken().Text is [var first, ..] ? first : ' ';
+            var previousIsWhitespace = char.IsWhiteSpace(previous);
+            var nextIsWhitespace = char.IsWhiteSpace(next);
+            var previousIsPunctuation = char.IsPunctuation(previous) || char.IsSymbol(previous);
+            var nextIsPunctuation = char.IsPunctuation(next) || char.IsSymbol(next);
+            var leftFlanking = !nextIsWhitespace && (!nextIsPunctuation || previousIsWhitespace || previousIsPunctuation);
+            var rightFlanking = !previousIsWhitespace && (!previousIsPunctuation || nextIsWhitespace || nextIsPunctuation);
+            return delimiter == '_'
+                ? (leftFlanking && (!rightFlanking || previousIsPunctuation)) || (rightFlanking && (!leftFlanking || nextIsPunctuation))
+                : leftFlanking || rightFlanking;
+        }
+
+        // The first child that is content: not a marker, a delimiter, a bracket or generic attributes
+        private static SyntaxNodeOrToken GetFirstContent(SyntaxNode node)
+        {
+            var children = node.ChildNodesAndTokens();
+            for (var i = 0; i < children.Count; i++)
+            {
+                var child = children[i];
+                if (child.AsNode() is { } childNode)
+                {
+                    if (childNode is not MarkdownGenericAttributesSyntax && !(node is MarkdownTableSyntax && childNode is MarkdownTableRowSyntax { IsDelimiter: true }))
+                    {
+                        return childNode;
+                    }
+
+                    continue;
+                }
+
+                if (node is MarkdownBlockSyntax and not (MarkdownParagraphSyntax or MarkdownHeadingSyntax or MarkdownDefinitionTermSyntax or MarkdownFigureCaptionSyntax))
+                {
+                    // The tokens of a container block are its markers
+                    continue;
+                }
+
+                if ((SyntaxKind)child.RawKind is SyntaxKind.TextToken or SyntaxKind.EscapedCharacterToken or SyntaxKind.EmojiToken or SyntaxKind.EntityToken or SyntaxKind.SmartyPantToken or SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken or SyntaxKind.ExtendedAutolinkToken)
+                {
+                    return child;
+                }
+
+                // Markdig replaces a bracket that a ] closes without a link by a literal, which has no direction, but keeps the
+                // content of a bracket that nothing closes in it
+                if ((SyntaxKind)child.RawKind is SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken && IsClosed(children, i))
+                {
+                    return child;
+                }
+            }
+
+            return default;
+
+            static bool IsClosed(ChildSyntaxList children, int index)
+            {
+                for (var i = index + 1; i < children.Count; i++)
+                {
+                    if (children[i] is { IsToken: true } token && (SyntaxKind)token.RawKind is SyntaxKind.TextToken && token.AsToken().Text is [']', ..])
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        // The ids of the pragma lines, which go to the first block of each line, the outermost one, as Markdig gives them before it
+        // renders the document, and the blocks of a line whose id is set, which an anchor with the id precedes
+        private Dictionary<SyntaxNode, string>? _pragmaIds;
+        private Dictionary<SyntaxNode, string>? _pragmaAnchors;
+        private Dictionary<object, string>? _pragmaGridParts;
+
+        public void CollectPragmaLines(MarkdownSyntaxTree tree)
+        {
+            _pragmaIds = [];
+            _pragmaAnchors = [];
+            var text = tree.GetText();
+            var lines = new HashSet<int>();
+            Visit(tree.GetRoot());
+
+            void Visit(SyntaxNode container)
+            {
+                foreach (var child in container.ChildNodes())
+                {
+                    if (child is MarkdownGridTableSyntax grid)
+                    {
+                        Add(grid);
+                        var firstLine = text.GetLine(grid.SpanStart).LineNumber;
+                        foreach (var row in grid.Rows)
+                        {
+                            AddGridPart(row, row.LineIndex);
+                            foreach (var cell in row.Cells)
+                            {
+                                AddGridPart(cell, cell.LineIndex);
+                            }
+                        }
+
+                        void AddGridPart(object part, int lineIndex)
+                        {
+                            if (lineIndex >= 0 && lines.Add(firstLine + lineIndex))
+                            {
+                                (_pragmaGridParts ??= [])[part] = "pragma-line-" + (firstLine + lineIndex).ToString(CultureInfo.InvariantCulture);
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    if (child is MarkdownTableSyntax table)
+                    {
+                        Add(table);
+                        foreach (var row in table.ChildNodes().OfType<MarkdownTableRowSyntax>())
+                        {
+                            if (!row.IsDelimiter)
+                            {
+                                Add(row);
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    if (child is MarkdownBlockSyntax and not (MarkdownHtmlBlockSyntax or MarkdownLinkReferenceDefinitionSyntax or MarkdownFootnoteDefinitionSyntax or MarkdownFrontMatterSyntax or MarkdownAbbreviationDefinitionSyntax))
+                    {
+                        if (child is not MarkdownParagraphSyntax paragraph || _attributes is null || !IsAttributesParagraph(paragraph))
+                        {
+                            Add(child);
+                        }
+                    }
+
+                    if (MarkdownDocumentSyntax.IsBlockContainer(child))
+                    {
+                        Visit(child);
+                    }
+                }
+            }
+
+            void Add(SyntaxNode block)
+            {
+                var line = MarkdigLines.GetLine(block);
+                if (!lines.Add(line))
+                {
+                    return;
+                }
+
+                var id = "pragma-line-" + line.ToString(CultureInfo.InvariantCulture);
+                if (GetId(block) is null)
+                {
+                    _pragmaIds[block] = id;
+                }
+                else
+                {
+                    _pragmaAnchors[block] = id;
+                }
+            }
+        }
+
+        private string? GetId(SyntaxNode node)
+        {
+            if (_attributes is not null && _attributes.TryGetValue(node, out var attributes) && attributes.Id is not null)
+            {
+                return attributes.Id;
+            }
+
+            return _autoIdentifiers && node is MarkdownHeadingSyntax heading ? heading.Identifier : null;
+        }
+
+        // Markdig writes the anchor of a heading that has inlines at their start, and before the other blocks
+        private static bool HasPragmaAnchorInside(MarkdownBlockSyntax block) => block is MarkdownHeadingSyntax heading && heading.Inlines.Any(inline => inline.AsNode() is not MarkdownGenericAttributesSyntax);
+
+        // The anchor of the pragma line of a block whose id is set, which goes before it, or at the start of a heading
+        private void AppendPragmaAnchor(SyntaxNode block)
+        {
+            if (_pragmaAnchors is not null && _pragmaAnchors.TryGetValue(block, out var id))
+            {
+                _output.Append("<a id=\"").Append(id).Append("\"></a>");
+            }
+        }
 
         // The id of the last attributes wins, their classes are added, and a property is only added when there is none with its name
         public void CollectAttributes(MarkdownDocumentSyntax document)
@@ -132,7 +506,17 @@ public static class MarkdownHtmlRenderer
         {
             ParsedAttributes? attributes = null;
             _ = _attributes?.TryGetValue(node, out attributes);
+            AppendAttributes(node, attributes, leadingClasses, trailingClasses, id);
+        }
+
+        private void AppendAttributes(SyntaxNode node, ParsedAttributes? attributes, string? leadingClasses = null, string? trailingClasses = null, string? id = null)
+        {
             id ??= attributes?.Id;
+            if (id is null && _pragmaIds is not null)
+            {
+                id = _pragmaIds.GetValueOrDefault(node);
+            }
+
             if (id is not null)
             {
                 _output.Append(" id=\"");
@@ -142,12 +526,14 @@ public static class MarkdownHtmlRenderer
 
             List<string>? blockLineClasses = null;
             _ = _blockLineClasses?.TryGetValue(node, out blockLineClasses);
-            var hasClasses = attributes is { Classes.Count: > 0 } || blockLineClasses is { Count: > 0 };
+            (List<string> Classes, List<KeyValuePair<string, string?>> Properties) extra = default;
+            _ = _extraAttributes?.TryGetValue(node, out extra);
+            var hasClasses = attributes is { Classes.Count: > 0 } || blockLineClasses is { Count: > 0 } || extra.Classes is { Count: > 0 };
             if (hasClasses || leadingClasses is not null || trailingClasses is not null)
             {
                 _output.Append(" class=\"");
                 var first = true;
-                foreach (var cssClass in (string?[])[leadingClasses, .. blockLineClasses ?? [], trailingClasses, .. attributes?.Classes ?? []])
+                foreach (var cssClass in (string?[])[leadingClasses, .. blockLineClasses ?? [], trailingClasses, .. attributes?.Classes ?? [], .. extra.Classes ?? []])
                 {
                     if (cssClass is null)
                     {
@@ -171,6 +557,17 @@ public static class MarkdownHtmlRenderer
                 _output.Append(' ').Append(property.Key).Append("=\"");
                 AppendEscaped(property.Value ?? "");
                 _output.Append('"');
+            }
+
+            // The attributes of Bootstrap and of the direction of the text, unless the element has them
+            foreach (var property in extra.Properties ?? [])
+            {
+                if (attributes is null || !attributes.Properties.Exists(existing => string.Equals(existing.Key, property.Key, StringComparison.Ordinal)))
+                {
+                    _output.Append(' ').Append(property.Key).Append("=\"");
+                    AppendEscaped(property.Value ?? "");
+                    _output.Append('"');
+                }
             }
         }
 
@@ -268,6 +665,13 @@ public static class MarkdownHtmlRenderer
 
         private void WriteBlock(MarkdownBlockSyntax block)
         {
+            if (_pragmaAnchors is not null && !HasPragmaAnchorInside(block) && _pragmaAnchors.ContainsKey(block))
+            {
+                Cr();
+                AppendPragmaAnchor(block);
+                _output.Append('\n');
+            }
+
             switch (block)
             {
                 case MarkdownParagraphSyntax paragraph when _attributes is not null && IsAttributesParagraph(paragraph):
@@ -330,6 +734,11 @@ public static class MarkdownHtmlRenderer
                     _output.Append("<h").Append(heading.Level);
                     AppendAttributes(heading, id: _autoIdentifiers ? heading.Identifier : null);
                     _output.Append('>');
+                    if (HasPragmaAnchorInside(heading))
+                    {
+                        AppendPragmaAnchor(heading);
+                    }
+
                     WriteInlines(heading.Inlines, keepTrailingLineBreak: true);
                     _output.Append("</h").Append(heading.Level).Append('>');
                     Cr();
@@ -345,9 +754,9 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownAlertSyntax alert:
                     Cr();
-                    _output.Append("<div class=\"markdown-alert markdown-alert-");
-                    AppendEscaped(alert.AlertKind.ToLowerInvariant());
-                    _output.Append("\">\n");
+                    _output.Append("<div");
+                    AppendAttributes(alert, leadingClasses: "markdown-alert markdown-alert-" + alert.AlertKind.ToLowerInvariant());
+                    _output.Append(">\n");
                     if (AlertTitles.TryGetValue(alert.AlertKind, out var title))
                     {
                         _output.Append(title).Append('\n');
@@ -592,7 +1001,9 @@ public static class MarkdownHtmlRenderer
             }).ToList();
 
             Cr();
-            _output.Append("<table>\n<thead>\n");
+            _output.Append("<table");
+            AppendAttributes(table);
+            _output.Append(">\n<thead>\n");
             WriteTableRow(table.HeaderRow, "th", alignments);
             _output.Append("</thead>\n");
             var rows = table.Rows;
@@ -687,7 +1098,13 @@ public static class MarkdownHtmlRenderer
                     hasBody = true;
                 }
 
-                _output.Append("<tr>\n");
+                _output.Append("<tr");
+                if (_pragmaGridParts?.GetValueOrDefault(row) is { } rowId)
+                {
+                    _output.Append(" id=\"").Append(rowId).Append('"');
+                }
+
+                _output.Append(">\n");
                 var tag = row.IsHeader ? "th" : "td";
                 foreach (var cell in row.Cells)
                 {
@@ -700,6 +1117,11 @@ public static class MarkdownHtmlRenderer
                     if (cell.RowSpan != 1)
                     {
                         _output.Append(" rowspan=\"").Append(cell.RowSpan.ToString(CultureInfo.InvariantCulture)).Append('"');
+                    }
+
+                    if (_pragmaGridParts?.GetValueOrDefault(cell) is { } cellId)
+                    {
+                        _output.Append(" id=\"").Append(cellId).Append('"');
                     }
 
                     _output.Append(columns[Math.Min(cell.ColumnIndex, columns.Count - 1)].Alignment switch
@@ -757,7 +1179,9 @@ public static class MarkdownHtmlRenderer
 
         private void WritePipeTableRow(MarkdownTableRowSyntax row, string tag, int columnCount, IReadOnlyList<MarkdownTableAlignment> alignments)
         {
-            _output.Append("<tr>\n");
+            _output.Append("<tr");
+            AppendAttributes(row);
+            _output.Append(">\n");
             var cells = row.Cells;
             for (var i = 0; i < columnCount; i++)
             {
@@ -800,7 +1224,9 @@ public static class MarkdownHtmlRenderer
 
         private void WriteTableRow(MarkdownTableRowSyntax row, string tag, List<string> alignments)
         {
-            _output.Append("<tr>\n");
+            _output.Append("<tr");
+            AppendAttributes(row);
+            _output.Append(">\n");
             var cells = row.Cells;
             for (var i = 0; i < alignments.Count; i++)
             {
@@ -997,13 +1423,50 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownAutolinkSyntax autolink:
                     _output.Append("<a href=\"");
-                    AppendEscaped(NormalizeUri(autolink.Destination));
+                    AppendEscaped(NormalizeUrl(autolink.Destination));
                     _output.Append('"');
-                    AppendAttributes(autolink);
+                    if (autolink.IsMarkdigAutolink && options.AutolinkOptions.OpenInNewWindow)
+                    {
+                        // Markdig sets the target before the generic attributes
+                        ParsedAttributes? autolinkAttributes = null;
+                        _ = _attributes?.TryGetValue(autolink, out autolinkAttributes);
+                        AppendAttributes(autolink, new ParsedAttributes(autolinkAttributes?.Id, autolinkAttributes?.Classes ?? [], [new("target", "_blank"), .. (autolinkAttributes?.Properties ?? []).Where(property => !string.Equals(property.Key, "target", StringComparison.Ordinal))]));
+                    }
+                    else
+                    {
+                        AppendAttributes(autolink);
+                    }
+
+                    if (autolink.IsExtended || !autolink.IsEmail)
+                    {
+                        AppendRel();
+                    }
+
                     _output.Append('>');
                     AppendEscaped(autolink.Text);
                     _output.Append("</a>");
                     break;
+
+                case MarkdownJiraLinkSyntax jira:
+                {
+                    _output.Append("<a href=\"");
+                    AppendEscaped(NormalizeUrl(jira.Destination));
+                    _output.Append('"');
+                    ParsedAttributes? attributes = null;
+                    _ = _attributes?.TryGetValue(jira, out attributes);
+                    if (options.JiraLinks.OpenInNewWindow)
+                    {
+                        // Markdig sets the target before the generic attributes
+                        attributes = new ParsedAttributes(attributes?.Id, attributes?.Classes ?? [], [new("target", "_blank"), .. (attributes?.Properties ?? []).Where(property => !string.Equals(property.Key, "target", StringComparison.Ordinal))]);
+                    }
+
+                    AppendAttributes(jira, attributes);
+                    AppendRel();
+                    _output.Append('>');
+                    AppendEscaped(jira.ReferenceToken.Text);
+                    _output.Append("</a>");
+                    break;
+                }
 
                 case MarkdownRawHtmlSyntax html:
                     AppendHtml(html.Html);
@@ -1045,9 +1508,12 @@ public static class MarkdownHtmlRenderer
                     _output.Append("\\)</span>");
                     break;
 
+                case MarkdownLinkSyntax { IsImage: true } image when _mediaLinks && TryWriteMedia(image):
+                    break;
+
                 case MarkdownLinkSyntax { IsImage: true } image:
                     _output.Append("<img src=\"");
-                    AppendEscaped(NormalizeUri(image.Destination));
+                    AppendEscaped(NormalizeUrl(image.Destination));
                     _output.Append('"');
                     AppendAttributes(image);
                     _output.Append(" alt=\"");
@@ -1059,14 +1525,125 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownLinkSyntax link:
                     _output.Append("<a href=\"");
-                    AppendEscaped(NormalizeUri(link.Destination));
+                    AppendEscaped(NormalizeUrl(link.Destination));
                     _output.Append('"');
                     AppendAttributes(link);
                     AppendTitle(link.Title);
+                    AppendRel();
                     _output.Append('>');
                     WriteInlines(link.Text);
                     _output.Append("</a>");
                     break;
+            }
+        }
+
+        private void AppendRel()
+        {
+            if (!string.IsNullOrWhiteSpace(rendererOptions.LinkRel))
+            {
+                _output.Append(" rel=\"").Append(rendererOptions.LinkRel).Append('"');
+            }
+        }
+
+        // An image of a site such as YouTube is an <iframe>, and one of an audio or a video file is <audio> or <video>, with the
+        // attributes of the image and the ones of the options, unless the image has them
+        private bool TryWriteMedia(MarkdownLinkSyntax image)
+        {
+            var url = image.Destination;
+            var isSchemaRelative = url.StartsWith("//", StringComparison.Ordinal);
+            if (isSchemaRelative)
+            {
+                url = "https:" + url;
+            }
+
+            if (!Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri))
+            {
+                return false;
+            }
+
+            var mediaOptions = rendererOptions.MediaLinks;
+            ParsedAttributes? imageAttributes = null;
+            _ = _attributes?.TryGetValue(image, out imageAttributes);
+            var attributes = new ParsedAttributes(imageAttributes?.Id, [.. imageAttributes?.Classes ?? []], [.. imageAttributes?.Properties ?? []]);
+            if (uri.IsAbsoluteUri && IsHttpOrHttps(uri))
+            {
+                foreach (var host in mediaOptions.Hosts)
+                {
+                    if (!host.TryHandle(uri, isSchemaRelative, out var iframeUrl))
+                    {
+                        continue;
+                    }
+
+                    if (!Uri.TryCreate(iframeUrl, UriKind.Absolute, out var iframeUri) || !IsHttpOrHttps(iframeUri))
+                    {
+                        return false;
+                    }
+
+                    _output.Append("<iframe src=\"");
+                    AppendEscaped(NormalizeUrl(iframeUrl));
+                    _output.Append('"');
+                    AddProperty(attributes, "width", mediaOptions.Width, ifNotEmpty: true);
+                    AddProperty(attributes, "height", mediaOptions.Height, ifNotEmpty: true);
+                    AddClass(attributes, mediaOptions.Class);
+                    AddClass(attributes, host.Class);
+                    AddProperty(attributes, "frameborder", "0");
+                    if (host.AllowFullScreen)
+                    {
+                        AddProperty(attributes, "allowfullscreen", value: null);
+                    }
+
+                    AppendAttributes(image, attributes);
+                    _output.Append("></iframe>");
+                    return true;
+                }
+            }
+
+            var path = uri.IsAbsoluteUri ? uri.GetComponents(UriComponents.Path, UriFormat.Unescaped) : uri.ToString();
+            var lastDot = path.AsSpan().LastIndexOf('.');
+            if (lastDot < 0 || !mediaOptions.ExtensionToMimeType.TryGetValue(path[lastDot..], out var mimeType))
+            {
+                return false;
+            }
+
+            var isAudio = mimeType.StartsWith("audio", StringComparison.Ordinal);
+            var tag = isAudio ? "audio" : "video";
+            _output.Append('<').Append(tag);
+            AddProperty(attributes, "width", mediaOptions.Width);
+            if (!isAudio)
+            {
+                AddProperty(attributes, "height", mediaOptions.Height);
+            }
+
+            if (mediaOptions.AddControls)
+            {
+                AddProperty(attributes, "controls", value: null);
+            }
+
+            AddClass(attributes, mediaOptions.Class);
+            AppendAttributes(image, attributes);
+            _output.Append("><source type=\"");
+            AppendEscaped(mimeType);
+            _output.Append("\" src=\"");
+            AppendEscaped(NormalizeUrl(image.Destination));
+            _output.Append("\"></source></").Append(tag).Append('>');
+            return true;
+
+            static bool IsHttpOrHttps(Uri uri) => uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps;
+
+            static void AddClass(ParsedAttributes attributes, string? cssClass)
+            {
+                if (!string.IsNullOrEmpty(cssClass))
+                {
+                    attributes.Classes.Add(cssClass);
+                }
+            }
+
+            static void AddProperty(ParsedAttributes attributes, string name, string? value, bool ifNotEmpty = false)
+            {
+                if ((!ifNotEmpty || !string.IsNullOrEmpty(value)) && !attributes.Properties.Exists(property => string.Equals(property.Key, name, StringComparison.Ordinal)))
+                {
+                    attributes.Properties.Add(new(name, value));
+                }
             }
         }
 
@@ -1124,9 +1701,39 @@ public static class MarkdownHtmlRenderer
         }
 
         // Percent-encodes the characters that cannot be in a URL, as the reference implementation does
-        private static string NormalizeUri(string uri)
+        private static bool IsSafeExceptNonAscii(string uri)
         {
-            if (!uri.AsSpan().ContainsAnyExcept(UriSafeCharacters))
+            foreach (var c in uri)
+            {
+                if (c < 128 && !UriSafeCharacters.Contains(c))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // The URL of a link or of an image, made absolute with the base URL and rewritten as the options say, then percent-encoded
+        private string NormalizeUrl(string uri)
+        {
+            // A URL that cannot be made absolute, such as http:B, is kept
+            if (rendererOptions.BaseUrl is { } baseUrl && Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out var relative) && !relative.IsAbsoluteUri && Uri.TryCreate(baseUrl, relative, out var absolute))
+            {
+                uri = absolute.AbsoluteUri;
+            }
+
+            if (rendererOptions.LinkRewriter is { } rewriter)
+            {
+                uri = rewriter(uri);
+            }
+
+            return NormalizeUri(uri, rendererOptions.EscapeNonAsciiUrlCharacters);
+        }
+
+        private static string NormalizeUri(string uri, bool escapeNonAscii = true)
+        {
+            if (!uri.AsSpan().ContainsAnyExcept(UriSafeCharacters) || (!escapeNonAscii && IsSafeExceptNonAscii(uri)))
             {
                 return uri;
             }
@@ -1140,7 +1747,7 @@ public static class MarkdownHtmlRenderer
                 {
                     builder.Append(c);
                 }
-                else if (char.IsAsciiLetterOrDigit(c) || ";/?:@&=+$,-_.!~*'()#".Contains(c, StringComparison.Ordinal))
+                else if (char.IsAsciiLetterOrDigit(c) || ";/?:@&=+$,-_.!~*'()#".Contains(c, StringComparison.Ordinal) || (!escapeNonAscii && c >= 128))
                 {
                     builder.Append(c);
                 }

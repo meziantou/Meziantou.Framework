@@ -93,6 +93,71 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
         return _definitions.GetValueOrDefault(Scanners.NormalizeLabel(label)) ?? (SyntaxTree as MarkdownSyntaxTree)?.Container?.GetRoot().GetLinkReferenceDefinition(label);
     }
 
+    /// <summary>
+    /// Finds the line of the block that is the closest to a line, as Markdig does for its pragma lines: an editor scrolls its
+    /// preview to the element whose id is <c>pragma-line-N</c>, where N is the line that this method returns.
+    /// </summary>
+    /// <param name="line">The zero-based number of a line of the text.</param>
+    /// <returns>The zero-based number of the line where the block starts, or 0 when the document has no block.</returns>
+    public int FindClosestLine(int line) => FindClosestBlock(this, line) is { } block ? MarkdigLines.GetLine(block) : 0;
+
+    private static SyntaxNode? FindClosestBlock(SyntaxNode container, int line)
+    {
+        var blocks = IsBlockContainer(container) ? container.ChildNodes().OfType<MarkdownBlockSyntax>().ToList() : [];
+        if (blocks.Count == 0)
+        {
+            return container is MarkdownBlockSyntax && MarkdigLines.GetLine(container) == line ? container : null;
+        }
+
+        var lowerIndex = 0;
+        var upperIndex = blocks.Count - 1;
+        while (lowerIndex <= upperIndex)
+        {
+            var middleIndex = ((upperIndex - lowerIndex) / 2) + lowerIndex;
+            var comparison = MarkdigLines.GetLine(blocks[middleIndex]).CompareTo(line);
+            if (comparison == 0)
+            {
+                return blocks[middleIndex];
+            }
+
+            if (comparison < 0)
+            {
+                lowerIndex = middleIndex + 1;
+            }
+            else
+            {
+                upperIndex = middleIndex - 1;
+            }
+        }
+
+        // Between two blocks: the previous one, unless the line is past the middle of the lines between them
+        if (lowerIndex > 0 && lowerIndex < blocks.Count)
+        {
+            var previous = FindClosestBlock(blocks[lowerIndex - 1], line) ?? blocks[lowerIndex - 1];
+            var next = FindClosestBlock(blocks[lowerIndex], line) ?? blocks[lowerIndex];
+            var previousLine = MarkdigLines.GetLine(previous);
+            var nextLine = MarkdigLines.GetLine(next);
+            if (previousLine == line)
+            {
+                return previous;
+            }
+
+            if (nextLine == line)
+            {
+                return next;
+            }
+
+            return (line - previousLine) * 1.0 / (nextLine - previousLine) < 0.5 ? previous : next;
+        }
+
+        if (lowerIndex == 0)
+        {
+            return FindClosestBlock(blocks[0], line) ?? blocks[0];
+        }
+
+        return FindClosestBlock(blocks[^1], line) ?? blocks[^1];
+    }
+
     internal MarkdownParseOptions Options => (SyntaxTree as MarkdownSyntaxTree)?.Options ?? MarkdownParseOptions.Default;
 
     /// <summary>Gets the identifier of a heading of the document: the id of its generic attributes, or the one of auto-identifiers.</summary>

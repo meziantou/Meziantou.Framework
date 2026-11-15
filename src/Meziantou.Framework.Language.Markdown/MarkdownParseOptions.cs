@@ -21,6 +21,12 @@ public sealed record MarkdownParseOptions
     /// <summary>Gets a value indicating whether a block quote in a container, such as a list item, can be an alert. By default, only the block quotes of the document are.</summary>
     public bool AllowNestedAlerts { get; init; }
 
+    /// <summary>Gets how <see cref="MarkdownExtensions.MarkdigAutolinks"/> reads the URLs of the text.</summary>
+    public MarkdownAutolinkOptions AutolinkOptions { get; init; } = MarkdownAutolinkOptions.Default;
+
+    /// <summary>Gets where the links of <see cref="MarkdownExtensions.JiraLinks"/> go.</summary>
+    public MarkdownJiraLinkOptions JiraLinks { get; init; } = MarkdownJiraLinkOptions.Default;
+
     /// <summary>Gets a value indicating whether HTML is text: no HTML block or inline HTML is recognized, and the renderer escapes it.</summary>
     /// <remarks>Autolinks, such as <c>&lt;https://example.com&gt;</c>, are still links.</remarks>
     public bool DisableHtml { get; init; }

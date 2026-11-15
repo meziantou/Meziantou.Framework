@@ -39,6 +39,28 @@ public sealed record MarkdownHtmlRendererOptions
     /// <remarks>A character that the mapping does not have is written as the default entity.</remarks>
     public IReadOnlyDictionary<MarkdownSmartyPant, string> SmartyPants { get; init; } = DefaultSmartyPants;
 
+    /// <summary>Gets the <c>rel</c> attribute of the links, such as <c>nofollow noopener</c>, or <see langword="null"/> for none. The autolinks of email addresses between <c>&lt;</c> and <c>&gt;</c> have none.</summary>
+    public string? LinkRel { get; init; }
+
+    /// <summary>Gets the URL that the relative URLs of the links and of the images are relative to, or <see langword="null"/> to keep them relative.</summary>
+    public Uri? BaseUrl { get; init; }
+
+    /// <summary>Gets a function that changes the URLs of the links and of the images, after <see cref="BaseUrl"/>, or <see langword="null"/>.</summary>
+    public Func<string, string>? LinkRewriter { get; init; }
+
+    /// <summary>Gets a value indicating whether the characters of the URLs that are not ASCII are percent-encoded, as CommonMark does. Markdig keeps them for <c>nonascii-noescape</c>.</summary>
+    public bool EscapeNonAsciiUrlCharacters { get; init; } = true;
+
+    /// <summary>
+    /// Gets a value indicating whether the element of the first block of each line has the id <c>pragma-line-N</c>, where N is
+    /// the zero-based number of the line, as Markdig does with pragma lines: an editor can scroll its preview to a line. A block
+    /// whose id is set gets an anchor with the id instead.
+    /// </summary>
+    public bool PragmaLines { get; init; }
+
+    /// <summary>Gets how the images of audio, video, and of the sites that host them are rendered with <see cref="MarkdownExtensions.MediaLinks"/>.</summary>
+    public MarkdownMediaLinkOptions MediaLinks { get; init; } = MarkdownMediaLinkOptions.Default;
+
     /// <summary>Gets whether an attribute only describes the content: whatever its value, it cannot run script or load a resource.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
     public static bool IsSafeAttributeName(string name)

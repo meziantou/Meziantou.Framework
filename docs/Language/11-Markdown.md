@@ -155,6 +155,50 @@ read as one, such as two paragraphs. Removing the first block of a list item kee
 renders the HTML of the CommonMark reference implementation. The parser follows CommonMark 0.31.2, and renders the
 HTML of every example of the specification.
 
+[MarkdownHtmlRendererOptions](cref:Meziantou.Framework.Language.Markdown.MarkdownHtmlRendererOptions) changes the HTML of
+the links: [BaseUrl](cref:Meziantou.Framework.Language.Markdown.MarkdownHtmlRendererOptions.BaseUrl) makes the relative
+URLs absolute, [LinkRewriter](cref:Meziantou.Framework.Language.Markdown.MarkdownHtmlRendererOptions.LinkRewriter) changes
+the URLs, [LinkRel](cref:Meziantou.Framework.Language.Markdown.MarkdownHtmlRendererOptions.LinkRel) sets the `rel`
+attribute of the links, such as `nofollow`, and
+[EscapeNonAsciiUrlCharacters](cref:Meziantou.Framework.Language.Markdown.MarkdownHtmlRendererOptions.EscapeNonAsciiUrlCharacters)
+keeps the characters of the URLs that are not ASCII:
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownHtmlRenderer_LinkOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = MarkdownSyntaxTree.ParseText("[Next page](next.md) ![Logo](logo.png) <https://example.org>\n");
+var options = new MarkdownHtmlRendererOptions
+{
+    BaseUrl = new Uri("https://example.com/docs/"),
+    LinkRewriter = url => url.EndsWith(".md", StringComparison.Ordinal) ? url[..^3] + ".html" : url,
+    LinkRel = "nofollow noopener",
+};
+
+Assert.Equal("<p><a href=\"https://example.com/docs/next.html\" rel=\"nofollow noopener\">Next page</a> <img src=\"https://example.com/docs/logo.png\" alt=\"Logo\" /> <a href=\"https://example.org\" rel=\"nofollow noopener\">https://example.org</a></p>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+
+// Characters that are not ASCII are percent-encoded, unless the options keep them
+var image = MarkdownSyntaxTree.ParseText("![](photo-été.png)\n");
+Assert.Equal("<p><img src=\"photo-%C3%A9t%C3%A9.png\" alt=\"\" /></p>\n", MarkdownHtmlRenderer.ToHtml(image));
+Assert.Equal("<p><img src=\"photo-été.png\" alt=\"\" /></p>\n", MarkdownHtmlRenderer.ToHtml(image, new MarkdownHtmlRendererOptions { EscapeNonAsciiUrlCharacters = false }));
+```
+<!-- endref -->
+
+[PragmaLines](cref:Meziantou.Framework.Language.Markdown.MarkdownHtmlRendererOptions.PragmaLines) gives the element of
+the first block of each line the id `pragma-line-N`, where N is the number of the line, for an editor to scroll its
+preview to a line.
+[FindClosestLine](cref:Meziantou.Framework.Language.Markdown.MarkdownDocumentSyntax.FindClosestLine(System.Int32)) finds
+the line of the block that is the closest to a line:
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownHtmlRenderer_PragmaLines;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = MarkdownSyntaxTree.ParseText("# Title\n\nSome text.\n\n- First\n- Second\n");
+
+Assert.Equal("<h1 id=\"pragma-line-0\">Title</h1>\n<p id=\"pragma-line-2\">Some text.</p>\n<ul id=\"pragma-line-4\">\n<li>First</li>\n<li id=\"pragma-line-5\">Second</li>\n</ul>\n", MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { PragmaLines = true }));
+
+// The editor shows line 3, a blank line: scroll the preview to the closest element
+Assert.Equal(4, tree.GetRoot().FindClosestLine(3));
+```
+<!-- endref -->
+
 ## GitHub Flavored Markdown
 
 [MarkdownParseOptions.GitHubFlavored](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.GitHubFlavored)
@@ -473,11 +517,134 @@ Assert.IsType<MarkdownListSyntax>(pear.Content.GetRoot().Blocks.Single());
 ```
 <!-- endref -->
 
+- [MediaLinks](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.MediaLinks): an image of an audio or a video
+  file, such as `![](song.mp3)`, is rendered as `<audio>` or `<video>`, and one of YouTube, Vimeo, Yandex Music or
+  Odnoklassniki as an `<iframe>`.
+  [MarkdownHtmlRendererOptions.MediaLinks](cref:Meziantou.Framework.Language.Markdown.MarkdownHtmlRendererOptions.MediaLinks)
+  chooses the size, the class, the file extensions and the sites:
+  [MarkdownMediaHost.Create](cref:Meziantou.Framework.Language.Markdown.MarkdownMediaHost.Create(System.String,System.Func{System.Uri,System.String},System.Boolean,System.String))
+  makes a site of its own.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_MediaLinks;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = MarkdownSyntaxTree.ParseText("![Intro](https://youtu.be/mswPy5bt3TQ)\n\n![Song](song.mp3)\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.MediaLinks });
+
+Assert.Equal("<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n<p><audio width=\"500\" controls=\"\"><source type=\"audio/mpeg\" src=\"song.mp3\"></source></audio></p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+
+// The options choose the size, and the sites that are an iframe
+var options = new MarkdownHtmlRendererOptions
+{
+    MediaLinks = MarkdownMediaLinkOptions.Default with
+    {
+        Width = "100%",
+        Height = "",
+        Hosts = [MarkdownMediaHost.Create("videos.example.com", uri => "https://videos.example.com/embed" + uri.AbsolutePath, iframeClass: "example")],
+    },
+};
+Assert.Equal("<p><iframe src=\"https://videos.example.com/embed/42\" class=\"example\" width=\"100%\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("![](https://videos.example.com/42)\n", tree.Options), options));
+```
+<!-- endref -->
+
+- [JiraLinks](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.JiraLinks): a reference to an issue, such as
+  `PROJ-123`, after whitespace or `(` and before whitespace or `)`, is a
+  [MarkdownJiraLinkSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownJiraLinkSyntax), a link to the issue.
+  [MarkdownParseOptions.JiraLinks](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.JiraLinks) gives the URL
+  of the site, and whether the links open in a new window.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_JiraLinks;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions
+{
+    Extensions = MarkdownExtensions.JiraLinks,
+    JiraLinks = new MarkdownJiraLinkOptions { BaseUrl = "https://example.atlassian.net" },
+};
+var tree = MarkdownSyntaxTree.ParseText("Fixed in (PROJ-123), not in xPROJ-1.\n", options);
+
+var link = tree.GetRoot().DescendantNodes().OfType<MarkdownJiraLinkSyntax>().Single();
+Assert.Equal("PROJ", link.ProjectKey);
+Assert.Equal("123", link.IssueNumber);
+Assert.Equal("<p>Fixed in (<a href=\"https://example.atlassian.net/browse/PROJ-123\" target=\"_blank\">PROJ-123</a>), not in xPROJ-1.</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+```
+<!-- endref -->
+
+- [MarkdigAutolinks](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.MarkdigAutolinks): the autolinks of
+  Markdig, which replace the [extended autolinks of GFM](#github-flavored-markdown). A URL that starts with `http://`,
+  `https://`, `ftp://`, `mailto:`, `tel:` or `www.`, after whitespace or one of `*_~(`, is a
+  [MarkdownAutolinkSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownAutolinkSyntax) up to whitespace or trailing
+  punctuation, when its parentheses are balanced and its domain is valid. It is not a link in a link, nor after an `<a>`
+  that is not closed, and the characters of the delimiters of emphasis around it are not part of it.
+  [AutolinkOptions](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.AutolinkOptions) chooses the characters
+  before it, `https://` for `www.`, the domains without a period, and `target="_blank"`.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_MarkdigAutolinks;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions
+{
+    Extensions = MarkdownExtensions.MarkdigAutolinks,
+    AutolinkOptions = new MarkdownAutolinkOptions { UseHttpsForWwwLinks = true },
+};
+var tree = MarkdownSyntaxTree.ParseText("See www.example.com, mailto:me@example.com or tel:+15551234.\n", options);
+
+var links = tree.GetRoot().DescendantNodes().OfType<MarkdownAutolinkSyntax>().ToList();
+Assert.Equal(["https://www.example.com", "mailto:me@example.com", "tel:+15551234"], links.Select(link => link.Destination));
+Assert.Equal("<p>See <a href=\"https://www.example.com\">www.example.com</a>, <a href=\"mailto:me@example.com\">me@example.com</a> or <a href=\"tel:+15551234\">+15551234</a>.</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+```
+<!-- endref -->
+
+- [CjkFriendlyEmphasis](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.CjkFriendlyEmphasis): the
+  [CJK-friendly amendment](https://github.com/tats-u/markdown-cjk-friendly) of the delimiters of emphasis. CommonMark does
+  not close `**テスト。**です`, as the punctuation before the delimiters is followed by a letter: a Chinese, Japanese or
+  Korean character next to the delimiters counts as whitespace, so the delimiters can open or close.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_CjkFriendlyEmphasis;format=md-fenced-code-block;dedent=true -->
+```csharp
+// CommonMark does not close the emphasis: the punctuation before ** is followed by a letter
+Assert.Equal("<p>**テスト。**です</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("**テスト。**です\n")));
+
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.CjkFriendlyEmphasis };
+Assert.Equal("<p><strong>テスト。</strong>です</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("**テスト。**です\n", options)));
+```
+<!-- endref -->
+
+- [Bootstrap](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Bootstrap): the renderer adds the classes of
+  [Bootstrap](https://getbootstrap.com/): `table` to the tables, `img-fluid` to the images, `blockquote` to the block
+  quotes, `figure` and `figure-caption` to the figures, and `alert` to the alerts, with the class of their kind, `role="alert"`
+  and `mb-0` on their last paragraph. The classes come after the ones of the generic attributes.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownHtmlRenderer_Bootstrap;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Bootstrap | MarkdownExtensions.PipeTables };
+var tree = MarkdownSyntaxTree.ParseText("> Quote\n\n![Logo](logo.png)\n\n| Name |\n|------|\n| Apple |\n", options);
+
+Assert.Equal("<blockquote class=\"blockquote\">\n<p>Quote</p>\n</blockquote>\n<p><img src=\"logo.png\" class=\"img-fluid\" alt=\"Logo\" /></p>\n<table class=\"table\">\n<thead>\n<tr>\n<th>Name</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>Apple</td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+```
+<!-- endref -->
+
+- [Globalization](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Globalization): the renderer adds
+  `dir="rtl"` to the blocks and the links whose text starts with a right-to-left character, such as Arabic or Hebrew, and
+  `align="right"` to their tables. The direction is the one of the first character that has one: the digits, the
+  punctuation and the whitespace have none, and a block takes the direction of its first child. As Markdig, the text of a
+  construct that is not parsed, such as `]` or a lone `\`, is part of the text after it, but a delimiter of emphasis, a pipe
+  of a pipe table or a bracket that a `]` closes without a link is not: `*مرحبا` is left-to-right.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownHtmlRenderer_Globalization;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Globalization | MarkdownExtensions.PipeTables };
+var tree = MarkdownSyntaxTree.ParseText("Hello\n\n> مرحبا *world*\n\n| الاسم |\n|-------|\n| x |\n", options);
+
+Assert.Equal("<p>Hello</p>\n<blockquote dir=\"rtl\">\n<p dir=\"rtl\">مرحبا <em>world</em></p>\n</blockquote>\n<table dir=\"rtl\" align=\"right\">\n<thead>\n<tr>\n<th>الاسم</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>x</td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+```
+<!-- endref -->
+
+[Advanced](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Advanced) enables the extensions of
+`UseAdvancedExtensions` of `Meziantou.Framework.Markdown` 1.x: alerts, abbreviations, auto identifiers, citations, custom
+containers, definition lists, the extra emphasis, figures, footers, footnotes, grid tables, mathematics, media links, pipe
+tables, list extras, task lists, diagrams, the autolinks of Markdig and generic attributes.
+
 [DisableHtml](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.DisableHtml) reads HTML as text: the
 renderer escapes it, and autolinks such as `<https://example.com>` are still links.
 
 ## Limitations of the prototype
 
-- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no media links, Jira links...
 - Inserting and removing blocks parses the whole text again.
 - Parsing allocates more and is slower than [Meziantou.Framework.Markdown](../Markdown/01-Introduction.md).

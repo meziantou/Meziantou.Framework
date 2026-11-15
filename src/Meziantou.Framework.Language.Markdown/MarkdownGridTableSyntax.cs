@@ -56,8 +56,8 @@ public sealed class MarkdownGridTableSyntax : MarkdownBlockSyntax
         var rows = grid.Rows.Select(row => new MarkdownGridTableRow(row.IsHeader, [.. row.Cells.Select(cell =>
         {
             var text = string.Join('\n', cell.Segments.Select(segment => lines[segment.Line][segment.Start..segment.End]));
-            return new MarkdownGridTableCell(cell.ColumnIndex, cell.ColumnSpan, cell.RowSpan, text, outer, cell.IsClosed);
-        })])).ToArray();
+            return new MarkdownGridTableCell(cell.ColumnIndex, cell.ColumnSpan, cell.RowSpan, text, outer, cell.IsClosed, cell.Segments.Count > 0 ? cell.Segments[0].Line : -1);
+        })], row.Line)).ToArray();
         _layout = (columns, rows);
         return _layout.Value;
     }

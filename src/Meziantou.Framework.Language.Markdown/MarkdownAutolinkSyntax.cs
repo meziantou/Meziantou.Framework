@@ -12,7 +12,10 @@ public sealed class MarkdownAutolinkSyntax : MarkdownInlineSyntax
     }
 
     /// <summary>Gets a value indicating whether the link is an extended autolink of GitHub Flavored Markdown, which is not between angle brackets.</summary>
-    public bool IsExtended => Kind() == SyntaxKind.ExtendedAutolink;
+    public bool IsExtended => Kind() is SyntaxKind.ExtendedAutolink or SyntaxKind.MarkdigAutolink;
+
+    /// <summary>Gets a value indicating whether the link is an autolink of Markdig, read with <see cref="MarkdownExtensions.MarkdigAutolinks"/>.</summary>
+    public bool IsMarkdigAutolink => Kind() == SyntaxKind.MarkdigAutolink;
 
     /// <summary>Gets a value indicating whether the link is an email address.</summary>
     public bool IsEmail
@@ -23,6 +26,11 @@ public sealed class MarkdownAutolinkSyntax : MarkdownInlineSyntax
             {
                 var text = Text;
                 return text.Contains('@', StringComparison.Ordinal) && !text.Contains(':', StringComparison.Ordinal);
+            }
+
+            if (IsMarkdigAutolink)
+            {
+                return ChildTokens().First().Text.StartsWith("mailto:", StringComparison.Ordinal);
             }
 
             return ChildTokens().First().RawKind != (int)SyntaxKind.ExtendedAutolinkToken;
@@ -39,17 +47,31 @@ public sealed class MarkdownAutolinkSyntax : MarkdownInlineSyntax
                 return GetTokenText(ChildTokens().First())[1..^1];
             }
 
+            // Markdig writes the email address of mailto: and the number of tel:
+            if (IsMarkdigAutolink)
+            {
+                var url = GetTokenText(ChildTokens().First());
+                return url.StartsWith("mailto:", StringComparison.Ordinal) ? url[7..] : url.StartsWith("tel:", StringComparison.Ordinal) ? url[4..] : url;
+            }
+
             var builder = new StringBuilder();
             AppendPlainText(ChildNodesAndTokens(), builder);
             return builder.ToString();
         }
     }
 
-    /// <summary>Gets the destination: <c>mailto:</c> before an email address, and <c>http://</c> before a <c>www.</c> address.</summary>
+    /// <summary>Gets the destination: <c>mailto:</c> before an email address, and <c>http://</c> before a <c>www.</c> address (or <c>https://</c> for <see cref="MarkdownAutolinkOptions.UseHttpsForWwwLinks"/>).</summary>
     public string Destination
     {
         get
         {
+            if (IsMarkdigAutolink)
+            {
+                var url = GetTokenText(ChildTokens().First());
+                var https = ((SyntaxTree as MarkdownSyntaxTree)?.Options ?? MarkdownParseOptions.Default).AutolinkOptions.UseHttpsForWwwLinks;
+                return url.StartsWith("www.", StringComparison.Ordinal) ? (https ? "https://" : "http://") + url : url;
+            }
+
             var text = Text;
             if (IsEmail)
             {

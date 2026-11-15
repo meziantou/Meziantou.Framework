@@ -944,6 +944,248 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void RendersMediaLinks()
+    {
+        #region MarkdownSyntaxTree_MediaLinks
+        var tree = MarkdownSyntaxTree.ParseText("![Intro](https://youtu.be/mswPy5bt3TQ)\n\n![Song](song.mp3)\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.MediaLinks });
+
+        Assert.Equal("<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n<p><audio width=\"500\" controls=\"\"><source type=\"audio/mpeg\" src=\"song.mp3\"></source></audio></p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+
+        // The options choose the size, and the sites that are an iframe
+        var options = new MarkdownHtmlRendererOptions
+        {
+            MediaLinks = MarkdownMediaLinkOptions.Default with
+            {
+                Width = "100%",
+                Height = "",
+                Hosts = [MarkdownMediaHost.Create("videos.example.com", uri => "https://videos.example.com/embed" + uri.AbsolutePath, iframeClass: "example")],
+            },
+        };
+        Assert.Equal("<p><iframe src=\"https://videos.example.com/embed/42\" class=\"example\" width=\"100%\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("![](https://videos.example.com/42)\n", tree.Options), options));
+        #endregion
+    }
+
+    [Fact]
+    public void RendersLinksWithTheOptions()
+    {
+        #region MarkdownHtmlRenderer_LinkOptions
+        var tree = MarkdownSyntaxTree.ParseText("[Next page](next.md) ![Logo](logo.png) <https://example.org>\n");
+        var options = new MarkdownHtmlRendererOptions
+        {
+            BaseUrl = new Uri("https://example.com/docs/"),
+            LinkRewriter = url => url.EndsWith(".md", StringComparison.Ordinal) ? url[..^3] + ".html" : url,
+            LinkRel = "nofollow noopener",
+        };
+
+        Assert.Equal("<p><a href=\"https://example.com/docs/next.html\" rel=\"nofollow noopener\">Next page</a> <img src=\"https://example.com/docs/logo.png\" alt=\"Logo\" /> <a href=\"https://example.org\" rel=\"nofollow noopener\">https://example.org</a></p>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+
+        // Characters that are not ASCII are percent-encoded, unless the options keep them
+        var image = MarkdownSyntaxTree.ParseText("![](photo-été.png)\n");
+        Assert.Equal("<p><img src=\"photo-%C3%A9t%C3%A9.png\" alt=\"\" /></p>\n", MarkdownHtmlRenderer.ToHtml(image));
+        Assert.Equal("<p><img src=\"photo-été.png\" alt=\"\" /></p>\n", MarkdownHtmlRenderer.ToHtml(image, new MarkdownHtmlRendererOptions { EscapeNonAsciiUrlCharacters = false }));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("Link: [hello](/relative.jpg)", "https://example.com", "https://example.com/relative.jpg")]
+    [InlineData("Link: [hello](relative.jpg)", "https://example.com", "https://example.com/relative.jpg")]
+    [InlineData("Link: [hello](/relative.jpg?a=b)", "https://example.com/", "https://example.com/relative.jpg?a=b")]
+    [InlineData("Link: [hello](relative.jpg#x)", "https://example.com/", "https://example.com/relative.jpg#x")]
+    [InlineData("Image: ![alt text](image.jpg \"title\")", "https://example.com", "https://example.com/image.jpg")]
+    [InlineData("Link: [hello](https://other.org/a)", "https://example.com", "https://other.org/a")]
+    [InlineData("<a@b.c>", "https://example.com", "mailto:a@b.c")]
+    public void MakesTheRelativeUrlsAbsolute(string markdown, string baseUrl, string expected)
+    {
+        var html = MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(markdown), new MarkdownHtmlRendererOptions { BaseUrl = new Uri(baseUrl) });
+
+        Assert.Contains("=\"" + expected + "\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WritesTheRelOfLinksButNotOfEmailAutolinks()
+    {
+        var options = new MarkdownHtmlRendererOptions { LinkRel = "nofollow" };
+
+        Assert.Equal("<p><a href=\"mailto:a@b.c\">a@b.c</a> <a href=\"http://www.example.com\" rel=\"nofollow\">www.example.com</a></p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("<a@b.c> www.example.com\n", MarkdownParseOptions.GitHubFlavored), options));
+    }
+
+    [Fact]
+    public void WritesThePragmaLines()
+    {
+        #region MarkdownHtmlRenderer_PragmaLines
+        var tree = MarkdownSyntaxTree.ParseText("# Title\n\nSome text.\n\n- First\n- Second\n");
+
+        Assert.Equal("<h1 id=\"pragma-line-0\">Title</h1>\n<p id=\"pragma-line-2\">Some text.</p>\n<ul id=\"pragma-line-4\">\n<li>First</li>\n<li id=\"pragma-line-5\">Second</li>\n</ul>\n", MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { PragmaLines = true }));
+
+        // The editor shows line 3, a blank line: scroll the preview to the closest element
+        Assert.Equal(4, tree.GetRoot().FindClosestLine(3));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("# Title {#custom}\n\ntext", "<h1 id=\"custom\"><a id=\"pragma-line-0\"></a>Title</h1>\n<p id=\"pragma-line-2\">text</p>\n")]
+    [InlineData("text\n\n# {#custom}\n\n---", "<p id=\"pragma-line-0\">text</p>\n<a id=\"pragma-line-2\"></a>\n<h1 id=\"custom\"></h1>\n<hr id=\"pragma-line-4\" />\n")]
+    [InlineData("- a\n\n  b\n", "<ul id=\"pragma-line-0\">\n<li>\n<p>a</p>\n<p id=\"pragma-line-2\">b</p>\n</li>\n</ul>\n")]
+    [InlineData("> - a\n>   - b\n> - c", "<blockquote id=\"pragma-line-0\">\n<ul>\n<li>a\n<ul id=\"pragma-line-1\">\n<li>b</li>\n</ul>\n</li>\n<li id=\"pragma-line-2\">c</li>\n</ul>\n</blockquote>\n")]
+    [InlineData("a|b\n-|-\n1|2\n", "<table id=\"pragma-line-0\">\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr id=\"pragma-line-2\">\n<td>1</td>\n<td>2</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("x[^1]\n\n[^1]: note\n", "<p id=\"pragma-line-0\">x<a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"fn:1\">\n<p id=\"pragma-line-2\">note<a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n")]
+    [InlineData("Foo\nbar\n---\n", "<h2 id=\"pragma-line-2\">Foo\nbar</h2>\n")]
+    public void GivesThePragmaLineToTheOutermostBlockOfTheLine(string markdown, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(markdown, new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables | MarkdownExtensions.Footnotes | MarkdownExtensions.GenericAttributes });
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { PragmaLines = true }));
+    }
+
+    [Fact]
+    public void FindsTheClosestLine()
+    {
+        var root = MarkdownSyntaxTree.ParseText("test1\n\ntest2\n\ntest3\n\ntest4\n\n# Heading\n\nLong para\non multiple\nlines\nto check that\nlines are\ncorrectly \nfound\n\n- item1\n- item2\n- item3\n\nThis is a last paragraph\n").GetRoot();
+
+        foreach (var exact in new[] { 0, 2, 4, 6, 8, 10, 18, 19, 20, 22 })
+        {
+            Assert.Equal(exact, root.FindClosestLine(exact));
+        }
+
+        Assert.Equal(22, root.FindClosestLine(23));
+        Assert.Equal(10, root.FindClosestLine(13));
+        Assert.Equal(18, root.FindClosestLine(14));
+        Assert.Equal(6, MarkdownSyntaxTree.ParseText("- item1\n  - item11\n  - item12\n    - item121\n  - item13\n    - item131\n      - item1311\n").GetRoot().FindClosestLine(50));
+    }
+
+    [Fact]
+    public void ThePragmaLinesAreUniqueInTheSpecificationExamples()
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables | MarkdownExtensions.GridTables | MarkdownExtensions.Footnotes | MarkdownExtensions.GenericAttributes | MarkdownExtensions.DefinitionLists | MarkdownExtensions.Alerts | MarkdownExtensions.CustomContainers | MarkdownExtensions.Figures | MarkdownExtensions.Footers | MarkdownExtensions.AutoIdentifiers };
+        var count = 0;
+        foreach (var example in CommonMarkSpec.Examples)
+        {
+            var html = MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(example.Markdown, options), new MarkdownHtmlRendererOptions { PragmaLines = true });
+            var ids = System.Text.RegularExpressions.Regex.Matches(html, "id=\"(?<id>pragma-line-[0-9]+)\"", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1)).Select(match => match.Groups["id"].Value).ToList();
+            Assert.HasCount(ids.Count, ids.Distinct(StringComparer.Ordinal));
+            count++;
+        }
+
+        Assert.True(count > 600);
+    }
+
+    [Fact]
+    public void ParsesJiraLinks()
+    {
+        #region MarkdownSyntaxTree_JiraLinks
+        var options = new MarkdownParseOptions
+        {
+            Extensions = MarkdownExtensions.JiraLinks,
+            JiraLinks = new MarkdownJiraLinkOptions { BaseUrl = "https://example.atlassian.net" },
+        };
+        var tree = MarkdownSyntaxTree.ParseText("Fixed in (PROJ-123), not in xPROJ-1.\n", options);
+
+        var link = tree.GetRoot().DescendantNodes().OfType<MarkdownJiraLinkSyntax>().Single();
+        Assert.Equal("PROJ", link.ProjectKey);
+        Assert.Equal("123", link.IssueNumber);
+        Assert.Equal("<p>Fixed in (<a href=\"https://example.atlassian.net/browse/PROJ-123\" target=\"_blank\">PROJ-123</a>), not in xPROJ-1.</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void ParsesMarkdigAutolinks()
+    {
+        #region MarkdownSyntaxTree_MarkdigAutolinks
+        var options = new MarkdownParseOptions
+        {
+            Extensions = MarkdownExtensions.MarkdigAutolinks,
+            AutolinkOptions = new MarkdownAutolinkOptions { UseHttpsForWwwLinks = true },
+        };
+        var tree = MarkdownSyntaxTree.ParseText("See www.example.com, mailto:me@example.com or tel:+15551234.\n", options);
+
+        var links = tree.GetRoot().DescendantNodes().OfType<MarkdownAutolinkSyntax>().ToList();
+        Assert.Equal(["https://www.example.com", "mailto:me@example.com", "tel:+15551234"], links.Select(link => link.Destination));
+        Assert.Equal("<p>See <a href=\"https://www.example.com\">www.example.com</a>, <a href=\"mailto:me@example.com\">me@example.com</a> or <a href=\"tel:+15551234\">+15551234</a>.</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("**http://www.a.com**", "<p><strong><a href=\"http://www.a.com\">http://www.a.com</a></strong></p>\n")]
+    [InlineData("[http://a.com/ link](http://b.com)", "<p><a href=\"http://b.com\">http://a.com/ link</a></p>\n")]
+    [InlineData("<a href=\"x\">http://a.com</a>", "<p><a href=\"x\">http://a.com</a></p>\n")]
+    [InlineData("(http://a.com/b_(c))", "<p>(<a href=\"http://a.com/b_(c)\">http://a.com/b_(c)</a>)</p>\n")]
+    [InlineData("xhttp://a.com http://localhost ftp:// mailto:@a.com", "<p>xhttp://a.com http://localhost ftp:// mailto:@a.com</p>\n")]
+    public void RendersMarkdigAutolinks(string text, string expected)
+    {
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.MarkdigAutolinks })));
+    }
+
+    [Fact]
+    public void ParsesCjkFriendlyEmphasis()
+    {
+        #region MarkdownSyntaxTree_CjkFriendlyEmphasis
+        // CommonMark does not close the emphasis: the punctuation before ** is followed by a letter
+        Assert.Equal("<p>**テスト。**です</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("**テスト。**です\n")));
+
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.CjkFriendlyEmphasis };
+        Assert.Equal("<p><strong>テスト。</strong>です</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("**テスト。**です\n", options)));
+        #endregion
+    }
+
+    [Fact]
+    public void RendersTheClassesOfBootstrap()
+    {
+        #region MarkdownHtmlRenderer_Bootstrap
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Bootstrap | MarkdownExtensions.PipeTables };
+        var tree = MarkdownSyntaxTree.ParseText("> Quote\n\n![Logo](logo.png)\n\n| Name |\n|------|\n| Apple |\n", options);
+
+        Assert.Equal("<blockquote class=\"blockquote\">\n<p>Quote</p>\n</blockquote>\n<p><img src=\"logo.png\" class=\"img-fluid\" alt=\"Logo\" /></p>\n<table class=\"table\">\n<thead>\n<tr>\n<th>Name</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>Apple</td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void RendersTheDirectionOfTheText()
+    {
+        #region MarkdownHtmlRenderer_Globalization
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Globalization | MarkdownExtensions.PipeTables };
+        var tree = MarkdownSyntaxTree.ParseText("Hello\n\n> مرحبا *world*\n\n| الاسم |\n|-------|\n| x |\n", options);
+
+        Assert.Equal("<p>Hello</p>\n<blockquote dir=\"rtl\">\n<p dir=\"rtl\">مرحبا <em>world</em></p>\n</blockquote>\n<table dir=\"rtl\" align=\"right\">\n<thead>\n<tr>\n<th>الاسم</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>x</td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    // The direction is the one of the first character that has one, in the text that Markdig merges: the text of a construct that
+    // is not parsed, but not an emphasis delimiter, a pipe of a pipe table, or a bracket that a ] closes without a link
+    [Theory]
+    [InlineData("]مرحبا\n", true)]
+    [InlineData("\\مرحبا\n", true)]
+    [InlineData("\\*مرحبا\n", true)]
+    [InlineData("!مرحبا\n", true)]
+    [InlineData("_ مرحبا\n", true)]
+    [InlineData("[مرحبا\n", true)]
+    [InlineData("+مرحبا\n", true)]
+    [InlineData("x ]مرحبا\n", false)]
+    [InlineData("*مرحبا\n", false)]
+    [InlineData("++مرحبا\n", false)]
+    [InlineData("[مرحبا] x\n", false)]
+    [InlineData("[] مرحبا\n", false)]
+    [InlineData("|مرحبا\n", false)]
+    [InlineData("]\nمرحبا\n", false)]
+    [InlineData("&amp;مرحبا\n", false)]
+    [InlineData("[مرحبا](url) x\n", true)]
+    public void TheDirectionIsTheOneOfTheTextThatMarkdigMerges(string text, bool isRightToLeft)
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Globalization | MarkdownExtensions.PipeTables | MarkdownExtensions.EmphasisExtras };
+        var html = MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, options));
+
+        Assert.Equal(isRightToLeft, html.Contains("<p dir=\"rtl\">", StringComparison.Ordinal), html);
+    }
+
+    [Fact]
+    public void TheAdvancedExtensionsAreTheOnesOfMarkdig()
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Advanced };
+        var tree = MarkdownSyntaxTree.ParseText("| a |\n|---|\n| www.example.com |\n\n+---+\n| b |\n+---+\n", options);
+
+        Assert.Equal("<table>\n<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><a href=\"http://www.example.com\">www.example.com</a></td>\n</tr>\n</tbody>\n</table>\n<table>\n<col style=\"width:100%\" />\n<tbody>\n<tr>\n<td>b</td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
     public void AlertHasItsKind()
     {
         var alert = Assert.IsType<MarkdownAlertSyntax>(MarkdownSyntaxTree.ParseText("> [!Warning]  \n> Be *careful*\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts }).GetRoot().Blocks.Single());

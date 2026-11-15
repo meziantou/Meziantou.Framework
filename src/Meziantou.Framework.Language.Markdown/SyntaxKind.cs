@@ -75,6 +75,7 @@ public enum SyntaxKind
     DefinitionMarkerToken,
     SmartyPantToken,
     EmojiToken,
+    JiraLinkToken,
     FigureFenceToken,
     FooterMarkerToken,
 
@@ -131,4 +132,6 @@ public enum SyntaxKind
     GenericAttributes,
     CustomContainerInline,
     Citation,
+    JiraLink,
+    MarkdigAutolink,
 }

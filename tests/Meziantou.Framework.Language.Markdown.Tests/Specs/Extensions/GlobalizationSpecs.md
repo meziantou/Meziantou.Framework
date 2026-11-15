@@ -124,7 +124,7 @@ Lists:
 </li>
 </ul>
 <h2 id="section-2" dir="rtl">لیستی کڕین</h2>
-<ul class="contains-task-list" dir="rtl">
+<ul dir="rtl">
 <li><input checked="" disabled="" type="checkbox"> شووتی</li>
 <li><input checked="" disabled="" type="checkbox"> قەیسی</li>
 <li><input disabled="" type="checkbox"> هەنجیر</li>

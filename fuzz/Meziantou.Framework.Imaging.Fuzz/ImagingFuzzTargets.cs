@@ -5,9 +5,9 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 
 /// <summary>
 /// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, and its processing operations that read pixels or points
-/// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation and
-/// homography estimation; and the merging of the pieces of strokes. The inputs of the processing targets are small images
-/// whose pixel format, size, frames and bytes come from the fuzzer, followed by the options of the operation.
+/// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
+/// homography estimation and resizing; and the merging of the pieces of strokes. The inputs of the processing targets are
+/// small images whose pixel format, size, frames and bytes come from the fuzzer, followed by the options of the operation.
 /// </summary>
 public static partial class ImagingFuzzTargets
 {
@@ -36,6 +36,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-homography", HomographyTarget) { Seeds = GetHomographySeeds, Dictionary = Tokens },
         new("imaging-skew", SkewTarget) { Seeds = GetSkewSeeds, Dictionary = Tokens },
         new("imaging-stroke", StrokeTarget) { Seeds = GetStrokeSeeds, Dictionary = StrokeTokens },
+        new("imaging-resize", ResizeTarget) { Seeds = GetResizeSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>

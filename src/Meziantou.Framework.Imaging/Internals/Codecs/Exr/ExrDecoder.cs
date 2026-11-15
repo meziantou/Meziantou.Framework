@@ -249,13 +249,13 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         _batch = null;
     }
 
-    /// <summary>Gets the position of a chunk of the full-resolution image in the data window, and its geometry.</summary>
+    /// <summary>Gets the position of a chunk of the decoded level (the full resolution by default) in its data window, and its geometry.</summary>
     private static ExrChunkLayout GetChunk(ExrHeader header, long index, out int x0, out int y0)
     {
         var data = header.DataWindow;
         if (header.IsTiled)
         {
-            var tilesX = header.GetTileCount(0, horizontal: true);
+            var tilesX = header.GetTileCount(header.LevelX, horizontal: true);
             var tx = (int)(index % tilesX);
             var ty = (int)(index / tilesX);
             x0 = data.MinX + (tx * header.TileWidth);
@@ -525,7 +525,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
 
     private void RentFirstWorker(ExrHeader header)
     {
-        _decompressor ??= new ExrChunkDecompressor(_context.Scope, header.Compression, (int)header.MaxChunkDataLength);
+        _decompressor ??= new ExrChunkDecompressor(_context, header.Compression, (int)header.MaxChunkDataLength);
         _data ??= _context.Scope.Rent((int)Math.Max(header.MaxChunkDataLength, 1), AllocationKind.DecoderState, clear: false);
     }
 
@@ -596,7 +596,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         {
             for (var worker = 1; worker < _workers; worker++)
             {
-                batch.Decompressors[worker] = new ExrChunkDecompressor(_context.Scope, header.Compression, (int)header.MaxChunkDataLength);
+                batch.Decompressors[worker] = new ExrChunkDecompressor(_context, header.Compression, (int)header.MaxChunkDataLength);
                 batch.Buffers[worker] = _context.Scope.Rent((int)Math.Max(header.MaxChunkDataLength, 1), AllocationKind.DecoderState, clear: false);
             }
 

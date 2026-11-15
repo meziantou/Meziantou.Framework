@@ -31344,7 +31344,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -31444,7 +31444,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -31537,7 +31537,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 13,
@@ -31630,7 +31630,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 16,
@@ -31724,7 +31724,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -31824,7 +31824,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -31917,7 +31917,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 7,
@@ -32025,7 +32025,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 7,
@@ -32128,7 +32128,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 7,
@@ -32236,7 +32236,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -32328,7 +32328,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -32427,7 +32427,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -32520,7 +32520,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 29,
@@ -32621,7 +32621,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -32713,7 +32713,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -32812,7 +32812,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 27,
@@ -32890,6 +32890,492 @@
       "notes": "R, G and B of different types are one colour set, coded through the luma-chroma transform; A is run-length coded."
     },
     {
+      "id": "exr/htj2k256-half-rgba",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/htj2k256-half-rgba.exr",
+        "sha256": "29061a8f295317d1808b056493f9f43a3ebe8e4f232b51419148900c6622de47",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 23,
+          "height": 37
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=htj2k256",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF R, G, B and A, HTJ2K256: one chunk. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "result": "differs",
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, B, G, R, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 37,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/htj2k256-half-rgba.frame-0.rgbaf32le.raw",
+                "sha256": "620a1e654fdf7add1f6e1214c1dcfc978b7f70ec2a1b522df43fb755bd10a019",
+                "layout": "rgbaf32le",
+                "width": 23,
+                "height": 37,
+                "rowBytes": 368,
+                "byteLength": 13616,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "R, G and B are the first three components, coded through the reversible color transform; the negative samples of R go through the binary complement of the NLT marker segments."
+    },
+    {
+      "id": "exr/htj2k256-luminance-alpha",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/htj2k256-luminance-alpha.exr",
+        "sha256": "31291514b0d91c56505e972ac7acfa3ee96430b481d944bed0115913433987f2",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 19,
+          "height": 35
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=ay",
+        "exr.compression=htj2k256",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF Y and A, HTJ2K256. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, Y, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 19,
+        "height": 35,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "GrayscaleAlpha",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/htj2k256-luminance-alpha.frame-0.rgbaf32le.raw",
+                "sha256": "58d434cc81b85da01958ac6199589fb1f1452f5606e31e3ad08810a0c0764a2a",
+                "layout": "rgbaf32le",
+                "width": 19,
+                "height": 35,
+                "rowBytes": 304,
+                "byteLength": 10640,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "No RGB set: the components are the channels in their order, without color transform."
+    },
+    {
+      "id": "exr/htj2k32-half-rgba",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/htj2k32-half-rgba.exr",
+        "sha256": "226f4ac7b769b8462c3a954ec156482f1f81be243b4d7fad07faedbcbf1b54c5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 23,
+          "height": 37
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=htj2k32",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF R, G, B and A, HTJ2K32: two chunks. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "result": "differs",
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, B, G, R, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 37,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/htj2k32-half-rgba.frame-0.rgbaf32le.raw",
+                "sha256": "620a1e654fdf7add1f6e1214c1dcfc978b7f70ec2a1b522df43fb755bd10a019",
+                "layout": "rgbaf32le",
+                "width": 23,
+                "height": 37,
+                "rowBytes": 368,
+                "byteLength": 13616,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The first chunk is a codestream; OpenEXR stores the second one, of 5 lines, raw."
+    },
+    {
+      "id": "exr/htj2k32-half-specials",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/htj2k32-half-specials.exr",
+        "sha256": "314de9370436fdbbaae246f0c97c63d4c293ca161fa765a7934b22cb01d3766f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 32,
+          "height": 16
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=y",
+        "exr.compression=htj2k32",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF infinities, not-a-number, negative zero, the largest and smallest halves, then smooth steps. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "result": "differs",
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt grayf16le -"
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of Y, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 32,
+        "height": 16,
+        "pixelFormat": "RgbaHalf",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/htj2k32-half-specials.frame-0.rgbaf32le.raw",
+                "sha256": "2f52f956935309f06a5004e07a3417eb48e2bd2b5b67f509c2298b176478ffbe",
+                "layout": "rgbaf32le",
+                "width": 32,
+                "height": 16,
+                "rowBytes": 512,
+                "byteLength": 8192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The binary complement keeps negative zero apart from zero: it is -1 in the codestream."
+    },
+    {
+      "id": "exr/htj2k32-tiles",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/htj2k32-tiles.exr",
+        "sha256": "6973bc4ab58b64fe83ff36c8c88cbc7f3cd4092767eb045752a51d2e7279a6a6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 45,
+          "height": 37
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=htj2k32",
+        "exr.levels=one-level",
+        "exr.storage=tiled",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Tiles of 32x32 pixels of HALF R, G, B and A, HTJ2K32. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "result": "differs",
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, B, G, R, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 45,
+        "height": 37,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/htj2k32-tiles.frame-0.rgbaf32le.raw",
+                "sha256": "e5ff3456d5a8635bb78d4cc3fa13f23b8093662c86c6b4670a74d35b4894d3b5",
+                "layout": "rgbaf32le",
+                "width": 45,
+                "height": 37,
+                "rowBytes": 720,
+                "byteLength": 26640,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Each tile is a codestream of its size, clipped at the edges; OpenEXR stores two of the clipped tiles raw."
+    },
+    {
       "id": "exr/none-float-rgb",
       "kind": "valid",
       "format": "exr",
@@ -32906,7 +33392,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -33006,7 +33492,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -33106,7 +33592,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 1,
@@ -33206,7 +33692,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/TestImages/AllHalfValues.exr"
       },
@@ -33295,7 +33781,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/MultiResolution/ColorCodedLevels.exr"
       },
@@ -33386,7 +33872,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/TestImages/stripes.exr"
       },
@@ -33475,7 +33961,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/DisplayWindow/t01.exr"
       },
@@ -33564,7 +34050,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 70,
@@ -33665,7 +34151,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 9,
@@ -33760,7 +34246,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -33860,7 +34346,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 6,
@@ -33960,7 +34446,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -34060,7 +34546,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 17,
@@ -34154,7 +34640,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 40,
@@ -34255,7 +34741,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -34348,7 +34834,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 9,
@@ -34442,7 +34928,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -34542,7 +35028,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -34642,7 +35128,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 12,
@@ -34734,7 +35220,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -34834,7 +35320,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 11,
@@ -34928,7 +35414,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 20,
@@ -35031,7 +35517,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 29,
@@ -35114,7 +35600,241 @@
       "comparison": {
         "mode": "exact"
       },
-      "notes": "The other levels are skipped."
+      "notes": "The other levels are decoded with OpenExrDecodingOptions.LevelX and LevelY, and listed by AuxiliaryImageCollection.",
+      "exrDecodings": [
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 1,
+          "levelY": 1,
+          "width": 15,
+          "height": 10,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "exr/tiles-piz-mipmap-round-up.decoding-0.rgbaf32le.raw",
+            "sha256": "4b34a2f5c70e96d48201994351e31ca222a0583b764de4f6d84c8ccfed5be6d1",
+            "layout": "rgbaf32le",
+            "width": 15,
+            "height": 10,
+            "rowBytes": 240,
+            "byteLength": 2400,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (1, 1), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 2,
+          "levelY": 2,
+          "width": 8,
+          "height": 5,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "exr/tiles-piz-mipmap-round-up.decoding-1.rgbaf32le.raw",
+            "sha256": "d2798d41706d09bb9e6ae171c1d12354cad06a29a50831a0be52ff3ea485f4fb",
+            "layout": "rgbaf32le",
+            "width": 8,
+            "height": 5,
+            "rowBytes": 128,
+            "byteLength": 640,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (2, 2), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 3,
+          "levelY": 3,
+          "width": 4,
+          "height": 3,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "exr/tiles-piz-mipmap-round-up.decoding-2.rgbaf32le.raw",
+            "sha256": "66a17e92bf75f181f3c51966cf53cf45e3325563027f492c6d00ed2a43dfcc07",
+            "layout": "rgbaf32le",
+            "width": 4,
+            "height": 3,
+            "rowBytes": 64,
+            "byteLength": 192,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (3, 3), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 4,
+          "levelY": 4,
+          "width": 2,
+          "height": 2,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "exr/tiles-piz-mipmap-round-up.decoding-3.rgbaf32le.raw",
+            "sha256": "46ec3212865e8bbddd9f45094d255d61b2ee771b5e5a3960ae98c42b4f93385c",
+            "layout": "rgbaf32le",
+            "width": 2,
+            "height": 2,
+            "rowBytes": 32,
+            "byteLength": 64,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (4, 4), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 5,
+          "levelY": 5,
+          "width": 1,
+          "height": 1,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "exr/tiles-piz-mipmap-round-up.decoding-4.rgbaf32le.raw",
+            "sha256": "1da8d8190ccae85446dfdf832598e865f209abc477855f0abf6ac3b46a40c396",
+            "layout": "rgbaf32le",
+            "width": 1,
+            "height": 1,
+            "rowBytes": 16,
+            "byteLength": 16,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (5, 5), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 1,
+          "levelY": 0,
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing level"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 6,
+          "levelY": 6,
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing level"
+          }
+        }
+      ]
     },
     {
       "id": "exr/tiles-rle-ripmap",
@@ -35133,7 +35853,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 13,
@@ -35216,7 +35936,230 @@
       "comparison": {
         "mode": "exact"
       },
-      "notes": "The offset table lists the levels by rows of levels."
+      "notes": "The offset table lists the levels by rows of levels; the other levels are decoded with OpenExrDecodingOptions.LevelX and LevelY.",
+      "exrDecodings": [
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 1,
+          "levelY": 0,
+          "width": 6,
+          "height": 9,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "exr/tiles-rle-ripmap.decoding-0.rgbaf32le.raw",
+            "sha256": "8608d47021cb57b21ca8bc7562986ff7121387c5573d9f0b26a50effbe6407be",
+            "layout": "rgbaf32le",
+            "width": 6,
+            "height": 9,
+            "rowBytes": 96,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (1, 0), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 3,
+          "levelY": 0,
+          "width": 1,
+          "height": 9,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "exr/tiles-rle-ripmap.decoding-1.rgbaf32le.raw",
+            "sha256": "60ce72e317f1a191f71b7cea1ca8aab2fe05bb8164b85bb91fb61ecbe36caff8",
+            "layout": "rgbaf32le",
+            "width": 1,
+            "height": 9,
+            "rowBytes": 16,
+            "byteLength": 144,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (3, 0), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 0,
+          "levelY": 1,
+          "width": 13,
+          "height": 4,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "exr/tiles-rle-ripmap.decoding-2.rgbaf32le.raw",
+            "sha256": "e452898a7216e7143c8f074e3aa794c59869f8bc1415159414237eb550ddc842",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 4,
+            "rowBytes": 208,
+            "byteLength": 832,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (0, 1), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 2,
+          "levelY": 1,
+          "width": 3,
+          "height": 4,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "exr/tiles-rle-ripmap.decoding-3.rgbaf32le.raw",
+            "sha256": "4d6195b97e2e169cea74282813aaed8d8c021fb210e2dacb0f2c9daab71d107f",
+            "layout": "rgbaf32le",
+            "width": 3,
+            "height": 4,
+            "rowBytes": 48,
+            "byteLength": 192,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (2, 1), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 3,
+          "levelY": 3,
+          "width": 1,
+          "height": 1,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "exr/tiles-rle-ripmap.decoding-4.rgbaf32le.raw",
+            "sha256": "38632e9cd75a01b4575c074411b23da8d3f304d276510e11dde18f6013a05049",
+            "layout": "rgbaf32le",
+            "width": 1,
+            "height": 1,
+            "rowBytes": 16,
+            "byteLength": 16,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (3, 3), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 4,
+          "levelY": 0,
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing level"
+          }
+        }
+      ]
     },
     {
       "id": "exr/tiles-zip-one-level",
@@ -35235,7 +36178,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 37,
@@ -35336,7 +36279,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 14,
@@ -35437,7 +36380,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -35537,7 +36480,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 31,
@@ -35637,7 +36580,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 15,
@@ -35729,7 +36672,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -35829,7 +36772,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 10,
@@ -35921,7 +36864,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -36021,7 +36964,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -36121,7 +37064,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 8,
@@ -36224,7 +37167,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -36250,7 +37193,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-dc8d00b95a7cc993/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-OMI3Nr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -36321,7 +37264,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -36347,7 +37290,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-dc8d00b95a7cc993/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-OMI3Nr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -36418,7 +37361,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 15,
@@ -36512,7 +37455,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 21,
@@ -36539,7 +37482,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-dc8d00b95a7cc993/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-OMI3Nr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -42936,7 +43879,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc",
@@ -43037,7 +43980,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc",
@@ -43139,7 +44082,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc",
@@ -43240,7 +44183,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -43353,7 +44296,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -43467,7 +44410,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 18x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --chromaloc 0 -o {stream}.hevc"
@@ -43578,7 +44521,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 18x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --chromaloc 1 -o {stream}.hevc"
@@ -43689,7 +44632,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 18x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --chromaloc 2 -o {stream}.hevc"
@@ -43800,7 +44743,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --chromaloc 1 -o {stream}.hevc"
@@ -43912,7 +44855,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -44024,7 +44967,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 80 -p chroma=420 --cut-tiles 64 source.png -o {output}.heic"
@@ -44141,7 +45084,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 80 -p chroma=420 -p x265:chromaloc=1 --cut-tiles 64 source.png -o {output}.heic"
@@ -44259,7 +45202,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=444 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 --cut-tiles 64 source.png -o {output}.heic"
@@ -44363,7 +45306,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "tileWidth": 16,
@@ -44474,7 +45417,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/grid-2x2-lossless"
@@ -44588,7 +45531,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --cut-tiles 64 source.png -o {output}.heic"
@@ -44701,7 +45644,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --cut-tiles 64 source.png -o {output}.heic"
@@ -44815,7 +45758,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -44926,7 +45869,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/no-colr-no-signal-444"
@@ -45044,7 +45987,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/no-colr-no-signal-444"
@@ -45162,7 +46105,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -45272,7 +46215,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -45397,7 +46340,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --flip-v source.png -o {output}.heic"
@@ -45511,7 +46454,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --flip-h source.png -o {output}.heic"
@@ -45625,7 +46568,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --rotate-cw 270 source.png -o {output}.heic"
@@ -45739,7 +46682,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --rotate-cw 90 source.png -o {output}.heic"
@@ -45853,7 +46796,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --rotate-cw 270 --flip-h source.png -o {output}.heic"
@@ -45968,7 +46911,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -46082,7 +47025,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -46197,7 +47140,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -46311,7 +47254,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -46425,7 +47368,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -46539,7 +47482,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -46641,7 +47584,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 10 source.png -o {output}.heic"
@@ -46753,7 +47696,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 12 source.png -o {output}.heic"
@@ -46865,7 +47808,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -46976,7 +47919,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 10 source.png -o {output}.heic"
@@ -47077,7 +48020,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 12 source.png -o {output}.heic"
@@ -47178,7 +48121,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -47290,7 +48233,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -47402,7 +48345,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -47513,7 +48456,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 10 source.png -o {output}.heic"
@@ -47617,7 +48560,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 12 source.png -o {output}.heic"
@@ -47721,7 +48664,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -47825,7 +48768,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 source.png -o {output}.heic"
@@ -47916,6 +48859,111 @@
       }
     },
     {
+      "id": "heic/lossy-420-bt2020-constant-luminance-10bit",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/lossy-420-bt2020-constant-luminance-10bit.heic",
+        "sha256": "209950c86f51d474a3fdd73d6f3f99194e52b1eb5ed1cf0899f4862cc0b339b6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libheif 1.23.6 heif-enc (x265 4.2)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "heif-enc -q 70 -b 10 -p chroma=420 --matrix_coefficients 10 --colour_primaries 9 --transfer_characteristic 14 source.png -o {output}.heic"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=10",
+        "heic.chromaLoc=default",
+        "heic.clap",
+        "heic.colr=nclx",
+        "heic.hvcc.incompleteArrays",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=10",
+        "heic.range=full",
+        "heic.subsampling=4:2:0",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "maxAbsoluteError": 60,
+            "meanAbsoluteError": 14.8781,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgb48",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 10,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 14,
+          "matrixCoefficients": 10,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/lossy-420-bt2020-constant-luminance-10bit.frame-0.rgba16le.raw",
+                "sha256": "8e9d9dec2ab2cdf4cadbcb41eb11ce49118ff0bc00743771fdb4dd3b6ba26345",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 64,
+                "byteLength": 512,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 61, mean 22.42."
+      },
+      "notes": "BT.2020 constant luminance matrix coefficients: the luma is the transfer characteristics function of the luminance."
+    },
+    {
       "id": "heic/lossy-420-bt2020-limited-10bit",
       "kind": "valid",
       "format": "heic",
@@ -47932,7 +48980,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=420 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 --full_range_flag 0 source.png -o {output}.heic"
@@ -48037,7 +49085,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 source.png -o {output}.heic"
@@ -48153,7 +49201,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 12 -p chroma=420 source.png -o {output}.heic"
@@ -48257,7 +49305,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 60 -p chroma=420 source.png -o {output}.heic"
@@ -48373,7 +49421,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 source.png -o {output}.heic"
@@ -48489,7 +49537,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 --matrix_coefficients 1 --colour_primaries 1 --transfer_characteristic 13 --full_range_flag 0 source.png -o {output}.heic"
@@ -48605,7 +49653,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=420 -p x265:chromaloc=1 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 --full_range_flag 0 source.png -o {output}.heic"
@@ -48709,7 +49757,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 -p x265:chromaloc=1 source.png -o {output}.heic"
@@ -48825,7 +49873,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 -p x265:chromaloc=1 source.png -o {output}.heic"
@@ -48941,7 +49989,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 50 -p chroma=420 -p x265:chromaloc=1 --matrix_coefficients 1 --colour_primaries 1 --transfer_characteristic 13 --full_range_flag 0 source.png -o {output}.heic"
@@ -49059,7 +50107,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=420 -p x265:chromaloc=2 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 source.png -o {output}.heic"
@@ -49163,7 +50211,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 -p x265:chromaloc=2 source.png -o {output}.heic"
@@ -49279,7 +50327,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=422 source.png -o {output}.heic"
@@ -49385,7 +50433,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 12 -p chroma=422 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 source.png -o {output}.heic"
@@ -49488,7 +50536,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=422 source.png -o {output}.heic"
@@ -49603,7 +50651,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=422 source.png -o {output}.heic"
@@ -49718,7 +50766,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=422 --matrix_coefficients 1 --colour_primaries 1 --transfer_characteristic 13 --full_range_flag 0 source.png -o {output}.heic"
@@ -49821,7 +50869,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=444 source.png -o {output}.heic"
@@ -49923,7 +50971,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=444 --matrix_coefficients 1 --colour_primaries 1 --transfer_characteristic 13 --full_range_flag 0 source.png -o {output}.heic"
@@ -50030,7 +51078,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=444 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 source.png -o {output}.heic"
@@ -50134,7 +51182,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 12 -p chroma=444 --matrix_coefficients 5 --colour_primaries 5 --transfer_characteristic 6 --full_range_flag 0 source.png -o {output}.heic"
@@ -50237,7 +51285,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=444 source.png -o {output}.heic"
@@ -50348,7 +51396,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=444 --matrix_coefficients 1 --colour_primaries 1 --transfer_characteristic 13 --full_range_flag 0 source.png -o {output}.heic"
@@ -50447,6 +51495,234 @@
       }
     },
     {
+      "id": "heic/lossy-444-chromaticity-bt2020",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/lossy-444-chromaticity-bt2020.heic",
+        "sha256": "4af4123b0610a711af3a7a0d42da8e2b0216957e0b1b9eaf37bfc46765027640",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libheif 1.23.6 heif-enc (x265 4.2)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "heif-enc -q 70 -p chroma=444 --matrix_coefficients 12 --colour_primaries 9 --transfer_characteristic 14 source.png -o {output}.heic"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=8",
+        "heic.clap",
+        "heic.colr=nclx",
+        "heic.hvcc.incompleteArrays",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=12",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 14,
+          "matrixCoefficients": 12,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/lossy-444-chromaticity-bt2020.frame-0.rgba8.raw",
+                "sha256": "84d74e30507fa7d6cacb1e0a55e3f30c0e0d99bf8658bca2ab6f92853949cb81",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "heic/lossy-444-chromaticity-bt2020.frame-0.rgb8.raw",
+                "sha256": "93ec151866f86ffc251487ef210ef58670a1499a62ec27bb2e05c7b3e8cb1a36",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Chromaticity-derived matrix coefficients with the BT.2020 primaries: KR and KB are the luminance of the red and of the blue primary."
+    },
+    {
+      "id": "heic/lossy-444-chromaticity-constant-luminance-p3",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/lossy-444-chromaticity-constant-luminance-p3.heic",
+        "sha256": "844899840c79d4278a17e7d2ebd408a865fb7cac12a4e73cf5cc5710b3ca6a0e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libheif 1.23.6 heif-enc (x265 4.2)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "heif-enc -q 70 -p chroma=444 --matrix_coefficients 13 --colour_primaries 12 --transfer_characteristic 13 source.png -o {output}.heic"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=8",
+        "heic.clap",
+        "heic.colr=nclx",
+        "heic.hvcc.incompleteArrays",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=13",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "maxAbsoluteError": 44,
+            "meanAbsoluteError": 6.7292,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 12,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 13,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/lossy-444-chromaticity-constant-luminance-p3.frame-0.rgba8.raw",
+                "sha256": "1485332e699d45422030202b3bda1a8e131f240ade8dc02da06a17acf55666b3",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "heic/lossy-444-chromaticity-constant-luminance-p3.frame-0.rgb8.raw",
+                "sha256": "eb100933f8830f22e34185c15991a2ae498c6e4a6f7bfb3c33fcc460e791bf60",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 45, mean 10.2."
+      },
+      "notes": "Chromaticity-derived constant luminance matrix coefficients with the Display P3 primaries and the sRGB transfer characteristics."
+    },
+    {
       "id": "heic/lossy-444-unspecified-limited",
       "kind": "valid",
       "format": "heic",
@@ -50463,7 +51739,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=444 --matrix_coefficients 2 --colour_primaries 2 --transfer_characteristic 2 --full_range_flag 0 source.png -o {output}.heic"
@@ -50579,7 +51855,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=444 --matrix_coefficients 8 source.png -o {output}.heic"
@@ -50690,7 +51966,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 60 -b 10 source.png -o {output}.heic"
@@ -50801,7 +52077,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 60 source.png -o {output}.heic"
@@ -50911,7 +52187,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 60 --full_range_flag 0 source.png -o {output}.heic"
@@ -51023,7 +52299,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -51132,6 +52408,224 @@
       "notes": "Exif and XMP items, an ICC profile beside the nclx description, and a half turn after the clap property. The Exif orientation tag is 6: the orientation is 3 (the format takes it from irot and imir only)."
     },
     {
+      "id": "heic/nclx-ictcp-hlg",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/nclx-ictcp-hlg.heic",
+        "sha256": "4ae113325cc3c7b009438772461b786122a9ac3ce47260845c19e6e541943552",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildWrapped)",
+        "tools": [
+          "x265 4.2 (payloads)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt709 --transfer bt709 --colormatrix bt709 -o {stream}.hevc"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=8",
+        "heic.colr=nclx",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=14",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "result": "differs",
+            "notes": "heif-dec rejects the file: Could not decode image: Unsupported feature: Unsupported color conversion"
+          }
+        ]
+      },
+      "expected": {
+        "width": 16,
+        "height": 16,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 18,
+          "matrixCoefficients": 14,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/nclx-ictcp-hlg.frame-0.rgba8.raw",
+                "sha256": "83f2eac82ea5565706e06768d933946e55eb531dd666db69033445054f385671",
+                "layout": "rgba8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 64,
+                "byteLength": 1024,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "heic/nclx-ictcp-hlg.frame-0.rgb8.raw",
+                "sha256": "6f88af06679c3105a9b3a0cebd9d30f1cf83c13c246fc08351f1805e08d1bf9b",
+                "layout": "rgb8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 48,
+                "byteLength": 768,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "ICtCp with the HLG transfer characteristics, whose coefficients are not the ones of PQ, on arbitrary 4:4:4 planes."
+    },
+    {
+      "id": "heic/nclx-ictcp-pq",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/nclx-ictcp-pq.heic",
+        "sha256": "006c3200d3d31e340474c11c3545c72bfba05546b35c2ad21b3d07ed72d82224",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildWrapped)",
+        "tools": [
+          "x265 4.2 (payloads)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt709 --transfer bt709 --colormatrix bt709 -o {stream}.hevc"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=8",
+        "heic.colr=nclx",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=14",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "result": "differs",
+            "notes": "heif-dec rejects the file: Could not decode image: Unsupported feature: Unsupported color conversion"
+          }
+        ]
+      },
+      "expected": {
+        "width": 16,
+        "height": 16,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 16,
+          "matrixCoefficients": 14,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/nclx-ictcp-pq.frame-0.rgba8.raw",
+                "sha256": "0db24fd93e059ba65a216573285b29f11676f466693af04fc23f593fc22c7a7c",
+                "layout": "rgba8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 64,
+                "byteLength": 1024,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "heic/nclx-ictcp-pq.frame-0.rgb8.raw",
+                "sha256": "dbc70f4f95f64d5b1f3cfdddfa53c6e21a4f757db87eca274e815813bc66fc62",
+                "layout": "rgb8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 48,
+                "byteLength": 768,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "ICtCp with the PQ transfer characteristics (Rec. ITU-R BT.2100) on arbitrary 4:4:4 planes: the colr box describes the colors."
+    },
+    {
       "id": "heic/nclx-overrides-bitstream",
       "kind": "valid",
       "format": "heic",
@@ -51148,7 +52642,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt709 --transfer bt709 --colormatrix bt709 -o {stream}.hevc"
@@ -51242,6 +52736,115 @@
       "notes": "The bitstream signals BT.709 limited range and the colr box BT.601 full range: the colr box describes the colors."
     },
     {
+      "id": "heic/nclx-smpte2085",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/nclx-smpte2085.heic",
+        "sha256": "23e6ee36306d7d0f179b8754ff4db5d9fa7f2ef670a2b99f9287a573d429fb24",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildWrapped)",
+        "tools": [
+          "x265 4.2 (payloads)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt709 --transfer bt709 --colormatrix bt709 -o {stream}.hevc"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=8",
+        "heic.colr=nclx",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=11",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "result": "differs",
+            "notes": "heif-dec rejects the file: Could not decode image: Unsupported feature: Unsupported color conversion"
+          }
+        ]
+      },
+      "expected": {
+        "width": 16,
+        "height": 16,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 16,
+          "matrixCoefficients": 11,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/nclx-smpte2085.frame-0.rgba8.raw",
+                "sha256": "bc14709cc60169b8c7c192e669f3c0e769f73b1c81607a5e1d98243ede078a91",
+                "layout": "rgba8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 64,
+                "byteLength": 1024,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "heic/nclx-smpte2085.frame-0.rgb8.raw",
+                "sha256": "849bed3b00b0813af5024bba9ed67e6a9d278e1071725a06dd73f519257c35c5",
+                "layout": "rgb8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 48,
+                "byteLength": 768,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "SMPTE ST 2085 matrix coefficients (Y'D'zD'x) on arbitrary 4:4:4 planes."
+    },
+    {
       "id": "heic/no-colr-bitstream-bt709",
       "kind": "valid",
       "format": "heic",
@@ -51258,7 +52861,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossy-444-bt709-limited"
@@ -51374,7 +52977,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt709 --transfer bt709 --colormatrix bt709 -o {stream}.hevc"
@@ -51488,7 +53091,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited -o {stream}.hevc"
@@ -51597,7 +53200,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -51710,7 +53313,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -51824,7 +53427,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -51933,7 +53536,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -52043,7 +53646,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "tileWidth": 32,
@@ -52182,7 +53785,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "tileWidth": 32,
@@ -52309,7 +53912,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "tileWidth": 32,
@@ -52432,6 +54035,221 @@
       "notes": "The layout of a phone: a 64x24 grid of 2x2 tiles of 32x16 (the last row exceeds the image), a rotation, an ICC profile, an Exif item, and a hidden 16x16 thumbnail and a hidden depth map (an auxiliary image of type urn:mpeg:hevc:2015:auxid:2), neither of which is read: 8-bit 4:2:0 tiles whose bitstream signals centered chroma samples."
     },
     {
+      "id": "heic/premultiplied-alpha",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/premultiplied-alpha.heic",
+        "sha256": "3d73f22f5a08ba8f4d3199c8b70710c9981dff9a154ab1228ea9214bd6514cc9",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libheif 1.23.6 heif-enc (x265 4.2)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "heif-enc -L --premultiplied-alpha source.png -o {output}.heic"
+        ]
+      },
+      "features": [
+        "heic.alpha",
+        "heic.alpha.subsampling=4:0:0",
+        "heic.alpha.urn=hevc",
+        "heic.bitDepth=8",
+        "heic.clap",
+        "heic.colr=nclx",
+        "heic.hvcc.incompleteArrays",
+        "heic.hvcc.lengthSize=4",
+        "heic.lossless",
+        "heic.majorBrand=heix",
+        "heic.matrix=0",
+        "heic.premultiplied",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc) and libde265 1.1.3 (dec265), scaled without matrix. HM 18.0 (TAppDecoder) is left out (rejects: Assertion failed: (uiCode >= minLog2DiffMaxMinLumaCodingBlockSize && uiCode <= maxLog2DiffMaxMinLumaCodingBlockSize), function parseSPS, file TDecCAVLC.cpp, line 742.): HM 18.0 rejects a 16x16 coding tree block from level 5 (the limit of clause A.4.1); x265 codes a small picture with 16x16 coding tree blocks (libheif asks for them, and a picture smaller than 32x32 has no other size) and signals level 8.5 for a lossless stream.",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "maxAbsoluteError": 255,
+            "meanAbsoluteError": 69.6181,
+            "result": "differs",
+            "notes": "Its own sample scaling. Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/premultiplied-alpha.frame-0.rgba8.raw",
+                "sha256": "56c45040718ab0f384f38db304b1bc2103300e9e457b8f38cd600a2d1b42277a",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Lossless premultiplied colors: the division by the alpha rounds to the nearest sample, and a color under an alpha of 0 is 0."
+    },
+    {
+      "id": "heic/premultiplied-alpha-lossy-420",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/premultiplied-alpha-lossy-420.heic",
+        "sha256": "416471c5f2297fb0e656abe1012506c1ce4d3e18ff829346c501b56d79054ed9",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libheif 1.23.6 heif-enc (x265 4.2)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "heif-enc -q 70 --premultiplied-alpha -p chroma=420 source.png -o {output}.heic"
+        ]
+      },
+      "features": [
+        "heic.alpha",
+        "heic.alpha.subsampling=4:0:0",
+        "heic.alpha.urn=hevc",
+        "heic.bitDepth=8",
+        "heic.chromaLoc=default",
+        "heic.clap",
+        "heic.colr=nclx",
+        "heic.hvcc.incompleteArrays",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heic",
+        "heic.matrix=6",
+        "heic.premultiplied",
+        "heic.range=full",
+        "heic.subsampling=4:2:0",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "maxAbsoluteError": 215,
+            "meanAbsoluteError": 77.1458,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgba32",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 6,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/premultiplied-alpha-lossy-420.frame-0.rgba8.raw",
+                "sha256": "dfc27ee79f90e02609375db76e43c8deab5fb385fbbeb8e6d8f2a2a7d9c157c8",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 216, mean 115.82."
+      },
+      "notes": "Premultiplied colors that are matrixed and subsampled, under a lossy alpha plane: a color that the coding left above its alpha is clipped."
+    },
+    {
       "id": "heic/sequence-420",
       "kind": "valid",
       "format": "heic",
@@ -52448,7 +54266,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -52647,7 +54465,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -52845,7 +54663,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -53042,7 +54860,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -53203,7 +55021,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 2
@@ -53343,7 +55161,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -53571,7 +55389,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-reordered-444"
@@ -53831,7 +55649,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 4 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --keyint 8 --bframes 0 --qp 22 --ctu 16 --scenecut 0 -o {stream}.hevc"
@@ -54059,7 +55877,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 4 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --ctu 16 --keyint 8 --bframes 0 --qp 12 --range full --scenecut 0 -o {stream}.hevc",
@@ -54244,7 +56062,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -54478,7 +56296,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -54721,7 +56539,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -54909,7 +56727,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 8 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --keyint 8 --min-keyint 8 --bframes 2 --b-adapt 0 --ref 2 --qp 14 --range full --ctu 16 --scenecut 0 --rc-lookahead 4 -o {stream}.hevc"
@@ -55271,7 +57089,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 8 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --keyint 8 --min-keyint 8 --bframes 2 --b-adapt 0 --ref 2 --qp 14 --range full --ctu 16 --scenecut 0 --rc-lookahead 4 -o {stream}.hevc"
@@ -55632,7 +57450,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -55830,7 +57648,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 4
@@ -56062,7 +57880,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -56290,7 +58108,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -56517,7 +58335,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 8 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --keyint 8 --min-keyint 8 --bframes 2 --b-adapt 0 --ref 2 --qp 14 --range full --ctu 16 --scenecut 0 --rc-lookahead 4 -o {stream}.hevc"
@@ -56873,7 +58691,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 5
@@ -57135,7 +58953,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -57371,7 +59189,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 4 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --keyint 8 --bframes 0 --qp 22 --ctu 16 --scenecut 0 -o {stream}.hevc"
@@ -57598,7 +59416,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 8 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --keyint 8 --min-keyint 8 --bframes 2 --b-adapt 0 --ref 2 --qp 14 --range full --ctu 16 --scenecut 0 --rc-lookahead 4 -o {stream}.hevc"
@@ -57959,7 +59777,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 4 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --ctu 16 --keyint 8 --bframes 0 --qp 12 --range full --scenecut 0 -o {stream}.hevc"
@@ -58186,7 +60004,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -t 16 source.png -o {output}.heic"
@@ -58300,7 +60118,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i420 --input-depth 10 --output-depth 10 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt2020 --transfer smpte2084 --colormatrix bt2020nc -o {stream}.hevc"
@@ -58404,7 +60222,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x17 --fps 10 --input-csp i422 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -58514,7 +60332,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 32x32 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 32 --keyint 1 --qp 20 --range full --colorprim bt709 --transfer iec61966-2-1 --colormatrix bt470bg -o {stream}.hevc && ffmpeg -hide_banner -nostdin -loglevel error -y -f hevc -i {stream}.hevc -c copy -bsf:v hevc_metadata=crop_right=12:crop_bottom=14 -flags +bitexact -f hevc {filtered}.hevc"
@@ -58626,7 +60444,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 32x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range full --colorprim bt709 --transfer iec61966-2-1 --colormatrix bt470bg -o {stream}.hevc && ffmpeg -hide_banner -nostdin -loglevel error -y -f hevc -i {stream}.hevc -c copy -bsf:v hevc_metadata=crop_right=12:crop_bottom=6 -flags +bitexact -f hevc {filtered}.hevc"
@@ -58738,7 +60556,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 19x17 --fps 10 --input-csp i400 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --lossless -o {stream}.hevc"
@@ -58845,7 +60663,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 18x17 --fps 10 --input-csp i444 --input-depth 10 --output-depth 10 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --ctu 16 --keyint 1 --lossless --range full -o {stream}.hevc"
@@ -58946,7 +60764,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x17 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --ctu 16 --keyint 1 --lossless --range full -o {stream}.hevc"
@@ -61524,7 +63342,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61537,12 +63355,12 @@
       "notes": "The second chunk says it starts at the line 0."
     },
     {
-      "id": "invalid/exr/compression-htj2k256",
+      "id": "invalid/exr/compression-lj2k",
       "kind": "unsupported",
       "format": "exr",
       "input": {
-        "path": "invalid/exr/compression-htj2k256.exr",
-        "sha256": "16ca28cdeb66531e15053c1ca215f71c5978e6ad18c2d93a3ff8fb206d8e6bdc",
+        "path": "invalid/exr/compression-lj2k.exr",
+        "sha256": "47fc51de2481e344bf6c466ea3968b8c88ef6cabb29d49d752c8b1db2598ad83",
         "role": "encoded"
       },
       "provenance": {
@@ -61552,7 +63370,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61561,38 +63379,9 @@
       "expectedError": {
         "exception": "UnsupportedImageFeatureException",
         "format": "OpenExr",
-        "feature": "Compression: HTJ2K256"
+        "feature": "Compression: LJ2K"
       },
-      "notes": "The HTJ2K256 compression."
-    },
-    {
-      "id": "invalid/exr/compression-htj2k32",
-      "kind": "unsupported",
-      "format": "exr",
-      "input": {
-        "path": "invalid/exr/compression-htj2k32.exr",
-        "sha256": "dddc22064920bc4772300da4405a8b56393fb617b5242938ecb76d33f7277a86",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "generated",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
-        "tools": [
-          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
-        ],
-        "commands": [
-          "exr-from-raw {description}.json {output}.exr"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "OpenExr",
-        "feature": "Compression: HTJ2K32"
-      },
-      "notes": "The HTJ2K32 compression."
+      "notes": "The LJ2K compression: the irreversible wavelet transformation of the colors, and a non-linearity of OpenJPH that no standard defines."
     },
     {
       "id": "invalid/exr/data-window-outside",
@@ -61610,7 +63399,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61737,7 +63526,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61819,7 +63608,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61891,7 +63680,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61963,7 +63752,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62035,7 +63824,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62107,7 +63896,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62179,7 +63968,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62251,7 +64040,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62292,7 +64081,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62356,6 +64145,135 @@
       "notes": "A Z channel next to the colors: it would be lost. The default layer is decoded without it."
     },
     {
+      "id": "invalid/exr/htj2k256-float",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/htj2k256-float.exr",
+        "sha256": "52521427db287fbcd971888378f6129f07680036f980b36b6961927faaed6e92",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Compression: HTJ2K256 with 32-bit channels"
+      },
+      "notes": "HALF R, G and B and a FLOAT A, HTJ2K256: the 32-bit components of a FLOAT channel need more bit-planes than the block decoder has."
+    },
+    {
+      "id": "invalid/exr/htj2k256-subsampled-layer",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/htj2k256-subsampled-layer.exr",
+        "sha256": "d40fb30986e113d5c05ee971bb77969ce04176ed247a73efda169d5b26c610b8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "width": 32,
+          "height": 32,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/htj2k256-subsampled-layer.decoding-0.rgbaf32le.raw",
+            "sha256": "dc78dc1ae90bbe2d4caf2e66e1b885fcd37e890983881ab8619962d428221610",
+            "layout": "rgbaf32le",
+            "width": 32,
+            "height": 32,
+            "rowBytes": 512,
+            "byteLength": 16384,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "HALF R, G and B and a sub-sampled HALF channel of another layer, HTJ2K256: the sub-sampled channel turns off the color transform, and the components are coded one after the other. The default layer is decoded without it."
+    },
+    {
+      "id": "invalid/exr/htj2k32-uint",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/htj2k32-uint.exr",
+        "sha256": "87edacf3cfa7501a0791ebe6d65875204c3a56477b998a17fa28463b48d903c8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Compression: HTJ2K32 with 32-bit channels"
+      },
+      "notes": "HALF R, G and B and a UINT A, HTJ2K32: the 32-bit components of a UINT channel need more bit-planes than the block decoder has."
+    },
+    {
       "id": "invalid/exr/layer-channels",
       "kind": "unsupported",
       "format": "exr",
@@ -62371,7 +64289,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62468,7 +64386,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62508,7 +64426,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62536,7 +64454,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62669,7 +64587,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62792,7 +64710,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62820,7 +64738,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/DisplayWindow/t02.exr"
       },
@@ -62931,7 +64849,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/DisplayWindow/t09.exr"
       },
@@ -63042,7 +64960,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/DisplayWindow/t13.exr"
       },
@@ -63153,7 +65071,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -63299,7 +65217,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -63445,7 +65363,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -63589,7 +65507,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -63733,7 +65651,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -63879,7 +65797,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64025,7 +65943,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64171,7 +66089,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64317,7 +66235,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64463,7 +66381,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64609,7 +66527,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64753,7 +66671,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64781,7 +66699,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64809,7 +66727,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64880,7 +66798,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -65079,7 +66997,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -65176,7 +67094,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -65204,7 +67122,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -66027,7 +67945,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66055,7 +67973,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "HM 18.0 (payload: the committed HEVC vector)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66083,7 +68001,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "HM 18.0 (payload: the committed HEVC vector)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66111,7 +68029,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66136,7 +68054,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66161,7 +68079,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66189,7 +68107,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66217,7 +68135,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66245,7 +68163,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66273,7 +68191,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66301,7 +68219,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66326,7 +68244,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66354,7 +68272,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66379,7 +68297,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66404,7 +68322,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66432,7 +68350,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66457,7 +68375,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66482,7 +68400,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66507,7 +68425,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66532,7 +68450,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66557,7 +68475,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66582,7 +68500,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66610,7 +68528,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66634,7 +68552,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
-          ".NET 10.0 (payload: the committed fixture avif/lossy-444-bt601-full)"
+          ".NET 11.0 (payload: the committed fixture avif/lossy-444-bt601-full)"
         ]
       },
       "expectedError": {
@@ -66662,7 +68580,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66690,7 +68608,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66715,7 +68633,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66728,12 +68646,12 @@
       "notes": "An lsel property selects layer 1: only the base layer of an HEVC bitstream is decoded."
     },
     {
-      "id": "invalid/heic/matrix-ictcp",
+      "id": "invalid/heic/matrix-ictcp-sdr-transfer",
       "kind": "unsupported",
       "format": "heic",
       "input": {
-        "path": "invalid/heic/matrix-ictcp.heic",
-        "sha256": "bc4f362c120b2f6a3169fae8763989be66209a73714b6f1514f3fda8993e7648",
+        "path": "invalid/heic/matrix-ictcp-sdr-transfer.heic",
+        "sha256": "2a52b0e44eeb4885a3b5cd469586f3d76d3d6ce37023e8852818f333ea00f7b6",
         "role": "encoded"
       },
       "provenance": {
@@ -66743,7 +68661,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66753,7 +68671,7 @@
       "features": [
         "heic.unsupported=matrix"
       ],
-      "notes": "The colr box declares the ICtCp matrix coefficients (14)."
+      "notes": "The colr box declares the ICtCp matrix coefficients (14) with the sRGB transfer characteristics: ICtCp is defined for PQ and for HLG only."
     },
     {
       "id": "invalid/heic/missing-ftyp",
@@ -66771,7 +68689,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66795,7 +68713,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66820,7 +68738,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66845,7 +68763,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66870,7 +68788,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66895,7 +68813,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66920,7 +68838,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66928,34 +68846,6 @@
         "format": "Heic"
       },
       "notes": "The data of the item hold the SEI message of the picture (its decoded picture hash) and no slice: an item with no picture."
-    },
-    {
-      "id": "invalid/heic/premultiplied-alpha",
-      "kind": "unsupported",
-      "format": "heic",
-      "input": {
-        "path": "invalid/heic/premultiplied-alpha.heic",
-        "sha256": "3d73f22f5a08ba8f4d3199c8b70710c9981dff9a154ab1228ea9214bd6514cc9",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
-        "tools": [
-          "libheif 1.23.6 heif-enc (x265 4.2)",
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Heic"
-      },
-      "features": [
-        "heic.unsupported=premultiplied-alpha"
-      ],
-      "notes": "Written by heif-enc --premultiplied-alpha: a prem item reference declares that the color image is premultiplied by its alpha plane."
     },
     {
       "id": "invalid/heic/sequence-ctts-collision",
@@ -66973,7 +68863,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -66998,7 +68888,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67026,7 +68916,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67054,7 +68944,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67079,7 +68969,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67104,7 +68994,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67129,7 +69019,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67157,7 +69047,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67182,7 +69072,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67210,7 +69100,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67235,7 +69125,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67260,7 +69150,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67285,7 +69175,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67310,7 +69200,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67335,7 +69225,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -98178,7 +100068,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildLimits)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -98211,7 +100101,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildLimits)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -98359,7 +100249,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -98388,7 +100278,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -98417,7 +100307,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -98446,7 +100336,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -98475,7 +100365,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -98504,7 +100394,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -98533,7 +100423,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -98562,7 +100452,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -98591,7 +100481,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -98620,7 +100510,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -98649,7 +100539,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {

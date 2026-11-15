@@ -657,7 +657,6 @@ public sealed partial class HeicDecoderInteropTests
     /// <see cref="UnsupportedImageFeatureException"/>; they are never decoded approximately.
     /// </summary>
     [Theory]
-    [InlineData("premultiplied-alpha", SourceKind.Rgba8, new[] { "-q", "60", "--premultiplied-alpha" })]
     [InlineData("chroma-location-3", SourceKind.Rgb8, new[] { "-q", "60", "-p", "x265:chromaloc=3" })]
     [InlineData("chroma-location-4", SourceKind.Rgb8, new[] { "-q", "60", "-p", "x265:chromaloc=4" })]
     [InlineData("chroma-location-5", SourceKind.Rgb8, new[] { "-q", "60", "-p", "x265:chromaloc=5" })]

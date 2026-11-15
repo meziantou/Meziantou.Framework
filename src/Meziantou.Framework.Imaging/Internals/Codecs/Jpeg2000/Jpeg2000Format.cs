@@ -133,6 +133,9 @@ internal static class Jpeg2000Format
     /// <summary>Comment.</summary>
     public const ushort MarkerCom = 0xFF64;
 
+    /// <summary>Non-linearity point transformation (ISO/IEC 15444-2, A.3.12).</summary>
+    public const ushort MarkerNlt = 0xFF76;
+
     /// <summary>Start of tile-part.</summary>
     public const ushort MarkerSot = 0xFF90;
 

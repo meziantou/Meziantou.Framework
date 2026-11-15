@@ -12,17 +12,18 @@ OpenEXR's premultiplied colors can round them; this is not a general bit-exact s
 
 | | Reading | Writing |
 | --- | --- | --- |
-| Files | Scan-line and tiled files (the full-resolution level of mipmaps and ripmaps); one part of a multi-part file; deep data, flattened | Single-part scan-line files |
+| Files | Scan-line and tiled files (the full-resolution level, or another level of mipmaps and ripmaps); one part of a multi-part file; deep data, flattened | Single-part scan-line files |
 | Samples | HALF, FLOAT and UINT | HALF or FLOAT |
 | Channels | `R`, `G`, `B`, `A`, or `Y` (luminance) with or without `A`; or one layer of a file with other channels | `R`, `G`, `B` (and `A` for pixel formats with alpha), or `Y` for gray pixel formats |
 | Windows | The display window; an overscan cropped to it, or the data window | Both windows are the image |
-| Compression | NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB, ZSTD | NONE, RLE, ZIPS, ZIP (default) or PIZ, all lossless |
+| Compression | NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB, ZSTD; HTJ2K256 and HTJ2K32 of HALF channels | NONE, RLE, ZIPS, ZIP (default) or PIZ, all lossless |
 | Metadata | Chromaticities, the windows | Chromaticities |
 
 A file of half samples without an alpha channel loads as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf), any other as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), in linear light.
 The extra precision is used when dividing colors by alpha. Infinities and samples that are not numbers are kept,
 subject to the alpha conversion. The lossy compressions (PXR24, B44, DWAA, DWAB) decode to the same samples as OpenEXR, bit
-for bit: what they lose is lost when the file is written.
+for bit: what they lose is lost when the file is written. HTJ2K256 and HTJ2K32 store each chunk as a high-throughput JPEG
+2000 codestream, which the JPEG 2000 decoder of the library reads, losslessly.
 
 ## Load and save an OpenEXR file
 
@@ -154,13 +155,16 @@ rounding and alpha conversion.
 - Half samples are limited to ±65,504: a larger finite value is rejected when it is written as half.
 - EXIF, XMP, an orientation, a resolution and text entries cannot be stored, and the attributes of a file other than its
   windows and chromaticities are not read.
-- The HTJ2K256, HTJ2K32 and LJ2K compressions, the chroma channels `RY` and `BY`, and, unless a layer is selected,
+- The LJ2K compression, the HTJ2K256 and HTJ2K32 compressions of FLOAT or UINT channels, the chroma channels `RY` and
+  `BY`, and, unless a layer is selected,
   channels other than `R`, `G`, `B`, `A` and `Y` (layers, depth) are rejected with an
   [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). So are multi-part files without
   [Part](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions.Part), and deep data without [DeepData](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions.DeepData).
 - Deep data are only flattened: the samples and their depths are not available.
-- The decoder reads the full-resolution level of mipmaps and ripmaps; the lower levels and the preview image are not
-  read.
+- The decoder reads the full-resolution level of mipmaps and ripmaps. [LevelX](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions.LevelX) and
+  [LevelY](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions.LevelY) decode another level, the image of its data window;
+  [AuxiliaryImageCollection](cref:Meziantou.Framework.Imaging.AuxiliaryImageCollection) lists the levels of a file and its preview image (8-bit
+  RGBA, for display), and decodes them.
 - A file whose writer stopped before patching its offset table (zeros in the table) is rejected by default; the
   [lenient decoding](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept) rebuilds the table
   from the chunks, as OpenEXR does, when they are all there.

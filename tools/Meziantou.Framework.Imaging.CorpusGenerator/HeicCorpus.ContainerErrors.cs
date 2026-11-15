@@ -314,13 +314,6 @@ internal static partial class HeicCorpus
         Unsupported(context, "layer-selector", ErrorSource, builder => builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.LayerSelector(1)), true)),
             "layers", "An lsel property selects layer 1: only the base layer of an HEVC bitstream is decoded.");
 
-        // Premultiplied alpha, written by heif-enc
-        var (premultiplied, _) = HeifEnc(context, "premultiplied", new Dictionary<string, byte[]>(StringComparer.Ordinal) { ["source.png"] = Png(WithAlpha(CommonCorpus.PatternDetailColor(8, 6, 3))) }, "-L --premultiplied-alpha @source.png");
-        Py.Assert(ReferenceHeif.Parse(premultiplied).ItemReferences.Any(reference => reference.Type == "prem"), "prem reference");
-        AddHeicError(context, "invalid/heic/premultiplied-alpha", "unsupported", premultiplied, "UnsupportedImageFeatureException",
-            "Written by heif-enc --premultiplied-alpha: a prem item reference declares that the color image is premultiplied by its alpha plane.", "heic.unsupported=premultiplied-alpha",
-            tools: [context.Tools.HeifEncLabel, ToolSet.RuntimeLabel]);
-
         void Derived(string type, byte[] data)
         {
             Unsupported(context, "derived-" + type, ErrorSource, builder =>
@@ -351,8 +344,8 @@ internal static partial class HeicCorpus
             "clap", "The clean aperture is 5/2 samples wide: not a whole number of samples.");
         Unsupported(context, "essential-unknown-property", ErrorSource, builder => builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.Box("zzzz", [1, 2, 3])), true)),
             "essential-property", "An unknown property is marked essential: a reader that does not know it must not present the item.");
-        Unsupported(context, "matrix-ictcp", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(9, 16, 14, fullRange: true)),
-            "matrix", "The colr box declares the ICtCp matrix coefficients (14).");
+        Unsupported(context, "matrix-ictcp-sdr-transfer", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(9, 13, 14, fullRange: true)),
+            "matrix", "The colr box declares the ICtCp matrix coefficients (14) with the sRGB transfer characteristics: ICtCp is defined for PQ and for HLG only.");
         Unsupported(context, "alpha-different-size", "alpha-mpegb-urn", builder => ReplaceProperty(builder, builder.GetItem(2), "ispe", HeifFileBuilder.ImageSize(6, 9)),
             "alpha-size", "The alpha auxiliary image declares 6x9 and the color image 16x16.");
 

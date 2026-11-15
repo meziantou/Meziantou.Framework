@@ -2,8 +2,9 @@
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
-progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, PSD decoding (the composite image),
-DNG decoding, DDS decoding (BC1 to BC7), lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
+progressive), JPEG 2000, OpenEXR, Radiance HDR and DPX decoding and encoding, PSD decoding (the composite image),
+DNG decoding, DDS decoding (BC1 to BC7), Kodak Cineon decoding, lossless JPEG recompression (`JpegXlTranscoder`),
+animation-aware processing,
 vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
@@ -1014,6 +1015,27 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (the bit layouts of the BC6H modes against Tables 123 and 124). BC7 and BC6H are exact; BC1 to BC5 are rounded once
   from the real numbers of the specification (8 bits, halves up; multiples of 1/127 for the signed formats, as
   DirectXTex rounds them). Writing DDS (and BCn encoding) is not implemented: `texconv` could verify an encoder.
+- **DPX and Cineon** (`Internals/Codecs/Dpx`, `Internals/Codecs/Cineon`, `RawRowDecoder`). Written from SMPTE ST 268:2014
+  (a free PDF of SMPTE's document library) and the Cineon 4.5 draft. Both are a fixed header then raw lines: the
+  structure parsers read the header (DPX: 1,664 bytes, then the industry-specific headers when the data start after byte
+  2,048; Cineon: 1,024 bytes, then the motion-picture section), skip to the data and read one stored line at a time;
+  `DpxRowReader`/`CineonRowReader` unpack it into the source layout, and `RawRowDecoder` hands it to the sink (floats
+  through a staging image converted at the end, so that truncation is reported before a conversion rejects a sample).
+  The standard leaves the layout of components in words ambiguous (its figures put datum 0 in the low bits, Table 1 says
+  blue comes first, every writer stores red first): the rules are what FFmpeg, ImageMagick and OpenImageIO agree on, and
+  each one is a fixture cross-checked with the three tools (see the generator below). Keep these findings:
+  - Lines start on a 32-bit word at every depth (Table 3C); OpenImageIO pads no 8/12/16-bit line, ImageMagick no 12/16-bit
+    one, FFmpeg pads them all. 10-bit filled words put the first component at the top for multi-component elements and at
+    the bottom for single-component ones; packed 10/12-bit and 1-bit data are LSB-first bit streams (ImageMagick reads
+    1-bit MSB-first, against the standard). No tool reads run-length encoding: it is rejected, not implemented.
+  - Samples load as stored, scaled with `(v × 65535 + max / 2) / max` (OpenImageIO uses bit replication, which differs by
+    one at most: the generator recovers its codes with a shift). The transfer is a label: only linear (2) and the
+    BT.709/BT.601 pairs of Tables 5A/5B map to `ColorTransferFunction.Linear` or a CICP description; printing density is
+    never converted (no log-to-linear helper exists).
+  - Cineon 8/16-bit samples are streams whatever the cell (ImageMagick and OpenImageIO), but lines end on a cell boundary
+    (ImageMagick writes it; OpenImageIO does not skip it).
+  - Only the first DPX image element is decoded. The encoder writes one element at offset 8,192, 10/12 bits filled with
+    method A, and ignores `DpxHeader`.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -1783,8 +1805,7 @@ thin public types over its `FontFace`.
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
 | `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
 | `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`, `Psd`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`, `Dds` with the block decoders): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`, `Psd`, `Dng`, `Dds` with the block decoders, `Dpx` with Cineon): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
 | `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |
@@ -1980,6 +2001,13 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   midpoints, signed BC5 within 1 ulp, swapped 10:10:10:2 legacy masks, 3:3:2 and luminance-alpha layouts). A fixture of
   several surfaces lists them in `ddsSurfaces` and has the feature `dds.trailingSurfaces`
   (`FixtureTraits.HasUnreadTrailingBytes`: a load reads the first surface only).
+
+- **DPX and Cineon fixtures** (`dpx` generator, `DpxCorpus.cs`). Files assembled by `TestHarness/Dpx/DpxFileBuilder` and
+  `CineonFileBuilder` from patterns of code values expect the pattern scaled to the pixel format (Cb, Y, Cr converted by
+  the generator's own formula); files of FFmpeg, ImageMagick and OpenImageIO expect the code values the builders' packing
+  rules read back (they must repack to the same bytes). Every valid fixture declares what each tool gives (`Expectations`:
+  exact, a documented difference or a rejection, with a note); `DPX_CORPUS_DISCOVER=1` lists every mismatch at once when
+  a tool or a fixture changes. `DpxInteropTests` reads the encoder output with the three tools (`TestHarness/ExternalTools/DpxTool`).
 
 - **JPEG 2000 fixtures** (`jp2` generator, `Jp2Corpus.cs` and its partial files). A fixture of the reversible
   transformations expects the pattern given to `opj_compress` or `ojph_compress`; a fixture of the irreversible ones

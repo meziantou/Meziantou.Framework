@@ -60,6 +60,8 @@
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Dng\*.cs" LinkBase="TestHarness\Dng" />
     <!-- The builder of DDS files, the independent reader of their headers and uncompressed pixels, and the exact reference of the S3TC and RGTC blocks -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Dds\*.cs" LinkBase="TestHarness\Dds" />
+    <!-- The builders of DPX and Cineon files -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Dpx\*.cs" LinkBase="TestHarness\Dpx" />
   </ItemGroup>
 
   <ItemGroup>

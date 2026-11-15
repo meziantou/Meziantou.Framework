@@ -1697,6 +1697,36 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>DPX film scans: the code values as stored, the headers, and a copy with 10-bit components.</summary>
+    #region Imaging_Dpx
+    public static (string? TimeCode, DpxTransferCharacteristic Transfer) ConvertDpx(string dpxPath, string outputPath)
+    {
+        // 10-bit components load as Rgb48: each code value v is the 16-bit sample round(v × 65535 / 1023)
+        using var scan = Image.Load(dpxPath);
+
+        // The headers are reported: the time code, the film edge code, the frame rate, and how the code values encode
+        // light (printing densities are logarithmic: they are never converted implicitly)
+        var header = scan.Metadata.DpxHeader!;
+
+        // 10-bit components filled to 32-bit words with method A, big-endian; the orientation and the linear or BT.709
+        // labels are written too
+        scan.Save(outputPath, new DpxEncoder { BitDepth = 10, AllowBitDepthReduction = true });
+        return (header.TimeCode, header.Transfer);
+    }
+    #endregion
+
+    /// <summary>Kodak Cineon film scans: read, then written as DPX, the format that succeeded Cineon.</summary>
+    #region Imaging_Cineon
+    public static int ConvertCineonToDpx(string cinPath, string dpxPath)
+    {
+        // Cineon files are read only: their 10-bit printing densities load as Rgb48, as stored
+        using var scan = Image.Load(cinPath);
+        var bits = scan.Metadata.CineonHeader!.BitsPerSample;
+        scan.Save(dpxPath, new DpxEncoder { BitDepth = bits == 10 ? 10 : null, AllowBitDepthReduction = true });
+        return bits;
+    }
+    #endregion
+
     /// <summary>OpenEXR renderer outputs: one layer of a file with other channels, cropped to its display window.</summary>
     #region Imaging_OpenExrLayers
     public static (Image Image, Point Origin) LoadRenderLayer(string exrPath, string layer)

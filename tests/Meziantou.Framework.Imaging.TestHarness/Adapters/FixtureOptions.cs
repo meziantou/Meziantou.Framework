@@ -67,6 +67,8 @@ public static class FixtureOptions
             "psd" => ImageFormat.Psd,
             "dng" => ImageFormat.Dng,
             "dds" => ImageFormat.Dds,
+            "dpx" => ImageFormat.Dpx,
+            "cin" => ImageFormat.Cineon,
             _ => ImageFormat.Unknown,
         };
     }

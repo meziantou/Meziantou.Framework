@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR, PSD and DDS codecs, the DNG decoder, the BC1 to BC7 block decoders, the image data of PNG files, the lossy GIF compression, the processing operations and the strokes. The other codecs
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR, PSD, DDS, DPX and Cineon codecs, the DNG decoder, the BC1 to BC7 block decoders, the image data of PNG files, the lossy GIF compression, the processing operations and the strokes. The other codecs
     are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
   -->
   <PropertyGroup>
@@ -22,6 +22,12 @@
     <!-- The seeds of imaging-dds and imaging-dds-blocks: the DDS files of the golden corpus, valid, invalid, unsupported and over the limits -->
     <SeedTexture Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\dds\*.dds;..\..\tests\Meziantou.Framework.Imaging.Fixtures\invalid\dds\*.dds;..\..\tests\Meziantou.Framework.Imaging.Fixtures\limit\dds\*.dds" />
     <EmbeddedResource Include="@(SeedTexture)" LogicalName="Seeds/dds/%(Filename)%(Extension)" Link="Seeds\dds\%(Filename)%(Extension)" />
+
+    <!-- The seeds of imaging-dpx and imaging-cineon: the DPX and Cineon files of the golden corpus, valid, invalid, unsupported and over the limits -->
+    <SeedDpx Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\dpx\*.dpx;..\..\tests\Meziantou.Framework.Imaging.Fixtures\invalid\dpx\*.dpx;..\..\tests\Meziantou.Framework.Imaging.Fixtures\limit\dpx\*.dpx" />
+    <EmbeddedResource Include="@(SeedDpx)" LogicalName="Seeds/dpx/%(Filename)%(Extension)" Link="Seeds\dpx\%(Filename)%(Extension)" />
+    <SeedCineon Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\cin\*.cin;..\..\tests\Meziantou.Framework.Imaging.Fixtures\invalid\cin\*.cin" />
+    <EmbeddedResource Include="@(SeedCineon)" LogicalName="Seeds/cineon/%(Filename)%(Extension)" Link="Seeds\cineon\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

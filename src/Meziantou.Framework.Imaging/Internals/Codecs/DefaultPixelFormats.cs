@@ -132,6 +132,18 @@ internal static class DefaultPixelFormats
         return Select(isGray, hasAlpha, is16Bit);
     }
 
+    /// <summary>Gets the default pixel format of a DPX image element: the smallest built-in format that holds its samples.</summary>
+    /// <param name="descriptor">The descriptor of the element.</param>
+    /// <param name="bitDepth">The bit depth of its components.</param>
+    /// <returns><see cref="PixelFormat.RgbaFloat"/> for floating-point components; otherwise a gray, gray and alpha (black with alpha, for an alpha element), RGB or RGBA format of 8 bits (1 and 8-bit components) or 16 bits.</returns>
+    public static PixelFormat ForDpx(Metadata.DpxDescriptor descriptor, int bitDepth) => DpxRowReader.GetDefaultPixelFormat(descriptor, bitDepth);
+
+    /// <summary>Gets the default pixel format of a Cineon image.</summary>
+    /// <param name="isGrayscale">Whether the image has one channel.</param>
+    /// <param name="bitsPerSample">The depth of its samples.</param>
+    /// <returns>A gray or RGB format of 8 bits (samples of up to 8 bits) or 16 bits.</returns>
+    public static PixelFormat ForCineon(bool isGrayscale, int bitsPerSample) => Select(isGrayscale, hasAlpha: false, bitsPerSample > 8);
+
     /// <summary>Selects the default pixel format of a BMP image.</summary>
     /// <param name="hasAlphaMask">Whether the DIB layout defines a real (non-padding) alpha channel.</param>
     /// <returns><see cref="PixelFormat.Rgba32"/> for layouts with an alpha mask, otherwise <see cref="PixelFormat.Rgb24"/>.</returns>

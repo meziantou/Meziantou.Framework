@@ -415,6 +415,45 @@ public sealed class ApiSurfaceTests
         Assert.Equal([0, 1, 2, 3, 4, 5], Enum.GetValues<CubeMapFace>().Select(value => (int)value));
     }
 
+    [Fact]
+    public void DpxAndCineonAdditionsHaveTheirPublicShape()
+    {
+        // New formats are appended: the values of the existing members never change
+        Assert.Equal(22, (int)ImageFormat.Dpx);
+        Assert.Equal(23, (int)ImageFormat.Cineon);
+        Assert.Equal(23, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
+
+        var type = typeof(DpxEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(DpxEncoder.AllowBitDepthReduction), nameof(DpxEncoder.BitDepth), nameof(DpxEncoder.ByteOrder), nameof(DpxEncoder.Format)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(int?), GetDeclaredProperty(type, nameof(DpxEncoder.BitDepth)).PropertyType);
+        Assert.Equal([nameof(DpxByteOrder.BigEndian), nameof(DpxByteOrder.LittleEndian)], Enum.GetNames<DpxByteOrder>());
+
+        // The headers are informational records: sealed, value equality, init-only properties, attached by nullable read-write properties
+        foreach (var (header, propertyName) in new[] { (typeof(DpxHeader), nameof(ImageMetadata.DpxHeader)), (typeof(CineonHeader), nameof(ImageMetadata.CineonHeader)) })
+        {
+            Assert.Equal("Meziantou.Framework.Imaging.Metadata", header.Namespace);
+            Assert.True(header.IsPublic && header.IsSealed && header.IsClass);
+            Assert.True(typeof(IEquatable<>).MakeGenericType(header).IsAssignableFrom(header));
+            Assert.All(header.GetProperties(BindingFlags.Instance | BindingFlags.Public), property => Assert.True(property.GetSetMethod() is null || property.GetSetMethod()!.ReturnParameter.GetRequiredCustomModifiers().Contains(typeof(IsExternalInit))));
+            var property = GetDeclaredProperty(typeof(ImageMetadata), propertyName);
+            Assert.Equal(header, property.PropertyType);
+            Assert.Equal(NullabilityState.Nullable, new NullabilityInfoContext().Create(property).ReadState);
+        }
+
+        // The codes of the tables of the standard are the values of the enumerations
+        Assert.Equal(50, (int)DpxDescriptor.Rgb);
+        Assert.Equal(100, (int)DpxDescriptor.CbYCrY);
+        Assert.Equal(13, (int)DpxTransferCharacteristic.Adx);
+        Assert.Equal(255, (int)DpxTransferCharacteristic.Undefined);
+        Assert.Equal(6, (int)DpxColorimetricSpecification.Bt709);
+        Assert.Equal([0, 1, 2], Enum.GetValues<DpxPacking>().Select(value => (int)value));
+    }
+
     [Theory]
     [InlineData(typeof(UnknownImageFormatException))]
     [InlineData(typeof(InvalidImageContentException))]

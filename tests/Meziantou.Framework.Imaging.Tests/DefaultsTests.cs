@@ -251,7 +251,7 @@ public sealed class DefaultsTests
     [Fact]
     public void PublicEncoderSelectionMatchesTheSelectionOfSave()
     {
-        string[] readOnly = [".jpx", ".jpf", ".psd", ".psb", ".dng", ".dds"];
+        string[] readOnly = [".jpx", ".jpf", ".psd", ".psb", ".dng", ".dds", ".cin"];
         foreach (var info in ImageFormatInfo.All)
         {
             foreach (var extension in info.FileExtensions)
@@ -289,8 +289,8 @@ public sealed class DefaultsTests
     [Fact]
     public void EveryFormatHasADefaultEncoder()
     {
-        // PSD, DNG and DDS are read only
-        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Psd or ImageFormat.Dng or ImageFormat.Dds)))
+        // PSD, DNG, DDS and Cineon are read only
+        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Psd or ImageFormat.Dng or ImageFormat.Dds or ImageFormat.Cineon)))
         {
             var encoder = ImageEncoder.Create(format);
             Assert.Equal(format, encoder.Format);
@@ -309,6 +309,9 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Unknown));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Psd));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Custom));
+
+        // Cineon files are read, never written: DPX succeeded the format
+        Assert.Contains("read, not written", Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Cineon)).Message, StringComparison.Ordinal);
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create((ImageFormat)999));
         Assert.Contains("can be read but not written", Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Dds)).Message, StringComparison.Ordinal);
     }

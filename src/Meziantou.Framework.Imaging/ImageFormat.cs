@@ -115,6 +115,18 @@ public enum ImageFormat
     Dds = 21,
 
     /// <summary>
+    /// DPX (SMPTE ST 268, Digital Moving-Picture Exchange): film scans and video frames of 1 to 16-bit integer or 32 and
+    /// 64-bit floating-point components, RGB, luma or Cb, Y, Cr, in either byte order (<c>.dpx</c>).
+    /// </summary>
+    Dpx = 22,
+
+    /// <summary>
+    /// Kodak Cineon: film scans, usually 10-bit printing densities, the predecessor of DPX (<c>.cin</c>). Only decoding is
+    /// supported.
+    /// </summary>
+    Cineon = 23,
+
+    /// <summary>
     /// A format read or written by a <see cref="CustomImageCodec"/> of <see cref="ImageConfiguration.Codecs"/>, not by the
     /// library itself. <see cref="ImageInfo.FormatInfo"/> and <see cref="Formats.CustomImageEncoder.FormatInfo"/> tell which one.
     /// </summary>

@@ -26,6 +26,8 @@ internal static class ImageFormatNames
         ImageFormat.Psd => "PSD",
         ImageFormat.Dng => "DNG",
         ImageFormat.Dds => "DDS",
+        ImageFormat.Dpx => "DPX",
+        ImageFormat.Cineon => "Cineon",
         ImageFormat.Custom => "custom",
         _ => "image",
     };

@@ -53,6 +53,10 @@ const string Usage = """
                       mipmaps, cube maps (partial ones included), arrays, volume textures, alpha modes, malformed,
                       unsupported and over-limit files (Windows: texconv and texassemble of DirectXTex, oiiotool of
                       OpenImageIO, ImageMagick and the ffmpeg of the pinned meziantou/prebuilt release)
+        dpx           DPX and Cineon fixtures: every descriptor, bit depth and packing method, both byte orders, the
+                      orientations, the headers, files of FFmpeg, ImageMagick and OpenImageIO, malformed, unsupported and
+                      over-limit files (assembled from the specifications, cross-checked with the ffmpeg, oiiotool and
+                      magick of the pinned meziantou/prebuilt release; any OS)
         icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
         icc-builtin   the source of the CMYK profile provided by the library, transcribed from the committed corpus
                       (no tool; any OS)
@@ -198,6 +202,8 @@ try
             return DngCorpus.Run(options);
         case "dds":
             return DdsCorpus.Run(options);
+        case "dpx":
+            return DpxCorpus.Run(options);
         case "icc":
             if (iccProfiles is null)
             {

@@ -44,7 +44,7 @@ public static partial class FixtureManifestValidator
     public static IReadOnlySet<string> AllowedKinds => FixtureKinds.All;
 
     /// <summary>The accepted values of <see cref="FixtureEntry.Format"/> (container formats; APNG is <c>png</c>).</summary>
-    public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2", "exr", "hdr", "psd", "dng", "dds" };
+    public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2", "exr", "hdr", "psd", "dng", "dds", "dpx", "cin" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.PixelFormat"/> (library <c>PixelFormat</c> names).</summary>
     public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf", "La16", "La32", "Rgb48", "A8", "Argb32", "Abgr32", "Bgr565", "Rgba1010102", "Cmyk32", "Cmyk64" };
@@ -784,14 +784,14 @@ public static partial class FixtureManifestValidator
 
         // AV1 and HEVC samples are 8, 10 or 12 bits wide; JPEG XL and JPEG 2000 samples have any width, the fixtures use
         // the same ones; JPEG samples are 8 or 12 bits wide, and those of a lossless JPEG file 2 to 16 bits wide
-        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "heic" or "jxl" or "jp2" && expected.BitsPerComponent is 10 or 12) && !(entry.Format is "jpeg" && expected.BitsPerComponent is >= 2 and <= 16) && !(entry.Format is "exr" or "hdr" or "psd" or "dng" or "dds" && expected.BitsPerComponent is 32))
+        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "heic" or "jxl" or "jp2" && expected.BitsPerComponent is 10 or 12) && !(entry.Format is "jpeg" && expected.BitsPerComponent is >= 2 and <= 16) && !(entry.Format is "exr" or "hdr" or "psd" or "dng" or "dds" && expected.BitsPerComponent is 32) && !(entry.Format is "dpx" && expected.BitsPerComponent is 10 or 12 or 32) && !(entry.Format is "cin" && expected.BitsPerComponent is >= 1 and <= 16))
         {
             errors.Add($"{name}: invalid bitsPerComponent {expected.BitsPerComponent}.");
         }
 
         if (expected.Cicp is { } cicp)
         {
-            if (entry.Format is not ("avif" or "heic" or "jxl" or "exr" or "hdr" or "dds"))
+            if (entry.Format is not ("avif" or "heic" or "jxl" or "exr" or "hdr" or "dds" or "dpx"))
             {
                 errors.Add($"{name}: only AVIF, JPEG XL, OpenEXR, Radiance HDR and DDS (the _SRGB formats) inputs declare a CICP color description (and HEIC ones, which share the container of AVIF).");
             }
@@ -838,9 +838,9 @@ public static partial class FixtureManifestValidator
 
         if (expected.PixelAspectRatio is { } pixelAspectRatio)
         {
-            if (entry.Format is not "avif")
+            if (entry.Format is not ("avif" or "dpx"))
             {
-                errors.Add($"{name}: only AVIF inputs declare a pixel aspect ratio.");
+                errors.Add($"{name}: only AVIF and DPX inputs declare a pixel aspect ratio.");
             }
 
             if (pixelAspectRatio.HorizontalSpacing is < 1 or > uint.MaxValue || pixelAspectRatio.VerticalSpacing is < 1 or > uint.MaxValue)
@@ -863,7 +863,7 @@ public static partial class FixtureManifestValidator
         {
             errors.Add($"{name}: invalid transferFunction '{transfer}' (allowed: {string.Join(", ", AllowedTransferFunctions)}).");
         }
-        else if (expected.EffectiveTransferFunction == "linear" && entry.Format is not ("qoi" or "jxl" or "exr" or "hdr" or "psd" or "dng" or "dds"))
+        else if (expected.EffectiveTransferFunction == "linear" && entry.Format is not ("qoi" or "jxl" or "exr" or "hdr" or "psd" or "dng" or "dds" or "dpx"))
         {
             errors.Add($"{name}: only QOI inputs (colorspace 1), JPEG XL inputs (a linear transfer function with the sRGB primaries), OpenEXR inputs (BT.709 chromaticities), Radiance HDR inputs, 32-bit PSD inputs without ICC profile, DNG inputs (their rendering) and DDS inputs of floating-point formats declare linear samples.");
         }
@@ -1076,8 +1076,9 @@ public static partial class FixtureManifestValidator
         }
 
         // The orientation of an AVIF or HEIC input comes from its irot and imir properties, the one of a JPEG XL input from
-        // its image header, and the one of a DNG input from the Orientation tag of IFD 0, never from their EXIF payload
-        if (expected.Orientation != 1 && profiles.Exif is null && entry.Format is not ("avif" or "heic" or "jxl" or "dng"))
+        // its image header, the one of a DNG input from the Orientation tag of IFD 0, and the one of a DPX or Cineon input
+        // from its orientation code, never from their EXIF payload
+        if (expected.Orientation != 1 && profiles.Exif is null && entry.Format is not ("avif" or "heic" or "jxl" or "dng" or "dpx" or "cin"))
         {
             errors.Add($"{name}: orientation {expected.Orientation} can only come from an EXIF payload (profiles.exif).");
         }

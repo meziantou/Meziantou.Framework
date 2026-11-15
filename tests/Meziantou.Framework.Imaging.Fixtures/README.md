@@ -8,7 +8,7 @@ Independent reference data for the conformance and interop tests, extended with 
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
   color conversion vectors: `icc`, `IccCorpus.cs`; the AV1 conformance vectors of the `av1Vectors` section: `avif`,
   `AvifCorpus.cs`; AVIF entries: `avif-container`, `AvifCorpus.Container.cs`; HEIC entries: `heic-container`,
-  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; Radiance HDR entries: `hdr`, `RadianceCorpus.cs`; PSD entries: `psd`, `PsdCorpus.cs`; DNG entries: `dng`, `DngCorpus.cs`; DDS entries: `dds`, `DdsCorpus.cs`; the HEVC
+  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; Radiance HDR entries: `hdr`, `RadianceCorpus.cs`; PSD entries: `psd`, `PsdCorpus.cs`; DNG entries: `dng`, `DngCorpus.cs`; DDS entries: `dds`, `DdsCorpus.cs`; DPX and Cineon entries: `dpx`, `DpxCorpus.cs`; the HEVC
   conformance vectors of the `hevcVectors` section: `hevc`, `HevcCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
   its SHA-256 hash, provenance and license.
 - The tests read this folder from the Git repository root (`FixtureRoot.GetDirectory()`). They never download anything
@@ -23,7 +23,7 @@ Independent reference data for the conformance and interop tests, extended with 
 
 ```
 tests/Meziantou.Framework.Imaging.Fixtures/
-  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/   hdr/   psd/   dng/   dds/
+  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/   hdr/   psd/   dng/   dds/   dpx/   cin/
                                       encoded inputs and their raw references
   invalid/<format>/                   malformed, unsupported or over-limit inputs (expected errors, no expected pixels)
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
@@ -40,9 +40,9 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   (`png` for PNG and APNG, `gif`, `jpeg`, `webp`, `qoi`, `bmp`, `tga`, `pnm` for every Netpbm variant, `avif` for AVIF
   still images and image sequences, `heic` for HEIC still images and image sequences, `jxl` for JPEG XL codestreams and
   containers, `jp2` for JPEG 2000 codestreams and files of the JP2 family, whatever their block coder, `exr` for OpenEXR
-  files, `hdr` for Radiance HDR files, `psd` for PSD and PSB files, `dng` for DNG files, `dds` for DDS textures). The
-  expected frames of an OpenEXR, a Radiance HDR, a 32-bit PSD or a DNG fixture, and of a DDS fixture of a floating-point
-  format, are `rgbaf32le` buffers: the 32-bit floats of its `RgbaHalf` or `RgbaFloat` pixels (a half converts to a float
+  files, `hdr` for Radiance HDR files, `psd` for PSD and PSB files, `dng` for DNG files, `dds` for DDS textures, `dpx`
+  for DPX files, `cin` for Kodak Cineon files). The expected frames of an OpenEXR, a Radiance HDR, a 32-bit PSD, a DNG or
+  a floating-point DPX fixture, and of a DDS fixture of a floating-point format, are `rgbaf32le` buffers: the 32-bit floats of its `RgbaHalf` or `RgbaFloat` pixels (a half converts to a float
   exactly), compared bit for bit; they are no source of the encoder suites.
   A DDS fixture of several surfaces (mipmaps, cube map faces, array elements, depth slices) lists them in `ddsSurfaces`,
   in file order, each with its place in the texture and its pixels in the layout of the frame; the first one is the
@@ -823,8 +823,10 @@ follows it, so keep both headings unique in this file.
 | --- | --- | --- | --- | --- |
 | avif | 189 | 45 | 28 | 12 |
 | bmp | 24 | 21 | 2 | 2 |
+| cin | 13 | 5 | 6 | 0 |
 | dds | 114 | 27 | 12 | 2 |
 | dng | 31 | 9 | 6 | 2 |
+| dpx | 60 | 10 | 8 | 2 |
 | exr | 59 | 7 | 35 | 2 |
 | gif | 24 | 13 | 1 | 2 |
 | hdr | 27 | 15 | 3 | 2 |
@@ -1717,6 +1719,66 @@ follows it, so keep both headings unique in this file.
 | DDS written by texconv | `dds.writer=texconv` | 19 | 0 | 0 | 0 |
 | DDS assembled by texassemble | `dds.writer=texassemble` | 4 | 0 | 0 | 0 |
 | DDS written by ImageMagick | `dds.writer=magick` | 4 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr with alpha | `dpx.alpha` | 2 | 0 | 0 | 0 |
+| DPX 1-bit components | `dpx.bitDepth=1` | 1 | 0 | 0 | 0 |
+| DPX 10-bit components | `dpx.bitDepth=10` | 16 | 0 | 0 | 0 |
+| DPX 12-bit components | `dpx.bitDepth=12` | 8 | 0 | 0 | 0 |
+| DPX 16-bit components | `dpx.bitDepth=16` | 10 | 0 | 0 | 0 |
+| DPX 32-bit components | `dpx.bitDepth=32` | 4 | 0 | 0 | 0 |
+| DPX 64-bit components | `dpx.bitDepth=64` | 1 | 0 | 0 | 0 |
+| DPX 8-bit components | `dpx.bitDepth=8` | 20 | 0 | 0 | 0 |
+| DPX big-endian file | `dpx.byteOrder=big` | 39 | 0 | 0 | 0 |
+| DPX little-endian file | `dpx.byteOrder=little` | 10 | 0 | 0 | 0 |
+| DPX red element | `dpx.descriptor=1` | 1 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr, Y 4:2:2 element | `dpx.descriptor=100` | 2 | 0 | 0 | 0 |
+| DPX Cb, Y, A, Cr, Y, A 4:2:2:4 element | `dpx.descriptor=101` | 1 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr 4:4:4 element | `dpx.descriptor=102` | 2 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr, A 4:4:4:4 element | `dpx.descriptor=103` | 1 | 0 | 0 | 0 |
+| DPX alpha element | `dpx.descriptor=4` | 2 | 0 | 0 | 0 |
+| DPX RGB element | `dpx.descriptor=50` | 38 | 0 | 0 | 0 |
+| DPX RGBA element | `dpx.descriptor=51` | 4 | 0 | 0 | 0 |
+| DPX ABGR element | `dpx.descriptor=52` | 1 | 0 | 0 | 0 |
+| DPX luma element | `dpx.descriptor=6` | 8 | 0 | 0 | 0 |
+| DPX files of 2 image elements | `dpx.elements=2` | 1 | 0 | 0 | 0 |
+| DPX end-of-line padding | `dpx.endOfLinePadding` | 1 | 0 | 0 | 0 |
+| DPX film and television headers | `dpx.industryHeaders=filled` | 1 | 0 | 0 | 0 |
+| DPX without industry-specific headers | `dpx.industryHeaders=none` | 1 | 0 | 0 | 0 |
+| DPX orientation code 1 | `dpx.orientation=1` | 1 | 0 | 0 | 0 |
+| DPX orientation code 2 | `dpx.orientation=2` | 1 | 0 | 0 | 0 |
+| DPX orientation code 3 | `dpx.orientation=3` | 1 | 0 | 0 | 0 |
+| DPX orientation code 4 | `dpx.orientation=4` | 1 | 0 | 0 | 0 |
+| DPX orientation code 5 | `dpx.orientation=5` | 1 | 0 | 0 | 0 |
+| DPX orientation code 6 | `dpx.orientation=6` | 1 | 0 | 0 | 0 |
+| DPX orientation code 7 | `dpx.orientation=7` | 1 | 0 | 0 | 0 |
+| DPX components filled with method A | `dpx.packing=filled-a` | 13 | 0 | 0 | 0 |
+| DPX components filled with method B | `dpx.packing=filled-b` | 2 | 0 | 0 | 0 |
+| DPX packed 10 and 12-bit components | `dpx.packing=packed` | 3 | 0 | 0 | 0 |
+| DPX pixel aspect ratio | `dpx.pixelAspectRatio` | 1 | 0 | 0 | 0 |
+| DPX BT.709 transfer and colorimetry | `dpx.transfer=bt709` | 1 | 0 | 0 | 0 |
+| DPX linear transfer | `dpx.transfer=linear` | 1 | 0 | 0 | 0 |
+| DPX printing density | `dpx.transfer=printing-density` | 1 | 0 | 0 | 0 |
+| DPX user-defined data | `dpx.userData` | 1 | 0 | 0 | 0 |
+| DPX version 1.0 | `dpx.version=1.0` | 1 | 0 | 0 | 0 |
+| DPX files of FFmpeg | `dpx.writer=ffmpeg` | 4 | 0 | 0 | 0 |
+| DPX files of ImageMagick | `dpx.writer=magick` | 3 | 0 | 0 | 0 |
+| DPX files of OpenImageIO | `dpx.writer=oiio` | 4 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr with the BT.601 matrix | `dpx.ycbcr.matrix=bt601` | 1 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr with the BT.709 matrix | `dpx.ycbcr.matrix=bt709` | 1 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr in full range | `dpx.ycbcr.range=full` | 1 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr in limited range | `dpx.ycbcr.range=limited` | 1 | 0 | 0 | 0 |
+| DPX 4:2:2 chroma subsampling | `dpx.ycbcr.subsampling=422` | 3 | 0 | 0 | 0 |
+| Cineon 10-bit samples | `cin.bits=10` | 8 | 0 | 0 | 0 |
+| Cineon 12-bit samples | `cin.bits=12` | 2 | 0 | 0 | 0 |
+| Cineon 16-bit samples | `cin.bits=16` | 1 | 0 | 0 | 0 |
+| Cineon 8-bit samples | `cin.bits=8` | 2 | 0 | 0 | 0 |
+| Cineon big-endian file | `cin.byteOrder=big` | 11 | 0 | 0 | 0 |
+| Cineon little-endian file | `cin.byteOrder=little` | 2 | 0 | 0 | 0 |
+| Cineon images of 1 channel | `cin.channels=1` | 1 | 0 | 0 | 0 |
+| Cineon images of 3 channels | `cin.channels=3` | 12 | 0 | 0 | 0 |
+| Cineon packing 133 | `cin.packing=133` | 1 | 0 | 0 | 0 |
+| Cineon packing 3 | `cin.packing=3` | 1 | 0 | 0 | 0 |
+| Cineon packing 5 | `cin.packing=5` | 10 | 0 | 0 | 0 |
+| Cineon packing 6 | `cin.packing=6` | 1 | 0 | 0 | 0 |
 
 Not covered by fixtures, and verified elsewhere: encoder outputs (independent readers, FFmpeg and Apple ImageIO), malformed-input robustness beyond the error
 fixtures (`FuzzTests/MutationFuzzTests`, `Tests.Shared/Suites/Decode/TruncationTests`), and limits at every boundary (`Tests.Shared/Suites/Decode/ResourceLimitBoundaryTests`).
@@ -2924,6 +2986,26 @@ tool version to see what changes; the interop CI job runs it on every build to d
   ```shell
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dds          # check (Windows)
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dds --write  # replace the DDS fixtures, then review the diff
+  ```
+
+- `dpx` (`DpxCorpus.cs`) generates the DPX and Kodak Cineon fixtures; it replaces only the entries of formats `dpx` and
+  `cin` and their files (`dpx/`, `cin/`, `invalid/dpx/`, `invalid/cin/`, `limit/dpx/`). Most files are assembled by the
+  test harness (`DpxFileBuilder` and `CineonFileBuilder`, written from SMPTE ST 268:2014 and the Cineon 4.5 draft) from
+  patterns of code values, in every descriptor, bit depth, packing method and orientation, in both byte orders; their
+  reference is the pattern, the code values scaled to the samples of the pixel format (`round(v × 65535 / max)` for 10
+  and 12 bits), Cb, Y, Cr converted with the BT.601 or BT.709 matrix. Other files are written by FFmpeg, ImageMagick and
+  OpenImageIO; their reference is the code values the file stores, read with the packing rules of the builders, which
+  must give the image data back. Every valid file is cross-checked with the three decoders of the pinned
+  meziantou/prebuilt release (`PinnedFfmpeg`, `PinnedOiio`, `PinnedMagick`): FFmpeg in the native layout of the element,
+  `oiiotool --dumpdata` (10 and 12-bit samples recovered from their bit-replicated 16-bit values) and
+  `magick -set colorspace sRGB` (which keeps the code values of printing densities). Each fixture declares what each
+  tool gives: the same code values, a documented difference (the line padding of odd widths, method B, the bit order of
+  1-bit components, the precision of the text output, ...) or a rejection, with a note; the generation fails when a
+  tool gives something else (`DPX_CORPUS_DISCOVER=1` lists every such tool instead of stopping at the first one):
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dpx          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dpx --write  # replace the DPX and Cineon fixtures, then review the diff
   ```
 
 - `heic-container` (`HeicCorpus.Container.cs`: tools, references, cross-check and manifest entries;

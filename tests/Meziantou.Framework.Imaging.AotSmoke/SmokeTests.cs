@@ -1365,6 +1365,22 @@ internal static class SmokeTests
         Check(last.Frames[0][0, 0] == new Rgba32(247, 0, 0, 255), "DDS block decoding");
     }
 
+    public static void Dpx()
+    {
+        // Every depth of the encoder round trips: 8 and 16-bit samples exactly, 10 and 12-bit components to their code values
+        using var still = CreatePattern(seed: 15);
+        using var wide = still.CloneAs<Rgba64>();
+        foreach (var bits in new int?[] { null, 10, 12, 16, 32 })
+        {
+            var encoded = Encode(wide, new DpxEncoder { BitDepth = bits, AllowBitDepthReduction = true, ByteOrder = bits == 12 ? DpxByteOrder.LittleEndian : DpxByteOrder.BigEndian });
+            Check(Image.DetectFormat(encoded) == ImageFormat.Dpx, "DPX detection");
+            var info = Image.Identify(encoded, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+            Check(info.Width == Width && info.Height == Height && info.Metadata.DpxHeader?.BitDepth == (bits ?? 16), "DPX identification");
+            using var decoded = Image.Load(encoded);
+            Check(Encode(decoded, new DpxEncoder { BitDepth = bits, AllowBitDepthReduction = true, ByteOrder = bits == 12 ? DpxByteOrder.LittleEndian : DpxByteOrder.BigEndian }).AsSpan().SequenceEqual(encoded), "DPX " + (bits?.ToString(CultureInfo.InvariantCulture) ?? "default"));
+        }
+    }
+
     public static void Radiance()
     {
         // RGBE pixels round trip through both scanline encodings: a mantissa is read as the middle of its interval, so the

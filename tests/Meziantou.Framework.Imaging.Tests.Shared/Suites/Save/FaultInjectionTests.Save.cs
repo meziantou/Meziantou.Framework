@@ -152,7 +152,7 @@ public sealed partial class FaultInjectionTests
         // The integer encoders reject floating-point pixels: an OpenEXR source is reduced to 16-bit integers first, its
         // samples clipped to [0, 1] (no conversion gives a value to a NaN sample: such a source is skipped)
         Image image;
-        if (encoderName is not ("exr" or "hdr") && SuiteReaders.ReadsFloats(data))
+        if (encoderName is not ("exr" or "hdr" or "dpx") && SuiteReaders.ReadsFloats(data))
         {
             using var floats = Image.Load<RgbaFloat>(data, new ImageDecodeOptions { Conversion = Conversion });
             if (!HasOnlyNumbers(floats))
@@ -269,6 +269,14 @@ public sealed partial class FaultInjectionTests
             case "exr":
                 // PIZ runs every stage of the encoder: range compression, wavelet and Huffman coding
                 encoder = new OpenExrEncoder { MetadataHandling = MetadataHandling.Strip, Compression = OpenExrCompression.Piz };
+                if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
+                    return image;
+
+                image.Dispose();
+                return null;
+            case "dpx":
+                // Every packing of the default depths: 8, 16 or 32-bit components, as the source
+                encoder = new DpxEncoder { MetadataHandling = MetadataHandling.Strip };
                 if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
                     return image;
 

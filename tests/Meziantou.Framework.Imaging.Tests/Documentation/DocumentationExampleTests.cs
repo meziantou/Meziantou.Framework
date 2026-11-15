@@ -1525,6 +1525,39 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ConvertDpxKeepsTheCodeValues()
+    {
+        var source = GetPath("scan.dpx");
+        using (var image = new Image<Rgb48>(4, 2))
+        {
+            image.Frames[0][1, 1] = new Rgb48(64, 32768, 65535);
+            image.Save(source, new DpxEncoder { BitDepth = 10, AllowBitDepthReduction = true });
+        }
+
+        var output = GetPath("scan-copy.dpx");
+        var (timeCode, transfer) = Examples.ConvertDpx(source, output);
+        Assert.Null(timeCode);
+        Assert.Equal(DpxTransferCharacteristic.UserDefined, transfer);
+        using var copy = Image.Load<Rgb48>(output);
+        Assert.Equal(10, copy.Metadata.DpxHeader!.BitDepth);
+
+        // The 10-bit code values 1, 512 and 1023, scaled to 16 bits
+        Assert.Equal(new Rgb48(64, 32800, 65535), copy.Frames[0][1, 1]);
+    }
+
+    [Fact]
+    public void ConvertCineonToDpxWritesTheSamples()
+    {
+        var source = GetPath("scan.cin");
+        File.WriteAllBytes(source, GoldenCorpus.Default.Get("cin/rgb-10-be").ReadInput());
+        var output = GetPath("scan-from-cineon.dpx");
+        Assert.Equal(10, Examples.ConvertCineonToDpx(source, output));
+        using var cineon = Image.Load<Rgb48>(source);
+        using var dpx = Image.Load<Rgb48>(output);
+        Assert.Equal(cineon.Frames[0][2, 1], dpx.Frames[0][2, 1]);
+    }
+
+    [Fact]
     public void ConvertRadianceKeepsTheHighlightsAndReportsTheExposure()
     {
         var hdr = GetPath("environment.hdr");

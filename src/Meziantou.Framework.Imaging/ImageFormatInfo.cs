@@ -54,6 +54,8 @@ public sealed class ImageFormatInfo
         new(ImageFormat.Psd, ["image/vnd.adobe.photoshop", "application/x-photoshop", "image/x-photoshop"], [".psd", ".psb"]),
         new(ImageFormat.Dng, ["image/x-adobe-dng", "image/dng"], [".dng"]),
         new(ImageFormat.Dds, ["image/vnd-ms.dds", "image/x-dds"], [".dds"]),
+        new(ImageFormat.Dpx, ["image/dpx", "image/x-dpx"], [".dpx"]),
+        new(ImageFormat.Cineon, ["image/cineon", "image/x-cineon"], [".cin"]),
     ];
 
     private static readonly ReadOnlyCollection<ImageFormatInfo> AllFormats = Array.AsReadOnly(Formats);

@@ -190,6 +190,9 @@ public sealed class ColorProfileFuzzTests
 
             if (CheckSamples(source, destination, transform.Convert, transform) is { } failure)
                 return failure;
+
+            if (CheckBatches(source, destination, options) is { } batchFailure)
+                return batchFailure;
         }
 
         return null;
@@ -245,6 +248,69 @@ public sealed class ColorProfileFuzzTests
         catch (Exception exception)
         {
             return FuzzFailure.FromException("convert-integer", exception);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Converts 8-bit and 16-bit colors in one call (several batches and, with a lookup table, the cache of the 8-bit colors
+    /// and the decoded entries of the table once enough colors use it) and one color at a time with another transform: the
+    /// samples must be the same.
+    /// </summary>
+    private static FuzzFailure? CheckBatches(IccProfile source, IccProfile destination, IccColorTransformOptions options)
+    {
+        IccColorTransform all;
+        IccColorTransform single;
+        try
+        {
+            all = IccColorTransform.Create(source, destination, options);
+            single = IccColorTransform.Create(source, destination, options);
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("create-batches", exception);
+        }
+
+        // Runs of one color and colors on the faces of the cells (0 and the maximum), then other colors
+        const int Colors = 300;
+        var sourceChannels = all.SourceChannelCount;
+        var destinationChannels = all.DestinationChannelCount;
+        var bytes = new byte[Colors * sourceChannels];
+        var words = new ushort[bytes.Length];
+        var state = 0x2545F491u;
+        for (var i = 0; i < bytes.Length; i++)
+        {
+            state = (state * 1664525) + 1013904223;
+            var color = i / sourceChannels;
+            var value = color < 40 ? (color / 8 * 37) + (i % sourceChannels) : (state >> 29) switch { 0 => 0, 1 => 255, _ => (int)(state >> 24) };
+            bytes[i] = (byte)value;
+            words[i] = (ushort)((value * 257) ^ (state & 0x3F));
+        }
+
+        try
+        {
+            var expectedBytes = new byte[Colors * destinationChannels];
+            var expectedWords = new ushort[expectedBytes.Length];
+            for (var i = 0; i < Colors; i++)
+            {
+                single.Convert(bytes.AsSpan(i * sourceChannels, sourceChannels), expectedBytes.AsSpan(i * destinationChannels, destinationChannels));
+                single.Convert(words.AsSpan(i * sourceChannels, sourceChannels), expectedWords.AsSpan(i * destinationChannels, destinationChannels));
+            }
+
+            var actualBytes = new byte[expectedBytes.Length];
+            var actualWords = new ushort[expectedWords.Length];
+            all.Convert(bytes, actualBytes);
+            all.Convert(words, actualWords);
+            if (!actualBytes.AsSpan().SequenceEqual(expectedBytes))
+                return FuzzFailure.Property("batch-bytes", "Colors converted in one call differ from colors converted one at a time.");
+
+            if (!actualWords.AsSpan().SequenceEqual(expectedWords))
+                return FuzzFailure.Property("batch-words", "Colors converted in one call differ from colors converted one at a time.");
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("convert-batches", exception);
         }
 
         return null;

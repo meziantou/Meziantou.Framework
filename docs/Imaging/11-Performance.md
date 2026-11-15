@@ -115,7 +115,7 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
   `AvifEncoder.AutoTiling`, so they decode with less parallelism than files with several tiles. The HEIC encoder writes
   the rows of a large still image as wavefront rows, which the decoder decodes concurrently.
 - Drawing composites the shapes, images and layers that may cover at least 131,072 pixels with several threads, by
-  batches of rows: see [Draw large canvases on several threads](#draw-large-canvases-on-several-threads).
+  batches of rows, except those painted with an opaque solid color: see [Draw large canvases on several threads](#draw-large-canvases-on-several-threads).
 - The other decoders and encoders and the other operations run on one thread.
 - The result does not depend on the number of threads: the pixels and the encoded bytes are the same.
 - Each worker needs its own working memory, which counts against the memory limit of the image.
@@ -150,8 +150,12 @@ public static void DrawPoster(string outputPath)
 - The pixels are the same as with one thread, and so is the error when a draw call fails.
 - Paints that cost more per pixel gain the most: gradients, images that are turned, scaled or sampled with
   [ImageSampling.Bicubic](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling.Bicubic), translucent colors and
-  layers. An opaque solid color on its own gains little: computing the coverage costs about as much as writing the
+  layers. An opaque solid color, or a solid color with
+  [CompositeMode.Source](cref:Meziantou.Framework.Imaging.Drawing.CompositeMode.Source), is drawn on the calling
+  thread, unless it is clipped or has an opacity: handing its rows to other threads costs about as much as writing its
   pixels.
+- A rectangle on whole pixels painted with such a color is not swept row by row: its first row is composited, and its
+  pixels are copied to the other rows. Filling it, or clearing the canvas, costs about what writing the pixels costs.
 - Texts, clip masks, shadows, blurs and filters, and gradients mixed in a
   [paint profile](07-Drawing/06-RenderingQuality.md#draw-colors-of-a-color-profile), are drawn on the calling thread.
 - Each thread needs about 128 KB and 40 bytes per pixel of the width of the canvas, counted by

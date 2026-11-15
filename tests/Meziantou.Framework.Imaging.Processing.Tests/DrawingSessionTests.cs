@@ -582,7 +582,12 @@ public sealed class DrawingSessionTests
         "opacity-layer", "bounded-layer", "source-mode", "xor-mode", "multiply-blend", "horizontal-gradient", "vertical-gradient",
         "rotated-gradient", "radial-gradient", "sweep-gradient", "path-gradient", "dithered-gradient", "brush-opacity",
         "image", "scaled-image", "reduced-image", "bicubic-image", "image-brush", "pattern", "projected-image", "linear-light", "clear",
+        "solid-source-mode",
     ];
+
+    // A paint that gives the pixels it covers entirely the same samples, whatever they were, is composited on the calling
+    // thread: the workers would write those pixels as fast as the calling thread copies their coverages to them
+    private static readonly string[] CallingThreadSceneNames = ["solid", "whole-pixel-rectangle", "solid-source-mode"];
 
     public static TheoryData<string, PixelFormat> ParallelScenes()
     {
@@ -614,7 +619,15 @@ public sealed class DrawingSessionTests
             foreach (var workers in new[] { 2, 3, 8 })
             {
                 var pixels = RenderParallelScene(scene, format, width, height, workers, out var batches);
-                Assert.True(batches > 0, $"{scene} {width}x{height} with {workers} workers was composited on the calling thread only.");
+                if (CallingThreadSceneNames.Contains(scene))
+                {
+                    Assert.Equal(0, batches);
+                }
+                else
+                {
+                    Assert.True(batches > 0, $"{scene} {width}x{height} with {workers} workers was composited on the calling thread only.");
+                }
+
                 Assert.True(expected.AsSpan().SequenceEqual(pixels), $"{scene} {width}x{height} with {workers} workers differs.");
             }
         }
@@ -687,12 +700,59 @@ public sealed class DrawingSessionTests
                 Ct);
             Assert.Equal(0, batches);
 
+            // An opaque color is written faster than it would be handed to workers, however large the shape
             image.Draw(static canvas => canvas.FillRectangle(White, new RectangleD(0, 0, 2000, 300)), Ct);
+            image.Draw(static canvas => canvas.FillEllipse(White, new PointD(1000, 1000), 900, 900), Ct);
+            Assert.Equal(0, batches);
+
+            image.Draw(static canvas => canvas.FillRectangle(new SolidBrush(new Rgba32(255, 255, 255, 128)), new RectangleD(0, 0, 2000, 300)), Ct);
             Assert.True(batches > 1);
         }
         finally
         {
             DrawingSession.TestBatchObserver = null;
+        }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Bgra32)]
+    [InlineData(PixelFormat.Rgb24)]
+    [InlineData(PixelFormat.Gray8)]
+    [InlineData(PixelFormat.Rgba64)]
+    [InlineData(PixelFormat.Rgb48)]
+    [InlineData(PixelFormat.Gray16)]
+    [InlineData(PixelFormat.La16)]
+    [InlineData(PixelFormat.Bgr565)]
+    [InlineData(PixelFormat.RgbaFloat)]
+    public void AWholePixelRectangleOfOneColorPaintsTheRowsOfItsPolygon(PixelFormat format)
+    {
+        // The first row of the rectangle is composited and copied to the other rows (when the color gives every pixel the
+        // same samples); the polygon, with one more corner on its left side, is swept row by row
+        Rgba64[] colors = [new Rgba32(30, 120, 200), new Rgba32(30, 120, 200, 90), new Rgba32(0, 0, 0, 0), new Rgba64(1, 65534, 32768, 65535)];
+        foreach (var color in colors)
+        {
+            foreach (var mode in new[] { CompositeMode.SourceOver, CompositeMode.Source, CompositeMode.Xor })
+            {
+                foreach (var (left, top, right, bottom) in new[] { (3, 2, 60, 35), (-4, -3, 70, 40), (0, 0, 66, 37), (10, 5, 26, 6), (10, 5, 20, 30) })
+                {
+                    var brush = new SolidBrush(color) { CompositeMode = mode };
+                    var rectangle = Render(format, canvas => canvas.FillRectangle(brush, RectangleD.FromLTRB(left, top, right, bottom)));
+                    var polygon = Render(format, canvas => canvas.FillPolygon(brush, [new PointD(left, top), new PointD(right, top), new PointD(right, bottom), new PointD(left, bottom), new PointD(left, (top + bottom) / 2.0)]));
+                    Assert.True(rectangle.SequenceEqual(polygon), $"{format} {color} {mode} [{left}, {right}] x [{top}, {bottom}]");
+                }
+            }
+        }
+
+        static byte[] Render(PixelFormat format, DrawingAction action)
+        {
+            using var image = CreateParallelImage(format, 66, 37, new ImageConfiguration());
+            image.AppendFrame();
+
+            // A backdrop that is not uniform, with alpha
+            image.Draw(static canvas => canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(66, 37), [new GradientStop(0, new Rgba32(255, 10, 0, 40)), new GradientStop(1, new Rgba32(0, 250, 90, 230))])), Ct);
+            image.Draw(action, Ct);
+            return [.. Bytes(image.Frames[0]), .. Bytes(image.Frames[1])];
         }
     }
 
@@ -946,6 +1006,9 @@ public sealed class DrawingSessionTests
                 canvas.Layer(new RectangleD(20, 30, width - 60, height - 50), 0.8, canvas => canvas.Fill(new RadialGradientBrush(center, width * 0.5, stops)), CompositeMode.SourceAtop, BlendMode.Screen);
                 break;
             case "source-mode":
+                canvas.FillEllipse(new LinearGradientBrush(new PointD(0, 0), new PointD(width, height), stops) { CompositeMode = CompositeMode.Source }, center, width * 0.45, height * 0.4);
+                break;
+            case "solid-source-mode":
                 canvas.FillEllipse(new SolidBrush(new Rgba32(10, 250, 10, 60)) { CompositeMode = CompositeMode.Source }, center, width * 0.45, height * 0.4);
                 break;
             case "xor-mode":
@@ -1035,6 +1098,8 @@ public sealed class DrawingSessionTests
         PixelFormat.La16 => new Image<La16>(width, height, configuration),
         PixelFormat.Bgr565 => new Image<Bgr565>(width, height, configuration),
         PixelFormat.RgbaFloat => new Image<RgbaFloat>(width, height, configuration),
+        PixelFormat.Rgb48 => new Image<Rgb48>(width, height, configuration),
+        PixelFormat.Gray16 => new Image<Gray16>(width, height, configuration),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is not a format of the parallel scenes."),
     };
 

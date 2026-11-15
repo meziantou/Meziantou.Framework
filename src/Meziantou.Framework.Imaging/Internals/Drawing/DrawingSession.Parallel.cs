@@ -12,7 +12,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// calling thread included, and the pixels are those of one worker: each row is composited once, with the same paint and
 /// the same formulas, and the rows do not depend on one another. The sweep of the rasterizer carries its state from one
 /// row to the next, so it stays on the calling thread; it fills batches of about <see cref="PixelsPerBatch"/> covered
-/// pixels, which the workers composite while it sweeps the next rows.
+/// pixels, which the workers composite while it sweeps the next rows. A paint that gives the pixels covered entirely the
+/// same samples, whatever they were (<see cref="IsWrittenFasterThanCopied"/>), stays on the calling thread: copying the
+/// coverages to a batch costs about what writing those pixels costs.
 /// </para>
 /// <para>
 /// Each worker has its own scratch, rented before any pixel changes: the coverages of its batch, the products of the
@@ -59,7 +61,7 @@ internal sealed partial class DrawingSession
     {
         var rasterizer = _rasterizer!;
         var workerCount = GetPaintWorkerCount(_image.Configuration.MaxDegreeOfParallelism, rasterizer.EstimatedPixels);
-        if (workerCount <= 1)
+        if (workerCount <= 1 || IsWrittenFasterThanCopied(color, evaluator, mode, blend, opacity))
             return false;
 
         var needsCoverageRow = _clipDepth != 0 || opacity != CoverageRasterizer.FullCoverage;
@@ -68,6 +70,26 @@ internal sealed partial class DrawingSession
             return false;
 
         PaintRowsInParallel(new PaintParameters(color, mode, blend, opacity, alphaFactor, workerCount, rasterizer.IsFullyCovered, TestBatchObserver));
+        return true;
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether a paint gives the pixels covered entirely the same samples, whatever they were (an
+    /// opaque color, or a color that replaces the pixels): a worker would write most of its pixels as fast as the calling
+    /// thread copies their coverages to its batch, so the workers would only add their cost.
+    /// </summary>
+    private bool IsWrittenFasterThanCopied(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity)
+    {
+        if (evaluator is not null || opacity != CoverageRasterizer.FullCoverage || _clipDepth != 0)
+            return false;
+
+        var source = new DrawingSource(color, mode, blend, _transfer, _curves);
+        for (var i = 0; i < _frames.Length; i++)
+        {
+            if (!_frames[i].IsUniformOverFullCoverage(source, Width))
+                return false;
+        }
+
         return true;
     }
 

@@ -528,7 +528,8 @@ images of at least 65,536 pixels:
   such rows for its large still images), and the post-processing filters of AVIF images (by row bands);
 - drawn: the shapes, images and layers whose rows may cover at least 131,072 pixels, composited by batches of rows while
   the calling thread computes the coverages of the next rows (texts, clip masks, shadows, blurs and filters stay
-  sequential).
+  sequential, and so do the shapes of an opaque solid color, or of a solid color with `CompositeMode.Source`, without
+  clip or opacity: they are written as fast as their coverages would be handed to the workers).
 
 The results are identical to the sequential ones: the same pixels, the same encoded bytes, and the same error (the one
 of the first unit that fails, a cancellation first). A worker writes only its own rows, and the floating-point sums of
@@ -3184,7 +3185,10 @@ public static void MarkAnimation(string inputPath, string outputPath)
   hotspots and everything else are kept.
 
 **Cost**. The coverages of a shape are computed on the calling thread; with `MaxDegreeOfParallelism` above 1, a large
-shape is composited by several workers (see [Thread safety](#thread-safety)). A shape rents working storage from the allocation scope of the image (proportional to
+shape is composited by several workers (see [Thread safety](#thread-safety)). A rectangle on whole pixels (and `Fill`
+or `Clear` of the canvas) painted with an opaque solid color, or a solid color with `CompositeMode.Source`, without
+clip or opacity, has its first row composited and copied to its other rows: it costs about what writing its pixels
+costs. A shape rents working storage from the allocation scope of the image (proportional to
 the width and height of the canvas, and to the number of edges of the shape), and each `Draw` call allocates a few small
 objects; the shapes themselves allocate nothing once that storage has grown to the largest of them, so reuse brushes,
 pens and paths and use the overloads with a state and a static callback. A pattern brush is the exception: drawing

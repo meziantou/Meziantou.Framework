@@ -27,8 +27,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// </list>
 /// <para>
-/// The planes are clamped to 0 to 255 after each step and rounded once at the end. Fully transparent pixels neither
-/// contribute nor change (their luma keeps the value the encoder flattened them to). The design is the library's own: a
+/// The planes are clamped to 0 to 255 after each step and rounded once at the end. The refinement runs on the planes the
+/// encoder flattened under fully transparent pixels, which neither contribute nor change: their luma, and the chroma
+/// samples whose 2x2 pixels are all transparent, keep the flattened values, so that the visible pixels next to them are
+/// corrected against the chroma that is encoded. The design is the library's own: a
 /// gradient-style correction of the reconstruction error, not a port. Memory: 10 bytes per pixel
 /// (<see cref="AllocationKind.Temporary"/>), released before compression.
 /// </para>
@@ -164,12 +166,29 @@ internal static class WebPSharpYuv
 
         for (var i = 0; i < weights.Length; i++)
         {
-            if (weights[i] > 0)
+            if (weights[i] > 0 && HasVisiblePixel(planes, i))
             {
                 planes.U[i] = Math.Clamp(planes.U[i] + (sumU[i] / weights[i]), 0, 255);
                 planes.V[i] = Math.Clamp(planes.V[i] + (sumV[i] / weights[i]), 0, 255);
             }
         }
+    }
+
+    /// <summary>Gets whether the 2x2 block of chroma sample <paramref name="index"/> has a pixel that is not fully transparent.</summary>
+    private static bool HasVisiblePixel(Planes planes, int index)
+    {
+        var cx = index % planes.ChromaWidth;
+        var cy = index / planes.ChromaWidth;
+        for (var y = 2 * cy; y < Math.Min((2 * cy) + 2, planes.Height); y++)
+        {
+            for (var x = 2 * cx; x < Math.Min((2 * cx) + 2, planes.Width); x++)
+            {
+                if (planes.Rgba[(((y * planes.Width) + x) * 4) + 3] != 0)
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private static void Accumulate(Span<float> sumU, Span<float> sumV, Span<float> weights, int index, float weight, float du, float dv)

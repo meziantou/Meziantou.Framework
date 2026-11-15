@@ -75,17 +75,10 @@ conversion of the decoders (libwebp, the browsers and this library) and corrects
 samples move toward the average error of the pixels they cover, and each luma sample absorbs the error left at its pixel.
 The stream is an ordinary VP8 stream that every decoder reads.
 
-It is off by default, because the files are larger at the same `Quality` and the gain depends on the metric. Measured on
-four photographs at qualities 30 to 100:
-
-| Equal quality by | Size with `SharpYuv`, compared with the default |
-| --- | --- |
-| PSNR | 3 to 16% smaller |
-| SSIMULACRA 2 | from 5% smaller to 2% larger |
-| Butteraugli (3-norm) | from 10% smaller to 4% larger |
-
-On saturated colored stripes (charts, colored text), its quality 30 is better on all three metrics than any quality of
-the default conversion. It takes up to about twice the encoding time and 10 bytes of working memory per pixel.
+It is off by default: the files are larger at the same `Quality`, and the gain depends on the content and on how
+quality is judged. Turn it on for charts, screenshots and colored text, where colors change sharply; for photographs,
+compare both settings at equal decoded quality, not at equal `Quality`. It adds a few passes over the image before
+compression and 10 bytes of working memory per pixel.
 
 ## Reduce 16-bit images without bands
 

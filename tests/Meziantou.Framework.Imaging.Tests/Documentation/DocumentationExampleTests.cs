@@ -1437,6 +1437,61 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveWebPWithOptionsWritesSharpLossyDitheredAndNonSeekableOutputs()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var chart = GetPath("chart.png");
+        using (var source = new Image<Rgba32>(32, 16, new Rgba32(0, 0, 255)))
+        {
+            source.Frames[0][10, 8] = new Rgba32(255, 0, 0);
+            source.Save(chart);
+        }
+
+        var gradientPath = GetPath("gradient.png");
+        using (var gradient = new Image<Rgba64>(64, 8))
+        {
+            for (var x = 0; x < 64; x++)
+            {
+                for (var y = 0; y < 8; y++)
+                {
+                    gradient.Frames[0][x, y] = new Rgba64((ushort)(30000 + (x * 3)), 30000, 30000, 65535);
+                }
+            }
+
+            gradient.Save(gradientPath);
+        }
+
+        var chartWebP = GetPath("chart.webp");
+        var gradientWebP = GetPath("gradient.webp");
+        using var response = new NonSeekableMemoryStream();
+        Examples.SaveWebPWithOptions(chart, chartWebP, gradientPath, gradientWebP, apngPath, response);
+
+        using (var image = Image.Load<Rgb24>(chartWebP))
+        {
+            Assert.InRange(image.Frames[0][2, 2].B, 230, 255); // lossy, close to the blue background
+        }
+
+        using (var image = Image.Load<Rgb24>(gradientWebP))
+        {
+            // Lossless: each sample within one 8-bit step of its 16-bit value
+            for (var x = 0; x < 64; x++)
+            {
+                Assert.InRange((image.Frames[0][x, 4].R * 257) - (30000 + (x * 3)), -257, 257);
+            }
+        }
+
+        // The animation reached the non-seekable stream at completion
+        using var animation = Image.Load<Rgba32>(response.ToArray());
+        Assert.Equal(2, animation.Frames.Count);
+    }
+
+    /// <summary>A memory stream that reports it cannot seek, like an HTTP response.</summary>
+    private sealed class NonSeekableMemoryStream : MemoryStream
+    {
+        public override bool CanSeek => false;
+    }
+
+    [Fact]
     public void SaveAvifWritesALossyPhotoALosslessImageAndAnImageSequence()
     {
         var (apngPath, _) = BuildAnimation();

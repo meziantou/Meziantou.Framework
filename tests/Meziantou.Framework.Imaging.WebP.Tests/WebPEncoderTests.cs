@@ -394,6 +394,43 @@ public sealed class WebPEncoderTests
     }
 
     [Fact]
+    public void SharpYuvCorrectsColoredEdgesNextToTransparentBlocks()
+    {
+        // Stripes on the left, fully transparent 8x8 blocks on the right: the hidden blocks are flattened before the
+        // refinement, so the visible pixels next to them are corrected against the chroma that is encoded
+        using var stripes = CreateColoredStripes(64, 32, transparent: false);
+        var pixels = GetBytes(stripes);
+        for (var i = 0; i < pixels.Length; i += 4)
+        {
+            if ((i / 4) % 64 >= 27)
+            {
+                pixels[i + 3] = 0;
+            }
+        }
+
+        using var image = Image.ImportPixelBytes<Rgba32>(pixels, 64, 32);
+        using var plain = Image.Load<Rgba32>(Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy, Quality = 90 }));
+        using var sharp = Image.Load<Rgba32>(Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy, Quality = 90, SharpYuv = true }));
+        var plainBytes = GetBytes(plain);
+        var sharpBytes = GetBytes(sharp);
+        long plainError = 0, sharpError = 0;
+        for (var i = 0; i < pixels.Length; i += 4)
+        {
+            Assert.Equal(pixels[i + 3], sharpBytes[i + 3]);
+            if (pixels[i + 3] == 0)
+                continue;
+
+            for (var c = 0; c < 3; c++)
+            {
+                plainError += (pixels[i + c] - plainBytes[i + c]) * (pixels[i + c] - plainBytes[i + c]);
+                sharpError += (pixels[i + c] - sharpBytes[i + c]) * (pixels[i + c] - sharpBytes[i + c]);
+            }
+        }
+
+        Assert.True(sharpError < plainError * 0.9, $"Squared error of the visible pixels: {sharpError} with SharpYuv, {plainError} without.");
+    }
+
+    [Fact]
     public void SharpYuvKeepsAlphaAndIsIgnoredByLosslessOutput()
     {
         using var image = CreateColoredStripes(40, 24, transparent: true);

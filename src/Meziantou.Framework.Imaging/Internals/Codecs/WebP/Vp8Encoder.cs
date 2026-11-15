@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// block (weighted by alpha when the block is partly transparent, so hidden colors do not bleed into visible pixels); the
 /// luma of fully transparent pixels is replaced by the mean luma of the visible pixels of their 4x4 block, and each run of
 /// fully transparent 8x8 blocks takes one value (lossy output does not preserve hidden colors: hidden areas then cost almost
-/// no bits, see <see cref="FlattenTransparentRuns"/>). With <see cref="Formats.WebPEncoder.SharpYuv"/>, the planes are then
+/// no bits, see <see cref="FlattenTransparentRuns"/>). With <see cref="Formats.WebPEncoder.SharpYuv"/>, the flattened planes are then
 /// refined for the chroma upsampling of the decoder (<see cref="WebPSharpYuv"/>). The planes are extended to whole macroblocks by repeating the last column
 /// and row.
 /// </description></item>
@@ -302,14 +302,15 @@ internal sealed class Vp8Encoder : IDisposable
             }
         }
 
-        if (sharpYuv)
-        {
-            WebPSharpYuv.Refine(_scope, rgba[..(_width * _height * 4)], _width, _height, y, yStride, u, v, uvStride, _cancellationToken);
-        }
-
         if (hasTransparentPixels)
         {
             FlattenTransparentRuns(rgba);
+        }
+
+        // After the flattening: the visible pixels next to transparent blocks are refined against the chroma that is encoded
+        if (sharpYuv)
+        {
+            WebPSharpYuv.Refine(_scope, rgba[..(_width * _height * 4)], _width, _height, y, yStride, u, v, uvStride, _cancellationToken);
         }
 
         for (var row = 0; row < _height; row++)

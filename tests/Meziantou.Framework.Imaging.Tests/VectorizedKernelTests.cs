@@ -49,7 +49,7 @@ public sealed class VectorizedKernelTests
     public void PngFiltersMatchTheScalarReference(int bytesPerPixel)
     {
         var random = new Random(bytesPerPixel);
-        int[] lengths = [0, 1, bytesPerPixel, 15, 16, 17, 31, 32, 33, 47, 63, 64, 65, 100, 255, 1000, 4099];
+        int[] lengths = [0, 1, bytesPerPixel, 15, 16, 17, 31, 32, 33, 47, 63, 64, 65, 100, 255, 256, 271, 480, 495, 496, 1000, 4099];
         foreach (var length in lengths)
         {
             for (var round = 0; round < 8; round++)
@@ -99,6 +99,45 @@ public sealed class VectorizedKernelTests
                     Assert.Equal(reference, reconstructed);
                 }
             }
+        }
+    }
+
+    [Theory]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(6)]
+    [InlineData(8)]
+    public void PngPaethUnfilterReconstructsEveryTriple(int bytesPerPixel)
+    {
+        // The pixels at odd indices have every (above, upper left) pair in the row above; the rows give every left byte to
+        // each pair (one value per channel and row)
+        var length = 2 * 256 * 256 * bytesPerPixel;
+        var previous = new byte[length];
+        for (var pair = 0; pair < 256 * 256; pair++)
+        {
+            for (var channel = 0; channel < bytesPerPixel; channel++)
+            {
+                previous[(((2 * pair) + 0) * bytesPerPixel) + channel] = (byte)(pair >> 8);
+                previous[(((2 * pair) + 1) * bytesPerPixel) + channel] = (byte)pair;
+            }
+        }
+
+        var expected = new byte[length];
+        var filtered = new byte[length];
+        for (var round = 0; round < (256 + bytesPerPixel - 1) / bytesPerPixel; round++)
+        {
+            for (var pair = 0; pair < 256 * 256; pair++)
+            {
+                for (var channel = 0; channel < bytesPerPixel; channel++)
+                {
+                    expected[(((2 * pair) + 0) * bytesPerPixel) + channel] = (byte)(pair + (round * bytesPerPixel) + channel);
+                    expected[(((2 * pair) + 1) * bytesPerPixel) + channel] = (byte)(pair * 7);
+                }
+            }
+
+            PngFilters.FilterScalar(PngFilters.Paeth, expected, previous, bytesPerPixel, filtered);
+            PngFilters.Unfilter(PngFilters.Paeth, filtered, previous, bytesPerPixel);
+            Assert.True(expected.AsSpan().SequenceEqual(filtered), $"The Paeth reconstruction differs from the row in round {round}.");
         }
     }
 

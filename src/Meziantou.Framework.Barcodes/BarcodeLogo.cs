@@ -41,7 +41,8 @@ public sealed class BarcodeLogo
     /// <remarks>
     /// <para>
     /// The cleared area is the smallest rectangle of whole modules that contains the logo, grown by <see cref="MarginModules"/>
-    /// on each side. Its modules are not drawn, so the light paint of the QR code shows under the logo, or
+    /// on each side. A logo that is not square covers a band of its square, and only that band is cleared; an image with
+    /// Exif metadata clears its whole square, as viewers that apply its orientation can turn it. Its modules are not drawn, so the light paint of the QR code shows under the logo, or
     /// <see cref="BackdropPaint"/> when it is set.
     /// </para>
     /// <para>

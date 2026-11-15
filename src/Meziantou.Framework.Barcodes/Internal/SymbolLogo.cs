@@ -39,8 +39,25 @@ internal sealed record SymbolLogo(ReadOnlyMemory<byte> Data, double X, double Y,
         ModuleRectangle? cleared = null;
         if (logo.ClearModules)
         {
-            var (firstColumn, endColumn) = GetModuleRange(left, size, horizontalQuietZoneModules, moduleWidth, logo.MarginModules, columns);
-            var (firstRow, endRow) = GetModuleRange(top, size, verticalQuietZoneModules, moduleHeight, logo.MarginModules, rows);
+            // The pixels keep their proportions, centered in the square (XMidYMid): a wide logo covers a band of it. When
+            // the size of the pixels is unknown, the whole square is cleared.
+            var (imageLeft, imageTop, imageWidth, imageHeight) = (left, top, size, size);
+            if (LogoImageSize.TryGetSize(logo.Data.Span, out var pixelWidth, out var pixelHeight))
+            {
+                if (pixelWidth > pixelHeight)
+                {
+                    imageHeight = size * pixelHeight / pixelWidth;
+                    imageTop += (size - imageHeight) / 2;
+                }
+                else
+                {
+                    imageWidth = size * pixelWidth / pixelHeight;
+                    imageLeft += (size - imageWidth) / 2;
+                }
+            }
+
+            var (firstColumn, endColumn) = GetModuleRange(imageLeft, imageWidth, horizontalQuietZoneModules, moduleWidth, logo.MarginModules, columns);
+            var (firstRow, endRow) = GetModuleRange(imageTop, imageHeight, verticalQuietZoneModules, moduleHeight, logo.MarginModules, rows);
             if (endColumn > firstColumn && endRow > firstRow)
             {
                 cleared = new ModuleRectangle(firstRow, firstColumn, endRow - firstRow, endColumn - firstColumn);

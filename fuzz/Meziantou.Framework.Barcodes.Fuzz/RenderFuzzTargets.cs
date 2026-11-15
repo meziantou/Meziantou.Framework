@@ -4,6 +4,7 @@ using Meziantou.Framework.Barcodes.Internal;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Barcodes;
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.VectorGraphics;
 
 namespace Meziantou.Framework.Barcodes.Fuzz;
@@ -55,11 +56,20 @@ internal static class RenderFuzzTargets
         "HELLO WORLD", "12345", "ABC-123", "590123412345", "0950110153001", "<", ">", "&", "\"", "'", "]]>", "\u0001", "\n", "\u001b[", "\u0085", "￾", "😀",
     ];
 
+    // The signatures and the chunks, segments and markers the size reader looks at
+    private static readonly string[] LogoSizeTokens =
+    [
+        "\u0089PNG\r\n\u001A\n", "IHDR", "IDAT", "eXIf", "IEND", "GIF89a", "GIF87a", "RIFF", "WEBP", "VP8 ", "VP8L", "VP8X",
+        "\u009d\u0001*", "/", "ÿØ", "ÿá", "Exif\u0000", "ÿÀ", "ÿÂ", "ÿÚ", "ÿÙ", "ÿÿ",
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("barcodes-scene", SceneTarget) { Seeds = GetSceneSeeds, Dictionary = Tokens },
         new("barcodes-console", ConsoleTarget) { Seeds = GetConsoleSeeds, Dictionary = Tokens },
+        new("barcodes-logo-size", LogoSizeTarget) { Seeds = GetLogoSizeSeeds, Dictionary = LogoSizeTokens },
     ];
+
 
     private static void SceneTarget(ReadOnlySpan<byte> data)
     {
@@ -287,6 +297,60 @@ internal static class RenderFuzzTargets
                     FuzzAssert.Fail($"Module ({column}, {row}) at pixel ({x}, {y}) is {pixels[(y * image.Width) + x]}, expected {expected}");
             }
         }
+    }
+
+    /// <summary>
+    /// The size a logo covers in its square comes from the header of the image: when the reader gives one, the decoder of
+    /// Imaging, which the image renderer uses, decodes the image at that size, or rejects the data.
+    /// </summary>
+    private static void LogoSizeTarget(ReadOnlySpan<byte> data)
+    {
+        if (!LogoImageSize.TryGetSize(data, out var width, out var height))
+            return;
+
+        FuzzAssert.True(width > 0 && height > 0, $"The size of the logo is {width}x{height}");
+        Image image;
+        try
+        {
+            image = Image.Load(data);
+        }
+        catch (ImageException)
+        {
+            return;
+        }
+
+        using (image)
+        {
+            FuzzAssert.Equal((image.Frames[0].Width, image.Frames[0].Height), (width, height), "The size of the decoded logo");
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetLogoSizeSeeds()
+    {
+        yield return new FuzzSeed("logo-size-green-png", GreenPng);
+        (string Name, ImageEncoder Encoder)[] encoders =
+        [
+            ("png", new PngEncoder()),
+            ("gif", new GifEncoder()),
+            ("jpeg", new JpegEncoder()),
+            ("jpeg-progressive", new JpegEncoder { Process = JpegEncodingProcess.Progressive }),
+            ("webp-lossless", new WebPEncoder()),
+            ("webp-lossy", new WebPEncoder { Compression = WebPCompression.Lossy }),
+        ];
+
+        foreach (var (name, encoder) in encoders)
+        {
+            foreach (var (width, height) in new[] { (37, 21), (1, 1), (16, 64) })
+            {
+                using var image = new Image<Rgba32>(width, height, new Rgba32(0x25, 0x63, 0xeb));
+                using var stream = new MemoryStream();
+                image.Save(stream, encoder);
+                yield return new FuzzSeed($"logo-size-{name}-{width}x{height}", stream.ToArray());
+            }
+        }
+
+        // A JPEG with Exif metadata, whose orientation can turn the image (the unit tests)
+        yield return new FuzzSeed("logo-size-jpeg-exif", (byte[])[0xFF, 0xD8, 0xFF, 0xE1, 0x00, 0x08, (byte)'E', (byte)'x', (byte)'i', (byte)'f', 0x00, 0x00, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x02, 0x01, 0x01, 0x11, 0x00]);
     }
 
     private static void ConsoleTarget(ReadOnlySpan<byte> data)

@@ -222,7 +222,8 @@ using var image = qrCode.ToImage(options);
 ![A QR code with a blue disc in its middle, on a square of light modules](images/QRCodeLogo.png)
 
 The cleared area is the smallest rectangle of whole modules around the logo, grown by
-[MarginModules](cref:Meziantou.Framework.Barcodes.BarcodeLogo.MarginModules) on each side (0 by default). The scanner recovers its modules with the
+[MarginModules](cref:Meziantou.Framework.Barcodes.BarcodeLogo.MarginModules) on each side (0 by default). A wide or tall logo clears only the band
+of its square it covers, except an image with Exif metadata, whose orientation can turn it in a viewer. The scanner recovers its modules with the
 error correction, so rendering checks that it can, and throws an `ArgumentOutOfRangeException` when:
 
 - the area covers a finder pattern, a timing pattern, the format information or the version information, which locate

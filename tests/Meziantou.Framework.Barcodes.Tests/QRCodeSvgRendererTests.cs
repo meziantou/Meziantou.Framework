@@ -231,6 +231,62 @@ public class QRCodeSvgRendererTests
         Assert.Equal(2, scene.Root.Children.OfType<SceneRectangle>().Count() + scene.Root.Children.OfType<ScenePath>().Count());
     }
 
+    [Theory]
+    [InlineData(64, 32, 14, 19, 12, 21)]
+    [InlineData(32, 64, 12, 21, 14, 19)]
+    public void Logo_ClearModules_NonSquareLogo_ClearsTheBandItCovers(int logoWidth, int logoHeight, int firstRow, int endRow, int firstColumn, int endColumn)
+    {
+        // The logo keeps its proportions in its 82x82 square at (164, 164): a 2:1 logo covers 82x41 at (164, 184.5)
+        using var logoImage = new Image<Rgba32>(logoWidth, logoHeight, new Rgba32(0x25, 0x63, 0xeb));
+        using var logoStream = new MemoryStream();
+        logoImage.Save(logoStream, new PngEncoder());
+        var qr = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.H);
+        var scene = qr.CreateScene(new QRCodeRenderOptions { ModuleSize = 10, QuietZoneModules = 4, Logo = new BarcodeLogo(logoStream.ToArray()) });
+
+        var drawn = GetDrawnModules(scene, qr, moduleSize: 10, quietZoneModules: 4);
+        for (var row = 0; row < qr.Height; row++)
+        {
+            for (var column = 0; column < qr.Width; column++)
+            {
+                var isCleared = row >= firstRow && row < endRow && column >= firstColumn && column < endColumn;
+                Assert.Equal(qr[row, column] && !isCleared, drawn[row, column]);
+            }
+        }
+    }
+
+    public static TheoryData<string> LogoEncoders() => ["png", "gif", "jpeg", "webp-lossless", "webp-lossy"];
+
+    [Theory]
+    [MemberData(nameof(LogoEncoders))]
+    public void LogoImageSize_IsTheSizeOfTheDecodedImage(string format)
+    {
+        using var image = new Image<Rgba32>(37, 21, new Rgba32(0x25, 0x63, 0xeb));
+        using var stream = new MemoryStream();
+        image.Save(stream, format switch
+        {
+            "png" => new PngEncoder(),
+            "gif" => new GifEncoder(),
+            "jpeg" => new JpegEncoder(),
+            "webp-lossless" => new WebPEncoder(),
+            _ => new WebPEncoder { Compression = WebPCompression.Lossy },
+        });
+
+        Assert.True(Internal.LogoImageSize.TryGetSize(stream.ToArray(), out var width, out var height));
+        Assert.Equal((37, 21), (width, height));
+    }
+
+    [Fact]
+    public void LogoImageSize_ImageWithExif_IsUnknown()
+    {
+        // The orientation of the Exif metadata can turn the image: SOI, APP1 "Exif", then a start of frame of 2x1 pixels
+        byte[] jpeg = [0xFF, 0xD8, 0xFF, 0xE1, 0x00, 0x08, (byte)'E', (byte)'x', (byte)'i', (byte)'f', 0x00, 0x00, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x02, 0x01, 0x01, 0x11, 0x00];
+        Assert.False(Internal.LogoImageSize.TryGetSize(jpeg, out _, out _));
+
+        jpeg[6] = (byte)'X';
+        Assert.True(Internal.LogoImageSize.TryGetSize(jpeg, out var width, out var height));
+        Assert.Equal((2, 1), (width, height));
+    }
+
     [Fact]
     public void Logo_Backdrop_IsOnTheModuleBoundaries()
     {

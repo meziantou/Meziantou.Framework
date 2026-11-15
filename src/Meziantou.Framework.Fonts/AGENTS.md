@@ -43,9 +43,25 @@ These instructions complete the repository-level `AGENTS.md`.
   libraries, and with the web-platform-tests of WebPlatform (`css/WOFF2`, `css/css-fonts`).
 - Write the code from the specifications (OpenType, WOFF 1.0 and 2.0, Adobe Technical Notes #5176 and #5177, Adobe
   Technical Note #5004 for AFM files, the script development specifications of Microsoft, the Apple TrueType Reference
-  Manual, Unicode). Never copy or port code from font libraries (FreeType,
-  HarfBuzz, the woff2 reference code, fontTools, ...): they are test oracles only, their source is never read to write
-  ours.
+  Manual, Unicode) first. The specification stays the reference: where a library and the specification disagree,
+  follow the specification (or document the divergence and why).
+- The source of another font library may be read, and its code ported, only when its license is compatible with the
+  MIT license of this repository: a permissive license such as MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC,
+  Zlib, BSL-1.0, CC0-1.0, Unlicense, or public domain. HarfBuzz, fontTools and the woff2 reference code are MIT;
+  FreeType is dual FTL (usable) or GPL-2.0. Check the license of the exact version you read (the `LICENSE` file of
+  that tag or commit, and the header of the file: some projects mix licenses), not the project's reputation.
+  - Never read the source of code under a copyleft license (GPL, LGPL, AGPL, MPL, EPL, CDDL, ...), a non-commercial
+    or "research only" license, a proprietary license, or no license at all (for example a GitHub repository without
+    a `LICENSE` file). Those libraries are test oracles only: their output is compared with ours, their source is never
+    read to write ours. When the license is unclear, ask the user before reading.
+  - Port, do not paste: the result follows the rules of this library (managed, no reflection, untrusted input, the
+    style of the repository), which win where they differ from the original.
+  - Every port or adaptation (code, tables, constants, heuristics) is listed in `THIRD-PARTY-NOTICES.md` in the same
+    change: project, source URL, license URL, the version or commit read, what was taken and into which files, and the
+    copyright notice and license text (and, for Apache-2.0, the content of the project's `NOTICE` file). Add a comment
+    naming the original file at the top of the ported code.
+  - Reading a compatible source to understand an ambiguous part of a specification, without porting anything, needs no
+    notice; cite the clause of the specification in the code as usual.
 - Fully managed, trimmable and NativeAOT-compatible: no reflection.
 - The tests are in `tests/Meziantou.Framework.Imaging.Tests` (`FontTests`, `FontVariationTests`, `ColorFontTests`,
   `TextShaperTests`, `Conformance/`), the fuzzing in `fuzz/Meziantou.Framework.Imaging.FuzzTests` (`FontFuzzTests`), and
@@ -209,7 +225,7 @@ no instructions, any outline format), `TrueTypeHinter` with `TrueTypeInterpreter
 `AfmFontMetrics` (`Afm/`) reads AFM files (Adobe Font Metrics, Adobe Technical Note #5004, version 4.1); `AfmParser`
 reads the text, `AfmFontMetrics` indexes the characters and the kerning pairs.
 
-- Written from TN #5004; cite its section in the code. fontTools (`afmLib`) is an oracle only: the widths, boxes,
+- Written from TN #5004; cite its section in the code. fontTools (`afmLib`) is the oracle: the widths, boxes,
   codes and kerning pairs of the Core 14 files compare equal with it.
 - **Text.** The file is ASCII; the bytes are read as ISO-8859-1 because the notices of some files have such
   characters. A line ends with CR, LF or CRLF; spaces and tabs separate the values. What follows `EndFontMetrics` is
@@ -272,9 +288,10 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`OpenType/`) applies t
 `GPOS`, with `GdefTable`, `LayoutTable` and `LayoutCommon` for the tables they share.
 
 - Written from the OpenType specification (GSUB, GPOS, GDEF and the common table formats) and, for what a script
-  needs, from the script development specifications of Microsoft. HarfBuzz is the oracle and is never the source: where
-  the specification leaves a behavior to the client (what a lookup sees through, how marks follow a ligature, the
-  default features), write the rule in the terms of the specification and of Unicode, and let the corpus decide.
+  needs, from the script development specifications of Microsoft. HarfBuzz is the oracle (its code may be ported under
+  the license rule above): where the specification leaves a behavior to the client (what a lookup sees through, how
+  marks follow a ligature, the default features), write the rule in the terms of the specification and of Unicode,
+  and let the corpus decide.
 - **Everything is an integer in font units** until `TextLayout` scales it. Positions are an advance and an offset per
   glyph; an attached glyph records what it is attached to, and `FinishPositions` resolves the chains once.
 - **Clusters are the contract with the rest of the layout**: every glyph has the index of the first character of its

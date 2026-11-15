@@ -22,20 +22,29 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   [AGENTS.md](../Meziantou.Framework.Fonts/AGENTS.md)), whose public API the library uses with an exact version.
   Nothing else (`ApiSurfaceTests`). The library is trimmable and NativeAOT-compatible
   (`IsTrimmable`, `IsAotCompatible`): no reflection-based code.
-- Write implementations from the format specifications. Never copy or port code from other image libraries
-  (System.Drawing, libpng, libjpeg, giflib, libwebp, libavif, libaom, dav1d, stb, ...) or from font libraries (FreeType,
-  HarfBuzz, the woff2 reference code, fontTools, ...). Those libraries are test oracles only: their output is compared
-  with ours, their source is never read to write ours.
-  The one exception is OpenEXR, whose specification names its compressions without defining them: the library
-  defines them. Their data formats were described in prose, without code, by an agent that read OpenEXR 3.5.2
-  (BSD-3-Clause) and wrote nothing else (`Internals/Codecs/Exr/ExrCompression.md`); the codec is written from that
-  description and the OpenEXR File Layout, never from the source. Extend the description the same way (a separate
-  agent reads the source and writes prose) when a compression is added.
-  The settings of the frame of the lossy JPEG XL encoder (no Gabor-like filter, the weight of the adaptive
-  quantization field, the zero thresholds, the edge-preserving filter, the step of the LF values of X) were taken from
-  jixel (BSD-3-Clause), whose source the user allowed reading for that purpose, and each one was kept on measurements
-  (see "Lossy JPEG XL quality tools"); they are listed in `THIRD-PARTY-NOTICES.md`. Reading the source of another codec
-  needs the same explicit permission.
+- Write implementations from the format specifications first. The specification stays the reference: where a library
+  and the specification disagree, follow the specification (or document the divergence and why).
+- The source of another library (image, codec, font, color management, rasterizer, ...) may be read, and its code
+  ported, only when its license is compatible with the MIT license of this repository: a permissive license such as
+  MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC, Zlib, the libpng or IJG licenses, BSL-1.0, CC0-1.0, Unlicense, or
+  public domain. Check the license of the exact version you read (the `LICENSE` file of that tag or commit, and the
+  header of the file: some projects mix licenses), not the project's reputation.
+  - Never read the source of code under a copyleft license (GPL, LGPL, AGPL, MPL, EPL, CDDL, ...), a non-commercial
+    or "research only" license, a proprietary license, or no license at all (for example a GitHub repository without
+    a `LICENSE` file).
+    Those libraries are test oracles only: their output is compared with ours, their source is never read to write
+    ours. When the license is unclear, ask the user before reading.
+  - Port, do not paste: the result follows the rules of this library (managed, no native dependency, bounded memory,
+    untrusted input, the style of the repository), which win where they differ from the original.
+  - Every port or adaptation (code, tables, constants, heuristics, tuned settings) is listed in `THIRD-PARTY-NOTICES.md`
+    in the same change: project, source URL, license URL, the version or commit read, what was taken and into which
+    files, and the copyright notice and license text (and, for Apache-2.0, the content of the project's `NOTICE` file).
+    Add a comment naming the original file at the top of the ported code.
+  - Reading a compatible source to understand an ambiguous part of a specification, without porting anything, needs no
+    notice; cite the clause of the specification in the code as usual.
+  The OpenEXR compressions (`Internals/Codecs/Exr/ExrCompression.md`, a prose description of OpenEXR 3.5.2,
+  BSD-3-Clause) and the settings of the lossy JPEG XL encoder taken from jixel (BSD-3-Clause, see "Lossy JPEG XL
+  quality tools") were written under the earlier, stricter rule; both may now be extended from the source directly.
 - The extension points are `CustomImageCodec`/`CustomImageEncoder` (formats registered in `ImageConfiguration.Codecs`),
   `IPixelRowOperation<TPixel>`/`IPixelNeighborhoodOperation<TPixel>` (custom filters), `IImageProcessor<TPixel>` (custom
   processors that replace every frame through the geometry transaction; the built-in seam carving and inpainting use the
@@ -981,7 +990,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   transcribed from the corpus by the `icc-builtin` command of the corpus generator. Never edit it by hand.
 
 - Written from ICC.1:2001-04 (version 2 profiles), ICC.1:2022 (version 4 profiles) and Adobe's published black point
-  compensation algorithm. Never port code from another color management system; cite the clause in the code.
+  compensation algorithm; cite the clause in the code. Code from another color management system may be ported only
+  under the license rule of "Hard constraints" (Little CMS is MIT; Argyll CMS is AGPL and stays an oracle).
 - A profile is untrusted input. Validate every size against the tag before reading (64-bit arithmetic for table
   sizes), read color lookup tables in place (`ReadOnlyMemory<byte>`, no copy) so that a transform only copies
   one-dimensional curves, and allocate nothing per conversion (`PerformanceContractTests`). A malformed profile is `InvalidImageContentException`; a valid profile that is not
@@ -1045,7 +1055,8 @@ reads these images.
 
 - The gain map formula and the `hdrgm` XMP properties come from the public Adobe "Gain map" and Android Ultra HDR
   specifications; the binary layout of ISO 21496-1 (the standard itself is not public) was checked field by field
-  against the files of libultrahdr and libavif, never read from their source. A newer minimum version or unknown flags
+  against the files of libultrahdr and libavif (their source, Apache-2.0 and BSD-2-Clause, may be read under the
+  license rule of "Hard constraints"). A newer minimum version or unknown flags
   make the metadata unknown; malformed metadata is kept as the error of `DecodeHdr`, and the primary image always decodes.
 - Oracles (`tools/Meziantou.Framework.Imaging.GainMapFixtures`, a Docker image): libultrahdr 1.4.0 `ultrahdr_app -m 1`
   decodes Ultra HDR files to linear half floats in the gamut of the HDR intent (from the ICC profile of the gain map
@@ -1070,8 +1081,9 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 `FillSink` or `Stroker` -> `EdgeBuilder` (clipped edges) -> `CoverageRasterizer` (one row of coverage at a time) ->
 `GradientEvaluator` for gradients -> `DrawingKernels` (compositing on each frame).
 
-- Written from first principles: never port code from another rasterizer or stroker (FreeType, Skia, AGG, stb, ...).
-  The one exception is the managed rasterizer of Meziantou.Framework.WebPlatform (same author), whose semantics
+- Written from first principles. Code from another rasterizer or stroker may be ported only under the license rule of
+  "Hard constraints" (check the exact license: FreeType is dual FTL (usable) or GPL-2.0, AGG 2.4 is permissive but 2.5 is GPL).
+  The managed rasterizer of Meziantou.Framework.WebPlatform (same author, no notice needed), whose semantics
   (validated on the web-platform-tests) are the reference of what a browser engine needs: its code may be ported where
   it fits the rules of this library, which win where they differ (exact areas, no functions of the platform in the
   geometry, 16-bit precision).

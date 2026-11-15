@@ -191,7 +191,10 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
                     _stored = scope.Rent((int)dataLength, AllocationKind.Temporary, clear: false);
                 }
 
-                _offsets = scope.Rent(_chunkCount * sizeof(long), AllocationKind.Temporary, clear: false);
+                if (_compression != ExrCompressionMethod.None)
+                {
+                    _offsets = scope.Rent(_chunkCount * sizeof(long), AllocationKind.Temporary, clear: false);
+                }
                 (_predicted, _piz, _dwa) = RentCompressor(scope, (int)dataLength, maxWidth, maxLines);
                 if (levelLengths.Length > 0)
                 {
@@ -592,23 +595,49 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
 
             output.Write([0]);
 
-            // The offset table: known now without compression, patched once the chunks are written otherwise
+            // The offset table: patched once the chunks are written, or, without compression, known now and written entry by
+            // entry (no buffer of the whole table)
             _tableOffset = output.TotalBytes;
-            var table = _offsets!.Span[..(_chunkCount * sizeof(long))];
-            table.Clear();
-            if (_compression == ExrCompressionMethod.None)
+            if (_offsets is not null)
             {
-                var offset = _tableOffset - _fileStart + table.Length;
-                var chunkHeaderLength = _tiled ? ExrFormat.TileChunkHeaderLength : ExrFormat.ScanLineChunkHeaderLength;
-                for (var position = 0; position < _chunkCount; position++)
-                {
-                    var chunk = GetChunk(position);
-                    BinaryPrimitives.WriteInt64LittleEndian(table[(chunk.Index * sizeof(long))..], offset);
-                    offset += chunkHeaderLength + GetDataLength(chunk);
-                }
+                var table = _offsets.Span[..(_chunkCount * sizeof(long))];
+                table.Clear();
+                output.Write(table);
+                return;
             }
 
-            output.Write(table);
+            WriteUncompressedOffsets(output);
+        }
+
+        /// <summary>
+        /// Writes the offset table of uncompressed chunks, in table order: the chunks of a level follow those of the previous
+        /// levels, and in a level the rows of chunks before it in the line order, then the chunks on its left.
+        /// </summary>
+        private void WriteUncompressedOffsets(ImageOutputBuffer output)
+        {
+            var headerLength = _tiled ? ExrFormat.TileChunkHeaderLength : ExrFormat.ScanLineChunkHeaderLength;
+            long bytesPerPixel = _channels.Length * ExrFormat.GetBytesPerSample(_pixelType);
+            var levelStart = _tableOffset - _fileStart + ((long)_chunkCount * sizeof(long));
+            Span<byte> entry = stackalloc byte[sizeof(long)];
+            foreach (var level in _levels)
+            {
+                for (var ty = 0; ty < level.TilesY; ty++)
+                {
+                    // The lines of the rows of chunks written before this row, and their chunk headers
+                    var top = (long)ty * _tileHeight;
+                    var bottom = Math.Min(top + _tileHeight, level.Height);
+                    var (linesBefore, rowsBefore) = _lineOrder == ExrLineOrder.DecreasingY ? (level.Height - bottom, level.TilesY - 1 - ty) : (top, ty);
+                    var rowStart = levelStart + (linesBefore * level.Width * bytesPerPixel) + ((long)rowsBefore * level.TilesX * headerLength);
+                    var lines = bottom - top;
+                    for (var tx = 0; tx < level.TilesX; tx++)
+                    {
+                        BinaryPrimitives.WriteInt64LittleEndian(entry, rowStart + ((long)tx * ((_tileWidth * lines * bytesPerPixel) + headerLength)));
+                        output.Write(entry);
+                    }
+                }
+
+                levelStart += ((long)level.Width * level.Height * bytesPerPixel) + ((long)level.TilesX * level.TilesY * headerLength);
+            }
         }
 
         private static void WriteAttribute(ImageOutputBuffer output, string name, string type, ReadOnlySpan<byte> value)
@@ -716,7 +745,10 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
                 stored = _batch[slot]!.Span[.._batchLengths![slot]];
             }
 
-            BinaryPrimitives.WriteInt64LittleEndian(_offsets!.Span[(chunk.Index * sizeof(long))..], output.TotalBytes - _fileStart);
+            if (_offsets is not null)
+            {
+                BinaryPrimitives.WriteInt64LittleEndian(_offsets.Span[(chunk.Index * sizeof(long))..], output.TotalBytes - _fileStart);
+            }
             Span<byte> header = stackalloc byte[ExrFormat.TileChunkHeaderLength];
             if (_tiled)
             {
@@ -822,7 +854,8 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
 
         /// <summary>
         /// Generates a level below the full resolution into its buffer, from the level it comes from: the area average of the
-        /// samples the file stores (colors premultiplied by alpha), computed in double precision and rounded to floats.
+        /// samples the file stores for that level (colors premultiplied by alpha, rounded to the sample type), computed in
+        /// double precision and rounded to the sample type, so that each level is the average of the samples of its parent.
         /// </summary>
         private void PrepareLevel(int index)
         {
@@ -838,6 +871,7 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
             using var lease = _frame!.GetStorage().AcquireLease();
             for (var y = 0; y < level.Height; y++)
             {
+                CancellationToken.ThrowIfCancellationRequested();
                 sums.Clear();
 
                 // The rows of the source that the row covers, in units of 1 / level.Height source rows
@@ -865,7 +899,7 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
                 var line = target.Slice(y * level.Width * channelCount, level.Width * channelCount);
                 for (var i = 0; i < line.Length; i++)
                 {
-                    line[i] = (float)sums[i];
+                    line[i] = ToSampleType(sums[i]);
                 }
             }
         }
@@ -884,7 +918,7 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
                 for (var c = 0; c < channelCount; c++)
                 {
                     var index4 = (4 * x) + _components[c];
-                    row[(x * channelCount) + c] = (float)GetSampleValue(pixels, index4, _hasAlpha && _components[c] != 3 && GetStoredAlpha(pixels[index4 | 3]) != 0);
+                    row[(x * channelCount) + c] = ToSampleType(GetSampleValue(pixels, index4, _hasAlpha && _components[c] != 3 && GetStoredAlpha(pixels[index4 | 3]) != 0));
                 }
             }
 
@@ -899,7 +933,7 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
             var position = 0;
             if (chunk.Level != 0)
             {
-                // A generated level holds the samples the file stores, rounded once to the sample type
+                // A generated level holds the samples the file stores, already rounded to the sample type
                 var level = _levels[chunk.Level];
                 var channelCount = _channels.Length;
                 var samples = unsafe(MemoryMarshal.Cast<byte, float>(_levelBuffers![level.Slot]!.Span));
@@ -976,6 +1010,9 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
             _plan.ConvertRow(pixels, row);
             return unsafe(MemoryMarshal.Cast<byte, float>(row));
         }
+
+        /// <summary>Rounds a value to the sample type of the file (to a half, held in a float, for half samples).</summary>
+        private float ToSampleType(double value) => _pixelType == ExrPixelType.Half ? (float)(Half)value : (float)value;
 
         /// <summary>Gets the alpha the file stores: the alpha rounded to the sample type, which the decoder divides the colors by.</summary>
         private double GetStoredAlpha(float alpha) => _pixelType == ExrPixelType.Half ? (double)(Half)alpha : alpha;

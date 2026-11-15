@@ -617,6 +617,27 @@ public sealed class ExrEncoderTests
     }
 
     [Fact]
+    public void HalfLevelsAverageTheHalvesOfTheirParent()
+    {
+        // 4x1 opaque pixels: the 2x1 level stores the halves of 1.00048828125 (a tie, rounded to the even half 1) and
+        // 1.0009765625; the 1x1 level averages these halves, a tie again, not the unrounded averages (1.000732421875)
+        using var image = new Image<RgbaFloat>(4, 1);
+        float[] reds = [1f, 1.0009765625f, 1.0009765625f, 1.0009765625f];
+        for (var x = 0; x < 4; x++)
+        {
+            image.Frames[0][x, 0] = new RgbaFloat(reds[x], 0f, 0f, 1f);
+        }
+
+        var data = Encode(image, new OpenExrEncoder { Compression = OpenExrCompression.None, PixelType = OpenExrPixelType.Half, AllowBitDepthReduction = true, Tiling = new OpenExrTiling { TileWidth = 4, TileHeight = 4, LevelMode = OpenExrLevelMode.MipmapLevels } });
+        ReadAttributes(data, out var tableOffset);
+        var chunks = ReadTiles(data, tableOffset, 3);
+
+        // A, B, G, R in name order: R is the last plane of the line
+        Assert.Equal([(Half)1f, (Half)1.0009765625f], new[] { 12, 14 }.Select(i => BinaryPrimitives.ReadHalfLittleEndian(chunks[1].Data.AsSpan(i))));
+        Assert.Equal((Half)1f, BinaryPrimitives.ReadHalfLittleEndian(chunks[2].Data.AsSpan(6)));
+    }
+
+    [Fact]
     public void RipmapLevelsHaveEveryPairOfSizes()
     {
         // 4x2 pixels: widths 4, 2, 1 and heights 2, 1, in the order of the rows of levels

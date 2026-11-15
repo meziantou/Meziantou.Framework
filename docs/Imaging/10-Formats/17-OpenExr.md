@@ -79,9 +79,9 @@ public static void SaveOpenExrTextureAndPreview(Image hdr, string texturePath, s
 [Tiling](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder.Tiling) writes tiles instead of scan lines. Each tile is a chunk compressed on its own; the tiles at the
 right and bottom edges are clipped to the image. With [MipmapLevels](cref:Meziantou.Framework.Imaging.Formats.OpenExrLevelMode.MipmapLevels), the file also stores the
 image halved again and again down to one pixel; with [RipmapLevels](cref:Meziantou.Framework.Imaging.Formats.OpenExrLevelMode.RipmapLevels), every combination of
-halved widths and halved heights. The encoder generates the levels: each one is the area average of the previous one,
-computed on the stored samples (colors premultiplied by alpha, so that transparent pixels do not darken the edges), and
-rounded once to the sample type. [LevelRounding](cref:Meziantou.Framework.Imaging.Formats.OpenExrTiling.LevelRounding) says how odd sizes are halved: a level of 5 pixels is followed by 2 with
+halved widths and halved heights. The encoder generates the levels:
+each one is the area average of the samples the file stores for the previous one (colors premultiplied by alpha, so that
+transparent pixels do not darken the edges), rounded to the sample type. [LevelRounding](cref:Meziantou.Framework.Imaging.Formats.OpenExrTiling.LevelRounding) says how odd sizes are halved: a level of 5 pixels is followed by 2 with
 [Down](cref:Meziantou.Framework.Imaging.Formats.OpenExrLevelRounding.Down), by 3 with [Up](cref:Meziantou.Framework.Imaging.Formats.OpenExrLevelRounding.Up). The library reads the full-resolution level back; renderers and
 OpenImageIO read the others.
 

@@ -936,7 +936,7 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   chunks are numbered in file order (`ExrEncoderCodec.GetChunk`: levels in table order, rows of chunks from the top, or
   from the bottom for `DECREASING_Y`; a scan-line image is one level of one column), and the offset table is always in
   table order. The levels below the full resolution are generated before their first chunk (`PrepareLevel`, an area
-  average of the stored samples of the previous level, in double precision) into four buffers rented with the session:
+  average of the samples the file stores for the previous level, in double precision, rounded to the sample type) into four buffers rented with the session:
   a level stays while the levels generated from it are written. The lossy encoders are written from the same
   description: PXR24 (`ExrPxr24.Encode`, section 6), B44 (`ExrB44.Encode`, section 7, the pLinear table E pinned by a
   hash), and DWA (`ExrDwaEncoder`, section 8.14: the default rules, an orthonormal forward DCT in double precision, the

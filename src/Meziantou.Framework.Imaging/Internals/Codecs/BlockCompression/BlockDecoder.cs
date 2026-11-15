@@ -444,7 +444,7 @@ internal static class BlockDecoder
     private static int SignExtend(int value, int bits) => (value << (32 - bits)) >> (32 - bits);
 
     /// <summary>The unquantization of an endpoint of the unsigned format (section 20.2).</summary>
-    private static int UnquantizeUnsigned(int value, int bits)
+    public static int UnquantizeUnsigned(int value, int bits)
     {
         if (bits >= 15)
             return value;
@@ -459,7 +459,7 @@ internal static class BlockDecoder
     }
 
     /// <summary>The unquantization of an endpoint of the signed format (section 20.2).</summary>
-    private static int UnquantizeSigned(int value, int bits)
+    public static int UnquantizeSigned(int value, int bits)
     {
         if (bits >= 16)
             return value;

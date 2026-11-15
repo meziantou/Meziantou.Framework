@@ -31,7 +31,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// line fit of each subset and tries the ten modes of two subsets on the best of them.
 /// </para>
 /// </remarks>
-[SuppressMessage("Design", "MA0182:Avoid unused internal types", Justification = "Used by the DDS and KTX 2.0 encoders")]
 internal static class Bc6HBlockEncoder
 {
     /// <summary>The number of partitions that the thorough level encodes with every mode of two subsets.</summary>

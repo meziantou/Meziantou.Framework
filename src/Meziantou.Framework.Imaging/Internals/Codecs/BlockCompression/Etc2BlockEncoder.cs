@@ -30,7 +30,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// cannot be planar. A block of opaque texels sets it, and has every mode but the individual one.
 /// </para>
 /// </remarks>
-[SuppressMessage("Design", "MA0182:Avoid unused internal types", Justification = "Used by the DDS and KTX 2.0 encoders")]
 internal static class Etc2BlockEncoder
 {
     /// <summary>Encodes an ETC2 RGB block (8 bytes) from 16 RGBA texels; alpha is ignored.</summary>

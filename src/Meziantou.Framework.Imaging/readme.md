@@ -5,8 +5,8 @@ A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG
 cursor (ANI), AVIF and HEIC (still and animated, lossless and lossy), JPEG XL (still and animated, lossless and
 lossy, progressive), JPEG 2000 (lossless and lossy), OpenEXR and Radiance HDR (high dynamic range, floating-point
 samples) and DPX (film scans and video frames) decoding and encoding, PSD/PSB (the composite image of Adobe Photoshop
-documents) decoding, DNG (raw camera images) decoding, DDS texture decoding (BC1 to BC7), Kodak Cineon decoding, KTX
-2.0 (GPU textures) decoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC color
+documents) decoding, DNG (raw camera images) decoding, DDS texture decoding and encoding (BC1 to BC7), Kodak Cineon
+decoding, KTX 2.0 (GPU textures) decoding and encoding (BCn, ETC2, EAC, ASTC), lossless JPEG recompression, animation-aware processing, vector drawing, ICC color
 conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive/lossless JPEG, WebP (still and animated, lossless and lossy), QOI,
@@ -38,7 +38,8 @@ conversion, and bounded-memory streaming.
   demosaicing, rendered to scene-referred linear light; the raw mosaic through `DngRawImage`; previews as auxiliary images
 - DDS (DirectDraw Surface) decoding: the block-compressed formats BC1 to BC7 (BC6H to half floats), the common
   uncompressed DXGI formats and the legacy bit-mask layouts, and every surface of mipmaps, cube maps, texture arrays and
-  volume textures through `ImageCollection`
+  volume textures through `ImageCollection`; encoding with managed BC1 to BC7 block compressors (two quality levels,
+  deterministic), the uncompressed formats, generated mipmaps, cube maps and texture arrays
 - DPX (SMPTE ST 268) decoding and encoding: 1 to 16-bit and floating-point components, RGB, RGBA, ABGR, luma, alpha and
   Cb, Y, Cr (4:4:4 and 4:2:2), every packing in both byte orders, the film and television headers reported (time code,
   edge code, frame rate), the transfer characteristic reported and never applied; 8, 10, 12, 16-bit and floating-point
@@ -46,17 +47,20 @@ conversion, and bounded-memory streaming.
 - KTX 2.0 (GPU texture) decoding: mip levels, array layers, cube faces and depth slices as `ImageCollection` entries;
   uncompressed formats, BC1 to BC7, ETC2/EAC, ASTC (LDR and HDR) and Basis Universal (ETC1S with BasisLZ, UASTC)
   decoded to RGBA;
-  Zstandard and ZLIB supercompression; animations of array textures (`KTXanimData`)
+  Zstandard and ZLIB supercompression; animations of array textures (`KTXanimData`); encoding of the uncompressed
+  formats, BCn, ETC2/EAC and ASTC LDR (every 2D block size) with managed block compressors, generated mip levels, cube
+  maps, array textures and ZLIB supercompression
 - AVIF decoding and encoding with a fully managed AV1 decoder and a fully managed AV1 encoder: still images and
   animations, lossless and lossy, 8, 10 and 12 bits, alpha; grids and film grain are decoded
 - HEIC decoding and encoding with a fully managed HEVC (H.265) decoder and a fully managed HEVC encoder: the photos of
   phones and cameras (grids, rotation, alpha, 10 bits), image sequences with reordered pictures, lossless and lossy
   output, 8 to 12 bits
 - `ImageCollection` for the images that are not animation frames: TIFF document pages, icon/cursor representations,
-  the images of a Netpbm concatenation and the surfaces of a DDS texture, read one entry at a time (TIFF and ICO/CUR are
-  also written that way)
+  the images of a Netpbm concatenation and the surfaces of a DDS texture, read one entry at a time (TIFF, ICO/CUR and
+  DDS are also written that way)
 - `ImageCollection` for the images that are not animation frames: TIFF document pages, icon/cursor representations, the
-  images of a Netpbm concatenation and the subresources of a KTX 2.0 texture, read one entry at a time (TIFF and ICO/CUR are also written that way)
+  images of a Netpbm concatenation and the subresources of a KTX 2.0 texture, read one entry at a time (TIFF, ICO/CUR and
+  KTX 2.0 are also written that way)
 - Animation-aware model: every frame is a full-canvas displayed image with exact rational timing and, for cursors, a
   hotspot that follows its pixel through geometry operations
 - Fourteen integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`, the gray-with-alpha
@@ -227,10 +231,10 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | Radiance HDR | RGBE pictures (`#?RADIANCE` or `#?RGBE`); flat, "old" and "new" run-length encoded scanlines, mixed; the eight orientations of the resolution string; the header variables reported in `Metadata.RadianceHeader` (never applied); the primaries as a color label. XYZE pictures are identified and rejected by a load | RGBE pictures in the standard orientation, new run-length encoding (default) or flat; the primaries | `.hdr`, `.pic` |
 | PSD | The composite image of PSD (version 1) and PSB (version 2) files, not the layers; bitmap, grayscale, duotone (as gray), indexed, RGB, CMYK (as CMYK pixels or with a color conversion) and Lab (with a color conversion) documents, 1, 8, 16 and 32-bit samples; raw and RLE (PackBits) image data; the merged alpha channel, un-matted; resolution, ICC/EXIF/XMP | Not written | None (read only) |
 | DNG | Raw images of DNG 1.0 to 1.7.1 (a TIFF profile, both byte orders, BigTIFF): color filter arrays of rectangular patterns up to 16x16 (Bayer, CMYG, X-Trans kind) and linear raw data of 1 to 4 samples; integer samples of 8 to 16 bits and floating-point ones of 16, 24 and 32 bits; strips and tiles; uncompressed, Deflate (with the predictors of DNG), lossless JPEG, lossy JPEG and JPEG XL; the linearization, black and white levels, active area, default crop, camera profiles of one or two illuminants, baseline exposure and the common opcodes; rendered to `RgbaFloat` linear light (BT.709 primaries), demosaiced bilinearly; the raw mosaic through `DngRawImage`; previews as auxiliary images; EXIF, XMP, orientation (reported) | Not supported (`ImageEncoder.Create` and `Save(path)` reject DNG) | None |
-| DDS | Textures with the legacy header or the DX10 header: BC1 (DXT1, 1-bit alpha), BC2 (DXT3), BC3 (DXT5), BC4 and BC5 unsigned and signed, BC6H unsigned and signed (to `RgbaHalf`), BC7; R8G8B8A8 and B8G8R8A8 (UNORM and SRGB), B8G8R8X8, B5G6R5, B5G5R5A1, B4G4R4A4, R10G10B10A2, R16G16B16A16 (UNORM and FLOAT), R32G32B32A32_FLOAT and their formats of fewer channels, R8, R8G8, R16, R16G16, A8, R11G11B10_FLOAT, R9G9B9E5_SHAREDEXP; legacy bit masks and FourCC codes; mipmaps, cube maps (partial ones too), arrays and volume textures through `ImageCollection` | Not written (`ArgumentException` for `.dds`) | — |
+| DDS | Textures with the legacy header or the DX10 header: BC1 (DXT1, 1-bit alpha), BC2 (DXT3), BC3 (DXT5), BC4 and BC5 unsigned and signed, BC6H unsigned and signed (to `RgbaHalf`), BC7; R8G8B8A8 and B8G8R8A8 (UNORM and SRGB), B8G8R8X8, B5G6R5, B5G5R5A1, B4G4R4A4, R10G10B10A2, R16G16B16A16 (UNORM and FLOAT), R32G32B32A32_FLOAT and their formats of fewer channels, R8, R8G8, R16, R16G16, A8, R11G11B10_FLOAT, R9G9B9E5_SHAREDEXP; legacy bit masks and FourCC codes; mipmaps, cube maps (partial ones too), arrays and volume textures through `ImageCollection` | `DdsEncoder`: R8G8B8A8 and B8G8R8A8 (UNORM and SRGB), R8, R8G8, R16, R16G16B16A16 (UNORM and FLOAT), R32G32B32A32_FLOAT (the default: the format that keeps the pixels), BC1 to BC7 (UNORM, SRGB, SNORM, UF16, SF16); legacy or DX10 header; generated mipmaps; cube maps and arrays from an `ImageCollection` | `.dds` |
 | DPX | The first image element: R, G, B, A or Y alone, RGB, RGBA, ABGR, Cb, Y, Cr 4:4:4 and 4:2:2 with or without alpha (converted to RGB); 1, 8, 10, 12 and 16-bit integers, 32 and 64-bit floats; filled (methods A and B) and packed components; both byte orders, versions 1.0 and 2.0; the orientation and the pixel aspect ratio; the headers in `Metadata.DpxHeader` (time code, edge code, frame rate, creator); linear and television transfers as labels. Run-length encoded and encrypted elements are rejected | One RGB, RGBA or luma element of 8, 10 or 12 (filled with method A), 16-bit or 32-bit floating-point components, big-endian (default) or little-endian; the orientation, the pixel aspect ratio, the transfer and colorimetric codes | `.dpx` |
 | Cineon | Gray and RGB images of 1 to 16-bit samples, pixel interleaved, in every cell packing; both byte orders; the orientation; the header in `Metadata.CineonHeader` | Not written: save as DPX | `.cin` (read only) |
-| KTX 2.0 | Textures of one to three dimensions, arrays, cube maps and mip levels (every subresource an `ImageCollection` entry, `Image.Load` the base level of the first face of the first layer, or the frames of a `KTXanimData` animation); uncompressed 8/16-bit UNORM and sRGB, 16/32-bit float and packed formats (`R5G6B5`, `R4G4B4A4`, `A2B10G10R10`, `B10G11R11`, `E5B9G9R9`); BC1 to BC7 (BC4 and BC5 unsigned and signed, BC6H unsigned and signed); ETC2, EAC (unsigned and signed); ASTC 2D LDR (sRGB, UNORM as halves) and HDR; Basis Universal ETC1S (BasisLZ) and UASTC; Zstandard and ZLIB supercompression; `KTXswizzle` applied, `KTXorientation` reported as the orientation; color labels from the data format descriptor | Not written | None (read only: `.ktx2`) |
+| KTX 2.0 | Textures of one to three dimensions, arrays, cube maps and mip levels (every subresource an `ImageCollection` entry, `Image.Load` the base level of the first face of the first layer, or the frames of a `KTXanimData` animation); uncompressed 8/16-bit UNORM and sRGB, 16/32-bit float and packed formats (`R5G6B5`, `R4G4B4A4`, `A2B10G10R10`, `B10G11R11`, `E5B9G9R9`); BC1 to BC7 (BC4 and BC5 unsigned and signed, BC6H unsigned and signed); ETC2, EAC (unsigned and signed); ASTC 2D LDR (sRGB, UNORM as halves) and HDR; Basis Universal ETC1S (BasisLZ) and UASTC; Zstandard and ZLIB supercompression; `KTXswizzle` applied, `KTXorientation` reported as the orientation; color labels from the data format descriptor | `Ktx2Encoder`: R8, R8G8, R8G8B8A8, R16, R16G16B16A16 (UNORM, SFLOAT), R32G32B32A32_SFLOAT (the default: the format that keeps the pixels), BC1 to BC7, ETC2 (RGB, A1, RGBA), EAC (R11, RG11, signed), ASTC LDR of every 2D size; `_SRGB` or `_UNORM` from the transfer function; generated mip levels; cube maps and arrays from an `ImageCollection`; ZLIB supercompression | `.ktx2` |
 | ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
 
 ## Usage guide
@@ -399,7 +403,9 @@ kind `ImageCollectionKind.TextureSurfaces` (see [KTX 2.0](#ktx-20)).
   each with its `ImageCollectionEntry.TextureSurface` (array index, face, mip level, depth slice). The headers give
   them all when the collection loads; a surface is read when it is decoded. `Image.Load`, `Image.Identify` and
   `Image.OpenReader` read the top level of the first face or element, and report the number of surfaces in
-  `ImageInfo.CollectionEntryCount`. Such a collection is never created or saved (see [DDS](#dds)).
+  `ImageInfo.CollectionEntryCount`. `DdsEncoder` and `Ktx2Encoder` save such a collection, and
+  `ImageCollection.Create(ImageCollectionKind.TextureSurfaces)` with `Add(image, new TextureSurface(...))` builds one (see
+  [DDS](#dds)).
 - `ImageCollection.Save` and `SaveAsync` write pages with `TiffEncoder` and representations with `IcoEncoder`; entries
   are materialized one at a time, and path destinations are published atomically (a failure or a cancellation leaves no
   partial file). `SaveAsync` writes with asynchronous I/O and decodes the entries synchronously between the writes.
@@ -4880,10 +4886,10 @@ public static void StreamingWithReusedBuffer(string inputPath, string outputPath
 pixels only), `.tif`/`.tiff`, `.ico`, `.cur`, `.ani`, `.avif`/`.avifs` (lossless by default), `.heic`/`.heif`/`.heics`/`.heifs` (lossless by default), `.jxl` (lossless by default), `.jp2` (a JP2 file,
 lossless by default), `.j2k`/`.j2c`/`.jpc` (a JPEG 2000 codestream, lossless by default), `.jph`/`.jhc` (a JPH file or
 a codestream of the high-throughput block coder, lossless by default), `.exr` (OpenEXR, ZIP), `.hdr`/`.pic` (Radiance
-HDR, run-length encoded) and `.dpx` (big-endian DPX at the depth of the pixels); anything else throws
-`ArgumentException`, the `.jpx`, `.jpf`, `.psd`, `.psb`, `.dng`, `.dds`, `.cin` and `.ktx2` extensions included (these
-files are read, not written; and `ImageEncoder.Create` throws `ArgumentOutOfRangeException` for `ImageFormat.Psd`,
-`ImageFormat.Dng`, `ImageFormat.Dds`, `ImageFormat.Cineon` and `ImageFormat.Ktx2`). An eager save validates the whole image against the output (animation, poster,
+HDR, run-length encoded), `.dpx` (big-endian DPX at the depth of the pixels), `.dds` and `.ktx2` (uncompressed, at the
+depth of the pixels); anything else throws `ArgumentException`, the `.jpx`, `.jpf`, `.psd`, `.psb`, `.dng` and `.cin`
+extensions included (these files are read, not written; and `ImageEncoder.Create` throws
+`ArgumentOutOfRangeException` for `ImageFormat.Psd`, `ImageFormat.Dng` and `ImageFormat.Cineon`). An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
 `ImageEncoder.FromFileExtension` returns the encoder `Save(path)` selects for an extension (`.png` or `png`), and
@@ -6371,7 +6377,7 @@ a scaled decode is at full resolution (an exact scale is rejected).
 DDS (DirectDraw Surface) files hold the textures of Direct3D and of most game engines. The decoder is written from the
 DDS reference of Microsoft Learn (`DDS_HEADER`, `DDS_PIXELFORMAT`, `DDS_HEADER_DXT10`), and its block decoders from the
 Khronos Data Format Specification 1.3.1 (sections 18 to 20: S3TC, RGTC and BPTC) and the Direct3D 11 functional
-specification. DDS is read only. `Image.Load` gives the top level of the first face or element (the first depth slice of
+specification; `DdsEncoder` writes it, with block compressors of its own (see "Writing DDS" below). `Image.Load` gives the top level of the first face or element (the first depth slice of
 a volume texture); `ImageCollection.Load` gives every surface:
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DdsTexture;format=md-fenced-code-block;dedent=true -->
@@ -6416,6 +6422,44 @@ cut still loads, and its collection is `InvalidImageContentException` (it checks
 full identification reads the first surface too. Unknown FourCC codes and DXGI formats, the video, palette, depth,
 stencil, integer and signed normalized formats, and the typeless formats without a single reading are
 `UnsupportedImageFeatureException`, from `Identify` too.
+
+#### Writing DDS
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DdsEncode;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveDdsTextures(string albedoPath, IReadOnlyList<string> skyFacePaths, string outputDirectory)
+{
+    // A color texture: BC7 with sRGB colors, and the full chain of mipmaps averaged in linear light
+    using (var albedo = Image.Load(albedoPath))
+    {
+        albedo.Save(Path.Combine(outputDirectory, "albedo.dds"), new DdsEncoder
+        {
+            TextureFormat = DdsTextureFormat.Bc7UnormSrgb,
+            GenerateMipmaps = true,
+        });
+    }
+
+    // A cube map: the six faces (+X, -X, +Y, -Y, +Z, -Z) are the entries of a collection of texture surfaces
+    using var sky = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+    for (var i = 0; i < 6; i++)
+    {
+        using var face = Image.Load(skyFacePaths[i]);
+        sky.Add(face, new TextureSurface(face: (CubeMapFace)i));
+    }
+
+    sky.Save(Path.Combine(outputDirectory, "sky.dds"), new DdsEncoder { TextureFormat = DdsTextureFormat.Bc1UnormSrgb, GenerateMipmaps = true });
+}
+```
+<!-- endref -->
+
+| Feature | Encoding (`DdsEncoder`) |
+| --- | --- |
+| Formats | `TextureFormat`: R8G8B8A8 and B8G8R8A8 (UNORM and SRGB), R8, R8G8, R16, R16G16B16A16 (UNORM and FLOAT), R32G32B32A32_FLOAT, BC1, BC2, BC3, BC7 (UNORM and SRGB), BC4, BC5 (UNORM and SNORM), BC6H (UF16 and SF16). `null` (the default) is the uncompressed format that keeps the pixels: R8G8B8A8_UNORM, R8_UNORM or R16_UNORM for gray, R16G16B16A16_UNORM for 16-bit pixels, the FLOAT formats for floating-point pixels |
+| Header | `HeaderVersion`: the legacy header (FourCC `DXT1`, `DXT3`, `DXT5`, `BC4U`, `BC4S`, `ATI2`, `BC5S`, the codes 36, 113, 116, bit masks) when it can describe the texture, otherwise `DDS_HEADER_DXT10` (the `_SRGB` formats, BC6H, BC7, arrays); `Legacy` rejects the others, `Dx10` always writes the extension (alpha mode unknown) |
+| Structure | One surface (`Image.Save`), or cube maps, texture arrays and arrays of cube maps from an `ImageCollection` of `TextureSurfaces` (all six faces, the same levels for every face and element, each level of the size of the chain). `GenerateMipmaps` writes the full chain to 1x1: each level averages the texels it covers (box filter, exact areas for odd sizes), weighted by alpha, in linear light for sRGB-encoded integer samples (a rational approximation of the sRGB function evaluated with fused multiply-adds, the inverse by a search over the codes: the same on every platform). No volume textures |
+| Block compressors | Written from the specifications: BC1 to BC5 (principal axis and least squares; thorough: cluster fit and endpoint search; solid colors from tables, within 1 of the color), BC7 (fast: mode 6, modes 4 and 5 for varying alpha, the best two-subset partition of modes 1, 3 and 7 for blocks the first fit badly; thorough: the eight modes, rotations, index selections, ranked partitions, P-bit and endpoint search; constant alpha kept exactly), BC6H (fast: the one-subset modes; thorough: the ten two-subset modes on the best partitions; error measured on the half bit patterns). `Quality` selects `Fast` or `Thorough` (the default). The output is deterministic |
+| Losses | Pixels of more bits than the format need `AllowBitDepthReduction`; channels the format lacks (alpha, color of a one-channel format, blue of a two-channel format) need `AllowChannelReduction`; values a floating-point or signed format cannot store (above 65,504 or negative for BC6H, outside [-1, 1] for the SNORM formats) are rejected |
+| Colors | The `_SRGB` formats declare sRGB samples; the floating-point and signed formats linear light (an image labeled otherwise follows `MetadataHandling`); the UNORM formats are untagged, so an image labeled linear follows `MetadataHandling`. No other metadata |
 
 ### DPX
 
@@ -6504,7 +6548,7 @@ KTX 2.0 files (`.ktx2`, Khronos Texture) hold GPU textures: images of one to thr
 maps and their mip levels, in one of the `VkFormat` formats of Vulkan, block-compressed or not, and optionally
 supercompressed. The codec is written from the KTX File Format Specification 2.0 (revision 4), the Khronos Data
 Format Specification 1.4 (the data format descriptor and the BCn, ETC2, EAC, ASTC and UASTC block formats) and the BasisLZ
-appendices of the KTX specification. It only decodes.
+appendices of the KTX specification. `Ktx2Encoder` writes it (see "Writing KTX 2.0" below).
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Ktx2;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -6570,6 +6614,34 @@ UNORM textures are labeled linear (`ColorTransferFunction.Linear`), which most f
 or JPEG follows `ImageEncoder.MetadataHandling`, which rejects it by default. Relabel the image (normal maps and other
 data are not colors) or convert it with `ConvertColorProfile` first.
 
+#### Writing KTX 2.0
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Ktx2Encode;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveKtx2Texture(string inputPath, string outputPath)
+{
+    // ASTC 6x6 blocks (3.56 bits per texel); an image labeled sRGB (the default) gives ASTC_6x6_SRGB_BLOCK
+    using var image = Image.Load(inputPath);
+    image.Save(outputPath, new Ktx2Encoder
+    {
+        TextureFormat = Ktx2TextureFormat.Astc6x6,
+        Quality = TextureCompressionQuality.Fast,
+        GenerateMipmaps = true,
+        Supercompression = Ktx2Supercompression.Zlib,
+    });
+}
+```
+<!-- endref -->
+
+| Feature | Encoding (`Ktx2Encoder`) |
+| --- | --- |
+| Formats | `TextureFormat`: R8, R8G8, R8G8B8A8, R16, R16G16B16A16, R16G16B16A16_SFLOAT, R32G32B32A32_SFLOAT, BC1 (RGB, RGBA), BC2, BC3, BC4 and BC5 (UNORM, SNORM), BC6H (UFLOAT, SFLOAT), BC7, ETC2 (RGB, RGB A1, RGBA), EAC (R11, R11G11, UNORM and SNORM), ASTC LDR of the fourteen 2D block sizes. `null` (the default) is the uncompressed format that keeps the pixels. The `_SRGB` variant is written for an image labeled sRGB, `_UNORM` with the linear transfer function for an image labeled linear |
+| Data format descriptor | The samples of the decoder's table, with the bounds of KTX-Software (0 and the largest value of unsigned samples, the extremes of signed ones, -1.0 and 1.0 for floats); the transfer function of the image (sRGB or linear; formats without an `_SRGB` variant carry it here) and the primaries of its CICP description when KTX has them (BT.709, BT.601, BT.2020, Display P3) |
+| Key/value data | `KTXorientation` for the orientations without a transposition, `KTXswizzle` `rrr1` for the one-channel formats (read back as gray), `KTXwriter` |
+| Structure | One level (`Image.Save`), or cube maps, array textures and arrays of cube maps from an `ImageCollection` of `TextureSurfaces`; `GenerateMipmaps` as for DDS. The levels are stored from the smallest, aligned to `lcm(block size, 4)`. `Supercompression` `Zlib` compresses each level (scheme 3). No 3D textures, Zstandard or Basis Universal |
+| Block compressors | BCn as for DDS. ETC2 (fast: the individual and differential modes of ETC1 with both flips, and the planar mode; thorough: wider base color searches and the T and H modes); punchthrough alpha exact; EAC (the 16 tables, multipliers and bases around the range of the block; solid values exact). ASTC LDR: void-extent blocks for solid blocks, the LDR direct endpoint modes, weight grids and quantization levels that fit the block, ranked partitions and dual planes at the thorough level; never an HDR mode or an illegal block |
+| Losses | As for DDS: `AllowBitDepthReduction` (16-bit pixels in the 8-bit formats, BCn, ETC2, ASTC, or the 11 bits of EAC), `AllowChannelReduction`, and the values of the floating-point and signed formats checked |
+
 ## Limitations
 
 Everything below is rejected explicitly (never decoded or encoded approximately) or documented as lossy.
@@ -6608,8 +6680,8 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Radiance HDR | Decoding: XYZE pictures (identified, rejected by a load: no conversion of their CIE XYZ samples to RGB), `FORMAT` values other than RGBE and XYZE (hyperspectral pictures, other data); the exposure and the color correction are reported, never applied. Encoding: RGBE only, one still image in the standard orientation, no alpha (a background composites it), no negative or non-finite colors, no exposure, color correction, view or other header variable but the primaries, linear light only; the precision is that of RGBE, 8 bits of mantissa shared by the three colors |
 | PSD | Decoding: the composite image only (layers, masks, adjustment layers, effects and blend modes are not rendered); a file without composite (`No composite image`), ZIP-compressed image data, multichannel documents, 32-bit CMYK, 16 and 32-bit Lab and 32-bit duotone are `UnsupportedImageFeatureException` (all but the first two also from `Identify`); duotone documents are read as gray; CMYK needs a typed CMYK load or `CmykConversion`, and `CmykConversion` with transparency; Lab needs `CieLabConversion`; the extra channels that are not the merged alpha are skipped; the thumbnail, IPTC and the other image resources are not read; no scaled or region decoding. Encoding: none (read only) |
 | DNG | Decoding only. Vendor raw formats (CR2/CR3, NEF, ARW, RAF, ORF, ...) are not read: they are not documented. Rejected with `UnsupportedImageFeatureException` (also from `Identify`): staggered color filter arrays (`CFALayout` other than 1), non-square pixels (`DefaultScale`), a third calibration and custom illuminants (DNG 1.6), signed and 17- to 32-bit integer samples, planar raw data, `SubTileBlockSize`, a `DNGBackwardVersion` newer than 1.7.1, and the required opcodes WarpFisheye, TrimBounds, WarpRectilinear2 and those of later versions (skipped when optional, and in [lenient decoding](#lenient-decoding)). The rendering is colorimetric: the hue/saturation maps, look table, tone curve and gain table map of the profile, the default user crop and the noise and sharpening hints are not applied. The demosaicing is bilinear (documented, deterministic): it matches no other reader pixel for pixel (the DNG SDK differs by up to 12 levels of 8-bit sRGB at the edges and in the gradients of the test scenes, LibRaw more); the stages before it are exact (`DngRawImage`). The previews are decoded as TIFF pages without their `PreviewColorSpace`. Lossless JPEG frames of DNG 1.0 (the 16-bit deviation of their encoder) are read as the JPEG specification codes them |
-| DDS | Read only (no encoder). Rejected with `UnsupportedImageFeatureException`: premultiplied alpha (`DXT2`, `DXT4`, `DDS_ALPHA_MODE_PREMULTIPLIED`; the library never divides colors by their alpha), video and palette formats (YUY2, NV12, P8...), depth and stencil formats, integer (`_UINT`, `_SINT`) and most signed normalized formats, the typeless formats without a single reading (`BC6H_TYPELESS`, `R32G32B32A32_TYPELESS`...), channels wider than 16 bits; the masks of a legacy header are read as written (DirectXTex swaps red and blue in the 10:10:10:2 layouts) |
-| KTX 2.0 | Read only (no encoder). Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): PVRTC; the YCbCr formats (subsampled and multi-planar); 3D ASTC blocks; depth and stencil formats; the uncompressed SNORM, integer, `SCALED` and 64-bit formats; vendor supercompression schemes; premultiplied alpha (`KHR_DF_FLAG_ALPHA_PREMULTIPLIED`: dividing by alpha would lose precision); `VK_FORMAT_UNDEFINED` with a color model other than ETC1S and UASTC; primaries or transfer functions H.273 does not enumerate (ACES, Adobe RGB, PAL 525, BT.1886, S-Log, ...), and floating-point samples with a non-linear transfer function. The UASTC HDR files of basisu 2 (`ASTC_4x4_SFLOAT` with the color model 167, which the specification does not define) are rejected too. `KTXastcDecodeMode` `rgb9e5` is reported only (halves are kept). The ASTC error color and the UASTC reserved mode are `InvalidImageContentException`. The depth axis of `KTXorientation` (`i`, `o`) is reported, not applied |
+| DDS | Encoding: no volume textures, no partial cube maps, and the formats listed in the support matrix only (no packed 16-bit, 10-bit, shared-exponent or typeless formats). Decoding, rejected with `UnsupportedImageFeatureException`: premultiplied alpha (`DXT2`, `DXT4`, `DDS_ALPHA_MODE_PREMULTIPLIED`; the library never divides colors by their alpha), video and palette formats (YUY2, NV12, P8...), depth and stencil formats, integer (`_UINT`, `_SINT`) and most signed normalized formats, the typeless formats without a single reading (`BC6H_TYPELESS`, `R32G32B32A32_TYPELESS`...), channels wider than 16 bits; the masks of a legacy header are read as written (DirectXTex swaps red and blue in the 10:10:10:2 layouts) |
+| KTX 2.0 | Encoding: no 3D textures, no ASTC HDR blocks (the ASTC encoder writes LDR endpoint modes only), no Basis Universal (ETC1S, UASTC), no Zstandard (ZLIB only), no packed formats. Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): PVRTC; the YCbCr formats (subsampled and multi-planar); 3D ASTC blocks; depth and stencil formats; the uncompressed SNORM, integer, `SCALED` and 64-bit formats; vendor supercompression schemes; premultiplied alpha (`KHR_DF_FLAG_ALPHA_PREMULTIPLIED`: dividing by alpha would lose precision); `VK_FORMAT_UNDEFINED` with a color model other than ETC1S and UASTC; primaries or transfer functions H.273 does not enumerate (ACES, Adobe RGB, PAL 525, BT.1886, S-Log, ...), and floating-point samples with a non-linear transfer function. The UASTC HDR files of basisu 2 (`ASTC_4x4_SFLOAT` with the color model 167, which the specification does not define) are rejected too. `KTXastcDecodeMode` `rgb9e5` is reported only (halves are kept). The ASTC error color and the UASTC reserved mode are `InvalidImageContentException`. The depth axis of `KTXorientation` (`i`, `o`) is reported, not applied |
 | Text | In vertical lines, no compression of punctuation; ruby annotations only over their base, without overhang; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; greedy line breaking by default, optimal (total-fit) breaking without fitness classes; justification without kashida and without priorities; no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), without the variations of the control values (`cvar`) and without the hints of CFF outlines; subpixel (LCD) rendering is opt-in (`TextLayoutOptions.SubpixelRendering`), for layouts filled at a point with a solid color on 8- and 16-bit RGB images; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hints of CFF outlines; see [Fonts](#fonts) |
 | API | No custom pixel type and no replaceable allocator (the buffer pool has settings, `ImageBufferPool`); the extension points are custom codecs and encoders and custom pixel operations ([Extension points](#extension-points)); implementation types are internal |

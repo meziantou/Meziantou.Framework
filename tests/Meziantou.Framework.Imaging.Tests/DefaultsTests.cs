@@ -251,7 +251,7 @@ public sealed class DefaultsTests
     [Fact]
     public void PublicEncoderSelectionMatchesTheSelectionOfSave()
     {
-        string[] readOnly = [".jpx", ".jpf", ".psd", ".psb", ".dng", ".dds", ".cin", ".ktx2"];
+        string[] readOnly = [".jpx", ".jpf", ".psd", ".psb", ".dng", ".cin"];
         foreach (var info in ImageFormatInfo.All)
         {
             foreach (var extension in info.FileExtensions)
@@ -289,8 +289,8 @@ public sealed class DefaultsTests
     [Fact]
     public void EveryFormatHasADefaultEncoder()
     {
-        // PSD, DNG, DDS, Cineon and KTX 2.0 are read only
-        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Psd or ImageFormat.Dng or ImageFormat.Dds or ImageFormat.Cineon or ImageFormat.Ktx2)))
+        // PSD, DNG and Cineon are read only
+        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Psd or ImageFormat.Dng or ImageFormat.Cineon)))
         {
             var encoder = ImageEncoder.Create(format);
             Assert.Equal(format, encoder.Format);
@@ -313,9 +313,14 @@ public sealed class DefaultsTests
         // Cineon files are read, never written: DPX succeeded the format
         Assert.Contains("read, not written", Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Cineon)).Message, StringComparison.Ordinal);
 
-        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Ktx2));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create((ImageFormat)999));
-        Assert.Contains("can be read but not written", Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Dds)).Message, StringComparison.Ordinal);
+
+        // The texture encoders write uncompressed texels by default: the format that keeps the pixels
+        Assert.Null(Assert.IsType<DdsEncoder>(ImageEncoder.Create(ImageFormat.Dds)).TextureFormat);
+        Assert.Null(Assert.IsType<Ktx2Encoder>(ImageEncoder.Create(ImageFormat.Ktx2)).TextureFormat);
+        Assert.Equal(TextureCompressionQuality.Thorough, new DdsEncoder().Quality);
+        Assert.Equal(Ktx2Supercompression.None, new Ktx2Encoder().Supercompression);
+        Assert.Equal(DdsHeaderVersion.Automatic, new DdsEncoder().HeaderVersion);
     }
 
     [Fact]

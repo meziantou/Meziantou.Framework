@@ -26,7 +26,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// accept any input.
 /// </para>
 /// </remarks>
-[SuppressMessage("Design", "MA0182:Unused internal type", Justification = "Called by the DDS and KTX 2.0 encoders; covered by unit tests.")]
 internal static class S3tcBlockEncoder
 {
     /// <summary>The maximum number of passes of the local search of the endpoints (thorough level).</summary>

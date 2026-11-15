@@ -1,11 +1,12 @@
 ---
 title: DDS
-description: Read DirectDraw Surface (DDS) textures, block-compressed (BC1 to BC7) or uncompressed, with their mipmaps, cube maps, arrays and volume slices.
+description: Read and write DirectDraw Surface (DDS) textures, block-compressed (BC1 to BC7) or uncompressed, with their mipmaps, cube maps and arrays.
 ---
 
 DDS files (`.dds`) store the textures of Direct3D and of most game engines: block-compressed (BC1 to BC7, the DXT
 formats) or uncompressed pixels, with their mipmaps, the faces of a cube map, the elements of a texture array or the
-depth slices of a volume texture. The library reads them; it does not write them.
+depth slices of a volume texture. The library reads them, and writes them with [DdsEncoder](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder): its own block
+compressors encode BC1 to BC7.
 
 [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) gives the full-size level of the first face or element (the first depth slice of a volume
 texture). [ImageCollection.Load](cref:Meziantou.Framework.Imaging.ImageCollection.Load) reaches every surface.
@@ -74,12 +75,82 @@ level from the largest, the surface of the level, and for a volume texture each 
 
 The collection reads the headers only; an entry decodes its surface when you call `Decode`. The number of surfaces
 counts against [MaxFrames](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxFrames), and
-[ImageInfo.CollectionEntryCount](cref:Meziantou.Framework.Imaging.ImageInfo.CollectionEntryCount) gives it without loading the collection. A texture collection is
-read, never created or saved: decode its entries to save them in another format.
+[ImageInfo.CollectionEntryCount](cref:Meziantou.Framework.Imaging.ImageInfo.CollectionEntryCount) gives it without loading the collection. A texture collection can be
+saved again with [DdsEncoder](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder) or [Ktx2Encoder](cref:Meziantou.Framework.Imaging.Formats.Ktx2Encoder) (see below), or its entries decoded and saved in another format.
+
+## Write a texture
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DdsEncode;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveDdsTextures(string albedoPath, IReadOnlyList<string> skyFacePaths, string outputDirectory)
+{
+    // A color texture: BC7 with sRGB colors, and the full chain of mipmaps averaged in linear light
+    using (var albedo = Image.Load(albedoPath))
+    {
+        albedo.Save(Path.Combine(outputDirectory, "albedo.dds"), new DdsEncoder
+        {
+            TextureFormat = DdsTextureFormat.Bc7UnormSrgb,
+            GenerateMipmaps = true,
+        });
+    }
+
+    // A cube map: the six faces (+X, -X, +Y, -Y, +Z, -Z) are the entries of a collection of texture surfaces
+    using var sky = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+    for (var i = 0; i < 6; i++)
+    {
+        using var face = Image.Load(skyFacePaths[i]);
+        sky.Add(face, new TextureSurface(face: (CubeMapFace)i));
+    }
+
+    sky.Save(Path.Combine(outputDirectory, "sky.dds"), new DdsEncoder { TextureFormat = DdsTextureFormat.Bc1UnormSrgb, GenerateMipmaps = true });
+}
+```
+<!-- endref -->
+
+`Save` with a `.dds` path, or [ImageEncoder.Create](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.Create), gives a
+[DdsEncoder](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder) with its default settings: the uncompressed format that keeps the pixels exactly
+(R8G8B8A8_UNORM for 8-bit pixels, R8 or R16 for gray, R16G16B16A16 for 16-bit pixels, the floating-point formats for
+floating-point pixels). The settings:
+
+| Setting | Meaning |
+| --- | --- |
+| [TextureFormat](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder.TextureFormat) | The [DdsTextureFormat](cref:Meziantou.Framework.Imaging.Formats.DdsTextureFormat): R8G8B8A8 and B8G8R8A8 (UNORM and SRGB), R8, R8G8, R16, R16G16B16A16 (UNORM and FLOAT), R32G32B32A32_FLOAT, BC1, BC2, BC3 and BC7 (UNORM and SRGB), BC4 and BC5 (UNORM and SNORM), BC6H (UF16 and SF16) |
+| [Quality](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder.Quality) | [Thorough](cref:Meziantou.Framework.Imaging.Formats.TextureCompressionQuality.Thorough) (the default) searches more modes and partitions per block; [Fast](cref:Meziantou.Framework.Imaging.Formats.TextureCompressionQuality.Fast) is several times faster |
+| [GenerateMipmaps](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder.GenerateMipmaps) | Writes the full chain of mipmaps, down to 1×1 |
+| [HeaderVersion](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder.HeaderVersion) | The legacy header when it can describe the texture (the default), or always the DX10 header |
+| [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder.AllowBitDepthReduction) | Accepts 16-bit pixels in an 8-bit format (BC1 to BC5 and BC7 are 8-bit formats) |
+| [AllowChannelReduction](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder.AllowChannelReduction) | Accepts pixels whose channels the format lacks: alpha in a format without alpha, colors in a one-channel format (red is kept), blue in a two-channel one |
+
+[ImageCollection.Save](cref:Meziantou.Framework.Imaging.ImageCollection.Save) writes cube maps, texture arrays and arrays of
+cube maps: a collection of the kind [ImageCollectionKind.TextureSurfaces](cref:Meziantou.Framework.Imaging.ImageCollectionKind.TextureSurfaces), loaded from a DDS or KTX 2.0 file, or created with
+[ImageCollection.Create](cref:Meziantou.Framework.Imaging.ImageCollection.Create) and filled with
+[Add(image, surface)](cref:Meziantou.Framework.Imaging.ImageCollection.Add), where a [TextureSurface](cref:Meziantou.Framework.Imaging.TextureSurface) says where each image goes. Every face and every
+array element must be there, with the same mipmap levels at the sizes of the chain; a collection of base levels gets
+its mipmaps from `GenerateMipmaps`. Volume textures are not written.
+
+Mipmaps average the texels each level covers (a box filter, exact for odd sizes), weighted by their alpha, in linear
+light for sRGB-encoded colors.
+
+### What the block compressors reach
+
+The block compressors are deterministic: the same pixels and settings give the same bytes on every platform. On real
+photographs, their peak signal-to-noise ratio is about:
+
+| Format | `Fast` | `Thorough` | Solid colors |
+| --- | --- | --- | --- |
+| BC1, BC2, BC3 colors | 30 dB | 30 dB | Within 1 of the color (the best 5:6:5 endpoints) |
+| BC2 alpha | | | Within 8 (4-bit alpha) |
+| BC3 alpha, BC4, BC5 | 40 dB | 42 dB | Exact |
+| BC7 | 39 dB | 41 dB | Exact |
+| BC6H | 39 dB (in [0, 1]) | 42 dB | Exact for every finite half |
+
+BC1 to BC3 and BC4 and BC5 store each block as points on one line of colors: busy textures lose detail there first,
+BC7 keeps it. BC1 transparency is exact: an alpha below 128 is transparent, the other texels opaque. The `Thorough`
+level of BC7 and BC6H uses every mode and the partitions of two and three subsets; `Fast` uses the one-subset modes,
+and for BC7 the two-subset ones on blocks they fit much better.
 
 ## Pitfalls
 
-- DDS is read only: saving to a `.dds` path throws an `ArgumentException`.
 - Premultiplied alpha (`DXT2`, `DXT4`, the alpha mode `DDS_ALPHA_MODE_PREMULTIPLIED`) is rejected with an
   [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): the library never divides the colors by their alpha. The alpha modes
   straight, opaque and custom keep the stored alpha.
@@ -92,3 +163,8 @@ read, never created or saved: decode its entries to save them in another format.
 - [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) reads the first surface only: a file whose later surfaces are cut loads, and its collection is rejected.
 - Floating-point textures cannot be loaded as integer pixels without a conversion policy: see
   [Pixel formats](../04-Concepts/05-PixelFormats.md).
+- The `_SRGB` formats declare sRGB-encoded colors; the UNORM formats are read back untagged. An image labeled linear
+  can only be written with a [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) that discards the label. The floating-point and signed formats store linear
+  light: an image labeled sRGB is rejected there unless the label is discarded.
+- BC6H stores finite halves (at most 65,504, not negative for UF16) and the signed BC4 and BC5 values in [-1, 1]; other
+  samples are rejected, never clamped.

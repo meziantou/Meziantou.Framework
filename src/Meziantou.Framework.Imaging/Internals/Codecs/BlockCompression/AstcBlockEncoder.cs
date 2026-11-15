@@ -34,7 +34,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// value v is v × 257: decode_float16 and decode_unorm8 of the KTX formats are functions of it.
 /// </para>
 /// </remarks>
-[SuppressMessage("Design", "MA0182:Unused internal type", Justification = "Called by the DDS and KTX 2.0 encoders and covered by unit tests.")]
 internal static class AstcBlockEncoder
 {
     // The texels are stored as R, G, B, A and the luminance (R + G + B) / 3 that the luminance modes fit

@@ -1363,6 +1363,19 @@ internal static class SmokeTests
         Check(collection.Count == 6 && collection[5].TextureSurface?.Face == CubeMapFace.NegativeZ, "DDS surfaces");
         using var last = collection[5].Decode<Rgba32>();
         Check(last.Frames[0][0, 0] == new Rgba32(247, 0, 0, 255), "DDS block decoding");
+
+        // The encoder: uncompressed without loss, block-compressed with mipmaps, read back by the decoder
+        using var pattern = CreatePattern(seed: 21);
+        using (var decoded = Image.Load<Rgba32>(Encode(pattern, new DdsEncoder())))
+        {
+            Check(decoded.Frames[0][3, 2] == pattern.Frames[0][3, 2], "DDS encoding");
+        }
+
+        foreach (var format in new[] { DdsTextureFormat.Bc1Unorm, DdsTextureFormat.Bc3UnormSrgb, DdsTextureFormat.Bc7Unorm })
+        {
+            using var texture = ImageCollection.Load(Encode(pattern, new DdsEncoder { TextureFormat = format, GenerateMipmaps = true, Quality = TextureCompressionQuality.Fast }));
+            Check(texture.Count > 1 && texture[0].Size == pattern.Size, "DDS " + format.ToString());
+        }
     }
 
     public static void Dpx()
@@ -1441,6 +1454,19 @@ internal static class SmokeTests
         Check(collection.Count == 2 && collection[1].TextureSurface is { ArrayIndex: 1, MipLevel: 0, Face: null, DepthSlice: 0 }, "KTX 2.0 collection");
         using var layer = collection[1].Decode<Rgba32>();
         Check(layer.Frames[0][0, 0] == new Rgba32(1, 2, 3, 4), "KTX 2.0 layer");
+
+        // The encoder: uncompressed without loss, block-compressed with mip levels and ZLIB, read back by the decoder
+        using var pattern = CreatePattern(seed: 22);
+        using (var decoded = Image.Load<Rgba32>(Encode(pattern, new Ktx2Encoder())))
+        {
+            Check(decoded.Frames[0][3, 2] == pattern.Frames[0][3, 2], "KTX 2.0 encoding");
+        }
+
+        foreach (var format in new[] { Ktx2TextureFormat.Bc7, Ktx2TextureFormat.Etc2Rgba, Ktx2TextureFormat.Astc6x6 })
+        {
+            using var texture = ImageCollection.Load(Encode(pattern, new Ktx2Encoder { TextureFormat = format, GenerateMipmaps = true, Quality = TextureCompressionQuality.Fast, Supercompression = Ktx2Supercompression.Zlib }));
+            Check(texture.Count > 1 && texture[0].Size == pattern.Size, "KTX 2.0 " + format.ToString());
+        }
     }
 
     private static byte[] Encode(Image image, ImageEncoder encoder)

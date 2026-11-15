@@ -26,8 +26,9 @@ public enum ImageCollectionKind
     /// <summary>
     /// The entries are the surfaces of a texture (DDS, KTX 2.0): every mipmap level of every face of a cube map and of every
     /// element of a texture array, and every depth slice of a level of a volume texture, in file order (array element,
-    /// face, mipmap level, depth slice). <see cref="ImageCollectionEntry.TextureSurface"/> tells which one an entry is. Such
-    /// a collection is read, never created or saved.
+    /// face, mipmap level, depth slice). <see cref="ImageCollectionEntry.TextureSurface"/> tells which one an entry is.
+    /// <see cref="Formats.DdsEncoder"/> and <see cref="Formats.Ktx2Encoder"/> save such a collection, except the depth slices
+    /// of a volume texture; a created collection gets its entries with <see cref="ImageCollection.Add(Image, TextureSurface)"/>.
     /// </summary>
     TextureSurfaces = 3,
 }

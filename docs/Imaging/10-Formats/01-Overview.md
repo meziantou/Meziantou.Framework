@@ -3,8 +3,8 @@ title: Supported formats
 description: The formats the library reads and writes, how it detects them, which extension selects which encoder, and how to choose one.
 ---
 
-The library reads every format below with its own managed codecs, and writes all of them but PSD, DNG, DDS, Cineon and
-KTX 2.0. This group has one
+The library reads every format below with its own managed codecs, and writes all of them but PSD, DNG and Cineon. This
+group has one
 page per format: what is read, what is written, how to save with its encoder and its options, and the pitfalls.
 
 ## Support matrix
@@ -30,10 +30,10 @@ page per format: what is read, what is written, how to save with its encoder and
 | [Radiance HDR](18-Radiance.md) | RGBE pictures, flat and run-length encoded, every orientation | RGBE pictures, run-length encoded (default) or flat | No |
 | [PSD](19-Psd.md) | The composite image of PSD and PSB files (not the layers), 1 to 32 bits, CMYK and Lab with a color conversion | Not written | No |
 | [DNG](20-Dng.md) | Raw photos rendered to linear light, their raw mosaic, previews | Not written | No |
-| [DDS](21-Dds.md) | Textures: BC1 to BC7 and the common uncompressed formats, mipmaps, cube maps, arrays, volume textures | Not written | No (surfaces) |
+| [DDS](21-Dds.md) | Textures: BC1 to BC7 and the common uncompressed formats, mipmaps, cube maps, arrays, volume textures | BC1 to BC7 and uncompressed formats, generated mipmaps, cube maps and arrays | No (surfaces) |
 | [DPX](22-Dpx.md) | 1 to 16-bit and floating-point components, RGB, luma, Cb, Y, Cr, both byte orders | RGB, RGBA or luma, 8, 10, 12, 16 bits or 32-bit floats | No |
 | [Cineon](23-Cineon.md) | 10-bit (and 1 to 16-bit) RGB and gray film scans | No: saved as DPX | No |
-| [KTX 2.0](24-Ktx2.md) | GPU textures: levels, layers, cube faces and slices; uncompressed, BCn, ETC2, EAC, ASTC, ETC1S and UASTC; Zstandard and ZLIB | Not written | Read (`KTXanimData`), and every subresource as an entry |
+| [KTX 2.0](24-Ktx2.md) | GPU textures: levels, layers, cube faces and slices; uncompressed, BCn, ETC2, EAC, ASTC, ETC1S and UASTC; Zstandard and ZLIB | Uncompressed, BCn, ETC2, EAC and ASTC LDR, generated mip levels, cube maps and arrays; ZLIB | Read (`KTXanimData`), and every subresource as an entry |
 
 What a format cannot store is never dropped silently: saving an animation as JPEG, transparency to a format without
 it, 16-bit samples to an 8-bit format or metadata the format has no place for throws an
@@ -80,9 +80,11 @@ recognized from its whole header, and checked last. Data that no format recogniz
 | `.exr` | [OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) | ZIP-compressed OpenEXR |
 | `.hdr`, `.pic` | [RadianceEncoder](cref:Meziantou.Framework.Imaging.Formats.RadianceEncoder) | Run-length encoded Radiance HDR |
 | `.dpx` | [DpxEncoder](cref:Meziantou.Framework.Imaging.Formats.DpxEncoder) | Big-endian DPX at the depth of the pixels |
+| `.dds` | [DdsEncoder](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder) | Uncompressed DDS at the depth of the pixels |
+| `.ktx2` | [Ktx2Encoder](cref:Meziantou.Framework.Imaging.Formats.Ktx2Encoder) | Uncompressed KTX 2.0 at the depth of the pixels |
 
 Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf` (JPEG 2000), `.psd` and `.psb`
-(Photoshop), `.dng`, `.dds`, `.cin` (Cineon) and `.ktx2` (KTX 2.0): those files are read, not written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
+(Photoshop), `.dng` and `.cin` (Cineon): those files are read, not written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
 files from photos: pass an encoder with lossy compression for them.
 
 ## Choosing a format
@@ -108,9 +110,9 @@ files from photos: pass an encoder with lossy compression for them.
 - **Photoshop documents**: PSD and PSB files are read (their composite image), not written: save them as PNG, TIFF
   or another format.
 - **Tooling, game assets and test fixtures**: QOI, TGA, BMP and Netpbm are simple formats, lossless by default. The
-  block-compressed textures of game engines (DDS) are read: decode their surfaces and save them in another format.
+  block-compressed textures of game engines are DDS files: the library reads and writes them, BC1 to BC7 included.
 - **Tooling, game assets and test fixtures**: QOI, TGA, BMP and Netpbm are simple formats, lossless by default. GPU
-  textures (KTX 2.0) are read, to inspect or convert them.
+  textures (KTX 2.0) are read and written, block-compressed with BCn, ETC2, EAC or ASTC.
 
 To convert files from one format to another, see [Converting between formats](../03-Guides/03-ConvertBetweenFormats.md).
 

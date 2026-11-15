@@ -27,6 +27,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><term>JPEG XL</term><description>Unknown frame count allowed (a frame is written when the next one or the completion arrives); no poster; at most 1,073,741,824 pixels per side; any play count; no seeking.</description></item>
 /// <item><term>JPEG 2000</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side; no seeking (the lengths of a file are known before it is written).</description></item>
 /// <item><term>OpenEXR</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side; floating-point samples stored as they are; a seekable destination unless the chunks are not compressed (the table of their offsets precedes them and is patched once they are written).</description></item>
+/// <item><term>DDS, KTX 2.0</term><description>Exactly one surface (<c>ImageCollection.Save</c> writes cube maps and arrays); no animation settings; no poster; no seeking (the encoded levels are kept until the file is written).</description></item>
 /// </list>
 /// <para>
 /// <see cref="PngAnimationMode.Auto"/> writes an APNG when more than one frame is expected or animation settings are given
@@ -184,6 +185,8 @@ internal sealed class ImageOutputCapabilities
         OpenExrEncoder exr => new ImageOutputCapabilities(ImageFormat.OpenExr, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: exr.Compression != OpenExrCompression.None),
         RadianceEncoder => new ImageOutputCapabilities(ImageFormat.Radiance, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
         DpxEncoder => new ImageOutputCapabilities(ImageFormat.Dpx, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
+        DdsEncoder => new ImageOutputCapabilities(ImageFormat.Dds, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
+        Ktx2Encoder => new ImageOutputCapabilities(ImageFormat.Ktx2, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
         CustomImageEncoder custom => throw new ArgumentException($"The {custom.FormatInfo.Name} encoder is a custom encoder: sequential writers and image collections do not use custom encoders. Use Image.Save or ImageFrame.Save.", nameof(encoder)),
         _ => throw new ArgumentException($"The encoder {encoder.GetType().Name} is not supported.", nameof(encoder)),
     };

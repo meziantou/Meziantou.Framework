@@ -3,7 +3,8 @@
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
 progressive), JPEG 2000, OpenEXR, Radiance HDR and DPX decoding and encoding, PSD decoding (the composite image),
-DNG decoding, DDS decoding (BC1 to BC7), Kodak Cineon decoding, KTX 2.0 decoding, lossless JPEG recompression
+DNG decoding, DDS decoding and encoding (BC1 to BC7), Kodak Cineon decoding, KTX 2.0 decoding and encoding, lossless JPEG
+recompression
 (`JpegXlTranscoder`), animation-aware processing,
 vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
 readers and writers.
@@ -1014,7 +1015,32 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   follow the Khronos Data Format Specification 1.3.1; the BPTC tables were extracted from its text by a script and checked against each other
   (the bit layouts of the BC6H modes against Tables 123 and 124). BC7 and BC6H are exact; BC1 to BC5 are rounded once
   from the real numbers of the specification (8 bits, halves up; multiples of 1/127 for the signed formats, as
-  DirectXTex rounds them). Writing DDS (and BCn encoding) is not implemented: `texconv` could verify an encoder.
+  DirectXTex rounds them). Writing: see "Texture encoders" below.
+- **Texture encoders** (`DdsEncoder`, `Ktx2Encoder`; `Internals/Codecs/Textures`, `DdsTextureWriter`,
+  `Ktx2TextureWriter`; block encoders in `Internals/Codecs/BlockCompression`: `S3tcBlockEncoder`, `Bc7BlockEncoder`,
+  `Bc6HBlockEncoder`, `Etc2BlockEncoder`/`EacBlockEncoder`, `AstcBlockEncoder`). Written from the specifications (the
+  same sections as the decoders), never from DirectXTex, bc7enc, etcpak, astcenc or basisu. Decisions to keep:
+  - The block encoders are deterministic (CI pins the SHA-256 of their output per format and level): integer decisions,
+    scalar IEEE arithmetic, no `Math.Pow`/`Exp`/`Log`, no width-dependent vector reductions, deterministic ties. Every
+    candidate is scored by decoding it as the decoder of the library does. Two levels (`TextureCompressionQuality`):
+    keep `Fast` a single good attempt and `Thorough` bounded (seconds for 1024x1024, not minutes).
+  - The containers encode every surface into buffers charged to the scope before writing (DDS and KTX 2.0 give the
+    sizes of every level first, KTX stores the levels from the smallest); `TextureSurfaceEncoder` encodes one row of
+    blocks per step, generating each mip level from the previous one (`TextureMipmaps`: exact-area box, alpha-weighted,
+    linear light for sRGB integer samples, with the rational sRGB function of `LinearRgbLoader` and a search for the
+    inverse, so no libm). Edge blocks repeat the last row and column.
+  - Losses need settings, checked before anything is written (`TextureValidation`): `AllowBitDepthReduction` when the
+    pixels have more bits than the format (halves keep 11 bits of integers), `AllowChannelReduction` for the channels the
+    format lacks, and values outside the range of a floating-point or signed format are rejected, never clamped. The
+    block encoders themselves clamp anything (NaN, infinities) so that the fuzz target can feed them any bytes.
+  - KTX 2.0 picks `_SRGB` or `_UNORM` from the transfer function of the image; DDS exposes the DXGI formats (`_SRGB`
+    explicit). The DFD bounds are those of KTX-Software 4.4 (`ktx create --raw` dumps: unsigned 0..2^n-1 or all ones,
+    signed 0x80000000..0x7FFFFFFF, floats -1.0..1.0, BC6H UF 0..1.0); `bytesPlane0` stays the block size under
+    supercompression. One-channel KTX formats get `KTXswizzle` `rrr1`.
+  - Oracles (`TextureEncoderInteropTests`): `ktx validate --warnings-as-errors` for every KTX format, `ktx extract` and
+    `astcenc -dh` for ASTC, Apple ImageIO for ETC2/EAC (it ignores `KTXswizzle`), `oiiotool --dumpdata` for DDS. OpenImageIO
+    3.2 reads neither R16G16B16A16, R32G32B32A32_FLOAT (in either header) nor the BC4S/BC5S FourCCs or DXGI codes, and
+    prints 8-bit codes (R16 reduced to 8 bits); those formats are checked against the decoder only.
 - **DPX and Cineon** (`Internals/Codecs/Dpx`, `Internals/Codecs/Cineon`, `RawRowDecoder`). Written from SMPTE ST 268:2014
   (a free PDF of SMPTE's document library) and the Cineon 4.5 draft. Both are a fixed header then raw lines: the
   structure parsers read the header (DPX: 1,664 bytes, then the industry-specific headers when the data start after byte
@@ -1036,7 +1062,7 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     (ImageMagick writes it; OpenImageIO does not skip it).
   - Only the first DPX image element is decoded. The encoder writes one element at offset 8,192, 10/12 bits filled with
     method A, and ignores `DpxHeader`.
-- **KTX 2.0** (`Internals/Codecs/Ktx2`), read only. Written from the KTX File Format Specification 2.0 (revision 4), the
+- **KTX 2.0** (`Internals/Codecs/Ktx2`). Written from the KTX File Format Specification 2.0 (revision 4), the
   Khronos Data Format Specification 1.4 (sections 5, 21 to 23 and 25) and Appendices C and D of the KTX specification
   (BasisLZ), never from KTX-Software, astcenc or basisu. A random-access container, like TIFF and ICO
   (`RequiresRandomAccess`): `Ktx2Texture.Read` validates the whole structure (sections located by the index and checked

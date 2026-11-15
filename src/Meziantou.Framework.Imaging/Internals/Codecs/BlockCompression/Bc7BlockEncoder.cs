@@ -37,7 +37,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The encoder is deterministic (integer decisions, scalar double arithmetic in a fixed order) and allocation-free.
 /// </para>
 /// </remarks>
-[SuppressMessage("Design", "MA0182:Unused internal type", Justification = "Called by the DDS and KTX 2.0 encoders; covered by unit tests.")]
 internal static class Bc7BlockEncoder
 {
     /// <summary>The error of a candidate that cannot be used (it would change a constant alpha).</summary>

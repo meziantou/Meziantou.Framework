@@ -722,4 +722,47 @@ public sealed class PdfInteractiveFormTests
         Assert.Equal(["a = 1, 2", "a.b = x\u0001\uFFFDy"], fdf.Fields.Select(field => field.ToString()));
         Assert.Throws<InvalidPdfContentException>(() => PdfFormData.ParseFdf("%FDF-1.2\n1 0 obj\n<< >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF"u8));
     }
+
+    [Fact]
+    public void FormScriptsAreRead()
+    {
+        var data = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [10 0 R 11 0 R 12 0 R] /CO [12 0 R] >> /Names << /JavaScript << /Names [(init) << /S /JavaScript /JS (var rate = 0.2;) >> (stream) << /S /JavaScript /JS 20 0 R >>] >> >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 300 300] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [10 0 R 11 0 R 12 0 R] >>")
+            .Add(10, "<< /FT /Tx /T (Price) /Type /Annot /Subtype /Widget /Rect [10 250 150 270] /P 3 0 R /AA << /K << /S /JavaScript /JS (AFNumber_Keystroke\\(2, 0, 0, 0, \"\", true\\);) >> /F << /S /JavaScript /JS (AFNumber_Format\\(2, 0, 0, 0, \"$\", true\\);) >> >> >>")
+            .Add(11, "<< /FT /Tx /T (Quantity) /Type /Annot /Subtype /Widget /Rect [10 220 150 240] /P 3 0 R /AA << /V << /S /URI /URI (https://example.com) >> >> >>")
+            .Add(12, "<< /FT /Tx /T (Total) /Ff 1 /Type /Annot /Subtype /Widget /Rect [10 190 150 210] /P 3 0 R /DA (/Helv 10 Tf 0 g) /AA << /C << /S /JavaScript /JS (AFSimple_Calculate\\(\"PRD\", \"Price, Quantity\"\\);) >> >> >>")
+            .Add(20, HandWrittenPdf.Stream("function twice(x) { return 2 * x; }"))
+            .ToArray();
+        var document = PdfDocument.Open(data);
+        var form = document.Form;
+
+        #region Pdf_ReadFormScripts
+        var total = form.FindField("Total")!;
+        var calculate = total.Actions.Calculate?.Script;
+        var order = form.CalculationOrder;
+        var documentScripts = document.JavaScripts;
+        #endregion
+
+        Assert.Equal("AFSimple_Calculate(\"PRD\", \"Price, Quantity\");", calculate);
+        Assert.Equal(["Total"], order.Select(field => field.FullName));
+        Assert.Equal(["init", "stream"], documentScripts.Keys);
+        Assert.Equal("function twice(x) { return 2 * x; }", documentScripts["stream"]);
+        var price = form.FindField("Price")!.Actions;
+        Assert.StartsWith("AFNumber_Keystroke", price.Keystroke!.Script, StringComparison.Ordinal);
+        Assert.StartsWith("AFNumber_Format", price.Format!.Script, StringComparison.Ordinal);
+        Assert.Null(price.Validate);
+        Assert.Null(form.FindField("Quantity")!.Actions.Validate);
+
+        // A format script shows a text, while the value keeps the number
+        var textField = (PdfTextField)form.FindField("Price")!;
+        textField.SetValue("1234.5", "$1,234.50");
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal("1234.5", read.Form.FindField("Price")!.Value);
+        var appearance = Encoding.Latin1.GetString(read.Form.FindField("Price")!.Dictionary.Get<PdfDictionary>(AP)!.Get<PdfStream>(PdfNames.N)!.GetDecodedData());
+        Assert.Contains("($1,234.50) Tj", appearance, StringComparison.Ordinal);
+        Assert.DoesNotContain("1234.5", appearance, StringComparison.Ordinal);
+        Assert.Throws<InvalidOperationException>(() => ((PdfTextField)form.FindField("Total")!).SetValue("1", "1"));
+    }
 }

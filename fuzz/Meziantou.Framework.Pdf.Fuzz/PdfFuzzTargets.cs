@@ -51,6 +51,15 @@ public static class PdfFuzzTargets
 
     private static readonly string[] HeaderFooterTokens = ["{page}", "{pages}", "{label}", "{date}", "{bates}", "{{", "}}", "{", "}", "Page ", " of "];
 
+    private static readonly string[] FormScriptTokens =
+    [
+        "event.value", "event.rc = false;", "event.target", "event.source", "this.getField(\"A\")", "this.getField(\"B\").value", ".value = ", ".valueAsString",
+        "AFSimple_Calculate(\"SUM\", \"A, B\");", "AFNumber_Format(2, 0, 0, 0, \"$\", true);", "AFNumber_Keystroke(2, 0, 0, 0, \"\", true);", "AFPercent_Format(1, 0);",
+        "AFDate_FormatEx(\"yyyy-mm-dd\");", "AFDate_KeystrokeEx(\"mm/dd/yyyy\");", "AFTime_Format(1);", "AFSpecial_Format(2);", "AFRange_Validate(true, 0, true, 10);",
+        "util.printf(\"%,0.2f\", 1)", "util.printd(\"mmmm d\", new Date())", "util.scand(\"yyyy\", \"2026\")", "app.alert(\"x\")", "app.launchURL(\"u\")", "this.submitForm()",
+        "while (true) {}", "function f() { f(); } f();", "new Array(1e9)", "throw 1;", "\u0000", "\n",
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("pdf-fdf", Fdf) { Seeds = () => GetSeeds(".fdf"), Dictionary = FdfTokens },
@@ -64,6 +73,8 @@ public static class PdfFuzzTargets
         new("pdf-header-footer", HeaderFooter) { Seeds = GetHeaderFooterSeeds, Dictionary = HeaderFooterTokens },
         new("pdf-accessibility", Accessibility) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-imposition", Imposition) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-script-extraction", ScriptExtraction) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-form-scripts", FormScripts) { Seeds = GetFormScriptSeeds, Dictionary = FormScriptTokens },
     ];
 
     /// <summary>
@@ -484,6 +495,74 @@ public static class PdfFuzzTargets
         catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal))
         {
         }
+    }
+
+    /// <summary>The input is a PDF file: the scripts of its form and of its document are read without throwing other exceptions than <see cref="PdfException"/>.</summary>
+    private static void ScriptExtraction(ReadOnlySpan<byte> data)
+    {
+        try
+        {
+            var document = PdfDocument.Open(data.ToArray(), ReadOptions);
+            foreach (var (name, script) in document.JavaScripts)
+            {
+                FuzzAssert.True(name is not null && script is not null, "A document script has no name or no text");
+            }
+
+            var fields = document.Form.GetFields();
+            foreach (var field in fields.Take(100))
+            {
+                var actions = field.Actions;
+                _ = actions.Keystroke?.Script.Length + actions.Format?.Script.Length + actions.Validate?.Script.Length + actions.Calculate?.Script.Length;
+            }
+
+            var order = document.Form.CalculationOrder;
+            FuzzAssert.Equal(order.Count, order.Distinct().Count(), "A field is twice in the calculation order");
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// The input is three scripts (the keystroke script of A, the calculation script of B, a document-level script),
+    /// separated by NUL characters. A session with tight limits runs them on a form of two fields: no exception of the
+    /// host escapes, and the failures of the scripts are diagnostics.
+    /// </summary>
+    private static void FormScripts(ReadOnlySpan<byte> data)
+    {
+        var parts = FuzzText.Decode(data).Split('\0');
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A5);
+        var a = document.Form.AddTextField(page, "A", new PdfRectangle(10, 10, 100, 30));
+        var b = document.Form.AddTextField(page, "B", new PdfRectangle(10, 40, 100, 60), new PdfTextFieldOptions { IsReadOnly = true });
+        static Objects.PdfDictionary Script(string text) => new() { [Objects.PdfName.Create("S")] = Objects.PdfName.Create("JavaScript"), [Objects.PdfName.Create("JS")] = Objects.PdfString.FromText(text) };
+        a.Dictionary[Objects.PdfName.Create("AA")] = new Objects.PdfDictionary { [Objects.PdfName.Create("K")] = Script(parts[0]), [Objects.PdfName.Create("F")] = Script(parts[0]) };
+        b.Dictionary[Objects.PdfName.Create("AA")] = new Objects.PdfDictionary { [Objects.PdfName.Create("C")] = Script(parts.Length > 1 ? parts[1] : "AFSimple_Calculate(\"SUM\", \"A\");") };
+        document.Form.Dictionary![Objects.PdfName.Create("CO")] = new Objects.PdfArray(b.Reference!);
+        if (parts.Length > 2)
+        {
+            document.Catalog[Objects.PdfName.Create("Names")] = new Objects.PdfDictionary
+            {
+                [Objects.PdfName.Create("JavaScript")] = new Objects.PdfDictionary { [Objects.PdfName.Create("Names")] = new Objects.PdfArray(Objects.PdfString.FromText("init"), Script(parts[2])) },
+            };
+        }
+
+        var options = new JavaScript.PdfFormScriptOptions { Timeout = TimeSpan.FromMilliseconds(250), MaxStatements = 20_000, MemoryLimit = 8 * 1024 * 1024, RecursionLimit = 100 };
+        using var session = JavaScript.PdfInteractiveFormScriptExtensions.CreateScriptSession(document.Form, options);
+        var result = session.SetValue("A", "12");
+        FuzzAssert.True(result.IsAccepted || result.Changes.All(change => change.Field.FullName != "A"), "A rejected value changed the field");
+        session.SetValues([new("A", "1,5"), new("B", "x")]);
+        session.Recalculate();
+        FuzzAssert.Equal(2, PdfDocument.Open(document.ToByteArray()).Form.GetFields().Count, "The form lost fields");
+    }
+
+    private static IEnumerable<FuzzSeed> GetFormScriptSeeds()
+    {
+        yield return FuzzSeed.FromText("af", "AFNumber_Keystroke(2, 0, 0, 0, \"\", true);\0AFSimple_Calculate(\"SUM\", \"A\");\0var rate = 2;");
+        yield return FuzzSeed.FromText("custom", "event.value = event.value + '0';\0event.value = this.getField('A').value * rate;\0var rate = 3;");
+        yield return FuzzSeed.FromText("reject", "event.rc = false; app.alert('no');\0this.submitForm(); app.launchURL('x');");
+        yield return FuzzSeed.FromText("limits", "while (true) {}\0function f() { return f(); } f();\0throw new Error('x');");
+        yield return FuzzSeed.FromText("dates", "AFDate_KeystrokeEx('yyyy-mm-dd');\0event.value = util.printd('mmmm d, yyyy', util.scand('yyyy-mm-dd', '2026-03-01')) + util.printf('%,0.2f', 1234.5);");
     }
 
     private static IEnumerable<FuzzSeed> GetAppearanceSeeds()

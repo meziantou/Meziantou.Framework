@@ -15,5 +15,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.JavaScript\Meziantou.Framework.Pdf.JavaScript.csproj" />
   </ItemGroup>
 </Project>

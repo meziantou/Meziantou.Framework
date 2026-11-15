@@ -40,3 +40,4 @@ data of the file it was read from.
   stamp a page on others.
 - [Extracting images](08-ExtractingImages.md): the images of a page, where they are, and their pixels.
 - [Forms](09-Forms.md): create, read, fill and flatten the fields of an interactive form.
+- [Form scripts](10-FormScripts.md): read the scripts of a form, and run its calculations in a sandbox.

@@ -169,3 +169,5 @@ document.Form.Flatten();
 - The text and choice fields without appearance, or all of them when [NeedAppearances](cref:Meziantou.Framework.Pdf.PdfInteractiveForm.NeedAppearances) is set, get the appearance of
   their value first. The hidden widgets are not drawn.
 - The signed signature fields are kept, so that the signatures stay. The form is removed when no field is left.
+
+To run the calculation and format scripts of a form, see [Form scripts](10-FormScripts.md).

@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Imaging;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/IccNamedColorTests.cs" ref:region="IccNamedColorTransform_Convert" ref:dedent="true">
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.Framework.Imaging.Samples/ColorExamples.cs" ref:region="Imaging_NamedColors" ref:dedent="true">
 /// </code>
 /// </example>
 public sealed class IccNamedColorTransform

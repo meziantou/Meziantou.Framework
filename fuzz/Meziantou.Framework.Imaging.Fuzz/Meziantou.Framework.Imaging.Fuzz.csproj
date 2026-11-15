@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec, the image data of PNG files, the lossy GIF compression, the processing operations and the strokes. The other codecs
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec, the image data of PNG files, the lossy GIF compression, the processing operations, the strokes and the ICC profiles of color conversion. The other codecs
     are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
   -->
   <PropertyGroup>
@@ -13,6 +13,12 @@
     <!-- The seeds of imaging-radiance: the Radiance HDR files of the golden corpus, valid, invalid, unsupported and over the limits -->
     <SeedPicture Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\hdr\*.hdr;..\..\tests\Meziantou.Framework.Imaging.Fixtures\invalid\hdr\*.hdr;..\..\tests\Meziantou.Framework.Imaging.Fixtures\limit\hdr\*.hdr" />
     <EmbeddedResource Include="@(SeedPicture)" LogicalName="Seeds/radiance/%(Filename)%(Extension)" Link="Seeds\radiance\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The seeds of imaging-icc-named-colors and imaging-icc-conversion: the ICC profiles of the golden corpus (versions 2, 4 and 5, named colors) -->
+    <SeedProfile Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\icc\profiles\*.icc" />
+    <EmbeddedResource Include="@(SeedProfile)" LogicalName="Seeds/icc/%(Filename)%(Extension)" Link="Seeds\icc\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

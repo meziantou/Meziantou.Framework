@@ -643,8 +643,8 @@ public sealed class FontFuzzTests
                 .Select(file => new FuzzSeed(suite.Id + "/" + Path.GetFileName(file), File.ReadAllBytes(file))));
         }
 
-        // The OCR-A and OCR-B fonts generated for Meziantou.Framework.Imaging.Barcodes
-        seeds.AddRange(Directory.EnumerateFiles(RepositoryPaths.Root / "src" / "Meziantou.Framework.Imaging.Barcodes" / "Fonts", "*.ttf")
+        // The OCR-A and OCR-B fonts generated for Meziantou.Framework.Barcodes
+        seeds.AddRange(Directory.EnumerateFiles(RepositoryPaths.Root / "src" / "Meziantou.Framework.Barcodes" / "Fonts", "*.ttf")
             .Order(StringComparer.Ordinal)
             .Select(file => new FuzzSeed("barcodes/" + Path.GetFileName(file), File.ReadAllBytes(file))));
 

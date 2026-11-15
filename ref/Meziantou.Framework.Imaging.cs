@@ -661,6 +661,16 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.CubeLut Parse(string text) => throw null;
     }
 
+    public enum CubeMapFace
+    {
+        PositiveX = 0,
+        NegativeX = 1,
+        PositiveY = 2,
+        NegativeY = 3,
+        PositiveZ = 4,
+        NegativeZ = 5,
+    }
+
     public abstract class CustomImageCodec
     {
         public Meziantou.Framework.Imaging.ImageFormatInfo FormatInfo { get => throw null; }
@@ -1112,6 +1122,7 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.ImageFormat PayloadFormat { get => throw null; }
         public Meziantou.Framework.Imaging.PixelFormat PixelFormat { get => throw null; }
         public Meziantou.Framework.Imaging.Size Size { get => throw null; }
+        public Meziantou.Framework.Imaging.TextureSurface? TextureSurface { get => throw null; }
         public Meziantou.Framework.Imaging.Image Decode(Meziantou.Framework.Imaging.ImageDecodeOptions? options) => throw null;
         public Meziantou.Framework.Imaging.Image Decode(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public Meziantou.Framework.Imaging.Image<TPixel> Decode<TPixel>(Meziantou.Framework.Imaging.ImageDecodeOptions? options) where TPixel : unmanaged => throw null;
@@ -1123,6 +1134,7 @@ namespace Meziantou.Framework.Imaging
         Unknown = 0,
         Pages = 1,
         Representations = 2,
+        TextureSurfaces = 3,
     }
 
     public enum ImageColorModel
@@ -1205,6 +1217,7 @@ namespace Meziantou.Framework.Imaging
         Jpeg2000 = 16,
         OpenExr = 17,
         Radiance = 18,
+        Ktx2 = 19,
         Custom = 1000,
     }
 
@@ -2266,6 +2279,15 @@ namespace Meziantou.Framework.Imaging
         public bool Contains(int dx, int dy) => throw null;
         public static Meziantou.Framework.Imaging.StructuringElement CreateEllipse(int radiusX, int radiusY) => throw null;
         public static Meziantou.Framework.Imaging.StructuringElement CreateRectangle(int radiusX, int radiusY) => throw null;
+    }
+
+    public sealed class TextureSurface
+    {
+        public int ArrayIndex { get => throw null; }
+        public int DepthSlice { get => throw null; }
+        public Meziantou.Framework.Imaging.CubeMapFace? Face { get => throw null; }
+        public int MipLevel { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     public enum ThresholdMethod
@@ -3908,6 +3930,7 @@ namespace Meziantou.Framework.Imaging.Metadata
         public Meziantou.Framework.Imaging.Metadata.ContentLightLevel? ContentLightLevel { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ExifProfile? ExifProfile { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.IccProfile? IccProfile { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Metadata.Ktx2Header? Ktx2Header { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.MasteringDisplayColorVolume? MasteringDisplay { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.OpenExrWindows? OpenExrWindows { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ExifOrientation Orientation { get => throw null; set { } }
@@ -3942,6 +3965,33 @@ namespace Meziantou.Framework.Imaging.Metadata
         public string Value { get => throw null; }
         public ImageTextEntry(string keyword, string value, string? languageTag = null, string? translatedKeyword = null) { }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.ImageTextEntry? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class Ktx2Header : System.IEquatable<Meziantou.Framework.Imaging.Metadata.Ktx2Header>
+    {
+        public string? AstcDecodeMode { get => throw null; }
+        public int ColorModel { get => throw null; }
+        public int ColorPrimaries { get => throw null; }
+        public int FaceCount { get => throw null; }
+        public string FormatName { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, System.ReadOnlyMemory<byte>> KeyValueData { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Keys { get => throw null; }
+        public int LayerCount { get => throw null; }
+        public int LevelCount { get => throw null; }
+        public string? Orientation { get => throw null; }
+        public int PixelDepth { get => throw null; }
+        public int PixelHeight { get => throw null; }
+        public int PixelWidth { get => throw null; }
+        public int SupercompressionScheme { get => throw null; }
+        public string? Swizzle { get => throw null; }
+        public int TransferFunction { get => throw null; }
+        public int VkFormat { get => throw null; }
+        public string? Writer { get => throw null; }
+        public string? WriterScParams { get => throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.Ktx2Header? other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;

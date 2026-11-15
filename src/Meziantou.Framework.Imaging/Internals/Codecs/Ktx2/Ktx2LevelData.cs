@@ -57,7 +57,7 @@ internal sealed class Ktx2LevelData : IDisposable
     }
 
     /// <summary>Decodes the ETC1S blocks of an image of a BasisLZ level.</summary>
-    public Etc1SIndices DecodeEtc1S(TextureSubresource subresource, Etc1SIndices? previous, ImageCodecContext context)
+    public Etc1SIndices DecodeEtc1S(Ktx2Subresource subresource, Etc1SIndices? previous, ImageCodecContext context)
     {
         var image = _texture.BasisImages[_texture.GetBasisImageIndex(subresource)];
         var (columns, rows) = _texture.GetBlockCounts(subresource.MipLevel);

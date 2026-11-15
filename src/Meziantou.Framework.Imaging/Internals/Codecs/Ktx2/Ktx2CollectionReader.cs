@@ -9,11 +9,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class Ktx2CollectionReader : ImageCollectionReader
 {
     private readonly Ktx2Texture _texture;
-    private readonly TextureSubresource[] _subresources;
+    private readonly Ktx2Subresource[] _subresources;
     private readonly Ktx2Output _output;
     private readonly ImageMetadata _metadata;
 
-    private Ktx2CollectionReader(RandomAccessInput input, ImageConfiguration configuration, Ktx2Texture texture, TextureSubresource[] subresources)
+    private Ktx2CollectionReader(RandomAccessInput input, ImageConfiguration configuration, Ktx2Texture texture, Ktx2Subresource[] subresources)
         : base(input, configuration)
     {
         _texture = texture;
@@ -25,7 +25,7 @@ internal sealed class Ktx2CollectionReader : ImageCollectionReader
     public override ImageFormat Format => ImageFormat.Ktx2;
 
     /// <summary>Gets the kind: the subresources of a texture.</summary>
-    public override ImageCollectionKind Kind => ImageCollectionKind.Surfaces;
+    public override ImageCollectionKind Kind => ImageCollectionKind.TextureSurfaces;
 
     public override int Count => _subresources.Length;
 
@@ -50,7 +50,7 @@ internal sealed class Ktx2CollectionReader : ImageCollectionReader
     {
         var subresource = _subresources[index];
         var size = new Size(_texture.GetLevelWidth(subresource.MipLevel), _texture.GetLevelHeight(subresource.MipLevel));
-        return new ImageCollectionEntryDescriptor(size, _output.DefaultPixelFormat, _output.ColorModel, _output.BitsPerComponent, _output.MayHaveTransparency, ImageFormat.Ktx2, Hotspot: null, _metadata.Clone(), subresource);
+        return new ImageCollectionEntryDescriptor(size, _output.DefaultPixelFormat, _output.ColorModel, _output.BitsPerComponent, _output.MayHaveTransparency, ImageFormat.Ktx2, Hotspot: null, _metadata.Clone(), subresource.ToTextureSurface(_texture.FaceCount == 6));
     }
 
     protected override Image DecodeCore(int index, RandomAccessSource source, ImageDecodeRequest request, ImageCodecContext context)

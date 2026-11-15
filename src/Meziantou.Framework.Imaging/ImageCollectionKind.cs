@@ -24,9 +24,10 @@ public enum ImageCollectionKind
     Representations = 2,
 
     /// <summary>
-    /// The entries are the subresources of a texture (KTX 2.0): every depth slice of every mip level of every cube face of
-    /// every array layer, ordered by layer, then face, then level, then slice. <see cref="ImageCollectionEntry.TextureSubresource"/>
-    /// tells which one an entry is; the first entry is the base level of the first face of the first layer.
+    /// The entries are the surfaces of a texture (DDS, KTX 2.0): every mipmap level of every face of a cube map and of every
+    /// element of a texture array, and every depth slice of a level of a volume texture, in file order (array element,
+    /// face, mipmap level, depth slice). <see cref="ImageCollectionEntry.TextureSurface"/> tells which one an entry is. Such
+    /// a collection is read, never created or saved.
     /// </summary>
-    Surfaces = 3,
+    TextureSurfaces = 3,
 }

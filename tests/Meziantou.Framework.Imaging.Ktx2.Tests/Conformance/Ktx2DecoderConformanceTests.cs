@@ -49,12 +49,15 @@ public sealed class Ktx2DecoderConformanceTests
         var data = File.ReadAllBytes(Path.Combine(FilesDirectory, name));
         Assert.Equal(file.GetProperty("sha256").GetString(), Convert.ToHexStringLower(SHA256.HashData(data)));
         using var collection = ImageCollection.Load(data);
-        Assert.Equal(ImageCollectionKind.Surfaces, collection.Kind);
+        Assert.Equal(ImageCollectionKind.TextureSurfaces, collection.Kind);
         foreach (var entry in file.GetProperty("entries").EnumerateArray())
         {
             var index = entry.GetProperty("index").GetInt32();
-            var subresource = new TextureSubresource(entry.GetProperty("level").GetInt32(), entry.GetProperty("layer").GetInt32(), entry.GetProperty("face").GetInt32(), entry.GetProperty("slice").GetInt32());
-            Assert.Equal(subresource, collection[index].TextureSubresource);
+            var surface = Assert.IsType<TextureSurface>(collection[index].TextureSurface);
+            Assert.Equal(entry.GetProperty("level").GetInt32(), surface.MipLevel);
+            Assert.Equal(entry.GetProperty("layer").GetInt32(), surface.ArrayIndex);
+            Assert.Equal(entry.GetProperty("face").GetInt32(), (int)(surface.Face ?? CubeMapFace.PositiveX));
+            Assert.Equal(entry.GetProperty("slice").GetInt32(), surface.DepthSlice);
             Assert.Equal(new Size(entry.GetProperty("width").GetInt32(), entry.GetProperty("height").GetInt32()), collection[index].Size);
             using var image = collection[index].Decode();
             Assert.Equal(image.PixelFormat, collection[index].PixelFormat);

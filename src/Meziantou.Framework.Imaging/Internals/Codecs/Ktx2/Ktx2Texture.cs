@@ -128,7 +128,7 @@ internal sealed class Ktx2Texture
     }
 
     /// <summary>Enumerates the subresources in the order of an <see cref="ImageCollection"/>: layer, face, level, depth slice.</summary>
-    public IEnumerable<TextureSubresource> EnumerateSubresources()
+    public IEnumerable<Ktx2Subresource> EnumerateSubresources()
     {
         for (var layer = 0; layer < Layers; layer++)
         {
@@ -139,7 +139,7 @@ internal sealed class Ktx2Texture
                     var depth = GetLevelDepth(level);
                     for (var slice = 0; slice < depth; slice++)
                     {
-                        yield return new TextureSubresource(level, layer, face, slice);
+                        yield return new Ktx2Subresource(level, layer, face, slice);
                     }
                 }
             }
@@ -162,11 +162,11 @@ internal sealed class Ktx2Texture
     }
 
     /// <summary>Gets the index of an image in the level data: layer, face, then depth slice (section 3.13.1).</summary>
-    public long GetImageIndex(TextureSubresource subresource)
+    public long GetImageIndex(Ktx2Subresource subresource)
         => ((((long)subresource.ArrayLayer * FaceCount) + subresource.Face) * GetLevelDepth(subresource.MipLevel)) + subresource.DepthSlice;
 
     /// <summary>Gets the index of the BasisLZ image descriptor of a subresource (Appendix C: level, layer, face, depth slice).</summary>
-    public int GetBasisImageIndex(TextureSubresource subresource)
+    public int GetBasisImageIndex(Ktx2Subresource subresource)
     {
         long index = 0;
         for (var level = 0; level < subresource.MipLevel; level++)

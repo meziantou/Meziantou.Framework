@@ -335,7 +335,7 @@ live in a separate, disposable `ImageCollection` whose entries may differ in siz
 never carries a duration, a blend or disposal operation or a loop count. A decoded entry is always a one-frame still
 image, and `Image.OpenReader` rejects TIFF, ICO, CUR and KTX 2.0 explicitly, so a consumer that plays frames can never
 receive pages, icon sizes or texture levels by accident. The subresources of a KTX 2.0 texture are a collection of the
-kind `ImageCollectionKind.Surfaces` (see [KTX 2.0](#ktx-20)).
+kind `ImageCollectionKind.TextureSurfaces` (see [KTX 2.0](#ktx-20)).
 
 - Loading (`ImageCollection.Load` from a path, a seekable stream or a span) reads only the container structure, so
   describing every entry of a large document costs a few kilobytes of reads. Each entry exposes its `Size`,
@@ -6216,11 +6216,37 @@ Format Specification 1.4 (the data format descriptor and the ETC2, EAC, ASTC and
 appendices of the KTX specification. It only decodes.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Ktx2;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static IReadOnlyList<string> ExportKtx2Levels(string ktx2Path, string outputDirectory)
+{
+    // Image.Load decodes the base level of the first face of the first layer (or the frames of an animation)
+    using (var texture = Image.Load(ktx2Path))
+    {
+        texture.Save(Path.Combine(outputDirectory, "base.png"));
+    }
+
+    // Every level, layer, face and depth slice is an entry of a collection, decoded on demand
+    var files = new List<string>();
+    using var collection = ImageCollection.Load(ktx2Path);
+    foreach (var entry in collection.Entries)
+    {
+        if (entry.TextureSurface is { ArrayIndex: 0, Face: null or CubeMapFace.PositiveX, DepthSlice: 0, MipLevel: var level })
+        {
+            using var image = entry.Decode();
+            var path = Path.Combine(outputDirectory, $"level-{level}.png");
+            image.Save(path);
+            files.Add(path);
+        }
+    }
+
+    return files;
+}
+```
 <!-- endref -->
 
 A texture is a random-access container, like TIFF: `ImageCollection.Load` gives every subresource as an entry of the
-kind `ImageCollectionKind.Surfaces`, in the order layer, face, level, depth slice, each with its
-`ImageCollectionEntry.TextureSubresource` (mip level, array layer, cube face +X, -X, +Y, -Y, +Z, -Z, depth slice).
+kind `ImageCollectionKind.TextureSurfaces`, in the order layer, face, level, depth slice, each with its
+`ImageCollectionEntry.TextureSurface` (mip level, array element, `CubeMapFace` of a cube map or `null`, depth slice).
 `Image.Load` and `Image.Identify` give the first entry, the base level of the first face of the first layer, and
 report the number of entries in `ImageInfo.CollectionEntryCount`; an array texture with `KTXanimData` loads as an
 animation of its layers (base level), with the duration and the loop count of the key. `Image.OpenReader` rejects KTX

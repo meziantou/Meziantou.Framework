@@ -1666,7 +1666,7 @@ internal static class Examples
         using var collection = ImageCollection.Load(ktx2Path);
         foreach (var entry in collection.Entries)
         {
-            if (entry.TextureSubresource is { ArrayLayer: 0, Face: 0, DepthSlice: 0, MipLevel: var level })
+            if (entry.TextureSurface is { ArrayIndex: 0, Face: null or CubeMapFace.PositiveX, DepthSlice: 0, MipLevel: var level })
             {
                 using var image = entry.Decode();
                 var path = Path.Combine(outputDirectory, $"level-{level}.png");

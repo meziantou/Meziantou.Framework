@@ -85,7 +85,7 @@ internal static class Ktx2Decoder
     }
 
     /// <summary>Decodes one subresource into a still image.</summary>
-    public static Image DecodeSubresource(RandomAccessSource source, Ktx2Texture texture, TextureSubresource subresource, ImageDecodeRequest request, ImageCodecContext context)
+    public static Image DecodeSubresource(RandomAccessSource source, Ktx2Texture texture, Ktx2Subresource subresource, ImageDecodeRequest request, ImageCodecContext context)
     {
         var output = Ktx2Output.Create(texture);
         var metadata = Ktx2Output.CreateMetadata(texture);
@@ -115,7 +115,7 @@ internal static class Ktx2Decoder
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
                 sink.BeginFrame(duration);
-                var indices = WriteImage(sink, texture, output, level, new TextureSubresource(0, layer, 0, 0), previous, context);
+                var indices = WriteImage(sink, texture, output, level, new Ktx2Subresource(0, layer, 0, 0), previous, context);
                 previous?.Dispose();
                 previous = indices;
             }
@@ -130,7 +130,7 @@ internal static class Ktx2Decoder
     }
 
     /// <summary>Decodes the image of a subresource whose BasisLZ data are P-frames: the frames before it are decoded first, without pixels.</summary>
-    public static Image DecodeCollectionEntry(RandomAccessSource source, Ktx2Texture texture, TextureSubresource subresource, ImageDecodeRequest request, ImageCodecContext context)
+    public static Image DecodeCollectionEntry(RandomAccessSource source, Ktx2Texture texture, Ktx2Subresource subresource, ImageDecodeRequest request, ImageCodecContext context)
     {
         if (texture.Scheme != Ktx2Format.SchemeBasisLz || !texture.BasisImages[texture.GetBasisImageIndex(subresource)].IsPFrame)
             return DecodeSubresource(source, texture, subresource, request, context);
@@ -142,7 +142,7 @@ internal static class Ktx2Decoder
         using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Ktx2, size, output.DefaultPixelFormat, output.SourcePixelFormat, iccProfile: null);
         using var level = Ktx2LevelData.Open(source, texture, 0, context);
         var first = subresource.ArrayLayer;
-        while (first > 0 && texture.BasisImages[texture.GetBasisImageIndex(new TextureSubresource(0, first, 0, 0))].IsPFrame)
+        while (first > 0 && texture.BasisImages[texture.GetBasisImageIndex(new Ktx2Subresource(0, first, 0, 0))].IsPFrame)
         {
             first--;
         }
@@ -154,7 +154,7 @@ internal static class Ktx2Decoder
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
                 context.Tracker.ChargeHiddenPixels(size.Area);
-                var indices = level.DecodeEtc1S(new TextureSubresource(0, layer, 0, 0), previous, context);
+                var indices = level.DecodeEtc1S(new Ktx2Subresource(0, layer, 0, 0), previous, context);
                 previous?.Dispose();
                 previous = indices;
             }
@@ -176,7 +176,7 @@ internal static class Ktx2Decoder
 
     /// <summary>Writes the rows of one image to the current frame of the sink.</summary>
     /// <returns>The ETC1S indices of a BasisLZ image (the reference of the next P-frame), or <see langword="null"/>.</returns>
-    private static Etc1SIndices? WriteImage(DecodedFrameSink sink, Ktx2Texture texture, Ktx2Output output, Ktx2LevelData level, TextureSubresource subresource, Etc1SIndices? previousIndices, ImageCodecContext context)
+    private static Etc1SIndices? WriteImage(DecodedFrameSink sink, Ktx2Texture texture, Ktx2Output output, Ktx2LevelData level, Ktx2Subresource subresource, Etc1SIndices? previousIndices, ImageCodecContext context)
     {
         var format = texture.Format!;
         var width = texture.GetLevelWidth(subresource.MipLevel);

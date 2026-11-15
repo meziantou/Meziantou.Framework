@@ -375,15 +375,17 @@ public sealed class ApiSurfaceTests
         // A new format is appended: the values of the existing members never change
         Assert.Equal(19, (int)ImageFormat.Ktx2);
         Assert.Equal(19, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
-        Assert.Equal(3, (int)ImageCollectionKind.Surfaces);
+        Assert.Equal(3, (int)ImageCollectionKind.TextureSurfaces);
 
-        // The subresource of a texture entry: a value with value equality
-        var subresource = typeof(TextureSubresource);
-        Assert.True(subresource.IsPublic && subresource.IsValueType);
+        // Where a texture entry is: an immutable description created by the decoders
+        var surface = typeof(TextureSurface);
+        Assert.True(surface.IsPublic && surface.IsSealed && surface.IsClass);
+        Assert.Empty(surface.GetConstructors());
         Assert.Equal(
-            [nameof(TextureSubresource.ArrayLayer), nameof(TextureSubresource.DepthSlice), nameof(TextureSubresource.Face), nameof(TextureSubresource.MipLevel)],
-            subresource.GetProperties(BindingFlags.Instance | BindingFlags.Public).Select(property => property.Name).Order(StringComparer.Ordinal));
-        Assert.Equal(typeof(TextureSubresource?), GetDeclaredProperty(typeof(ImageCollectionEntry), nameof(ImageCollectionEntry.TextureSubresource)).PropertyType);
+            [nameof(TextureSurface.ArrayIndex), nameof(TextureSurface.DepthSlice), nameof(TextureSurface.Face), nameof(TextureSurface.MipLevel)],
+            surface.GetProperties(BindingFlags.Instance | BindingFlags.Public).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(CubeMapFace?), GetDeclaredProperty(surface, nameof(TextureSurface.Face)).PropertyType);
+        Assert.Equal(typeof(TextureSurface), GetDeclaredProperty(typeof(ImageCollectionEntry), nameof(ImageCollectionEntry.TextureSurface)).PropertyType);
 
         // The header of the file: immutable, created by the decoder only, attached to the metadata like the other labels
         var header = typeof(Ktx2Header);

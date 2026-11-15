@@ -74,7 +74,7 @@ public static partial class ImagingFuzzTargets
 
             using (collection)
             {
-                FuzzAssert.Equal(ImageCollectionKind.Surfaces, collection.Kind, "The kind of the collection");
+                FuzzAssert.Equal(ImageCollectionKind.TextureSurfaces, collection.Kind, "The kind of the collection");
                 FuzzAssert.Equal(info.CollectionEntryCount, collection.Count, "The identified number of entries");
                 for (var i = 0; i < collection.Count && i < 16; i++)
                 {

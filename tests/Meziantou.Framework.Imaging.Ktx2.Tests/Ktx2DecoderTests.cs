@@ -480,6 +480,12 @@ public sealed class Ktx2DecoderTests
         return data;
     }
 
+    private static void AssertSurface(ImageCollectionEntry entry, int mipLevel, int arrayIndex, int? face, int depthSlice)
+    {
+        var surface = Assert.IsType<TextureSurface>(entry.TextureSurface);
+        Assert.Equal((mipLevel, arrayIndex, face, depthSlice), (surface.MipLevel, surface.ArrayIndex, (int?)surface.Face, surface.DepthSlice));
+    }
+
     [Fact]
     public void SubresourcesAreOrderedByLayerFaceLevelAndSlice()
     {
@@ -501,13 +507,13 @@ public sealed class Ktx2DecoderTests
 
         var data = builder.Build();
         using var collection = ImageCollection.Load(data);
-        Assert.Equal(ImageCollectionKind.Surfaces, collection.Kind);
+        Assert.Equal(ImageCollectionKind.TextureSurfaces, collection.Kind);
         Assert.Equal(ImageFormat.Ktx2, collection.Format);
         Assert.HasCount(24, collection.Entries);
-        Assert.Equal(new TextureSubresource(0, 0, 0, 0), collection[0].TextureSubresource);
-        Assert.Equal(new TextureSubresource(1, 0, 0, 0), collection[1].TextureSubresource);
-        Assert.Equal(new TextureSubresource(0, 0, 1, 0), collection[2].TextureSubresource);
-        Assert.Equal(new TextureSubresource(1, 1, 5, 0), collection[23].TextureSubresource);
+        AssertSurface(collection[0], 0, 0, 0, 0);
+        AssertSurface(collection[1], 1, 0, 0, 0);
+        AssertSurface(collection[2], 0, 0, 1, 0);
+        AssertSurface(collection[23], 1, 1, 5, 0);
         Assert.Equal(new Size(2, 2), collection[23].Size);
         using (var entry = collection[23].Decode<Rgba32>())
         {
@@ -534,8 +540,8 @@ public sealed class Ktx2DecoderTests
         builder.Levels.Add([.. Solid(1, 0, 1, 0), .. Solid(1, 1, 1, 0)]);
         using var collection = ImageCollection.Load(builder.Build());
         Assert.HasCount(6, collection.Entries);
-        Assert.Equal(new TextureSubresource(0, 0, 0, 3), collection[3].TextureSubresource);
-        Assert.Equal(new TextureSubresource(1, 0, 0, 1), collection[5].TextureSubresource);
+        AssertSurface(collection[3], 0, 0, null, 3);
+        AssertSurface(collection[5], 1, 0, null, 1);
         using var slice = collection[3].Decode<Rgba32>();
         Assert.Equal(new Rgba32(3, 0, 0), slice.Frames[0][1, 1]);
         using var small = collection[5].Decode<Rgba32>();

@@ -1369,7 +1369,7 @@ internal static class SmokeTests
         }
 
         using var collection = ImageCollection.Load(file);
-        Check(collection.Count == 2 && collection[1].TextureSubresource == new TextureSubresource(0, 1, 0, 0), "KTX 2.0 collection");
+        Check(collection.Count == 2 && collection[1].TextureSurface is { ArrayIndex: 1, MipLevel: 0, Face: null, DepthSlice: 0 }, "KTX 2.0 collection");
         using var layer = collection[1].Decode<Rgba32>();
         Check(layer.Frames[0][0, 0] == new Rgba32(1, 2, 3, 4), "KTX 2.0 layer");
     }

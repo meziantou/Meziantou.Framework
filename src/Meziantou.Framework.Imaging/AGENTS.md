@@ -969,7 +969,7 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`RequiresRandomAccess`): `Ktx2Texture.Read` validates the whole structure (sections located by the index and checked
   against each other, the levels from the smallest one, the data format descriptor against the samples of
   `Ktx2VkFormats`, the key/value data) before any texel is read; `Ktx2CollectionReader` gives the subresources
-  (`ImageCollectionKind.Surfaces`, ordered layer, face, level, slice) and `Image.Load` the first one, or the layers of a
+  (`ImageCollectionKind.TextureSurfaces`, ordered layer, face, level, slice) and `Image.Load` the first one, or the layers of a
   `KTXanimData` animation. The block decoders are per format (`Etc2BlockDecoder`, `AstcBlockDecoder`,
   `UastcBlockDecoder`, `Etc1SIndices`); BCn is rejected until the DDS decoders of the BC1 to BC7 blocks can be reused
   (`Ktx2VkFormats.GetRejection`). Decisions to keep:

@@ -113,7 +113,7 @@ public sealed class OpenCvProcessingInteropTests
         var cvStrongest = cv.Max(c => c.Votes);
         foreach (var peak in cv.Where(c => c.Votes * 4 >= cvStrongest * 3))
         {
-            Assert.True(lines.Any(line => Math.Abs(line.Angle - (peak.Theta * 180 / Math.PI)) <= 2 + 1e-4 && Math.Abs(ToOpenCvDistance(line) - peak.Rho) <= 2 + 1e-4), $"{scene}: the OpenCV peak θ={peak.Theta * 180 / Math.PI} ρ={peak.Rho} ({peak.Votes} votes) has no line of the library.");
+            Assert.Contains(lines, line => Math.Abs(line.Angle - (peak.Theta * 180 / Math.PI)) <= 2 + 1e-4 && Math.Abs(ToOpenCvDistance(line) - peak.Rho) <= 2 + 1e-4, $"{scene}: the OpenCV peak θ={peak.Theta * 180 / Math.PI} ρ={peak.Rho} ({peak.Votes} votes) has no line of the library.");
         }
     }
 
@@ -204,12 +204,12 @@ public sealed class OpenCvProcessingInteropTests
         Assert.NotEmpty(cvStrong);
         foreach (var corner in libraryStrong)
         {
-            Assert.True(cvAll.Any(other => Math.Abs(other.X - corner.X) <= 1 && Math.Abs(other.Y - corner.Y) <= 1), $"{scene}: the corner {corner} of the library is not a corner of OpenCV.");
+            Assert.Contains(cvAll, other => Math.Abs(other.X - corner.X) <= 1 && Math.Abs(other.Y - corner.Y) <= 1, $"{scene}: the corner {corner} of the library is not a corner of OpenCV.");
         }
 
         foreach (var (x, y) in cvStrong)
         {
-            Assert.True(libraryAll.Any(corner => Math.Abs(x - corner.X) <= 1 && Math.Abs(y - corner.Y) <= 1), $"{scene}: the corner ({x}, {y}) of OpenCV is not a corner of the library.");
+            Assert.Contains(libraryAll, corner => Math.Abs(x - corner.X) <= 1 && Math.Abs(y - corner.Y) <= 1, $"{scene}: the corner ({x}, {y}) of OpenCV is not a corner of the library.");
         }
     }
 

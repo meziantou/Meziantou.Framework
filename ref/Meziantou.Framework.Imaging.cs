@@ -1250,6 +1250,9 @@ namespace Meziantou.Framework.Imaging
         Psd = 19,
         Dng = 20,
         Dds = 21,
+        Dpx = 22,
+        Cineon = 23,
+        Ktx2 = 24,
         Custom = 1000,
     }
 
@@ -3421,6 +3424,20 @@ namespace Meziantou.Framework.Imaging.Formats
         public virtual System.Threading.Tasks.ValueTask EncodeAsync(Meziantou.Framework.Imaging.Image image, System.IO.Stream destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
+    public enum DpxByteOrder
+    {
+        BigEndian = 0,
+        LittleEndian = 1,
+    }
+
+    public sealed class DpxEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public bool AllowBitDepthReduction { get => throw null; init { } }
+        public int? BitDepth { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.DpxByteOrder ByteOrder { get => throw null; init { } }
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+    }
+
     public enum FrameDurationRounding
     {
         RequireExact = 0,
@@ -3842,6 +3859,46 @@ namespace Meziantou.Framework.Imaging.Metadata
         public override string ToString() => throw null;
     }
 
+    public sealed class CineonHeader : System.IEquatable<Meziantou.Framework.Imaging.Metadata.CineonHeader>
+    {
+        public int BitsPerSample { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<ushort> ChannelDesignators { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<float>? Chromaticities { get => throw null; init { } }
+        public string? CreationDate { get => throw null; init { } }
+        public string? CreationTime { get => throw null; init { } }
+        public string? FileName { get => throw null; init { } }
+        public string? FilmEdgeCode { get => throw null; init { } }
+        public string? FilmFormat { get => throw null; init { } }
+        public string? FrameAttribute { get => throw null; init { } }
+        public uint? FramePosition { get => throw null; init { } }
+        public float? FrameRate { get => throw null; init { } }
+        public float? Gamma { get => throw null; init { } }
+        public string? InputDevice { get => throw null; init { } }
+        public string? InputDeviceModel { get => throw null; init { } }
+        public string? InputDeviceSerialNumber { get => throw null; init { } }
+        public bool IsBigEndian { get => throw null; init { } }
+        public bool IsNegative { get => throw null; init { } }
+        public string? Label { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<float?> MaximumDataValues { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<float?> MaximumQuantities { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<float?> MinimumDataValues { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<float?> MinimumQuantities { get => throw null; init { } }
+        public byte Packing { get => throw null; init { } }
+        public string? SlateInformation { get => throw null; init { } }
+        public string? SourceCreationDate { get => throw null; init { } }
+        public string? SourceCreationTime { get => throw null; init { } }
+        public string? SourceFileName { get => throw null; init { } }
+        public string Version { get => throw null; init { } }
+        public float? XDevicePitch { get => throw null; init { } }
+        public int? XOffset { get => throw null; init { } }
+        public float? YDevicePitch { get => throw null; init { } }
+        public int? YOffset { get => throw null; init { } }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.CineonHeader? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
     public enum ColorTransferFunction
     {
         Srgb = 0,
@@ -3875,6 +3932,120 @@ namespace Meziantou.Framework.Imaging.Metadata
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
+    }
+
+    public enum DpxColorimetricSpecification
+    {
+        UserDefined = 0,
+        PrintingDensity = 1,
+        UnspecifiedVideo = 4,
+        Smpte274 = 5,
+        Bt709 = 6,
+        Bt601System625 = 7,
+        Bt601System525 = 8,
+        CompositeNtsc = 9,
+        CompositePal = 10,
+        Adx = 13,
+        Undefined = 255,
+    }
+
+    public enum DpxDescriptor
+    {
+        UserDefined = 0,
+        Red = 1,
+        Green = 2,
+        Blue = 3,
+        Alpha = 4,
+        Luma = 6,
+        ColorDifference = 7,
+        Depth = 8,
+        CompositeVideo = 9,
+        Rgb = 50,
+        Rgba = 51,
+        Abgr = 52,
+        CbYCrY = 100,
+        CbYACrYA = 101,
+        CbYCr = 102,
+        CbYCrA = 103,
+        UserDefined2 = 150,
+        UserDefined3 = 151,
+        UserDefined4 = 152,
+        UserDefined5 = 153,
+        UserDefined6 = 154,
+        UserDefined7 = 155,
+        UserDefined8 = 156,
+    }
+
+    public sealed class DpxHeader : System.IEquatable<Meziantou.Framework.Imaging.Metadata.DpxHeader>
+    {
+        public int BitDepth { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Metadata.DpxColorimetricSpecification Colorimetric { get => throw null; init { } }
+        public string? Copyright { get => throw null; init { } }
+        public string? CreationTime { get => throw null; init { } }
+        public string? Creator { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Metadata.DpxDescriptor Descriptor { get => throw null; init { } }
+        public string? ElementDescription { get => throw null; init { } }
+        public byte? FieldNumber { get => throw null; init { } }
+        public string? FileName { get => throw null; init { } }
+        public string? FilmEdgeCode { get => throw null; init { } }
+        public string? FilmFormat { get => throw null; init { } }
+        public string? FrameIdentification { get => throw null; init { } }
+        public uint? FramePosition { get => throw null; init { } }
+        public float? FrameRate { get => throw null; init { } }
+        public float? Gamma { get => throw null; init { } }
+        public uint? HeldCount { get => throw null; init { } }
+        public int ImageElementCount { get => throw null; init { } }
+        public string? InputDevice { get => throw null; init { } }
+        public string? InputDeviceSerialNumber { get => throw null; init { } }
+        public bool IsBigEndian { get => throw null; init { } }
+        public bool? IsInterlaced { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Metadata.DpxPacking Packing { get => throw null; init { } }
+        public string? Project { get => throw null; init { } }
+        public uint? ReferenceHighCode { get => throw null; init { } }
+        public float? ReferenceHighQuantity { get => throw null; init { } }
+        public uint? ReferenceLowCode { get => throw null; init { } }
+        public float? ReferenceLowQuantity { get => throw null; init { } }
+        public uint? SequenceLength { get => throw null; init { } }
+        public float? ShutterAngle { get => throw null; init { } }
+        public string? SlateInformation { get => throw null; init { } }
+        public string? SourceCreationTime { get => throw null; init { } }
+        public string? SourceFileName { get => throw null; init { } }
+        public float? TemporalSamplingRate { get => throw null; init { } }
+        public string? TimeCode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Metadata.DpxTransferCharacteristic Transfer { get => throw null; init { } }
+        public uint? UserBits { get => throw null; init { } }
+        public string Version { get => throw null; init { } }
+        public byte? VideoSignalStandard { get => throw null; init { } }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.DpxHeader? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public enum DpxPacking
+    {
+        Packed = 0,
+        FilledMethodA = 1,
+        FilledMethodB = 2,
+    }
+
+    public enum DpxTransferCharacteristic
+    {
+        UserDefined = 0,
+        PrintingDensity = 1,
+        Linear = 2,
+        Logarithmic = 3,
+        UnspecifiedVideo = 4,
+        Smpte274 = 5,
+        Bt709 = 6,
+        Bt601System625 = 7,
+        Bt601System525 = 8,
+        CompositeNtsc = 9,
+        CompositePal = 10,
+        DepthLinear = 11,
+        DepthHomogeneous = 12,
+        Adx = 13,
+        Undefined = 255,
     }
 
     public enum ExifOrientation
@@ -3979,10 +4150,13 @@ namespace Meziantou.Framework.Imaging.Metadata
     public sealed class ImageMetadata
     {
         public Meziantou.Framework.Imaging.Metadata.CicpColorDescription? Cicp { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Metadata.CineonHeader? CineonHeader { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ContentLightLevel? ContentLightLevel { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.DngProperties? DngProperties { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Metadata.DpxHeader? DpxHeader { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ExifProfile? ExifProfile { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.IccProfile? IccProfile { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Metadata.Ktx2Header? Ktx2Header { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.MasteringDisplayColorVolume? MasteringDisplay { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.OpenExrWindows? OpenExrWindows { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ExifOrientation Orientation { get => throw null; set { } }
@@ -4017,6 +4191,33 @@ namespace Meziantou.Framework.Imaging.Metadata
         public string Value { get => throw null; }
         public ImageTextEntry(string keyword, string value, string? languageTag = null, string? translatedKeyword = null) { }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.ImageTextEntry? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class Ktx2Header : System.IEquatable<Meziantou.Framework.Imaging.Metadata.Ktx2Header>
+    {
+        public string? AstcDecodeMode { get => throw null; }
+        public int ColorModel { get => throw null; }
+        public int ColorPrimaries { get => throw null; }
+        public int FaceCount { get => throw null; }
+        public string FormatName { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, System.ReadOnlyMemory<byte>> KeyValueData { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Keys { get => throw null; }
+        public int LayerCount { get => throw null; }
+        public int LevelCount { get => throw null; }
+        public string? Orientation { get => throw null; }
+        public int PixelDepth { get => throw null; }
+        public int PixelHeight { get => throw null; }
+        public int PixelWidth { get => throw null; }
+        public int SupercompressionScheme { get => throw null; }
+        public string? Swizzle { get => throw null; }
+        public int TransferFunction { get => throw null; }
+        public int VkFormat { get => throw null; }
+        public string? Writer { get => throw null; }
+        public string? WriterScParams { get => throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.Ktx2Header? other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;

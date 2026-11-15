@@ -260,7 +260,7 @@ internal static class Ktx2Decoder
                     Etc2BlockDecoder.DecodeEac(format, block, destination, stripStride);
                     break;
                 case Ktx2Encoding.Astc:
-                    AstcBlockDecoder.Decode(block, format.BlockWidth, format.BlockHeight, AstcBlockDecoder.GetProfile(format), destination, stripStride);
+                    AstcBlockDecoder.Decode(block, format.BlockWidth, format.BlockHeight, AstcBlockDecoder.GetProfile(format, precision), destination, stripStride);
                     break;
                 case Ktx2Encoding.Uastc:
                     UastcBlockDecoder.Decode(block, srgbTransfer, destination, stripStride);

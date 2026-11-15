@@ -482,7 +482,7 @@ internal sealed class Ktx2Texture
     {
         var format = Format!;
         var alignment = Scheme == Ktx2Format.SchemeNone ? LeastCommonMultiple(format.BytesPerBlock, 4) : 1;
-        var previousStart = source.Length;
+        var previousEnd = metadataEnd;
         var faceLayers = (long)FaceCount * Layers;
         for (var level = Levels - 1; level >= 0; level--)
         {
@@ -514,10 +514,10 @@ internal sealed class Ktx2Texture
             }
 
             // Section 3.13: the levels follow the metadata, from the smallest images to the largest, without overlapping
-            if (entry.Offset < metadataEnd || !source.IsInRange(entry.Offset, entry.Length) || entry.Offset + entry.Length > previousStart)
-                throw Ktx2Format.Invalid(string.Create(CultureInfo.InvariantCulture, $"the level {level} at {entry.Offset} ({entry.Length} bytes) is not between the metadata (which end at {metadataEnd}), the next larger level and the end of the file ({source.Length} bytes)."));
+            if (entry.Offset < previousEnd || !source.IsInRange(entry.Offset, entry.Length))
+                throw Ktx2Format.Invalid(string.Create(CultureInfo.InvariantCulture, $"the level {level} at {entry.Offset} ({entry.Length} bytes) does not start after the metadata and the smaller levels (which end at {previousEnd}), or ends after the end of the file ({source.Length} bytes)."));
 
-            previousStart = entry.Offset;
+            previousEnd = entry.Offset + entry.Length;
         }
 
         if (Scheme != Ktx2Format.SchemeBasisLz)

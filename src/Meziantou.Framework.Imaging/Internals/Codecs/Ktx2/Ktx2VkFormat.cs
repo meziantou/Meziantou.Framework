@@ -59,7 +59,4 @@ internal sealed class Ktx2VkFormat
 
     /// <summary>Gets the samples the data format descriptor must have, in their order.</summary>
     public Ktx2Sample[] Samples { get; }
-
-    /// <summary>Gets a value indicating whether the samples are floating-point (or shared-exponent) values.</summary>
-    public bool IsFloatingPoint => Precision is Ktx2OutputPrecision.Half or Ktx2OutputPrecision.Float;
 }

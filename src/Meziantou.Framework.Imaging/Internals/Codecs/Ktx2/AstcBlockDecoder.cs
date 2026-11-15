@@ -19,9 +19,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// texture of valid blocks never shows the error color.
 /// </para>
 /// <para>
-/// The results are those of the operation mode of the format: the top 8 bits of the interpolation for an sRGB format, the
-/// UNORM16 interpolation itself for a linear LDR format (from which decode_unorm8 keeps the top 8 bits and decode_float16
-/// derives its half), and the halves of decode_float16 for an HDR (SFLOAT) format.
+/// The results are those of the operation mode and the decode mode: the top 8 bits of the interpolation for an sRGB
+/// format, the halves of decode_float16 for a linear LDR (UNORM) format, which KTX makes the default (section 5.7), or the
+/// top 8 bits of decode_unorm8 when the texture says it can be decoded so, and the halves of decode_float16 for an HDR
+/// (SFLOAT) format.
 /// </para>
 /// </remarks>
 internal static class AstcBlockDecoder
@@ -35,8 +36,20 @@ internal static class AstcBlockDecoder
         (1, 0, 3), (0, 1, 2), (0, 0, 4), (1, 0, 2), (0, 1, 1), (0, 0, 3), (1, 0, 1),
     ];
 
-    /// <summary>Gets the operation mode of a format: sRGB, linear LDR (UNORM) or HDR (SFLOAT).</summary>
-    public static AstcProfile GetProfile(Ktx2VkFormat format) => format.IsSrgb ? AstcProfile.Srgb : format.Precision == Ktx2OutputPrecision.Half ? AstcProfile.Hdr : AstcProfile.Linear;
+    /// <summary>
+    /// Gets the operation mode and the decode mode of a format: sRGB, linear LDR (UNORM, decode_float16 unless
+    /// <c>KTXastcDecodeMode</c> is <c>unorm8</c>) or HDR (SFLOAT).
+    /// </summary>
+    public static AstcProfile GetProfile(Ktx2VkFormat format, Ktx2OutputPrecision precision)
+    {
+        if (format.IsSrgb)
+            return AstcProfile.Srgb;
+
+        if (format.NumericType == Ktx2NumericType.Sfloat)
+            return AstcProfile.Hdr;
+
+        return precision == Ktx2OutputPrecision.Byte ? AstcProfile.LinearUnorm8 : AstcProfile.Linear;
+    }
 
     /// <summary>Decodes a block.</summary>
     /// <param name="block">The 16 bytes of the block.</param>
@@ -211,7 +224,7 @@ internal static class AstcBlockDecoder
                     texel[c] = Interpolate(endpoint[c], endpoint[4 + c], weight, hdr, profile);
                 }
 
-                WriteTexel(texel, profile, destination, (y * stride) + (x * (profile == AstcProfile.Srgb ? 4 : 8)));
+                WriteTexel(texel, profile, destination, (y * stride) + (x * (IsByte(profile) ? 4 : 8)));
             }
         }
     }
@@ -244,7 +257,7 @@ internal static class AstcBlockDecoder
         }
 
         var unorm = (((c0 << 8) | c0) * (64 - weight) + (((c1 << 8) | c1) * weight) + 32) / 64;
-        return profile == AstcProfile.Hdr ? UnormToHalf(unorm) : unorm;
+        return profile == AstcProfile.LinearUnorm8 ? unorm >> 8 : UnormToHalf(unorm);
     }
 
     /// <summary>The decode_float16 result of a UNORM16 value: 1.0 for 65535, otherwise C / 65536 rounded toward zero.</summary>
@@ -269,9 +282,11 @@ internal static class AstcBlockDecoder
         return (exponent << 10) | mantissa;
     }
 
+    private static bool IsByte(AstcProfile profile) => profile is AstcProfile.Srgb or AstcProfile.LinearUnorm8;
+
     private static void WriteTexel(ReadOnlySpan<int> texel, AstcProfile profile, Span<byte> destination, int offset)
     {
-        if (profile == AstcProfile.Srgb)
+        if (IsByte(profile))
         {
             for (var c = 0; c < 4; c++)
             {
@@ -1115,8 +1130,7 @@ internal static class AstcBlockDecoder
             var value = (int)Bits(bits, 64 + (16 * c), 16);
             texel[c] = profile switch
             {
-                AstcProfile.Srgb => value >> 8,
-                AstcProfile.Linear => value,
+                AstcProfile.Srgb or AstcProfile.LinearUnorm8 => value >> 8,
                 _ => hdr ? value : UnormToHalf(value),
             };
         }
@@ -1125,7 +1139,7 @@ internal static class AstcBlockDecoder
         {
             for (var x = 0; x < blockWidth; x++)
             {
-                WriteTexel(texel, profile, destination, (y * stride) + (x * (profile == AstcProfile.Srgb ? 4 : 8)));
+                WriteTexel(texel, profile, destination, (y * stride) + (x * (IsByte(profile) ? 4 : 8)));
             }
         }
     }

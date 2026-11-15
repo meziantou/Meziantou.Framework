@@ -187,7 +187,7 @@ internal static class Ktx2VkFormats
         {
             var (width, height) = astcSizes[i];
             var size = string.Create(CultureInfo.InvariantCulture, $"{width}x{height}");
-            formats.Add(157 + (2 * i), new Ktx2VkFormat(157 + (2 * i), "ASTC_" + size + "_UNORM_BLOCK", Ktx2Encoding.Astc, width, height, 16, 1, Ktx2Format.ModelAstc, isSrgb: false, Ktx2NumericType.Unorm, Ktx2OutputPrecision.UInt16, isSigned: false, R | G | B | A, [new(0, 0, 128, 0)]));
+            formats.Add(157 + (2 * i), new Ktx2VkFormat(157 + (2 * i), "ASTC_" + size + "_UNORM_BLOCK", Ktx2Encoding.Astc, width, height, 16, 1, Ktx2Format.ModelAstc, isSrgb: false, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Half, isSigned: false, R | G | B | A, [new(0, 0, 128, 0)]));
             formats.Add(158 + (2 * i), new Ktx2VkFormat(158 + (2 * i), "ASTC_" + size + "_SRGB_BLOCK", Ktx2Encoding.Astc, width, height, 16, 1, Ktx2Format.ModelAstc, isSrgb: true, Ktx2NumericType.Unorm, Ktx2OutputPrecision.Byte, isSigned: false, R | G | B | A, [new(0, 0, 128, 0)]));
             formats.Add(1000066000 + i, new Ktx2VkFormat(1000066000 + i, "ASTC_" + size + "_SFLOAT_BLOCK", Ktx2Encoding.Astc, width, height, 16, 1, Ktx2Format.ModelAstc, isSrgb: false, Ktx2NumericType.Sfloat, Ktx2OutputPrecision.Half, isSigned: false, R | G | B | A, [new(0, 0, 128, Ktx2Format.QualifierFloat | Ktx2Format.QualifierSigned)]));
         }

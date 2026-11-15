@@ -99,7 +99,7 @@ internal sealed class Ktx2Output
             mapping[i] = source;
         }
 
-        var precision = format.Precision;
+        var precision = GetPrecision(texture);
         var isGray = mapping[0] == mapping[1] && mapping[1] == mapping[2];
         var hasAlpha = mapping[3] != One;
         PixelFormat defaultFormat;
@@ -128,6 +128,18 @@ internal sealed class Ktx2Output
         return new Ktx2Output(precision, mapping, defaultFormat, colorModel, bits, hasAlpha);
     }
 
+    /// <summary>
+    /// Gets the precision of the texels: the one of the format, except for the linear LDR ASTC formats, which decode to
+    /// halves (decode_float16, KTX section 5.7) unless <c>KTXastcDecodeMode</c> is <c>unorm8</c>.
+    /// </summary>
+    public static Ktx2OutputPrecision GetPrecision(Ktx2Texture texture)
+    {
+        var format = texture.Format!;
+        return format.Encoding == Ktx2Encoding.Astc && !format.IsSrgb && format.NumericType == Ktx2NumericType.Unorm && texture.AstcDecodeMode == "unorm8"
+            ? Ktx2OutputPrecision.Byte
+            : format.Precision;
+    }
+
     /// <summary>Writes the color labels of the data format descriptor and the reported metadata of the texture.</summary>
     /// <exception cref="UnsupportedImageFeatureException">The color description has no label in the library.</exception>
     public static ImageMetadata CreateMetadata(Ktx2Texture texture)
@@ -136,7 +148,7 @@ internal sealed class Ktx2Output
         var metadata = new ImageMetadata { SourceFormat = ImageFormat.Ktx2 };
         var primaries = texture.ColorPrimaries;
         var transfer = texture.TransferFunction;
-        if (format.IsFloatingPoint || format.IsSigned)
+        if (GetPrecision(texture) is Ktx2OutputPrecision.Half or Ktx2OutputPrecision.Float)
         {
             // Floating-point and signed samples are linear values
             if (transfer is not (Ktx2Format.TransferLinear or Ktx2Format.TransferUnspecified) || primaries is not (Ktx2Format.PrimariesBt709 or Ktx2Format.PrimariesUnspecified))

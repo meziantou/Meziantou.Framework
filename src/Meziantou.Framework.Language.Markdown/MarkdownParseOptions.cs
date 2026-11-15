@@ -24,6 +24,9 @@ public sealed record MarkdownParseOptions
     /// <summary>Gets how <see cref="MarkdownExtensions.MarkdigAutolinks"/> reads the URLs of the text.</summary>
     public MarkdownAutolinkOptions AutolinkOptions { get; init; } = MarkdownAutolinkOptions.Default;
 
+    /// <summary>Gets how <see cref="MarkdownExtensions.PipeTables"/> reads and renders the pipe tables.</summary>
+    public MarkdownPipeTableOptions PipeTableOptions { get; init; } = MarkdownPipeTableOptions.Default;
+
     /// <summary>Gets where the links of <see cref="MarkdownExtensions.JiraLinks"/> go.</summary>
     public MarkdownJiraLinkOptions JiraLinks { get; init; } = MarkdownJiraLinkOptions.Default;
 

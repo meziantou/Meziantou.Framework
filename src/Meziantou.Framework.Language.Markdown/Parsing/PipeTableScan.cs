@@ -15,7 +15,13 @@ internal sealed class PipeTableScan
     /// <summary>Gets or sets the quotes of SmartyPants, by their position, and whether they are paired, or <see langword="null"/> when there are none.</summary>
     public IReadOnlyDictionary<int, bool>? Quotes { get; set; }
 
-    /// <summary>Gets the rows: the header row, the delimiter row, then the other rows.</summary>
+    /// <summary>
+    /// Gets or sets a value indicating whether the table has a header row and a delimiter row, which a table that
+    /// <see cref="MarkdownPipeTableOptions.RequireHeaderSeparator"/> allows has not.
+    /// </summary>
+    public bool HasDelimiterRow { get; set; } = true;
+
+    /// <summary>Gets the rows: the header row, the delimiter row, then the other rows, or only the other rows when the table has no delimiter row.</summary>
     public List<PipeTableScanRow> Rows { get; } = [];
 
     /// <summary>Gets or sets where the lines after the table start, which are a paragraph, or -1 when the table ends the paragraph.</summary>

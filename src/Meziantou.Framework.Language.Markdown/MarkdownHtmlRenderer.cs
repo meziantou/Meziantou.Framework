@@ -64,6 +64,10 @@ public static class MarkdownHtmlRenderer
     {
         // The generic attributes of the nodes, merged as Markdig merges them, and the classes of the attributes of the first line of a
         // block, which come before the classes of the block
+        // The empty cells added to the short rows of the pipe tables of the document, at most MaximumAutocompletedCells as in Markdig
+        private const long MaximumAutocompletedCells = 0x80000;
+        private long _autocompletedCells;
+
         private Dictionary<SyntaxNode, ParsedAttributes>? _attributes;
         private Dictionary<SyntaxNode, List<string>>? _blockLineClasses;
         private Dictionary<MarkdownParagraphSyntax, MarkdownBlockSyntax>? _nextBlocks;
@@ -1004,7 +1008,7 @@ public static class MarkdownHtmlRenderer
             _output.Append("<table");
             AppendAttributes(table);
             _output.Append(">\n<thead>\n");
-            WriteTableRow(table.HeaderRow, "th", alignments);
+            WriteTableRow(table.HeaderRow!, "th", alignments);
             _output.Append("</thead>\n");
             var rows = table.Rows;
             if (rows.Count > 0)
@@ -1021,36 +1025,107 @@ public static class MarkdownHtmlRenderer
             _output.Append("</table>\n");
         }
 
-        // A pipe table of Markdig: as many columns as its longest row has cells, with the alignments of GFM. A column after the last
-        // column of the delimiter row has its alignment.
+        // A pipe table of Markdig: as many columns as its longest row has cells, or as its first row with UseHeaderForColumnCount,
+        // with the alignments of GFM. A column after the last column of the delimiter row has its alignment. A table without a
+        // delimiter row has no <thead>.
         private void WritePipeTable(MarkdownTableSyntax table)
         {
+            var pipeTableOptions = options.PipeTableOptions;
             var alignments = table.Alignments;
+            var header = table.HeaderRow;
             var rows = table.Rows;
-            var columnCount = table.HeaderRow.Cells.Count;
-            foreach (var row in rows)
+            int columnCount;
+            if (pipeTableOptions.UseHeaderForColumnCount)
             {
-                columnCount = Math.Max(columnCount, row.Cells.Count);
+                columnCount = (header ?? rows[0]).Cells.Count;
+            }
+            else
+            {
+                columnCount = header?.Cells.Count ?? 0;
+                foreach (var row in rows)
+                {
+                    columnCount = Math.Max(columnCount, row.Cells.Count);
+                }
+            }
+
+            // As Markdig, the empty cells that complete the short rows are limited in the document: the rows of a table that would
+            // exceed the limit are not completed
+            long missingCells = 0;
+            foreach (var row in header is null ? rows : rows.Prepend(header))
+            {
+                missingCells += Math.Max(0, columnCount - row.Cells.Count);
+            }
+
+            var completeShortRows = missingCells <= MaximumAutocompletedCells - _autocompletedCells;
+            if (completeShortRows)
+            {
+                _autocompletedCells += missingCells;
             }
 
             Cr();
             _output.Append("<table");
             AppendAttributes(table);
-            _output.Append(">\n<thead>\n");
-            WritePipeTableRow(table.HeaderRow, "th", columnCount, alignments);
-            _output.Append("</thead>\n");
+            _output.Append(">\n");
+            if (pipeTableOptions.InferColumnWidthsFromSeparator)
+            {
+                WritePipeTableColumnWidths(table);
+            }
+
+            if (header is not null)
+            {
+                _output.Append("<thead>\n");
+                WritePipeTableRow(header, "th", GetCellCount(header), alignments);
+                _output.Append("</thead>\n");
+            }
+
             if (rows.Count > 0)
             {
                 _output.Append("<tbody>\n");
                 foreach (var row in rows)
                 {
-                    WritePipeTableRow(row, "td", columnCount, alignments);
+                    WritePipeTableRow(row, "td", GetCellCount(row), alignments);
                 }
 
                 _output.Append("</tbody>\n");
             }
 
             _output.Append("</table>\n");
+
+            int GetCellCount(MarkdownTableRowSyntax row) => completeShortRows ? columnCount : Math.Min(columnCount, row.Cells.Count);
+        }
+
+        // The width of each column of the delimiter row, in percent of the dashes of the row, computed as Markdig computes it. No
+        // width is written when every column is 0% or 1%.
+        private void WritePipeTableColumnWidths(MarkdownTableSyntax table)
+        {
+            var columns = table.GetPipeTableColumns();
+            var totalDashCount = 0;
+            foreach (var column in columns)
+            {
+                totalDashCount += column.DashCount;
+            }
+
+            if (totalDashCount == 0)
+            {
+                return;
+            }
+
+            var widths = new float[columns.Count];
+            for (var i = 0; i < columns.Count; i++)
+            {
+                widths[i] = (float)columns[i].DashCount * 100 / totalDashCount;
+            }
+
+            if (widths.All(width => width is 0.0f or 1.0f))
+            {
+                return;
+            }
+
+            foreach (var width in widths)
+            {
+                var rounded = Math.Round(width * 100, MidpointRounding.ToEven) / 100;
+                _output.Append("<col style=\"width:").Append(rounded.ToString("0.##", CultureInfo.InvariantCulture)).Append("%\" />\n");
+            }
         }
 
         // A grid table of Markdig: the widths of its columns, then its rows, the ones of its header in <thead>. A cell whose content

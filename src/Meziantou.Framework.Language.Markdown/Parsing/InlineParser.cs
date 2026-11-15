@@ -39,6 +39,7 @@ internal sealed class InlineParser
     private long _abbreviationExpansion;
     private readonly bool _autolinks;
     private readonly MarkdownAutolinkOptions? _markdigAutolinks;
+    private readonly MarkdownPipeTableOptions _pipeTableOptions;
     private readonly bool _jiraLinks;
     private readonly bool _cjkFriendly;
     private readonly bool _disableHtml;
@@ -98,6 +99,7 @@ internal sealed class InlineParser
         _jiraLinks = extensions.HasFlag(MarkdownExtensions.JiraLinks);
         _cjkFriendly = extensions.HasFlag(MarkdownExtensions.CjkFriendlyEmphasis);
         _markdigAutolinks = extensions.HasFlag(MarkdownExtensions.MarkdigAutolinks) ? options.AutolinkOptions : null;
+        _pipeTableOptions = options.PipeTableOptions;
     }
 
     /// <summary>Parses the inlines of the subject from <paramref name="start"/>, without the whitespace around them, or only before them.</summary>
@@ -535,12 +537,19 @@ internal sealed class InlineParser
 
         var delimiters = table.Delimiters;
         var count = last is null ? delimiters.Count : delimiters.IndexOf(last) + 1;
-        if (!table.IsParsingStopped && (FindPipeTableColumns(delimiters, count) is null || (last is not null && last.Parent != _root) || IsHeaderWithoutCell(delimiters)))
+        var hasDelimiterRow = true;
+        if (!table.IsParsingStopped)
         {
-            return null;
+            // Without a delimiter row, the lines are a table without a header when it is allowed and they end the paragraph
+            // and they have a pipe that is not in a link (Markdig 1.x throws on lines whose pipes are all in links)
+            hasDelimiterRow = FindPipeTableColumns(delimiters, count) is not null;
+            if ((!hasDelimiterRow && (_pipeTableOptions.RequireHeaderSeparator || last is not null || !HasPipe(delimiters, count))) || (last is not null && last.Parent != _root) || (hasDelimiterRow && IsHeaderWithoutCell(delimiters)))
+            {
+                return null;
+            }
         }
 
-        var scan = new PipeTableScan { TrailingStart = last is null ? -1 : trailingStart, SplitLineBreak = table.HasNestedDelimiters ? _firstNestedLineBreak : -1 };
+        var scan = new PipeTableScan { TrailingStart = last is null ? -1 : trailingStart, SplitLineBreak = table.HasNestedDelimiters ? _firstNestedLineBreak : -1, HasDelimiterRow = hasDelimiterRow };
         var rowStart = GetRowStart(delimiters[0], out var leadingEnd);
         scan.LeadingEnd = leadingEnd;
         var pipes = new List<int>();
@@ -553,14 +562,14 @@ internal sealed class InlineParser
                 continue;
             }
 
-            scan.Rows.Add(CreatePipeTableRow(rowStart, delimiter.Start, pipes, delimiter, isDelimiterRow: scan.Rows.Count == 1));
+            scan.Rows.Add(CreatePipeTableRow(rowStart, delimiter.Start, pipes, delimiter, isDelimiterRow: hasDelimiterRow && scan.Rows.Count == 1));
             pipes.Clear();
             rowStart = delimiter.End;
         }
 
         if (count > 0 && delimiters[count - 1].IsDelimiterRun)
         {
-            scan.Rows.Add(CreatePipeTableRow(rowStart, _end, pipes, _root, isDelimiterRow: scan.Rows.Count == 1));
+            scan.Rows.Add(CreatePipeTableRow(rowStart, _end, pipes, _root, isDelimiterRow: hasDelimiterRow && scan.Rows.Count == 1));
         }
         else if (last is null && !_text.AsSpan(rowStart, _end - rowStart).Trim(" \t\n\v\f\r").IsEmpty)
         {
@@ -570,6 +579,19 @@ internal sealed class InlineParser
         }
 
         return scan;
+    }
+
+    private static bool HasPipe(List<InlineNode> delimiters, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            if (delimiters[i].IsDelimiterRun)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // A pipe that only whitespace precedes starts the row, and the text after the last pipe is a cell when it is not whitespace.

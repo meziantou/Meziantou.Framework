@@ -1984,6 +1984,7 @@ internal sealed class BlockParser
             var row = scan.Rows[i];
             var rowNode = new BuildNode(i switch
             {
+                _ when !scan.HasDelimiterRow => SyntaxKind.TableRow,
                 0 => SyntaxKind.TableHeaderRow,
                 1 => SyntaxKind.TableDelimiterRow,
                 _ => SyntaxKind.TableRow,
@@ -2005,7 +2006,7 @@ internal sealed class BlockParser
                     case 0:
                         rowNode.AddToken(SyntaxKind.PipeToken, subject.ToSourceStart(start), subject.ToSourceEnd(end));
                         break;
-                    case 1 when i == 1:
+                    case 1 when i == 1 && scan.HasDelimiterRow:
                         rowNode.AddToken(SyntaxKind.TableDelimiterToken, subject.ToSourceStart(start), subject.ToSourceEnd(end));
                         break;
                     case 1:

@@ -486,6 +486,46 @@ Assert.Equal("<p>Fruits:</p>\n<table>\n<thead>\n<tr>\n<th align=\"left\">Name</t
 ```
 <!-- endref -->
 
+[PipeTableOptions](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.PipeTableOptions) has the options of
+the pipe tables of Markdig.
+[RequireHeaderSeparator](cref:Meziantou.Framework.Language.Markdown.MarkdownPipeTableOptions.RequireHeaderSeparator) set to
+`false` reads the lines that have a pipe, up to the end of their paragraph, as a table without a header row:
+[HeaderRow](cref:Meziantou.Framework.Language.Markdown.MarkdownTableSyntax.HeaderRow) and
+[DelimiterRow](cref:Meziantou.Framework.Language.Markdown.MarkdownTableSyntax.DelimiterRow) are `null`.
+[UseHeaderForColumnCount](cref:Meziantou.Framework.Language.Markdown.MarkdownPipeTableOptions.UseHeaderForColumnCount) gives
+the table as many columns as its first row has cells, and
+[InferColumnWidthsFromSeparator](cref:Meziantou.Framework.Language.Markdown.MarkdownPipeTableOptions.InferColumnWidthsFromSeparator)
+writes the width of the columns, in proportion to their dashes. As in Markdig, the renderer adds at most 524,288 empty cells
+to the short rows of a document: the rows of a table that would exceed the limit keep their cells.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_PipeTableOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The first row gives the number of columns, and the dashes the widths of the columns
+var options = new MarkdownParseOptions
+{
+    Extensions = MarkdownExtensions.PipeTables,
+    PipeTableOptions = new MarkdownPipeTableOptions { UseHeaderForColumnCount = true, InferColumnWidthsFromSeparator = true },
+};
+var tree = MarkdownSyntaxTree.ParseText("Name | Price\n:---|------:\nApple | 1 | each\n", options);
+
+Assert.Equal("<table>\n<col style=\"width:33.33%\" />\n<col style=\"width:66.67%\" />\n<thead>\n<tr>\n<th align=\"left\">Name</th>\n<th align=\"right\">Price</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"left\">Apple</td>\n<td align=\"right\">1</td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+
+// A table without a delimiter row has no header row
+options = new MarkdownParseOptions
+{
+    Extensions = MarkdownExtensions.PipeTables,
+    PipeTableOptions = new MarkdownPipeTableOptions { RequireHeaderSeparator = false },
+};
+tree = MarkdownSyntaxTree.ParseText("a | b\nc | d\n", options);
+var table = tree.GetRoot().Blocks.OfType<MarkdownTableSyntax>().Single();
+
+Assert.Null(table.HeaderRow);
+Assert.Null(table.DelimiterRow);
+Assert.HasCount(2, table.Rows);
+Assert.Equal("<table>\n<tbody>\n<tr>\n<td>a</td>\n<td>b</td>\n</tr>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+```
+<!-- endref -->
+
 - [GridTables](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.GridTables): the grid tables of Markdig. A
   line of columns, `+---+:--:+`, starts the table, whose width the dashes of each column give, and the colons its
   alignment. The next lines start with `|`, which separates the cells, or with `+`, which separates the rows: a cell that a

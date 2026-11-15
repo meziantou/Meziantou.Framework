@@ -894,13 +894,68 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.True(table.IsPipeTable);
         Assert.Equal(SyntaxKind.PipeTable, table.Kind());
         Assert.Equal([MarkdownTableAlignment.Center, MarkdownTableAlignment.None, MarkdownTableAlignment.None], table.Alignments);
-        Assert.Equal(2, table.DelimiterRow.DelimiterTokens.Count);
-        Assert.Equal(4, table.DelimiterRow.PipeTokens.Count);
-        Assert.Equal(["a", "b", "c"], table.HeaderRow.Cells.Select(cell => cell.GetPlainText()));
+        Assert.Equal(2, table.DelimiterRow!.DelimiterTokens.Count);
+        Assert.Equal(4, table.DelimiterRow!.PipeTokens.Count);
+        Assert.Equal(["a", "b", "c"], table.HeaderRow!.Cells.Select(cell => cell.GetPlainText()));
 
         // A backslash escapes a pipe as anywhere else
         Assert.Equal("x\\|y", table.Rows.Single().DescendantNodes().OfType<MarkdownCodeSpanSyntax>().Single().Code);
         Assert.False(Assert.IsType<MarkdownTableSyntax>(MarkdownSyntaxTree.ParseText("| a |\n|---|\n", MarkdownParseOptions.GitHubFlavored).GetRoot().Blocks.Single()).IsPipeTable);
+    }
+
+    [Fact]
+    public void ReadsPipeTablesWithTheOptions()
+    {
+        #region MarkdownSyntaxTree_PipeTableOptions
+        // The first row gives the number of columns, and the dashes the widths of the columns
+        var options = new MarkdownParseOptions
+        {
+            Extensions = MarkdownExtensions.PipeTables,
+            PipeTableOptions = new MarkdownPipeTableOptions { UseHeaderForColumnCount = true, InferColumnWidthsFromSeparator = true },
+        };
+        var tree = MarkdownSyntaxTree.ParseText("Name | Price\n:---|------:\nApple | 1 | each\n", options);
+
+        Assert.Equal("<table>\n<col style=\"width:33.33%\" />\n<col style=\"width:66.67%\" />\n<thead>\n<tr>\n<th align=\"left\">Name</th>\n<th align=\"right\">Price</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"left\">Apple</td>\n<td align=\"right\">1</td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+
+        // A table without a delimiter row has no header row
+        options = new MarkdownParseOptions
+        {
+            Extensions = MarkdownExtensions.PipeTables,
+            PipeTableOptions = new MarkdownPipeTableOptions { RequireHeaderSeparator = false },
+        };
+        tree = MarkdownSyntaxTree.ParseText("a | b\nc | d\n", options);
+        var table = tree.GetRoot().Blocks.OfType<MarkdownTableSyntax>().Single();
+
+        Assert.Null(table.HeaderRow);
+        Assert.Null(table.DelimiterRow);
+        Assert.HasCount(2, table.Rows);
+        Assert.Equal("<table>\n<tbody>\n<tr>\n<td>a</td>\n<td>b</td>\n</tr>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    // A table without a delimiter row must end the paragraph, and the lines before its first pipe are a paragraph
+    [Theory]
+    [InlineData("a | b\nc | d\ne\n", "<p>a | b\nc | d\ne</p>\n")]
+    [InlineData("x\na | b\n", "<p>x</p>\n<table>\n<tbody>\n<tr>\n<td>a</td>\n<td>b</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("a | b\n-|-\nc\n", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n<p>c</p>\n")]
+    public void ReadsPipeTablesWithoutDelimiterRow(string text, string expected)
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables, PipeTableOptions = new MarkdownPipeTableOptions { RequireHeaderSeparator = false } };
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, options)));
+    }
+
+    // As Markdig, the empty cells that complete the short rows are limited in a document: the rows of a table that would exceed
+    // the limit keep their cells
+    [Theory]
+    [InlineData(500, 1000)]
+    [InlineData(600, 1)]
+    public void LimitsTheCellsThatCompleteTheRows(int rowCount, int cellsPerRow)
+    {
+        var text = string.Concat(Enumerable.Repeat("|a", 1000)) + "|\n" + string.Concat(Enumerable.Repeat("|-", 1000)) + "|\n" + string.Concat(Enumerable.Repeat("|x\n", rowCount));
+        var html = MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables }));
+
+        Assert.Equal(1000 + (rowCount * cellsPerRow), System.Text.RegularExpressions.Regex.Count(html, "<t[hd]>", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(10)));
     }
 
     [Fact]
@@ -1446,8 +1501,8 @@ public sealed class MarkdownSyntaxTreeTests
         var table = Assert.IsType<MarkdownTableSyntax>(MarkdownSyntaxTree.ParseText("| a | b | c | d |\n|---|:--|:-:|--:|\n| `x\\|y` | [l](/u\\|v) |\n", MarkdownParseOptions.GitHubFlavored).GetRoot().Blocks.Single());
 
         Assert.Equal([MarkdownTableAlignment.None, MarkdownTableAlignment.Left, MarkdownTableAlignment.Center, MarkdownTableAlignment.Right], table.Alignments.ToArray());
-        Assert.True(table.HeaderRow.IsHeader);
-        Assert.True(table.DelimiterRow.IsDelimiter);
+        Assert.True(table.HeaderRow!.IsHeader);
+        Assert.True(table.DelimiterRow!.IsDelimiter);
         Assert.Equal(4, table.DelimiterRow.DelimiterTokens.Count);
         Assert.Equal(["a", "b", "c", "d"], table.HeaderRow.Cells.Select(cell => cell.GetPlainText()).ToArray());
 

@@ -31,8 +31,10 @@ internal static class MarkdownFuzzTargets
     ];
 
     // Every extension, with the pipe tables and the autolinks of Markdig. A text of odd length has the tables and the autolinks
-    // of GFM instead, HTML disabled, and identifiers made as GitHub makes them.
+    // of GFM instead, HTML disabled, and identifiers made as GitHub makes them. A text whose length is 2 modulo 4 has the pipe
+    // tables without delimiter row, their column count from the first row, and the widths of their columns.
     private static readonly MarkdownParseOptions AllExtensions = new() { Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension) };
+    private static readonly MarkdownParseOptions AllExtensionsWithPipeTableOptions = AllExtensions with { PipeTableOptions = new MarkdownPipeTableOptions { RequireHeaderSeparator = false, UseHeaderForColumnCount = true, InferColumnWidthsFromSeparator = true } };
     private static readonly MarkdownParseOptions AllExtensionsWithoutHtml = AllExtensions with { Extensions = AllExtensions.Extensions & ~(MarkdownExtensions.PipeTables | MarkdownExtensions.MarkdigAutolinks), AutolinkOptions = new MarkdownAutolinkOptions { OpenInNewWindow = true, UseHttpsForWwwLinks = true, AllowDomainWithoutPeriod = true }, DisableHtml = true, AutoIdentifierOptions = MarkdownAutoIdentifierOptions.GitHub | MarkdownAutoIdentifierOptions.AutoLink };
 
     private static readonly MarkdownHtmlRendererOptions RendererOptions = new()
@@ -48,7 +50,7 @@ internal static class MarkdownFuzzTargets
     [
         new("language-markdown", data => Parse(data, MarkdownParseOptions.Default)) { Seeds = GetSeeds, Dictionary = Tokens },
         new("language-markdown-gfm", data => Parse(data, MarkdownParseOptions.GitHubFlavored)) { Seeds = GetGfmSeeds, Dictionary = GfmTokens },
-        new("language-markdown-extensions", data => Parse(data, data.Length % 2 == 0 ? AllExtensions : AllExtensionsWithoutHtml)) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
+        new("language-markdown-extensions", data => Parse(data, (data.Length % 4) switch { 0 => AllExtensions, 2 => AllExtensionsWithPipeTableOptions, _ => AllExtensionsWithoutHtml })) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
     ];
 
     private static void Parse(ReadOnlySpan<byte> data, MarkdownParseOptions options)
@@ -124,14 +126,18 @@ internal static class MarkdownFuzzTargets
                     }
 
                     break;
-                case MarkdownTableSyntax { IsPipeTable: true } pipeTable:
+                case MarkdownTableSyntax { IsPipeTable: true, DelimiterRow: { } delimiterRow } pipeTable:
                     // A pipe table has a header cell and a delimiter row, whose columns are read from its text
-                    FuzzAssert.True(pipeTable.Alignments.Count > 0 && pipeTable.Alignments.Count >= pipeTable.DelimiterRow.DelimiterTokens.Count, $"The pipe table at {pipeTable.Span} has {pipeTable.Alignments.Count} columns for {pipeTable.DelimiterRow.DelimiterTokens.Count} delimiters: {FuzzAssert.Format(text)}");
-                    FuzzAssert.True(pipeTable.HeaderRow.Cells.Count > 0, $"The pipe table at {pipeTable.Span} has no header cell: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(pipeTable.Alignments.Count > 0 && pipeTable.Alignments.Count >= delimiterRow.DelimiterTokens.Count, $"The pipe table at {pipeTable.Span} has {pipeTable.Alignments.Count} columns for {delimiterRow.DelimiterTokens.Count} delimiters: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(pipeTable.HeaderRow is { Cells.Count: > 0 }, $"The pipe table at {pipeTable.Span} has no header cell: {FuzzAssert.Format(text)}");
                     _ = pipeTable.Rows;
                     break;
+                case MarkdownTableSyntax { IsPipeTable: true } pipeTable:
+                    // A pipe table without a delimiter row is allowed by the options, and has only rows
+                    FuzzAssert.True(!tree.Options.PipeTableOptions.RequireHeaderSeparator && pipeTable.HeaderRow is null && pipeTable.Rows.Count > 0 && pipeTable.Alignments.Count == 0, $"The pipe table at {pipeTable.Span} has no delimiter row: {FuzzAssert.Format(text)}");
+                    break;
                 case MarkdownTableSyntax table:
-                    FuzzAssert.True(table.Alignments.Count == table.HeaderRow.Cells.Count, $"The table at {table.Span} has {table.Alignments.Count} columns and {table.HeaderRow.Cells.Count} header cells: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(table.HeaderRow is not null && table.Alignments.Count == table.HeaderRow.Cells.Count, $"The table at {table.Span} has {table.Alignments.Count} columns and {table.HeaderRow?.Cells.Count} header cells: {FuzzAssert.Format(text)}");
                     _ = table.Rows;
                     break;
                 case MarkdownCodeSpanSyntax codeSpan:

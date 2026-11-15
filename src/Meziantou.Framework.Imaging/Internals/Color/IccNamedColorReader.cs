@@ -44,6 +44,9 @@ internal static class IccNamedColorReader
             throw Invalid(role, error);
 
         _ = IccHeader.TryRead(data, out var header);
+        if (header.Version.Major > 5)
+            throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The {role} ICC profile has version {header.Version.Major}.{header.Version.Minor}; only versions 2, 4 and 5 (iccMAX) are supported."), ImageFormat.Unknown, "ICC profile version");
+
         if (header.ConnectionSpace is not (IccReader.SignatureXyz or IccReader.SignatureLab))
         {
             if (header.Version.Major >= 5 && header.ConnectionSpace == 0)

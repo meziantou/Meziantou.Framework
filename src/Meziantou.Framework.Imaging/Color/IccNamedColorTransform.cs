@@ -28,6 +28,21 @@ namespace Meziantou.Framework.Imaging;
 /// </remarks>
 /// <example>
 /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.Framework.Imaging.Samples/ColorExamples.cs" ref:region="Imaging_NamedColors" ref:dedent="true">
+/// public static (byte[] Rgb, IReadOnlyList&lt;double&gt; Inks) SpotColor(string swatchBookPath, string name)
+/// {
+///     var swatchBook = new IccProfile(new MetadataBlob(File.ReadAllBytes(swatchBookPath)));
+///     var colors = IccNamedColorCollection.Create(swatchBook);
+///     if (!colors.TryGetValue(name, out var color))
+///         throw new ArgumentException($"The swatch book has no color named '{name}'.", nameof(name));
+///
+///     // The colorimetry of the color, converted to the device values of the display (relative colorimetric intent)
+///     var transform = IccNamedColorTransform.Create(swatchBook, IccProfile.Srgb);
+///     var rgb = new byte[transform.DestinationChannelCount];
+///     transform.Convert(color, rgb);
+///
+///     // On the press the profile was made for, its device values (here CMYK inks) reproduce the color exactly
+///     return (rgb, color.DeviceValues);
+/// }
 /// </code>
 /// </example>
 public sealed class IccNamedColorTransform

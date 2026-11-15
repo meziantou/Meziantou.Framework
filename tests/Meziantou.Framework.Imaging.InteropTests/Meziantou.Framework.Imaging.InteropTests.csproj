@@ -29,5 +29,7 @@
     <Compile Include="..\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\DeltaFrameAnimations.cs" LinkBase="Shared\Codecs" />
     <!-- Synthetic ICC profiles shared with the corpus generator -->
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
+    <!-- The PostScript Type 1 font of the font tests, compared with FreeType -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontType1Writer.cs" Link="Shared\FontType1Writer.cs" />
   </ItemGroup>
 </Project>

@@ -58,7 +58,7 @@ internal sealed class TiffRowExpander : IDisposable
     /// <summary>Creates the expander of rows of <paramref name="width"/> pixels of a page: a part of its rows (a region).</summary>
     /// <param name="page">The page.</param>
     /// <param name="inkConversion">The conversion of the inks of a CMYK page to RGB; <see langword="null"/> for the other pages.</param>
-    /// <param name="scope">The scope charged for the lookup table of a palette and the scratch row of 16-bit inks.</param>
+    /// <param name="scope">The scope charged for the lookup table of a palette, the scratch row of 16-bit inks and the decoded entries of the lookup tables of the conversion (released on disposal).</param>
     /// <param name="width">The number of pixels of a row to expand, at most the width of the page.</param>
     /// <param name="nativeInks">Whether the inks of a CMYK page without alpha are expanded as CMYK pixels instead of being converted.</param>
     public TiffRowExpander(TiffPage page, IccPipeline? inkConversion, AllocationScope scope, int width, bool nativeInks = false)
@@ -73,6 +73,7 @@ internal sealed class TiffRowExpander : IDisposable
         _page = page;
         _width = width;
         _inkConversion = inkConversion;
+        inkConversion?.BindLookupTables(scope);
         _nativeInks = nativeInks;
         SourcePixelFormat = nativeInks ? GetCmykPixelFormat(page) : page.SourcePixelFormat;
         if (page.IsPalette)
@@ -145,6 +146,7 @@ internal sealed class TiffRowExpander : IDisposable
 
     public void Dispose()
     {
+        _inkConversion?.ReleaseLookupTables();
         _palette?.Dispose();
         _palette = null;
         _inks?.Dispose();

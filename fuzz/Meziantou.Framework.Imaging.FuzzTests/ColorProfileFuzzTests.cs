@@ -255,8 +255,8 @@ public sealed class ColorProfileFuzzTests
 
     /// <summary>
     /// Converts 8-bit and 16-bit colors in one call (several batches and, with a lookup table, the cache of the 8-bit colors
-    /// and the decoded entries of the table once enough colors use it) and one color at a time with another transform: the
-    /// samples must be the same.
+    /// and the decoded entries of the table once enough colors use it, charged to a scope) and one color at a time with
+    /// another transform: the samples must be the same, and releasing the tables returns the scope to zero.
     /// </summary>
     private static FuzzFailure? CheckBatches(IccProfile source, IccProfile destination, IccColorTransformOptions options)
     {
@@ -288,6 +288,8 @@ public sealed class ColorProfileFuzzTests
             words[i] = (ushort)((value * 257) ^ (state & 0x3F));
         }
 
+        var scope = new Internals.AllocationScope(new ImageResourceLimits());
+        all.Pipeline.BindLookupTables(scope);
         try
         {
             var expectedBytes = new byte[Colors * destinationChannels];
@@ -312,6 +314,13 @@ public sealed class ColorProfileFuzzTests
         {
             return FuzzFailure.FromException("convert-batches", exception);
         }
+        finally
+        {
+            all.Pipeline.ReleaseLookupTables();
+        }
+
+        if (scope.LiveBytes != 0)
+            return FuzzFailure.Property("batch-release", "Releasing the lookup tables leaves bytes charged to the scope.");
 
         return null;
     }

@@ -76,7 +76,9 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
             // the one that labels the image
             var conversion = _request.CmykConversion ?? throw JpegXlFormat.Unsupported("The JPEG XL image has a black channel (CMYK): CMYK images are only loaded with a color conversion; set the CmykConversion property of the decode or reader options.", "CMYK");
             var transform = conversion.CreateTransform(profile) ?? throw JpegXlFormat.Unsupported("The JPEG XL image has a black channel (CMYK) and no CMYK color profile, and CmykConversionOptions.AssumedSourceProfile is null.", "CMYK without color profile");
+            _inkConversion?.ReleaseLookupTables();
             _inkConversion = transform.Pipeline;
+            _inkConversion.BindLookupTables(_context.Scope);
             profile = conversion.DestinationProfile;
         }
 
@@ -341,6 +343,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         if (disposing)
         {
             _row?.Dispose();
+            _inkConversion?.ReleaseLookupTables();
             _row = null;
             _inks?.Dispose();
             _inks = null;

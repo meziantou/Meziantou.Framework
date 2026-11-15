@@ -42,10 +42,12 @@ internal sealed class IccClutStage : IccStage
     private readonly int[] _gridPoints;
     private readonly int[] _strides;
 
-    // The number of entries of the table, then the colors counted by Reserve before the entries were decoded, and the entries
+    // The number of entries of the table, then the colors counted by Reserve before the entries were decoded, the decoded
+    // entries with their charge, and whether the scope refused them (the entries are then read in place until Release)
     private readonly int _entryCount;
     private long _reservedColors;
-    private double[]? _entries;
+    private DecodedEntries? _decoded;
+    private int _refused;
 
     // For a multilinear table of 4 inputs, the offset of each vertex of a cell from its first one, in entries: bit i of the
     // vertex number selects the upper grid point of input i
@@ -100,24 +102,61 @@ internal sealed class IccClutStage : IccStage
     /// read: the same values, so the results are unchanged. A table of more than <see cref="MaxDecodedEntries"/> entries
     /// is never decoded.
     /// </summary>
+    /// <remarks>
+    /// The decoded entries are charged to <paramref name="scope"/> before they are allocated, and stay charged until
+    /// <see cref="Release"/>. When the charge would exceed the limit, nothing is charged and the entries are read in place
+    /// from the profile, as before they were decoded: the results are the same.
+    /// </remarks>
     /// <param name="colors">The number of colors.</param>
-    public void Reserve(int colors)
+    /// <param name="scope">The scope of the owner of the conversion, which calls <see cref="Release"/> once it is done.</param>
+    public void Reserve(int colors, AllocationScope scope)
     {
-        if (_entryCount > MaxDecodedEntries || Volatile.Read(ref _entries) is not null)
+        if (_entryCount > MaxDecodedEntries || Volatile.Read(ref _decoded) is not null || Volatile.Read(ref _refused) != 0)
             return;
 
         if (Interlocked.Add(ref _reservedColors, colors) < _entryCount / 8)
             return;
 
         // One more value, so that a vector of 4 values can be read at the last entry (the last lane is ignored)
-        var entries = new double[_entryCount + 1];
-        var data = _data.Span;
-        for (var i = 0; i < _entryCount; i++)
+        var length = _entryCount + 1;
+        AllocationCharge? charge = null;
+        try
         {
-            entries[i] = _bytesPerEntry == 1 ? data[i] / 255.0 : BinaryPrimitives.ReadUInt16BigEndian(data[(2 * i)..]) / 65535.0;
-        }
+            try
+            {
+                charge = scope.Charge((long)length * sizeof(double), AllocationKind.Temporary);
+            }
+            catch (ImageResourceLimitException)
+            {
+                Volatile.Write(ref _refused, 1);
+                return;
+            }
 
-        Interlocked.CompareExchange(ref _entries, entries, comparand: null);
+            var entries = new double[length];
+            var data = _data.Span;
+            for (var i = 0; i < _entryCount; i++)
+            {
+                entries[i] = _bytesPerEntry == 1 ? data[i] / 255.0 : BinaryPrimitives.ReadUInt16BigEndian(data[(2 * i)..]) / 65535.0;
+            }
+
+            // Two threads may decode the entries at once: the charge of the one that loses is released
+            if (Interlocked.CompareExchange(ref _decoded, new DecodedEntries(entries, charge), comparand: null) is null)
+            {
+                charge = null;
+            }
+        }
+        finally
+        {
+            charge?.Dispose();
+        }
+    }
+
+    /// <summary>Releases the decoded entries and their charge: the next colors read the entries in place, until <see cref="Reserve"/> decodes them again.</summary>
+    public void Release()
+    {
+        Interlocked.Exchange(ref _decoded, null)?.Charge.Dispose();
+        Volatile.Write(ref _refused, 0);
+        Interlocked.Exchange(ref _reservedColors, 0);
     }
 
     public override void Apply(Span<double> values) => Apply(values, isScalar: false);
@@ -127,7 +166,7 @@ internal sealed class IccClutStage : IccStage
 
     private void Apply(Span<double> values, bool isScalar)
     {
-        if (!isScalar && _outputs == 3 && _vertexEntryOffsets is not null && Vector128.IsHardwareAccelerated && Volatile.Read(ref _entries) is { } entries)
+        if (!isScalar && _outputs == 3 && _vertexEntryOffsets is not null && Vector128.IsHardwareAccelerated && Volatile.Read(ref _decoded)?.Values is { } entries)
         {
             ApplyMultilinear4(values, entries, _vertexEntryOffsets);
             return;
@@ -306,7 +345,7 @@ internal sealed class IccClutStage : IccStage
     /// </remarks>
     private void Interpolate(ReadOnlySpan<double> weights, ReadOnlySpan<int> offsets, Span<double> values)
     {
-        if (Volatile.Read(ref _entries) is { } entries)
+        if (Volatile.Read(ref _decoded)?.Values is { } entries)
         {
             InterpolateDecoded(weights, offsets, values, entries);
             return;
@@ -510,5 +549,13 @@ internal sealed class IccClutStage : IccStage
         }
 
         result[.._outputs].CopyTo(values);
+    }
+
+    /// <summary>The entries of the table divided by 255 or 65535, and their charge.</summary>
+    private sealed class DecodedEntries(double[] values, AllocationCharge charge)
+    {
+        public double[] Values { get; } = values;
+
+        public AllocationCharge Charge { get; } = charge;
     }
 }

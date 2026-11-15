@@ -750,7 +750,15 @@ public abstract partial class Image
             // after the replacements are reserved, and released with the conversion)
             var colors = PixelFormats.GetBitsPerComponent(KernelPixelFormat) == 16 && !PixelFormats.IsFloatingPoint(KernelPixelFormat) ? (long)_size.Width * _size.Height * GetAllFrames().Length : 0;
             using var scratch = new ColorConversionScratch();
-            ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(pipeline, colors, scratch), cancellationToken);
+            pipeline.BindLookupTables(Owner.Scope);
+            try
+            {
+                ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(pipeline, colors, scratch), cancellationToken);
+            }
+            finally
+            {
+                pipeline.ReleaseLookupTables();
+            }
         }
 
         // Committed (or nothing to convert): the pixels are now described by the destination profile. A CICP description

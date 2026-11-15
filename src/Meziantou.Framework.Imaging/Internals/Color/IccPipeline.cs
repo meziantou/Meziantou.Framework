@@ -42,6 +42,9 @@ internal sealed class IccPipeline
     private long _outputCurveColors;
     private QuantizationThresholds[]? _byteOutputTables;
 
+    // The scope that the decoded entries of the lookup tables are charged to, or null when they are read in place
+    private AllocationScope? _lookupTableScope;
+
     private IccPipeline(IccStage[] stages, int sourceChannelCount, int destinationChannelCount, bool isIdentity)
     {
         _stages = stages;
@@ -104,15 +107,47 @@ internal sealed class IccPipeline
     /// </summary>
     public bool HasLookupTable { get; }
 
-    /// <summary>Counts colors that are about to be converted, for the lookup tables that decode their entries once enough colors use them (<see cref="IccClutStage.Reserve"/>).</summary>
-    /// <param name="colors">The number of colors.</param>
-    public void ReserveLookupTables(int colors)
+    /// <summary>
+    /// Lets the lookup tables decode their entries once enough colors use them (<see cref="IccClutStage.Reserve"/>),
+    /// charged to <paramref name="scope"/>: the owner of the conversion calls <see cref="ReleaseLookupTables"/> once it is
+    /// done. A pipeline that is not bound reads the entries in place.
+    /// </summary>
+    /// <param name="scope">The scope of the owner of the conversion.</param>
+    public void BindLookupTables(AllocationScope scope)
     {
+        if (HasLookupTable)
+        {
+            Volatile.Write(ref _lookupTableScope, scope);
+        }
+    }
+
+    /// <summary>Releases the decoded entries of the lookup tables and their charges, after the last conversion of the owner that bound them (<see cref="BindLookupTables"/>).</summary>
+    public void ReleaseLookupTables()
+    {
+        if (Interlocked.Exchange(ref _lookupTableScope, null) is null)
+            return;
+
         foreach (var stage in _stages)
         {
             if (stage is IccClutStage table)
             {
-                table.Reserve(colors);
+                table.Release();
+            }
+        }
+    }
+
+    /// <summary>Counts colors that are about to be converted, for the lookup tables that decode their entries once enough colors use them (<see cref="IccClutStage.Reserve"/>), when the pipeline is bound to a scope.</summary>
+    /// <param name="colors">The number of colors.</param>
+    public void ReserveLookupTables(int colors)
+    {
+        if (Volatile.Read(ref _lookupTableScope) is not { } scope)
+            return;
+
+        foreach (var stage in _stages)
+        {
+            if (stage is IccClutStage table)
+            {
+                table.Reserve(colors, scope);
             }
         }
     }

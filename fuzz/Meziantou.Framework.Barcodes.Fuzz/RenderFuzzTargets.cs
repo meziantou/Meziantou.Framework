@@ -506,7 +506,7 @@ internal static class RenderFuzzTargets
 
         var expected = QRCodeDecoder.Decode(qrCode);
         FuzzAssert.True(QRCodeDecoder.TryDecode(modules, out var actual), $"The QR code is not readable without the modules cleared under the logo ({area})");
-        FuzzAssert.Equal(expected.Text, actual!.Text, "The text of the QR code without the modules cleared under the logo");
+        FuzzAssert.Equal(expected.Text, actual.Text, "The text of the QR code without the modules cleared under the logo");
     }
 
     private static object? CreateSymbol(int kind, string text)

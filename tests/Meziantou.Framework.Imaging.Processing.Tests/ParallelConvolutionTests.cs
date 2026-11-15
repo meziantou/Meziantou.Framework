@@ -374,6 +374,8 @@ public sealed class ParallelConvolutionTests
             image => image.OilPaint(levels: 20, radius: 3, Ct),
             image => image.OilPaint(levels: 8, radius: 40, Ct),
             image => image.Flatten(new Rgba64(0x1234, 0x8000, 0xFEDC, 0xFFFF), Ct),
+            image => image.ApplyColorMatrix(ColorMatrix.CreateSepia(), Ct),
+            image => image.ApplyColorMatrix(ColorMatrix.CreateOpacity(0.4).Then(ColorMatrix.CreateHueRotation(140)), Ct),
         ];
 
         foreach (var effect in effects)

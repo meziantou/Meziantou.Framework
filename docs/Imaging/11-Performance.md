@@ -95,7 +95,8 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
 <!-- endref -->
 
 - The configuration is set when the image is loaded or created; every operation on the image uses it.
-- Resizing, transformations, convolutions, blurs, sharpening and edge detection split large frames into bands.
+- Resizing, transformations, convolutions, blurs, sharpening, edge detection and color matrices split large frames
+  into bands.
 - The HEIC and AVIF decoders decode the tiles of large grid images (the photos of phones) concurrently, and the HEIC and
   AVIF encoders encode the tiles concurrently when `GridTileSize` is set.
 - The codecs split the independent parts of images of at least 65,536 pixels between threads:

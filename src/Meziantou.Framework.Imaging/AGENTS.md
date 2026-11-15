@@ -1581,7 +1581,8 @@ thin public types over its `FontFace`.
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`, and `PercentileFilter`, which shares the median's
   plan), `Sharpen`, `DetectEdges`, `BilateralFilter` and `RadialBlur` (every pixel computed alone from a
   `WorkingFrameCopy`), the `Pixelate`, `OilPaint` and
-  `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every
+  `Flatten` effects (`EffectScratch`), the color matrices of a drawing session outside a clip (`ApplyColorMatrix`, a row of
+  colors per worker), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every
   `SimilarityPrecision`) and the
   codec work listed below are parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
   `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split

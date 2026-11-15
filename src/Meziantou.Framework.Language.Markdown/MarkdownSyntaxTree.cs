@@ -13,13 +13,27 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     private readonly SourceText _text;
     private readonly MarkdownDocumentSyntax _root;
 
-    private MarkdownSyntaxTree(SourceText text, MarkdownParseOptions options, MarkdownDocumentSyntax root, string? path)
+    private MarkdownSyntaxTree(SourceText text, MarkdownParseOptions options, MarkdownDocumentSyntax root, string? path, MarkdownSyntaxTree? container = null)
     {
         _text = text;
         _root = root;
         Options = options;
         FilePath = path;
+        Container = container;
         _root.AttachToTree(this);
+    }
+
+    // The tree of the grid table of a cell, whose definitions the cell can use
+    internal MarkdownSyntaxTree? Container { get; }
+
+    // The content of a cell of a grid table of the tree. Markdig does not close the blocks of a cell that the last line of the table
+    // spans: a grid table that ends it is kept, even when it has no row.
+    internal static MarkdownSyntaxTree ParseCell(string text, MarkdownSyntaxTree? container, bool isClosed)
+    {
+        var options = container?.Options ?? MarkdownParseOptions.Default;
+        var labels = container?.GetRoot().LinkReferenceDefinitions.Select(definition => Scanners.NormalizeLabel(definition.Label)) ?? [];
+        var green = MarkdownParser.Parse(text, options, new CellContext(labels, KeepsGridTable: !isClosed));
+        return new MarkdownSyntaxTree(SourceText.From(text), options, (MarkdownDocumentSyntax)green.CreateRed(parent: null, position: 0), container?.FilePath, container);
     }
 
     public override string? FilePath { get; }

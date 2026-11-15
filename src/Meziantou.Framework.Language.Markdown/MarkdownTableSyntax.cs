@@ -41,12 +41,12 @@ public sealed class MarkdownTableSyntax : MarkdownBlockSyntax
 
     private MarkdownTableAlignment[] GetPipeTableAlignments()
     {
-        // The generic attributes of the delimiter row are not part of its cells
+        // The generic attributes of the delimiter row, and the text before them in their cell, are not part of its cells
         var row = DelimiterRow;
         var characters = row.ToString().ToCharArray();
         foreach (var attributes in row.ChildNodes())
         {
-            characters.AsSpan(attributes.Span.Start - row.Span.Start, attributes.Span.Length).Fill(' ');
+            PipeTableScanner.BlankAttributes(characters, 0, attributes.Span.Start - row.Span.Start, attributes.Span.End - row.Span.Start);
         }
 
         var text = new string(characters);

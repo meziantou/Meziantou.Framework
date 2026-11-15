@@ -67,6 +67,7 @@ internal sealed class MarkdownNode : GreenNode
             SyntaxKind.ThematicBreak => new Markdown.MarkdownThematicBreakSyntax(this, parent, position),
             SyntaxKind.LinkReferenceDefinition => new Markdown.MarkdownLinkReferenceDefinitionSyntax(this, parent, position),
             SyntaxKind.Table or SyntaxKind.PipeTable => new Markdown.MarkdownTableSyntax(this, parent, position),
+            SyntaxKind.GridTable => new Markdown.MarkdownGridTableSyntax(this, parent, position),
             SyntaxKind.TableHeaderRow or SyntaxKind.TableDelimiterRow or SyntaxKind.TableRow => new Markdown.MarkdownTableRowSyntax(this, parent, position),
             SyntaxKind.TableCell => new Markdown.MarkdownTableCellSyntax(this, parent, position),
             SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis => new Markdown.MarkdownEmphasisSyntax(this, parent, position),

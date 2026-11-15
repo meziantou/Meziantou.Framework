@@ -44,6 +44,7 @@ public sealed class ExtensionSpecTests
     {
         ["gfm-pipetables"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Tables },
         ["pipetables"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.PipeTables },
+        ["gridtables"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.GridTables },
         ["tasklists"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.TaskLists },
         ["hardlinebreak"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.HardLineBreaks },
         ["nohtml"] = options => options with { DisableHtml = true },

@@ -137,6 +137,16 @@ internal static class PipeTableScanner
         return false;
     }
 
+    /// <summary>
+    /// Makes generic attributes of a delimiter row whitespace, with the text before them in their cell: Markdig reads the text
+    /// before a pipe, which the attributes start, as an escaped character does.
+    /// </summary>
+    public static void BlankAttributes(Span<char> text, int lineStart, int start, int end)
+    {
+        var cellStart = text[lineStart..start].LastIndexOf('|') + 1 + lineStart;
+        text[cellStart..end].Fill(' ');
+    }
+
     /// <summary>Whether the characters of the line are the ones of a delimiter row: pipes, dashes, colons, whitespace, and the dashes and colons that a backslash escapes.</summary>
     public static bool IsDelimiterRowText(string text, int start, int end)
     {

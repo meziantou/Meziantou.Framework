@@ -214,9 +214,9 @@ internal sealed class InlineParser
     /// there is none, and adds the inlines of the paragraph to <paramref name="paragraph"/>. Else the inlines are not kept: the
     /// cells, and the lines around the table, are parsed afterwards.
     /// </summary>
-    public PipeTableScan? ScanPipeTable(Subject subject, int start, List<BuildElement> paragraph)
+    public PipeTableScan? ScanPipeTable(Subject subject, int start, List<BuildElement> paragraph, bool trimEnd = true)
     {
-        Begin(subject, start, subject.Length, trimEnd: true);
+        Begin(subject, start, subject.Length, trimEnd);
         _scanningPipeTable = true;
         _table = null;
         _colonLineStart = -1;
@@ -554,7 +554,7 @@ internal sealed class InlineParser
         {
             scan.Rows.Add(CreatePipeTableRow(rowStart, _end, pipes, _root, isDelimiterRow: scan.Rows.Count == 1));
         }
-        else if (last is null && !PipeTableScanner.IsWhitespace(_text, rowStart, _end))
+        else if (last is null && !_text.AsSpan(rowStart, _end - rowStart).Trim(" \t\n\v\f\r").IsEmpty)
         {
             // The pipes of the last line were in a link: Markdig counts the line as a row without cell, and writes its text in a
             // paragraph before the table. It is a paragraph after the table, where the text is.
@@ -588,7 +588,14 @@ internal sealed class InlineParser
             var characters = _text.ToCharArray(0, end);
             foreach (var (attributesStart, attributesEnd) in attributes)
             {
-                characters.AsSpan(attributesStart, attributesEnd - attributesStart).Fill(' ');
+                if (isDelimiterRow)
+                {
+                    PipeTableScanner.BlankAttributes(characters, start, attributesStart, attributesEnd);
+                }
+                else
+                {
+                    characters.AsSpan(attributesStart, attributesEnd - attributesStart).Fill(' ');
+                }
             }
 
             text = new string(characters);
@@ -775,7 +782,7 @@ internal sealed class InlineParser
             if (node.Kind == SyntaxKind.GenericAttributes)
             {
                 withoutAttributes ??= _text.ToCharArray();
-                withoutAttributes.AsSpan(node.Start, node.End - node.Start).Fill(' ');
+                PipeTableScanner.BlankAttributes(withoutAttributes, lineStart, node.Start, node.End);
             }
             else if (node.Kind is not (SyntaxKind.PipeToken or SyntaxKind.TextToken or SyntaxKind.EscapedCharacterToken) || (node.Kind == SyntaxKind.TextToken && node.IsDelimiterRun))
             {

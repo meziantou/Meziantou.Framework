@@ -499,6 +499,10 @@ public static class MarkdownHtmlRenderer
                     Cr();
                     break;
 
+                case MarkdownGridTableSyntax grid:
+                    WriteGridTable(grid);
+                    break;
+
                 case MarkdownTableSyntax table:
                     WriteTable(table);
                     break;
@@ -636,6 +640,119 @@ public static class MarkdownHtmlRenderer
             }
 
             _output.Append("</table>\n");
+        }
+
+        // A grid table of Markdig: the widths of its columns, then its rows, the ones of its header in <thead>. A cell whose content
+        // is a paragraph has no <p>.
+        private void WriteGridTable(MarkdownGridTableSyntax table)
+        {
+            Cr();
+            _output.Append("<table");
+            AppendAttributes(table);
+            _output.Append(">\n");
+            var columns = table.Columns;
+            if (columns.Any(column => column.Width is not (0.0f or 1.0f)))
+            {
+                foreach (var column in columns)
+                {
+                    var width = Math.Round(column.Width * 100, MidpointRounding.ToEven) / 100;
+                    _output.Append("<col style=\"width:").Append(width.ToString("0.##", CultureInfo.InvariantCulture)).Append("%\" />\n");
+                }
+            }
+
+            var hasBody = false;
+            var hasHeader = false;
+            var isHeaderOpen = false;
+            foreach (var row in table.Rows)
+            {
+                if (row.IsHeader)
+                {
+                    if (!hasHeader)
+                    {
+                        _output.Append("<thead>\n");
+                        isHeaderOpen = true;
+                    }
+
+                    hasHeader = true;
+                }
+                else if (!hasBody)
+                {
+                    if (isHeaderOpen)
+                    {
+                        _output.Append("</thead>\n");
+                        isHeaderOpen = false;
+                    }
+
+                    _output.Append("<tbody>\n");
+                    hasBody = true;
+                }
+
+                _output.Append("<tr>\n");
+                var tag = row.IsHeader ? "th" : "td";
+                foreach (var cell in row.Cells)
+                {
+                    _output.Append('<').Append(tag);
+                    if (cell.ColumnSpan != 1)
+                    {
+                        _output.Append(" colspan=\"").Append(cell.ColumnSpan.ToString(CultureInfo.InvariantCulture)).Append('"');
+                    }
+
+                    if (cell.RowSpan != 1)
+                    {
+                        _output.Append(" rowspan=\"").Append(cell.RowSpan.ToString(CultureInfo.InvariantCulture)).Append('"');
+                    }
+
+                    _output.Append(columns[Math.Min(cell.ColumnIndex, columns.Count - 1)].Alignment switch
+                    {
+                        MarkdownTableAlignment.Center => " align=\"center\"",
+                        MarkdownTableAlignment.Left => " align=\"left\"",
+                        MarkdownTableAlignment.Right => " align=\"right\"",
+                        _ => "",
+                    });
+                    _output.Append('>');
+                    _output.Append(RenderCell(cell.Content));
+                    _output.Append("</").Append(tag).Append(">\n");
+                }
+
+                _output.Append("</tr>\n");
+            }
+
+            if (hasBody)
+            {
+                _output.Append("</tbody>\n");
+            }
+            else if (isHeaderOpen)
+            {
+                _output.Append("</thead>\n");
+            }
+
+            _output.Append("</table>\n");
+        }
+
+        private string RenderCell(MarkdownSyntaxTree content)
+        {
+            var writer = new Writer(content.GetText().Length, content.Options, rendererOptions);
+            if (content.Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes))
+            {
+                writer.CollectAttributes(content.GetRoot());
+            }
+
+            if (content.GetRoot().Blocks is [MarkdownParagraphSyntax paragraph] && !(writer._attributes is not null && IsAttributesParagraph(paragraph)))
+            {
+                writer.WriteInlines(paragraph.Inlines);
+            }
+            else
+            {
+                // As in Markdig, the blocks start on a new line after <td>, except a paragraph, a heading, a thematic break and HTML
+                if (content.GetRoot().Blocks is [not (MarkdownParagraphSyntax or MarkdownHeadingSyntax or MarkdownThematicBreakSyntax or MarkdownHtmlBlockSyntax), ..])
+                {
+                    writer._output.Append('\n');
+                }
+
+                writer.WriteBlocks(content.GetRoot().Blocks);
+            }
+
+            return writer.ToString();
         }
 
         private void WritePipeTableRow(MarkdownTableRowSyntax row, string tag, int columnCount, IReadOnlyList<MarkdownTableAlignment> alignments)

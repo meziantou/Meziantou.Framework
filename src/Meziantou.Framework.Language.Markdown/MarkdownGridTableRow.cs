@@ -1,0 +1,17 @@
+namespace Meziantou.Framework.Language.Markdown;
+
+/// <summary>A row of a grid table.</summary>
+public sealed class MarkdownGridTableRow
+{
+    internal MarkdownGridTableRow(bool isHeader, IReadOnlyList<MarkdownGridTableCell> cells)
+    {
+        IsHeader = isHeader;
+        Cells = cells;
+    }
+
+    /// <summary>Gets a value indicating whether the row is above a line of <c>=</c>.</summary>
+    public bool IsHeader { get; }
+
+    /// <summary>Gets the cells that start in the row. A cell of a row above can span it.</summary>
+    public IReadOnlyList<MarkdownGridTableCell> Cells { get; }
+}

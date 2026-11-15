@@ -88,6 +88,9 @@ public enum MarkdownExtensions
     /// <summary>The pipe tables of Markdig: the lines of a paragraph that have a pipe, whose second line is a delimiter row, are a table, which has as many columns as its longest row. It replaces <see cref="Tables"/>, whose rules are the ones of GitHub Flavored Markdown.</summary>
     PipeTables = 1 << 26,
 
+    /// <summary>The grid tables of Markdig: the lines between <c>+---+</c> lines, whose cells are separated by <c>|</c>, and can span columns and rows. The content of a cell is a document of its own.</summary>
+    GridTables = 1 << 27,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

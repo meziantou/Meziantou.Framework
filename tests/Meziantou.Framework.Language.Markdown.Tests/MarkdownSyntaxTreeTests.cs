@@ -904,6 +904,46 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void ParsesGridTables()
+    {
+        #region MarkdownSyntaxTree_GridTables
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables };
+        var tree = MarkdownSyntaxTree.ParseText("+-------+:------:+\n| Name  | Price  |\n+=======+========+\n| Apple | 1      |\n|       | each   |\n+-------+--------+\n| - Pear         |\n+-------+--------+\n", options);
+        var table = Assert.IsType<MarkdownGridTableSyntax>(tree.GetRoot().Blocks.Single());
+
+        Assert.Equal([MarkdownTableAlignment.None, MarkdownTableAlignment.Center], table.Columns.Select(column => column.Alignment));
+        Assert.True(table.Rows[0].IsHeader);
+
+        // The text of a cell is its lines between its pipes, which is a document of its own
+        var price = table.Rows[1].Cells[1];
+        Assert.Equal(" 1\n each", price.Text);
+        Assert.Equal("1\neach", price.Content.GetRoot().Blocks.Single().GetPlainText());
+        var pear = table.Rows[2].Cells.Single();
+        Assert.Equal(2, pear.ColumnSpan);
+        Assert.IsType<MarkdownListSyntax>(pear.Content.GetRoot().Blocks.Single());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("+-------+-------+\n| Name  | Price |\n+=======+=======+\n| Apple | 1     |\n+-------+-------+\n", "<table>\n<col style=\"width:50%\" />\n<col style=\"width:50%\" />\n<thead>\n<tr>\n<th>Name</th>\n<th>Price</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>Apple</td>\n<td>1</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("+---+---+---+\n| AAAAA | B |\n+---+---+ B +\n| D | E | B |\n+ D +---+---+\n| D | CCCCC |\n+---+---+---+\n", "<table>\n<col style=\"width:33.33%\" />\n<col style=\"width:33.33%\" />\n<col style=\"width:33.33%\" />\n<tbody>\n<tr>\n<td colspan=\"2\">AAAAA</td>\n<td rowspan=\"2\">B\nB\nB</td>\n</tr>\n<tr>\n<td rowspan=\"2\">D\nD\nD</td>\n<td>E</td>\n</tr>\n<tr>\n<td colspan=\"2\">CCCCC</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("+----------+\n| - a      |\n| - b      |\n|          |\n| para     |\n+----------+\n", "<table>\n<col style=\"width:100%\" />\n<tbody>\n<tr>\n<td>\n<ul>\n<li>a</li>\n<li>b</li>\n</ul>\n<p>para</p>\n</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("+-------+\n| [x][r] |\n+-------+\n\n[r]: /url\n", "<table>\n<col style=\"width:100%\" />\n<tbody>\n<tr>\n<td><a href=\"/url\">x</a></td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("> +---+\n> | a |\n> +---+\n", "<blockquote>\n<table>\n<col style=\"width:100%\" />\n<tbody>\n<tr>\n<td>a</td>\n</tr>\n</tbody>\n</table>\n</blockquote>\n")]
+    [InlineData("+----+\n| a |\n+----+\n| b\n", "<table>\n<col style=\"width:100%\" />\n<tbody>\n<tr>\n<td>a</td>\n</tr>\n<tr>\n<td>b</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("+---+---+\n| a | b |\n+=======+\n", "<table>\n<col style=\"width:50%\" />\n<col style=\"width:50%\" />\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n")]
+    [InlineData("+---+\n| a | b |\n| c | d | e |\n+---+---+\n", "<table>\n<col style=\"width:100%\" />\n<tbody>\n<tr>\n<td>a\nc</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("+---+---+---+\n| AAAAA | B |\n+ A +---+ B +\n| A | C | B |\n+---+---+---+\n| DDDDD | E |\n+---+---+---+\n", "<p>+---+---+---+\n| AAAAA | B |\n+ A +---+ B +\n| A | C | B |\n+---+---+---+\n| DDDDD | E |\n+---+---+---+</p>\n")]
+    [InlineData("+----+\n=\n", "<h1>+----+</h1>\n")]
+    public void RendersGridTables(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
     public void AlertHasItsKind()
     {
         var alert = Assert.IsType<MarkdownAlertSyntax>(MarkdownSyntaxTree.ParseText("> [!Warning]  \n> Be *careful*\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts }).GetRoot().Blocks.Single());

@@ -72,7 +72,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
         return _abbreviations.GetValueOrDefault(label);
     }
 
-    /// <summary>Finds the definition of a link label: the first one with the same label, compared as CommonMark does.</summary>
+    /// <summary>Finds the definition of a link label: the first one with the same label, compared as CommonMark does. In a cell of a grid table, the definitions of the tree of the table are found too.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="label"/> is <see langword="null"/>.</exception>
     public MarkdownLinkReferenceDefinitionSyntax? GetLinkReferenceDefinition(string label)
     {
@@ -89,7 +89,8 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
             _definitions = definitions;
         }
 
-        return _definitions.GetValueOrDefault(Scanners.NormalizeLabel(label));
+        // The content of a cell of a grid table can use the definitions of the document of the table
+        return _definitions.GetValueOrDefault(Scanners.NormalizeLabel(label)) ?? (SyntaxTree as MarkdownSyntaxTree)?.Container?.GetRoot().GetLinkReferenceDefinition(label);
     }
 
     internal MarkdownParseOptions Options => (SyntaxTree as MarkdownSyntaxTree)?.Options ?? MarkdownParseOptions.Default;

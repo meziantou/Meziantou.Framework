@@ -24,6 +24,11 @@ internal sealed class BlockParser
     // are always the last ones.
     private readonly List<Line> _lines;
     private readonly Dictionary<string, bool> _references = new(StringComparer.Ordinal);
+
+    // Whether the text is the content of a cell of a grid table whose grid table at the end is kept, and whether the end closes
+    // the blocks
+    private bool _keepsGridTable;
+    private bool _atEnd;
     private readonly InlineParser _inlineParser;
 
     // The definition that the line closes after it has been read
@@ -65,9 +70,15 @@ internal sealed class BlockParser
         _inlineParser = new InlineParser(_references, options) { MaximumAbbreviationExpansion = Math.Max(100_000, text.Length) };
     }
 
-    public static (BuildNode Document, List<TriviaSpan> TriviaSpans) Parse(string text, MarkdownParseOptions options)
+    /// <param name="cell">For the content of a cell of a grid table, the context of the table.</param>
+    public static (BuildNode Document, List<TriviaSpan> TriviaSpans) Parse(string text, MarkdownParseOptions options, CellContext? cell = null)
     {
-        var parser = new BlockParser(text, options);
+        var parser = new BlockParser(text, options) { _keepsGridTable = cell?.KeepsGridTable ?? false };
+        foreach (var label in cell?.References ?? [])
+        {
+            parser._references.TryAdd(label, value: true);
+        }
+
         var position = parser.HasExtension(MarkdownExtensions.YamlFrontMatter) ? parser.ParseFrontMatter() : 0;
         while (position < text.Length)
         {
@@ -87,6 +98,7 @@ internal sealed class BlockParser
             position = eolEnd;
         }
 
+        parser._atEnd = true;
         while (parser._tip is { } tip && tip != parser._document)
         {
             parser.Finalize(tip);
@@ -254,7 +266,7 @@ internal sealed class BlockParser
         _skipAddLine = false;
     }
 
-    private static bool AcceptsLines(SyntaxKind kind) => kind is SyntaxKind.Paragraph or SyntaxKind.IndentedCodeBlock or SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock or SyntaxKind.HtmlBlock;
+    private static bool AcceptsLines(SyntaxKind kind) => kind is SyntaxKind.Paragraph or SyntaxKind.IndentedCodeBlock or SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock or SyntaxKind.HtmlBlock or SyntaxKind.GridTable;
 
     private static bool CanContain(SyntaxKind parent, SyntaxKind child) => parent switch
     {
@@ -332,6 +344,26 @@ internal sealed class BlockParser
                 }
 
                 return 0;
+
+            case SyntaxKind.GridTable:
+                // The lines of a grid table start with + or |, after their indentation
+                if (Peek(_nextNonspace) is '+' or '|')
+                {
+                    AdvanceNextNonspace();
+                    return 0;
+                }
+
+                // Markdig reads the rest of the line after its indentation, which is then not code
+                if (IsGridTable(block))
+                {
+                    AdvanceNextNonspace();
+                    return 1;
+                }
+
+                // As in Markdig, the lines are the paragraph that the line continues, which keeps the whitespace at their end
+                block.Kind = SyntaxKind.Paragraph;
+                block.GridLineCount = block.LineCount;
+                return Continue(block);
 
             case SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock:
                 if (_indent <= 3 && Peek(_nextNonspace) == block.FenceChar)
@@ -576,6 +608,15 @@ internal sealed class BlockParser
     private int TryStart(Block container)
     {
         var c = Peek(_nextNonspace);
+
+        // Grid table, a line of columns, +---+---+, which Markdig tries first, unless the line is an item of the list of + that it continues
+        if (!_indented && c == '+' && HasExtension(MarkdownExtensions.GridTables) && !(container.Kind == SyntaxKind.List && container.ListData is { Ordered: false, BulletChar: '+' } && (_nextNonspace + 1 >= _lineEnd || Scanners.IsSpaceOrTab(_text[_nextNonspace + 1]))) && GridTableLayout.ReadColumns(_text.AsSpan(_nextNonspace, _lineEnd - _nextNonspace)) is not null)
+        {
+            CloseUnmatchedBlocks();
+            AddChild(SyntaxKind.GridTable);
+            AdvanceNextNonspace();
+            return 2;
+        }
 
         // A line of dashes, pipes, colons and spaces that has a pipe continues a paragraph, as Markdig reads a delimiter row of a pipe
         // table, which is then not a list item, the underline of a setext heading or a thematic break. It is a lazy line, unless
@@ -1596,6 +1637,17 @@ internal sealed class BlockParser
                 ParseDefinitions(block);
                 break;
 
+            case SyntaxKind.GridTable:
+                // In a cell that Markdig does not close, the grid table that ends it is kept, even when it has no row
+                if (!(_keepsGridTable && _atEnd) && !IsGridTable(block))
+                {
+                    block.Kind = SyntaxKind.Paragraph;
+                    block.GridLineCount = block.LineCount;
+                    ParseDefinitions(block);
+                }
+
+                break;
+
             case SyntaxKind.IndentedCodeBlock:
                 // The blank lines at the end are not part of the code
                 while (block.LineCount > 0 && _lines[block.LineStart + block.LineCount - 1] is var line && _text.AsSpan(line.Start, line.End - line.Start).Trim(" \t").IsEmpty)
@@ -1607,6 +1659,17 @@ internal sealed class BlockParser
         }
 
         _tip = block.Parent ?? _document;
+    }
+
+    private bool IsGridTable(Block table)
+    {
+        var lines = new List<string>(table.LineCount);
+        foreach (var line in GetLines(table))
+        {
+            lines.Add(_text[line.Start..line.End]);
+        }
+
+        return GridTableLayout.Read(lines) is not null;
     }
 
     // With auto-identifiers, a reference link whose label is the first line of a heading links to it, as in Markdig
@@ -1696,12 +1759,12 @@ internal sealed class BlockParser
                 }
                 else if (block.Kind == SyntaxKind.Paragraph && !block.IsEmpty && HasExtension(MarkdownExtensions.PipeTables) && block.Subject!.Text.AsSpan(block.ContentStart).Contains('|'))
                 {
-                    ConvertPipeTables(block.Subject, block.ContentStart, output);
+                    ConvertPipeTables(block.Subject, block.ContentStart, output, trimEnd: block.GridLineCount != block.LineCount);
                 }
                 else if (block.Kind == SyntaxKind.SetextHeading || !block.IsEmpty)
                 {
                     var node = new BuildNode(block.Kind);
-                    _inlineParser.Parse(block.Subject!, block.ContentStart, node.Children);
+                    _inlineParser.Parse(block.Subject!, block.ContentStart, node.Children, trimEnd: block.GridLineCount != block.LineCount);
                     AddTokens(node, block.TrailingOrNull);
                     output.Add(node);
                 }
@@ -1762,7 +1825,7 @@ internal sealed class BlockParser
                 return;
             }
 
-            case SyntaxKind.FencedCodeBlock or SyntaxKind.IndentedCodeBlock or SyntaxKind.HtmlBlock or SyntaxKind.FrontMatter or SyntaxKind.MathBlock:
+            case SyntaxKind.FencedCodeBlock or SyntaxKind.IndentedCodeBlock or SyntaxKind.HtmlBlock or SyntaxKind.FrontMatter or SyntaxKind.MathBlock or SyntaxKind.GridTable:
             {
                 var node = new BuildNode(block.Kind, block.TokenCount + block.LineCount);
                 AddTokens(node, block.LeadingOrNull);
@@ -1771,6 +1834,7 @@ internal sealed class BlockParser
                     SyntaxKind.HtmlBlock => SyntaxKind.HtmlLineToken,
                     SyntaxKind.FrontMatter => SyntaxKind.FrontMatterLineToken,
                     SyntaxKind.MathBlock => SyntaxKind.MathLineToken,
+                    SyntaxKind.GridTable => SyntaxKind.GridTableLineToken,
                     _ => SyntaxKind.CodeLineToken,
                 };
                 foreach (var line in GetLines(block))
@@ -1876,15 +1940,16 @@ internal sealed class BlockParser
 
     // A paragraph whose lines have pipe tables: the lines before a table are a paragraph, and the lines after it are a paragraph,
     // which can have a table, as in Markdig
-    private void ConvertPipeTables(Subject subject, int start, List<BuildElement> output)
+    // trimEnd: whether the whitespace at the end of the lines is not text, which it is after lines that are not a grid table
+    private void ConvertPipeTables(Subject subject, int start, List<BuildElement> output, bool trimEnd)
     {
         var node = new BuildNode(SyntaxKind.Paragraph);
-        while (_inlineParser.ScanPipeTable(subject, start, node.Children) is { } scan)
+        while (_inlineParser.ScanPipeTable(subject, start, node.Children, trimEnd) is { } scan)
         {
             _inlineParser.PipeTableQuotes = scan.Quotes;
             try
             {
-                if (!PipeTableScanner.IsWhitespace(subject.Text, start, scan.LeadingEnd))
+                if (!subject.Text.AsSpan(start, scan.LeadingEnd - start).Trim(" \t\n\v\f\r").IsEmpty)
                 {
                     var paragraph = new BuildNode(SyntaxKind.Paragraph);
                     _inlineParser.ParseBeforePipeTable(subject, start, scan.LeadingEnd, scan.SplitLineBreak, paragraph.Children);
@@ -1898,7 +1963,8 @@ internal sealed class BlockParser
                 _inlineParser.PipeTableQuotes = null;
             }
 
-            if (scan.TrailingStart < 0 || PipeTableScanner.IsWhitespace(subject.Text, scan.TrailingStart, subject.Length))
+            // The text after the table is a paragraph unless it is whitespace that is trivia: Unicode whitespace is text
+            if (scan.TrailingStart < 0 || subject.Text.AsSpan(scan.TrailingStart).Trim(" \t\n\v\f\r").IsEmpty)
             {
                 return;
             }
@@ -2197,6 +2263,9 @@ internal sealed class BlockParser
 
         // A paragraph whose last line was not the header row of a table: GFM tries a paragraph once
         public bool TableVisited { get; set; }
+
+        // For a paragraph whose first lines are not a grid table, their number
+        public int GridLineCount { get; set; } = -1;
 
         // A paragraph: its link reference definitions, then its inlines from ContentStart in its subject
         public List<BuildNode> Definitions => DefinitionsOrNull ??= [];

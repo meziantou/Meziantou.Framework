@@ -48,11 +48,11 @@ public sealed class Bc6HBlockEncoderTests
     [InlineData(Content.Solid, true, true, 0, 0)]
     [InlineData(Content.TwoRegions, true, true, 8.8, 68)]
     [InlineData(Content.NarrowNoise, true, true, 6320, 45400)]
-    public void RoundTripStaysWithinTheMeasuredError(Content content, bool signed, bool thorough, double maxMean, int maxError)
+    public void RoundTripStaysWithinTheMeasuredError(Content content, bool isSigned, bool thorough, double maxMean, int maxError)
     {
         // In half-float bit patterns: 1024 is a factor of 2, so a mean of 10 is a relative error of about 0.7%. Noise
         // spans the whole range of the format, which one line (or two) of a block cannot follow
-        var (mean, max, _) = Measure(content, signed, thorough);
+        var (mean, max, _) = Measure(content, isSigned, thorough);
         Assert.InRange(mean, 0, maxMean);
         Assert.InRange(max, 0, maxError);
     }
@@ -60,11 +60,11 @@ public sealed class Bc6HBlockEncoderTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ThoroughIsNeverWorseOnAverage(bool signed)
+    public void ThoroughIsNeverWorseOnAverage(bool isSigned)
     {
         foreach (var content in Enum.GetValues<Content>())
         {
-            Assert.InRange(Measure(content, signed, thorough: true).Mean, 0, Measure(content, signed, thorough: false).Mean);
+            Assert.InRange(Measure(content, isSigned, thorough: true).Mean, 0, Measure(content, isSigned, thorough: false).Mean);
         }
     }
 
@@ -73,7 +73,7 @@ public sealed class Bc6HBlockEncoderTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void SolidColorsAreExact(bool signed, bool thorough)
+    public void SolidColorsAreExact(bool isSigned, bool thorough)
     {
         // Mode 0x0F stores a 16-bit endpoint: the value of the interpolation that decodes to the texel
         var seed = 99u;
@@ -81,9 +81,9 @@ public sealed class Bc6HBlockEncoderTests
         var decoded = new ushort[64];
         for (var n = 0; n < 300; n++)
         {
-            var block = CreateBlock(Content.Solid, signed, ref seed);
-            Bc6HBlockEncoder.Encode(block, encoded, signed, thorough);
-            BlockDecoder.DecodeBc6H(encoded, decoded, signed);
+            var block = CreateBlock(Content.Solid, isSigned, ref seed);
+            Bc6HBlockEncoder.Encode(block, encoded, isSigned, thorough);
+            BlockDecoder.DecodeBc6H(encoded, decoded, isSigned);
             for (var i = 0; i < 64; i++)
             {
                 var expected = (i & 3) == 3 ? (ushort)0x3C00 : block[i] == 0x8000 ? (ushort)0 : block[i];
@@ -109,7 +109,7 @@ public sealed class Bc6HBlockEncoderTests
     [InlineData(true, 0xFC00, 0xFBFF)]
     [InlineData(true, 0xFBFF, 0xFBFF)]
     [InlineData(true, 0x8001, 0x8001)]
-    public void ValuesTheFormatCannotStoreAreMapped(bool signed, int half, int expected)
+    public void ValuesTheFormatCannotStoreAreMapped(bool isSigned, int half, int expected)
     {
         var block = new ushort[64];
         block.AsSpan().Fill((ushort)half);
@@ -117,8 +117,8 @@ public sealed class Bc6HBlockEncoderTests
         var decoded = new ushort[64];
         foreach (var thorough in new[] { false, true })
         {
-            Bc6HBlockEncoder.Encode(block, encoded, signed, thorough);
-            BlockDecoder.DecodeBc6H(encoded, decoded, signed);
+            Bc6HBlockEncoder.Encode(block, encoded, isSigned, thorough);
+            BlockDecoder.DecodeBc6H(encoded, decoded, isSigned);
             for (var i = 0; i < 64; i++)
             {
                 Assert.Equal((i & 3) == 3 ? 0x3C00 : expected, decoded[i]);
@@ -129,7 +129,7 @@ public sealed class Bc6HBlockEncoderTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ExtremeValuesInOneBlockDecodeToFiniteValues(bool signed)
+    public void ExtremeValuesInOneBlockDecodeToFiniteValues(bool isSigned)
     {
         ushort[] values = [0x0000, 0x8000, 0x7C00, 0xFC00, 0x7E00, 0xFFFF, 0x7BFF, 0xFBFF, 0x0001, 0x8001, 0x3C00, 0xBC00];
         var block = new ushort[64];
@@ -142,12 +142,12 @@ public sealed class Bc6HBlockEncoderTests
         var decoded = new ushort[64];
         foreach (var thorough in new[] { false, true })
         {
-            Bc6HBlockEncoder.Encode(block, encoded, signed, thorough);
-            BlockDecoder.DecodeBc6H(encoded, decoded, signed);
+            Bc6HBlockEncoder.Encode(block, encoded, isSigned, thorough);
+            BlockDecoder.DecodeBc6H(encoded, decoded, isSigned);
             foreach (var value in decoded)
             {
                 Assert.InRange(value & 0x7FFF, 0, 0x7BFF);
-                Assert.True(signed || value < 0x8000);
+                Assert.True(isSigned || value < 0x8000);
             }
         }
     }
@@ -176,12 +176,12 @@ public sealed class Bc6HBlockEncoderTests
     [Fact]
     public void EveryModeIsEmitted()
     {
-        HashSet<int> Modes(bool signed, bool thorough)
+        HashSet<int> Modes(bool isSigned, bool thorough)
         {
             var modes = new HashSet<int>();
             foreach (var content in Enum.GetValues<Content>())
             {
-                modes.UnionWith(Measure(content, signed, thorough).Modes);
+                modes.UnionWith(Measure(content, isSigned, thorough).Modes);
             }
 
             return modes;
@@ -191,10 +191,10 @@ public sealed class Bc6HBlockEncoderTests
         // never needs modes 0x16 and 0x1A, which give one more delta bit to green or blue)
         int[] oneSubset = [0x03, 0x07, 0x0B, 0x0F];
         int[] all = [0x00, 0x01, 0x02, 0x03, 0x06, 0x07, 0x0A, 0x0B, 0x0E, 0x0F, 0x12, 0x16, 0x1A, 0x1E];
-        Assert.Equal(oneSubset, Modes(signed: false, thorough: false).Order().ToArray());
-        Assert.Equal(oneSubset, Modes(signed: true, thorough: false).Order().ToArray());
-        Assert.Equal(all, Modes(signed: false, thorough: true).Order().ToArray());
-        Assert.Equal(all.Except([0x16, 0x1A]).ToArray(), Modes(signed: true, thorough: true).Order().ToArray());
+        Assert.Equal(oneSubset, Modes(isSigned: false, thorough: false).Order().ToArray());
+        Assert.Equal(oneSubset, Modes(isSigned: true, thorough: false).Order().ToArray());
+        Assert.Equal(all, Modes(isSigned: false, thorough: true).Order().ToArray());
+        Assert.Equal(all.Except([0x16, 0x1A]).ToArray(), Modes(isSigned: true, thorough: true).Order().ToArray());
     }
 
     [Theory]
@@ -202,9 +202,9 @@ public sealed class Bc6HBlockEncoderTests
     [InlineData(false, true, "df681952de20fa133ce49a6cbdb35daa5156044b9749f05fc47c369570760a81")]
     [InlineData(true, false, "268d61f3e0318e300e3dedb7b780aeb06ac953568b1ba96a79b375dcc76cfd66")]
     [InlineData(true, true, "4fa5eddcd001e35cde87211d01eace98518bacf0e6fa2bfc46549b8787b9273f")]
-    public void OutputIsTheSameOnEveryPlatform(bool signed, bool thorough, string expected)
+    public void OutputIsTheSameOnEveryPlatform(bool isSigned, bool thorough, string expected)
     {
-        Assert.Equal(expected, ComputeHash(signed, thorough));
+        Assert.Equal(expected, ComputeHash(isSigned, thorough));
     }
 
     /// <summary>A small linear congruential generator, so that the content is the same on every platform.</summary>
@@ -214,18 +214,18 @@ public sealed class Bc6HBlockEncoderTests
         return seed >> 8;
     }
 
-    /// <summary>A random finite half-float bit pattern, negative half of the time when <paramref name="signed"/>.</summary>
-    private static int RandomHalf(ref uint seed, bool signed, int min, int max)
+    /// <summary>A random finite half-float bit pattern, negative half of the time when <paramref name="isSigned"/>.</summary>
+    private static int RandomHalf(ref uint seed, bool isSigned, int min, int max)
     {
         var magnitude = min + (int)(Next(ref seed) % (uint)(max - min + 1));
-        return signed && (Next(ref seed) & 1) != 0 ? magnitude | 0x8000 : magnitude;
+        return isSigned && (Next(ref seed) & 1) != 0 ? magnitude | 0x8000 : magnitude;
     }
 
     /// <summary>
     /// Creates a block of 16 RGBA texels of half-float bit patterns, row by row. The gradients are linear in the bit
     /// patterns: exponential in value, like the light of HDR content.
     /// </summary>
-    internal static ushort[] CreateBlock(Content content, bool signed, ref uint seed)
+    internal static ushort[] CreateBlock(Content content, bool isSigned, ref uint seed)
     {
         var block = new ushort[64];
         for (var i = 0; i < 16; i++)
@@ -238,7 +238,7 @@ public sealed class Bc6HBlockEncoderTests
             case Content.Gradient:
                 for (var channel = 0; channel < 3; channel++)
                 {
-                    var origin = RandomHalf(ref seed, signed, 0x1000, 0x6000);
+                    var origin = RandomHalf(ref seed, isSigned, 0x1000, 0x6000);
                     var slopeX = (int)(Next(ref seed) % 801) - 400;
                     var slopeY = (int)(Next(ref seed) % 801) - 400;
                     for (var i = 0; i < 16; i++)
@@ -255,7 +255,7 @@ public sealed class Bc6HBlockEncoderTests
                 {
                     for (var channel = 0; channel < 3; channel++)
                     {
-                        block[(i * 4) + channel] = (ushort)RandomHalf(ref seed, signed, 0, 0x7BFF);
+                        block[(i * 4) + channel] = (ushort)RandomHalf(ref seed, isSigned, 0, 0x7BFF);
                     }
                 }
 
@@ -263,8 +263,8 @@ public sealed class Bc6HBlockEncoderTests
 
             case Content.Edges:
                 {
-                    Span<int> color1 = [RandomHalf(ref seed, signed, 0, 0x7BFF), RandomHalf(ref seed, signed, 0, 0x7BFF), RandomHalf(ref seed, signed, 0, 0x7BFF)];
-                    Span<int> color2 = [RandomHalf(ref seed, signed, 0, 0x7BFF), RandomHalf(ref seed, signed, 0, 0x7BFF), RandomHalf(ref seed, signed, 0, 0x7BFF)];
+                    Span<int> color1 = [RandomHalf(ref seed, isSigned, 0, 0x7BFF), RandomHalf(ref seed, isSigned, 0, 0x7BFF), RandomHalf(ref seed, isSigned, 0, 0x7BFF)];
+                    Span<int> color2 = [RandomHalf(ref seed, isSigned, 0, 0x7BFF), RandomHalf(ref seed, isSigned, 0, 0x7BFF), RandomHalf(ref seed, isSigned, 0, 0x7BFF)];
                     var vertical = (Next(ref seed) & 1) != 0;
                     var position = (int)(Next(ref seed) % 3) + 1;
                     for (var i = 0; i < 16; i++)
@@ -286,7 +286,7 @@ public sealed class Bc6HBlockEncoderTests
                     var magnitudes = Next(ref seed);
                     for (var channel = 0; channel < 3; channel++)
                     {
-                        var origin = RandomHalf(ref seed, signed, 0x2000, 0x6000);
+                        var origin = RandomHalf(ref seed, isSigned, 0x2000, 0x6000);
                         var spread = 1 << (int)((magnitudes >> (channel * 4)) % 13);
                         var offset = (int)(Next(ref seed) % (uint)((2 * spread) + 1)) - spread;
                         var slope = (int)(Next(ref seed) % 64) - 32;
@@ -309,7 +309,7 @@ public sealed class Bc6HBlockEncoderTests
                     {
                         for (var channel = 0; channel < 3; channel++)
                         {
-                            block[(i * 4) + channel] = (ushort)RandomHalf(ref seed, signed, origin, origin + 0x7FF);
+                            block[(i * 4) + channel] = (ushort)RandomHalf(ref seed, isSigned, origin, origin + 0x7FF);
                         }
                     }
 
@@ -318,7 +318,7 @@ public sealed class Bc6HBlockEncoderTests
 
             default:
                 {
-                    Span<int> color = [RandomHalf(ref seed, signed, 0, 0x7BFF), RandomHalf(ref seed, signed, 0, 0x7BFF), RandomHalf(ref seed, signed, 0, 0x7BFF)];
+                    Span<int> color = [RandomHalf(ref seed, isSigned, 0, 0x7BFF), RandomHalf(ref seed, isSigned, 0, 0x7BFF), RandomHalf(ref seed, isSigned, 0, 0x7BFF)];
                     for (var i = 0; i < 16; i++)
                     {
                         for (var channel = 0; channel < 3; channel++)
@@ -345,9 +345,9 @@ public sealed class Bc6HBlockEncoderTests
     }
 
     /// <summary>Encodes and decodes blocks of a content; returns the mean and the largest error in half-float bit patterns.</summary>
-    internal static (double Mean, int Max, HashSet<int> Modes) Measure(Content content, bool signed, bool thorough)
+    internal static (double Mean, int Max, HashSet<int> Modes) Measure(Content content, bool isSigned, bool thorough)
     {
-        var seed = (uint)content + (signed ? 100u : 1u);
+        var seed = (uint)content + (isSigned ? 100u : 1u);
         var encoded = new byte[16];
         var decoded = new ushort[64];
         var modes = new HashSet<int>();
@@ -355,9 +355,9 @@ public sealed class Bc6HBlockEncoderTests
         var max = 0;
         for (var n = 0; n < BlockCount; n++)
         {
-            var block = CreateBlock(content, signed, ref seed);
-            Bc6HBlockEncoder.Encode(block, encoded, signed, thorough);
-            BlockDecoder.DecodeBc6H(encoded, decoded, signed);
+            var block = CreateBlock(content, isSigned, ref seed);
+            Bc6HBlockEncoder.Encode(block, encoded, isSigned, thorough);
+            BlockDecoder.DecodeBc6H(encoded, decoded, isSigned);
             modes.Add(GetMode(encoded));
             for (var i = 0; i < 64; i++)
             {
@@ -374,14 +374,14 @@ public sealed class Bc6HBlockEncoderTests
     }
 
     /// <summary>Encodes blocks of every content; returns the SHA-256 of the blocks.</summary>
-    internal static string ComputeHash(bool signed, bool thorough)
+    internal static string ComputeHash(bool isSigned, bool thorough)
     {
         var seed = 2024u;
         var output = new List<byte>();
         var encoded = new byte[16];
         for (var n = 0; n < 64; n++)
         {
-            Bc6HBlockEncoder.Encode(CreateBlock((Content)(n % 4), signed, ref seed), encoded, signed, thorough);
+            Bc6HBlockEncoder.Encode(CreateBlock((Content)(n % 4), isSigned, ref seed), encoded, isSigned, thorough);
             output.AddRange(encoded);
         }
 

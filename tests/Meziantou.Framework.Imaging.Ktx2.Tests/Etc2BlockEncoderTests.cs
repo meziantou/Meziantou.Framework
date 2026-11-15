@@ -91,10 +91,10 @@ public sealed class Etc2BlockEncoderTests
     [InlineData(true, Content.Noise, true, 30.8, 167)]
     [InlineData(true, Content.Edges, true, 53.0, 26)]
     [InlineData(true, Content.Solid, true, 76.2, 0.52)]
-    public void ElevenBitRoundTripStaysWithinTheMeasuredError(bool signed, Content content, bool thorough, double minPsnr, double maxError)
+    public void ElevenBitRoundTripStaysWithinTheMeasuredError(bool isSigned, Content content, bool thorough, double minPsnr, double maxError)
     {
         // In 11-bit units; a solid block is within half a unit: the nearest 11-bit value
-        var (psnr, max, _) = MeasureEac(signed, content, thorough);
+        var (psnr, max, _) = MeasureEac(isSigned, content, thorough);
         Assert.InRange(psnr, minPsnr, double.PositiveInfinity);
         Assert.InRange(max, 0, maxError);
     }
@@ -111,9 +111,9 @@ public sealed class Etc2BlockEncoderTests
                 Assert.InRange(thorough.Take(3).Sum(Inverse), 0, fast.Take(3).Sum(Inverse) + 1e-12);
             }
 
-            foreach (var signed in new[] { false, true })
+            foreach (var isSigned in new[] { false, true })
             {
-                Assert.InRange(MeasureEac(signed, content, thorough: true).Psnr, MeasureEac(signed, content, thorough: false).Psnr, double.PositiveInfinity);
+                Assert.InRange(MeasureEac(isSigned, content, thorough: true).Psnr, MeasureEac(isSigned, content, thorough: false).Psnr, double.PositiveInfinity);
             }
         }
 
@@ -332,8 +332,8 @@ public sealed class Etc2BlockEncoderTests
         var signedMultipliers = new HashSet<int>();
         foreach (var content in Enum.GetValues<Content>())
         {
-            unsignedMultipliers.UnionWith(MeasureEac(signed: false, content, thorough: false).Multipliers);
-            signedMultipliers.UnionWith(MeasureEac(signed: true, content, thorough: false).Multipliers);
+            unsignedMultipliers.UnionWith(MeasureEac(isSigned: false, content, thorough: false).Multipliers);
+            signedMultipliers.UnionWith(MeasureEac(isSigned: true, content, thorough: false).Multipliers);
         }
 
         Assert.Contains(0, unsignedMultipliers);
@@ -542,9 +542,9 @@ public sealed class Etc2BlockEncoderTests
     }
 
     /// <summary>Encodes and decodes the red channel of blocks as R11: returns the PSNR and the largest error, in 11-bit units.</summary>
-    internal static (double Psnr, double MaxError, HashSet<int> Multipliers) MeasureEac(bool signed, Content content, bool thorough)
+    internal static (double Psnr, double MaxError, HashSet<int> Multipliers) MeasureEac(bool isSigned, Content content, bool thorough)
     {
-        var format = GetFormat(signed ? 154 : 153);
+        var format = GetFormat(isSigned ? 154 : 153);
         double squares = 0, maxError = 0;
         var multipliers = new HashSet<int>();
         var seed = (uint)content + 10;
@@ -562,7 +562,7 @@ public sealed class Etc2BlockEncoderTests
                 signedSamples[i] = (unsignedSamples[i] / 32767.5f) - 1;
             }
 
-            if (signed)
+            if (isSigned)
             {
                 Etc2BlockEncoder.EncodeEacSigned(signedSamples, 1, encoded, thorough);
             }
@@ -576,7 +576,7 @@ public sealed class Etc2BlockEncoderTests
             for (var i = 0; i < 16; i++)
             {
                 var (x, y) = (i & 3, i >> 2);
-                var error = signed
+                var error = isSigned
                     ? (BinaryPrimitives.ReadSingleLittleEndian(decoded.AsSpan((y * 64) + (x * 16))) - signedSamples[i]) * 1023.0
                     : (BinaryPrimitives.ReadUInt16LittleEndian(decoded.AsSpan((y * 64) + (x * 8))) - unsignedSamples[i]) * 2047.0 / 65535;
                 squares += error * error;
@@ -584,7 +584,7 @@ public sealed class Etc2BlockEncoderTests
             }
         }
 
-        var peak = signed ? 2046.0 : 2047.0;
+        var peak = isSigned ? 2046.0 : 2047.0;
         return (squares == 0 ? double.PositiveInfinity : 10 * Math.Log10(peak * peak * BlockCount * 16 / squares), maxError, multipliers);
     }
 

@@ -30,6 +30,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// slot holding the key and its code in 32 bits, rented once from the writer scope as <see cref="AllocationKind.Temporary"/>
 /// and reused by every image.
 /// </description></item>
+/// <item><description>
+/// Lossy mode (<see cref="Formats.GifEncoder.LossyTolerance"/>): when the string "prefix + index" is not in the table, the encoder
+/// may extend the prefix with another child of the table instead, when the color of that child is at most the tolerance
+/// farther from the color of the pixel (squared RGB distances) than the color of its index. The child with the nearest color
+/// wins (ties: the most recently added). The datastream is an ordinary datastream of the indices it chose: only the choice
+/// of the indices is lossy. The children of each code are a list (first child, next sibling, index), kept with the table.
+/// </description></item>
 /// </list>
 /// </remarks>
 internal sealed class GifLzwEncoder : IDisposable
@@ -52,7 +59,17 @@ internal sealed class GifLzwEncoder : IDisposable
     private const int CodeBits = 12;
     private const uint EmptySlot = uint.MaxValue;
 
+    // The lossy state: the colors of the color table, then the first child and the next sibling of each code (16 bits each),
+    // then the index of each code
+    private const int PaletteOffset = 0;
+    private const int FirstChildOffset = PaletteOffset + (256 * sizeof(int));
+    private const int NextSiblingOffset = FirstChildOffset + (MaxCodes * sizeof(ushort));
+    private const int ChildIndexOffset = NextSiblingOffset + (MaxCodes * sizeof(ushort));
+    private const int LossyStateLength = ChildIndexOffset + MaxCodes;
+    private const ushort NoChild = ushort.MaxValue;
+
     private PooledBuffer? _state;
+    private PooledBuffer? _lossyState;
 
     // The array of the state, for the bytes of the sub-block being filled
     private byte[]? _subBlock;
@@ -65,15 +82,30 @@ internal sealed class GifLzwEncoder : IDisposable
     private int _bitCount;
     private int _subBlockLength;
     private bool _started;
+    private int _tolerance;
+    private int _transparentIndex;
 
     /// <summary>Allocates the string table.</summary>
     /// <param name="scope">The scope charged for the table.</param>
+    /// <param name="lossy"><see langword="true"/> to also allocate the state of the lossy mode (about 21 KiB).</param>
     /// <exception cref="ImageResourceLimitException">The table exceeds the live-allocation limit.</exception>
-    public GifLzwEncoder(AllocationScope scope)
+    public GifLzwEncoder(AllocationScope scope, bool lossy = false)
     {
         ArgumentNullException.ThrowIfNull(scope);
         _state = scope.Rent(StateLength, AllocationKind.Temporary, clear: false);
         _subBlock = _state.RawBuffer;
+        if (lossy)
+        {
+            try
+            {
+                _lossyState = scope.Rent(LossyStateLength, AllocationKind.Temporary, clear: false);
+            }
+            catch
+            {
+                Dispose();
+                throw;
+            }
+        }
     }
 
     /// <summary>Gets the minimum code size used for a color table of <paramref name="colorTableEntries"/> entries (a power of two, 2 to 256).</summary>
@@ -90,13 +122,40 @@ internal sealed class GifLzwEncoder : IDisposable
         return Math.Max(2, bits);
     }
 
-    /// <summary>Starts a new image datastream (the caller writes the minimum code size byte before it).</summary>
+    /// <summary>Starts a new lossless image datastream (the caller writes the minimum code size byte before it).</summary>
     /// <param name="minimumCodeSize">The LZW minimum code size (2 to 8).</param>
-    public void Reset(int minimumCodeSize)
+    public void Reset(int minimumCodeSize) => Reset(minimumCodeSize, colorTable: default, transparentIndex: -1, tolerance: 0);
+
+    /// <summary>
+    /// Starts a new image datastream (the caller writes the minimum code size byte before it), lossy when
+    /// <paramref name="tolerance"/> is positive: the indices are then written with <see cref="Write(ReadOnlySpan{byte}, ReadOnlySpan{int}, ImageOutputBuffer)"/>.
+    /// </summary>
+    /// <param name="minimumCodeSize">The LZW minimum code size (2 to 8).</param>
+    /// <param name="colorTable">The color table of the image (3 bytes per entry), for the lossy mode.</param>
+    /// <param name="transparentIndex">The transparent entry, which the lossy mode never chooses nor replaces, or -1.</param>
+    /// <param name="tolerance">The largest increase of the squared RGB distance of a pixel, or 0 for a lossless datastream.</param>
+    public void Reset(int minimumCodeSize, ReadOnlySpan<byte> colorTable, int transparentIndex, int tolerance)
     {
         if (minimumCodeSize is < 2 or > 8)
             throw new ArgumentOutOfRangeException(nameof(minimumCodeSize), minimumCodeSize, "The LZW minimum code size must be 2 to 8.");
 
+        ArgumentOutOfRangeException.ThrowIfNegative(tolerance);
+        if (tolerance > 0)
+        {
+            if (_lossyState is null)
+                throw new InvalidOperationException("The encoder was created without the lossy state.");
+
+            var palette = GetPalette();
+            palette.Clear();
+            var entries = Math.Min(colorTable.Length / 3, palette.Length);
+            for (var i = 0; i < entries; i++)
+            {
+                palette[i] = (colorTable[3 * i] << 16) | (colorTable[(3 * i) + 1] << 8) | colorTable[(3 * i) + 2];
+            }
+        }
+
+        _tolerance = tolerance;
+        _transparentIndex = transparentIndex;
         _minimumCodeSize = minimumCodeSize;
         _clearCode = 1 << minimumCodeSize;
         _bits = 0;
@@ -112,6 +171,9 @@ internal sealed class GifLzwEncoder : IDisposable
     public void Write(ReadOnlySpan<byte> indices, ImageOutputBuffer output)
     {
         ArgumentNullException.ThrowIfNull(output);
+        if (_tolerance > 0)
+            throw new InvalidOperationException("A lossy datastream needs the colors of the pixels.");
+
         var table = GetTable();
         if (!_started)
         {
@@ -170,6 +232,121 @@ internal sealed class GifLzwEncoder : IDisposable
         _prefix = prefix;
     }
 
+    /// <summary>Appends color indices to the datastream, with the colors of their pixels for the lossy mode.</summary>
+    /// <param name="indices">The indices (each below <c>2^minimumCodeSize</c>).</param>
+    /// <param name="keys">The 24-bit RGB colors of the pixels (<see cref="PaletteQuantizer.TransparentKey"/> for a transparent pixel), as many as <paramref name="indices"/>.</param>
+    /// <param name="output">The output receiving the completed data sub-blocks.</param>
+    public void Write(ReadOnlySpan<byte> indices, ReadOnlySpan<int> keys, ImageOutputBuffer output)
+    {
+        if (_tolerance == 0)
+        {
+            Write(indices, output);
+            return;
+        }
+
+        ArgumentNullException.ThrowIfNull(output);
+        if (keys.Length != indices.Length)
+            throw new ArgumentException("There must be one color per index.", nameof(keys));
+
+        var table = GetTable();
+        var lossy = GetLossyState();
+        var palette = unsafe(MemoryMarshal.Cast<byte, int>(lossy.Slice(PaletteOffset, 256 * sizeof(int))));
+        var firstChild = unsafe(MemoryMarshal.Cast<byte, ushort>(lossy.Slice(FirstChildOffset, MaxCodes * sizeof(ushort))));
+        var nextSibling = unsafe(MemoryMarshal.Cast<byte, ushort>(lossy.Slice(NextSiblingOffset, MaxCodes * sizeof(ushort))));
+        var childIndex = lossy.Slice(ChildIndexOffset, MaxCodes);
+        if (!_started)
+        {
+            _started = true;
+            ClearTable(table);
+            firstChild.Fill(NoChild);
+            EmitCode(_clearCode, output);
+        }
+
+        var clearCode = _clearCode;
+        var transparentIndex = _transparentIndex;
+        var tolerance = _tolerance;
+        var prefix = _prefix;
+        for (var i = 0; i < indices.Length; i++)
+        {
+            int index = indices[i];
+            if (index >= clearCode)
+                throw new ArgumentOutOfRangeException(nameof(indices), index, "The color index is outside the code space.");
+
+            if (prefix < 0)
+            {
+                prefix = index;
+                continue;
+            }
+
+            // Look up the string "prefix + index"
+            var key = (uint)((prefix << 8) | index);
+            var slot = Hash(key);
+            uint entry;
+            while ((entry = table[slot]) != EmptySlot)
+            {
+                if (entry >> CodeBits == key)
+                    break;
+
+                slot = (slot + 1) & (HashSlots - 1);
+            }
+
+            if (entry != EmptySlot)
+            {
+                prefix = (int)(entry & ((1u << CodeBits) - 1));
+                continue;
+            }
+
+            // Not in the table: the child of the prefix with the nearest color, when it is close enough to the pixel
+            var color = keys[i];
+            if (index != transparentIndex && color != PaletteQuantizer.TransparentKey)
+            {
+                var limit = GetDistance(color, palette[index]) + tolerance;
+                var best = -1;
+                var bestDistance = int.MaxValue;
+                for (int child = firstChild[prefix]; child != NoChild; child = nextSibling[child])
+                {
+                    int candidate = childIndex[child];
+                    if (candidate == transparentIndex)
+                        continue;
+
+                    var distance = GetDistance(color, palette[candidate]);
+                    if (distance <= limit && distance < bestDistance)
+                    {
+                        best = child;
+                        bestDistance = distance;
+                    }
+                }
+
+                if (best >= 0)
+                {
+                    prefix = best;
+                    continue;
+                }
+            }
+
+            // Emit the prefix, then add the new string (or restart a full table)
+            EmitDataCode(prefix, output);
+            if (_nextCode < MaxCodes)
+            {
+                table[slot] = (key << CodeBits) | (uint)_nextCode;
+                childIndex[_nextCode] = (byte)index;
+                nextSibling[_nextCode] = firstChild[prefix];
+                firstChild[prefix] = (ushort)_nextCode;
+                _nextCode++;
+            }
+            else
+            {
+                EmitCode(clearCode, output);
+                ClearTable(table);
+                firstChild.Fill(NoChild);
+            }
+
+            prefix = index;
+        }
+
+        _prefix = prefix;
+    }
+
     /// <summary>Ends the datastream: the pending string, the end code, the padding bits, the last sub-block and the block terminator.</summary>
     /// <param name="output">The output.</param>
     public void Finish(ImageOutputBuffer output)
@@ -205,10 +382,21 @@ internal sealed class GifLzwEncoder : IDisposable
     {
         _state?.Dispose();
         _state = null;
+        _lossyState?.Dispose();
+        _lossyState = null;
         _subBlock = null;
     }
 
     private static int Hash(uint key) => (int)((key * 0x9E3779B1u) >> (32 - HashBits));
+
+    /// <summary>Gets the squared distance between two 24-bit RGB colors.</summary>
+    private static int GetDistance(int a, int b)
+    {
+        var red = ((a >> 16) & 0xFF) - ((b >> 16) & 0xFF);
+        var green = ((a >> 8) & 0xFF) - ((b >> 8) & 0xFF);
+        var blue = (a & 0xFF) - (b & 0xFF);
+        return (red * red) + (green * green) + (blue * blue);
+    }
 
     private void ClearTable(Span<uint> table)
     {
@@ -261,6 +449,10 @@ internal sealed class GifLzwEncoder : IDisposable
     }
 
     private Span<byte> GetState() => (_state ?? throw new ObjectDisposedException(nameof(GifLzwEncoder))).RawBuffer.AsSpan(0, StateLength);
+
+    private Span<byte> GetLossyState() => (_lossyState ?? throw new InvalidOperationException("The encoder was created without the lossy state.")).RawBuffer.AsSpan(0, LossyStateLength);
+
+    private Span<int> GetPalette() => unsafe(MemoryMarshal.Cast<byte, int>(GetLossyState().Slice(PaletteOffset, 256 * sizeof(int))));
 
     private Span<uint> GetTable() => unsafe(MemoryMarshal.Cast<byte, uint>(GetState().Slice(TableOffset, HashSlots * sizeof(uint))));
 }

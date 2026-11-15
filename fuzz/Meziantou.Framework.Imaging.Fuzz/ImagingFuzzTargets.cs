@@ -4,7 +4,7 @@ using Meziantou.Framework.Fuzzing;
 namespace Meziantou.Framework.Imaging.Fuzz;
 
 /// <summary>
-/// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, and its processing operations that read pixels or points
+/// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, the lossy compression of its GIF encoder, and its processing operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation and
 /// homography estimation. The inputs of the processing targets are small images whose pixel format, size, frames and bytes
 /// come from the fuzzer, followed by the options of the operation.
@@ -28,6 +28,7 @@ public static partial class ImagingFuzzTargets
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("imaging-radiance", RadianceTarget) { Seeds = GetRadianceSeeds, Dictionary = RadianceTokens },
+        new("imaging-gif-lossy", GifLossyTarget) { Seeds = GetGifLossySeeds, Dictionary = Tokens },
         new("imaging-processor", ProcessorTarget) { Seeds = GetProcessorSeeds, Dictionary = Tokens },
         new("imaging-seam-carving", SeamCarvingTarget) { Seeds = GetSeamCarvingSeeds, Dictionary = Tokens },
         new("imaging-inpainting", InpaintingTarget) { Seeds = GetInpaintingSeeds, Dictionary = Tokens },

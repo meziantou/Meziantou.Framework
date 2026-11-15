@@ -124,6 +124,10 @@ internal static class JpegXlLayeredIO
         var format = image.Layers[0].Image.PixelFormat;
         foreach (var layer in image.Layers)
         {
+            // Frames or a poster added to the image of a layer after it was added would not be written
+            if (layer.Image.Frames.Count != 1 || layer.Image.PosterFrame is not null)
+                throw new InvalidOperationException("The image of a layer has several frames or a poster frame: a layer is a still image of one frame. Remove the other frames, or add them as layers of their own.");
+
             if (layer.Image.PixelFormat != format)
                 throw new InvalidOperationException($"The layers of a JPEG XL image have the same pixel format: the first one is {format}, another one {layer.Image.PixelFormat}. Convert them with CloneAs.");
 

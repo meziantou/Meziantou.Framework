@@ -166,7 +166,7 @@ public sealed class JpegXlLayeredImage : IDisposable
     /// another reference frame than the layers below, or the alpha channel otherwise than the colors).
     /// </exception>
     /// <exception cref="InvalidImageContentException">The file is malformed or truncated.</exception>
-    /// <exception cref="ImageResourceLimitException">A limit of the configuration is exceeded.</exception>
+    /// <exception cref="ImageResourceLimitException">A limit of the configuration is exceeded: each layer counts as a frame of its own size, charged before it is decoded.</exception>
     public static JpegXlLayeredImage Load(string path, ImageConfiguration? configuration = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
@@ -185,7 +185,7 @@ public sealed class JpegXlLayeredImage : IDisposable
     /// another reference frame than the layers below, or the alpha channel otherwise than the colors).
     /// </exception>
     /// <exception cref="InvalidImageContentException">The file is malformed or truncated.</exception>
-    /// <exception cref="ImageResourceLimitException">A limit of the configuration is exceeded.</exception>
+    /// <exception cref="ImageResourceLimitException">A limit of the configuration is exceeded: each layer counts as a frame of its own size, charged before it is decoded.</exception>
     public static JpegXlLayeredImage Load(Stream stream, ImageConfiguration? configuration = null)
     {
         Image.ValidateReadableStream(stream);
@@ -202,7 +202,7 @@ public sealed class JpegXlLayeredImage : IDisposable
     /// another reference frame than the layers below, or the alpha channel otherwise than the colors).
     /// </exception>
     /// <exception cref="InvalidImageContentException">The file is malformed or truncated.</exception>
-    /// <exception cref="ImageResourceLimitException">A limit of the configuration is exceeded.</exception>
+    /// <exception cref="ImageResourceLimitException">A limit of the configuration is exceeded: each layer counts as a frame of its own size, charged before it is decoded.</exception>
     public static JpegXlLayeredImage Load(ReadOnlySpan<byte> data, ImageConfiguration? configuration = null)
         => JpegXlLayeredIO.Load(data, configuration ?? ImageConfiguration.Default);
 
@@ -211,7 +211,7 @@ public sealed class JpegXlLayeredImage : IDisposable
     /// <param name="encoder">The settings of the frames, or <see langword="null"/> for the default ones (lossless). <see cref="JpegXlEncoder.DurationRounding"/> and <see cref="JpegXlEncoder.OptimizeFrames"/> do not apply to a still image.</param>
     /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
-    /// <exception cref="InvalidOperationException">The image has no layer, or its layers do not have the same pixel format.</exception>
+    /// <exception cref="InvalidOperationException">The image has no layer, its layers do not have the same pixel format, or the image of a layer has several frames or a poster frame.</exception>
     /// <exception cref="UnsupportedImageFeatureException">
     /// A layer has floating-point samples without <see cref="ImageEncoder.FloatingPointConversion"/>, CMYK samples, or other
     /// color metadata than <see cref="Metadata"/>; or the metadata cannot be stored (see <see cref="ImageEncoder.MetadataHandling"/>).
@@ -230,7 +230,7 @@ public sealed class JpegXlLayeredImage : IDisposable
     /// <param name="encoder">The settings of the frames, or <see langword="null"/> for the default ones (lossless). <see cref="JpegXlEncoder.DurationRounding"/> and <see cref="JpegXlEncoder.OptimizeFrames"/> do not apply to a still image.</param>
     /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="stream"/> is not writable.</exception>
-    /// <exception cref="InvalidOperationException">The image has no layer, or its layers do not have the same pixel format.</exception>
+    /// <exception cref="InvalidOperationException">The image has no layer, its layers do not have the same pixel format, or the image of a layer has several frames or a poster frame.</exception>
     /// <exception cref="UnsupportedImageFeatureException">
     /// A layer has floating-point samples without <see cref="ImageEncoder.FloatingPointConversion"/>, CMYK samples, or other
     /// color metadata than <see cref="Metadata"/>; or the metadata cannot be stored (see <see cref="ImageEncoder.MetadataHandling"/>).

@@ -316,6 +316,82 @@ public sealed class JpegXlLayeredImageTests
     }
 
     [Fact]
+    public void FramesAddedToALayerAreNotDroppedSilently()
+    {
+        using var document = new JpegXlLayeredImage(4, 4);
+        using var image = new Image<Rgba32>(4, 4);
+        var layer = document.AddLayer(image);
+        layer.Image.AppendFrame(image.Frames[0]);
+        Assert.Throws<InvalidOperationException>(() => Save(document, new JpegXlEncoder()));
+
+        document.RemoveLayerAt(0);
+        layer = document.AddLayer(image);
+        layer.Image.SetPosterFrame(image.Frames[0]);
+        Assert.Throws<InvalidOperationException>(() => Save(document, new JpegXlEncoder()));
+    }
+
+    [Fact]
+    public void ALayerWhoseNameIsNotUtf8IsRejected()
+    {
+        using var document = new JpegXlLayeredImage(4, 4);
+        using var image = new Image<Gray8>(4, 4, new Gray8(7));
+        document.AddLayer(image, name: "NAMEXYZW");
+        document.AddLayer(image, new Point(1, 1), JpegXlBlendMode.Add);
+        var data = Save(document, new JpegXlEncoder());
+
+        // The name is a run of 8-bit fields of the frame header, at any bit position (least significant bit first): its
+        // first byte becomes 0xFF, which UTF-8 never uses
+        var name = "NAMEXYZW"u8.ToArray();
+        var (index, shift) = FindBits(data, name);
+        data[index] |= (byte)(0xFF << shift);
+        if (shift != 0)
+        {
+            data[index + 1] |= (byte)(0xFF >> (8 - shift));
+        }
+
+        var exception = Assert.Throws<InvalidImageContentException>(() => JpegXlLayeredImage.Load(data));
+        Assert.Contains("the name of a frame is not UTF-8 text", exception.Message, StringComparison.Ordinal);
+
+        static (int Index, int Shift) FindBits(byte[] data, byte[] value)
+        {
+            for (var shift = 0; shift < 8; shift++)
+            {
+                for (var i = 0; i + value.Length < data.Length; i++)
+                {
+                    var match = true;
+                    for (var j = 0; j < value.Length && match; j++)
+                    {
+                        match = (byte)((data[i + j] >> shift) | (data[i + j + 1] << (8 - shift))) == value[j];
+                    }
+
+                    if (match)
+                        return (i, shift);
+                }
+            }
+
+            throw new InvalidOperationException("The name is not in the file.");
+        }
+    }
+
+    /// <summary>Each layer counts as a frame of its own size, charged before it is decoded.</summary>
+    [Fact]
+    public void LayersCountTowardTheFrameAndPixelLimits()
+    {
+        using var document = new JpegXlLayeredImage(20, 10);
+        AddLayer(document, PixelFormat.Rgba32, 20, 10, seed: 1, default, JpegXlBlendMode.Replace, null);
+        AddLayer(document, PixelFormat.Rgba32, 30, 7, seed: 2, new Point(-3, 2), JpegXlBlendMode.Blend, null);
+        var data = Save(document, new JpegXlEncoder());
+        const long Pixels = (20 * 10) + (30 * 7);
+
+        using (JpegXlLayeredImage.Load(data, new ImageConfiguration { Limits = new ImageResourceLimits { MaxFrames = 2, MaxTotalPixels = Pixels } }))
+        {
+        }
+
+        Assert.Throws<ImageResourceLimitException>(() => JpegXlLayeredImage.Load(data, new ImageConfiguration { Limits = new ImageResourceLimits { MaxFrames = 1 } }));
+        Assert.Throws<ImageResourceLimitException>(() => JpegXlLayeredImage.Load(data, new ImageConfiguration { Limits = new ImageResourceLimits { MaxTotalPixels = Pixels - 1 } }));
+    }
+
+    [Fact]
     public void AnImageWithoutLayersCannotBeSaved()
     {
         using var document = new JpegXlLayeredImage(4, 4);

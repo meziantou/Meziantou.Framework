@@ -264,7 +264,15 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
             _invisibleFrameIndex++;
         }
 
-        if (!isLayer)
+        // A layer is charged as a frame of its own size before it is decoded, and its image is created without charging it
+        // again (CreateLayerImage); its name is read first, so that an invalid name leaves no image behind
+        string? name = null;
+        if (isLayer)
+        {
+            name = DecodeName(frame.Name);
+            _context.Tracker.ChargeFrame(new Size(checked((int)frame.Width), checked((int)frame.Height)));
+        }
+        else
         {
             _context.Tracker.ChargeHiddenPixels((long)frame.Width * frame.Height);
         }
@@ -280,7 +288,16 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
 
             if (layer is not null)
             {
-                _layers!.Add(new JpegXlDecodedLayer(CreateLayerImage(structure, layer), new Point(frame.X0, frame.Y0), (JpegXlBlendMode)frame.Blending.Mode, DecodeName(frame.Name)));
+                var image = CreateLayerImage(structure, layer);
+                try
+                {
+                    _layers!.Add(new JpegXlDecodedLayer(image, new Point(frame.X0, frame.Y0), (JpegXlBlendMode)frame.Blending.Mode, name));
+                }
+                catch
+                {
+                    image.Dispose();
+                    throw;
+                }
             }
         }
         finally
@@ -337,10 +354,10 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         static bool IsClamped(JpegXlBlendingInfo blending) => blending.Clamp && blending.Mode is not (JpegXlBlendingInfo.ModeReplace or JpegXlBlendingInfo.ModeAdd);
     }
 
-    /// <summary>Converts the samples of a layer to an image of the default pixel format of the file.</summary>
+    /// <summary>Converts the samples of a layer, already charged as a frame (<see cref="OnLayerFrame"/>), to an image of the default pixel format of the file.</summary>
     private Image CreateLayerImage(JpegXlStructureParser structure, JpegXlImageBuffer layer)
     {
-        using var sink = DecodedFrameSink.Create(_context, _request, ImageFormat.JpegXl, new Size(layer.Width, layer.Height), _defaultPixelFormat, PixelFormatWidening.GetWidenedFormat(_defaultPixelFormat), _profile);
+        using var sink = DecodedFrameSink.Create(_context, _request with { IsEmbeddedPayload = true }, ImageFormat.JpegXl, new Size(layer.Width, layer.Height), _defaultPixelFormat, PixelFormatWidening.GetWidenedFormat(_defaultPixelFormat), _profile);
         sink.BeginFrame(FrameDuration.Zero);
         WriteCanvas(sink, structure.Header, layer, _renderer!.OutputColorChannelCount);
         sink.EndImage();

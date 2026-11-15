@@ -30,7 +30,8 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
     /// metadata or lossy alpha, otherwise <c>VP8X</c>, <c>ICCP</c>, the image, <c>EXIF</c>, <c>XMP </c>). An animation writes
     /// the RIFF header, <c>VP8X</c>, <c>ICCP</c> and <c>ANIM</c> before its first frame, one <c>ANMF</c> per frame, and the
     /// metadata chunks at completion, then asks the writer to patch the RIFF size and the <c>VP8X</c> alpha flag
-    /// (<see cref="ImageOutputBuffer.AddPatch"/>; the destination is seekable, see <see cref="ImageOutputCapabilities.RequiresSeekableOutput"/>).
+    /// (<see cref="ImageOutputBuffer.AddPatch"/>, see <see cref="ImageOutputCapabilities.RequiresSeekableOutput"/>: the writer
+    /// applies them to a seekable destination, or to the whole output it keeps for a non-seekable stream).
     /// </summary>
     /// <remarks>
     /// With <see cref="WebPEncoder.OptimizeFrames"/>, the session keeps the displayed frame (<see cref="AnimationFrameDelta"/>):
@@ -316,7 +317,7 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
 
         private EncodedFrame Compress(Span<byte> rgba, int width, int height, bool hasAlpha) => _lossless
             ? EncodedFrame.EncodeLossless(Options.Scope, rgba, width, height, _encoder.Effort, _encoder.NearLossless, CancellationToken)
-            : EncodedFrame.EncodeLossy(Options.Scope, rgba, width, height, hasAlpha, _encoder.Quality, _encoder.AlphaQuality, _encoder.Effort, CancellationToken);
+            : EncodedFrame.EncodeLossy(Options.Scope, rgba, width, height, hasAlpha, _encoder.Quality, _encoder.AlphaQuality, _encoder.Effort, _encoder.SharpYuv, CancellationToken);
 
         /// <summary>
         /// Plans a frame of <see cref="WebPEncoder.OptimizeFrames"/> (the first one covers the canvas), patches the disposal of
@@ -405,13 +406,17 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             return (region, blend, hasAlpha);
         }
 
-        /// <summary>Converts the frame to 8-bit RGBA (gray replicated, 16-bit reduced to the nearest 8-bit value), optionally clearing the color of transparent pixels.</summary>
+        /// <summary>
+        /// Converts the frame to 8-bit RGBA (gray replicated, 16-bit reduced to the nearest 8-bit value or dithered, see
+        /// <see cref="WebPEncoder.DitherBitDepthReduction"/>), optionally clearing the color of transparent pixels.
+        /// </summary>
         /// <returns>Whether at least one pixel is not fully opaque.</returns>
         private bool LoadPixels(ImageFrame frame, Span<byte> rgba)
         {
             var hasAlpha = false;
             var rowLength = _width * 4;
             using var lease = frame.GetStorage().AcquireLease();
+            using var dither = _encoder.DitherBitDepthReduction && PixelFormats.GetBitsPerComponent(_sourceFormat) > 8 ? new BitDepthDither(Options.Scope, _width) : null;
             for (var y = 0; y < _height; y++)
             {
                 if ((y & 63) == 0)
@@ -428,6 +433,7 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
                 else
                 {
                     PixelConverter.ConvertRow(_sourceFormat, source, PixelFormat.Rgba32, row, background: null, ImageFormat.WebP);
+                    dither?.DitherRow(_sourceFormat, source, row);
                 }
 
                 if (!PixelFormats.HasAlpha(_sourceFormat))
@@ -562,6 +568,73 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             => new(string.Create(CultureInfo.InvariantCulture, $"The WebP output would be {size} bytes; a WebP file is at most 4 GiB - 2 bytes (RIFF size field)."), ImageFormat.WebP, "WebP file size");
     }
 
+    /// <summary>
+    /// The Floyd–Steinberg reduction of <see cref="WebPEncoder.DitherBitDepthReduction"/>: the color components of a row are
+    /// reduced from their 16-bit values with the error carried to the right (7/16) and to the row below (3/16, 5/16, 1/16),
+    /// left to right from the top row down. The nearest 8-bit alpha decides which pixels are dithered: fully transparent
+    /// pixels keep their nearest colors and neither receive nor spread error.
+    /// </summary>
+    private sealed class BitDepthDither : IDisposable
+    {
+        private const float Step = 257;
+
+        private readonly int _width;
+        private PooledBuffer? _buffer;
+        private int _current;
+
+        public BitDepthDither(AllocationScope scope, int width)
+        {
+            _width = width;
+
+            // The 16-bit row, then two rows of errors (3 components, one pixel of margin on each side)
+            var bytes = ((long)width * 8) + (2L * (width + 2) * 3 * sizeof(float));
+            if (bytes > CheckedSizes.MaxBufferLength)
+                throw CheckedSizes.CreateOverflowException(scope.Limits);
+
+            _buffer = scope.Rent((int)bytes, AllocationKind.Temporary, clear: true);
+        }
+
+        /// <summary>Replaces the colors of <paramref name="row"/> (the nearest 8-bit conversion of <paramref name="source"/>) by dithered colors.</summary>
+        public void DitherRow(PixelFormat sourceFormat, ReadOnlySpan<byte> source, Span<byte> row)
+        {
+            var raw = _buffer!.RawBuffer.AsSpan();
+            var wideBytes = raw[..(_width * 8)];
+            PixelConverter.ConvertRow(sourceFormat, source, PixelFormat.Rgba64, wideBytes, background: null, ImageFormat.WebP);
+            var wide = unsafe(MemoryMarshal.Cast<byte, ushort>(wideBytes));
+            var errors = unsafe(MemoryMarshal.Cast<byte, float>(raw.Slice(_width * 8, 2 * (_width + 2) * 3 * sizeof(float))));
+            var rowErrors = (_width + 2) * 3;
+            var current = errors.Slice(_current * rowErrors, rowErrors);
+            var next = errors.Slice((1 - _current) * rowErrors, rowErrors);
+            next.Clear();
+            for (var x = 0; x < _width; x++)
+            {
+                if (row[(x * 4) + 3] == 0)
+                    continue;
+
+                for (var c = 0; c < 3; c++)
+                {
+                    // Errors are indexed from the margin pixel: pixel x is at (x + 1) * 3
+                    var target = wide[(x * 4) + c] + current[((x + 1) * 3) + c];
+                    var value = Math.Clamp((int)MathF.Floor((target / Step) + 0.5f), 0, 255);
+                    var error = target - (value * Step);
+                    row[(x * 4) + c] = (byte)value;
+                    current[((x + 2) * 3) + c] += error * (7 / 16f);
+                    next[(x * 3) + c] += error * (3 / 16f);
+                    next[((x + 1) * 3) + c] += error * (5 / 16f);
+                    next[((x + 2) * 3) + c] += error * (1 / 16f);
+                }
+            }
+
+            _current = 1 - _current;
+        }
+
+        public void Dispose()
+        {
+            _buffer?.Dispose();
+            _buffer = null;
+        }
+    }
+
     /// <summary>The compressed chunks of one frame: the bitstream (and the alpha data of a lossy frame).</summary>
     private sealed class EncodedFrame : IDisposable
     {
@@ -646,7 +719,7 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             }
         }
 
-        public static EncodedFrame EncodeLossy(AllocationScope scope, Span<byte> rgba, int width, int height, bool hasAlpha, int quality, int alphaQuality, int effort, CancellationToken cancellationToken)
+        public static EncodedFrame EncodeLossy(AllocationScope scope, Span<byte> rgba, int width, int height, bool hasAlpha, int quality, int alphaQuality, int effort, bool sharpYuv, CancellationToken cancellationToken)
         {
             var result = new EncodedFrame();
             try
@@ -657,7 +730,7 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
                     (result._alpha, result._alphaHeader) = EncodeAlpha(scope, rgba, width, height, alphaQuality, effort, cancellationToken);
                 }
 
-                result._lossy = Vp8Encoder.Encode(scope, rgba, width, height, quality, effort, cancellationToken);
+                result._lossy = Vp8Encoder.Encode(scope, rgba, width, height, quality, effort, sharpYuv, cancellationToken);
                 return result;
             }
             catch

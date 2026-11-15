@@ -1642,7 +1642,10 @@ thin public types over its `FontFace`.
     one worker. Uncompressed and PackBits blocks (a copy) and JPEG and JPEG 2000 blocks stay on the calling thread. The
     encoder compresses LZW and Deflate strips into outputs pre-grown to a proven bound (`TiffLzwEncoder.GetMaxEncodedLength`,
     9/8 for Deflate) and appends them one per `EncodeStrip` call, so the bytes and the flushes are those of one worker
-    (`BlocksDecodedByWorkersHaveThePixelsOfOneWorker`, `StripsCompressedByWorkersAreTheFileOfOneWorker`).
+    (`BlocksDecodedByWorkersHaveThePixelsOfOneWorker`, `StripsCompressedByWorkersAreTheFileOfOneWorker`). Its batches hold
+    up to `BlocksPerWorker` (4) strips per worker, as many as the live bytes left allow, split evenly over the page, and
+    each worker takes the next strip of the batch (`RowBands.RunParallelInItemOrder`): with one strip per worker, waiting
+    for the slowest strip of each batch and a last batch of a few strips cost a 1080p Deflate page 25% on 24 threads.
   - OpenEXR (`ExrDecoder`, `ExrEncoderCodec`): a chunk is compressed on its own and covers pixels no other chunk covers
     (one offset per index, and a chunk carries its coordinates). The chunks are copied to a batch (at least 2 chunks and
     1 MiB per worker) that the workers decode, each with its own `ExrChunkDecompressor`. The structure parser has the

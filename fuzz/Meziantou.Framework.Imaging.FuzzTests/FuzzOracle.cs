@@ -725,6 +725,43 @@ internal static class FuzzOracle
         if (FrameSummary.Capture(expected.Frames[0]).PixelHash != FrameSummary.Capture(reloaded.Frames[0]).PixelHash)
             return $"lossless-round-trip-pixels: the {pixelFormat} image of {expected.Width}x{expected.Height} written as {encoder.Format} ({encoder.GetType().Name}, variant {variant}) does not decode to the same pixels";
 
+        if (encoder is TiffEncoder { Compression: TiffCompression.Deflate or TiffCompression.Lzw } tiff)
+            return CheckTiffWorkers(expected, tiff, variant);
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// Returns an empty string, or "name: description" for a violated property; throws for exceptions. The corner repeated
+    /// over a page large enough for several workers (65,536 pixels) is written by 2 to 8 workers as by one: the batches of
+    /// strips the workers compress change neither the bytes nor the order of the strips.
+    /// </summary>
+    private static string CheckTiffWorkers(Image<Rgba64> corner, TiffEncoder encoder, int variant)
+    {
+        const int Side = 256;
+        var colors = new Rgba64[corner.Width * corner.Height];
+        corner.Frames[0].CopyPixelDataTo(colors);
+        var pixels = new Rgba64[Side * Side];
+        for (var y = 0; y < Side; y++)
+        {
+            for (var x = 0; x < Side; x++)
+            {
+                pixels[(y * Side) + x] = colors[((y % corner.Height) * corner.Width) + (x % corner.Width)];
+            }
+        }
+
+        var workers = 2 + (variant % 7);
+        byte[] Save(int maxDegreeOfParallelism)
+        {
+            using var page = Image.ImportPixelData<Rgba64>(pixels, Side, Side, configuration: new ImageConfiguration { MaxDegreeOfParallelism = maxDegreeOfParallelism });
+            using var output = new MemoryStream();
+            page.Save(output, encoder);
+            return output.ToArray();
+        }
+
+        if (!Save(1).AsSpan().SequenceEqual(Save(workers)))
+            return $"tiff-workers: the {Side}x{Side} page written as {encoder.Compression} TIFF ({encoder.RowsPerStrip} rows per strip) by {workers} workers differs from the file of one worker";
+
         return string.Empty;
     }
 

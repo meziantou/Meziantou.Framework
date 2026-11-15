@@ -28,8 +28,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// With several workers (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>), LZW and Deflate strips and tiles are compressed
-/// by batches of one strip per worker, each into an output of its own, and appended in order, one per call: the file and
-/// its flushes are those of one worker, and the memory is one strip and its compressed bytes per worker.
+/// by batches of up to <see cref="BlocksPerWorker"/> strips per worker, each into an output of its own, and appended in order,
+/// one per call: the file and its flushes are those of one worker, and the memory is up to
+/// <see cref="BlocksPerWorker"/> strips and their compressed bytes per worker.
 /// </para>
 /// <para>
 /// Nothing is lost silently. The bilevel and palette layouts store a page exactly or reject it, and so does a layout
@@ -52,6 +53,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class TiffDocumentWriter : IDisposable
 {
     private const ulong WhiteColor = 0xFFFF_FFFF_FFFF;
+
+    /// <summary>
+    /// The largest number of blocks per worker in a batch of blocks compressed by several workers
+    /// (<see cref="EncodeStripOfWorkers"/>): about four times fewer waits for the slowest block of a batch than one block
+    /// per worker, for the memory of four blocks and their compressed bytes per worker.
+    /// </summary>
+    private const int BlocksPerWorker = 4;
 
     private readonly TiffEncoder _encoder;
     private readonly AllocationScope _scope;
@@ -469,7 +477,8 @@ internal sealed class TiffDocumentWriter : IDisposable
     /// (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>): LZW and Deflate blocks of a page of at least
     /// <see cref="RowBands.MinPixelsForParallelism"/> pixels and two blocks, and as many workers as the live bytes the scope
     /// has left can give their memory to, after the growth of the output buffer one worker would cause. Uncompressed,
-    /// PackBits and CCITT strips cost about what serializing them costs.
+    /// PackBits and CCITT strips cost about what serializing them costs. The live bytes left after the workers give up to
+    /// <see cref="BlocksPerWorker"/> blocks per worker to a batch.
     /// </summary>
     /// <returns>The workers, or <see langword="null"/> for one worker.</returns>
     private StripWorkers? CreateWorkers(ImageOutputBuffer output)
@@ -486,31 +495,29 @@ internal sealed class TiffDocumentWriter : IDisposable
 
         // One worker rents the table of LZW with its first strip, and grows the output buffer to hold the bytes written
         // between two flushes (the old and the new buffer are live together while it grows): the other workers need a strip,
-        // a table and an output of their own, and the first one an output
+        // a table and an output of their own, and the first one an output. Each other block of a batch needs a strip and an
+        // output
         var encoderBytes = _compression == TiffFormat.CompressionLzw ? _scope.GetChargedSize(TiffLzwEncoder.StateLength) : 0;
         var outputBytes = _scope.GetChargedSize(compressedLength);
-        var workerBytes = _scope.GetChargedSize(stripLength) + encoderBytes + outputBytes;
+        var blockBytes = _scope.GetChargedSize(stripLength) + outputBytes;
+        var workerBytes = blockBytes + encoderBytes;
         var oneWorkerBytes = (_lzw is null ? encoderBytes : 0) + (3 * _scope.GetChargedSize(output.FlushThreshold + compressedLength));
         var available = _scope.Limit - _scope.LiveBytes - oneWorkerBytes - outputBytes;
         if (available < workerBytes)
             return null;
 
         var workers = (int)Math.Min(1 + (available / workerBytes), Math.Min(_configuration.MaxDegreeOfParallelism, stripCount));
-        var created = new StripWorkers(workers);
+        var blocks = (int)Math.Min(workers + ((available - ((workers - 1) * workerBytes)) / blockBytes), Math.Min((long)BlocksPerWorker * workers, stripCount));
+        var created = new StripWorkers(workers, blocks);
         try
         {
-            for (var i = 0; i < workers; i++)
+            for (var i = 0; i < blocks; i++)
             {
-                // The first worker uses the strip and the table of the writer
-                if (i == 0)
+                // The first block uses the strip of the writer, and the first worker its table
+                created.Strips[i] = i == 0 ? _strip! : _scope.Rent((int)stripLength, AllocationKind.Temporary, clear: false);
+                if (i < workers && _compression == TiffFormat.CompressionLzw)
                 {
-                    created.Strips[i] = _strip!;
-                    created.Encoders[i] = _compression == TiffFormat.CompressionLzw ? _lzw ??= new TiffLzwEncoder(_scope) : null;
-                }
-                else
-                {
-                    created.Strips[i] = _scope.Rent((int)stripLength, AllocationKind.Temporary, clear: false);
-                    created.Encoders[i] = _compression == TiffFormat.CompressionLzw ? new TiffLzwEncoder(_scope) : null;
+                    created.Encoders[i] = i == 0 ? _lzw ??= new TiffLzwEncoder(_scope) : new TiffLzwEncoder(_scope);
                 }
 
                 var compressed = new ImageOutputBuffer(_scope);
@@ -528,36 +535,41 @@ internal sealed class TiffDocumentWriter : IDisposable
     }
 
     /// <summary>
-    /// Writes the next block of a page whose strips or tiles several workers compress: the rows of a batch of one block per
-    /// worker are serialized on this thread, the workers compress them, each into an output of its own, and the blocks are
+    /// Writes the next block of a page whose strips or tiles several workers compress: the rows of a batch of blocks are
+    /// serialized on this thread, the workers compress them, each block into an output of its own, and the blocks are
     /// appended in order, one per call, so the file and its flushes are the ones of one worker.
     /// </summary>
+    /// <remarks>
+    /// The workers wait for each other at the end of a batch, so the more blocks a batch has, the less time they wait for
+    /// the slowest block (<see cref="BlocksPerWorker"/>), and the batches of a page have the same number of blocks, give or
+    /// take one, so that the last one is not a few blocks that leave most of the workers idle.
+    /// </remarks>
     private bool EncodeStripOfWorkers(ImageOutputBuffer output, StripWorkers workers, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (workers.Next == workers.Count)
         {
             var block = _blocksWritten;
-            var count = 0;
+            var remaining = _page.BlockCount - block;
+            var batches = (remaining + workers.Strips.Length - 1) / workers.Strips.Length;
+            var count = (remaining + batches - 1) / batches;
             using (var lease = _page.Frame.GetStorage().AcquireLease())
             {
-                while (count < workers.Strips.Length && block < _page.BlockCount)
+                for (var i = 0; i < count; i++)
                 {
-                    workers.Lengths[count] = FillBlock(block, lease, workers.Strips[count].Span, cancellationToken);
-                    block++;
-                    count++;
+                    workers.Lengths[i] = FillBlock(block + i, lease, workers.Strips[i].Span, cancellationToken);
                 }
             }
 
             workers.Count = 0;
             workers.Next = 0;
             var compression = _compression;
-            RowBands.RunParallelInBandOrder(count, worker =>
+            RowBands.RunParallelInItemOrder(count, workers.Encoders.Length, (strip, worker) =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var compressed = workers.Outputs[worker];
+                var compressed = workers.Outputs[strip];
                 compressed.FlushTo(Stream.Null);
-                var stored = workers.Strips[worker].Span[..workers.Lengths[worker]];
+                var stored = workers.Strips[strip].Span[..workers.Lengths[strip]];
                 if (compression == TiffFormat.CompressionLzw)
                 {
                     workers.Encoders[worker]!.Encode(stored, compressed);
@@ -571,10 +583,10 @@ internal sealed class TiffDocumentWriter : IDisposable
             workers.Count = count;
         }
 
-        var strip = workers.Next++;
+        var next = workers.Next++;
         var start = output.TotalBytes;
         _blockOffsets.Add((ulong)start);
-        output.Write(workers.Outputs[strip].WrittenMemory.Span);
+        output.Write(workers.Outputs[next].WrittenMemory.Span);
         _blockByteCounts.Add((ulong)(output.TotalBytes - start));
         _blocksWritten++;
         if (HasPendingBlocks)
@@ -1388,19 +1400,20 @@ internal sealed class TiffDocumentWriter : IDisposable
     }
 
     /// <summary>
-    /// The memory of the workers that compress the strips of a page: a strip, an LZW table and an output each (the first
-    /// worker uses the strip and the table of the writer), and the strips of the current batch.
+    /// The memory of the workers that compress the strips of a page: an LZW table per worker (the first worker uses the
+    /// table of the writer), and a strip and an output per block of a batch (the first block uses the strip of the writer).
     /// </summary>
-    private sealed class StripWorkers(int count) : IDisposable
+    private sealed class StripWorkers(int workers, int blocks) : IDisposable
     {
-        public PooledBuffer[] Strips { get; } = new PooledBuffer[count];
+        public PooledBuffer[] Strips { get; } = new PooledBuffer[blocks];
 
-        public TiffLzwEncoder?[] Encoders { get; } = new TiffLzwEncoder?[count];
+        /// <summary>Gets the LZW table of each worker.</summary>
+        public TiffLzwEncoder?[] Encoders { get; } = new TiffLzwEncoder?[workers];
 
-        public ImageOutputBuffer[] Outputs { get; } = new ImageOutputBuffer[count];
+        public ImageOutputBuffer[] Outputs { get; } = new ImageOutputBuffer[blocks];
 
         /// <summary>Gets the number of stored bytes of each block of the batch.</summary>
-        public int[] Lengths { get; } = new int[count];
+        public int[] Lengths { get; } = new int[blocks];
 
         /// <summary>Gets or sets the number of strips of the batch.</summary>
         public int Count { get; set; }
@@ -1415,13 +1428,21 @@ internal sealed class TiffDocumentWriter : IDisposable
                 if (i > 0)
                 {
                     Strips[i]?.Dispose();
-                    Encoders[i]?.Dispose();
                 }
 
                 Outputs[i]?.Dispose();
                 Strips[i] = null!;
-                Encoders[i] = null;
                 Outputs[i] = null!;
+            }
+
+            for (var i = 0; i < Encoders.Length; i++)
+            {
+                if (i > 0)
+                {
+                    Encoders[i]?.Dispose();
+                }
+
+                Encoders[i] = null;
             }
         }
     }

@@ -238,6 +238,33 @@ public sealed class ImageRendererTests
         }
     }
 
+    [Theory]
+    [InlineData(ErrorCorrectionLevel.L, 15, 0)]
+    [InlineData(ErrorCorrectionLevel.M, 20, 1)]
+    [InlineData(ErrorCorrectionLevel.Q, 25, 1)]
+    [InlineData(ErrorCorrectionLevel.H, 30, 1)]
+    public void QRCode_ToImage_LogoOnClearedModules_IsDecoded(ErrorCorrectionLevel level, int sizePercent, int margin)
+    {
+        // The largest logo each level recovers, for 120 characters (versions 6 to 11): the logo is dark in its middle
+        var data = new string('a', 120);
+        var qr = QRCode.Create(data, level);
+        using var logo = new Image<Rgba32>(32, 32, Colors.White);
+        logo.Draw(canvas => canvas.FillCircle(new SolidBrush(new Rgba32(0x25, 0x63, 0xeb)), new PointD(16, 16), 14));
+        using var logoStream = new MemoryStream();
+        logo.Save(logoStream, new PngEncoder());
+        var options = new QRCodeRenderOptions
+        {
+            ModuleSize = 4,
+            Logo = new BarcodeLogo(logoStream.ToArray()) { SizePercent = sizePercent, MarginModules = margin, BackdropPaint = new SceneColor(0xf0, 0xf0, 0xf0), BackdropCornerRadius = 1 },
+        };
+
+        using var image = qr.ToImage(options);
+
+        var result = Assert.Single(image.ReadQRCodes());
+        Assert.Equal(data, result.Text);
+        Assert.Equal(level, result.Result.ErrorCorrectionLevel);
+    }
+
     [Fact]
     public void QRCode_ToImage_UsesCustomColors()
     {

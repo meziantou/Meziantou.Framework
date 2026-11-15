@@ -190,7 +190,8 @@ shows the light paint through it.
 [Logo](cref:Meziantou.Framework.Barcodes.QRCodeRenderOptions.Logo) draws an image in the middle of a QR code, in every format. The
 [BarcodeLogo](cref:Meziantou.Framework.Barcodes.BarcodeLogo) takes the bytes of a PNG, JPEG, GIF or WebP file: the SVG embeds them as a data URI,
 and the image and PDF renderers decode them. The image keeps its proportions, centered in a square of [SizePercent](cref:Meziantou.Framework.Barcodes.BarcodeLogo.SizePercent)
-of the side of the code (20 by default):
+of the side of the code (20 by default). The modules under the logo are not drawn, so the logo sits on a clean area
+instead of over half-visible modules:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeSvgRendererTests.cs;region=QRCode_Logo;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -200,12 +201,16 @@ logoImage.Draw(canvas => canvas.FillCircle(new SolidBrush(new Rgba32(0x25, 0x63,
 using var logoStream = new MemoryStream();
 logoImage.Save(logoStream, new PngEncoder());
 
-// The error correction of level H recovers the modules under the logo
+// The modules around the logo are not drawn: the error correction of level H recovers them
 var qrCode = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.H);
 var options = new QRCodeRenderOptions
 {
     ModuleSize = 4,
-    Logo = new BarcodeLogo(logoStream.ToArray()) { SizePercent = 20 },
+    Logo = new BarcodeLogo(logoStream.ToArray())
+    {
+        SizePercent = 20,
+        MarginModules = 1, // A ring of light modules around the logo
+    },
 };
 
 // Every output draws the logo
@@ -214,11 +219,35 @@ using var image = qrCode.ToImage(options);
 ```
 <!-- endref -->
 
-![A QR code with a blue disc in its middle](images/QRCodeLogo.png)
+![A QR code with a blue disc in its middle, on a square of light modules](images/QRCodeLogo.png)
 
-The logo hides the modules under it, which the scanner must recover with the error correction: create the code with
-[ErrorCorrectionLevel.H](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.H), keep the logo small, and check that the result scans. Data
-that is not one of these formats throws an `ArgumentException`.
+The cleared area is the smallest rectangle of whole modules around the logo, grown by
+[MarginModules](cref:Meziantou.Framework.Barcodes.BarcodeLogo.MarginModules) on each side (0 by default). The scanner recovers its modules with the
+error correction, so rendering checks that it can, and throws an `ArgumentOutOfRangeException` when:
+
+- the area covers a finder pattern, a timing pattern, the format information or the version information, which locate
+  and describe the code: the logo is too large for a small code;
+- an error correction block of the code has more codewords in the area than its level recovers. The logo can make
+  any module of the area read wrong, so every codeword with a module in the area counts as an error. Level L recovers
+  about 7% of the codewords, M 15%, Q 25% and H 30%, minus a few codewords in the smallest codes.
+
+For example, for 120 characters (versions 6 to 11) and a margin of 1 module, the largest logo accepted among 10, 15, 20,
+25 and 30 percent:
+
+| Level | L | M | Q | H |
+| --- | --- | --- | --- | --- |
+| Largest [SizePercent](cref:Meziantou.Framework.Barcodes.BarcodeLogo.SizePercent) | 10 | 20 | 30 | 30 |
+
+Create the code with [ErrorCorrectionLevel.H](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.H) and keep the logo small: the check is
+for a perfect print, and a scanner also has to deal with blur, glare and distortion. The alignment patterns under the
+logo are cleared too: scanners read the code with the others. A Micro QR code or an rMQR code is too small to lose a
+centered area, so most logos are rejected on them.
+
+[BackdropPaint](cref:Meziantou.Framework.Barcodes.BarcodeLogo.BackdropPaint) paints the cleared area, under the logo, with
+[BackdropCornerRadius](cref:Meziantou.Framework.Barcodes.BarcodeLogo.BackdropCornerRadius) rounded corners, in modules: set it when the code has no
+light paint, or to draw the logo on a color of its own. Keep it light, as dark areas read as dark modules. Set
+[ClearModules](cref:Meziantou.Framework.Barcodes.BarcodeLogo.ClearModules) to `false` to draw the modules under the logo instead, without the
+check: then check that the result scans. Data that is not one of these formats throws an `ArgumentException`.
 
 ## Print the text under a barcode
 

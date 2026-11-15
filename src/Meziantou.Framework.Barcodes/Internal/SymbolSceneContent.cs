@@ -14,9 +14,8 @@ namespace Meziantou.Framework.Barcodes.Internal;
 /// <param name="SnapToPixels">Whether the positions are rounded to whole units.</param>
 /// <param name="Text">The style of the text under the symbol, or <see langword="null"/> for no text.</param>
 /// <param name="TextValue">The text under the symbol.</param>
-/// <param name="Logo">The logo over the center of the symbol, or <see langword="null"/>.</param>
+/// <param name="Logo">The logo over the center of the symbol, already validated and placed, or <see langword="null"/>.</param>
 /// <param name="SizeParameterName">The option to blame when the drawing is too large.</param>
-/// <param name="LogoParameterName">The option to blame when the logo is invalid.</param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct SymbolSceneContent(
     bool[,] Modules,
@@ -29,6 +28,5 @@ internal readonly record struct SymbolSceneContent(
     bool SnapToPixels,
     BarcodeTextOptions? Text,
     string? TextValue,
-    BarcodeLogo? Logo,
-    string SizeParameterName,
-    string LogoParameterName);
+    SymbolLogo? Logo,
+    string SizeParameterName);

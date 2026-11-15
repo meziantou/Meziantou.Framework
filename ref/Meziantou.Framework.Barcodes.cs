@@ -136,7 +136,11 @@ namespace Meziantou.Framework.Barcodes
 
     public sealed class BarcodeLogo
     {
+        public double BackdropCornerRadius { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.ScenePaint? BackdropPaint { get => throw null; set { } }
+        public bool ClearModules { get => throw null; set { } }
         public System.ReadOnlyMemory<byte> Data { get => throw null; }
+        public int MarginModules { get => throw null; set { } }
         public int SizePercent { get => throw null; set { } }
         public BarcodeLogo(System.ReadOnlyMemory<byte> data) { }
     }

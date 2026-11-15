@@ -1,5 +1,6 @@
 using System.Text;
 using System.Xml.Linq;
+using Meziantou.Framework.Barcodes.Internal;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Barcodes;
@@ -12,11 +13,13 @@ namespace Meziantou.Framework.Barcodes.Fuzz;
 /// with an <see cref="ArgumentOutOfRangeException"/>, and logo data that is not an image with an <see cref="ArgumentException"/>,
 /// exactly when the option is invalid; the scene has the size of the modules and the quiet zone, which Imaging measures, the
 /// SVG is XML and the image has the size of the scene, rounded up. The console renderers reject invalid options the same
-/// way, and give a line per two pixel rows of the modules, followed by the centered text of a linear barcode.
+/// way, and give a line per two pixel rows of the modules, followed by the centered text of a linear barcode. A QR code
+/// logo clears exactly the modules of the rectangle of whole modules around it, and only when the code stays readable
+/// with every codeword of the area wrong.
 /// </summary>
 internal static class RenderFuzzTargets
 {
-    private const int KindCount = 15;
+    private const int KindCount = 16;
 
     private static readonly double[] ModuleSizes = [1, 2, 3, 0.5, 1.5, 2.6, 4, 7.3, 0.1, 0, -1, double.NaN, double.PositiveInfinity, 1e7, double.NegativeInfinity, 1e-300];
 
@@ -25,6 +28,12 @@ internal static class RenderFuzzTargets
     private static readonly double[] Spacings = [2, 0, 5.5, 0.4, -1, double.NaN, double.PositiveInfinity, 1e6, 10, 2, 1, 0.5, 3, 7, -0.1, 4];
 
     private static readonly int[] LogoSizePercents = [20, 1, 50, 100, 0, 101, -5, 10, 99, 30, int.MaxValue, int.MinValue];
+
+    private static readonly int[] LogoMargins = [0, 1, 2, -1];
+
+    private static readonly double[] BackdropCornerRadii = [0, 1.5, -1, double.NaN];
+
+    private static readonly SceneColor BackdropColor = new(0xee, 0xee, 0xee);
 
     // A PNG image of 1x1 green pixel, the logo of the unit tests
     private static readonly byte[] GreenPng = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mNg+M8AAAICAQBF9FLUAAAAAElFTkSuQmCC");
@@ -36,6 +45,7 @@ internal static class RenderFuzzTargets
         "ABC-123", "Hello 12345678", "Hello 12345678", "5512345", "590123412345", "03600029145", "40156", "12345678",
         "0950110153001",
         "Hello", "Hello", "Hello",
+        "https://www.meziantou.net",
     ];
 
     // The signatures of the image formats a logo can be, and the elements of an SVG document
@@ -60,6 +70,7 @@ internal static class RenderFuzzTargets
         var flags = FuzzInput.ReadByte(ref data);
         var textByte = FuzzInput.ReadByte(ref data);
         var logoSizePercent = FuzzInput.Pick(LogoSizePercents, FuzzInput.ReadByte(ref data));
+        var logoFlags = FuzzInput.ReadByte(ref data);
         var text = FuzzInput.ReadText(FuzzInput.ReadUntil(ref data, 0));
         var logoData = data.ToArray();
 
@@ -71,6 +82,10 @@ internal static class RenderFuzzTargets
         var fonts = (flags & 32) == 0 ? BarcodeFonts.OcrB : BarcodeFonts.OcrA;
         var fontSize = FontSizes[textByte & 15];
         var spacing = Spacings[textByte >> 4];
+        var clearModules = (logoFlags & 1) == 0;
+        var logoMargin = LogoMargins[(logoFlags >> 1) & 3];
+        var withBackdrop = (logoFlags & 8) != 0;
+        var backdropCornerRadius = BackdropCornerRadii[(logoFlags >> 4) & 3];
 
         var symbol = CreateSymbol(kind, text);
         if (symbol is null)
@@ -85,6 +100,8 @@ internal static class RenderFuzzTargets
         var textIsInvalid = false;
         var logoSizeIsInvalid = false;
         var logoDataIsInvalid = false;
+        var logoMayBeUnreadable = false;
+        var hasLogo = false;
         Func<Scene> createScene;
         Func<string> toSvg;
         Func<RectangleD> measure;
@@ -95,8 +112,17 @@ internal static class RenderFuzzTargets
                 var qrOptions = new QRCodeRenderOptions { ModuleSize = moduleSize, QuietZoneModules = quietZone, DarkPaint = dark, LightPaint = light, SnapToPixels = snap };
                 if (withLogo)
                 {
-                    qrOptions.Logo = new BarcodeLogo(logoData) { SizePercent = logoSizePercent };
-                    logoSizeIsInvalid = logoSizePercent is < 1 or > 100;
+                    qrOptions.Logo = new BarcodeLogo(logoData)
+                    {
+                        SizePercent = logoSizePercent,
+                        ClearModules = clearModules,
+                        MarginModules = logoMargin,
+                        BackdropPaint = withBackdrop ? (ScenePaint)BackdropColor : null,
+                        BackdropCornerRadius = backdropCornerRadius,
+                    };
+                    logoSizeIsInvalid = logoSizePercent is < 1 or > 100 || logoMargin < 0 || !double.IsFinite(backdropCornerRadius) || backdropCornerRadius < 0;
+                    logoMayBeUnreadable = clearModules;
+                    hasLogo = true;
                     logoDataIsInvalid = SceneImage.GetMediaType(logoData) is null;
                 }
 
@@ -145,7 +171,9 @@ internal static class RenderFuzzTargets
         }
         catch (ArgumentOutOfRangeException ex)
         {
-            FuzzAssert.True(outOfRange, $"CreateScene rejects valid options: {ex.Message}");
+            // A cleared area the QR code cannot lose is rejected after the options are validated
+            var isUnreadableLogo = ex.Message.StartsWith("The area cleared under the logo", StringComparison.Ordinal);
+            FuzzAssert.True(isUnreadableLogo ? !outOfRange && logoMayBeUnreadable : outOfRange, $"CreateScene rejects valid options: {ex.Message}");
             AssertThrows<ArgumentOutOfRangeException>(() => toSvg(), "ToSvg");
             AssertThrows<ArgumentOutOfRangeException>(() => measure(), "Measure");
             AssertThrows<ArgumentOutOfRangeException>(() => toImage().Dispose(), "ToImage");
@@ -177,6 +205,35 @@ internal static class RenderFuzzTargets
 
         FuzzAssert.Equal(new RectangleD(0, 0, scene.Width, scene.Height), measure(), "The measured rectangle is the size of the scene");
 
+        // The cleared area is the rectangle of whole modules around the logo, grown by the margin
+        ModuleRectangle? cleared = null;
+        if (symbol is QRCode clearedQRCode && hasLogo)
+        {
+            var logo = scene.Root.Children.OfType<SceneImage>().Single();
+            if (clearModules)
+            {
+                cleared = GetClearedArea(logo, quietZone, moduleWidth, logoMargin, columns, rows);
+                if (cleared is { } area)
+                {
+                    AssertLosesTheArea(clearedQRCode, area);
+                }
+            }
+
+            var backdrop = scene.Root.Children.OfType<SceneRectangle>().Where(rectangle => rectangle.Fill is SolidPaint { Color: var color } && color == BackdropColor).ToList();
+            if (withBackdrop && cleared is { } backdropArea)
+            {
+                FuzzAssert.Equal(1, backdrop.Count, "The number of backdrops");
+                var rectangle = backdrop[0];
+                var expected = ((quietZone + backdropArea.Column) * moduleWidth, (quietZone + backdropArea.Row) * moduleWidth, backdropArea.ColumnCount * moduleWidth, backdropArea.RowCount * moduleWidth);
+                FuzzAssert.Equal(expected, (rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height), "The backdrop is on the module boundaries of the cleared area");
+                FuzzAssert.True(rectangle.CornerRadius >= 0 && rectangle.CornerRadius <= Math.Min(rectangle.Width, rectangle.Height) / 2, $"The corner radius of the backdrop is {rectangle.CornerRadius}");
+            }
+            else
+            {
+                FuzzAssert.Equal(0, backdrop.Count, "No backdrop without a cleared area");
+            }
+        }
+
         var svg = toSvg();
         XDocument document;
         try
@@ -197,10 +254,12 @@ internal static class RenderFuzzTargets
         using var image = toImage();
         FuzzAssert.Equal(((int)Math.Ceiling(scene.Width), (int)Math.Ceiling(scene.Height)), (image.Width, image.Height), "The size of the image is the size of the scene rounded up");
 
-        // With whole sizes and solid paints, the center of each module is its color
-        if (!snap || gradient || noLight || withLogo || hasText)
+        // With whole sizes and solid paints, the center of each module is its color: the light paint, or the backdrop, in the
+        // cleared area. The logo covers the modules under it.
+        if (!snap || gradient || noLight || hasText || (hasLogo && !clearModules))
             return;
 
+        var logoBounds = hasLogo ? scene.Root.Children.OfType<SceneImage>().Select(logo => new RectangleD(logo.X, logo.Y, logo.Width, logo.Height)).Single() : default;
         var pixels = new Rgba32[image.Width * image.Height];
         image.Frames[0].CopyPixelDataTo(pixels);
         for (var row = 0; row < rows; row++)
@@ -209,7 +268,21 @@ internal static class RenderFuzzTargets
             {
                 var x = (int)((quietZone + column + 0.5) * moduleWidth);
                 var y = (int)((verticalQuietZone + row + 0.5) * effectiveModuleHeight);
-                var expected = isDark(row, column) ? Colors.Black : Colors.White;
+                if (hasLogo && x + 1 >= logoBounds.X && x <= logoBounds.X + logoBounds.Width && y + 1 >= logoBounds.Y && y <= logoBounds.Y + logoBounds.Height)
+                    continue;
+
+                var isCleared = cleared is { } area && area.Contains(row, column);
+                if (isCleared && withBackdrop)
+                {
+                    // The backdrop, or the light paint and the edge of the backdrop in its rounded corners
+                    var pixel = pixels[(y * image.Width) + x];
+                    if (pixel.R < BackdropColor.R || pixel.G < BackdropColor.G || pixel.B < BackdropColor.B)
+                        FuzzAssert.Fail($"Cleared module ({column}, {row}) at pixel ({x}, {y}) is {pixel}, expected the backdrop");
+
+                    continue;
+                }
+
+                var expected = isDark(row, column) && !isCleared ? Colors.Black : Colors.White;
                 if (pixels[(y * image.Width) + x] != expected)
                     FuzzAssert.Fail($"Module ({column}, {row}) at pixel ({x}, {y}) is {pixels[(y * image.Width) + x]}, expected {expected}");
             }
@@ -316,6 +389,33 @@ internal static class RenderFuzzTargets
         }
     }
 
+    private static ModuleRectangle? GetClearedArea(SceneImage logo, int quietZone, double moduleSize, int margin, int columns, int rows)
+    {
+        var first = (int)Math.Clamp(Math.Floor((logo.X / moduleSize) - quietZone + 1e-9) - margin, 0, columns);
+        var end = (int)Math.Clamp(Math.Ceiling(((logo.X + logo.Width) / moduleSize) - quietZone - 1e-9) + margin, 0, columns);
+        var firstRow = (int)Math.Clamp(Math.Floor((logo.Y / moduleSize) - quietZone + 1e-9) - margin, 0, rows);
+        var endRow = (int)Math.Clamp(Math.Ceiling(((logo.Y + logo.Height) / moduleSize) - quietZone - 1e-9) + margin, 0, rows);
+        return end > first && endRow > firstRow ? new ModuleRectangle(firstRow, first, endRow - firstRow, end - first) : null;
+    }
+
+    // The worst case of a logo: every module of the area is wrong, so every codeword with a module in it is wrong too. The
+    // error correction still recovers the data.
+    private static void AssertLosesTheArea(QRCode qrCode, ModuleRectangle area)
+    {
+        var modules = new bool[qrCode.Height, qrCode.Width];
+        for (var row = 0; row < qrCode.Height; row++)
+        {
+            for (var column = 0; column < qrCode.Width; column++)
+            {
+                modules[row, column] = qrCode[row, column] != area.Contains(row, column);
+            }
+        }
+
+        var expected = QRCodeDecoder.Decode(qrCode);
+        FuzzAssert.True(QRCodeDecoder.TryDecode(modules, out var actual), $"The QR code is not readable without the modules cleared under the logo ({area})");
+        FuzzAssert.Equal(expected.Text, actual!.Text, "The text of the QR code without the modules cleared under the logo");
+    }
+
     private static object? CreateSymbol(int kind, string text)
     {
         try
@@ -336,7 +436,8 @@ internal static class RenderFuzzTargets
                 11 => Barcode.CreateGs1DataBarStacked(text),
                 12 => Barcode2D.CreateDataMatrix(text),
                 13 => Barcode2D.CreatePdf417(text),
-                _ => Barcode2D.CreateAztec(text),
+                14 => Barcode2D.CreateAztec(text),
+                _ => QRCode.Create(text, ErrorCorrectionLevel.H),
             };
         }
         catch (ArgumentException)
@@ -377,22 +478,35 @@ internal static class RenderFuzzTargets
     private static IEnumerable<FuzzSeed> GetSceneSeeds()
     {
         // The options of the unit tests (default sizes, no quiet zone, fractional sizes, text, logo), and invalid ones
-        (string Name, byte ModuleSize, byte ModuleHeight, byte QuietZone, byte Flags, byte TextByte, byte LogoSizePercent, bool Logo)[] variants =
+        // The logo flags: 1 draws the modules under the logo, then the margin (bits 1-2), 8 adds a backdrop, and the corner
+        // radius of the backdrop (bits 4-5)
+        (string Name, byte ModuleSize, byte ModuleHeight, byte QuietZone, byte Flags, byte TextByte, byte LogoSizePercent, byte LogoFlags, bool Logo)[] variants =
         [
-            ("default", 1, 1, 6, 0, 0, 0, false),
-            ("no-quiet-zone", 0, 0, 2, 0, 0, 0, false),
-            ("fractional", 4, 5, 3, 1, 0, 0, false),
-            ("no-light-gradient", 6, 6, 4, 6, 0, 0, false),
-            ("text", 1, 6, 12, 8, 0x21, 0, true),
-            ("text-ocra-red", 2, 6, 4, 8 | 32 | 64, 0x12, 0, false),
-            ("logo", 1, 1, 6, 16, 0, 0, true),
-            ("logo-full", 3, 3, 2, 17, 0, 3, true),
-            ("logo-invalid-data", 1, 1, 6, 16, 0, 0, false),
-            ("logo-invalid-size", 1, 1, 6, 16, 0, 4, true),
-            ("nan", 11, 11, 6, 0, 0, 0, false),
-            ("negative-quiet-zone", 1, 1, 0, 0, 0, 0, false),
-            ("invalid-text", 1, 1, 6, 8, 0x45, 0, false),
-            ("huge", 13, 13, 6, 0, 0, 0, false),
+            ("default", 1, 1, 6, 0, 0, 0, 0, false),
+            ("no-quiet-zone", 0, 0, 2, 0, 0, 0, 0, false),
+            ("fractional", 4, 5, 3, 1, 0, 0, 0, false),
+            ("no-light-gradient", 6, 6, 4, 6, 0, 0, 0, false),
+            ("text", 1, 6, 12, 8, 0x21, 0, 0, true),
+            ("text-ocra-red", 2, 6, 4, 8 | 32 | 64, 0x12, 0, 0, false),
+            ("logo", 1, 1, 6, 16, 0, 0, 0, true),
+            ("logo-not-cleared", 1, 1, 6, 16, 0, 0, 1, true),
+            ("logo-small", 1, 1, 6, 16, 0, 7, 0, true),
+            ("logo-margin", 1, 1, 6, 16, 0, 7, 2, true),
+            ("logo-backdrop", 1, 1, 6, 16, 0, 0, 8, true),
+            ("logo-backdrop-rounded", 3, 3, 6, 16, 0, 0, 8 | 2 | 16, true),
+            ("logo-fractional-backdrop", 4, 4, 3, 17, 0, 7, 8, true),
+            ("logo-no-light-backdrop", 1, 1, 6, 16 | 2, 0, 0, 8, true),
+            ("logo-full", 3, 3, 2, 17, 0, 3, 0, true),
+            ("logo-full-not-cleared", 3, 3, 2, 17, 0, 3, 1, true),
+            ("logo-invalid-data", 1, 1, 6, 16, 0, 0, 0, false),
+            ("logo-invalid-size", 1, 1, 6, 16, 0, 4, 0, true),
+            ("logo-invalid-margin", 1, 1, 6, 16, 0, 0, 6, true),
+            ("logo-invalid-radius", 1, 1, 6, 16, 0, 0, 8 | 32, true),
+            ("logo-nan-radius", 1, 1, 6, 16, 0, 0, 8 | 48, true),
+            ("nan", 11, 11, 6, 0, 0, 0, 0, false),
+            ("negative-quiet-zone", 1, 1, 0, 0, 0, 0, 0, false),
+            ("invalid-text", 1, 1, 6, 8, 0x45, 0, 0, false),
+            ("huge", 13, 13, 6, 0, 0, 0, 0, false),
         ];
 
         for (var kind = 0; kind < KindCount; kind++)
@@ -400,9 +514,16 @@ internal static class RenderFuzzTargets
             foreach (var variant in variants)
             {
                 byte[] logo = variant.Logo ? [0, .. GreenPng] : [0, 1, 2, 3];
-                yield return new FuzzSeed($"scene-{kind}-{variant.Name}", (byte[])[(byte)kind, variant.ModuleSize, variant.ModuleHeight, variant.QuietZone, variant.Flags, variant.TextByte, variant.LogoSizePercent, .. FuzzText.Encode(SeedTexts[kind]), .. logo]);
+                yield return new FuzzSeed($"scene-{kind}-{variant.Name}", (byte[])[(byte)kind, variant.ModuleSize, variant.ModuleHeight, variant.QuietZone, variant.Flags, variant.TextByte, variant.LogoSizePercent, variant.LogoFlags, .. FuzzText.Encode(SeedTexts[kind]), .. logo]);
             }
         }
+
+        // A version 6 QR code of level L: its error correction recovers the modules under a logo of 10%, not of 20% (the
+        // unit tests of the cleared area)
+        var longText = FuzzText.Encode(new string('a', 120));
+        yield return new FuzzSeed("scene-0-logo-recovered", (byte[])[0, 1, 1, 6, 16, 0, 7, 2, .. longText, 0, .. GreenPng]);
+        yield return new FuzzSeed("scene-0-logo-too-large", (byte[])[0, 1, 1, 6, 16, 0, 0, 0, .. longText, 0, .. GreenPng]);
+        yield return new FuzzSeed("scene-0-logo-too-large-backdrop", (byte[])[0, 1, 1, 6, 16, 0, 0, 8, .. longText, 0, .. GreenPng]);
     }
 
     private static IEnumerable<FuzzSeed> GetConsoleSeeds()

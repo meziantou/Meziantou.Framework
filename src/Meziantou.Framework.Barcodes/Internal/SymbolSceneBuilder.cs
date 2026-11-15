@@ -83,12 +83,10 @@ internal static class SymbolSceneBuilder
             scene.Root.Add(new SceneRectangle(0, 0, width, height) { Fill = content.LightPaint });
         }
 
-        var path = CreateDarkModulesPath(
-            modules,
-            symbolLeft + (content.HorizontalQuietZoneModules * content.ModuleWidth),
-            content.VerticalQuietZoneModules * content.ModuleHeight,
-            content.ModuleWidth,
-            content.ModuleHeight);
+        var modulesLeft = symbolLeft + (content.HorizontalQuietZoneModules * content.ModuleWidth);
+        var modulesTop = content.VerticalQuietZoneModules * content.ModuleHeight;
+        var cleared = content.Logo?.ClearedModules;
+        var path = CreateDarkModulesPath(modules, modulesLeft, modulesTop, content.ModuleWidth, content.ModuleHeight, cleared);
         if (path is not null)
         {
             scene.Root.Add(new ScenePath(path) { Fill = content.DarkPaint });
@@ -107,20 +105,19 @@ internal static class SymbolSceneBuilder
 
         if (content.Logo is { } logo)
         {
-            if (logo.SizePercent is < 1 or > 100)
-                throw new ArgumentOutOfRangeException(content.LogoParameterName, logo.SizePercent, "The size of the logo must be between 1 and 100 percent.");
-
-            var logoSize = Math.Max(1, Math.Min(symbolWidth, symbolHeight) * logo.SizePercent / 100);
-            var logoLeft = symbolLeft + ((symbolWidth - logoSize) / 2);
-            var logoTop = (symbolHeight - logoSize) / 2;
-            if (content.SnapToPixels)
+            if (logo.BackdropPaint is not null && cleared is { } area)
             {
-                logoSize = Math.Max(1, Math.Floor(logoSize));
-                logoLeft = symbolLeft + Math.Floor((symbolWidth - logoSize) / 2);
-                logoTop = Math.Floor((symbolHeight - logoSize) / 2);
+                var backdropWidth = area.ColumnCount * content.ModuleWidth;
+                var backdropHeight = area.RowCount * content.ModuleHeight;
+                var radius = Math.Min(logo.BackdropCornerRadius * Math.Min(content.ModuleWidth, content.ModuleHeight), Math.Min(backdropWidth, backdropHeight) / 2);
+                scene.Root.Add(new SceneRectangle(modulesLeft + (area.Column * content.ModuleWidth), modulesTop + (area.Row * content.ModuleHeight), backdropWidth, backdropHeight)
+                {
+                    Fill = logo.BackdropPaint,
+                    CornerRadius = radius,
+                });
             }
 
-            scene.Root.Add(new SceneImage(logoLeft, logoTop, logoSize, logoSize, logo.Data) { Alignment = SceneAspectRatio.XMidYMid });
+            scene.Root.Add(new SceneImage(symbolLeft + logo.X, logo.Y, logo.Size, logo.Size, logo.Data) { Alignment = SceneAspectRatio.XMidYMid });
         }
 
         return scene;
@@ -134,8 +131,9 @@ internal static class SymbolSceneBuilder
 
     private static SceneFont CreateFont(BarcodeTextOptions text) => new(text.FontSize, Family: text.Fonts.DefaultFamily);
 
-    // One path holds every dark module, so the edges of adjacent modules are painted as one shape, without seams
-    private static PathData? CreateDarkModulesPath(bool[,] modules, double left, double top, double moduleWidth, double moduleHeight)
+    // One path holds every dark module, so the edges of adjacent modules are painted as one shape, without seams. The
+    // modules of the cleared area are not drawn.
+    private static PathData? CreateDarkModulesPath(bool[,] modules, double left, double top, double moduleWidth, double moduleHeight, ModuleRectangle? cleared)
     {
         var rows = modules.GetLength(0);
         var columns = modules.GetLength(1);
@@ -144,21 +142,38 @@ internal static class SymbolSceneBuilder
         var row = 0;
         while (row < rows)
         {
-            // Identical consecutive rows (the rows of PDF417, of stacked barcodes) are one rectangle per run
+            // Identical consecutive rows (the rows of PDF417, of stacked barcodes) are one rectangle per run, which stops at
+            // the edges of the cleared area
             var rowCount = CountIdenticalRows(modules, row);
+            var clearedStart = 0;
+            var clearedEnd = 0;
+            if (cleared is { } area)
+            {
+                if (row < area.Row)
+                {
+                    rowCount = Math.Min(rowCount, area.Row - row);
+                }
+                else if (row < area.EndRow)
+                {
+                    rowCount = Math.Min(rowCount, area.EndRow - row);
+                    clearedStart = area.Column;
+                    clearedEnd = area.EndColumn;
+                }
+            }
+
             var y = top + (row * moduleHeight);
             var height = rowCount * moduleHeight;
             var column = 0;
             while (column < columns)
             {
-                if (!modules[row, column])
+                if (!IsDrawn(modules, row, column, clearedStart, clearedEnd))
                 {
                     column++;
                     continue;
                 }
 
                 var start = column;
-                while (column < columns && modules[row, column])
+                while (column < columns && IsDrawn(modules, row, column, clearedStart, clearedEnd))
                 {
                     column++;
                 }
@@ -171,6 +186,8 @@ internal static class SymbolSceneBuilder
         }
 
         return hasDarkModule ? builder.Build() : null;
+
+        static bool IsDrawn(bool[,] modules, int row, int column, int clearedStart, int clearedEnd) => modules[row, column] && (column < clearedStart || column >= clearedEnd);
     }
 
     /// <summary>Gets the number of rows, starting at <paramref name="row"/>, that have the same modules.</summary>

@@ -51,8 +51,7 @@ public static class BarcodeRenderer
             text,
             barcode.Text,
             Logo: null,
-            nameof(options.ModuleWidth),
-            LogoParameterName: ""));
+            nameof(options.ModuleWidth)));
     }
 
     /// <summary>Renders the barcode as an SVG document.</summary>

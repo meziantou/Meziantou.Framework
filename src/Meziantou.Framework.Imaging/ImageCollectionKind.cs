@@ -22,4 +22,11 @@ public enum ImageCollectionKind
     /// Their order carries no meaning; <see cref="ImageCollection.SelectBySize"/> picks one.
     /// </summary>
     Representations = 2,
+
+    /// <summary>
+    /// The entries are the subresources of a texture (KTX 2.0): every depth slice of every mip level of every cube face of
+    /// every array layer, ordered by layer, then face, then level, then slice. <see cref="ImageCollectionEntry.TextureSubresource"/>
+    /// tells which one an entry is; the first entry is the base level of the first face of the first layer.
+    /// </summary>
+    Surfaces = 3,
 }

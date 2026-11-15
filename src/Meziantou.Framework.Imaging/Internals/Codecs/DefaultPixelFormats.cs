@@ -88,6 +88,18 @@ internal static class DefaultPixelFormats
     /// <summary>Gets the default pixel format of a Radiance HDR image: every RGBE pixel is an exact single-precision color.</summary>
     public static PixelFormat Radiance => PixelFormat.RgbaFloat;
 
+    /// <summary>Selects the default pixel format of a KTX 2.0 texture, from the output channels its format and its swizzle give.</summary>
+    /// <param name="isGray">Whether the three colors are the same channel.</param>
+    /// <param name="hasAlpha">Whether alpha is not the constant 1.</param>
+    /// <param name="precision">The precision of the texels.</param>
+    /// <returns>A gray, gray with alpha, RGB or RGBA format of 8 or 16 bits, or <see cref="PixelFormat.RgbaHalf"/> or <see cref="PixelFormat.RgbaFloat"/> for floating-point and signed texels.</returns>
+    public static PixelFormat ForKtx2(bool isGray, bool hasAlpha, Ktx2OutputPrecision precision) => precision switch
+    {
+        Ktx2OutputPrecision.Half => PixelFormat.RgbaHalf,
+        Ktx2OutputPrecision.Float => PixelFormat.RgbaFloat,
+        _ => Select(isGray, hasAlpha, precision == Ktx2OutputPrecision.UInt16),
+    };
+
     /// <summary>Selects the default pixel format of a BMP image.</summary>
     /// <param name="hasAlphaMask">Whether the DIB layout defines a real (non-padding) alpha channel.</param>
     /// <returns><see cref="PixelFormat.Rgba32"/> for layouts with an alpha mask, otherwise <see cref="PixelFormat.Rgb24"/>.</returns>

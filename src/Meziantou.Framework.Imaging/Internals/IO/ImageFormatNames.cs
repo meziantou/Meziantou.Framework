@@ -23,6 +23,7 @@ internal static class ImageFormatNames
         ImageFormat.Jpeg2000 => "JPEG 2000",
         ImageFormat.OpenExr => "OpenEXR",
         ImageFormat.Radiance => "Radiance HDR",
+        ImageFormat.Ktx2 => "KTX 2.0",
         ImageFormat.Custom => "custom",
         _ => "image",
     };

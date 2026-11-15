@@ -76,6 +76,12 @@ public sealed class ImageCollectionEntry
     /// </remarks>
     public Point? Hotspot { get; }
 
+    /// <summary>
+    /// Gets the mip level, array layer, cube face and depth slice of a texture entry (<see cref="ImageCollectionKind.Surfaces"/>),
+    /// or <see langword="null"/> for the entries of other collections and for an entry that was added to the collection.
+    /// </summary>
+    public TextureSubresource? TextureSubresource => _descriptor?.TextureSubresource;
+
     /// <summary>Gets the metadata of the entry. Entries of one collection have independent metadata.</summary>
     public ImageMetadata Metadata => _descriptor?.Metadata ?? OwnedImage.Metadata;
 

@@ -51,6 +51,7 @@ public sealed class ImageFormatInfo
         new(ImageFormat.Jpeg2000, ["image/jp2", "image/jpx", "image/jph"], [".jp2", ".j2k", ".j2c", ".jpc", ".jpx", ".jpf", ".jph", ".jhc"]),
         new(ImageFormat.OpenExr, ["image/x-exr"], [".exr"]),
         new(ImageFormat.Radiance, ["image/vnd.radiance", "image/x-hdr"], [".hdr", ".pic"]),
+        new(ImageFormat.Ktx2, ["image/ktx2"], [".ktx2"]),
     ];
 
     private static readonly ReadOnlyCollection<ImageFormatInfo> AllFormats = Array.AsReadOnly(Formats);
@@ -145,8 +146,9 @@ public sealed class ImageFormatInfo
     /// in lower case with their leading period, the preferred one first.
     /// </summary>
     /// <remarks>
-    /// Every extension selects an encoder in <see cref="ImageEncoder.FromFileExtension(string)"/>, except the JPEG 2000
-    /// extensions of files the library reads but does not write: <c>.jpx</c> and <c>.jpf</c> (the extended file format).
+    /// Every extension selects an encoder in <see cref="ImageEncoder.FromFileExtension(string)"/>, except the extensions of
+    /// files the library reads but does not write: <c>.jpx</c> and <c>.jpf</c> (the extended file format of JPEG 2000) and
+    /// <c>.ktx2</c> (KTX 2.0).
     /// </remarks>
     public IReadOnlyList<string> FileExtensions { get; }
 

@@ -97,6 +97,13 @@ public enum ImageFormat
     Radiance = 18,
 
     /// <summary>
+    /// KTX 2.0 (Khronos Texture): GPU textures with mip levels, array layers, cube faces and depth slices, uncompressed or
+    /// block-compressed (ETC2, EAC, ASTC, Basis Universal ETC1S and UASTC), optionally supercompressed (<c>.ktx2</c>).
+    /// Read only.
+    /// </summary>
+    Ktx2 = 19,
+
+    /// <summary>
     /// A format read or written by a <see cref="CustomImageCodec"/> of <see cref="ImageConfiguration.Codecs"/>, not by the
     /// library itself. <see cref="ImageInfo.FormatInfo"/> and <see cref="Formats.CustomImageEncoder.FormatInfo"/> tell which one.
     /// </summary>

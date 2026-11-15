@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec, the image data of PNG files, the lossy GIF compression, the processing operations, the strokes, and the layers and optimized animations of JPEG XL. The other codecs
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec, the image data of PNG files, the lossy GIF compression, the processing operations, the strokes, the optimal line breaking, and the layers and optimized animations of JPEG XL. The other codecs
     are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
   -->
   <PropertyGroup>
@@ -16,6 +16,11 @@
     <!-- The seeds of imaging-jxl-layers-load, after the layered files it generates: the JPEG XL files of the golden corpus -->
     <JpegXlSeed Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\jxl\*.jxl" />
     <EmbeddedResource Include="@(JpegXlSeed)" LogicalName="Seeds/jxl/%(Filename)%(Extension)" Link="Seeds\jxl\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The PostScript Type 1 font of the font tests: the font of imaging-line-breaking -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontType1Writer.cs" Link="Shared\FontType1Writer.cs" />
   </ItemGroup>
 
   <ItemGroup>

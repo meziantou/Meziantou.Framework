@@ -286,6 +286,45 @@ public sealed class Font
     public static Font Load(ReadOnlySpan<byte> data, FontLoadOptions? options = null)
         => new(FontFiles.Load(data, options ?? FontLoadOptions.Default)[0]);
 
+    /// <summary>Loads a PostScript Type 1 font (a PFB or a PFA file) with the metrics of its AFM file.</summary>
+    /// <param name="data">The bytes of the PFB or PFA file. They are converted: the font does not refer to the span after the method returns.</param>
+    /// <param name="metrics">
+    /// The metrics of the font, read from its AFM file with <see cref="AfmFontMetrics.Load(ReadOnlySpan{byte}, FontResourceLimits?)"/>,
+    /// or <see langword="null"/>: their kerning pairs become the kerning of the font, and their ascender, descender,
+    /// cap height and x-height replace the values computed from the font program. The advance widths are always the
+    /// ones of the font program.
+    /// </param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
+    /// <returns>The font.</returns>
+    /// <remarks>
+    /// <see cref="Load(ReadOnlySpan{byte}, FontLoadOptions?)"/> reads Type 1 fonts too, without metrics. The font is
+    /// converted to an OpenType font with CFF outlines when it is loaded: subroutines, flex and accented characters
+    /// (<c>seac</c>) become outlines, and the hints are dropped.
+    /// </remarks>
+    /// <exception cref="UnknownImageFormatException">The data is not a PFB or a PFA file.</exception>
+    /// <exception cref="InvalidImageContentException">The font program is malformed or truncated.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The font is a multiple master, CID-keyed or stroked font.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    public static Font LoadType1(ReadOnlySpan<byte> data, AfmFontMetrics? metrics, FontLoadOptions? options = null)
+        => new(FontFiles.LoadType1(data, metrics, options ?? FontLoadOptions.Default));
+
+    /// <summary>Loads a PostScript Type 1 font from a PFB or a PFA file, with the metrics of its AFM file.</summary>
+    /// <param name="path">The path of the PFB or PFA file. The file is closed before the method returns.</param>
+    /// <param name="metrics">The metrics of the font, read from its AFM file, or <see langword="null"/>; see <see cref="LoadType1(ReadOnlySpan{byte}, AfmFontMetrics?, FontLoadOptions?)"/>.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
+    /// <returns>The font.</returns>
+    /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+    /// <exception cref="UnknownImageFormatException">The file is not a PFB or a PFA file.</exception>
+    /// <exception cref="InvalidImageContentException">The font program is malformed or truncated.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The font is a multiple master, CID-keyed or stroked font.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
+    public static Font LoadType1(string path, AfmFontMetrics? metrics, FontLoadOptions? options = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        return new Font(FontFiles.LoadType1(path, metrics, options ?? FontLoadOptions.Default));
+    }
+
     /// <summary>Loads a face of a font installed on the machine, or of a font of the directories of a <see cref="SystemFontCollection"/>.</summary>
     /// <param name="face">The face: one of <see cref="SystemFontCollection.Fonts"/>, or what <see cref="SystemFontCollection.Match"/> or <see cref="SystemFontCollection.FindByName"/> returns.</param>
     /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>

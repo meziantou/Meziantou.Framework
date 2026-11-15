@@ -7,9 +7,10 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 /// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, the image data of PNG files (inflation and
 /// reconstruction), the lossy compression of its GIF encoder, and its processing operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
-/// homography estimation and resizing; the merging of the pieces of strokes; and the layers of JPEG XL images and the
-/// regions of its optimized animations. The inputs of the processing targets are
-/// small images whose pixel format, size, frames and bytes come from the fuzzer, followed by the options of the operation.
+/// homography estimation and resizing; the merging of the pieces of strokes; the optimal line breaking of text
+/// layouts; and the layers of JPEG XL images and the regions of its optimized animations. The inputs of the processing
+/// targets are small images whose pixel format, size, frames and bytes come from the fuzzer, followed by the options of
+/// the operation.
 /// </summary>
 public static partial class ImagingFuzzTargets
 {
@@ -41,6 +42,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-skew", SkewTarget) { Seeds = GetSkewSeeds, Dictionary = Tokens },
         new("imaging-stroke", StrokeTarget) { Seeds = GetStrokeSeeds, Dictionary = StrokeTokens },
         new("imaging-resize", ResizeTarget) { Seeds = GetResizeSeeds, Dictionary = Tokens },
+        new("imaging-line-breaking", LineBreakingTarget) { Seeds = GetLineBreakingSeeds, Dictionary = LineBreakingTokens },
         new("imaging-color-matrix", ColorMatrixTarget) { Seeds = GetColorMatrixSeeds, Dictionary = Tokens },
         new("imaging-resize-float", ResizeFloatTarget) { Seeds = GetResizeFloatSeeds, Dictionary = Tokens },
         new("imaging-jxl-layers", JpegXlLayersTarget) { Seeds = GetJpegXlLayersSeeds, Dictionary = JpegXlLayerTokens },

@@ -351,11 +351,18 @@ public sealed class ApiSurfaceTests
     }
 
     [Fact]
+    public void PsdIsTheLastFormat()
+    {
+        // A new format is appended: the values of the existing members never change. PSD is read only: no public type of its own
+        Assert.Equal(19, (int)ImageFormat.Psd);
+        Assert.Equal(19, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
+    }
+
+    [Fact]
     public void RadianceAdditionsHaveTheirPublicShape()
     {
         // A new format is appended: the values of the existing members never change
         Assert.Equal(18, (int)ImageFormat.Radiance);
-        Assert.Equal(18, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
 
         var type = typeof(RadianceEncoder);
         Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);

@@ -2,7 +2,8 @@
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
-progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
+progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, PSD decoding (the composite image),
+lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
 vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
@@ -229,8 +230,9 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - A new format always adds an `ImageFormat` member, its name in `ImageFormatNames`, an `ImageCodec` in
   `ImageCodecRegistry`, a default pixel format in `DefaultPixelFormats`, and a row in the support matrix and a section in
   the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a
-  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (none
-  today) makes `ImageEncoder.FromPath` reject its extensions with a message that says so.
+  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (PSD)
+  makes `ImageEncoder.FromPath` reject its extensions with a message that says so, and `ImageEncoder.Create` reject
+  its `ImageFormat` member.
 - **PNG `MinimumSize`** (`PngOptimizedEncoderSession`, a session of its own): the default session must keep writing the
   same bytes, so the search never goes through it. Candidates are compressed to a byte counter
   (`PngImageDataEncoder.StartSource` with `count: true`), in bands, and the winner is compressed again for real; nothing
@@ -963,6 +965,25 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   SharpFuzz target checks it). Header variables are metadata: one that cannot be read is skipped, never an error.
   XYZE is identified and rejected by a load, since converting XYZ to RGB would be an implicit color conversion.
   `MetadataWritePlan` treats it as linear light only, like OpenEXR.
+- **PSD** (`Internals/Codecs/Psd`). Written from the Adobe Photoshop File Formats Specification. Only read: no encoder.
+  Only the composite image (the image data section, written with "Maximize Compatibility") is decoded; the layer
+  section is skipped, and a version info resource (1057) without real merged data is `UnsupportedImageFeatureException`
+  (`No composite image`) from a load. `PsdStructureParser` walks the header, the color mode data (the color table of an
+  indexed image; the duotone specification is skipped), the image resources (1005, 1039, 1047, 1057, 1058, 1060 read,
+  their bytes charged to `MaxMetadataBytes` first; the others skipped), the layer and mask information up to the layer
+  count, then the image data, raw or PackBits (strict: a row gives exactly its bytes from exactly its stored count).
+  Version 2 (PSB) has 8-byte section lengths, 4-byte row counts and 8-byte lengths for the tagged blocks of
+  `PsdFormat.HasLargeLength`. The header walk stops at the layer count; a full scan decompresses every row; ZIP image
+  data stops a full scan at the compression field and is rejected by a load. A negative layer count, in the layer info
+  or in the `Lr16`/`Lr32`/`Layr` block after the global layer mask info (16 and 32-bit documents), makes the first channel
+  after the color channels the alpha of the composite ("merged alpha"); the other extra channels (selections, spot
+  colors) are skipped. The channels are stored one after the other, so `PsdDecoder` gathers them into a staging image of
+  the stored samples (about one extra copy of the image, charged to the allocation scope) and converts the rows at the
+  end. With alpha, the colors are stored matted over white: the decoder un-mattes them,
+  `round((s × max − w × (max − α)) / α)` clipped to [0, max] (the stored samples where α is 0, as ImageMagick keeps them; floats `(s − (1 − α)) / α`, not clipped),
+  `w` being the largest sample (no ink for the inverted CMYK samples), 128 for a* and b*. CMYK is loaded as inks
+  (`Cmyk32`/`Cmyk64`) or through `CmykConversion`, Lab (8 bits) only through `CieLabConversion`, as for TIFF.
+  Multichannel, 32-bit CMYK, 16 and 32-bit Lab and 32-bit duotone are rejected from the header, `Identify` included.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -1732,7 +1753,7 @@ thin public types over its `FontFace`.
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
 | `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
 | `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`, `Psd`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
 | `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |
@@ -1903,6 +1924,16 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   file order) and rejects the invalid ones except those `RadianceCorpus.ToleratedByRadiance` lists. `RadianceInteropTests`
   also writes files with `pvalue -r` in the eight orientations, and rewrites them with `pflip` and `protate` (without
   `-c`, the picture stays the same): `TestHarness/ExternalTools/RadianceTool` wraps the tools.
+
+- **PSD fixtures** (`psd` generator, `PsdCorpus.cs`). Files written by `psd-tools write` 1.26.1 (every color mode,
+  depth and compression, merged alpha, layers in the layer info or in the `Lr16`/`Lr32` blocks, PSB) and ImageMagick
+  7.1.2-35 (RGB, grayscale and bitmap documents, with a layer or flat, PSB), both from Meziantou.Prebuilt 3.15.0, and
+  files assembled by `TestHarness/Psd/PsdFileBuilder` (the image resources, the unsupported and malformed files). A
+  fixture expects its pattern, hand-computed into RGBA (a bitmap 1 is black, an index its color, the colors of a
+  composite with alpha un-matted), and `TestHarness/Psd/ReferencePsd`, an independent strict reader, must give it back
+  from the file. `psd-tools dump` checks the stored samples, ImageMagick (which un-mattes the same way, in floating
+  point) and FFmpeg (which does not un-matte) cross-check the decoded composite, and their differences are recorded
+  with their measured errors. `PsdInteropTests` decodes files `magick` and `psd-tools write` write (`TestHarness/ExternalTools/PsdTools`), and compares the fixtures with `oiiotool`.
 
 - **JPEG 2000 fixtures** (`jp2` generator, `Jp2Corpus.cs` and its partial files). A fixture of the reversible
   transformations expects the pattern given to `opj_compress` or `ojph_compress`; a fixture of the irreversible ones

@@ -20,6 +20,6 @@ it loads an image and writes it back when it saves one, and it never changes you
 - [Metadata and orientation](02-MetadataAndOrientation.md): what an image carries, how to apply the EXIF orientation,
   how to edit metadata, and what happens to it when you save to another format.
 - [Color management](03-ColorManagement.md): convert an image to sRGB, turn an HDR image into a standard one, load CMYK
-  JPEG and TIFF files, convert sample buffers between ICC profiles, and choose a rendering intent.
+  JPEG, TIFF and PSD files, convert sample buffers between ICC profiles, and choose a rendering intent.
 - [Color values](04-ColorValues.md): single colors in CIELAB, Oklch, HSL and the other color spaces, the notations of
   CSS, and how different two colors look.

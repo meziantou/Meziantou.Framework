@@ -97,6 +97,12 @@ public enum ImageFormat
     Radiance = 18,
 
     /// <summary>
+    /// Adobe Photoshop documents (<c>.psd</c>) and large documents (PSB, <c>.psb</c>): the composite image Photoshop stores
+    /// next to the layers is read (the layers are not rendered). Only read: no encoder writes this format.
+    /// </summary>
+    Psd = 19,
+
+    /// <summary>
     /// A format read or written by a <see cref="CustomImageCodec"/> of <see cref="ImageConfiguration.Codecs"/>, not by the
     /// library itself. <see cref="ImageInfo.FormatInfo"/> and <see cref="Formats.CustomImageEncoder.FormatInfo"/> tell which one.
     /// </summary>

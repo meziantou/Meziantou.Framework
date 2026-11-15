@@ -194,6 +194,7 @@ public sealed class FormatDetectionTests
     [InlineData(ImageFormat.Jpeg2000, "JPEG 2000", "image/jp2", ".jp2")]
     [InlineData(ImageFormat.OpenExr, "OpenEXR", "image/x-exr", ".exr")]
     [InlineData(ImageFormat.Radiance, "Radiance HDR", "image/vnd.radiance", ".hdr")]
+    [InlineData(ImageFormat.Psd, "PSD", "image/vnd.adobe.photoshop", ".psd")]
     public void FormatsDescribeTheirNameMimeTypeAndExtension(ImageFormat format, string name, string mimeType, string extension)
     {
         // The registered media types (IANA) where there is one, otherwise those of the freedesktop.org shared MIME

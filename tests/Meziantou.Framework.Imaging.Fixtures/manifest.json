@@ -71162,6 +71162,837 @@
       "notes": "The header declares a width of 0."
     },
     {
+      "id": "invalid/psd/57-channels",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/57-channels.psd",
+        "sha256": "cb9c1dbc7c60fc90088638cdbc17871fb060bf20049e3e4c9a68b5440734bae1",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "The file header declares 57 channels; the specification allows 1 to 56."
+    },
+    {
+      "id": "invalid/psd/bitmap-depth-8",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/bitmap-depth-8.psd",
+        "sha256": "102167de0a63df276a08d8898cfa640c2defabd863444e2fd303ba1db2e04697",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A bitmap document of 8-bit samples: bitmap samples have 1 bit."
+    },
+    {
+      "id": "invalid/psd/cmyk16",
+      "kind": "unsupported",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/cmyk16.psd",
+        "sha256": "dc7dce1f695c972cd4cbbe2f7a9f88ea173ce99f2c18b06ab6b74567b3fba8b8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Psd",
+        "feature": "CMYK samples without color conversion"
+      },
+      "features": [
+        "psd.mode=cmyk"
+      ],
+      "notes": "16-bit CMYK samples (psd-tools): identified, rejected by an untyped load; they load as Cmyk64 pixels."
+    },
+    {
+      "id": "invalid/psd/cmyk32",
+      "kind": "unsupported",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/cmyk32.psd",
+        "sha256": "e14791392064939a73889f7e64cccfd251b2d5a69dc8703c5cbfa2f00ff4026f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Psd",
+        "feature": "32-bit CMYK samples"
+      },
+      "features": [
+        "psd.mode=cmyk"
+      ],
+      "notes": "32-bit CMYK samples, which no CMYK pixel format or conversion reads."
+    },
+    {
+      "id": "invalid/psd/cmyk8",
+      "kind": "unsupported",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/cmyk8.psd",
+        "sha256": "02c6ded00030c1a4ec149438ebe5627ce6717bdbdf5ef48160041665aa912d34",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Psd",
+        "feature": "CMYK samples without color conversion"
+      },
+      "features": [
+        "psd.mode=cmyk"
+      ],
+      "notes": "8-bit CMYK samples (stored inverted, psd-tools): identified, rejected by an untyped load; they load as Cmyk32 pixels or with CmykConversionOptions (PsdDecoderConformanceTests)."
+    },
+    {
+      "id": "invalid/psd/compression-4",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/compression-4.psd",
+        "sha256": "92f774dd8bea9596604ef75048d285bcec8739f466075d69beec51cae5c000e7",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "The compression of the image data is 4, which is not defined."
+    },
+    {
+      "id": "invalid/psd/depth-4",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/depth-4.psd",
+        "sha256": "40570951db09e106d43b6b39d442bcfb4c062e544fa30fed55c7f1d92cfc0f74",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "The depth is 4 bits: only 1, 8, 16 and 32 are defined."
+    },
+    {
+      "id": "invalid/psd/fewer-channels-than-colors",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/fewer-channels-than-colors.psd",
+        "sha256": "d7d11b2c3286a4bf5f9589545ff6a3cde01fa13c5e57721e748231aac3b725eb",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "An RGB document of two channels."
+    },
+    {
+      "id": "invalid/psd/indexed-color-table-length",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/indexed-color-table-length.psd",
+        "sha256": "f39b02a840361018726fd50c1ad75c6780ed0f660018a0871a47be03a5b9653a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "An indexed document whose color table has 767 bytes instead of 768."
+    },
+    {
+      "id": "invalid/psd/lab16",
+      "kind": "unsupported",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/lab16.psd",
+        "sha256": "e95c000d303f7cdf3a95420e46a3d1dee6ccb275e6f04e14a2a9cbbea4ba551c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Psd",
+        "feature": "16-bit Lab samples"
+      },
+      "features": [
+        "psd.mode=lab"
+      ],
+      "notes": "16-bit Lab samples: only 8-bit Lab documents are read."
+    },
+    {
+      "id": "invalid/psd/lab8",
+      "kind": "unsupported",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/lab8.psd",
+        "sha256": "19c4acbe95b8a540227c28edd31dee387303eb97bc826ae2a6986985a0256040",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Psd",
+        "feature": "Lab samples without color conversion"
+      },
+      "features": [
+        "psd.mode=lab"
+      ],
+      "notes": "8-bit Lab samples (psd-tools): identified, only loaded with CieLabConversionOptions."
+    },
+    {
+      "id": "invalid/psd/layer-info-past-section",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/layer-info-past-section.psd",
+        "sha256": "bc74da09344369e5869370dcca35a10f4ba628e183556fe3c42a0c3a7286ed03",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A layer info of 9 bytes in a layer and mask information section of 10 bytes."
+    },
+    {
+      "id": "invalid/psd/mode-5",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/mode-5.psd",
+        "sha256": "09560d31145c8efb1bdc817804a9c36571fe3236988910eb981f39a58f663a36",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "The color mode is 5, which is not defined."
+    },
+    {
+      "id": "invalid/psd/multichannel",
+      "kind": "unsupported",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/multichannel.psd",
+        "sha256": "c3215836ff9d8ec88c02cbe555534e27d041d1a57dc020ac7035f1cc1ab188fa",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Psd",
+        "feature": "Multichannel color mode"
+      },
+      "features": [
+        "psd.mode=multichannel"
+      ],
+      "notes": "A multichannel document: its channels have no color interpretation."
+    },
+    {
+      "id": "invalid/psd/no-composite",
+      "kind": "unsupported",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/no-composite.psd",
+        "sha256": "c4b99509b115ac7ad06cc7e161ac931ee4a770b9914c17920d4e0566e2d7eef8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Psd",
+        "feature": "No composite image"
+      },
+      "features": [
+        "psd.layers=layerInfo"
+      ],
+      "notes": "A file saved with \"Maximize Compatibility\" off (psd-tools): the version information resource (1057) says there is no real composite, and the image data is white. The layers are not rendered."
+    },
+    {
+      "id": "invalid/psd/psd-width-30001",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/psd-width-30001.psd",
+        "sha256": "f5bb932180e9dbf37c73b77b3676d2f1e83147fba4d195609fd6ab19266c7579",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A PSD file 30,001 pixels wide: only PSB files are wider than 30,000 pixels."
+    },
+    {
+      "id": "invalid/psd/reserved-bytes",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/reserved-bytes.psd",
+        "sha256": "054c6d66a3716492e70589e5ebb1e4ede7b0cd6d6547b30d846300f7639e246c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A reserved byte of the file header is not zero."
+    },
+    {
+      "id": "invalid/psd/resource-past-section",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/resource-past-section.psd",
+        "sha256": "dee5185e85e7ea0b7571f8a2be801bf3d64e4237c9ad7b062589a9f9534bce2d",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "An image resource of 9 bytes in a section that holds 8."
+    },
+    {
+      "id": "invalid/psd/resource-signature",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/resource-signature.psd",
+        "sha256": "b9625b472b69153678e2a1f994770b35c253d16a6912dfeeacdb4911da6b03d5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "An image resource whose signature is neither 8BIM nor one of the other signatures Photoshop writes."
+    },
+    {
+      "id": "invalid/psd/rle-literal-past-length",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/rle-literal-past-length.psd",
+        "sha256": "f59a0cf5f8f5f38dae395d2e456231ff1e68748ffac6e6050c7edb4467c58f8c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A PackBits literal of 5 bytes in a row whose stored length leaves 3."
+    },
+    {
+      "id": "invalid/psd/rle-row-too-long",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/rle-row-too-long.psd",
+        "sha256": "a027e26c2dc96f7c1bf5fafa5a23fb323690d628a18d61551602d97e65cf271f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A PackBits row of the second channel gives 5 bytes after its first literal and goes on: it decompresses to more than the 5 bytes of a row."
+    },
+    {
+      "id": "invalid/psd/rle-row-too-short",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/rle-row-too-short.psd",
+        "sha256": "afde77dbbea4de4dd4f72076aa66547e22a9b5df0cd5d32f221b4a5befd299d4",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A PackBits row of the third channel decompresses to 3 bytes; a row has 5."
+    },
+    {
+      "id": "invalid/psd/rle-run-without-byte",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/rle-run-without-byte.psd",
+        "sha256": "0a7d50fbc005a448072b50caff4a0080acdd5006f58555c2df99a354490b51d7",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A PackBits row that ends with the header of a run, without the byte to repeat."
+    },
+    {
+      "id": "invalid/psd/tagged-block-signature",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/tagged-block-signature.psd",
+        "sha256": "43281427136ffe60eb7738a571cdc3adcdceb4c6c9efed0242bcda3542270ffb",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A tagged block of the layer and mask information whose signature is neither 8BIM nor 8B64."
+    },
+    {
+      "id": "invalid/psd/truncated-counts",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/truncated-counts.psd",
+        "sha256": "20b814c4e625781b0af3dd36e2110f687f1c797b9588ce36778a9cc61e3f55e0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A file cut in the table of the lengths of the PackBits rows."
+    },
+    {
+      "id": "invalid/psd/truncated-header",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/truncated-header.psd",
+        "sha256": "0ddb17df3074985231e6e2cb7fca70a48e499561a1b35e449347594595098b7a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A file cut in its header."
+    },
+    {
+      "id": "invalid/psd/truncated-image-data",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/truncated-image-data.psd",
+        "sha256": "cb7049c8a490cbc54f3989ce7e654c6ff93b5030a95c94565fe6b1a7db37979a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A file of raw image data cut in its last channel."
+    },
+    {
+      "id": "invalid/psd/truncated-resources",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/truncated-resources.psd",
+        "sha256": "e7c5552f8c01df8ed702344a9473f3ef3f7ee82369b3c8177f248ffaf4b70cfc",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "A file cut in its image resources."
+    },
+    {
+      "id": "invalid/psd/version-3",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/version-3.psd",
+        "sha256": "aedda6ec02ab5f7f6cb14ac47a2536095e0191bf43b8d576b09be156a4357589",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "The version is 3: only 1 (PSD) and 2 (PSB) are defined."
+    },
+    {
+      "id": "invalid/psd/zero-channels",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/zero-channels.psd",
+        "sha256": "2c237c6a648711d923b044ee9ad317156025847979276c945853bc82d6ee05ef",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "The file header declares 0 channels."
+    },
+    {
+      "id": "invalid/psd/zero-width",
+      "kind": "invalid",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/zero-width.psd",
+        "sha256": "43100e3c1b3ee9fc48a3ad70d554ddac6e36bf5f10ce0bc4e2318957102a62ba",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildInvalid)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Psd"
+      },
+      "notes": "The width is 0."
+    },
+    {
+      "id": "invalid/psd/zip",
+      "kind": "unsupported",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/zip.psd",
+        "sha256": "7c5b589c0bc542f24faa104c5d3b524b625033fb67aabde21de7d393a899defe",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Psd",
+        "feature": "ZIP-compressed image data"
+      },
+      "notes": "A composite of ZIP compressed channels (psd-tools), which Photoshop only writes in layers: identified, rejected by a load."
+    },
+    {
+      "id": "invalid/psd/zip-prediction",
+      "kind": "unsupported",
+      "format": "psd",
+      "input": {
+        "path": "invalid/psd/zip-prediction.psd",
+        "sha256": "9fd18bbdd59bfa922933a2bc3c9398b626e0f47d6403956497d9a8a7c0461484",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Psd",
+        "feature": "ZIP-compressed image data"
+      },
+      "notes": "A composite of ZIP with prediction compressed channels (psd-tools), which Photoshop only writes in layers: identified, rejected by a load."
+    },
+    {
       "id": "invalid/qoi/bad-end-marker",
       "kind": "invalid",
       "format": "qoi",
@@ -99402,6 +100233,147 @@
       "notes": "Reuses the 5x3 pnm/p6-rgb8 input with MaxWidth = 4 (checked once the header is complete, before the raster)."
     },
     {
+      "id": "limit/psd/frame-pixels-over-limit",
+      "kind": "limit",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgb8-rle.psd",
+        "sha256": "4bee67719b66b538735939d4271cf8ba3aabfd2bb57c2433f0cbcfeb8e60d391",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildLimits)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "ImageResourceLimitException",
+        "limitKind": "FramePixels"
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "decodeOptions": {
+        "limits": {
+          "MaxFramePixels": 90
+        }
+      },
+      "notes": "Reuses psd/rgb8-rle (13x7, 91 pixels) with MaxFramePixels = 90."
+    },
+    {
+      "id": "limit/psd/height-over-limit",
+      "kind": "limit",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgb8-rle.psd",
+        "sha256": "4bee67719b66b538735939d4271cf8ba3aabfd2bb57c2433f0cbcfeb8e60d391",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildLimits)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "ImageResourceLimitException",
+        "limitKind": "Height"
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "decodeOptions": {
+        "limits": {
+          "MaxHeight": 6
+        }
+      },
+      "notes": "Reuses psd/rgb8-rle (13x7) with MaxHeight = 6."
+    },
+    {
+      "id": "limit/psd/metadata-bytes-over-limit",
+      "kind": "limit",
+      "format": "psd",
+      "input": {
+        "path": "psd/resources.psd",
+        "sha256": "db717b773c93daff6b71af560dc8c69ea65996d051301b8f2cc871f05a03751b",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildLimits)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "ImageResourceLimitException",
+        "limitKind": "MetadataBytes"
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.mode=rgb",
+        "psd.resources",
+        "psd.writer=builder"
+      ],
+      "decodeOptions": {
+        "limits": {
+          "MaxMetadataBytes": 200
+        }
+      },
+      "notes": "Reuses psd/resources with MaxMetadataBytes = 200: the bytes of the resolution and of the ICC profile, charged before they are read, exceed it."
+    },
+    {
+      "id": "limit/psd/width-over-limit",
+      "kind": "limit",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgb8-rle.psd",
+        "sha256": "4bee67719b66b538735939d4271cf8ba3aabfd2bb57c2433f0cbcfeb8e60d391",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildLimits)",
+        "tools": [
+          ".NET 11.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "ImageResourceLimitException",
+        "limitKind": "Width"
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "decodeOptions": {
+        "limits": {
+          "MaxWidth": 12
+        }
+      },
+      "notes": "Reuses psd/rgb8-rle (13x7) with MaxWidth = 12."
+    },
+    {
       "id": "limit/qoi/encoded-bytes-over-limit",
       "kind": "limit",
       "format": "qoi",
@@ -110138,6 +111110,3551 @@
                 "height": 3,
                 "rowBytes": 20,
                 "byteLength": 60,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/bitmap-raw",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/bitmap-raw.psd",
+        "sha256": "52019a30e5aea0ff216bc029de0771aef628658aedd8d903658d716e7ee81b75",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 5
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=raw",
+        "psd.depth=1",
+        "psd.mode=bitmap",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 13x5 bitmap pattern (1 is black), raw, rows padded with 0 bits (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 5,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 1,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/bitmap-raw.frame-0.rgba8.raw",
+                "sha256": "91b8e3f487d9e27a00134b6f4acbfe584f83b5957ac65156c81032ebc9856beb",
+                "layout": "rgba8",
+                "width": 13,
+                "height": 5,
+                "rowBytes": 52,
+                "byteLength": 260,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/bitmap-raw.frame-0.gray8.raw",
+                "sha256": "e81a97052108c05b2d967a5d57c52fa1c884aa14e07b721678a4511df7ef9011",
+                "layout": "gray8",
+                "width": 13,
+                "height": 5,
+                "rowBytes": 13,
+                "byteLength": 65,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/bitmap-rle",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/bitmap-rle.psd",
+        "sha256": "f16feb5beae625d1f28b52573717ff3eef30475c3c3ca25b5b57378cc396e1bd",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 5
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=1",
+        "psd.mode=bitmap",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 13x5 bitmap pattern (1 is black), PackBits rows, rows padded with 0 bits (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 5,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 1,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/bitmap-rle.frame-0.rgba8.raw",
+                "sha256": "91b8e3f487d9e27a00134b6f4acbfe584f83b5957ac65156c81032ebc9856beb",
+                "layout": "rgba8",
+                "width": 13,
+                "height": 5,
+                "rowBytes": 52,
+                "byteLength": 260,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/bitmap-rle.frame-0.gray8.raw",
+                "sha256": "e81a97052108c05b2d967a5d57c52fa1c884aa14e07b721678a4511df7ef9011",
+                "layout": "gray8",
+                "width": 13,
+                "height": 5,
+                "rowBytes": 13,
+                "byteLength": 65,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/duotone8",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/duotone8.psd",
+        "sha256": "f7ecb1397b318162f25c0a28c7adcb81b8a3b9866dd82a587ff840ef10b26330",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 8,
+          "height": 5
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.mode=duotone",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "An 8x5 duotone document, read as its grayscale samples (the duotone specification of the color mode data is not applied) (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 5,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/duotone8.frame-0.rgba8.raw",
+                "sha256": "dff93775d91eff55df0be4c888fa5d950c36f43c0d0f32d2fb82fca39faa334e",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 5,
+                "rowBytes": 32,
+                "byteLength": 160,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/duotone8.frame-0.gray8.raw",
+                "sha256": "d9184c0c69c8075bb2f47170fe0aff6ecbf6969fb4c14575d04312748111c98f",
+                "layout": "gray8",
+                "width": 8,
+                "height": 5,
+                "rowBytes": 8,
+                "byteLength": 40,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/gray16-rle",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/gray16-rle.psd",
+        "sha256": "6fbbde02acc05b3050e85dde5db1ab825cb35e736f59567e577834ec5e324414",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 10,
+          "height": 4
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=16",
+        "psd.mode=grayscale",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 10x4 grayscale pattern of 16-bit samples, PackBits rows (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 16 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba64le -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 10,
+        "height": 4,
+        "pixelFormat": "Gray16",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/gray16-rle.frame-0.rgba16le.raw",
+                "sha256": "c894724cddfd23db89c659ab34a98e06ae9464a6aa8b3eb991a41bc51f8817f7",
+                "layout": "rgba16le",
+                "width": 10,
+                "height": 4,
+                "rowBytes": 80,
+                "byteLength": 320,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/gray16-rle.frame-0.gray16le.raw",
+                "sha256": "b5c58be42515c8fcf003c3c13224b7e10b3630c4ddd8cff54cffd3da196b80ca",
+                "layout": "gray16le",
+                "width": 10,
+                "height": 4,
+                "rowBytes": 20,
+                "byteLength": 80,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/gray32",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/gray32.psd",
+        "sha256": "1a79bb7d16f20d3b3f48dcccf0aa230eb28d4769fbd1b21575392826a11408b6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildFloatingPoint)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 6,
+          "height": 3
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=raw",
+        "psd.depth=32",
+        "psd.mode=grayscale",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 6x3 grayscale pattern of 32-bit floating-point samples, raw (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder, HDRI)",
+            "command": "magick {input}[0] -depth 32 -define quantum:format=floating-point -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "ImageMagick gives the same floats, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf32le -",
+            "result": "differs",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg clips the floating-point samples to [0, 1]. The floats differ by at most 3.25."
+          }
+        ]
+      },
+      "expected": {
+        "width": 6,
+        "height": 3,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/gray32.frame-0.rgbaf32le.raw",
+                "sha256": "da56446721e52d1b3cc609ec075352a56c47bbb62121f181e6a5a3c4593b16f7",
+                "layout": "rgbaf32le",
+                "width": 6,
+                "height": 3,
+                "rowBytes": 96,
+                "byteLength": 288,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/gray8-raw",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/gray8-raw.psd",
+        "sha256": "afec917ccb54ab42597f66e680044c13ffae699d15f663beae5777f414f98707",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 11,
+          "height": 6
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=raw",
+        "psd.depth=8",
+        "psd.mode=grayscale",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "An 11x6 grayscale pattern of 8-bit samples, raw (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 11,
+        "height": 6,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/gray8-raw.frame-0.rgba8.raw",
+                "sha256": "73c525303eaef488c4125379b0d648d2dd98f6afc2ecd9961a8393e259235612",
+                "layout": "rgba8",
+                "width": 11,
+                "height": 6,
+                "rowBytes": 44,
+                "byteLength": 264,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/gray8-raw.frame-0.gray8.raw",
+                "sha256": "5d75cddad653ade3d442e8e15f2e32a1e0c6b31739584812418e04e02096bf75",
+                "layout": "gray8",
+                "width": 11,
+                "height": 6,
+                "rowBytes": 11,
+                "byteLength": 66,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/gray8-rle",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/gray8-rle.psd",
+        "sha256": "a82eece799653d83126e138f5f39a8e2109c1a655e280cf3c31ff191b690a6ac",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 11,
+          "height": 6
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.mode=grayscale",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "An 11x6 grayscale pattern of 8-bit samples, PackBits rows (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 11,
+        "height": 6,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/gray8-rle.frame-0.rgba8.raw",
+                "sha256": "73c525303eaef488c4125379b0d648d2dd98f6afc2ecd9961a8393e259235612",
+                "layout": "rgba8",
+                "width": 11,
+                "height": 6,
+                "rowBytes": 44,
+                "byteLength": 264,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/gray8-rle.frame-0.gray8.raw",
+                "sha256": "5d75cddad653ade3d442e8e15f2e32a1e0c6b31739584812418e04e02096bf75",
+                "layout": "gray8",
+                "width": 11,
+                "height": 6,
+                "rowBytes": 11,
+                "byteLength": 66,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/graya8-matted",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/graya8-matted.psd",
+        "sha256": "b0aafc52c8e935ca295667dd1aeecc9b7a5bf5c4c51af1fed527dedf4f50f46f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildTransparency)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 7,
+          "height": 5
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.alpha=merged",
+        "psd.compression=raw",
+        "psd.depth=8",
+        "psd.mode=grayscale",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 7x5 grayscale pattern with a transparency channel, matted over white, raw (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "differs",
+            "maxAbsoluteError": 140,
+            "meanAbsoluteError": 22.35,
+            "excludedFromTolerance": true,
+            "notes": "ImageMagick does not un-matte the colors of a grayscale composite with a transparency channel: it gives the stored samples, matted over white. At most 140 units of a 8-bit sample differ."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 140,
+            "meanAbsoluteError": 22.35,
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not un-matte the colors of a composite with a transparency channel. At most 140 units of a 8-bit sample differ."
+          }
+        ]
+      },
+      "expected": {
+        "width": 7,
+        "height": 5,
+        "pixelFormat": "La16",
+        "colorModel": "GrayscaleAlpha",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/graya8-matted.frame-0.rgba8.raw",
+                "sha256": "cb5449bfe1d78f0797329103031e9ddf9b25ae3f329ff14046e437942c38d9f4",
+                "layout": "rgba8",
+                "width": 7,
+                "height": 5,
+                "rowBytes": 28,
+                "byteLength": 140,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/indexed-rle",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/indexed-rle.psd",
+        "sha256": "8ec4003ebd33013c640549d95e18fc109b46b688492a798afa97965c608a50a3",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 12,
+          "height": 6
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.mode=indexed",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 12x6 pattern of indexes into a table of 256 colors, PackBits rows (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 12,
+        "height": 6,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/indexed-rle.frame-0.rgba8.raw",
+                "sha256": "8703673eadb23ba70f49644ef52efe78bd6646b054344af589afda861656cbe5",
+                "layout": "rgba8",
+                "width": 12,
+                "height": 6,
+                "rowBytes": 48,
+                "byteLength": 288,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/indexed-rle.frame-0.rgb8.raw",
+                "sha256": "8d5705969c3656736459d263e0317f73aaaccccaa07212022ae6cc59038df6ae",
+                "layout": "rgb8",
+                "width": 12,
+                "height": 6,
+                "rowBytes": 36,
+                "byteLength": 216,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/indexed-transparent",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/indexed-transparent.psd",
+        "sha256": "0cdcdb630fac585e02d0820bd40f7b85d20c24953613707f6aca18e4126bdf00",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 12,
+          "height": 6
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=raw",
+        "psd.depth=8",
+        "psd.mode=indexed",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The indexes of psd/indexed-rle, raw, with a transparency index resource (1047): the pixels of that index are transparent (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "differs",
+            "maxAbsoluteError": 255,
+            "meanAbsoluteError": 0.885417,
+            "excludedFromTolerance": true,
+            "notes": "ImageMagick does not read the transparency index resource (1047): every pixel is opaque. At most 255 units of a 8-bit sample differ."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 255,
+            "meanAbsoluteError": 0.885417,
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not read the transparency index resource (1047). At most 255 units of a 8-bit sample differ."
+          }
+        ]
+      },
+      "expected": {
+        "width": 12,
+        "height": 6,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/indexed-transparent.frame-0.rgba8.raw",
+                "sha256": "d1a7fd5914c9da5c455c415bc65d59d5839db7661974fbcae5e43f3a21ca4c76",
+                "layout": "rgba8",
+                "width": 12,
+                "height": 6,
+                "rowBytes": 48,
+                "byteLength": 288,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/layers-zip",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/layers-zip.psd",
+        "sha256": "1b00d5ac4cd46fc03842dfbb6730806fe47d0eb1185b00558d02580c098fde3c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildLayers)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 10,
+          "height": 6
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=raw",
+        "psd.depth=8",
+        "psd.layers=layerInfo",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 10x6 RGB composite after two layers (a background and a smaller layer with transparency) whose channels are ZIP and ZIP-with-prediction compressed: the layers are skipped, the composite is read (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 10,
+        "height": 6,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/layers-zip.frame-0.rgba8.raw",
+                "sha256": "dfe0736d020b38eb4f8d5770bbc36174e3f7143a67e60cd0f228577bc88e3713",
+                "layout": "rgba8",
+                "width": 10,
+                "height": 6,
+                "rowBytes": 40,
+                "byteLength": 240,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/layers-zip.frame-0.rgb8.raw",
+                "sha256": "f02d93ae2ebb9e43617a9ce53651aee6bd4e2f9515843ae8967e7af0ef7257a8",
+                "layout": "rgb8",
+                "width": 10,
+                "height": 6,
+                "rowBytes": 30,
+                "byteLength": 180,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/magick-bitmap",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/magick-bitmap.psd",
+        "sha256": "fb2c7857a6040fd835b400e7f19c906c35aadce7372efdacfed32f1ab2c55f23",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildMagick)",
+        "tools": [
+          "psd-tools 1.26.1 (dump, cross-check)",
+          "ImageMagick 7.1.2-35 (writer, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 11,
+          "height": 4
+        },
+        "commands": [
+          "magick -size 11x4 -depth 8 gray:{source}.raw -endian MSB -type Bilevel -depth 1 -define psd:write-layers=false -compress RLE {output}.psd"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=1",
+        "psd.mode=bitmap",
+        "psd.writer=magick"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "An 11x4 bilevel pattern written by ImageMagick as a bitmap document: rows padded with 1 bits, PackBits rows. The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg rejects the PackBits rows ImageMagick writes. FFmpeg rejects the file (\"Invalid rle char.\")."
+          }
+        ]
+      },
+      "expected": {
+        "width": 11,
+        "height": 4,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 1,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/magick-bitmap.frame-0.rgba8.raw",
+                "sha256": "1ee87a465eb225b896aefb84360d33a30f3097b5af58f2ab6ea05b5b496ae80d",
+                "layout": "rgba8",
+                "width": 11,
+                "height": 4,
+                "rowBytes": 44,
+                "byteLength": 176,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/magick-bitmap.frame-0.gray8.raw",
+                "sha256": "44d1e649d1555f0aa27869423ab8250806974ca688a3341feee647ab94bfc9ee",
+                "layout": "gray8",
+                "width": 11,
+                "height": 4,
+                "rowBytes": 11,
+                "byteLength": 44,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/magick-gray16-rle",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/magick-gray16-rle.psd",
+        "sha256": "d351abae07271e8cb3b01da445bc7a6225846a016f5667110523c1a86616142d",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildMagick)",
+        "tools": [
+          "psd-tools 1.26.1 (dump, cross-check)",
+          "ImageMagick 7.1.2-35 (writer, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 7
+        },
+        "commands": [
+          "magick -size 9x7 -depth 16 -endian LSB gray:{source}.raw -endian MSB -compress RLE {output}.psd"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=16",
+        "psd.layers=layerInfo",
+        "psd.mode=grayscale",
+        "psd.writer=magick"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 9x7 grayscale pattern of 16-bit samples written by ImageMagick, PackBits rows. The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 16 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg rejects the PackBits rows ImageMagick writes. FFmpeg rejects the file (\"Invalid rle char.\")."
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 7,
+        "pixelFormat": "Gray16",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/magick-gray16-rle.frame-0.rgba16le.raw",
+                "sha256": "09806e3de6fe27dbc438fc685c59e96491167c862f1c17441c9b59839d0a07ae",
+                "layout": "rgba16le",
+                "width": 9,
+                "height": 7,
+                "rowBytes": 72,
+                "byteLength": 504,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/magick-gray16-rle.frame-0.gray16le.raw",
+                "sha256": "b4681eb2790b2e4202d3e4cdd8f633140281b3e42e149a96a9eebc22110be3c7",
+                "layout": "gray16le",
+                "width": 9,
+                "height": 7,
+                "rowBytes": 18,
+                "byteLength": 126,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/magick-psb-gray8",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/magick-psb-gray8.psb",
+        "sha256": "512ed16bcd3a5ebcdde3c0aae83d721c26f5798802e9afb58c5710d4c0cef673",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildLargeDocuments)",
+        "tools": [
+          "psd-tools 1.26.1 (dump, cross-check)",
+          "ImageMagick 7.1.2-35 (writer, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 4
+        },
+        "commands": [
+          "magick -size 9x4 -depth 8 gray:{source}.raw -endian MSB -compress RLE PSB:{output}.psb"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.layers=layerInfo",
+        "psd.mode=grayscale",
+        "psd.version=psb",
+        "psd.writer=magick"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 9x4 grayscale pattern written by ImageMagick as a PSB file, with a layer, PackBits rows. The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not read PSB files. FFmpeg rejects the file (\"an error\")."
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 4,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/magick-psb-gray8.frame-0.rgba8.raw",
+                "sha256": "05bc8321cc1d19c25468e58e41102b31b40b4aba0c7938cc070c5b4bed2a43b4",
+                "layout": "rgba8",
+                "width": 9,
+                "height": 4,
+                "rowBytes": 36,
+                "byteLength": 144,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/magick-psb-gray8.frame-0.gray8.raw",
+                "sha256": "665073a30dc42ed56c0a2c1dd34f259bc6331827dce000c7dbd4d8aab277c92d",
+                "layout": "gray8",
+                "width": 9,
+                "height": 4,
+                "rowBytes": 9,
+                "byteLength": 36,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/magick-rgb8-flat",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/magick-rgb8-flat.psd",
+        "sha256": "d25fc50da880813150602418dba450a29dcda6d5bb6ff5380746e1b5aff1ad51",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildMagick)",
+        "tools": [
+          "psd-tools 1.26.1 (dump, cross-check)",
+          "ImageMagick 7.1.2-35 (writer, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 14,
+          "height": 6
+        },
+        "commands": [
+          "magick -size 14x6 -depth 8 rgb:{source}.raw -endian MSB -define psd:write-layers=false {output}.psd"
+        ]
+      },
+      "features": [
+        "psd.compression=raw",
+        "psd.depth=8",
+        "psd.mode=rgb",
+        "psd.writer=magick"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern of psd/magick-rgb8-rle written by ImageMagick without layers (an empty layer and mask information section), raw. The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 14,
+        "height": 6,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/magick-rgb8-flat.frame-0.rgba8.raw",
+                "sha256": "1d33f2a0ce271d1331cdf92dc28a004a9427de8214094ebdbdd10084833d1f10",
+                "layout": "rgba8",
+                "width": 14,
+                "height": 6,
+                "rowBytes": 56,
+                "byteLength": 336,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/magick-rgb8-flat.frame-0.rgb8.raw",
+                "sha256": "b02b781a8292614e31bf313ca3ab53af1d8df2697d1d554a2b41ea220e954f78",
+                "layout": "rgb8",
+                "width": 14,
+                "height": 6,
+                "rowBytes": 42,
+                "byteLength": 252,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/magick-rgb8-rle",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/magick-rgb8-rle.psd",
+        "sha256": "a5f0b9eaa221012c5a05ddec43b8779fa0bf33b1b848c0ab67cc6092d31772b8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildMagick)",
+        "tools": [
+          "psd-tools 1.26.1 (dump, cross-check)",
+          "ImageMagick 7.1.2-35 (writer, cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 14,
+          "height": 6
+        },
+        "commands": [
+          "magick -size 14x6 -depth 8 rgb:{source}.raw -endian MSB -compress RLE {output}.psd"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.layers=layerInfo",
+        "psd.mode=rgb",
+        "psd.writer=magick"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 14x6 RGB pattern written by ImageMagick as the composite and as one layer, PackBits rows. The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg rejects the PackBits rows ImageMagick writes. FFmpeg rejects the file (\"Invalid rle char.\")."
+          }
+        ]
+      },
+      "expected": {
+        "width": 14,
+        "height": 6,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/magick-rgb8-rle.frame-0.rgba8.raw",
+                "sha256": "1d33f2a0ce271d1331cdf92dc28a004a9427de8214094ebdbdd10084833d1f10",
+                "layout": "rgba8",
+                "width": 14,
+                "height": 6,
+                "rowBytes": 56,
+                "byteLength": 336,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/magick-rgb8-rle.frame-0.rgb8.raw",
+                "sha256": "b02b781a8292614e31bf313ca3ab53af1d8df2697d1d554a2b41ea220e954f78",
+                "layout": "rgb8",
+                "width": 14,
+                "height": 6,
+                "rowBytes": 42,
+                "byteLength": 252,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/psb-rgb8-rle",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/psb-rgb8-rle.psb",
+        "sha256": "83f35afcf167c5dede2631040099838584055618f172b9767165b78d254acca5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildLargeDocuments)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 12,
+          "height": 5
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.mode=rgb",
+        "psd.version=psb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 12x5 RGB pattern in a large document (PSB, version 2): 8-byte section lengths and 4-byte row counts (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not read PSB files. FFmpeg rejects the file (\"an error\")."
+          }
+        ]
+      },
+      "expected": {
+        "width": 12,
+        "height": 5,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/psb-rgb8-rle.frame-0.rgba8.raw",
+                "sha256": "4c6633674e8933ca5afb99415313ff32672b13c5704fba5dd0cd89020e67ae28",
+                "layout": "rgba8",
+                "width": 12,
+                "height": 5,
+                "rowBytes": 48,
+                "byteLength": 240,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/psb-rgb8-rle.frame-0.rgb8.raw",
+                "sha256": "3b3e139743e3813013fe071b312934fe4ca322686b28228afaacdef2a1ae3639",
+                "layout": "rgb8",
+                "width": 12,
+                "height": 5,
+                "rowBytes": 36,
+                "byteLength": 180,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/psb-rgba16-lr16",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/psb-rgba16-lr16.psb",
+        "sha256": "0d32950aff8371761b95bffe01bd7adb9097ff9a3a39a4cfdd51ffc7b9ec8092",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildLargeDocuments)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 5,
+          "height": 4
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.alpha=merged",
+        "psd.compression=rle",
+        "psd.depth=16",
+        "psd.layers=lr16",
+        "psd.mode=rgb",
+        "psd.version=psb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 5x4 opaque RGBA pattern of 16-bit samples in a PSB file, the layer count in an Lr16 block of 8-byte length (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 16 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not read PSB files. FFmpeg rejects the file (\"an error\")."
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 4,
+        "pixelFormat": "Rgba64",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/psb-rgba16-lr16.frame-0.rgba16le.raw",
+                "sha256": "fa1408f8eb8162999ba8702b911076b08eacba57191e9744cde24d7c4bd59b5a",
+                "layout": "rgba16le",
+                "width": 5,
+                "height": 4,
+                "rowBytes": 40,
+                "byteLength": 160,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/resources",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/resources.psd",
+        "sha256": "db717b773c93daff6b71af560dc8c69ea65996d051301b8f2cc871f05a03751b",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildResources)",
+        "tools": [
+          "psd-tools 1.26.1 (dump, cross-check)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 6,
+          "height": 4
+        }
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.mode=rgb",
+        "psd.resources",
+        "psd.writer=builder"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 6x4 RGB pattern after image resources: the resolution (300 by 150 pixels per inch), an ICC profile, EXIF data, XMP metadata, a thumbnail resource (skipped), a plug-in resource of odd length and the version information (assembled from the specification). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 6,
+        "height": 4,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "rgb",
+        "animation": null,
+        "resolution": {
+          "horizontalDpi": 300,
+          "verticalDpi": 150,
+          "encoded": {
+            "unit": "inch",
+            "x": 300,
+            "y": 150
+          }
+        },
+        "profiles": {
+          "icc": {
+            "sha256": "582cd4ecc31eb15a2493a97a75d5039bb270f4eb6e3c58b812cbe980fdbeb650",
+            "length": 444
+          },
+          "exif": {
+            "sha256": "c7afad1d16065c72bc5da860fb9f89eb63a1a8f933f59da129594d84d26ffba1",
+            "length": 46
+          },
+          "xmp": {
+            "sha256": "f04ab172678af448874f19d701115003f1ad5281897e049da6de5774744fbe27",
+            "length": 320
+          }
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/resources.frame-0.rgba8.raw",
+                "sha256": "03c93e0873490ab12533a837fe62bfaaac3e6277afd7da52e51fda66d24dbd0a",
+                "layout": "rgba8",
+                "width": 6,
+                "height": 4,
+                "rowBytes": 24,
+                "byteLength": 96,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/resources.frame-0.rgb8.raw",
+                "sha256": "77198cc8c7e0e96db74123dcf7f90c4c928888ceebda473f265f73ec29458693",
+                "layout": "rgb8",
+                "width": 6,
+                "height": 4,
+                "rowBytes": 18,
+                "byteLength": 72,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/resources-gray-icc",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/resources-gray-icc.psd",
+        "sha256": "a26ac77b5462d110797ef8658451e565706b6260d8c2481b18a312c8965cb389",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildResources)",
+        "tools": [
+          "psd-tools 1.26.1 (dump, cross-check)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 5,
+          "height": 3
+        }
+      },
+      "features": [
+        "psd.compression=raw",
+        "psd.depth=8",
+        "psd.mode=grayscale",
+        "psd.resources",
+        "psd.writer=builder"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 5x3 grayscale pattern with a grayscale ICC profile (a resource with a name), a resource of another signature (MeSa, not read) and the resolution in a display unit of centimeters (stored in pixels per inch) (assembled from the specification). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 3,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "gray",
+        "animation": null,
+        "resolution": {
+          "horizontalDpi": 72,
+          "verticalDpi": 72,
+          "encoded": {
+            "unit": "inch",
+            "x": 72,
+            "y": 72
+          }
+        },
+        "profiles": {
+          "icc": {
+            "sha256": "96fae90936fe836f6f4fc8f9d81d73c8e25f9f5d456080e7a89ccf6a5ea331ce",
+            "length": 324
+          },
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/resources-gray-icc.frame-0.rgba8.raw",
+                "sha256": "6424899d722d4074302d763c73172021044cbfe2e22755359dc4d6f497884916",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 20,
+                "byteLength": 60,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/resources-gray-icc.frame-0.gray8.raw",
+                "sha256": "4e8abc158198ac42224ac7954950200751f22e806fecdb0b50082f22558a16c0",
+                "layout": "gray8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 5,
+                "byteLength": 15,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/rgb16-layers-lr16",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgb16-layers-lr16.psd",
+        "sha256": "764b1eef36e1a3b3f6fd37ffcd516bcce3f30d308983370902fe6f17508ce0bf",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildLayers)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 6,
+          "height": 5
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=16",
+        "psd.layers=lr16",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 6x5 RGB composite of 16-bit samples after a layer in the Lr16 block, as Photoshop writes 16-bit documents (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 16 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba64le -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 6,
+        "height": 5,
+        "pixelFormat": "Rgb48",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/rgb16-layers-lr16.frame-0.rgba16le.raw",
+                "sha256": "5750e9be34a63755ea957e9bac1689db83f30772aec4919b560fc8fe8ccace51",
+                "layout": "rgba16le",
+                "width": 6,
+                "height": 5,
+                "rowBytes": 48,
+                "byteLength": 240,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/rgb16-raw",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgb16-raw.psd",
+        "sha256": "5c0e266ec6c04756596c843cb73972dc1314a39c8d0612b893a34abba23f5170",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 5
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=raw",
+        "psd.depth=16",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 9x5 RGB pattern of 16-bit samples, raw (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 16 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba64le -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 5,
+        "pixelFormat": "Rgb48",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/rgb16-raw.frame-0.rgba16le.raw",
+                "sha256": "05e1c22d2d0f6d71c213feed28d06b6552ddb93a4c064aa75d8045e9ccb7e80b",
+                "layout": "rgba16le",
+                "width": 9,
+                "height": 5,
+                "rowBytes": 72,
+                "byteLength": 360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/rgb16-rle",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgb16-rle.psd",
+        "sha256": "5915a52364f83197d08d58303d50579e3e70d3933adb153de4a2e1f055ce8be7",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 5
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=16",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 9x5 RGB pattern of 16-bit samples, PackBits rows (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 16 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba64le -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 5,
+        "pixelFormat": "Rgb48",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/rgb16-rle.frame-0.rgba16le.raw",
+                "sha256": "05e1c22d2d0f6d71c213feed28d06b6552ddb93a4c064aa75d8045e9ccb7e80b",
+                "layout": "rgba16le",
+                "width": 9,
+                "height": 5,
+                "rowBytes": 72,
+                "byteLength": 360,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/rgb32",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgb32.psd",
+        "sha256": "1c6e83a536146938190302a766e3f12e3f7346b535e2723b72dca72fa66e17ba",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildFloatingPoint)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 7,
+          "height": 4
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=32",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 7x4 RGB pattern of 32-bit floating-point samples (values from 0 to 4.25, linear light), PackBits rows of their bytes (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder, HDRI)",
+            "command": "magick {input}[0] -depth 32 -define quantum:format=floating-point -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "ImageMagick gives the same floats, bit for bit."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not read 32-bit RGB documents. FFmpeg rejects the file (\"Decoding error: Not yet implemented in FFmpeg, patches welcome\")."
+          }
+        ]
+      },
+      "expected": {
+        "width": 7,
+        "height": 4,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/rgb32.frame-0.rgbaf32le.raw",
+                "sha256": "54fa6e474698f828c6ed5663f974be0a19decc6ed5ec2ce7be522f3e166538ec",
+                "layout": "rgbaf32le",
+                "width": 7,
+                "height": 4,
+                "rowBytes": 112,
+                "byteLength": 448,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/rgb8-extra-channels",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgb8-extra-channels.psd",
+        "sha256": "8943e26f3cfe867da1b20ad121951dee3235860db851f374f90c82f4dee8691c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildTransparency)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 8,
+          "height": 4
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.extraChannels",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "An 8x4 RGB pattern with two more channels and a layer count that is not negative: the extra channels (saved selections) are not part of the composite, which is opaque (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "differs",
+            "maxAbsoluteError": 239,
+            "meanAbsoluteError": 68.882812,
+            "excludedFromTolerance": true,
+            "notes": "ImageMagick takes the first extra channel for the transparency of the composite although the layer count is not negative (the file has two extra channels and no layer). At most 239 units of a 8-bit sample differ."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 4,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/rgb8-extra-channels.frame-0.rgba8.raw",
+                "sha256": "ff56ca2b57a72c63c085c9ccf18a028ae2c1eec68585bc4a5e83c30172391754",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 4,
+                "rowBytes": 32,
+                "byteLength": 128,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/rgb8-extra-channels.frame-0.rgb8.raw",
+                "sha256": "418dc6742cba6876915dc13df2ac3624b548cc9e56de4498bcbd3ea68bfd1199",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 4,
+                "rowBytes": 24,
+                "byteLength": 96,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/rgb8-raw",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgb8-raw.psd",
+        "sha256": "ad9ce3c4fd827b13ecf1eb3f6416f7d60b3e4bfabf2e8fa35585fe716d81ddb5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 7
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=raw",
+        "psd.depth=8",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 13x7 RGB pattern of 8-bit samples, raw (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 7,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/rgb8-raw.frame-0.rgba8.raw",
+                "sha256": "1358531610f9af6ca039eb700858af1f5f18779d5416d7ec7a60c171cf824108",
+                "layout": "rgba8",
+                "width": 13,
+                "height": 7,
+                "rowBytes": 52,
+                "byteLength": 364,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/rgb8-raw.frame-0.rgb8.raw",
+                "sha256": "1f33970dd75107eccb232f9ac036972be0529e64abca0682a62c23ba7ad746ea",
+                "layout": "rgb8",
+                "width": 13,
+                "height": 7,
+                "rowBytes": 39,
+                "byteLength": 273,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/rgb8-rle",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgb8-rle.psd",
+        "sha256": "4bee67719b66b538735939d4271cf8ba3aabfd2bb57c2433f0cbcfeb8e60d391",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildModes)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 7
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 13x7 RGB pattern of 8-bit samples, PackBits rows (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 7,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/rgb8-rle.frame-0.rgba8.raw",
+                "sha256": "1358531610f9af6ca039eb700858af1f5f18779d5416d7ec7a60c171cf824108",
+                "layout": "rgba8",
+                "width": 13,
+                "height": 7,
+                "rowBytes": 52,
+                "byteLength": 364,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "psd/rgb8-rle.frame-0.rgb8.raw",
+                "sha256": "1f33970dd75107eccb232f9ac036972be0529e64abca0682a62c23ba7ad746ea",
+                "layout": "rgb8",
+                "width": 13,
+                "height": 7,
+                "rowBytes": 39,
+                "byteLength": 273,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/rgba16-matted-lr16",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgba16-matted-lr16.psd",
+        "sha256": "d1b9bb6cb42ed9e5c756ab348f975f4f954cd586a504ca23d3ef1a82406506b1",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildTransparency)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 6
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.alpha=merged",
+        "psd.compression=rle",
+        "psd.depth=16",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 9x6 RGB pattern of 16-bit samples with a transparency channel (a negative layer count in the Lr16 block), its colors matted over white as Photoshop stores the composite (psd-tools); alpha values of 0, the maximum and in between. The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 16 -endian LSB rgba:-",
+            "result": "differs",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.00463,
+            "excludedFromTolerance": true,
+            "notes": "ImageMagick un-mattes 16-bit colors in floating point and rounds them to its own 16-bit quantum: some samples differ by one unit. At most 1 units of a 16-bit sample differ."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba64le -",
+            "result": "differs",
+            "maxAbsoluteError": 65535,
+            "meanAbsoluteError": 14810.009259,
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not un-matte the colors of a composite with a transparency channel. At most 65535 units of a 16-bit sample differ."
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 6,
+        "pixelFormat": "Rgba64",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/rgba16-matted-lr16.frame-0.rgba16le.raw",
+                "sha256": "0c100495b79caeafbd5a9adb87df93b569565a355d6c09865dff608ffe353bf8",
+                "layout": "rgba16le",
+                "width": 9,
+                "height": 6,
+                "rowBytes": 72,
+                "byteLength": 432,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/rgba32-lr32",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgba32-lr32.psd",
+        "sha256": "27f958b6cecc546b9915f0d6604aa3b0c424ecf4d47b1449b30da088844aa03a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildFloatingPoint)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 5,
+          "height": 4
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.alpha=merged",
+        "psd.compression=rle",
+        "psd.depth=32",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 5x4 RGB pattern of 32-bit floats with a transparency channel, the layer count in the Lr32 block; the colors are matted over white (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder, HDRI)",
+            "command": "magick {input}[0] -depth 32 -define quantum:format=floating-point -endian LSB rgba:-",
+            "result": "differs",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "ImageMagick un-mattes the floats in its own precision and clips them, where the reference does not. The floats differ by at most 5.96046E-08 (mean 1.49012E-09)."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not read 32-bit RGB documents. FFmpeg rejects the file (\"Decoding error: Not yet implemented in FFmpeg, patches welcome\")."
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 4,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/rgba32-lr32.frame-0.rgbaf32le.raw",
+                "sha256": "2ac81133047b96d8cddd89ea3987a0948ff2d268c767e441275c198a6a1f8033",
+                "layout": "rgbaf32le",
+                "width": 5,
+                "height": 4,
+                "rowBytes": 80,
+                "byteLength": 320,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/rgba8-matted",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgba8-matted.psd",
+        "sha256": "5e20b19e9bda5835454956c38650aed749f589a215ca5e4dffc2c595578e984c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildTransparency)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 6
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.alpha=merged",
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 9x6 RGB pattern of 8-bit samples with a transparency channel (a negative layer count in the layer info), its colors matted over white as Photoshop stores the composite (psd-tools); alpha values of 0, the maximum and in between. The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 217,
+            "meanAbsoluteError": 26.625,
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not un-matte the colors of a composite with a transparency channel. At most 217 units of a 8-bit sample differ."
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 6,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/rgba8-matted.frame-0.rgba8.raw",
+                "sha256": "42a67dab8c02d8da9edc7eb22cabd468c6caf7a4eccc173779f15dd5de5b4fbd",
+                "layout": "rgba8",
+                "width": 9,
+                "height": 6,
+                "rowBytes": 36,
+                "byteLength": 216,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "psd/rgba8-spot-channel",
+      "kind": "valid",
+      "format": "psd",
+      "input": {
+        "path": "psd/rgba8-spot-channel.psd",
+        "sha256": "8bf8ac145fba1ca32ec3ecab4ac91a69ab98b1f521cddafd15cab6e52fd5b88d",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs (BuildTransparency)",
+        "tools": [
+          "psd-tools 1.26.1 (writer)",
+          "ImageMagick 7.1.2-35 (cross-check)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 6,
+          "height": 4
+        },
+        "commands": [
+          "psd-tools write {description}.json {output}"
+        ]
+      },
+      "features": [
+        "psd.alpha=merged",
+        "psd.compression=rle",
+        "psd.depth=8",
+        "psd.extraChannels",
+        "psd.mode=rgb",
+        "psd.writer=psd-tools"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A 6x4 RGB pattern with a transparency channel followed by another channel: the first extra channel is the transparency, the next one is skipped (psd-tools). The reference is the pattern: a bitmap sample of 1 is black, an index is its color, gray is repeated, and colors stored matted over white are un-matted, round((s × max − max × (max − α)) / α) (floats: (s − (1 − α)) / α), the stored samples where α is 0.",
+        "crossChecks": [
+          {
+            "decoder": "psd-tools 1.26.1 (dump: the stored samples of the composite)",
+            "command": "psd-tools dump --no-layers {input} {output}",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "psd-tools gives the stored samples of every channel, before the conversion to RGBA: they are the ones the reference reader reads, bit for bit."
+          },
+          {
+            "decoder": "ImageMagick 7.1.2-35 (PSD coder)",
+            "command": "magick {input}[0] -depth 8 -endian LSB rgba:-",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec psd decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 234,
+            "meanAbsoluteError": 29.53125,
+            "excludedFromTolerance": true,
+            "notes": "FFmpeg does not un-matte the colors of a composite with a transparency channel. At most 234 units of a 8-bit sample differ."
+          }
+        ]
+      },
+      "expected": {
+        "width": 6,
+        "height": 4,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "psd/rgba8-spot-channel.frame-0.rgba8.raw",
+                "sha256": "ff79ebcbe769e49d9befb6c2c7edeb9eb600e387a21d079bd2fcda3cba69a828",
+                "layout": "rgba8",
+                "width": 6,
+                "height": 4,
+                "rowBytes": 24,
+                "byteLength": 96,
                 "alpha": "straight",
                 "rowOrder": "top-down",
                 "compression": "none"

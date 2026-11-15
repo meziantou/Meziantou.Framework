@@ -12,7 +12,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 - **No custom pixel types.** Images use the built-in pixel formats; the buffer pool has settings
   ([ImageBufferPool](cref:Meziantou.Framework.Imaging.ImageBufferPool)) but cannot be replaced by an allocator of yours.
 - **No floating-point grayscale.** [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) are the floating-point formats. OpenEXR and TIFF read and
-  write them, JPEG XL reads them; the other encoders need an explicit reduction to 16 bits.
+  write them, JPEG XL and PSD read them; the other encoders need an explicit reduction to 16 bits.
 - **Scaled and region decoding are limited to some formats.** JPEG and JPEG 2000 decode at a reduced size, lossy JPEG XL
   at 1/8, interlaced PNG at 1/2, 1/4 or 1/8, TIFF from the reduced-resolution images it stores, and JPEG,
   JPEG 2000, TIFF, AVIF and HEIC decode an area; the other formats are decoded whole: resize or crop the image afterward.
@@ -44,6 +44,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 | JPEG XL | Premultiplied alpha and integer samples of more than 24 bits are not read; lossy decoding is close to, not identical with, the reference decoder. Writing has no layers or blending. |
 | JPEG 2000 | More than 16 bits and Part 2 extensions are not read; a region decode reads the whole compressed data of each tile it meets. Writing has no precincts and no tile-parts beyond one per tile; HTJ2K output has one quality layer and no HT refinement passes. |
 | OpenEXR | HTJ2K and LJ2K compressions and chroma (RY, BY) channels are not read; deep data are flattened, never read as samples; a multi-part file, deep data, other channels than R, G, B, A and Y, and an overscan, need a part, the flattening, a layer or a window mode ([OpenExrDecodingOptions](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions)). Writing uses lossless scan-line compression, but alpha premultiplication and sample conversion can change source pixels. |
+| PSD | Only the composite image is read: layers, masks, adjustment layers and effects are not rendered, and a file saved without a composite is rejected. ZIP-compressed image data, multichannel documents, 32-bit CMYK, 16 and 32-bit Lab and 32-bit duotone are not read; duotone is read as gray; the thumbnail and IPTC data are not read. Not written. |
 
 ## Drawing and text
 

@@ -1311,6 +1311,22 @@ internal static class SmokeTests
         }
     }
 
+    public static void Psd()
+    {
+        // A 2x1 RGB document, raw planes after empty sections: red, then green, then blue
+        byte[] file =
+        [
+            (byte)'8', (byte)'B', (byte)'P', (byte)'S', 0, 1, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 8, 0, 3,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            255, 10, 0, 20, 128, 30,
+        ];
+        Check(Image.DetectFormat(file) == ImageFormat.Psd, "PSD detection");
+        var info = Image.Identify(file, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+        Check(info.Width == 2 && info.Height == 1 && info.PixelFormat == PixelFormat.Rgb24, "PSD identification");
+        using var image = Image.Load<Rgb24>(file);
+        Check(image.Frames[0][0, 0] == new Rgb24(255, 0, 128) && image.Frames[0][1, 0] == new Rgb24(10, 20, 30), "PSD pixels");
+    }
+
     public static void Radiance()
     {
         // RGBE pixels round trip through both scanline encodings: a mantissa is read as the middle of its interval, so the

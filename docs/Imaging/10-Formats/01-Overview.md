@@ -3,7 +3,8 @@ title: Supported formats
 description: The formats the library reads and writes, how it detects them, which extension selects which encoder, and how to choose one.
 ---
 
-The library reads every format below with its own managed codecs, and writes all of them but PSD. This group has one
+The library reads every format below with its own managed codecs, and writes all of them but PSD, DNG, DDS, Cineon and
+KTX 2.0. This group has one
 page per format: what is read, what is written, how to save with its encoder and its options, and the pitfalls.
 
 ## Support matrix

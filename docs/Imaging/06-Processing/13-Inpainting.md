@@ -51,9 +51,8 @@ most.
   smoother fills, and the time grows with its square.
 - **Colors.** The colors are filled premultiplied by alpha, in double precision, and each channel stays within the range
   of the pixels it comes from. The result is the same on every platform.
-- **Compared with OpenCV.** The `INPAINT_TELEA` method of OpenCV scales the gradient term of the extrapolations to a unit
-  length, which the paper does not, so its fills differ: by a level or two even on a smooth gradient, which this method
-  continues exactly.
+- **Gradients.** The extrapolations follow the paper: their gradient term is not scaled to a unit length, so a smooth
+  gradient is continued exactly into the hole.
 
 ## Animations and failures
 

@@ -132,19 +132,15 @@ public sealed class DngRawImage : IDisposable
             throw new ArgumentException("The stream is not readable.", nameof(stream));
 
         configuration ??= ImageConfiguration.Default;
-        var limit = configuration.Limits.MaxEncodedBytes;
-        using var buffer = new MemoryStream();
-        var chunk = new byte[81920];
-        int read;
-        while ((read = stream.Read(chunk)) > 0)
-        {
-            if (buffer.Length + read > limit)
-                throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, limit, buffer.Length + read);
 
-            buffer.Write(chunk, 0, read);
-        }
+        // The input buffer of Image.Load: rented from the allocation scope, bounded by MaxEncodedBytes
+        var context = new ImageCodecContext(configuration, "DngRawImage", CancellationToken.None);
+        using var input = new ImageInputBuffer(stream, ownsStream: false, context);
+        if (ImageInputPump.Detect(ImageCodecRegistry.For(configuration), input, context).Format != ImageFormat.Tiff)
+            throw CreateNotDngException();
 
-        return Load(buffer.GetBuffer().AsSpan(0, (int)buffer.Length), configuration);
+        using var parser = new WholeInputParser<DngRawImage>(context, ImageFormat.Dng, source => Decode(source, context));
+        return ImageInputPump.Run(input, parser, context);
     }
 
     /// <summary>Loads the raw image of DNG data.</summary>
@@ -159,7 +155,7 @@ public sealed class DngRawImage : IDisposable
     {
         configuration ??= ImageConfiguration.Default;
         if (!TiffHeader.MatchesSignature(data) || Image.DetectFormat(data) != ImageFormat.Dng)
-            throw new UnknownImageFormatException("The data is not a DNG file: a TIFF file whose first image file directory has a DNGVersion tag.");
+            throw CreateNotDngException();
 
         var context = new ImageCodecContext(configuration, "DngRawImage", CancellationToken.None);
         using var parser = new WholeInputParser<DngRawImage>(context, ImageFormat.Dng, source => Decode(source, context));
@@ -236,11 +232,18 @@ public sealed class DngRawImage : IDisposable
         _linear = null;
     }
 
+    private static UnknownImageFormatException CreateNotDngException() => new("The data is not a DNG file: a TIFF file whose first image file directory has a DNGVersion tag.");
+
     private static DngRawImage Decode(RandomAccessSource source, ImageCodecContext context)
     {
         try
         {
-            var document = DngDocument.Read(source, context);
+            var header = TiffHeader.Read(source);
+            var ifd0 = TiffDirectory.Read(source, header, header.FirstDirectoryOffset);
+            if (!DngDocument.IsDng(ifd0))
+                throw CreateNotDngException();
+
+            var document = DngDocument.Read(source, header, ifd0, context);
             var raw = DngRawDescriptor.Resolve(document.RawImage, context);
             var stored = DngPipeline.ReadStage1(source, raw, context);
             try

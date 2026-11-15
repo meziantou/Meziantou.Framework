@@ -109,6 +109,23 @@ internal static class DngPipeline
         var width = stage2.Width;
         var height = stage2.Height;
         var planes = raw.Planes;
+        // Every color must have a sample in the image, or no window would ever hold one: the pattern repeats, so its first
+        // period (clipped to the image) holds every color the image has
+        var present = 0;
+        for (var y = 0; y < Math.Min(height, raw.PatternRows); y++)
+        {
+            for (var x = 0; x < Math.Min(width, raw.PatternColumns); x++)
+            {
+                present |= 1 << raw.GetPlane(x, y);
+            }
+        }
+
+        for (var plane = 0; plane < planes; plane++)
+        {
+            if ((present & (1 << plane)) == 0)
+                throw DngFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The {width}x{height} active area of the DNG file holds no sample of the color {plane} of its color filter array: it cannot be demosaiced."));
+        }
+
         var stage3 = DngPlanes.Create(context, width, height, planes);
         try
         {

@@ -26,6 +26,25 @@ public sealed class DngDecoderTests
     }
 
     [Fact]
+    public void AnActiveAreaWithoutASampleOfEveryColorIsRejected()
+    {
+        // A 1x1 active area of an RGGB pattern holds a red sample only: no window of it holds green or blue
+        var builder = new DngFileBuilder
+        {
+            Width = 8,
+            Height = 8,
+            Samples = DngScenes.Mosaic(8, 8, 2, 2, [0, 1, 1, 2], 0, 65535),
+            ColorMatrix1 = DngScenes.CameraMatrixD65,
+            ActiveArea = [0, 0, 1, 1],
+            DefaultCropOrigin = [0, 0],
+            DefaultCropSize = [1, 1],
+        };
+
+        var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(builder.Build()));
+        Assert.Contains("cannot be demosaiced", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void IdentifyReportsTheDefaultCropAndTheProperties()
     {
         var info = Image.Identify(DngScenes.Get("active-area-crop").Build());

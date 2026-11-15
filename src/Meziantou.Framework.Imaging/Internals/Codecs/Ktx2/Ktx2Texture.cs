@@ -444,8 +444,9 @@ internal sealed class Ktx2Texture
         if (endpointCount == 0 || selectorCount == 0)
             throw Ktx2Format.Invalid(string.Create(CultureInfo.InvariantCulture, $"the BasisLZ codebooks have {endpointCount} endpoints and {selectorCount} selectors."));
 
-        var images = new Ktx2BasisImage[imageCount];
+        // The descriptors count as metadata before anything is allocated for them
         context.Tracker.ChargeMetadataBytes(imageCount * Ktx2Format.BasisLzImageDescLength);
+        var images = new Ktx2BasisImage[imageCount];
         using var descriptors = source.ReadToBuffer(offset + Ktx2Format.BasisLzGlobalHeaderLength, imageCount * Ktx2Format.BasisLzImageDescLength);
         var hasAlpha = BasisSecondChannelId >= 0;
         var animated = Animation is not null;

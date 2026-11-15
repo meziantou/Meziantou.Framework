@@ -757,10 +757,10 @@ internal static class AstcBlockDecoder
                 var (v0, v1) = BitTransferSigned(v[1], v[0]);
                 var (v2, v3) = BitTransferSigned(v[3], v[2]);
                 var (v4, v5) = BitTransferSigned(v[5], v[4]);
-                int a0 = 0xFF, a1 = 0xFF, a1Offset = 0;
+                int a0 = 0xFF, a1 = 0xFF;
                 if (mode == 13)
                 {
-                    (a0, a1Offset) = BitTransferSigned(v[7], v[6]);
+                    (a0, var a1Offset) = BitTransferSigned(v[7], v[6]);
                     a1 = a0 + a1Offset;
                 }
 

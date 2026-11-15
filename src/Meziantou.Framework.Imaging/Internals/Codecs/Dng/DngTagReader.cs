@@ -124,7 +124,7 @@ internal static class DngTagReader
         if (field.Count > (ulong)maxLength)
             return null;
 
-        var bytes = TryReadBytes(directory, tag, name, maxLength)!.AsSpan();
+        var bytes = TryReadBytes(directory, tag, name, maxLength).AsSpan();
         var end = bytes.IndexOf((byte)0);
         if (end >= 0)
         {

@@ -98,17 +98,14 @@ corner. The results do not depend on the platform: the votes are integers, and e
 fixed order. The working memory is charged to the image: for the lines, 18 bytes per pixel for the edges and 12 bytes
 per cell of the accumulator; for the corners, up to 48 bytes per pixel.
 
-## Compared with OpenCV
+## Coordinates and settings
 
-- **Lines.** `HoughLines` gives the angles in radians and the distances for the pixel indices: subtract
-  `(cos θ + sin θ) / 2` from a [Distance](cref:Meziantou.Framework.Imaging.HoughLine.Distance) to compare it. On the same
-  edges, the strongest lines are in the same cells; OpenCV counts a few more votes where the edges turn a corner, since
-  its pixels vote for every angle, and it has no probabilistic variant here (`HoughLinesP`).
-- **Harris and Shi-Tomasi.** `cornerHarris` and `goodFeaturesToTrack` sum the gradients over a box of `blockSize` pixels
-  where this detector weights them by a Gaussian: a `blockSize` of 3 is closest to a
-  [Sigma](cref:Meziantou.Framework.Imaging.CornerDetectionOptions.Sigma) of 0.8, and the strong corners then agree within a
-  pixel. With an aperture of 3, the response of OpenCV is 16 times this one.
-- **FAST.** A threshold `t` of OpenCV tests the same pixels as a
-  [FastThreshold](cref:Meziantou.Framework.Imaging.CornerDetectionOptions.FastThreshold) of `(t + 0.5) / 255`. The scores
-  differ (OpenCV keeps the largest threshold a pixel passes, this detector the sum of the differences beyond it), so the
-  two keep different pixels of a cluster of candidates.
+- **Lines.** A [Distance](cref:Meziantou.Framework.Imaging.HoughLine.Distance) is measured from the corner of the image,
+  the center of a pixel being at its index plus 0.5: a distance measured from the pixel indices is smaller by
+  `(cos θ + sin θ) / 2`. The angles are in degrees.
+- **Harris and Shi-Tomasi.** The gradients are weighted by a Gaussian of
+  [Sigma](cref:Meziantou.Framework.Imaging.CornerDetectionOptions.Sigma); to sum them over a 3x3 window instead, a Sigma of
+  0.8 is the closest.
+- **FAST.** [FastThreshold](cref:Meziantou.Framework.Imaging.CornerDetectionOptions.FastThreshold) is a fraction of the
+  full range: a threshold of `t` levels of 8-bit samples is `(t + 0.5) / 255`. The score of a corner, which keeps one
+  corner of a cluster of candidates, is the sum of the differences beyond the threshold.

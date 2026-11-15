@@ -282,7 +282,7 @@ internal sealed class DngRawDescriptor
                 continue;
 
             context.Tracker.ChargeMetadataBytes((long)field.Count);
-            var data = DngTagReader.TryReadBytes(Directory, tags[i], "OpcodeList" + (i + 1).ToString(CultureInfo.InvariantCulture), context.Limits.MaxMetadataBytes)!;
+            var data = DngTagReader.TryReadBytes(Directory, tags[i], "OpcodeList" + (i + 1).ToString(CultureInfo.InvariantCulture), context.Limits.MaxMetadataBytes);
             OpcodeLists[i] = DngOpcodeList.Parse(data, i + 1, context.IsLenient);
         }
     }

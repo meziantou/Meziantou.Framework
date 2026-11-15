@@ -126,6 +126,11 @@ faster.
   decoded whole before the area is kept. See
   [Decode an area](../05-LoadingAndSaving/02-LoadingImages.md#decode-an-area).
 - A side is at most 65,536 pixels (65,535 for an image sequence), and a still image at most 4 GiB.
+- A file without a `colr` box takes its color description from the AV1 bitstream: from the last sequence header before
+  the first frame, the one the image is decoded with, when a bitstream repeats it. A header-only identification reads
+  only the first bytes of the bitstream: when they end before the first frame, the color description and the color
+  model are unknown, never guessed. A full identification or a load reads the whole sequence header, and returns its
+  color description when it has one.
 - The decoder presents the primary image, or the sequence of a file with the `avis` brand. The thumbnails, depth maps
   and gain maps are listed by [AuxiliaryImageCollection](cref:Meziantou.Framework.Imaging.AuxiliaryImageCollection), which decodes them on request and renders the HDR version of a
   photo with a gain map (see [Color management](../09-Color/03-ColorManagement.md)).

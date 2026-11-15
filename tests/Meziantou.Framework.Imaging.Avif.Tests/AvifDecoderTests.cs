@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Heif;
@@ -356,6 +357,31 @@ public sealed class AvifDecoderTests
         Assert.Equal("9/16/9 limited", info.Metadata.Cicp!.ToString());
         Assert.Equal(new ReferenceHeif.ColorDescription(9, 16, 9, FullRange: false), ReferenceHeif.Parse(data).PrimaryItem!.Nclx);
         Assert.Equal(132, ReferenceHeif.Parse(data).PrimaryItem!.IccProfile!.Value.Length);
+    }
+
+    [Fact]
+    public void HeaderIdentificationReadsTheSequenceHeaderTheFirstFrameIsDecodedWith()
+    {
+        // Without a 'colr' box, the color description is the one of the last sequence header before the first frame header,
+        // which the frame is decoded with: the first one, whose matrix coefficients are reserved, is replaced (fuzz regression)
+        byte[] payload = [.. SequenceHeaderObu(matrixCoefficients: 181), .. SequenceHeaderObu(matrixCoefficients: 1), 0x1A, 0x00];
+        var builder = new HeifFileBuilder { PrimaryItemId = 1 };
+        builder.AddItem(1, "av01", payload,
+            builder.AddProperty(HeifFileBuilder.ImageSize(8, 6)),
+            -builder.AddProperty(HeifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0)));
+        var info = Image.Identify(builder.Build());
+        Assert.Equal(new CicpColorDescription(1, 13, 1, fullRange: true), info.Metadata.Cicp);
+
+        static byte[] SequenceHeaderObu(int matrixCoefficients)
+        {
+            var parameters = new Av1SequenceParameters(8, 6, 8, Monochrome: false, 0, 0, ColorPrimaries: 1, TransferCharacteristics: 13, matrixCoefficients, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Use128x128Superblock: false, EnableCdef: true, EnableRestoration: true, LevelIndex: 0);
+            var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(AvifDecoderTests));
+            using var output = new PooledPayloadWriter(scope);
+            Av1HeaderWriter.WriteSequenceHeader(output, parameters);
+
+            // An OBU of type 1 (sequence header) with a size field of one byte
+            return [0x0A, (byte)output.WrittenSpan.Length, .. output.WrittenSpan];
+        }
     }
 
     // ISO/IEC 14496-12, sections 12.1.6, 12.1.7 and 12.1.4: big-endian fields, written by hand. MaxCLL 1,000 and MaxPALL

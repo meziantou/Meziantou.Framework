@@ -1019,6 +1019,29 @@ public sealed class ShapefileTests
     }
 
     [Fact]
+    public void Write_TextTooLongCutInSpaces()
+    {
+        // Cut to 254 bytes, the value would end with spaces, which the readers trim: the field is as wide as the trimmed value
+        var value = new string('a', 200) + new string(' ', 60) + "b";
+        GeoFeatureCollection features = [new GeoFeature(new GeoPoint(new(1, 2)), new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = value })];
+        using var shp = new MemoryStream();
+        using var shx = new MemoryStream();
+        using var dbf = new MemoryStream();
+        Shapefile.Write(features, shp, shx, dbf);
+
+        var bytes = dbf.ToArray();
+        Assert.Equal(200, bytes[32 + 16]);
+        var read = Shapefile.Read(new MemoryStream(shp.ToArray()), new MemoryStream(bytes));
+        Assert.Equal(new string('a', 200), read[0].Properties["name"]);
+
+        using var shp2 = new MemoryStream();
+        using var shx2 = new MemoryStream();
+        using var dbf2 = new MemoryStream();
+        Shapefile.Write(read, shp2, shx2, dbf2);
+        Assert.Equal(bytes, dbf2.ToArray());
+    }
+
+    [Fact]
     public void Write_FieldNameReadsBackAsWritten()
     {
         // Trimmed and cut to 10 bytes, the name would end with spaces, which the readers trim

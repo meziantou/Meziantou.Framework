@@ -78,7 +78,8 @@ internal sealed class DbaseWriter
         }
 
         // The width of the integer and character fields fits their longest value, as written: a value too long is cut before
-        // a UTF-8 sequence, so the width is not wider than what the value is cut to, and the file reads back to the same widths
+        // a UTF-8 sequence, so the width is not wider than what the value is cut to, and the file reads back to the same widths.
+        // The readers trim the trailing spaces of a value, which the cut can leave, so they do not count either.
         for (var i = 0; i < features.Count; i++)
         {
             foreach (var field in fields)
@@ -86,7 +87,7 @@ internal sealed class DbaseWriter
                 if (field.Kind is Kind.Integer or Kind.Text or Kind.None)
                 {
                     var text = FormatValue(field, GetValue(features[i], field, i)) ?? "";
-                    var length = Encoding.UTF8.GetByteCount(Truncate(text, MaxCharacterLength));
+                    var length = Encoding.UTF8.GetByteCount(Truncate(text, MaxCharacterLength).TrimEnd(' '));
                     field.Length = Math.Max(field.Length, length);
                 }
             }

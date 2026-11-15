@@ -937,8 +937,17 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   into a staging image and converts it at the end (`Image.PrepareConversion`: a tone mapping needs the peak of the whole
   image). The compressions cite the sections of `ExrCompression.md`; they are bit-exact with OpenEXR, PXR24 and B44
   included (their loss happens when the file is written). The B44 table of pLinear channels is computed from
-  `Math.Log` in single precision and pinned by a hash (`ExrCompressionTests`). The encoder writes scan lines, and patches
-  the offset table once the chunks are written (seekable destination) unless the chunks are not compressed.
+  `Math.Log` in single precision and pinned by a hash (`ExrCompressionTests`). The encoder writes scan lines or tiles, and
+  patches the offset table once the chunks are written (seekable destination) unless the chunks are not compressed. Its
+  chunks are numbered in file order (`ExrEncoderCodec.GetChunk`: levels in table order, rows of chunks from the top, or
+  from the bottom for `DECREASING_Y`; a scan-line image is one level of one column), and the offset table is always in
+  table order. The levels below the full resolution are generated before their first chunk (`PrepareLevel`, an area
+  average of the samples the file stores for the previous level, in double precision, rounded to the sample type) into four buffers rented with the session:
+  a level stays while the levels generated from it are written. The lossy encoders are written from the same
+  description: PXR24 (`ExrPxr24.Encode`, section 6), B44 (`ExrB44.Encode`, section 7, the pLinear table E pinned by a
+  hash), and DWA (`ExrDwaEncoder`, section 8.14: the default rules, an orthonormal forward DCT in double precision, the
+  simple quantization of step 7, Huffman AC symbols but deflate for DWAA tiles as OpenEXR does). Every lossy output is
+  decoded by OpenEXR to the samples the library decodes (`ExrInteropTests`), since both decoders are exact.
   The common layouts (one HALF channel per color, a HALF alpha or none, no sub-sampled channel) are written to the
   pixels and read from them by `ExrLineKernels` in vectors (exact half conversions; the division by alpha and the
   product by the stored alpha give the bits of the scalar double-precision forms); `ExrPredictor` and the first level of
@@ -1677,7 +1686,8 @@ thin public types over its `FontFace`.
     batch decoded before it asks for more input or throws (`ExrStructureParser.NeedChunkBytes`, the catch in `Parse`), so a
     pending chunk never outlives a `Parse` call; its requests read the next batch ahead, so a stream gives it whole. The
     encoder checks the samples by row bands (`RunParallelInBandOrder`) and compresses batches of chunks into slots as
-    large as the one-worker buffer, written in order (`ChunksDecodedByWorkersHaveThePixelsOfOneWorker`,
+    large as the one-worker buffer, written in order; a batch never crosses a level of a tiled image, whose generation
+    precedes it (`ChunksDecodedByWorkersHaveThePixelsOfOneWorker`,
     `WorkersReportTheErrorOfTheFirstChunkOfTheFileThatFails`, `FilesWrittenByWorkersAreTheFilesOfOneWorker`).
   - JPEG 2000 (`Jpeg2000Workers`): the packets are read in order on the calling thread; then each worker takes the next
     code-block of a tile with block decoders of its own (Tier-1, HT and its SigProp flags, the buffer that joins

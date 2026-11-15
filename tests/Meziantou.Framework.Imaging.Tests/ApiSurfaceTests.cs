@@ -339,15 +339,28 @@ public sealed class ApiSurfaceTests
         Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
         Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
         Assert.Equal(
-            [nameof(OpenExrEncoder.AllowBitDepthReduction), nameof(OpenExrEncoder.Compression), nameof(OpenExrEncoder.Format), nameof(OpenExrEncoder.PixelType)],
+            [nameof(OpenExrEncoder.AllowBitDepthReduction), nameof(OpenExrEncoder.Compression), nameof(OpenExrEncoder.DwaCompressionLevel), nameof(OpenExrEncoder.Format), nameof(OpenExrEncoder.LineOrder), nameof(OpenExrEncoder.PixelType), nameof(OpenExrEncoder.Tiling)],
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
         Assert.Equal(typeof(OpenExrCompression), GetDeclaredProperty(type, nameof(OpenExrEncoder.Compression)).PropertyType);
         Assert.Equal(typeof(OpenExrPixelType?), GetDeclaredProperty(type, nameof(OpenExrEncoder.PixelType)).PropertyType);
 
         // The compressions have the values of the format; the pixel types have no default value but null
-        Assert.Equal([nameof(OpenExrCompression.None), nameof(OpenExrCompression.Rle), nameof(OpenExrCompression.Zips), nameof(OpenExrCompression.Zip), nameof(OpenExrCompression.Piz)], Enum.GetNames<OpenExrCompression>());
-        Assert.Equal([0, 1, 2, 3, 4], Enum.GetValues<OpenExrCompression>().Select(value => (int)value));
+        Assert.Equal(
+            [nameof(OpenExrCompression.None), nameof(OpenExrCompression.Rle), nameof(OpenExrCompression.Zips), nameof(OpenExrCompression.Zip), nameof(OpenExrCompression.Piz), nameof(OpenExrCompression.Pxr24), nameof(OpenExrCompression.B44), nameof(OpenExrCompression.B44A), nameof(OpenExrCompression.Dwaa), nameof(OpenExrCompression.Dwab)],
+            Enum.GetNames<OpenExrCompression>());
+        Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], Enum.GetValues<OpenExrCompression>().Select(value => (int)value));
         Assert.Equal([nameof(OpenExrPixelType.Half), nameof(OpenExrPixelType.Float)], Enum.GetNames<OpenExrPixelType>());
+
+        // The line orders and the level modes have the values of the format; the tiling is a sealed class of settings
+        Assert.Equal([0, 1, 2], Enum.GetValues<OpenExrLineOrder>().Select(value => (int)value));
+        Assert.Equal([nameof(OpenExrLineOrder.IncreasingY), nameof(OpenExrLineOrder.DecreasingY), nameof(OpenExrLineOrder.RandomY)], Enum.GetNames<OpenExrLineOrder>());
+        Assert.Equal([nameof(OpenExrLevelMode.OneLevel), nameof(OpenExrLevelMode.MipmapLevels), nameof(OpenExrLevelMode.RipmapLevels)], Enum.GetNames<OpenExrLevelMode>());
+        Assert.Equal([nameof(OpenExrLevelRounding.Down), nameof(OpenExrLevelRounding.Up)], Enum.GetNames<OpenExrLevelRounding>());
+        Assert.Equal(typeof(OpenExrTiling), GetDeclaredProperty(type, nameof(OpenExrEncoder.Tiling)).PropertyType);
+        Assert.True(typeof(OpenExrTiling).IsSealed);
+        Assert.Equal(
+            [nameof(OpenExrTiling.LevelMode), nameof(OpenExrTiling.LevelRounding), nameof(OpenExrTiling.TileHeight), nameof(OpenExrTiling.TileWidth)],
+            typeof(OpenExrTiling).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
     }
 
     [Fact]

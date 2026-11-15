@@ -1059,7 +1059,7 @@ internal static class PsdCorpus
         var fixtureId = "invalid/psd/" + name;
 
         // The defect is one the independent reader finds too
-        var rejected = false;
+        bool rejected;
         try
         {
             var picture = ReferencePsd.Read(data);

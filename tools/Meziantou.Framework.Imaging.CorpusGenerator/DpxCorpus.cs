@@ -863,7 +863,7 @@ internal static class DpxCorpus
         var transfer = data[801];
         var colorimetric = data[802];
         AddDpxData(c, "tool-" + name, function, data, new StoredElement("dpx", descriptor, bits, width, height, bits >= 32 ? [.. floats.Select(value => BitConverter.SingleToUInt32Bits((float)value))] : [.. components], bits >= 32 ? [.. floats] : null),
-            colorimetric, ReferenceLow: U32(784) is var low && low != uint.MaxValue ? low : null, ReferenceHigh: U32(792) is var high && high != uint.MaxValue ? high : null, orientation: U16(768),
+            colorimetric, referenceLow: U32(784) is var low && low != uint.MaxValue ? low : null, referenceHigh: U32(792) is var high && high != uint.MaxValue ? high : null, orientation: U16(768),
             description: description + " The reference is the code values the file stores.", expectations ?? Expectations.AllExact, [command], features: ["dpx.writer=" + name.Split('-')[0]],
             transferLinear: transfer == 2, cicp: transfer == 2 ? null : Cicp(transfer, colorimetric), pixelAspectRatio: null);
     }
@@ -913,7 +913,7 @@ internal static class DpxCorpus
             transferLinear || builder.Transfer == 2, cicp ?? Cicp(builder.Transfer, builder.Colorimetric), pixelAspectRatio, packing: builder.Packing, parameters: new Obj { ["width"] = builder.Width, ["height"] = builder.Height, ["descriptor"] = builder.Descriptor, ["bitDepth"] = builder.BitDepth, ["packing"] = builder.Packing });
     }
 
-    private static void AddDpxData(Corpus<DpxTools> c, string name, string function, byte[] data, StoredElement element, int colorimetric, uint? ReferenceLow, uint? ReferenceHigh, int orientation,
+    private static void AddDpxData(Corpus<DpxTools> c, string name, string function, byte[] data, StoredElement element, int colorimetric, uint? referenceLow, uint? referenceHigh, int orientation,
         string description, Expectations expectations, List<string> commands, IList<string> features, bool transferLinear, Obj? cicp, (uint, uint)? pixelAspectRatio, int? packing = null, Obj? parameters = null)
     {
         var fixtureId = "dpx/" + name;
@@ -939,7 +939,7 @@ internal static class DpxCorpus
         if (packing is { } method && element.Bits is 10 or 12)
             allFeatures.Add("dpx.packing=" + method switch { 0 => "packed", 1 => "filled-a", _ => "filled-b" });
 
-        AddFixture(c, fixtureId, "dpx", function, data, element, pixelFormat, colorModel, Math.Min(element.Bits, 32), exifOrientation, colorimetric, ReferenceLow, ReferenceHigh,
+        AddFixture(c, fixtureId, "dpx", function, data, element, pixelFormat, colorModel, Math.Min(element.Bits, 32), exifOrientation, colorimetric, referenceLow, referenceHigh,
             description, checks, commands, allFeatures, transferLinear, cicp, pixelAspectRatio, parameters);
     }
 

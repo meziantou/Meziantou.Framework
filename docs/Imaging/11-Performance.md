@@ -118,7 +118,9 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
   batches of rows: see [Draw large canvases on several threads](#draw-large-canvases-on-several-threads).
 - The other decoders and encoders and the other operations run on one thread.
 - The result does not depend on the number of threads: the pixels and the encoded bytes are the same.
-- Each worker needs its own working memory, which counts against the memory limit of the image.
+- Each worker needs its own working memory, which counts against the memory limit of the image. The TIFF encoder keeps
+  up to four strips or tiles and their compressed bytes per worker, fewer when the memory limit leaves less room, so
+  that its workers rarely wait for each other.
 
 ## Draw large canvases on several threads
 

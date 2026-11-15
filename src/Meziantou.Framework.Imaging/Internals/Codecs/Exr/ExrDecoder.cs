@@ -249,13 +249,13 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         _batch = null;
     }
 
-    /// <summary>Gets the position of a chunk of the full-resolution image in the data window, and its geometry.</summary>
+    /// <summary>Gets the position of a chunk of the decoded level (the full resolution by default) in its data window, and its geometry.</summary>
     private static ExrChunkLayout GetChunk(ExrHeader header, long index, out int x0, out int y0)
     {
         var data = header.DataWindow;
         if (header.IsTiled)
         {
-            var tilesX = header.GetTileCount(0, horizontal: true);
+            var tilesX = header.GetTileCount(header.LevelX, horizontal: true);
             var tx = (int)(index % tilesX);
             var ty = (int)(index / tilesX);
             x0 = data.MinX + (tx * header.TileWidth);

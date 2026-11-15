@@ -21,7 +21,7 @@ internal sealed class ExrCodec : ImageCodec
         var decoder = new ExrDecoder(request, context);
         try
         {
-            return new StructureDecodeParser(new ExrStructureParser(context, StructureWalk.Decode, decoder), decoder);
+            return new StructureDecodeParser(new ExrStructureParser(context, StructureWalk.Decode, decoder, request.OpenExrLevel), decoder);
         }
         catch
         {

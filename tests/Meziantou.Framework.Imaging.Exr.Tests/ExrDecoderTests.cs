@@ -694,6 +694,42 @@ public sealed class ExrDecoderTests
             => ExrFileBuilder.ScanLines(1, 1, None, HalfChannel("R")).Set("chromaticities", "chromaticities", ExrFileBuilder.Floats(values)).AddScanLineChunk(0, ExrFileBuilder.Halves(1f)).Build();
     }
 
+    [Fact]
+    public void ThePreviewImageIsAnAuxiliaryThumbnail()
+    {
+        byte[] preview = [.. ExrFileBuilder.UInts(2, 1), 255, 0, 0, 255, 10, 20, 30, 128];
+        var data = ExrFileBuilder.ScanLines(1, 1, None, HalfChannel("R")).AddScanLineChunk(0, ExrFileBuilder.Halves(1f)).Set("preview", "preview", preview).Build();
+
+        // The image is the full-resolution image; the preview is listed apart
+        Assert.Equal(new Size(1, 1), Image.Identify(data).Size);
+        var images = AuxiliaryImageCollection.Load(data);
+        var thumbnail = Assert.Single(images);
+        Assert.Equal(AuxiliaryImageKind.Thumbnail, thumbnail.Kind);
+        Assert.Null(thumbnail.Level);
+        Assert.Equal(new Size(2, 1), thumbnail.Size);
+        using var image = thumbnail.Decode<Rgba32>();
+        Assert.Equal(new Rgba32(255, 0, 0, 255), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(10, 20, 30, 128), image.Frames[0][1, 0]);
+        using var wide = thumbnail.Decode<Rgba64>();
+        Assert.Equal(new Rgba64(2570, 5140, 7710, 32896), wide.Frames[0][1, 0]);
+
+        // A preview whose pixels are not those of its size is malformed
+        var malformed = ExrFileBuilder.ScanLines(1, 1, None, HalfChannel("R")).AddScanLineChunk(0, ExrFileBuilder.Halves(1f)).Set("preview", "preview", [.. ExrFileBuilder.UInts(2, 2), 1, 2, 3, 4]).Build();
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(malformed));
+    }
+
+    [Fact]
+    public void LevelsAreRejectedWhenTheImageHasThemNot()
+    {
+        var data = ExrFileBuilder.ScanLines(1, 1, None, HalfChannel("R")).AddScanLineChunk(0, ExrFileBuilder.Halves(1f)).Build();
+        var configuration = new ImageConfiguration { OpenExrDecoding = new OpenExrDecodingOptions { LevelX = 1, LevelY = 1 } };
+        Assert.Equal("Missing level", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = configuration })).Feature);
+        Assert.Equal("Missing level", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { Configuration = configuration })).Feature);
+        Assert.Empty(AuxiliaryImageCollection.Load(data));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrDecodingOptions { LevelX = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrDecodingOptions { LevelY = -1 });
+    }
+
     [Theory]
     [InlineData("4854000000040001")]
     [InlineData("485400000004000100")]

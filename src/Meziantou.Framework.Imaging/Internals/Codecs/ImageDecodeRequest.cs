@@ -19,6 +19,13 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
     /// </summary>
     public uint? HeifItemId { get; init; }
 
+    /// <summary>
+    /// Gets the level of a tiled OpenEXR image that is decoded instead of the one <see cref="OpenExrDecodingOptions.LevelX"/>
+    /// and <see cref="OpenExrDecodingOptions.LevelY"/> select (a level of <see cref="AuxiliaryImageCollection"/>), or
+    /// <see langword="null"/>.
+    /// </summary>
+    public (int X, int Y)? OpenExrLevel { get; init; }
+
     /// <summary>Gets the color conversion that makes CMYK samples loadable, or <see langword="null"/> to reject them.</summary>
     public CmykConversionOptions? CmykConversion { get; init; }
 

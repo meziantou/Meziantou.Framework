@@ -32932,7 +32932,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -33123,7 +33123,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -33221,7 +33221,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt grayf16le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt grayf16le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -33320,7 +33320,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -35600,7 +35600,241 @@
       "comparison": {
         "mode": "exact"
       },
-      "notes": "The other levels are skipped."
+      "notes": "The other levels are decoded with OpenExrDecodingOptions.LevelX and LevelY, and listed by AuxiliaryImageCollection.",
+      "exrDecodings": [
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 1,
+          "levelY": 1,
+          "width": 15,
+          "height": 10,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "exr/tiles-piz-mipmap-round-up.decoding-0.rgbaf32le.raw",
+            "sha256": "4b34a2f5c70e96d48201994351e31ca222a0583b764de4f6d84c8ccfed5be6d1",
+            "layout": "rgbaf32le",
+            "width": 15,
+            "height": 10,
+            "rowBytes": 240,
+            "byteLength": 2400,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (1, 1), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 2,
+          "levelY": 2,
+          "width": 8,
+          "height": 5,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "exr/tiles-piz-mipmap-round-up.decoding-1.rgbaf32le.raw",
+            "sha256": "d2798d41706d09bb9e6ae171c1d12354cad06a29a50831a0be52ff3ea485f4fb",
+            "layout": "rgbaf32le",
+            "width": 8,
+            "height": 5,
+            "rowBytes": 128,
+            "byteLength": 640,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (2, 2), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 3,
+          "levelY": 3,
+          "width": 4,
+          "height": 3,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "exr/tiles-piz-mipmap-round-up.decoding-2.rgbaf32le.raw",
+            "sha256": "66a17e92bf75f181f3c51966cf53cf45e3325563027f492c6d00ed2a43dfcc07",
+            "layout": "rgbaf32le",
+            "width": 4,
+            "height": 3,
+            "rowBytes": 64,
+            "byteLength": 192,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (3, 3), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 4,
+          "levelY": 4,
+          "width": 2,
+          "height": 2,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "exr/tiles-piz-mipmap-round-up.decoding-3.rgbaf32le.raw",
+            "sha256": "46ec3212865e8bbddd9f45094d255d61b2ee771b5e5a3960ae98c42b4f93385c",
+            "layout": "rgbaf32le",
+            "width": 2,
+            "height": 2,
+            "rowBytes": 32,
+            "byteLength": 64,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (4, 4), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 5,
+          "levelY": 5,
+          "width": 1,
+          "height": 1,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "exr/tiles-piz-mipmap-round-up.decoding-4.rgbaf32le.raw",
+            "sha256": "1da8d8190ccae85446dfdf832598e865f209abc477855f0abf6ac3b46a40c396",
+            "layout": "rgbaf32le",
+            "width": 1,
+            "height": 1,
+            "rowBytes": 16,
+            "byteLength": 16,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (5, 5), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 1,
+          "levelY": 0,
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing level"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 6,
+          "levelY": 6,
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing level"
+          }
+        }
+      ]
     },
     {
       "id": "exr/tiles-rle-ripmap",
@@ -35702,7 +35936,230 @@
       "comparison": {
         "mode": "exact"
       },
-      "notes": "The offset table lists the levels by rows of levels."
+      "notes": "The offset table lists the levels by rows of levels; the other levels are decoded with OpenExrDecodingOptions.LevelX and LevelY.",
+      "exrDecodings": [
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 1,
+          "levelY": 0,
+          "width": 6,
+          "height": 9,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "exr/tiles-rle-ripmap.decoding-0.rgbaf32le.raw",
+            "sha256": "8608d47021cb57b21ca8bc7562986ff7121387c5573d9f0b26a50effbe6407be",
+            "layout": "rgbaf32le",
+            "width": 6,
+            "height": 9,
+            "rowBytes": 96,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (1, 0), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 3,
+          "levelY": 0,
+          "width": 1,
+          "height": 9,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "exr/tiles-rle-ripmap.decoding-1.rgbaf32le.raw",
+            "sha256": "60ce72e317f1a191f71b7cea1ca8aab2fe05bb8164b85bb91fb61ecbe36caff8",
+            "layout": "rgbaf32le",
+            "width": 1,
+            "height": 9,
+            "rowBytes": 16,
+            "byteLength": 144,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (3, 0), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 0,
+          "levelY": 1,
+          "width": 13,
+          "height": 4,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "exr/tiles-rle-ripmap.decoding-2.rgbaf32le.raw",
+            "sha256": "e452898a7216e7143c8f074e3aa794c59869f8bc1415159414237eb550ddc842",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 4,
+            "rowBytes": 208,
+            "byteLength": 832,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (0, 1), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 2,
+          "levelY": 1,
+          "width": 3,
+          "height": 4,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "exr/tiles-rle-ripmap.decoding-3.rgbaf32le.raw",
+            "sha256": "4d6195b97e2e169cea74282813aaed8d8c021fb210e2dacb0f2c9daab71d107f",
+            "layout": "rgbaf32le",
+            "width": 3,
+            "height": 4,
+            "rowBytes": 48,
+            "byteLength": 192,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (2, 1), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 3,
+          "levelY": 3,
+          "width": 1,
+          "height": 1,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "exr/tiles-rle-ripmap.decoding-4.rgbaf32le.raw",
+            "sha256": "38632e9cd75a01b4575c074411b23da8d3f304d276510e11dde18f6013a05049",
+            "layout": "rgbaf32le",
+            "width": 1,
+            "height": 1,
+            "rowBytes": 16,
+            "byteLength": 16,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the level (3, 3), whose data window is the image, every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R in every level, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "levelX": 4,
+          "levelY": 0,
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing level"
+          }
+        }
+      ]
     },
     {
       "id": "exr/tiles-zip-one-level",
@@ -36736,7 +37193,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -36833,7 +37290,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -37025,7 +37482,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-9HAlLM/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",

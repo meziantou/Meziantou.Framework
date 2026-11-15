@@ -130,6 +130,7 @@ namespace Meziantou.Framework.Imaging
         public string? AuxiliaryType { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.GainMapMetadata? GainMapMetadata { get => throw null; }
         public Meziantou.Framework.Imaging.AuxiliaryImageKind Kind { get => throw null; }
+        public Meziantou.Framework.Imaging.Point? Level { get => throw null; }
         public Meziantou.Framework.Imaging.Size Size { get => throw null; }
         public Meziantou.Framework.Imaging.Image Decode(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) => throw null;
         public Meziantou.Framework.Imaging.Image<TPixel> Decode<TPixel>(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : unmanaged => throw null;
@@ -158,6 +159,7 @@ namespace Meziantou.Framework.Imaging
         Depth = 2,
         GainMap = 3,
         Matte = 4,
+        ResolutionLevel = 5,
     }
 
     public struct Bgr565 : System.IEquatable<Meziantou.Framework.Imaging.Bgr565>
@@ -1734,6 +1736,8 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.OpenExrDeepDataMode DeepData { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.OpenExrDecodingOptions Default { get => throw null; }
         public string? Layer { get => throw null; init { } }
+        public int LevelX { get => throw null; init { } }
+        public int LevelY { get => throw null; init { } }
         public string? Part { get => throw null; init { } }
         public Meziantou.Framework.Imaging.OpenExrWindowMode WindowMode { get => throw null; init { } }
     }

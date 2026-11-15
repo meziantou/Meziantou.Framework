@@ -539,9 +539,9 @@ public static partial class FixtureManifestValidator
         if (entry.ExrDecodings is not { } decodings)
             return;
 
-        if (entry.Format != "exr" || entry.Kind != FixtureKinds.Unsupported)
+        if (entry.Format != "exr" || (entry.Kind != FixtureKinds.Unsupported && (entry.Kind != FixtureKinds.Valid || !decodings.All(decoding => decoding.HasLevel))))
         {
-            errors.Add($"{name} exrDecodings: only unsupported OpenEXR fixtures (rejected with the default options) declare decodings.");
+            errors.Add($"{name} exrDecodings: only unsupported OpenEXR fixtures (rejected with the default options) declare decodings, and valid ones their levels.");
         }
 
         if (decodings.Count == 0)
@@ -563,7 +563,12 @@ public static partial class FixtureManifestValidator
                 errors.Add($"{decodingName}: invalid deepData '{deepData}' (allowed: {string.Join(", ", ExrDecodingDefinition.DeepDataModes)}).");
             }
 
-            if (decoding.Part is null && decoding.DeepData is null or "Reject" && decoding.Layer is null && decoding.WindowMode == "DisplayWindow")
+            if (decoding.LevelX is < 0 || decoding.LevelY is < 0)
+            {
+                errors.Add($"{decodingName}: a level index is negative.");
+            }
+
+            if (decoding.Part is null && decoding.DeepData is null or "Reject" && decoding.Layer is null && decoding.WindowMode == "DisplayWindow" && !decoding.HasLevel)
             {
                 errors.Add($"{decodingName}: the default options are the decoding of the fixture itself (its expectedError).");
             }

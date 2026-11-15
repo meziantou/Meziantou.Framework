@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using Meziantou.Framework.Imaging.Internals;
@@ -10,7 +11,9 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// <summary>
 /// The compressions of OpenEXR chunks on hand-computed data and on the worked examples of the description of their data
 /// formats (<c>ExrCompression.md</c> in the library): the byte predictor, the run-length coder, zlib, the PIZ wavelet,
-/// range compression and Huffman coder, PXR24 and B44. The files written by OpenEXR are compared in the conformance tests.
+/// range compression and Huffman coder, PXR24, B44 and DWA, their encoders included (each chunk they write decodes to the
+/// samples it was given, within the loss of the compression). The files written by OpenEXR are compared in the conformance
+/// tests.
 /// </summary>
 [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
 public sealed class ExrCompressionTests
@@ -475,6 +478,413 @@ public sealed class ExrCompressionTests
         Assert.Equal(0x8000, table[0x8001]);
         Assert.Equal(0xC883, table[0xC000]);
         Assert.Equal(0xFC00, table[0xFBFF]);
+    }
+
+    [Fact]
+    public void Pxr24RoundsFloatsToTwentyFourBits()
+    {
+        // Section 6.2: ties away from zero, a carry into the exponent, truncation instead of infinity, payloads kept
+        Assert.Equal(0x3F8000u, ExrPxr24.ToFloat24(0x3F800000));
+        Assert.Equal(0x3F8001u, ExrPxr24.ToFloat24(0x3F800080));
+        Assert.Equal(0x3F8000u, ExrPxr24.ToFloat24(0x3F80007F));
+        Assert.Equal(0x7F7FFFu, ExrPxr24.ToFloat24(0x7F7FFFFF));
+        Assert.Equal(0x800000u, ExrPxr24.ToFloat24(0x80000000));
+        Assert.Equal(0x7FC000u, ExrPxr24.ToFloat24(0x7FC00000));
+        Assert.Equal(0x7F8001u, ExrPxr24.ToFloat24(0x7F800001));
+        Assert.Equal(0x7F8000u, ExrPxr24.ToFloat24(0x7F800000));
+        Assert.Equal(0x000001u, ExrPxr24.ToFloat24(0x00000080));
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(5, 3)]
+    [InlineData(64, 16)]
+    public void Pxr24ChunksRoundTrip(int width, int lines)
+    {
+        // HALF and UINT samples come back exactly, FLOAT samples rounded to 24 bits; a sub-sampled channel has every other line
+        var channels = new[]
+        {
+            new ExrChannel("A", ExrPixelType.Half, false, 1, 1),
+            new ExrChannel("B", ExrPixelType.Float, false, 1, 1),
+            new ExrChannel("C", ExrPixelType.UInt, false, 1, 1),
+            new ExrChannel("D", ExrPixelType.Half, false, 1, 2),
+        };
+        var layout = new ExrChunkLayout(channels, width, 0, lines);
+        var data = new byte[layout.GetDataLength()];
+        new Random(width * lines).NextBytes(data);
+        var planes = new byte[ExrPxr24.GetInflatedLength(layout)];
+        Assert.Equal(planes.Length, ExrPxr24.Encode(data, planes, layout));
+        var decoded = new byte[data.Length];
+        ExrPxr24.Decode(planes, decoded, layout);
+
+        var position = 0;
+        for (var line = 0; line < lines; line++)
+        {
+            for (var c = 0; c < channels.Length; c++)
+            {
+                if (!layout.HasLine(c, line))
+                    continue;
+
+                for (var x = 0; x < width; x++)
+                {
+                    if (channels[c].PixelType == ExrPixelType.Float)
+                    {
+                        var bits = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position));
+                        Assert.Equal(ExrPxr24.ToFloat24(bits) << 8, BinaryPrimitives.ReadUInt32LittleEndian(decoded.AsSpan(position)));
+                    }
+                    else
+                    {
+                        Assert.Equal(data.AsSpan(position, channels[c].BytesPerSample), decoded.AsSpan(position, channels[c].BytesPerSample));
+                    }
+
+                    position += channels[c].BytesPerSample;
+                }
+            }
+        }
+
+        Assert.Equal(data.Length, position);
+    }
+
+    [Fact]
+    public void B44EncodesTheTestVectorsOfTheDescription()
+    {
+        // Section 7.8: sixteen 1.0
+        var ones = Enumerable.Repeat((ushort)0x3C00, 16).ToArray();
+        var block = new byte[14];
+        Assert.Equal(3, ExrB44.EncodeBlock(ones, block, flatBlocks: true, adjustBase: true));
+        Assert.Equal([0xBC, 0x00, 0xFC], block[..3]);
+        Assert.Equal(14, ExrB44.EncodeBlock(ones, block, flatBlocks: false, adjustBase: true));
+        Assert.Equal([0xBC, 0x00, 0x02, 0x08, 0x20, 0x82, 0x08, 0x20, 0x82, 0x08, 0x20, 0x82, 0x08, 0x20], block);
+
+        // The largest spread of a block needs the largest shift; infinities and values that are not numbers become +0
+        var spread = new ushort[16];
+        spread[0] = 0xFBFF;
+        spread[1] = 0x7BFF;
+        spread[7] = 0x7C00;
+        spread[8] = 0xFE00;
+        Assert.Equal(14, ExrB44.EncodeBlock(spread, block, flatBlocks: true, adjustBase: true));
+        Assert.Equal(11, block[2] >> 2);
+        var planes = new byte[32];
+        ExrB44.Decode(block, planes, new ExrChunkLayout([HalfChannel], 4, 0, 4));
+        var values = ToUInt16(planes);
+        Assert.Equal(0x7BFF, values[1]);
+        Assert.True(values[7] < 0x7C00 && values[8] < 0x7C00);
+    }
+
+    [Theory]
+    [InlineData(1, 1, false)]
+    [InlineData(7, 2, false)]
+    [InlineData(5, 5, true)]
+    [InlineData(37, 32, true)]
+    public void B44ChunksRoundTripWithinTheirStep(int width, int lines, bool flat)
+    {
+        // A smooth half channel, a float channel stored as it is, a pLinear channel and a flat channel: within the step of
+        // their blocks (B44 is coarse for blocks whose values cross zero, whose keys are far apart)
+        var channels = new[]
+        {
+            new ExrChannel("A", ExrPixelType.Half, false, 1, 1),
+            new ExrChannel("B", ExrPixelType.Float, false, 1, 1),
+            new ExrChannel("C", ExrPixelType.Half, PLinear: true, 1, 1),
+            new ExrChannel("D", ExrPixelType.Half, false, 1, 1),
+        };
+        var layout = new ExrChunkLayout(channels, width, 0, lines);
+        var random = new Random(width + lines);
+        var planes = new byte[layout.GetDataLength()];
+        var offset = 0;
+        foreach (var channel in channels)
+        {
+            for (var i = 0; i < width * lines; i++)
+            {
+                var x = i % width;
+                var y = i / width;
+                switch (channel.Name)
+                {
+                    case "A":
+                        BinaryPrimitives.WriteHalfLittleEndian(planes.AsSpan(offset), (Half)(1 + (x * 0.05) - (y * 0.02) + (random.NextDouble() * 0.01)));
+                        break;
+                    case "B":
+                        BinaryPrimitives.WriteSingleLittleEndian(planes.AsSpan(offset), (float)random.NextDouble());
+                        break;
+                    case "C":
+                        BinaryPrimitives.WriteHalfLittleEndian(planes.AsSpan(offset), (Half)(1 + (x * 0.01)));
+                        break;
+                    default:
+                        BinaryPrimitives.WriteHalfLittleEndian(planes.AsSpan(offset), (Half)1);
+                        break;
+                }
+
+                offset += channel.BytesPerSample;
+            }
+        }
+
+        var stored = new byte[(planes.Length * 4) + 1024];
+        var length = ExrB44.Encode(planes, stored, layout, flat);
+        Assert.True(length > 0);
+        var decoded = new byte[planes.Length];
+        ExrB44.Decode(stored.AsSpan(0, length), decoded, layout);
+        var plane = width * lines;
+        for (var i = 0; i < plane; i++)
+        {
+            var expected = (double)BinaryPrimitives.ReadHalfLittleEndian(planes.AsSpan(2 * i));
+            var actual = (double)BinaryPrimitives.ReadHalfLittleEndian(decoded.AsSpan(2 * i));
+            Assert.True(Math.Abs(expected - actual) <= Math.Max(0.02, Math.Abs(expected) / 64), $"A {i}: {expected} {actual}");
+        }
+
+        Assert.Equal(planes.AsSpan(2 * plane, 4 * plane), decoded.AsSpan(2 * plane, 4 * plane));
+        for (var i = 0; i < plane; i++)
+        {
+            var expected = (double)BinaryPrimitives.ReadHalfLittleEndian(planes.AsSpan((6 * plane) + (2 * i)));
+            var actual = (double)BinaryPrimitives.ReadHalfLittleEndian(decoded.AsSpan((6 * plane) + (2 * i)));
+            Assert.True(Math.Abs(expected - actual) <= 0.01, $"C {i}: {expected} {actual}");
+        }
+
+        Assert.Equal(planes.AsSpan(8 * plane), decoded.AsSpan(8 * plane));
+    }
+
+    [Fact]
+    public void TheTableOfPLinearChannelsBeforePackingIsTheExponential()
+    {
+        // E(x) = half(exp(x / 8)): the hash of the 65,536 little-endian values and some of them (section 7.6)
+        var table = ExrB44.GetToPerceptualTable();
+        var bytes = new byte[table.Length * 2];
+        for (var i = 0; i < table.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(2 * i), table[i]);
+        }
+
+        Assert.Equal("aeb0250f258b38cb0fb4fb86dca1e32f1f512a93b3ceca1fcf825a523324aea1", Convert.ToHexStringLower(SHA256.HashData(bytes)));
+        Assert.Equal(0x3C00, table[0x0000]);
+        Assert.Equal(0x3C88, table[0x3C00]);
+        Assert.Equal(0x3B0F, table[0xBC00]);
+        Assert.Equal(0x7BF7, table[0x558B]);
+        Assert.Equal(0x7BFF, table[0x558C]);
+        Assert.Equal(0x0000, table[0x7C00]);
+    }
+
+    [Fact]
+    public void TheDwaEncoderCurveIsTheInverseOfTheDecoderCurve()
+    {
+        // toNonlinear(x) = half(x^(1/2.2)) up to 1, half(ln(x) / 2.2 + 1) above (section 8.13)
+        var table = ExrDwa.GetToNonlinearTable();
+        var bytes = new byte[table.Length * 2];
+        for (var i = 0; i < table.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(2 * i), table[i]);
+        }
+
+        Assert.Equal("9439b1fe1d69d77b3ea98dbe0af73e5bb7f4224b61eec3335a40b0c31bbccab8", Convert.ToHexStringLower(SHA256.HashData(bytes)));
+        Assert.Equal(0x1043, table[0x0001]);
+        Assert.Equal(0x2237, table[0x03FF]);
+        Assert.Equal(0x39D7, table[0x3800]);
+        Assert.Equal(0x3C00, table[0x3C01]);
+        Assert.Equal(0x3D43, table[0x4000]);
+        Assert.Equal(0x460A, table[0x7BFF]);
+        Assert.Equal(0x0000, table[0x8000]);
+        Assert.Equal(0xBC00, table[0xBC00]);
+        Assert.Equal(0xC60A, table[0xFBFF]);
+    }
+
+    [Fact]
+    public void DwaAcSymbolsAreTheRunsOfTheDescription()
+    {
+        // Section 8.8: literals, runs of zeros, the end of the block; a single zero is a literal
+        ushort[] Symbols(params (int Z, ushort Value)[] values)
+        {
+            var coefficients = new ushort[64];
+            foreach (var (z, value) in values)
+            {
+                coefficients[z] = value;
+            }
+
+            var symbols = new ushort[64];
+            var count = 0;
+            ExrDwaEncoder.WriteAcSymbols(coefficients, symbols, ref count);
+            return symbols[..count];
+        }
+
+        Assert.Equal([0x3C00, 0xFF03, 0x3800, 0xFF00], Symbols((1, 0x3C00), (5, 0x3800)));
+        Assert.Equal([0xFF00], Symbols());
+        Assert.Equal([0x0000, 0x3C00, 0xFF00], Symbols((2, 0x3C00)));
+        Assert.Equal([0x8000, 0xFF00], Symbols((1, 0x8000)));
+        Assert.Equal([0xFF3E, 0x3C00], Symbols((63, 0x3C00)));
+        Assert.Equal([0x7E00, 0xFF00], Symbols((1, 0xFF01)));
+    }
+
+    [Fact]
+    public void DwaQuantizationKeepsTheValueWithTheFewestBitsWithinTheTolerance()
+    {
+        Assert.Equal(0, ExrDwaEncoder.Quantize(0.4f, 0.5f));
+        Assert.Equal(BitConverter.HalfToUInt16Bits((Half)0.4f), ExrDwaEncoder.Quantize(0.4f, 0f));
+        Assert.Equal(0x7C00, ExrDwaEncoder.Quantize(float.PositiveInfinity, 1f));
+        foreach (var value in new[] { 1.2345f, -7.5f, 300.25f, -0.0123f })
+        {
+            foreach (var tolerance in new[] { 0.001f, 0.01f, 0.1f })
+            {
+                var quantized = ExrDwaEncoder.Quantize(value, tolerance);
+                var half = BitConverter.HalfToUInt16Bits((Half)value);
+                Assert.True(Math.Abs((float)BitConverter.UInt16BitsToHalf(quantized) - (float)(Half)value) < tolerance);
+                Assert.True(BitOperations.PopCount(quantized) <= BitOperations.PopCount(half));
+            }
+        }
+    }
+
+    [Fact]
+    public void TheDwaRuleBlockHoldsTheRulesOfTheChannels()
+    {
+        // Section 8.3: the default rules that match a channel
+        Assert.Equal([0x0E, 0x00, 0x52, 0x00, 0x14, 0x01, 0x47, 0x00, 0x24, 0x01, 0x42, 0x00, 0x34, 0x01], GetDwaRules(["B", "G", "R"]));
+        Assert.Equal([0x06, 0x00, 0x41, 0x00, 0x08, 0x01], GetDwaRules(["A"]));
+        Assert.Equal([0x06, 0x00, 0x59, 0x00, 0x04, 0x01], GetDwaRules(["Y"]));
+        Assert.Equal([0x02, 0x00], GetDwaRules(["Z"]));
+    }
+
+    [Theory]
+    [InlineData(1, 1, 45f, true)]
+    [InlineData(9, 7, 45f, true)]
+    [InlineData(37, 32, 45f, false)]
+    [InlineData(64, 32, 0f, true)]
+    [InlineData(20, 19, 200f, true)]
+    public void DwaChunksDecodeCloseToTheirSamples(int width, int lines, float level, bool huffman)
+    {
+        // A colour set and alpha of a layer, a luminance, a float red alone, and a channel stored with zlib: alpha and the
+        // zlib channel come back exactly, the colors close to their samples (relative errors after the perceptual curve)
+        var channels = new[]
+        {
+            new ExrChannel("A", ExrPixelType.Half, false, 1, 1),
+            new ExrChannel("B", ExrPixelType.Half, false, 1, 1),
+            new ExrChannel("G", ExrPixelType.Float, false, 1, 1),
+            new ExrChannel("R", ExrPixelType.Half, false, 1, 1),
+            new ExrChannel("Z", ExrPixelType.UInt, false, 1, 1),
+            new ExrChannel("other.R", ExrPixelType.Float, false, 1, 1),
+            new ExrChannel("other.Y", ExrPixelType.Half, false, 1, 2),
+        };
+        var layout = new ExrChunkLayout(channels, width, 0, lines);
+        var data = new byte[layout.GetDataLength()];
+        var random = new Random(width * lines);
+        var position = 0;
+        for (var line = 0; line < lines; line++)
+        {
+            for (var c = 0; c < channels.Length; c++)
+            {
+                if (!layout.HasLine(c, line))
+                    continue;
+
+                for (var x = 0; x < width; x++)
+                {
+                    var value = 0.2 + (0.5 * Math.Sin((x + c) * 0.3) * Math.Cos(line * 0.2)) + 0.5;
+                    switch (channels[c].PixelType)
+                    {
+                        case ExrPixelType.Half:
+                            BinaryPrimitives.WriteHalfLittleEndian(data.AsSpan(position), (Half)(channels[c].Name == "A" ? random.NextDouble() : value));
+                            position += 2;
+                            break;
+                        case ExrPixelType.Float:
+                            BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(position), (float)value);
+                            position += 4;
+                            break;
+                        default:
+                            BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(position), (uint)random.Next());
+                            position += 4;
+                            break;
+                    }
+                }
+            }
+        }
+
+        var scope = AllocationScope.Create(ImageConfiguration.Default, "exr dwa");
+        using var encoder = new ExrDwaEncoder(scope, level, data.Length + 4096, width, lines, channels.Length, huffman);
+        var stored = new byte[(data.Length * 4) + 4096];
+        var length = encoder.Compress(data, stored, layout, huffman);
+        Assert.True(length > 88);
+        Assert.Equal(huffman ? 0 : 1, BinaryPrimitives.ReadInt64LittleEndian(stored.AsSpan(80)));
+        using var decoder = new ExrDwa(scope);
+        var decoded = new byte[data.Length];
+        decoder.Decompress(stored.AsSpan(0, length), decoded, layout);
+
+        var tolerance = level switch
+        {
+            0f => 0.002,
+            45f => 0.03,
+            _ => 0.12,
+        };
+        position = 0;
+        for (var line = 0; line < lines; line++)
+        {
+            for (var c = 0; c < channels.Length; c++)
+            {
+                if (!layout.HasLine(c, line))
+                    continue;
+
+                for (var x = 0; x < width; x++)
+                {
+                    var name = channels[c].Name;
+                    switch (channels[c].PixelType)
+                    {
+                        case ExrPixelType.Half when name == "A":
+                            Assert.Equal(data.AsSpan(position, 2), decoded.AsSpan(position, 2));
+                            position += 2;
+                            break;
+                        case ExrPixelType.Half:
+                        {
+                            var expected = (double)BinaryPrimitives.ReadHalfLittleEndian(data.AsSpan(position));
+                            var actual = (double)BinaryPrimitives.ReadHalfLittleEndian(decoded.AsSpan(position));
+                            Assert.True(Math.Abs(expected - actual) <= tolerance * Math.Max(1, expected), $"{name} ({x}, {line}): {expected} {actual}");
+                            position += 2;
+                            break;
+                        }
+
+                        case ExrPixelType.Float:
+                        {
+                            var expected = (double)BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(position));
+                            var actual = BinaryPrimitives.ReadSingleLittleEndian(decoded.AsSpan(position));
+                            Assert.True(Math.Abs(expected - actual) <= tolerance * Math.Max(1, expected), $"{name} ({x}, {line}): {expected} {actual}");
+                            Assert.Equal(actual, (float)(Half)actual);
+                            position += 4;
+                            break;
+                        }
+
+                        default:
+                            Assert.Equal(data.AsSpan(position, 4), decoded.AsSpan(position, 4));
+                            position += 4;
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void AConstantDwaBlockIsExact()
+    {
+        // A block of one value has only a DC coefficient, which the inverse of the DC-only block gives back
+        var channels = new[] { new ExrChannel("Y", ExrPixelType.Half, false, 1, 1) };
+        var layout = new ExrChunkLayout(channels, 8, 0, 8);
+        var data = new byte[128];
+        for (var i = 0; i < 64; i++)
+        {
+            BinaryPrimitives.WriteHalfLittleEndian(data.AsSpan(2 * i), (Half)1f);
+        }
+
+        var scope = AllocationScope.Create(ImageConfiguration.Default, "exr dwa");
+        using var encoder = new ExrDwaEncoder(scope, 45, data.Length, 8, 8, 1, huffman: true);
+        var stored = new byte[1024];
+        var length = encoder.Compress(data, stored, layout, huffman: true);
+        using var decoder = new ExrDwa(scope);
+        var decoded = new byte[data.Length];
+        decoder.Decompress(stored.AsSpan(0, length), decoded, layout);
+        Assert.Equal(data, decoded);
+    }
+
+    private static byte[] GetDwaRules(string[] names)
+    {
+        var channels = names.Select(name => new ExrChannel(name, ExrPixelType.Half, false, 1, 1)).ToArray();
+        var layout = new ExrChunkLayout(channels, 1, 0, 1);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, "exr dwa");
+        using var encoder = new ExrDwaEncoder(scope, 45, 4096, 1, 1, channels.Length, huffman: true);
+        var stored = new byte[1024];
+        Assert.True(encoder.Compress(new byte[layout.GetDataLength()], stored, layout, huffman: true) > 0);
+        var size = BinaryPrimitives.ReadUInt16LittleEndian(stored.AsSpan(88));
+        return stored.AsSpan(88, size).ToArray();
     }
 
     private static ushort[] ToUInt16(byte[] bytes)

@@ -1501,6 +1501,39 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveOpenExrTextureAndPreviewWritesATiledMipmapAndALossyFile()
+    {
+        var texturePath = GetPath("texture.exr");
+        var reviewPath = GetPath("review.exr");
+        using (var hdr = new Image<RgbaHalf>(80, 40, new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)2f)))
+        {
+            hdr.Frames[0][3, 2] = new RgbaHalf((Half)12f, (Half)6f, (Half)3f);
+            Examples.SaveOpenExrTextureAndPreview(hdr, texturePath, reviewPath);
+        }
+
+        // The tiled file keeps every sample; its header declares 64x64 tiles with mipmap levels
+        var texture = File.ReadAllBytes(texturePath);
+        Assert.Equal(0x02, texture[5] & 0x02);
+        Assert.True(texture.AsSpan().IndexOf("tiledesc\0"u8) > 0);
+        using (var decoded = Image.Load<RgbaHalf>(texture))
+        {
+            Assert.Equal(new RgbaHalf((Half)12f, (Half)6f, (Half)3f), decoded.Frames[0][3, 2]);
+            Assert.Equal(new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)2f), decoded.Frames[0][70, 30]);
+        }
+
+        // The review file declares DWAB (compression 9) and is close to the source away from the highlight
+        var review = File.ReadAllBytes(reviewPath);
+        var compression = review.AsSpan().IndexOf("compression\0compression\0"u8);
+        Assert.Equal(9, review[compression + 28]);
+        using (var decoded = Image.Load<RgbaFloat>(review))
+        {
+            Assert.Equal((80, 40), (decoded.Width, decoded.Height));
+            Assert.InRange(decoded.Frames[0][70, 30].B, 1.9f, 2.1f);
+            Assert.InRange(decoded.Frames[0][70, 30].R, 0.24f, 0.26f);
+        }
+    }
+
+    [Fact]
     public void ConvertRadianceKeepsTheHighlightsAndReportsTheExposure()
     {
         var hdr = GetPath("environment.hdr");

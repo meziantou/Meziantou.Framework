@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The sample images of zxing-cpp (Apache-2.0 license, see ZXingCppSamples/README.md) and what the readers read in them -->
+    <!-- The sample images of zxing-cpp (Apache-2.0 license, see THIRD-PARTY-NOTICES.md) and what the readers read in them -->
     <None Update="ZXingCppSamples/**/*" CopyToOutputDirectory="PreserveNewest" />
     <None Update="ZXingCppSamples.Results/**/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

@@ -1,3 +1,21 @@
+# Third-Party Notices
+
+This project includes third-party data. The original copyright notices and the licenses under which the respective
+authors made them available are reproduced below.
+
+---
+
+## zxing-cpp
+
+- Project: zxing-cpp
+- Source: <https://github.com/zxing-cpp/zxing-cpp>
+- License: <https://github.com/zxing-cpp/zxing-cpp/blob/f19f7c6e0509fe0eeb822bf35c41b0f637dec290/LICENSE> (Apache License, Version 2.0)
+- Version: commit [f19f7c6e0509fe0eeb822bf35c41b0f637dec290](https://github.com/zxing-cpp/zxing-cpp/commit/f19f7c6e0509fe0eeb822bf35c41b0f637dec290) (2026-11-13)
+- Files: `ZXingCppSamples/`, the sample images of `test/samples` and their expected results, unmodified (the directories
+  of the symbologies that the readers do not support are not copied)
+- Used for: `ZXingCppSampleTests`, which reads every image and compares the outcome with `ZXingCppSamples.Results/`
+
+```
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -199,4 +217,4 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-
+```

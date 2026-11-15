@@ -4,7 +4,8 @@ description: Read and write OpenEXR files of half or float samples, the linear-l
 ---
 
 OpenEXR stores scene-linear, high dynamic range images in 16-bit (half) or 32-bit floating-point samples, as rendering
-and visual-effects tools produce them. Files load as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) pixels, values above 1 included, and
+and visual-effects tools produce them. Files load as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) pixels (luminance files as their gray
+formats), values above 1 included, and
 [OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) compresses the stored samples losslessly. Conversion between the library's straight colors and
 OpenEXR's premultiplied colors can round them; this is not a general bit-exact source-pixel round-trip guarantee.
 
@@ -20,6 +21,8 @@ OpenEXR's premultiplied colors can round them; this is not a general bit-exact s
 | Metadata | Chromaticities, the windows | Chromaticities |
 
 A file of half samples without an alpha channel loads as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf), any other as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), in linear light.
+A luminance file (a `Y` channel) loads in the gray format of the same precision: [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf), [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat), or
+[LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) with an alpha channel.
 The extra precision is used when dividing colors by alpha. Infinities and samples that are not numbers are kept,
 subject to the alpha conversion. The lossy compressions (PXR24, B44, DWAA, DWAB) decode to the same samples as OpenEXR, bit
 for bit: what they lose is lost when the file is written. HTJ2K256 and HTJ2K32 store each chunk as a high-throughput JPEG
@@ -138,6 +141,8 @@ colors) and the chroma channels `RY` and `BY` are rejected with an [UnsupportedI
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata OpenEXR cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 By default, [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) and 8-bit pixels are written as half samples, and [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and 16-bit pixels as float samples.
+The gray formats ([Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Gray16](cref:Meziantou.Framework.Imaging.Gray16), [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf), [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat)) are written as a luminance channel `Y`,
+and [LaHalf](cref:Meziantou.Framework.Imaging.LaHalf) and [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) as `Y` and `A`; the half-precision gray formats are written as half samples.
 Integer pixels are written as their value divided by the largest sample (`v / max`).
 
 Nonzero alpha multiplies the colors on encoding and divides them on decoding. Rounding, underflow or overflow can

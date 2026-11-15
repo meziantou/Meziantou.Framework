@@ -162,7 +162,7 @@ internal static class ImageCollectionWriterCore
                 if (PixelFormats.IsFloatingPoint(collection[i].PixelFormat))
                 {
                     throw new UnsupportedImageFeatureException(
-                        string.Create(CultureInfo.InvariantCulture, $"{ImageFormatNames.Get(encoder.Format)} output does not store floating-point samples, so encoding the {collection[i].PixelFormat} pixels of entry {i} would discard their range and precision. Set {encoder.GetType().Name}.FloatingPointConversion to reduce them to 16-bit integers (Rgba64), or convert the image explicitly with CloneAs."),
+                        string.Create(CultureInfo.InvariantCulture, $"{ImageFormatNames.Get(encoder.Format)} output does not store floating-point samples, so encoding the {collection[i].PixelFormat} pixels of entry {i} would discard their range and precision. Set {encoder.GetType().Name}.FloatingPointConversion to reduce them to 16-bit integers, or convert the image explicitly with CloneAs."),
                         encoder.Format,
                         "Floating-point samples");
                 }
@@ -295,7 +295,7 @@ internal static class ImageCollectionWriterCore
         if (entry.OwnedOrNull is { } owned)
         {
             if (PixelFormats.IsFloatingPoint(owned.PixelFormat) && !encoder.StoresFloatingPointSamples)
-                return new MaterializedEntry(owned.CloneAs<Rgba64>(encoder.FloatingPointConversion), ownsImage: true);
+                return new MaterializedEntry(owned.CloneAs(PixelFormatWidening.GetReducedFloatingPointFormat(encoder, owned.PixelFormat), encoder.FloatingPointConversion), ownsImage: true);
 
             var widened = PixelFormatWidening.GetEncodedFormat(encoder, owned.PixelFormat);
             if (widened != owned.PixelFormat)

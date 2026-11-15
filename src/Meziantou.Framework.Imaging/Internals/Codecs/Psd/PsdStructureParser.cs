@@ -148,7 +148,7 @@ internal sealed class PsdStructureParser : ImageParser<ImageInfo>
     public static PixelFormat GetDefaultPixelFormat(int mode, int depth, bool hasAlpha)
     {
         if (depth == 32)
-            return DefaultPixelFormats.ForPsdFloatingPoint;
+            return DefaultPixelFormats.ForPsdFloatingPoint(mode == PsdFormat.ModeGrayscale, hasAlpha);
 
         var isGray = mode is PsdFormat.ModeBitmap or PsdFormat.ModeGrayscale or PsdFormat.ModeDuotone;
         return DefaultPixelFormats.ForPsd(isGray, hasAlpha, depth == 16);

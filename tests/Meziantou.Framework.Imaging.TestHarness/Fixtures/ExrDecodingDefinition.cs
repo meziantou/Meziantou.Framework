@@ -53,7 +53,7 @@ public sealed class ExrDecodingDefinition
     [JsonPropertyName("height")]
     public int? Height { get; init; }
 
-    /// <summary>Gets the pixel format of an untyped load: <c>RgbaHalf</c> or <c>RgbaFloat</c> (with <see cref="Buffer"/>).</summary>
+    /// <summary>Gets the pixel format of an untyped load: <c>RgbaHalf</c>, <c>RgbaFloat</c>, or <c>GrayHalf</c>, <c>GrayFloat</c> or <c>LaFloat</c> for a luminance image (with <see cref="Buffer"/>).</summary>
     [JsonPropertyName("pixelFormat")]
     public string? PixelFormat { get; init; }
 

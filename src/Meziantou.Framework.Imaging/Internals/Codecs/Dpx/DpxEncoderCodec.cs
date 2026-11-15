@@ -337,6 +337,24 @@ internal sealed class DpxEncoderCodec : ImageEncoderCodec
                     break;
                 }
 
+                case PixelFormat.GrayFloat:
+                {
+                    var samples = unsafe(MemoryMarshal.Cast<byte, uint>(row[..(_width * 4)]));
+                    samples.CopyTo(components);
+                    break;
+                }
+
+                case PixelFormat.GrayHalf:
+                {
+                    var samples = unsafe(MemoryMarshal.Cast<byte, Half>(row[..(_width * 2)]));
+                    for (var x = 0; x < _width; x++)
+                    {
+                        components[x] = BitConverter.SingleToUInt32Bits((float)samples[x]);
+                    }
+
+                    break;
+                }
+
                 default:
                     throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"The DPX encoder does not write {_source} pixels."));
             }

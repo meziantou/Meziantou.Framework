@@ -31,8 +31,8 @@ internal static class DngDecoder
             return new ImageInfo(
                 ImageFormat.Dng,
                 raw.DefaultCrop.Size,
-                DefaultPixelFormats.Dng,
-                ImageColorModel.Rgb,
+                DefaultPixelFormats.ForDng(raw.Planes == 1),
+                raw.Planes == 1 ? ImageColorModel.Grayscale : ImageColorModel.Rgb,
                 bitsPerComponent: 32,
                 frameCount: 1,
                 isAnimated: false,
@@ -57,7 +57,7 @@ internal static class DngDecoder
             var matrix = DngColorProfile.Read(document.Ifd0, raw.Planes).GetCameraToOutput();
             var metadata = ReadMetadata(document, context);
             var area = request.GetRegion(raw.DefaultCrop.Size, ImageFormat.Dng);
-            using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Dng, area.Size, DefaultPixelFormats.Dng, PixelFormat.RgbaFloat, iccProfile: null);
+            using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Dng, area.Size, DefaultPixelFormats.ForDng(raw.Planes == 1), PixelFormat.RgbaFloat, iccProfile: null);
             using var stage3 = Render(source, raw, context);
             Write(sink, stage3, raw.DefaultCrop, area, matrix, context);
             return sink.Build(metadata, animation: null);

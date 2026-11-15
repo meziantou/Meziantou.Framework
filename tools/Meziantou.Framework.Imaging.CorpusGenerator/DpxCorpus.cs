@@ -235,13 +235,13 @@ internal static class DpxCorpus
     {
         if (bits >= 32)
         {
-            return ("RgbaFloat", descriptor switch
+            return descriptor switch
             {
-                1 or 2 or 3 or 6 => "Grayscale",
-                4 => "GrayscaleAlpha",
-                50 => "Rgb",
-                _ => "Rgba",
-            });
+                1 or 2 or 3 or 6 => ("GrayFloat", "Grayscale"),
+                4 => ("LaFloat", "GrayscaleAlpha"),
+                50 => ("RgbaFloat", "Rgb"),
+                _ => ("RgbaFloat", "Rgba"),
+            };
         }
 
         var wide = bits > 8;

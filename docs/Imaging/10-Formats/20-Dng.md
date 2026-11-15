@@ -8,8 +8,9 @@ color filter array (or every color of linear raw data), the black and white leve
 that says how the camera sees colors. Phones and cameras write DNG, and raw converters convert the raw files of other
 cameras to it. Loading a DNG file renders it: the samples become linear-light
 [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) pixels with the primaries of BT.709, the size of the image the
-camera framed. [DngEncoder](cref:Meziantou.Framework.Imaging.Formats.DngEncoder) saves an image as linear raw data, a DNG
-file that raw converters open.
+camera framed. Monochrome linear raw data (one sample per pixel) render to [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) pixels.
+[DngEncoder](cref:Meziantou.Framework.Imaging.Formats.DngEncoder) saves an image as linear raw data, a DNG file that raw
+converters open.
 
 ## Render a raw photo and read its mosaic
 

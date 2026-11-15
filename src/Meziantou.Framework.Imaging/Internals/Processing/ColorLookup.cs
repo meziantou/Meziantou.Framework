@@ -17,7 +17,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// evaluated for every pixel. A gray pixel is mapped as the color of three equal samples, whose rounded result is stored
 /// as its Rec. 709 luma (<see cref="PixelConverter.Luma(uint, uint, uint, uint)"/>), which gives the result of the
 /// processing bridge (<see cref="ProcessingBridge"/>) and keeps a gray result exact; the table of a gray format has one
-/// entry per level. Floating-point samples are mapped as stored and stored without clamping.
+/// entry per level. Floating-point samples are mapped as stored and stored without clamping; a floating-point gray level is
+/// mapped as the color of three equal samples and stores the gray level of the result.
 /// </para>
 /// <para>
 /// The working memory (a row, and the tables) is charged to the scope as <see cref="AllocationKind.Temporary"/> before a
@@ -110,6 +111,12 @@ internal abstract class ColorLookup
                         break;
                     case PixelFormat.RgbaHalf:
                         _lookup.ApplyFloat<Half>(lease, _size, cancellationToken);
+                        break;
+                    case PixelFormat.GrayFloat or PixelFormat.LaFloat:
+                        _lookup.ApplyFloatGray<float>(lease, _size, PixelFormats.GetComponentCount(_format), cancellationToken);
+                        break;
+                    case PixelFormat.GrayHalf or PixelFormat.LaHalf:
+                        _lookup.ApplyFloatGray<Half>(lease, _size, PixelFormats.GetComponentCount(_format), cancellationToken);
                         break;
                     default:
                         ApplyInteger(lease, cancellationToken);
@@ -262,6 +269,42 @@ internal abstract class ColorLookup
                 samples[i] = FromDouble<TSample>(r);
                 samples[i + 1] = FromDouble<TSample>(g);
                 samples[i + 2] = FromDouble<TSample>(b);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Maps the floating-point gray pixels of a frame in place (<paramref name="step"/> samples per pixel, the gray level
+    /// first): the level is mapped as the color of three equal samples, and stored as the gray level of the result
+    /// (<see cref="PixelConverter.GetGrayLevel"/>), without clamping.
+    /// </summary>
+    internal void ApplyFloatGray<TSample>(scoped in PixelLease lease, Size size, int step, CancellationToken cancellationToken)
+        where TSample : unmanaged
+    {
+        for (var y = 0; y < size.Height; y++)
+        {
+            if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            var samples = unsafe(MemoryMarshal.Cast<byte, TSample>(lease.GetRowBytes(y)))[..(step * size.Width)];
+            for (var i = 0; i < samples.Length; i += step)
+            {
+                var r = WorkingSamples.ToDouble(samples[i]);
+                var (g, b) = (r, r);
+                if (IsPerChannel)
+                {
+                    r = MapChannel(0, r);
+                    g = MapChannel(1, g);
+                    b = MapChannel(2, b);
+                }
+                else
+                {
+                    MapColor(ref r, ref g, ref b);
+                }
+
+                samples[i] = FromDouble<TSample>(PixelConverter.GetGrayLevel(r, g, b));
             }
         }
     }

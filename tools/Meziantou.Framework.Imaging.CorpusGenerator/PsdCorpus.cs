@@ -661,7 +661,7 @@ internal static class PsdCorpus
         {
             ["width"] = picture.Width,
             ["height"] = picture.Height,
-            ["pixelFormat"] = "RgbaFloat",
+            ["pixelFormat"] = picture.ColorChannelCount == 1 ? (hasAlpha ? "LaFloat" : "GrayFloat") : "RgbaFloat",
             ["colorModel"] = picture.ColorChannelCount == 1 ? (hasAlpha ? "GrayscaleAlpha" : "Grayscale") : (hasAlpha ? "Rgba" : "Rgb"),
             ["bitsPerComponent"] = 32,
             ["orientation"] = 1,

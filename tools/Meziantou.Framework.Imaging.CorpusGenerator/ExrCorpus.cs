@@ -781,6 +781,16 @@ internal static partial class ExrCorpus
         return entry;
     }
 
+    /// <summary>Gets the default pixel format of an image: a luminance image is gray, of the precision of its samples (half samples without alpha).</summary>
+    private static string PixelFormatOf(bool halfPixels, string colorModel) => (colorModel, halfPixels) switch
+    {
+        ("Grayscale", true) => "GrayHalf",
+        ("Grayscale", false) => "GrayFloat",
+        ("GrayscaleAlpha", _) => "LaFloat",
+        (_, true) => "RgbaHalf",
+        _ => "RgbaFloat",
+    };
+
     /// <summary>Records a valid fixture: OpenEXR decodes it, and the expected pixels follow from its samples.</summary>
     private static void AddValid(Corpus<ExrTools> c, string name, string function, byte[] data, List<string> commands, string description, string? notes = null,
         IEnumerable<string>? features = null, Obj? cicp = null, Obj? parameters = null, string origin = "generated", string? source = null, string license = Corpus<ExrTools>.License,
@@ -795,7 +805,7 @@ internal static partial class ExrCorpus
         {
             ["width"] = width,
             ["height"] = height,
-            ["pixelFormat"] = halfPixels ? "RgbaHalf" : "RgbaFloat",
+            ["pixelFormat"] = PixelFormatOf(halfPixels, colorModel),
             ["colorModel"] = colorModel,
             ["bitsPerComponent"] = bits,
             ["orientation"] = 1,
@@ -1304,7 +1314,7 @@ internal static partial class ExrCorpus
                 options = string.Create(CultureInfo.InvariantCulture, $"the level ({x}, {y}), whose data window is the image, ") + options;
             entry["width"] = width;
             entry["height"] = height;
-            entry["pixelFormat"] = halfPixels ? "RgbaHalf" : "RgbaFloat";
+            entry["pixelFormat"] = PixelFormatOf(halfPixels, colorModel);
             entry["colorModel"] = colorModel;
             entry["bitsPerComponent"] = bits;
             entry["buffer"] = FloatBuffer(c, fixtureId + string.Create(CultureInfo.InvariantCulture, $".decoding-{i}.rgbaf32le.raw"), width, height, pixels);

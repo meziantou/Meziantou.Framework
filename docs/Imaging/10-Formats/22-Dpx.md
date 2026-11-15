@@ -19,7 +19,9 @@ the film. Files load at the precision of their components, and [DpxEncoder](cref
 
 The pixels are the code values the file stores: a 10-bit code value `v` is the 16-bit sample
 `round(v × 65535 / 1023)` of an [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) image, 8 and 16-bit components keep their value, and floating-point
-components load as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat). Nothing converts them to linear light.
+components load as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), or [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) for a luma (or single-color) element and [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) for
+an alpha element. [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) and [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf) images are written as floating-point luma elements. Nothing converts
+them to linear light.
 
 ## Load and save a DPX file
 

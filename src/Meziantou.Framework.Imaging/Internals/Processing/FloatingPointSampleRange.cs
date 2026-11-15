@@ -73,6 +73,21 @@ internal static class FloatingPointSampleRange
                 }
             }
         }
+        else if (PixelFormats.IsFloatingPoint(format))
+        {
+            // The gray formats: the level in the three colors, opaque without alpha
+            var count = row.Length / PixelFormats.GetBytesPerPixel(format);
+            for (var i = 0; i < count; i++)
+            {
+                PixelConverter.ReadFloat(format, row, i, out var r, out var g, out var b, out var a);
+                var value = new RgbaFloat((float)r, (float)g, (float)b, (float)a);
+                if (!Meets(value.R, value.G, value.B, value.A, requirement))
+                {
+                    (index, pixel) = (i, value);
+                    return true;
+                }
+            }
+        }
 
         (index, pixel) = (-1, default);
         return false;

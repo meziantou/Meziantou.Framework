@@ -174,6 +174,10 @@ public abstract partial class Image
         PixelFormat.Abgr32 => new Image<Abgr32>(configuration, size, memory, pointer, stride, release),
         PixelFormat.Bgr565 => new Image<Bgr565>(configuration, size, memory, pointer, stride, release),
         PixelFormat.Rgba1010102 => new Image<Rgba1010102>(configuration, size, memory, pointer, stride, release),
+        PixelFormat.GrayFloat => new Image<GrayFloat>(configuration, size, memory, pointer, stride, release),
+        PixelFormat.GrayHalf => new Image<GrayHalf>(configuration, size, memory, pointer, stride, release),
+        PixelFormat.LaFloat => new Image<LaFloat>(configuration, size, memory, pointer, stride, release),
+        PixelFormat.LaHalf => new Image<LaHalf>(configuration, size, memory, pointer, stride, release),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The pixel format is not supported."),
     };
 }

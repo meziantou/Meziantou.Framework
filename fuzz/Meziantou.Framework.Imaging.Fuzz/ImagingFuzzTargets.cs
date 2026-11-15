@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 /// (and the decoders of the BC1 to BC7 blocks), the image data of PNG files (inflation and
 /// reconstruction), the lossy compression of its GIF encoder, and its processing operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
-/// homography estimation and resizing; and the merging of the pieces of strokes. The inputs of the processing targets are
+/// homography estimation and resizing; the conversions between the pixel formats; and the merging of the pieces of strokes. The inputs of the processing targets are
 /// small images whose pixel format, size, frames and bytes come from the fuzzer, followed by the options of the operation.
 /// </summary>
 public static partial class ImagingFuzzTargets
@@ -51,6 +51,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-skew", SkewTarget) { Seeds = GetSkewSeeds, Dictionary = Tokens },
         new("imaging-stroke", StrokeTarget) { Seeds = GetStrokeSeeds, Dictionary = StrokeTokens },
         new("imaging-resize", ResizeTarget) { Seeds = GetResizeSeeds, Dictionary = Tokens },
+        new("imaging-pixel-conversion", PixelConversionTarget) { Seeds = GetPixelConversionSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>

@@ -1186,7 +1186,13 @@ public sealed class TiffEncoderTests
             3 => ImageColorModel.Rgb,
             _ => ImageColorModel.Rgba,
         };
-        Assert.Equal((PixelFormat.RgbaFloat, model, 32, ColorTransferFunction.Linear), (info.PixelFormat, info.ColorModel, info.BitsPerComponent, info.Metadata.TransferFunction));
+        var expectedFormat = samplesPerPixel switch
+        {
+            1 => PixelFormat.GrayFloat,
+            2 => PixelFormat.LaFloat,
+            _ => PixelFormat.RgbaFloat,
+        };
+        Assert.Equal((expectedFormat, model, 32, ColorTransferFunction.Linear), (info.PixelFormat, info.ColorModel, info.BitsPerComponent, info.Metadata.TransferFunction));
 
         using var decoded = Image.Load<RgbaFloat>(data);
         Assert.Equal(GetComponentBits(image), GetComponentBits(decoded));

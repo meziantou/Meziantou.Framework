@@ -18,6 +18,8 @@ public sealed class DpxEncoderTests
     [InlineData(PixelFormat.Gray16, 6, 16)]
     [InlineData(PixelFormat.RgbaFloat, 50, 32)]
     [InlineData(PixelFormat.RgbaHalf, 50, 32)]
+    [InlineData(PixelFormat.GrayFloat, 6, 32)]
+    [InlineData(PixelFormat.GrayHalf, 6, 32)]
     public void TheDefaultDepthIsTheOneOfThePixelFormat(PixelFormat format, int descriptor, int bits)
     {
         using var source = CreatePattern(5, 3);
@@ -36,6 +38,8 @@ public sealed class DpxEncoderTests
         using var decoded = Image.Load(data);
         if (PixelFormats.IsFloatingPoint(format))
         {
+            // A floating-point luma element loads as GrayFloat
+            Assert.Equal(PixelFormats.IsGrayscale(format) ? PixelFormat.GrayFloat : PixelFormat.RgbaFloat, decoded.PixelFormat);
             using var expected = image.CloneAs<RgbaFloat>();
             using var actual = decoded.CloneAs<RgbaFloat>();
             Assert.Equal(GetBytes(expected), GetBytes(actual));

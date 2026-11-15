@@ -270,7 +270,7 @@ internal sealed class TiffPage
                 return HasSixteenBitColorMap ? PixelFormat.Rgb48 : PixelFormat.Rgb24;
 
             if (IsFloatingPoint)
-                return DefaultPixelFormats.ForTiffFloatingPoint(BitsPerSample);
+                return DefaultPixelFormats.ForTiffFloatingPoint(IsGrayscale, HasAlpha, BitsPerSample);
 
             return DefaultPixelFormats.ForTiff(IsGrayscale, HasAlpha, DecodedBitsPerSample == 16);
         }

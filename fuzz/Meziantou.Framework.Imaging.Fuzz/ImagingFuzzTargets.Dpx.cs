@@ -53,7 +53,7 @@ public static partial class ImagingFuzzTargets
             FuzzAssert.Equal(info.Size, image.Size, "The identified size");
             FuzzAssert.Equal(info.PixelFormat, image.PixelFormat, "The identified pixel format");
 
-            var isFloat = image.PixelFormat == PixelFormat.RgbaFloat;
+            var isFloat = PixelFormats.IsFloatingPoint(image.PixelFormat);
             using (var reader = isFloat
                 ? (IDisposable)Image.OpenReader<RgbaFloat>(new MemoryStream(input), new ImageReaderOptions { Configuration = DpxConfiguration })
                 : Image.OpenReader<Rgba64>(new MemoryStream(input), new ImageReaderOptions { Configuration = DpxConfiguration }))

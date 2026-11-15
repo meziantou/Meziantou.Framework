@@ -696,6 +696,8 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.Image<TPixel> CreateImage<TPixel>(int width, int height) where TPixel : unmanaged => throw null;
     }
 
+    public delegate void CustomPixelRowAction<TPixel>(System.Span<TPixel> row, int y) where TPixel : unmanaged;
+
     public enum DecodingStrictness
     {
         Strict = 0,
@@ -845,6 +847,30 @@ namespace Meziantou.Framework.Imaging
         public readonly override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Gray8 left, Meziantou.Framework.Imaging.Gray8 right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Gray8 left, Meziantou.Framework.Imaging.Gray8 right) => throw null;
+    }
+
+    public struct GrayFloat : System.IEquatable<Meziantou.Framework.Imaging.GrayFloat>
+    {
+        public float Value;
+        public GrayFloat(float value) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.GrayFloat other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.GrayFloat left, Meziantou.Framework.Imaging.GrayFloat right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.GrayFloat left, Meziantou.Framework.Imaging.GrayFloat right) => throw null;
+    }
+
+    public struct GrayHalf : System.IEquatable<Meziantou.Framework.Imaging.GrayHalf>
+    {
+        public System.Half Value;
+        public GrayHalf(System.Half value) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.GrayHalf other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.GrayHalf left, Meziantou.Framework.Imaging.GrayHalf right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.GrayHalf left, Meziantou.Framework.Imaging.GrayHalf right) => throw null;
     }
 
     public enum HdrToneMappingOperator
@@ -1008,6 +1034,13 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.Hwb left, Meziantou.Framework.Imaging.Hwb right) => throw null;
     }
 
+    public interface ICustomPixel<TSelf> where TSelf : unmanaged, Meziantou.Framework.Imaging.ICustomPixel<TSelf>
+    {
+        static Meziantou.Framework.Imaging.PixelFormat StorageFormat { get; }
+        static void FromStorage(System.ReadOnlySpan<byte> source, System.Span<TSelf> destination);
+        static void ToStorage(System.ReadOnlySpan<TSelf> source, System.Span<byte> destination);
+    }
+
     public interface IImageProcessor<TPixel> where TPixel : unmanaged
     {
         Meziantou.Framework.Imaging.Size GetOutputSize(Meziantou.Framework.Imaging.Size size);
@@ -1077,6 +1110,7 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.ImageInfo Identify(string path, Meziantou.Framework.Imaging.ImageIdentifyOptions? options = null) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.ImageInfo> IdentifyAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageIdentifyOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.ImageInfo> IdentifyAsync(string path, Meziantou.Framework.Imaging.ImageIdentifyOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Imaging.Image ImportCustomPixelData<TPixel>(System.ReadOnlySpan<TPixel> source, int width, int height, int strideInPixels = 0, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : unmanaged, Meziantou.Framework.Imaging.ICustomPixel<TPixel> => throw null;
         public static Meziantou.Framework.Imaging.Image<TPixel> ImportPixelBytes<TPixel>(System.ReadOnlySpan<byte> source, int width, int height, int strideInBytes = 0, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : unmanaged => throw null;
         public static Meziantou.Framework.Imaging.Image<TPixel> ImportPixelData<TPixel>(System.ReadOnlySpan<TPixel> source, int width, int height, int strideInPixels = 0, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : unmanaged => throw null;
         public abstract Meziantou.Framework.Imaging.ImageFrame InsertFrame(int index, Meziantou.Framework.Imaging.ImageFrame source);
@@ -1108,6 +1142,13 @@ namespace Meziantou.Framework.Imaging
         public static unsafe Meziantou.Framework.Imaging.Image WrapMemory(Meziantou.Framework.Imaging.PixelFormat pixelFormat, void* address, int width, int height, int strideInBytes = 0, System.Action? release = null, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
         public static Meziantou.Framework.Imaging.Image<TPixel> WrapMemory<TPixel>(System.Memory<byte> memory, int width, int height, int strideInBytes = 0, System.Action? release = null, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : unmanaged => throw null;
         public static unsafe Meziantou.Framework.Imaging.Image<TPixel> WrapMemory<TPixel>(void* address, int width, int height, int strideInBytes = 0, System.Action? release = null, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : unmanaged => throw null;
+    }
+
+    public abstract class ImageBufferAllocator
+    {
+        public virtual int GetBufferLength(int length) => throw null;
+        public abstract byte[] Rent(int length);
+        public abstract void Return(byte[] buffer);
     }
 
     public static class ImageBufferPool
@@ -1183,6 +1224,7 @@ namespace Meziantou.Framework.Imaging
 
     public sealed class ImageConfiguration
     {
+        public Meziantou.Framework.Imaging.ImageBufferAllocator? BufferAllocator { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.CustomImageCodec> Codecs { get => throw null; init { } }
         public Meziantou.Framework.Imaging.DecodingStrictness DecodingStrictness { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.ImageConfiguration Default { get => throw null; }
@@ -1279,9 +1321,11 @@ namespace Meziantou.Framework.Imaging
         public abstract Meziantou.Framework.Imaging.PixelFormat PixelFormat { get; }
         public Meziantou.Framework.Imaging.Size Size { get => throw null; }
         public int Width { get => throw null; }
+        public void CopyCustomPixelDataTo<TPixel>(System.Span<TPixel> destination, int strideInPixels = 0, Meziantou.Framework.Imaging.PixelConversionOptions? options = null) where TPixel : unmanaged, Meziantou.Framework.Imaging.ICustomPixel<TPixel> { }
         public void CopyPixelBytesTo(System.Span<byte> destination, int strideInBytes = 0) { }
         public void Draw(Meziantou.Framework.Imaging.Drawing.DrawingAction action, System.Threading.CancellationToken cancellationToken = default) { }
         public void Draw<TState>(TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, System.Threading.CancellationToken cancellationToken = default) where TState : allows ref struct { }
+        public void ProcessCustomPixelRows<TPixel>(Meziantou.Framework.Imaging.CustomPixelRowAction<TPixel> action) where TPixel : unmanaged, Meziantou.Framework.Imaging.ICustomPixel<TPixel> { }
         public void ProcessPixelBytes(Meziantou.Framework.Imaging.PixelBytesAction action) { }
         public void ProcessPixelBytes<TState>(TState state, Meziantou.Framework.Imaging.PixelBytesAction<TState> action) where TState : allows ref struct { }
         public void Save(System.IO.Stream stream, Meziantou.Framework.Imaging.Formats.ImageEncoder encoder) { }
@@ -1722,6 +1766,34 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.La32 left, Meziantou.Framework.Imaging.La32 right) => throw null;
     }
 
+    public struct LaFloat : System.IEquatable<Meziantou.Framework.Imaging.LaFloat>
+    {
+        public float A;
+        public float L;
+        public LaFloat(float l) { }
+        public LaFloat(float l, float a) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.LaFloat other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.LaFloat left, Meziantou.Framework.Imaging.LaFloat right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.LaFloat left, Meziantou.Framework.Imaging.LaFloat right) => throw null;
+    }
+
+    public struct LaHalf : System.IEquatable<Meziantou.Framework.Imaging.LaHalf>
+    {
+        public System.Half A;
+        public System.Half L;
+        public LaHalf(System.Half l) { }
+        public LaHalf(System.Half l, System.Half a) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.LaHalf other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.LaHalf left, Meziantou.Framework.Imaging.LaHalf right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.LaHalf left, Meziantou.Framework.Imaging.LaHalf right) => throw null;
+    }
+
     public enum LutInterpolation
     {
         Tetrahedral = 0,
@@ -1867,6 +1939,10 @@ namespace Meziantou.Framework.Imaging
         Rgba1010102 = 16,
         Cmyk32 = 17,
         Cmyk64 = 18,
+        GrayFloat = 19,
+        GrayHalf = 20,
+        LaFloat = 21,
+        LaHalf = 22,
     }
 
     public static class PixelFormats

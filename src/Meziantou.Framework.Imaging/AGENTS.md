@@ -53,8 +53,11 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   processors that replace every frame through the geometry transaction; the built-in seam carving and inpainting use the
   same path and implement the internal `INativePixelCopier` so that the pixels they keep are copied, not converted),
   `Image.WrapMemory` (caller-owned
-  pixel memory) and `ImageBufferPool` (the retention of the pool). No public allocator and no custom pixel type: the
-  pixel formats are a closed set that every kernel, converter and codec switches over. Implementation types are
+  pixel memory), `ImageBufferPool` (the retention of the pool), `ImageBufferAllocator` (`ImageConfiguration.BufferAllocator`,
+  the arrays of the scopes of a configuration, see Memory) and `ICustomPixel<TSelf>` (a pixel type of the caller that
+  converts rows from and to a built-in storage format: import, copy and row editing only). The pixel formats stay a
+  closed set that every kernel, converter and codec switches over: a custom pixel type never reaches them, and
+  `Image<TPixel>` takes the built-in types only. Implementation types are
   `internal` and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings), `.Drawing` (brushes,
   pens, paths, the canvas) and `.Typography` (fonts). The base types of the model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`,
@@ -178,6 +181,18 @@ reference white, values outside [0, 1] are meaningful (highlights, negative out-
   decoders are the ones that produce them. TIFF floating-point pages are linear light unless an ICC profile describes
   them: `MetadataWritePlan` gives them the linear label (`FormatCapabilities.TiffFloatingPoint`) and rejects sRGB-labeled
   floats without profile, which would be relabeled.
+- `GrayFloat`, `GrayHalf`, `LaFloat` and `LaHalf` are the floating-point gray formats (`PixelConverter.IsFloatGray`).
+  Their conversions are in `PixelConverter.Float.cs` too: a color becomes its luma in double precision without
+  clipping, but a gray color keeps its level (`PixelConverter.GetGrayLevel`), and an integer gray sample is the same
+  fraction as in the color format of the precision, so that gray goes back and forth exactly. They widen to `RgbaFloat`
+  or `RgbaHalf` (`PixelFormatWidening`, which is also the layout their decoders write: keep the decoder rows RGBA), the
+  processing kernels run them through `ProcessingBridge` in that format, the tone operations (`ToneSamples`,
+  `ColorLookup.ApplyFloatGray`) read them natively, and drawing composites them in `FloatDrawingKernels` (the gray
+  level of the result; the colors over black for `GrayFloat` and `GrayHalf`, which have no alpha). The encoders that do
+  not store floats reduce them to `Gray16` or `La32` (`PixelFormatWidening.GetReducedFloatingPointFormat`).
+  `OpenExrEncoder` and `DpxEncoder` store them (`StoresPixelFormat`); TIFF gets the widened format and writes one or two
+  samples when the pixels are gray. DDS still loads its single-channel floating-point textures as RGBA (its corpus is
+  generated with Windows tools); changing it changes `DdsPixelLayout`, `DefaultPixelFormats.ForDds` and the generator.
 - Drawing (`FloatDrawingKernels`): paints keep 16-bit samples (`DrawingKernels.GetPaintMax`), are composited in double
   precision over the stored values without clipping the colors, and color matrices are applied in place. Layers,
   patterns, groups and filter surfaces stay `Rgba64`, so what goes through them must be in [0, 1].
@@ -185,8 +200,13 @@ reference white, values outside [0, 1] are meaningful (highlights, negative out-
 ## Memory
 
 - Every library-controlled buffer (pixels, decoder and compositor state, input buffers, scratch, encoder state) is rented
-  from `SlabPool` and charged at its actual rented capacity to an `AllocationScope`, which is bounded by
-  `MaxLiveAllocationBytes`. Never allocate a large buffer outside a scope; charge before renting.
+  from the `IBufferPool` of its `AllocationScope` and charged at its actual rented capacity to it, which is bounded by
+  `MaxLiveAllocationBytes`. Never allocate a large buffer outside a scope; charge before renting. The pool is `SlabPool`
+  (`SlabPool.Shared`), or `AllocatorBufferPool` when the configuration has an `ImageBufferAllocator`
+  (`AllocationScope.Create` takes `ImageConfiguration.BufferPool`): the capacity it charges is the
+  `GetBufferLength` the allocator declares, and an array of another length is returned to it and rejected, so that the
+  charged bytes stay the bytes in use. Every scope of an operation must come from `AllocationScope.Create` with the
+  configuration of the image, or the allocator of the caller is bypassed.
 - Pixel storage is made of row-aligned slabs: rows are contiguous, the whole image is not. All size arithmetic is checked
   (`CheckedSizes`). Newly visible pixels are cleared; padding and scratch data are never exposed.
 - Pixel access goes through exclusive scoped leases (`ProcessPixelRows`, `ProcessPixelBytes`, `CopyPixel*To`). Cross-image

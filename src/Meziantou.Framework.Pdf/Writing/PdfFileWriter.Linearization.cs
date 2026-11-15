@@ -116,7 +116,7 @@ internal sealed partial class PdfFileWriter
             }
         }
 
-        var info = OmitsInformation() ? null : trailer[PdfNames.Info];
+        var info = GetInformation(trailer);
         var others = GetOtherTrailerEntries(trailer);
         foreach (var value in new[] { info }.Concat(others.Select(e => e.Value)))
         {

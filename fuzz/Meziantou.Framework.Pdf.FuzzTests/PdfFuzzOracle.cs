@@ -153,12 +153,37 @@ internal static class PdfFuzzOracle
 
         CheckReadBack(document.ToByteArray(), options, pageCount, "default options");
         CheckReadBack(document.ToByteArray(new PdfSaveOptions { CompressStreams = false, UseObjectStreams = false }), options, pageCount, "uncompressed streams, no object streams");
+        CheckRoundTrip(PdfDocument.Open(data, options), options);
         if (pageCount > 0)
         {
             CheckRedaction(PdfDocument.Open(data, options), options, pageCount);
             CheckWatermark(PdfDocument.Open(data, options), options, pageCount);
             CheckPdfAConversion(PdfDocument.Open(data, options), options, pageCount);
         }
+    }
+
+    /// <summary>
+    /// The writer is deterministic and keeps the document (<see cref="PdfRoundTripValidator"/>): the document is written,
+    /// read back and written again, and the two outputs have the same pages, objects and bytes.
+    /// </summary>
+    private static void CheckRoundTrip(PdfDocument document, PdfReadOptions options)
+    {
+        PdfRoundTripResult result;
+        try
+        {
+            result = PdfRoundTripValidator.Validate(document, readOptions: options);
+        }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+        {
+            return;
+        }
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!result.Succeeded)
+            throw new InvalidOperationException($"The round trip of the document failed: {result.Failure}");
     }
 
     /// <summary>

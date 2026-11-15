@@ -50,6 +50,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   detached signatures, RFC 3161 time stamps, the document security store, document time stamps), certification and
   field locks, visible signatures, appended as incremental updates, and the verification of the signatures of a
   document and of the changes made after them
+- **Tools**: a round-trip validator that checks that the writer is deterministic and keeps the pages of a document
+  (`PdfRoundTripValidator`, with structural summaries of documents: `PdfDocumentSummary`)
 
 ## Create a document
 

@@ -110,7 +110,7 @@ internal sealed partial class PdfFileWriter : IDisposable
         }
 
         var root = trailer[PdfNames.Root];
-        var info = OmitsInformation() ? null : trailer[PdfNames.Info];
+        var info = GetInformation(trailer);
         var others = GetOtherTrailerEntries(trailer);
         foreach (var value in new[] { root, info }.Concat(others.Select(e => e.Value)))
         {
@@ -347,7 +347,7 @@ internal sealed partial class PdfFileWriter : IDisposable
             entries.Add((entry.Reference.ObjectNumber, (0, 0, Math.Min(entry.Reference.Generation + 1, 65535))));
         }
 
-        var info = OmitsInformation() ? null : trailer[PdfNames.Info];
+        var info = GetInformation(trailer);
         var others = GetOtherTrailerEntries(trailer);
         var id = ComputeId(_output.EndHash(), isUpdate: true);
         var prev = PdfInteger.Get(reader.LastXrefOffset);
@@ -416,6 +416,25 @@ internal sealed partial class PdfFileWriter : IDisposable
     /// allows it with page-piece dictionaries (ISO 19005-4, 6.1.3), the XMP metadata has the information.
     /// </summary>
     private bool OmitsInformation() => Conformance.PdfALevel.GetPart(_document.PdfAConformance) == 4 && !_document.Catalog.ContainsKey(PdfName.Create("PieceInfo"));
+
+    /// <summary>
+    /// Gets the <c>/Info</c> entry to write: none when it is left out, or when it is not a dictionary, such as a reference
+    /// to an object the file does not have (the null object, 7.3.10), so that a document written again is written the same.
+    /// </summary>
+    private PdfObject? GetInformation(PdfDictionary trailer)
+    {
+        if (OmitsInformation())
+            return null;
+
+        try
+        {
+            return trailer.GetResolved(PdfNames.Info) is PdfDictionary ? trailer[PdfNames.Info] : null;
+        }
+        catch (PdfException)
+        {
+            return null;
+        }
+    }
 
     private PdfVersion GetVersion(bool useObjectStreams)
     {

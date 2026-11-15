@@ -413,6 +413,16 @@ namespace Meziantou.Framework.Pdf
         public void SetText(string key, string? value) { }
     }
 
+    public sealed class PdfDocumentSummary
+    {
+        public string Digest { get => throw null; }
+        public int ObjectCount { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<Meziantou.Framework.Pdf.Objects.PdfObjectKind, int> ObjectKinds { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, int> ObjectTypes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfPageSummary> Pages { get => throw null; }
+        public static Meziantou.Framework.Pdf.PdfDocumentSummary Create(Meziantou.Framework.Pdf.PdfDocument document) => throw null;
+    }
+
     public sealed class PdfEmbeddedFile
     {
         public System.DateTimeOffset? CreationDate { get => throw null; }
@@ -854,6 +864,21 @@ namespace Meziantou.Framework.Pdf
         LowercaseLetters = 5,
     }
 
+    public sealed class PdfPageSummary : System.IEquatable<Meziantou.Framework.Pdf.PdfPageSummary>
+    {
+        public int AnnotationCount { get => throw null; }
+        public string? ContentDigest { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRectangle CropBox { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRectangle MediaBox { get => throw null; }
+        public int Rotation { get => throw null; }
+        public bool Equals(Meziantou.Framework.Pdf.PdfPageSummary? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Pdf.PdfPageSummary? left, Meziantou.Framework.Pdf.PdfPageSummary? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Pdf.PdfPageSummary? left, Meziantou.Framework.Pdf.PdfPageSummary? right) => throw null;
+    }
+
     public sealed class PdfPasswordException : Meziantou.Framework.Pdf.PdfException
     {
         public PdfPasswordException(string? message) { }
@@ -994,6 +1019,44 @@ namespace Meziantou.Framework.Pdf
     {
         public PdfResourceLimitException(string? message) { }
         public PdfResourceLimitException(string? message, System.Exception? innerException) { }
+    }
+
+    public sealed class PdfRoundTripFailure
+    {
+        public Meziantou.Framework.Pdf.PdfRoundTripFailureKind Kind { get => throw null; }
+        public string Message { get => throw null; }
+        public int? PageIndex { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum PdfRoundTripFailureKind
+    {
+        ReadBackFailed = 0,
+        ReadBackRepaired = 1,
+        PageCountChanged = 2,
+        PageChanged = 3,
+        ObjectGraphChanged = 4,
+        OutputsDiffer = 5,
+    }
+
+    public sealed class PdfRoundTripResult
+    {
+        public bool AreOutputsIdentical { get => throw null; }
+        public bool AreOutputsStructurallyEquivalent { get => throw null; }
+        public bool ComparesBytes { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRoundTripFailure? Failure { get => throw null; }
+        public System.ReadOnlyMemory<byte> FirstOutput { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfDocumentSummary? FirstSummary { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfDocumentSummary OriginalSummary { get => throw null; }
+        public System.ReadOnlyMemory<byte>? SecondOutput { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfDocumentSummary? SecondSummary { get => throw null; }
+        public bool Succeeded { get => throw null; }
+    }
+
+    public static class PdfRoundTripValidator
+    {
+        public static Meziantou.Framework.Pdf.PdfRoundTripResult Validate(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.PdfSaveOptions? saveOptions = null, Meziantou.Framework.Pdf.PdfReadOptions? readOptions = null) => throw null;
+        public static Meziantou.Framework.Pdf.PdfRoundTripResult Validate(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Pdf.PdfReadOptions? readOptions = null, Meziantou.Framework.Pdf.PdfSaveOptions? saveOptions = null) => throw null;
     }
 
     public sealed class PdfSaveOptions

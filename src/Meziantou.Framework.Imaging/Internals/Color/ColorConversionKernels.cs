@@ -110,6 +110,11 @@ internal static class ColorConversionKernels
             return;
         }
 
+        if (pipeline.HasLookupTable)
+        {
+            pipeline.ReserveLookupTables(source.Length / sourceStride);
+        }
+
         if (typeof(T) == typeof(byte) && pipeline.HasLookupTable && pipeline.ByteInputTables is { } tables)
         {
             ConvertBytesCached(pipeline, tables, unsafe(MemoryMarshal.Cast<T, byte>(source)), unsafe(MemoryMarshal.Cast<T, byte>(destination)), sourceStride, destinationStride, reverseColorOrder);

@@ -104,6 +104,19 @@ internal sealed class IccPipeline
     /// </summary>
     public bool HasLookupTable { get; }
 
+    /// <summary>Counts colors that are about to be converted, for the lookup tables that decode their entries once enough colors use them (<see cref="IccClutStage.Reserve"/>).</summary>
+    /// <param name="colors">The number of colors.</param>
+    public void ReserveLookupTables(int colors)
+    {
+        foreach (var stage in _stages)
+        {
+            if (stage is IccClutStage table)
+            {
+                table.Reserve(colors);
+            }
+        }
+    }
+
     /// <summary>Gets the inverse tone curves of the last stage that <see cref="GetByteOutputTables"/> replaces, one per destination channel; <see langword="null"/> when it does not.</summary>
     internal IccInverseCurve[]? OutputCurves => _outputCurves;
 

@@ -10771,6 +10771,59 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DecodedLookupTablesMatchTheScalarReference()
+    {
+        // Once enough colors are converted, the entries of a lookup table are divided once, and a CMYK table interpolates
+        // all its vertices (vertices of weight zero included): the samples of the stage-by-stage reference, at every precision
+        (Metadata.IccProfile Source, Metadata.IccProfile Destination)[] pairs =
+        [
+            (IccTestProfiles.CmykLabLut16(), Metadata.IccProfile.Srgb),
+            (IccTestProfiles.CmykLabLutAToB(), IccTestProfiles.CmykLabLut16()),
+            (IccTestProfiles.RgbLabLut8(), Metadata.IccProfile.Srgb),
+            (Metadata.IccProfile.Cgats001CompatibleCmyk, Metadata.IccProfile.Srgb),
+        ];
+
+        var random = new Random(1115);
+        foreach (var (source, destination) in pairs)
+        {
+            var pipeline = IccPipeline.Create(source, destination, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: true);
+            pipeline.ReserveLookupTables(int.MaxValue);
+            var sourceChannels = pipeline.SourceChannelCount;
+            var destinationChannels = pipeline.DestinationChannelCount;
+            const int Colors = 4000;
+
+            // Samples on the faces of the cells (0, the maximum, and a quarter of the range) and anywhere else
+            var bytes = new byte[Colors * sourceChannels];
+            var words = new ushort[bytes.Length];
+            var floats = new float[bytes.Length];
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                var kind = random.Next(4);
+                bytes[i] = kind switch { 0 => 0, 1 => 255, 2 => 64, _ => (byte)random.Next(256) };
+                words[i] = kind switch { 0 => 0, 1 => 65535, 2 => 16384, _ => (ushort)random.Next(65536) };
+                floats[i] = kind switch { 0 => 0, 1 => 1, 2 => 0.25f, _ => random.NextSingle() };
+            }
+
+            AssertConversion<byte, IccByteSample>(pipeline, bytes, sourceChannels, destinationChannels);
+            AssertConversion<ushort, IccUInt16Sample>(pipeline, words, sourceChannels, destinationChannels);
+            AssertConversion<float, IccSingleSample>(pipeline, floats, sourceChannels, destinationChannels);
+        }
+
+        static void AssertConversion<T, TSample>(IccPipeline pipeline, T[] samples, int sourceChannels, int destinationChannels)
+            where T : unmanaged
+            where TSample : struct, IIccSample<T>
+        {
+            var count = samples.Length / sourceChannels;
+            var expected = new T[count * destinationChannels];
+            var actual = new T[expected.Length];
+            ColorConversionKernels.ConvertScalar<T, TSample>(pipeline, samples, expected, sourceChannels, destinationChannels);
+            ColorConversionKernels.Convert<T, TSample>(pipeline, samples, actual, sourceChannels, destinationChannels);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ColorConversionCacheMatchesTheScalarReference()
     {
         // The 8-bit conversions that interpolate a lookup table remember the colors of a call: rows of repeated colors (runs,

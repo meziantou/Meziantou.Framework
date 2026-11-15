@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -177,9 +178,13 @@ internal static class ColorConversionKernels
                 }
             }
 
+            // A sample at a time: the copies of one or two samples are shorter than a call
             for (var i = 0; i < batch && copied > 0; i++)
             {
-                input.Slice((i * sourceStride) + sourceChannels, copied).CopyTo(kept[(i * copied)..]);
+                for (var c = 0; c < copied; c++)
+                {
+                    kept[(i * copied) + c] = input[(i * sourceStride) + sourceChannels + c];
+                }
             }
 
             pipeline.ApplyBatch(components, batch, firstStage, endStage);
@@ -193,7 +198,20 @@ internal static class ColorConversionKernels
                 {
                     var table = outputTables[channel];
                     var bytes = unsafe(MemoryMarshal.Cast<T, byte>(output));
-                    for (var i = 0; i < values.Length; i++)
+                    var i = 0;
+                    if (Vector128.IsHardwareAccelerated && !table.Intervals.IsEmpty)
+                    {
+                        // Two values at a time, one comparison from their interval: the samples of Quantize(double)
+                        ref var intervals = ref unsafe(MemoryMarshal.GetReference(table.Intervals));
+                        for (; i + 2 <= values.Length; i += 2)
+                        {
+                            var samples = QuantizationThresholds.Quantize(Vector128.Create(values.Slice(i, 2)), ref intervals);
+                            bytes[(i * destinationStride) + offset] = (byte)samples.GetElement(0);
+                            bytes[((i + 1) * destinationStride) + offset] = (byte)samples.GetElement(1);
+                        }
+                    }
+
+                    for (; i < values.Length; i++)
                     {
                         bytes[(i * destinationStride) + offset] = (byte)table.Quantize(values[i]);
                     }
@@ -209,7 +227,10 @@ internal static class ColorConversionKernels
 
             for (var i = 0; i < batch && copied > 0; i++)
             {
-                kept.Slice(i * copied, copied).CopyTo(output[((i * destinationStride) + destinationChannels)..]);
+                for (var c = 0; c < copied; c++)
+                {
+                    output[(i * destinationStride) + destinationChannels + c] = kept[(i * copied) + c];
+                }
             }
         }
     }

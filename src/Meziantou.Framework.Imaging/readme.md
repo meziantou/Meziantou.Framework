@@ -1061,7 +1061,9 @@ runs RANSAC (Fischler and Bolles, 1981): `HomographyRansacOptions.Iterations` sa
 xorshift generator seeded by `Seed`, scored by their inliers within `Threshold` (3 pixels; ties by the sum of squared
 errors, then the earlier sample), refitted on the inliers; the `HomographyEstimate` gives the `Transform`, the
 `Inliers`, their count and their root mean square error. Both are deterministic and feed `Transform` (with
-`TransformCanvasMode.Explicit`, the canvas has the coordinates of the destination points).
+`TransformCanvasMode.Explicit`, the canvas has the coordinates of the destination points). OpenCV's `findHomography`
+also refines its result to minimize the reprojection error, which the DLT does not: on noisy points its error is
+smaller by up to about 0.1%, and RANSAC finds the same inliers. The matrix maps row vectors: OpenCV's is its transpose.
 
 **Deskew**. `ImageFrame.EstimateSkew(options)` returns the angle of the lines of text of a document, in degrees, positive
 when they go down to the right, by projection profiles (Postl 1986, Baird 1987): the luma composited over white, split
@@ -1383,7 +1385,8 @@ Colors are filled premultiplied by alpha, in double precision, each channel clam
 from; the pixels outside the mask keep their stored values. The result is the same on every platform. It suits thin
 and small regions (scratches, text, small objects) and blurs the texture of large ones, which it does not reconstruct.
 The working memory (17 bytes per pixel, a working copy of a frame and the new frames) is charged to the image, and the
-operation is transactional. `PixelMask.FromFrame` reads a mask from the light pixels of a frame (luma times alpha at
+operation is transactional. OpenCV's `INPAINT_TELEA` normalizes the gradient term to a unit vector, which the paper does
+not: its fills differ, by a level or two even on a linear ramp, which this method reproduces. `PixelMask.FromFrame` reads a mask from the light pixels of a frame (luma times alpha at
 least half, alpha for `A8`).
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_Inpaint;format=md-fenced-code-block;dedent=true -->
@@ -1421,7 +1424,11 @@ Gaussian window of `Sigma`, `HarrisK` 0.04), `ShiTomasi` (its smaller eigenvalue
 Drummond: 9 contiguous pixels of the circle of 16 brighter or darker than the center by `FastThreshold`); a corner is a
 local maximum above `ResponseThreshold` times the strongest response (or a FAST corner), and the strongest are kept at
 least `MinDistance` apart, up to `MaxCorners`, sorted by response, then row, then column. Both are deterministic, read
-one frame without changing it, and charge their working memory to the image.
+one frame without changing it, and charge their working memory to the image. Compared with OpenCV: the distances of
+`HoughLines` are for the pixel indices, `(cos θ + sin θ) / 2` less, and its angles in radians; the Harris response of
+`cornerHarris` (aperture 3) is 16 times this one with equal windows, and its box of `blockSize` 3 is closest to a
+`Sigma` of 0.8; `FAST` with the threshold `t` tests the same pixels as a `FastThreshold` of `(t + 0.5) / 255`, but
+scores them differently, so its non-maximum suppression keeps other pixels of a cluster.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_DetectLines;format=md-fenced-code-block;dedent=true -->
 ```csharp

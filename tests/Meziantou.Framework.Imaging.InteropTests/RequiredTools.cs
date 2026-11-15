@@ -37,6 +37,9 @@ internal static class RequiredTools
 
     public static Task<RadianceTool> RadianceAsync() => RadianceTool.LocateAsync(XunitCancellationToken);
 
+    /// <summary>Gets <c>opencv-oracle</c>, which runs one OpenCV function per call, its files in the artifacts directory of the OpenCV tests.</summary>
+    public static Task<OpenCvOracleTool> OpenCvOracleAsync() => OpenCvOracleTool.LocateAsync(InteropSettings.GetArtifactsDirectory("OpenCvProcessingInteropTests"), XunitCancellationToken);
+
     /// <summary>Gets the <c>jpeg</c> tool of the ISO JPEG reference codec, which shares no code with libjpeg-turbo.</summary>
     public static Task<IsoJpegTool> IsoJpegAsync() => IsoJpegTool.LocateAsync(XunitCancellationToken);
 

@@ -58,6 +58,7 @@ public static class PdfFuzzTargets
         new("pdf-annotation-appearances", AnnotationAppearances) { Seeds = GetAppearanceSeeds, Dictionary = AppearanceTokens },
         new("pdf-separations", Separations) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-compare", Compare) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-table", Table) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
     ];
 
     /// <summary>
@@ -353,6 +354,37 @@ public static class PdfFuzzTargets
             var rewritten = PdfDocumentComparer.Compare(document, PdfDocument.Open(written, ReadOptions));
             FuzzAssert.True(rewritten.AreEquivalent, "A document differs from the document written: " + rewritten);
             FuzzAssert.Equal("", rewritten.ToString(), "The diff of equivalent documents is not empty");
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// The input is a PDF file: the table of the crop box of its first page is rebuilt, or a reason is given. A table has
+    /// as many cells in each row as columns, and its boundaries are sorted (left to right, top to bottom).
+    /// </summary>
+    private static void Table(ReadOnlySpan<byte> data)
+    {
+        try
+        {
+            var document = PdfDocument.Open(data.ToArray(), ReadOptions);
+            if (document.Pages.Count == 0)
+                return;
+
+            var page = document.Pages[0];
+            var result = PdfTableExtractor.Extract(page, page.CropBox);
+            if (!result.Succeeded)
+            {
+                FuzzAssert.True(result.Failure is not null && result.Message is not null, "A failure has no reason");
+                return;
+            }
+
+            var table = result.Table;
+            FuzzAssert.True(table.ColumnCount >= 1 && table.RowCount >= 1, "A table has no cell");
+            FuzzAssert.True(table.Rows.All(row => row.Count == table.ColumnCount), "A row does not have a cell per column");
+            FuzzAssert.True(table.ColumnBoundaries.Zip(table.ColumnBoundaries.Skip(1)).All(pair => pair.First < pair.Second), "The columns are not sorted");
+            FuzzAssert.True(table.RowBoundaries.Zip(table.RowBoundaries.Skip(1)).All(pair => pair.First > pair.Second), "The rows are not sorted");
         }
         catch (PdfException)
         {

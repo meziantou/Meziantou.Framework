@@ -549,6 +549,16 @@ namespace Meziantou.Framework.Pdf
         public bool? TextKnockout { get => throw null; init { } }
     }
 
+    public sealed class PdfExtractedTable
+    {
+        public System.Collections.Generic.IReadOnlyList<double> ColumnBoundaries { get => throw null; }
+        public int ColumnCount { get => throw null; }
+        public string this[int row, int column] { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<double> RowBoundaries { get => throw null; }
+        public int RowCount { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<string>> Rows { get => throw null; }
+    }
+
     public sealed class PdfFileAttachmentAnnotation : Meziantou.Framework.Pdf.PdfAnnotation
     {
         public Meziantou.Framework.Pdf.PdfEmbeddedFile? File { get => throw null; }
@@ -1512,6 +1522,35 @@ namespace Meziantou.Framework.Pdf
         public double Bottom { get => throw null; }
         public bool IsComplete { get => throw null; }
         public int RowCount { get => throw null; }
+    }
+
+    public enum PdfTableExtractionFailureKind
+    {
+        NoGrid = 0,
+        MergedCells = 1,
+        NonHorizontalText = 2,
+        ImageOnly = 3,
+    }
+
+    public sealed class PdfTableExtractionOptions
+    {
+        public static Meziantou.Framework.Pdf.PdfTableExtractionOptions Default { get => throw null; }
+        public double MaxRuleThickness { get => throw null; init { } }
+        public double Tolerance { get => throw null; init { } }
+    }
+
+    public sealed class PdfTableExtractionResult
+    {
+        public Meziantou.Framework.Pdf.PdfTableExtractionFailureKind? Failure { get => throw null; }
+        public string? Message { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "Table")]
+        public bool Succeeded { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfExtractedTable? Table { get => throw null; }
+    }
+
+    public static class PdfTableExtractor
+    {
+        public static Meziantou.Framework.Pdf.PdfTableExtractionResult Extract(Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Pdf.PdfRectangle region, Meziantou.Framework.Pdf.PdfTableExtractionOptions? options = null) => throw null;
     }
 
     public sealed class PdfTableRow

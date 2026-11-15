@@ -38,7 +38,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`, with the
   right-to-left lines put in the order of the text by the Unicode Bidirectional Algorithm), positioned
   text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), the reading order of the
-  layout (`PdfTextReadingOrder.Layout`: columns and blocks found from the blank spaces of the page), image extraction
+  layout (`PdfTextReadingOrder.Layout`: columns and blocks found from the blank spaces of the page), ruled tables
+  rebuilt from their rules and text (`PdfTableExtractor`, with a typed reason when it cannot), image extraction
   (`PdfPage.GetImages`), content drawn over or under the content of a page (`PdfContentPlacement`), text watermarks
   (`PdfDocument.AddWatermark`), interactive forms created, read, filled and flattened (`PdfDocument.Form`), and their values exchanged as FDF
   and XFDF (`PdfFormData`), redaction

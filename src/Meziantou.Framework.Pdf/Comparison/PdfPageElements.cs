@@ -93,11 +93,38 @@ public sealed class PdfPageElements
         return new PdfPageElements(crop.Width, crop.Height, page.Rotation, text, images, walker.Paths, walker.Shadings);
     }
 
+    /// <summary>
+    /// Gets the line segments a page paints, in default user space: the segments of the stroked paths (the edges of their
+    /// rectangles included), and the center lines of the filled rectangles thinner than <paramref name="maxThickness"/>,
+    /// which tables use as rules.
+    /// </summary>
+    internal static List<(double X1, double Y1, double X2, double Y2)> GetRules(PdfPage page, double maxThickness)
+    {
+        var walker = new ContentWalker { Rules = [], MaxRuleThickness = maxThickness };
+        try
+        {
+            walker.Walk(page.GetContentData(), page.Resources, PdfMatrix.Identity, depth: 0);
+        }
+        catch (PdfException)
+        {
+        }
+
+        return walker.Rules;
+    }
+
     /// <summary>Follows the graphics state of a content (8.4): the transformation, the colors and the paths it paints.</summary>
     private sealed class ContentWalker
     {
         private readonly HashSet<PdfStream> _activeForms = new(ReferenceEqualityComparer.Instance);
+        private readonly List<(double X1, double Y1, double X2, double Y2)> _segments = [];
+        private readonly List<(double X1, double Y1, double X2, double Y2)> _thinRectangles = [];
+        private (double X, double Y) _current;
+        private (double X, double Y) _start;
         private int _operations;
+
+        public List<(double X1, double Y1, double X2, double Y2)>? Rules { get; init; }
+
+        public double MaxRuleThickness { get; init; }
 
         public List<PdfPathElement> Paths { get; } = [];
 
@@ -144,6 +171,25 @@ public sealed class PdfPageElements
 
                     case "m" or "l" when TryGetNumbers(operands, 2, out var p):
                         AddPoint(points, ctm, p[0], p[1]);
+                        if (Rules is not null)
+                        {
+                            var point = ctm.Transform(p[0], p[1]);
+                            if (name == "l")
+                            {
+                                AddSegment(_current, point);
+                            }
+                            else
+                            {
+                                _start = point;
+                            }
+
+                            _current = point;
+                        }
+
+                        break;
+                    case "h" when Rules is not null:
+                        AddSegment(_current, _start);
+                        _current = _start;
                         break;
                     case "c" when TryGetNumbers(operands, 6, out var c):
                         AddPoint(points, ctm, c[0], c[1]);
@@ -159,20 +205,57 @@ public sealed class PdfPageElements
                         AddPoint(points, ctm, r[0] + r[2], r[1]);
                         AddPoint(points, ctm, r[0] + r[2], r[1] + r[3]);
                         AddPoint(points, ctm, r[0], r[1] + r[3]);
+                        if (Rules is not null)
+                        {
+                            var a = ctm.Transform(r[0], r[1]);
+                            var b = ctm.Transform(r[0] + r[2], r[1]);
+                            var c2 = ctm.Transform(r[0] + r[2], r[1] + r[3]);
+                            var d = ctm.Transform(r[0], r[1] + r[3]);
+                            AddSegment(a, b);
+                            AddSegment(b, c2);
+                            AddSegment(c2, d);
+                            AddSegment(d, a);
+                            _start = _current = a;
+
+                            // A thin filled rectangle is a rule: its center line, along its longer side
+                            var width = Math.Abs(b.X - a.X) + Math.Abs(b.Y - a.Y);
+                            var height = Math.Abs(d.X - a.X) + Math.Abs(d.Y - a.Y);
+                            if (Math.Min(width, height) <= MaxRuleThickness)
+                            {
+                                _thinRectangles.Add(width >= height
+                                    ? ((a.X + d.X) / 2, (a.Y + d.Y) / 2, (b.X + c2.X) / 2, (b.Y + c2.Y) / 2)
+                                    : ((a.X + b.X) / 2, (a.Y + b.Y) / 2, (d.X + c2.X) / 2, (d.Y + c2.Y) / 2));
+                            }
+                        }
+
                         break;
 
                     case "f" or "F" or "f*":
+                        PaintRules(stroke: false);
                         AddPath(points, PdfPathPaint.Fill, fill, stroke);
                         AddPatternShading(fillPattern);
                         break;
                     case "S" or "s":
+                        if (name == "s")
+                        {
+                            AddSegment(_current, _start);
+                        }
+
+                        PaintRules(stroke: true);
                         AddPath(points, PdfPathPaint.Stroke, fill, stroke);
                         break;
                     case "B" or "B*" or "b" or "b*":
+                        if (name is "b" or "b*")
+                        {
+                            AddSegment(_current, _start);
+                        }
+
+                        PaintRules(stroke: true);
                         AddPath(points, PdfPathPaint.FillAndStroke, fill, stroke);
                         AddPatternShading(fillPattern);
                         break;
                     case "n":
+                        PaintRules(stroke: false, paint: false);
                         points.Clear();
                         break;
 
@@ -200,6 +283,26 @@ public sealed class PdfPageElements
                         break;
                 }
             }
+        }
+
+        private void AddSegment((double X, double Y) from, (double X, double Y) to)
+        {
+            if (Rules is not null && _segments.Count < MaxElements && double.IsFinite(from.X) && double.IsFinite(from.Y) && double.IsFinite(to.X) && double.IsFinite(to.Y))
+            {
+                _segments.Add((from.X, from.Y, to.X, to.Y));
+            }
+        }
+
+        /// <summary>The path is painted: its segments are rules when it is stroked, its thin rectangles when it is filled.</summary>
+        private void PaintRules(bool stroke, bool paint = true)
+        {
+            if (Rules is not null && paint && Rules.Count < MaxElements)
+            {
+                Rules.AddRange(stroke ? _segments : _thinRectangles);
+            }
+
+            _segments.Clear();
+            _thinRectangles.Clear();
         }
 
         private void AddPath(List<(double X, double Y)> points, PdfPathPaint paint, string? fill, string? stroke)

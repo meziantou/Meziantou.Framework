@@ -491,9 +491,9 @@ internal static class BlockDecoder
     private static ushort FinishSigned(int value) => value < 0 ? (ushort)((((-value) * 31) >> 5) | 0x8000) : (ushort)((value * 31) >> 5);
 
     /// <summary>The parameters of a BC7 mode (Table 109).</summary>
-    private readonly record struct Bc7Mode(int Subsets, int PartitionBits, int RotationBits, int IndexSelectionBits, int ColorBits, int AlphaBits, bool EndpointPBits, bool SharedPBits, int IndexBits, int SecondaryIndexBits);
+    internal readonly record struct Bc7Mode(int Subsets, int PartitionBits, int RotationBits, int IndexSelectionBits, int ColorBits, int AlphaBits, bool EndpointPBits, bool SharedPBits, int IndexBits, int SecondaryIndexBits);
 
-    private static readonly Bc7Mode[] Bc7Modes =
+    internal static readonly Bc7Mode[] Bc7Modes =
     [
         new(3, 4, 0, 0, 4, 0, EndpointPBits: true, SharedPBits: false, 3, 0),
         new(2, 6, 0, 0, 6, 0, EndpointPBits: false, SharedPBits: true, 3, 0),

@@ -35,14 +35,44 @@ public static string DescribeFont(string path)
 
 | | Supported |
 | --- | --- |
-| Containers | TrueType and OpenType (`.ttf`, `.otf`), collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0, collections included |
-| Outlines | TrueType (`glyf`), CFF and CFF2; fonts without outlines whose glyphs are bitmaps |
+| Containers | TrueType and OpenType (`.ttf`, `.otf`), collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0, collections included; PostScript Type 1 fonts (`.pfb`, `.pfa`), see [below](#postscript-type-1-fonts) |
+| Outlines | TrueType (`glyf`), CFF and CFF2, Type 1 charstrings of PostScript Type 1 fonts; fonts without outlines whose glyphs are bitmaps |
 | Variable fonts | Axes, named instances and everything an instance varies: outlines, advances, metrics and the positions of the layout tables |
 | Color glyphs | `COLR` versions 0 and 1 with the palettes of `CPAL`, glyphs described by SVG documents (`SVG `), and glyphs that are images (`sbix` with PNG, JPEG and TIFF images, `CBDT` with PNG images and pixels of 32 bits) |
 | Bitmaps without colors | The strikes of 1, 2, 4 and 8 bits per pixel of `EBDT` (`bdat` in Apple fonts), on request or in a font without outlines (see below) |
 
 A font collection holds several faces in one file. [Font.Load](cref:Meziantou.Framework.Imaging.Typography.Font.Load) gives its first face; [FontCollection.Load](cref:Meziantou.Framework.Imaging.Typography.FontCollection.Load) gives them
 all (a file that holds one font is a collection of one). The faces of a collection share the bytes of the file.
+
+## PostScript Type 1 fonts
+
+A PostScript Type 1 font, in a PFB file (binary) or a PFA file (text), is detected from its content and loaded by
+[Font.Load](cref:Meziantou.Framework.Imaging.Typography.Font.Load) like any other font. Its widths and its kerning are in a separate AFM file (Adobe Font Metrics):
+[Font.LoadType1](cref:Meziantou.Framework.Imaging.Typography.Font.LoadType1) takes the metrics of that file, read with [AfmFontMetrics](cref:Meziantou.Framework.Fonts.AfmFontMetrics) of `Meziantou.Framework.Fonts`, and adds its
+kerning pairs to the font:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadType1Font;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static TextLayout LayOutWithType1Font(string pfbPath, string afmPath, string text)
+{
+    // Font.Load reads a PFB or a PFA file like any other font file. The widths and the kerning of the font are in a
+    // separate AFM file: LoadType1 adds its kerning pairs to the font
+    var metrics = AfmFontMetrics.Load(File.ReadAllBytes(afmPath));
+    var font = Font.LoadType1(pfbPath, metrics);
+    return TextLayout.Create(text, new TextStyle(font, 24));
+}
+```
+<!-- endref -->
+
+- The font is converted to an OpenType font with CFF outlines when it is loaded, from the Adobe Type 1 Font Format:
+  the eexec and charstring encryptions are removed, the subroutines are expanded, flex becomes its two curves, and an
+  accented character made of two glyphs (`seac`) becomes the outlines of both. Every glyph is converted when the font
+  is loaded, so a malformed glyph fails the loading, with [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException).
+- The characters of the glyphs come from their names (the Adobe Glyph List): `Aacute` is the character `Á`.
+- The hints, hint replacement and counter control are dropped: [Hinting](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Hinting) does not apply to these fonts.
+- With an AFM file, the ascender, descender, cap height and x-height of the file replace the ones computed from the
+  glyphs. The advance widths are always those of the font program.
+- Multiple master, CID-keyed and stroked (`PaintType 2`) fonts fail with [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
 
 ## Use an installed font
 
@@ -208,5 +238,7 @@ library does not support, and [ImageResourceLimitException](cref:Meziantou.Frame
 
 ## What is not supported
 
-- PostScript Type 1 fonts and Type 1 charstrings.
+- The hints of PostScript Type 1 fonts; multiple master, CID-keyed and stroked Type 1 fonts, and Type 3 fonts.
+- Type 1 charstrings and the `seac` form of `endchar` inside the CFF table of an OpenType font.
+- Bitmap font formats other than the tables of OpenType fonts: BDF, PCF, Windows `.fon` files.
 - The metadata and private blocks of WOFF and WOFF2 files. Table checksums are not verified.

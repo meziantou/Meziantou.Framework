@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec, the image data of PNG files, the lossy GIF compression, the processing operations, the strokes and the ICC profiles of color conversion. The other codecs
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec, the image data of PNG files, the lossy GIF compression, the processing operations, the strokes, the optimal line breaking and the ICC profiles of color conversion. The other codecs
     are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
   -->
   <PropertyGroup>
@@ -19,6 +19,9 @@
     <!-- The seeds of imaging-icc-named-colors and imaging-icc-conversion: the ICC profiles of the golden corpus (versions 2, 4 and 5, named colors) -->
     <SeedProfile Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\icc\profiles\*.icc" />
     <EmbeddedResource Include="@(SeedProfile)" LogicalName="Seeds/icc/%(Filename)%(Extension)" Link="Seeds\icc\%(Filename)%(Extension)" />
+
+    <!-- The PostScript Type 1 font of the font tests: the font of imaging-line-breaking -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontType1Writer.cs" Link="Shared\FontType1Writer.cs" />
   </ItemGroup>
 
   <ItemGroup>

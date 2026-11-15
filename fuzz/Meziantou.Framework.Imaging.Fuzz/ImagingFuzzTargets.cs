@@ -7,8 +7,9 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 /// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, the image data of PNG files (inflation and
 /// reconstruction), the lossy compression of its GIF encoder, and its processing operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
-/// homography estimation and resizing; the merging of the pieces of strokes; and the ICC profiles that the color conversions
-/// read (named colors, the processing elements of iccMAX profiles). The inputs of the processing targets are
+/// homography estimation and resizing; the merging of the pieces of strokes; the optimal line breaking of text
+/// layouts; and the ICC profiles that the color conversions read (named colors, the processing elements of iccMAX
+/// profiles). The inputs of the processing targets are
 /// small images whose pixel format, size, frames and bytes come from the fuzzer, followed by the options of the operation.
 /// </summary>
 public static partial class ImagingFuzzTargets
@@ -43,6 +44,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-resize", ResizeTarget) { Seeds = GetResizeSeeds, Dictionary = Tokens },
         new("imaging-icc-named-colors", IccNamedColorsTarget) { Seeds = GetIccSeeds, Dictionary = IccTokens },
         new("imaging-icc-conversion", IccProfileConversionTarget) { Seeds = GetIccSeeds, Dictionary = IccTokens },
+        new("imaging-line-breaking", LineBreakingTarget) { Seeds = GetLineBreakingSeeds, Dictionary = LineBreakingTokens },
         new("imaging-color-matrix", ColorMatrixTarget) { Seeds = GetColorMatrixSeeds, Dictionary = Tokens },
         new("imaging-resize-float", ResizeFloatTarget) { Seeds = GetResizeFloatSeeds, Dictionary = Tokens },
     ];

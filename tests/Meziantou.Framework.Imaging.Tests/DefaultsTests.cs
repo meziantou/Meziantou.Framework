@@ -231,11 +231,17 @@ public sealed class DefaultsTests
         var jhc = Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("dir/a.jhc"));
         Assert.Equal((Jpeg2000BlockCoder.HighThroughput, Jpeg2000Container.Codestream), (jhc.BlockCoder, jhc.Container));
 
-        // The other members of the family, and Photoshop documents, are read, never written
-        foreach (var extension in new[] { ".jpx", ".jpf", ".psd", ".PSB" })
+        // The other members of the family are read, never written
+        foreach (var extension in new[] { ".jpx", ".jpf" })
         {
             Assert.Contains("can be read but not written", Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a" + extension)).Message, StringComparison.Ordinal);
         }
+
+        // Photoshop documents: ".psb" names the large document format
+        Assert.False(Assert.IsType<PsdEncoder>(ImageEncoder.FromPath("a.psd")).LargeDocument);
+        Assert.True(Assert.IsType<PsdEncoder>(ImageEncoder.FromPath("a.PSB")).LargeDocument);
+        Assert.IsType<DngEncoder>(ImageEncoder.FromPath("a.dng"));
+        Assert.IsType<CineonEncoder>(ImageEncoder.FromPath("a.cin"));
 
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.xyz"));
         Assert.Equal(HeicCompression.Lossless, Assert.IsType<HeicEncoder>(ImageEncoder.FromPath("a.heic")).Compression);
@@ -251,7 +257,7 @@ public sealed class DefaultsTests
     [Fact]
     public void PublicEncoderSelectionMatchesTheSelectionOfSave()
     {
-        string[] readOnly = [".jpx", ".jpf", ".psd", ".psb", ".dng", ".dds", ".cin", ".ktx2"];
+        string[] readOnly = [".jpx", ".jpf", ".dds", ".ktx2"];
         foreach (var info in ImageFormatInfo.All)
         {
             foreach (var extension in info.FileExtensions)
@@ -279,6 +285,7 @@ public sealed class DefaultsTests
         var jhc = Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromFileExtension("jhc"));
         Assert.Equal((Jpeg2000BlockCoder.HighThroughput, Jpeg2000Container.Codestream), (jhc.BlockCoder, jhc.Container));
         Assert.Equal(IconKind.Cursor, Assert.IsType<IcoEncoder>(ImageEncoder.FromFileExtension("cur")).Kind);
+        Assert.True(Assert.IsType<PsdEncoder>(ImageEncoder.FromFileExtension("psb")).LargeDocument);
         Assert.Throws<ArgumentNullException>("extension", () => ImageEncoder.FromFileExtension(null!));
         foreach (var invalid in new[] { "", ".", "xyz", ".xyz", "a.png", "..png", " .png" })
         {
@@ -289,16 +296,13 @@ public sealed class DefaultsTests
     [Fact]
     public void EveryFormatHasADefaultEncoder()
     {
-        // PSD, DNG, DDS, Cineon and KTX 2.0 are read only
-        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Psd or ImageFormat.Dng or ImageFormat.Dds or ImageFormat.Cineon or ImageFormat.Ktx2)))
+        // DDS and KTX 2.0 are read only
+        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Dds or ImageFormat.Ktx2)))
         {
             var encoder = ImageEncoder.Create(format);
             Assert.Equal(format, encoder.Format);
             Assert.NotSame(encoder, ImageEncoder.Create(format));
         }
-
-        // DNG files are read, never written
-        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Dng));
 
         // The defaults are those of the encoder types: the variants of an extension are not applied
         Assert.Equal(PngAnimationMode.Auto, Assert.IsType<PngEncoder>(ImageEncoder.Create(ImageFormat.Png)).AnimationMode);
@@ -306,12 +310,9 @@ public sealed class DefaultsTests
         Assert.Equal(Jpeg2000Container.Jp2, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.Create(ImageFormat.Jpeg2000)).Container);
         Assert.Equal(IconKind.Icon, Assert.IsType<IcoEncoder>(ImageEncoder.Create(ImageFormat.Ico)).Kind);
         Assert.Equal(IconKind.Cursor, Assert.IsType<IcoEncoder>(ImageEncoder.Create(ImageFormat.Cur)).Kind);
+        Assert.False(Assert.IsType<PsdEncoder>(ImageEncoder.Create(ImageFormat.Psd)).LargeDocument);
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Unknown));
-        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Psd));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Custom));
-
-        // Cineon files are read, never written: DPX succeeded the format
-        Assert.Contains("read, not written", Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Cineon)).Message, StringComparison.Ordinal);
 
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Ktx2));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create((ImageFormat)999));

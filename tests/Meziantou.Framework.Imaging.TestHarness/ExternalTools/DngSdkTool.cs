@@ -18,10 +18,11 @@ namespace Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 /// </remarks>
 public sealed class DngSdkTool
 {
-    private DngSdkTool(string dngValidate, string unprocessedRaw)
+    private DngSdkTool(string dngValidate, string unprocessedRaw, string dcrawEmu)
     {
         DngValidatePath = dngValidate;
         UnprocessedRawPath = unprocessedRaw;
+        DcrawEmuPath = dcrawEmu;
     }
 
     /// <summary>Gets the version of the DNG SDK the package declares.</summary>
@@ -31,17 +32,50 @@ public sealed class DngSdkTool
 
     public string UnprocessedRawPath { get; }
 
+    public string DcrawEmuPath { get; }
+
     /// <summary>Downloads the tools (pinned by the <c>Meziantou.Prebuilt</c> package, cached and checksum-verified) and checks that they run.</summary>
     /// <exception cref="ExternalToolUnavailableException">A tool does not run.</exception>
     public static async Task<DngSdkTool> LocateAsync(CancellationToken cancellationToken)
     {
         var dngValidate = await PrebuiltTools.DngValidate.GetOrDownloadAsync(cancellationToken).ConfigureAwait(false);
         var unprocessedRaw = await PrebuiltTools.UnprocessedRaw.GetOrDownloadAsync(cancellationToken).ConfigureAwait(false);
+        var dcrawEmu = await PrebuiltTools.DcrawEmu.GetOrDownloadAsync(cancellationToken).ConfigureAwait(false);
         var result = await ProcessRunner.RunAsync(dngValidate, [], cancellationToken).ConfigureAwait(false);
         if (!(result.StandardError + System.Text.Encoding.UTF8.GetString(result.StandardOutput.Span)).Contains("dng_validate", StringComparison.Ordinal))
             throw new ExternalToolUnavailableException($"'{dngValidate}' does not run (exit code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardError}");
 
-        return new DngSdkTool(dngValidate, unprocessedRaw);
+        return new DngSdkTool(dngValidate, unprocessedRaw, dcrawEmu);
+    }
+
+    /// <summary>Validates a file with dng_validate: the messages it prints, which are empty for a valid file.</summary>
+    /// <returns>The lines of its output that are warnings or errors.</returns>
+    /// <exception cref="InvalidOperationException">dng_validate rejected the file.</exception>
+    public async Task<string[]> ValidateAsync(FullPath path, CancellationToken cancellationToken)
+    {
+        var result = await ProcessRunner.RunAsync(DngValidatePath, [path], cancellationToken).ConfigureAwait(false);
+        var output = System.Text.Encoding.UTF8.GetString(result.StandardOutput.Span) + result.StandardError;
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException($"dng_validate {path} failed ({result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {output}");
+
+        return [.. output.Split('\n').Where(line => line.Contains("Warning", StringComparison.OrdinalIgnoreCase) || line.Contains("Error", StringComparison.OrdinalIgnoreCase))];
+    }
+
+    /// <summary>
+    /// Gets the linear camera values of LibRaw's <c>dcraw_emu -4 -o 0 -r 1 1 1 1</c>: 16-bit linear samples of the camera color
+    /// space (no white balance, no color conversion, no gamma) of the demosaiced or linear raw image, from its 16-bit
+    /// big-endian PPM or PGM output.
+    /// </summary>
+    public async Task<(int Width, int Height, int Samples, ushort[] Values)> GetLibRawLinearAsync(FullPath path, CancellationToken cancellationToken)
+    {
+        var result = await ProcessRunner.RunAsync(DcrawEmuPath, ["-4", "-o", "0", "-r", "1", "1", "1", "1", path], cancellationToken).ConfigureAwait(false);
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException($"dcraw_emu failed ({result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardError}");
+
+        var output = File.Exists(path.Value + ".ppm") ? path.Value + ".ppm" : path.Value + ".pgm";
+        var (width, height, samples, values) = ReadPnm(await File.ReadAllBytesAsync(output, cancellationToken).ConfigureAwait(false));
+        File.Delete(output);
+        return (width, height, samples, values);
     }
 
     /// <summary>Gets a stage image of dng_validate (1, 2 or 3).</summary>
@@ -78,36 +112,43 @@ public sealed class DngSdkTool
             throw new InvalidOperationException($"unprocessed_raw failed ({result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardError}");
 
         var pgm = await File.ReadAllBytesAsync(path.Value + ".pgm", cancellationToken).ConfigureAwait(false);
+        var (width, height, _, samples) = ReadPnm(pgm);
+        return (width, height, samples);
+    }
 
-        // P5, the width, the height, the maximum value, each followed by one white space character
+    /// <summary>Reads a binary PGM (P5) or PPM (P6) file of 16-bit big-endian samples.</summary>
+    private static (int Width, int Height, int Samples, ushort[] Values) ReadPnm(byte[] pnm)
+    {
+        // The magic number, the width, the height, the maximum value, each followed by one white space character
         var fields = new List<string>();
         var position = 0;
         while (fields.Count < 4)
         {
-            while (char.IsWhiteSpace((char)pgm[position]))
+            while (char.IsWhiteSpace((char)pnm[position]))
             {
                 position++;
             }
 
             var start = position;
-            while (!char.IsWhiteSpace((char)pgm[position]))
+            while (!char.IsWhiteSpace((char)pnm[position]))
             {
                 position++;
             }
 
-            fields.Add(System.Text.Encoding.ASCII.GetString(pgm, start, position - start));
+            fields.Add(System.Text.Encoding.ASCII.GetString(pnm, start, position - start));
         }
 
         position++;
         var width = int.Parse(fields[1], CultureInfo.InvariantCulture);
         var height = int.Parse(fields[2], CultureInfo.InvariantCulture);
-        var samples = new ushort[width * height];
-        for (var i = 0; i < samples.Length; i++)
+        var channels = fields[0] == "P6" ? 3 : 1;
+        var values = new ushort[width * height * channels];
+        for (var i = 0; i < values.Length; i++)
         {
-            samples[i] = BinaryPrimitives.ReadUInt16BigEndian(pgm.AsSpan(position + (i * 2)));
+            values[i] = BinaryPrimitives.ReadUInt16BigEndian(pnm.AsSpan(position + (i * 2)));
         }
 
-        return (width, height, samples);
+        return (width, height, channels, values);
     }
 
     private async Task RunAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken)

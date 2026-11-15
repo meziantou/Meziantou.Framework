@@ -148,7 +148,7 @@ public sealed class ImageMetadata
     /// Gets or sets the fields of the header of the Cineon file the image was decoded from, or <see langword="null"/> for the
     /// other formats. This is informational only, like <see cref="SourceFormat"/>: it describes the file, not the pixels.
     /// </summary>
-    /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
+    /// <remarks>No operation updates it. <see cref="Formats.CineonEncoder"/> copies its fields; the other encoders ignore it.</remarks>
     public CineonHeader? CineonHeader { get; set; }
 
     /// <summary>

@@ -3415,6 +3415,13 @@ namespace Meziantou.Framework.Imaging.Formats
         TopDown = 1,
     }
 
+    public sealed class CineonEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public bool AllowBitDepthReduction { get => throw null; init { } }
+        public int? BitDepth { get => throw null; init { } }
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+    }
+
     public abstract class CustomImageEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
         public sealed override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
@@ -3422,6 +3429,20 @@ namespace Meziantou.Framework.Imaging.Formats
         protected CustomImageEncoder(Meziantou.Framework.Imaging.ImageFormatInfo formatInfo) { }
         public abstract void Encode(Meziantou.Framework.Imaging.Image image, System.IO.Stream destination);
         public virtual System.Threading.Tasks.ValueTask EncodeAsync(Meziantou.Framework.Imaging.Image image, System.IO.Stream destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public enum DngCompression
+    {
+        None = 0,
+        LosslessJpeg = 1,
+        Deflate = 2,
+    }
+
+    public sealed class DngEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public Meziantou.Framework.Imaging.Formats.DngCompression? Compression { get => throw null; init { } }
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public int? TileSize { get => throw null; init { } }
     }
 
     public enum DpxByteOrder
@@ -3743,6 +3764,19 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         Auto = 0,
         Bitmap = 1,
+    }
+
+    public enum PsdCompression
+    {
+        None = 0,
+        RunLength = 1,
+    }
+
+    public sealed class PsdEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public Meziantou.Framework.Imaging.Formats.PsdCompression Compression { get => throw null; init { } }
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public bool LargeDocument { get => throw null; init { } }
     }
 
     public sealed class QoiEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder

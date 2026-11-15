@@ -185,6 +185,150 @@ public sealed class DngInteropTests
         Assert.True(max <= 4, $"{name}: the proxy decodes to linear values that differ from the DNG SDK by {max.ToString(CultureInfo.InvariantCulture)} units of 1/65535.");
     }
 
+    public static TheoryData<string> EncoderCases =>
+    [
+        "rgb8-ljpeg",
+        "rgb8-ljpeg-tile32",
+        "rgb8-none",
+        "rgb8-none-tile16",
+        "rgb16-ljpeg",
+        "rgb16-linear-none",
+        "gray8-ljpeg",
+        "gray16-none",
+        "float-deflate",
+        "float-none",
+        "float-hdr-deflate",
+    ];
+
+    [Theory]
+    [MemberData(nameof(EncoderCases))]
+    public async Task EncoderOutputIsValidForTheDngSdk(string name)
+    {
+        var tool = await RequiredTools.DngSdkAsync();
+        var path = await WriteAsync("encoder-" + name, CreateEncoderOutput(name));
+        Assert.Empty(await tool.ValidateAsync(path, XunitCancellationToken));
+
+        // Stage 1 holds the stored samples, stage 2 the linear values: those the library gives
+        using var raw = DngRawImage.Load(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        var (width1, height1, samples1, stage1) = await tool.GetStageAsync(path, 1, XunitCancellationToken);
+        Assert.Equal((raw.Size.Width, raw.Size.Height, raw.SamplesPerPixel), (width1, height1, samples1));
+        var row = new float[width1 * samples1];
+        for (var y = 0; y < height1; y++)
+        {
+            raw.CopyStoredRow(y, row);
+            for (var i = 0; i < row.Length; i++)
+            {
+                Assert.Equal(stage1[(y * row.Length) + i], (double)row[i]);
+            }
+        }
+
+        var (_, height2, _, stage2) = await tool.GetStageAsync(path, 2, XunitCancellationToken);
+        var max = 0.0;
+        for (var y = 0; y < height2; y++)
+        {
+            raw.CopyLinearRow(y, row);
+            for (var i = 0; i < row.Length; i++)
+            {
+                var expected = raw.IsFloatingPoint ? row[i] : row[i] * 65535.0;
+                max = Math.Max(max, Math.Abs(expected - stage2[(y * row.Length) + i]));
+            }
+        }
+
+        Assert.True(max <= (raw.IsFloatingPoint ? 1e-6 : 0.5), $"{name}: the linear values differ from stage 2 of the DNG SDK by {max.ToString(CultureInfo.InvariantCulture)}.");
+
+        // The rendering of the DNG SDK is the image, sRGB-encoded: its camera profile has no tone curve. Monochrome images
+        // are rendered in gray gamma 2.2, and highlights above the white level rolled off
+        if (name.StartsWith("gray", StringComparison.Ordinal) || name.Contains("hdr", StringComparison.Ordinal))
+            return;
+
+        var (width3, height3, samples3, rendering) = await tool.RenderAsync(path, XunitCancellationToken);
+        using var decoded = Image.Load<RgbaFloat>(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.Equal((decoded.Width, decoded.Height, 3), (width3, height3, samples3));
+        var difference = 0.0;
+        for (var i = 0; i < width3 * height3; i++)
+        {
+            var pixel = decoded.Frames[0][i % width3, i / width3];
+            difference = Math.Max(difference, Math.Abs(EncodeSrgb(pixel.R) - rendering[i * 3]));
+            difference = Math.Max(difference, Math.Abs(EncodeSrgb(pixel.G) - rendering[(i * 3) + 1]));
+            difference = Math.Max(difference, Math.Abs(EncodeSrgb(pixel.B) - rendering[(i * 3) + 2]));
+        }
+
+        // The DNG SDK renders through its own working space and matrices: measured, 0.0024 at most (less than an 8-bit level)
+        Assert.True(difference <= 3e-3, $"{name}: the rendering of the DNG SDK differs from the image by {difference.ToString(CultureInfo.InvariantCulture)}.");
+    }
+
+    [Theory]
+    [InlineData("rgb8-ljpeg")]
+    [InlineData("rgb8-ljpeg-tile32")]
+    [InlineData("rgb8-none-tile16")]
+    [InlineData("rgb16-ljpeg")]
+    [InlineData("rgb16-linear-none")]
+    public async Task EncoderOutputIsReadByLibRaw(string name)
+    {
+        // LibRaw renders the linear values of a linear raw image without color conversion. It reads no floating-point DNG
+        // (all its values are 0), and renders monochrome linear raw images with a gain of its own (measured: 4 to 10 %)
+        var tool = await RequiredTools.DngSdkAsync();
+        var path = await WriteAsync("encoder-libraw-" + name, CreateEncoderOutput(name));
+        var (width, height, samples, values) = await tool.GetLibRawLinearAsync(path, XunitCancellationToken);
+        using var raw = DngRawImage.Load(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.Equal((raw.ActiveArea.Width, raw.ActiveArea.Height, raw.SamplesPerPixel), (width, height, samples));
+        var row = new float[width * samples];
+        for (var y = 0; y < height; y++)
+        {
+            raw.CopyLinearRow(y, row);
+            for (var i = 0; i < row.Length; i++)
+            {
+                Assert.Equal(Math.Round(row[i] * 65535.0, MidpointRounding.AwayFromZero), (double)values[(y * row.Length) + i]);
+            }
+        }
+    }
+
+    /// <summary>Encodes a pattern with the settings a case names (pixels, compression, tiles).</summary>
+    private static byte[] CreateEncoderOutput(string name)
+    {
+        const int Width = 45;
+        const int Height = 37;
+        using var pattern = new Image<Rgba64>(Width, Height);
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                pattern.Frames[0][x, y] = new Rgba64((ushort)(x * 1456), (ushort)(65535 - (y * 1771)), (ushort)(((x * 37) + (y * 911)) * 19 % 65536), 65535);
+            }
+        }
+
+        using Image image = name.Split('-')[0] switch
+        {
+            "rgb8" => pattern.CloneAs<Rgb24>(),
+            "rgb16" => pattern.CloneAs<Rgb48>(),
+            "gray8" => pattern.CloneAs<Gray8>(),
+            "gray16" => pattern.CloneAs<Gray16>(),
+            _ => pattern.CloneAs<RgbaFloat>(),
+        };
+
+        if (name.StartsWith("float", StringComparison.Ordinal) || name.Contains("linear", StringComparison.Ordinal))
+        {
+            image.Metadata.TransferFunction = Metadata.ColorTransferFunction.Linear;
+        }
+
+        if (name.Contains("hdr", StringComparison.Ordinal) && image is Image<RgbaFloat> floats)
+        {
+            floats.Frames[0][3, 4] = new RgbaFloat(5.5f, 2, 0.25f, 1);
+        }
+
+        var encoder = new Formats.DngEncoder
+        {
+            Compression = name.Contains("ljpeg", StringComparison.Ordinal) ? Formats.DngCompression.LosslessJpeg
+                : name.Contains("deflate", StringComparison.Ordinal) ? Formats.DngCompression.Deflate
+                : Formats.DngCompression.None,
+            TileSize = name.EndsWith("tile16", StringComparison.Ordinal) ? 16 : name.EndsWith("tile32", StringComparison.Ordinal) ? 32 : null,
+        };
+
+        using var stream = new MemoryStream();
+        image.Save(stream, encoder);
+        return stream.ToArray();
+    }
+
     private static double EncodeSrgb(double value)
     {
         value = Math.Clamp(value, 0, 1);

@@ -86,10 +86,18 @@ public sealed class DpxTool
     }
 
     /// <summary>Reads the code values of a file with ImageMagick, as 16-bit samples of the channels of <paramref name="map"/> (<c>gray</c>, <c>rgb</c>, <c>rgba</c>).</summary>
+    /// <param name="path">The file.</param>
+    /// <param name="map">The channels to read.</param>
+    /// <param name="bits">The bit depth of the code values.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="colorspace">
+    /// The colorspace set after reading, so that ImageMagick converts nothing: <c>sRGB</c>, or <c>Gray</c> for a gray Cineon
+    /// file (with <c>sRGB</c>, ImageMagick still converts it from log).
+    /// </param>
     /// <exception cref="InvalidOperationException">magick rejected the file.</exception>
-    public async Task<uint[]> ReadWithImageMagickAsync(FullPath path, string map, int bits, CancellationToken cancellationToken)
+    public async Task<uint[]> ReadWithImageMagickAsync(FullPath path, string map, int bits, CancellationToken cancellationToken, string colorspace = "sRGB")
     {
-        var result = await ProcessRunner.RunAsync(MagickPath, [path, "-set", "colorspace", "sRGB", "-depth", "16", "-endian", "LSB", map + ":-"], cancellationToken).ConfigureAwait(false);
+        var result = await ProcessRunner.RunAsync(MagickPath, [path, "-set", "colorspace", colorspace, "-depth", "16", "-endian", "LSB", map + ":-"], cancellationToken).ConfigureAwait(false);
         if (result.ExitCode != 0)
             throw new InvalidOperationException($"magick rejected '{path}' (exit code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardError}");
 

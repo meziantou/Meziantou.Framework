@@ -320,10 +320,10 @@ public sealed class DngDecoderTests
     }
 
     [Fact]
-    public void DngIsReadButNotWritten()
+    public void DngIsReadAndWritten()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => ImageEncoder.Create(ImageFormat.Dng));
-        Assert.Throws<ArgumentException>(() => ImageEncoder.FromFileExtension(".dng"));
+        Assert.IsType<DngEncoder>(ImageEncoder.Create(ImageFormat.Dng));
+        Assert.IsType<DngEncoder>(ImageEncoder.FromFileExtension(".dng"));
         Assert.Equal(ImageFormat.Dng, ImageFormatInfo.Get(ImageFormat.Dng).Format);
         Assert.Contains(".dng", ImageFormatInfo.Get(ImageFormat.Dng).FileExtensions);
     }

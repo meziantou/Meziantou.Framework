@@ -297,7 +297,7 @@ internal sealed class DngColorProfile
         return new Calibration(illuminant, new DngMatrix(planes, 3, colorMatrix), forward is null ? null : new DngMatrix(3, planes, forward), calibration is null ? null : new DngMatrix(planes, planes, calibration));
     }
 
-    private static DngMatrix GetRgbToXyz(double rx, double ry, double gx, double gy, double bx, double by, double[] white)
+    internal static DngMatrix GetRgbToXyz(double rx, double ry, double gx, double gy, double bx, double by, double[] white)
     {
         var primaries = new DngMatrix(3, 3, [rx / ry, gx / gy, bx / by, 1, 1, 1, (1 - rx - ry) / ry, (1 - gx - gy) / gy, (1 - bx - by) / by]);
         var scale = primaries.TryInvert()!.Multiply(DngMatrix.Column(white));

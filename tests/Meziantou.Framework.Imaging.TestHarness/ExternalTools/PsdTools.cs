@@ -80,6 +80,9 @@ public sealed class PsdTools
         return await File.ReadAllBytesAsync(folder / "composite.raw", cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Dumps the composite and the layers of a file (<c>psd-tools dump</c>): header.json, composite.raw and layer-<i>n</i>.raw.</summary>
+    public Task PsdToolsDumpAllAsync(FullPath path, FullPath folder, CancellationToken cancellationToken) => RunAsync(PsdToolsPath, ["dump", path, folder], cancellationToken);
+
     /// <summary>
     /// Converts the composite image of a file (the next subimages are the layers) with OpenImageIO to a TIFF file of a data type
     /// (<c>uint8</c>, <c>uint16</c>, <c>float</c>), with straight alpha: OpenImageIO removes the matte of a PSD composite into

@@ -351,10 +351,21 @@ public sealed class ApiSurfaceTests
     }
 
     [Fact]
-    public void PsdKeepsItsValue()
+    public void PsdAdditionsHaveTheirPublicShape()
     {
-        // A new format is appended: the values of the existing members never change. PSD is read only: no public type of its own
+        // A new format is appended: the values of the existing members never change
         Assert.Equal(19, (int)ImageFormat.Psd);
+
+        var type = typeof(PsdEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(PsdEncoder.Compression), nameof(PsdEncoder.Format), nameof(PsdEncoder.LargeDocument)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(PsdCompression), GetDeclaredProperty(type, nameof(PsdEncoder.Compression)).PropertyType);
+        Assert.Equal([nameof(PsdCompression.None), nameof(PsdCompression.RunLength)], Enum.GetNames<PsdCompression>());
+        Assert.Equal([0, 1], Enum.GetValues<PsdCompression>().Select(value => (int)value));
     }
 
     [Fact]
@@ -368,6 +379,18 @@ public sealed class ApiSurfaceTests
         Assert.True(type.IsPublic && type.IsSealed && typeof(IDisposable).IsAssignableFrom(type));
         Assert.True(typeof(DngProperties).IsPublic && typeof(DngProperties).IsSealed);
         Assert.Equal(typeof(DngProperties), typeof(ImageMetadata).GetProperty(nameof(ImageMetadata.DngProperties))!.PropertyType);
+
+        var encoder = typeof(DngEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", encoder.Namespace);
+        Assert.True(encoder.IsPublic && encoder.IsSealed && encoder.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(encoder.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(DngEncoder.Compression), nameof(DngEncoder.Format), nameof(DngEncoder.TileSize)],
+            encoder.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(DngCompression?), GetDeclaredProperty(encoder, nameof(DngEncoder.Compression)).PropertyType);
+        Assert.Equal(typeof(int?), GetDeclaredProperty(encoder, nameof(DngEncoder.TileSize)).PropertyType);
+        Assert.Equal([nameof(DngCompression.None), nameof(DngCompression.LosslessJpeg), nameof(DngCompression.Deflate)], Enum.GetNames<DngCompression>());
+        Assert.Equal([0, 1, 2], Enum.GetValues<DngCompression>().Select(value => (int)value));
     }
 
     [Fact]
@@ -431,6 +454,15 @@ public sealed class ApiSurfaceTests
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
         Assert.Equal(typeof(int?), GetDeclaredProperty(type, nameof(DpxEncoder.BitDepth)).PropertyType);
         Assert.Equal([nameof(DpxByteOrder.BigEndian), nameof(DpxByteOrder.LittleEndian)], Enum.GetNames<DpxByteOrder>());
+
+        var cineon = typeof(CineonEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", cineon.Namespace);
+        Assert.True(cineon.IsPublic && cineon.IsSealed && cineon.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(cineon.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(CineonEncoder.AllowBitDepthReduction), nameof(CineonEncoder.BitDepth), nameof(CineonEncoder.Format)],
+            cineon.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(int?), GetDeclaredProperty(cineon, nameof(CineonEncoder.BitDepth)).PropertyType);
 
         // The headers are informational records: sealed, value equality, init-only properties, attached by nullable read-write properties
         foreach (var (header, propertyName) in new[] { (typeof(DpxHeader), nameof(ImageMetadata.DpxHeader)), (typeof(CineonHeader), nameof(ImageMetadata.CineonHeader)) })

@@ -121,6 +121,10 @@ internal static class MarkdownFuzzTargets
         }
 
         _ = MarkdownHtmlRenderer.ToHtml(tree);
+
+        // The plain text has no HTML: the HTML of the text is not written
+        var plainText = MarkdownPlainTextRenderer.ToPlainText(tree);
+        FuzzAssert.True(plainText.Length == 0 || plainText[^1] == '\n', $"The plain text {FuzzAssert.Format(plainText)} does not end with a line ending: {FuzzAssert.Format(text)}");
         if (options != MarkdownParseOptions.Default)
         {
             // The options of the renderer that read the whole tree: the pragma lines, and the URLs

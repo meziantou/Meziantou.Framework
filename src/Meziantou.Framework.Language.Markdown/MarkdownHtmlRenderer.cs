@@ -31,11 +31,14 @@ public static class MarkdownHtmlRenderer
     /// <param name="tree">The document.</param>
     /// <param name="options">How to write the HTML, or <see langword="null"/> for <see cref="MarkdownHtmlRendererOptions.Default"/>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="tree"/> is <see langword="null"/>.</exception>
-    public static string ToHtml(MarkdownSyntaxTree tree, MarkdownHtmlRendererOptions? options)
+    public static string ToHtml(MarkdownSyntaxTree tree, MarkdownHtmlRendererOptions? options) => Render(tree, options, plainText: false);
+
+    // The HTML, or the plain text: the text of the HTML, without its tags and its HTML, and not escaped
+    internal static string Render(MarkdownSyntaxTree tree, MarkdownHtmlRendererOptions? options, bool plainText)
     {
         ArgumentNullException.ThrowIfNull(tree);
 
-        var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default);
+        var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default) { PlainText = plainText };
         if (tree.Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes))
         {
             writer.CollectAttributes(tree.GetRoot());
@@ -46,7 +49,7 @@ public static class MarkdownHtmlRenderer
             writer.CollectExtraAttributes(tree.GetRoot());
         }
 
-        if (options?.PragmaLines is true)
+        if (options?.PragmaLines is true && !plainText)
         {
             writer.CollectPragmaLines(tree);
         }
@@ -55,6 +58,11 @@ public static class MarkdownHtmlRenderer
         if (tree.Options.Extensions.HasFlag(MarkdownExtensions.Footnotes))
         {
             writer.WriteFootnotes(tree.GetRoot());
+        }
+
+        if (plainText)
+        {
+            writer.EndLine();
         }
 
         return writer.ToString();
@@ -74,6 +82,30 @@ public static class MarkdownHtmlRenderer
 
         // The HTML is about as long as the Markdown
         private readonly StringBuilder _output = new(sourceLength + 16);
+
+        // The text that is not content, which plain text does not write: the tags, the attributes and the HTML
+        private readonly StringBuilder _discardedMarkup = new();
+
+        /// <summary>Gets or sets a value indicating whether the writer writes plain text: the text of the document without HTML, as the plain text of Markdig.</summary>
+        public bool PlainText { get; init; }
+
+        private StringBuilder Markup
+        {
+            get
+            {
+                if (!PlainText)
+                {
+                    return _output;
+                }
+
+                if (_discardedMarkup.Length > 4096)
+                {
+                    _discardedMarkup.Clear();
+                }
+
+                return _discardedMarkup;
+            }
+        }
         private readonly bool _tagFilter = options.Extensions.HasFlag(MarkdownExtensions.TagFilter);
         private readonly bool _hardLineBreaks = options.Extensions.HasFlag(MarkdownExtensions.HardLineBreaks);
         private readonly bool _diagrams = options.Extensions.HasFlag(MarkdownExtensions.Diagrams);
@@ -460,7 +492,7 @@ public static class MarkdownHtmlRenderer
         {
             if (_pragmaAnchors is not null && _pragmaAnchors.TryGetValue(block, out var id))
             {
-                _output.Append("<a id=\"").Append(id).Append("\"></a>");
+                Markup.Append("<a id=\"").Append(id).Append("\"></a>");
             }
         }
 
@@ -523,9 +555,9 @@ public static class MarkdownHtmlRenderer
 
             if (id is not null)
             {
-                _output.Append(" id=\"");
-                AppendEscaped(id);
-                _output.Append('"');
+                Markup.Append(" id=\"");
+                AppendAttributeEscaped(id);
+                Markup.Append('"');
             }
 
             List<string>? blockLineClasses = null;
@@ -535,7 +567,7 @@ public static class MarkdownHtmlRenderer
             var hasClasses = attributes is { Classes.Count: > 0 } || blockLineClasses is { Count: > 0 } || extra.Classes is { Count: > 0 };
             if (hasClasses || leadingClasses is not null || trailingClasses is not null)
             {
-                _output.Append(" class=\"");
+                Markup.Append(" class=\"");
                 var first = true;
                 foreach (var cssClass in (string?[])[leadingClasses, .. blockLineClasses ?? [], trailingClasses, .. attributes?.Classes ?? [], .. extra.Classes ?? []])
                 {
@@ -546,21 +578,21 @@ public static class MarkdownHtmlRenderer
 
                     if (!first)
                     {
-                        _output.Append(' ');
+                        Markup.Append(' ');
                     }
 
-                    AppendEscaped(cssClass);
+                    AppendAttributeEscaped(cssClass);
                     first = false;
                 }
 
-                _output.Append('"');
+                Markup.Append('"');
             }
 
             foreach (var property in attributes?.Properties ?? [])
             {
-                _output.Append(' ').Append(property.Key).Append("=\"");
-                AppendEscaped(property.Value ?? "");
-                _output.Append('"');
+                Markup.Append(' ').Append(property.Key).Append("=\"");
+                AppendAttributeEscaped(property.Value ?? "");
+                Markup.Append('"');
             }
 
             // The attributes of Bootstrap and of the direction of the text, unless the element has them
@@ -568,9 +600,9 @@ public static class MarkdownHtmlRenderer
             {
                 if (attributes is null || !attributes.Properties.Exists(existing => string.Equals(existing.Key, property.Key, StringComparison.Ordinal)))
                 {
-                    _output.Append(' ').Append(property.Key).Append("=\"");
-                    AppendEscaped(property.Value ?? "");
-                    _output.Append('"');
+                    Markup.Append(' ').Append(property.Key).Append("=\"");
+                    AppendAttributeEscaped(property.Value ?? "");
+                    Markup.Append('"');
                 }
             }
         }
@@ -592,6 +624,9 @@ public static class MarkdownHtmlRenderer
             Cr();
         }
 
+        // Plain text ends with a line ending, as the last block of Markdig ends its line
+        public void EndLine() => Cr();
+
         private void Cr()
         {
             _firstInContainer = false;
@@ -605,19 +640,20 @@ public static class MarkdownHtmlRenderer
         private void WriteDefinitionList(MarkdownDefinitionListSyntax list)
         {
             Cr();
-            _output.Append("<dl");
+            Markup.Append("<dl");
             AppendAttributes(list);
-            _output.Append(">\n");
+            Markup.Append(">\n");
             var paragraphOnNewLine = !IsFirstBlockForMarkdig(list);
             foreach (var item in list.Items)
             {
                 foreach (var term in item.Terms)
                 {
-                    _output.Append("<dt");
+                    Markup.Append("<dt");
                     AppendAttributes(term);
-                    _output.Append('>');
+                    Markup.Append('>');
                     WriteInlines(term.Inlines);
-                    _output.Append("</dt>\n");
+                    Markup.Append("</dt>");
+                    Cr();
                 }
 
                 // Markdig moves the definitions out of the definition
@@ -627,13 +663,14 @@ public static class MarkdownHtmlRenderer
                     continue;
                 }
 
-                _output.Append("<dd");
+                Markup.Append("<dd");
                 AppendAttributes(item);
-                _output.Append('>');
+                Markup.Append('>');
                 if (blocks is [MarkdownParagraphSyntax paragraph] && item.BlankLineCount == 0)
                 {
                     WriteInlines(paragraph.Inlines);
-                    _output.Append("</dd>\n");
+                    Markup.Append("</dd>");
+                    Cr();
                     continue;
                 }
 
@@ -643,11 +680,11 @@ public static class MarkdownHtmlRenderer
                 _firstInContainer = false;
                 _paragraphOnNewLineInDefinition = false;
                 Cr();
-                _output.Append("</dd>\n");
+                Markup.Append("</dd>\n");
             }
 
             Cr();
-            _output.Append("</dl>");
+            Markup.Append("</dl>");
             Cr();
         }
 
@@ -673,7 +710,7 @@ public static class MarkdownHtmlRenderer
             {
                 Cr();
                 AppendPragmaAnchor(block);
-                _output.Append('\n');
+                Markup.Append('\n');
             }
 
             switch (block)
@@ -702,9 +739,9 @@ public static class MarkdownHtmlRenderer
                     else
                     {
                         CrUnlessFirstInContainer(paragraph: true);
-                        _output.Append("<p");
+                        Markup.Append("<p");
                         AppendAttributes(paragraph);
-                        _output.Append('>');
+                        Markup.Append('>');
                     }
 
                     if (_pendingCheckbox is not null)
@@ -716,7 +753,7 @@ public static class MarkdownHtmlRenderer
                     WriteInlines(paragraph.Inlines, keepTrailingLineBreak: paragraph == _backLinksParagraph);
                     if (paragraph == _backLinksParagraph)
                     {
-                        _output.Append(_backLinks);
+                        Markup.Append(_backLinks);
                     }
 
                     if (inFooter)
@@ -726,7 +763,7 @@ public static class MarkdownHtmlRenderer
 
                     if (!tight)
                     {
-                        _output.Append("</p>");
+                        Markup.Append("</p>");
                         Cr();
                     }
 
@@ -735,53 +772,53 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownHeadingSyntax heading:
                     CrUnlessFirstInContainer();
-                    _output.Append("<h").Append(heading.Level);
+                    Markup.Append("<h").Append(heading.Level);
                     AppendAttributes(heading, id: _autoIdentifiers ? heading.Identifier : null);
-                    _output.Append('>');
+                    Markup.Append('>');
                     if (HasPragmaAnchorInside(heading))
                     {
                         AppendPragmaAnchor(heading);
                     }
 
                     WriteInlines(heading.Inlines, keepTrailingLineBreak: true);
-                    _output.Append("</h").Append(heading.Level).Append('>');
+                    Markup.Append("</h").Append(heading.Level).Append('>');
                     Cr();
                     break;
 
                 case MarkdownThematicBreakSyntax:
                     CrUnlessFirstInContainer();
-                    _output.Append("<hr");
+                    Markup.Append("<hr");
                     AppendAttributes(block);
-                    _output.Append(" />");
+                    Markup.Append(" />");
                     Cr();
                     break;
 
                 case MarkdownAlertSyntax alert:
                     Cr();
-                    _output.Append("<div");
+                    Markup.Append("<div");
                     AppendAttributes(alert, leadingClasses: "markdown-alert markdown-alert-" + alert.AlertKind.ToLowerInvariant());
-                    _output.Append(">\n");
+                    Markup.Append(">\n");
                     if (AlertTitles.TryGetValue(alert.AlertKind, out var title))
                     {
-                        _output.Append(title).Append('\n');
+                        Markup.Append(title).Append('\n');
                     }
 
                     WriteBlocks(alert.Blocks);
                     Cr();
-                    _output.Append("</div>");
+                    Markup.Append("</div>");
                     Cr();
                     break;
 
                 case MarkdownCustomContainerSyntax container:
                     // Markdig writes the first block just after the <div>, and the </div> just after the last block
                     Cr();
-                    _output.Append("<div");
+                    Markup.Append("<div");
                     AppendAttributes(container, trailingClasses: container.Name is { Length: > 0 } name ? name : null);
-                    _output.Append('>');
+                    Markup.Append('>');
                     _firstInContainer = true;
                     WriteBlocks(container.Blocks);
                     _firstInContainer = false;
-                    _output.Append("</div>");
+                    Markup.Append("</div>");
                     Cr();
                     break;
 
@@ -791,47 +828,47 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownFigureSyntax figure:
                     Cr();
-                    _output.Append("<figure");
+                    Markup.Append("<figure");
                     AppendAttributes(figure);
-                    _output.Append(">\n");
+                    Markup.Append(">\n");
                     // Markdig writes the </figure> just after the last block
                     WriteBlocks(figure.Blocks);
-                    _output.Append("</figure>");
+                    Markup.Append("</figure>");
                     Cr();
                     break;
 
                 case MarkdownFigureCaptionSyntax caption:
                     Cr();
-                    _output.Append("<figcaption");
+                    Markup.Append("<figcaption");
                     AppendAttributes(caption);
-                    _output.Append('>');
+                    Markup.Append('>');
                     WriteInlines(caption.Inlines);
-                    _output.Append("</figcaption>");
+                    Markup.Append("</figcaption>");
                     Cr();
                     break;
 
                 case MarkdownFooterSyntax footer:
                     // Markdig writes the first block just after the <footer>, and the </footer> just after the last block
                     Cr();
-                    _output.Append("<footer");
+                    Markup.Append("<footer");
                     AppendAttributes(footer);
-                    _output.Append('>');
+                    Markup.Append('>');
                     _firstInContainer = true;
                     WriteBlocks(footer.Blocks);
                     _firstInContainer = false;
-                    _output.Append("</footer>");
+                    Markup.Append("</footer>");
                     Cr();
                     break;
 
                 case MarkdownBlockQuoteSyntax quote:
                     Cr();
-                    _output.Append("<blockquote");
+                    Markup.Append("<blockquote");
                     AppendAttributes(quote);
-                    _output.Append('>');
+                    Markup.Append('>');
                     Cr();
                     WriteBlocks(quote.Blocks);
                     Cr();
-                    _output.Append("</blockquote>");
+                    Markup.Append("</blockquote>");
                     Cr();
                     break;
 
@@ -839,8 +876,8 @@ public static class MarkdownHtmlRenderer
                     Cr();
                     if (list.StartNumber is { } start)
                     {
-                        _output.Append("<ol");
-                        _output.Append(list.OrderedStyle switch
+                        Markup.Append("<ol");
+                        Markup.Append(list.OrderedStyle switch
                         {
                             MarkdownOrderedListStyle.LowerAlpha => " type=\"a\"",
                             MarkdownOrderedListStyle.UpperAlpha => " type=\"A\"",
@@ -850,17 +887,17 @@ public static class MarkdownHtmlRenderer
                         });
                         if (start != 1)
                         {
-                            _output.Append(" start=\"").Append(start.ToString(CultureInfo.InvariantCulture)).Append('"');
+                            Markup.Append(" start=\"").Append(start.ToString(CultureInfo.InvariantCulture)).Append('"');
                         }
 
                         AppendAttributes(list);
-                        _output.Append('>');
+                        Markup.Append('>');
                     }
                     else
                     {
-                        _output.Append("<ul");
+                        Markup.Append("<ul");
                         AppendAttributes(list);
-                        _output.Append('>');
+                        Markup.Append('>');
                     }
 
                     Cr();
@@ -870,7 +907,7 @@ public static class MarkdownHtmlRenderer
                     }
 
                     Cr();
-                    _output.Append(list.IsOrdered ? "</ol>" : "</ul>");
+                    Markup.Append(list.IsOrdered ? "</ol>" : "</ul>");
                     Cr();
                     break;
 
@@ -879,30 +916,30 @@ public static class MarkdownHtmlRenderer
                     // A diagram is its code, where only < and & are escaped, in the element that its script reads
                     var tag = diagram.Language == "mermaid" ? "pre" : "div";
                     Cr();
-                    _output.Append('<').Append(tag).Append(" class=\"").Append(diagram.Language).Append("\">");
+                    Markup.Append('<').Append(tag).Append(" class=\"").Append(diagram.Language).Append("\">");
                     AppendSoftEscaped(diagram.Code);
-                    _output.Append("</").Append(tag).Append('>');
+                    Markup.Append("</").Append(tag).Append('>');
                     Cr();
                     break;
                 }
 
                 case MarkdownCodeBlockSyntax code:
                     Cr();
-                    _output.Append("<pre><code");
+                    Markup.Append("<pre><code");
                     AppendAttributes(code, trailingClasses: code.Language is { } language ? "language-" + language : null);
-                    _output.Append('>');
+                    Markup.Append('>');
                     AppendEscaped(code.Code);
-                    _output.Append("</code></pre>");
+                    Markup.Append("</code></pre>");
                     Cr();
                     break;
 
                 case MarkdownMathBlockSyntax math:
                     Cr();
-                    _output.Append("<div");
+                    Markup.Append("<div");
                     AppendAttributes(math, leadingClasses: "math");
-                    _output.Append(">\n\\[\n");
+                    Markup.Append(">\n\\[\n");
                     AppendEscaped(math.Math);
-                    _output.Append("\\]</div>");
+                    Markup.Append("\\]</div>");
                     Cr();
                     break;
 
@@ -933,10 +970,10 @@ public static class MarkdownHtmlRenderer
             }
 
             Cr();
-            _output.Append("<div class=\"footnotes\">\n<hr />\n<ol>\n");
+            Markup.Append("<div class=\"footnotes\">\n<hr />\n<ol>\n");
             foreach (var footnote in _footnotes.Footnotes)
             {
-                _output.Append("<li id=\"fn:").Append(_footnotes.GetNumber(footnote)).Append("\">\n");
+                Markup.Append("<li id=\"fn:").Append(_footnotes.GetNumber(footnote)).Append("\">\n");
                 var backLinks = new StringBuilder();
                 foreach (var reference in _footnotes.GetReferences(footnote))
                 {
@@ -950,14 +987,14 @@ public static class MarkdownHtmlRenderer
                 if (_backLinksParagraph is null)
                 {
                     Cr();
-                    _output.Append("<p>").Append(_backLinks).Append("</p>");
+                    Markup.Append("<p>").Append(_backLinks).Append("</p>");
                 }
 
                 Cr();
-                _output.Append("</li>\n");
+                Markup.Append("</li>\n");
             }
 
-            _output.Append("</ol>\n</div>\n");
+            Markup.Append("</ol>\n</div>\n");
         }
 
         // A paragraph of attributes only, whose last attributes are for the next block, is not written
@@ -965,13 +1002,19 @@ public static class MarkdownHtmlRenderer
 
         private void WriteListItem(MarkdownListItemSyntax item)
         {
-            _output.Append("<li");
+            Markup.Append("<li");
             AppendAttributes(item);
-            _output.Append('>');
+            Markup.Append('>');
             if (item.IsTask)
             {
                 // The checkbox starts the first paragraph, or the item when it starts with another block
-                var checkbox = item.IsChecked ? "<input checked=\"\" disabled=\"\" type=\"checkbox\"> " : "<input disabled=\"\" type=\"checkbox\"> ";
+                var checkbox = (PlainText, item.IsChecked) switch
+                {
+                    (true, true) => "[x] ",
+                    (true, false) => "[ ] ",
+                    (false, true) => "<input checked=\"\" disabled=\"\" type=\"checkbox\"> ",
+                    (false, false) => "<input disabled=\"\" type=\"checkbox\"> ",
+                };
                 if (item.Blocks.Count > 0 && item.Blocks[0] is MarkdownParagraphSyntax)
                 {
                     _pendingCheckbox = checkbox;
@@ -983,7 +1026,7 @@ public static class MarkdownHtmlRenderer
             }
 
             WriteBlocks(item.Blocks);
-            _output.Append("</li>");
+            Markup.Append("</li>");
             Cr();
         }
 
@@ -1005,24 +1048,24 @@ public static class MarkdownHtmlRenderer
             }).ToList();
 
             Cr();
-            _output.Append("<table");
+            Markup.Append("<table");
             AppendAttributes(table);
-            _output.Append(">\n<thead>\n");
+            Markup.Append(">\n<thead>\n");
             WriteTableRow(table.HeaderRow!, "th", alignments);
-            _output.Append("</thead>\n");
+            Markup.Append("</thead>\n");
             var rows = table.Rows;
             if (rows.Count > 0)
             {
-                _output.Append("<tbody>\n");
+                Markup.Append("<tbody>\n");
                 foreach (var row in rows)
                 {
                     WriteTableRow(row, "td", alignments);
                 }
 
-                _output.Append("</tbody>\n");
+                Markup.Append("</tbody>\n");
             }
 
-            _output.Append("</table>\n");
+            Markup.Append("</table>\n");
         }
 
         // A pipe table of Markdig: as many columns as its longest row has cells, or as its first row with UseHeaderForColumnCount,
@@ -1063,9 +1106,9 @@ public static class MarkdownHtmlRenderer
             }
 
             Cr();
-            _output.Append("<table");
+            Markup.Append("<table");
             AppendAttributes(table);
-            _output.Append(">\n");
+            Markup.Append(">\n");
             if (pipeTableOptions.InferColumnWidthsFromSeparator)
             {
                 WritePipeTableColumnWidths(table);
@@ -1073,23 +1116,23 @@ public static class MarkdownHtmlRenderer
 
             if (header is not null)
             {
-                _output.Append("<thead>\n");
+                Markup.Append("<thead>\n");
                 WritePipeTableRow(header, "th", GetCellCount(header), alignments);
-                _output.Append("</thead>\n");
+                Markup.Append("</thead>\n");
             }
 
             if (rows.Count > 0)
             {
-                _output.Append("<tbody>\n");
+                Markup.Append("<tbody>\n");
                 foreach (var row in rows)
                 {
                     WritePipeTableRow(row, "td", GetCellCount(row), alignments);
                 }
 
-                _output.Append("</tbody>\n");
+                Markup.Append("</tbody>\n");
             }
 
-            _output.Append("</table>\n");
+            Markup.Append("</table>\n");
 
             int GetCellCount(MarkdownTableRowSyntax row) => completeShortRows ? columnCount : Math.Min(columnCount, row.Cells.Count);
         }
@@ -1124,7 +1167,7 @@ public static class MarkdownHtmlRenderer
             foreach (var width in widths)
             {
                 var rounded = Math.Round(width * 100, MidpointRounding.ToEven) / 100;
-                _output.Append("<col style=\"width:").Append(rounded.ToString("0.##", CultureInfo.InvariantCulture)).Append("%\" />\n");
+                Markup.Append("<col style=\"width:").Append(rounded.ToString("0.##", CultureInfo.InvariantCulture)).Append("%\" />\n");
             }
         }
 
@@ -1133,16 +1176,16 @@ public static class MarkdownHtmlRenderer
         private void WriteGridTable(MarkdownGridTableSyntax table)
         {
             Cr();
-            _output.Append("<table");
+            Markup.Append("<table");
             AppendAttributes(table);
-            _output.Append(">\n");
+            Markup.Append(">\n");
             var columns = table.Columns;
             if (columns.Any(column => column.Width is not (0.0f or 1.0f)))
             {
                 foreach (var column in columns)
                 {
                     var width = Math.Round(column.Width * 100, MidpointRounding.ToEven) / 100;
-                    _output.Append("<col style=\"width:").Append(width.ToString("0.##", CultureInfo.InvariantCulture)).Append("%\" />\n");
+                    Markup.Append("<col style=\"width:").Append(width.ToString("0.##", CultureInfo.InvariantCulture)).Append("%\" />\n");
                 }
             }
 
@@ -1155,7 +1198,7 @@ public static class MarkdownHtmlRenderer
                 {
                     if (!hasHeader)
                     {
-                        _output.Append("<thead>\n");
+                        Markup.Append("<thead>\n");
                         isHeaderOpen = true;
                     }
 
@@ -1165,70 +1208,71 @@ public static class MarkdownHtmlRenderer
                 {
                     if (isHeaderOpen)
                     {
-                        _output.Append("</thead>\n");
+                        Markup.Append("</thead>\n");
                         isHeaderOpen = false;
                     }
 
-                    _output.Append("<tbody>\n");
+                    Markup.Append("<tbody>\n");
                     hasBody = true;
                 }
 
-                _output.Append("<tr");
+                Markup.Append("<tr");
                 if (_pragmaGridParts?.GetValueOrDefault(row) is { } rowId)
                 {
-                    _output.Append(" id=\"").Append(rowId).Append('"');
+                    Markup.Append(" id=\"").Append(rowId).Append('"');
                 }
 
-                _output.Append(">\n");
+                Markup.Append(">\n");
                 var tag = row.IsHeader ? "th" : "td";
                 foreach (var cell in row.Cells)
                 {
-                    _output.Append('<').Append(tag);
+                    Markup.Append('<').Append(tag);
                     if (cell.ColumnSpan != 1)
                     {
-                        _output.Append(" colspan=\"").Append(cell.ColumnSpan.ToString(CultureInfo.InvariantCulture)).Append('"');
+                        Markup.Append(" colspan=\"").Append(cell.ColumnSpan.ToString(CultureInfo.InvariantCulture)).Append('"');
                     }
 
                     if (cell.RowSpan != 1)
                     {
-                        _output.Append(" rowspan=\"").Append(cell.RowSpan.ToString(CultureInfo.InvariantCulture)).Append('"');
+                        Markup.Append(" rowspan=\"").Append(cell.RowSpan.ToString(CultureInfo.InvariantCulture)).Append('"');
                     }
 
                     if (_pragmaGridParts?.GetValueOrDefault(cell) is { } cellId)
                     {
-                        _output.Append(" id=\"").Append(cellId).Append('"');
+                        Markup.Append(" id=\"").Append(cellId).Append('"');
                     }
 
-                    _output.Append(columns[Math.Min(cell.ColumnIndex, columns.Count - 1)].Alignment switch
+                    Markup.Append(columns[Math.Min(cell.ColumnIndex, columns.Count - 1)].Alignment switch
                     {
                         MarkdownTableAlignment.Center => " align=\"center\"",
                         MarkdownTableAlignment.Left => " align=\"left\"",
                         MarkdownTableAlignment.Right => " align=\"right\"",
                         _ => "",
                     });
-                    _output.Append('>');
+                    Markup.Append('>');
                     _output.Append(RenderCell(cell.Content));
-                    _output.Append("</").Append(tag).Append(">\n");
+                    AppendPlainTextCellSeparator();
+                    Markup.Append("</").Append(tag).Append(">\n");
                 }
 
-                _output.Append("</tr>\n");
+                Markup.Append("</tr>\n");
             }
 
             if (hasBody)
             {
-                _output.Append("</tbody>\n");
+                Markup.Append("</tbody>\n");
             }
             else if (isHeaderOpen)
             {
-                _output.Append("</thead>\n");
+                Markup.Append("</thead>\n");
             }
 
-            _output.Append("</table>\n");
+            Markup.Append("</table>\n");
         }
 
         private string RenderCell(MarkdownSyntaxTree content)
         {
-            var writer = new Writer(content.GetText().Length, content.Options, rendererOptions);
+            var writer = new Writer(content.GetText().Length, content.Options, rendererOptions) { PlainText = PlainText };
             if (content.Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes))
             {
                 writer.CollectAttributes(content.GetRoot());
@@ -1254,16 +1298,16 @@ public static class MarkdownHtmlRenderer
 
         private void WritePipeTableRow(MarkdownTableRowSyntax row, string tag, int columnCount, IReadOnlyList<MarkdownTableAlignment> alignments)
         {
-            _output.Append("<tr");
+            Markup.Append("<tr");
             AppendAttributes(row);
-            _output.Append(">\n");
+            Markup.Append(">\n");
             var cells = row.Cells;
             for (var i = 0; i < columnCount; i++)
             {
-                _output.Append('<').Append(tag);
+                Markup.Append('<').Append(tag);
                 if (alignments.Count > 0)
                 {
-                    _output.Append(alignments[Math.Min(i, alignments.Count - 1)] switch
+                    Markup.Append(alignments[Math.Min(i, alignments.Count - 1)] switch
                     {
                         MarkdownTableAlignment.Center => " align=\"center\"",
                         MarkdownTableAlignment.Left => " align=\"left\"",
@@ -1272,7 +1316,7 @@ public static class MarkdownHtmlRenderer
                     });
                 }
 
-                _output.Append('>');
+                Markup.Append('>');
                 if (i < cells.Count)
                 {
                     // As in Markdig, a cell starts after its last hard line break: the inlines before it are not written
@@ -1291,21 +1335,22 @@ public static class MarkdownHtmlRenderer
                     _trimmedCellTokens = default;
                 }
 
-                _output.Append("</").Append(tag).Append(">\n");
+                AppendPlainTextCellSeparator();
+                Markup.Append("</").Append(tag).Append(">\n");
             }
 
-            _output.Append("</tr>\n");
+            Markup.Append("</tr>\n");
         }
 
         private void WriteTableRow(MarkdownTableRowSyntax row, string tag, List<string> alignments)
         {
-            _output.Append("<tr");
+            Markup.Append("<tr");
             AppendAttributes(row);
-            _output.Append(">\n");
+            Markup.Append(">\n");
             var cells = row.Cells;
             for (var i = 0; i < alignments.Count; i++)
             {
-                _output.Append('<').Append(tag).Append(alignments[i]).Append('>');
+                Markup.Append('<').Append(tag).Append(alignments[i]).Append('>');
                 if (i < cells.Count)
                 {
                     _inTableCell = true;
@@ -1313,10 +1358,11 @@ public static class MarkdownHtmlRenderer
                     _inTableCell = false;
                 }
 
-                _output.Append("</").Append(tag).Append(">\n");
+                AppendPlainTextCellSeparator();
+                Markup.Append("</").Append(tag).Append(">\n");
             }
 
-            _output.Append("</tr>\n");
+            Markup.Append("</tr>\n");
         }
 
         private void WriteInlines(IEnumerable<SyntaxNodeOrToken> inlines, bool keepTrailingLineBreak = false)
@@ -1429,18 +1475,25 @@ public static class MarkdownHtmlRenderer
                     break;
                 case SyntaxKind.SmartyPantToken:
                     var pant = (MarkdownSmartyPant)(int)token.Value!;
-                    _output.Append(rendererOptions.SmartyPants.GetValueOrDefault(pant) ?? MarkdownHtmlRendererOptions.DefaultSmartyPants[pant]);
+                    var pantText = rendererOptions.SmartyPants.GetValueOrDefault(pant) ?? MarkdownHtmlRendererOptions.DefaultSmartyPants[pant];
+                    _output.Append(PlainText ? HtmlEntities.Decode(pantText) : pantText);
                     break;
                 case SyntaxKind.LineEndingToken when !_hardLineBreaks:
                     // As in Markdig, a line ending after a line ending, which only generic attributes separate, is not written
-                    if (_output.Length == 0 || _output[^1] != '\n')
+                    // Plain text does not start with a line ending, as Markdig ensures a line only after text
+                    if (_output.Length == 0 ? !PlainText : _output[^1] != '\n')
                     {
                         _output.Append('\n');
                     }
 
                     break;
                 case SyntaxKind.HardLineBreakToken or SyntaxKind.LineEndingToken:
-                    _output.Append("<br />\n");
+                    // As Markdig, plain text has a line break: the next text starts on a new line
+                    Markup.Append("<br />");
+                    if (!PlainText || _output.Length == 0 || _output[^1] != '\n')
+                    {
+                        _output.Append('\n');
+                    }
                     break;
             }
         }
@@ -1452,20 +1505,20 @@ public static class MarkdownHtmlRenderer
                 case MarkdownEmphasisSyntax emphasis:
                 {
                     var tag = emphasis.IsStrong ? "strong" : "em";
-                    _output.Append('<').Append(tag);
+                    Markup.Append('<').Append(tag);
                     AppendAttributes(emphasis);
-                    _output.Append('>');
+                    Markup.Append('>');
                     WriteInlines(emphasis.Inlines);
-                    _output.Append("</").Append(tag).Append('>');
+                    Markup.Append("</").Append(tag).Append('>');
                     break;
                 }
 
                 case MarkdownStrikethroughSyntax strikethrough:
-                    _output.Append("<del");
+                    Markup.Append("<del");
                     AppendAttributes(strikethrough);
-                    _output.Append('>');
+                    Markup.Append('>');
                     WriteInlines(strikethrough.Inlines);
-                    _output.Append("</del>");
+                    Markup.Append("</del>");
                     break;
 
                 case MarkdownEmphasisExtraSyntax extra:
@@ -1480,26 +1533,26 @@ public static class MarkdownHtmlRenderer
                         _ => "mark",
                     };
 
-                    _output.Append('<').Append(tag);
+                    Markup.Append('<').Append(tag);
                     AppendAttributes(extra);
-                    _output.Append('>');
+                    Markup.Append('>');
                     WriteInlines(extra.Inlines);
-                    _output.Append("</").Append(tag).Append('>');
+                    Markup.Append("</").Append(tag).Append('>');
                     break;
                 }
 
                 case MarkdownCodeSpanSyntax code:
-                    _output.Append("<code");
+                    Markup.Append("<code");
                     AppendAttributes(code);
-                    _output.Append('>');
+                    Markup.Append('>');
                     AppendEscaped(code.Code);
-                    _output.Append("</code>");
+                    Markup.Append("</code>");
                     break;
 
                 case MarkdownAutolinkSyntax autolink:
-                    _output.Append("<a href=\"");
-                    AppendEscaped(NormalizeUrl(autolink.Destination));
-                    _output.Append('"');
+                    Markup.Append("<a href=\"");
+                    AppendAttributeEscaped(NormalizeUrl(autolink.Destination));
+                    Markup.Append('"');
                     if (autolink.IsMarkdigAutolink && options.AutolinkOptions.OpenInNewWindow)
                     {
                         // Markdig sets the target before the generic attributes
@@ -1517,16 +1570,16 @@ public static class MarkdownHtmlRenderer
                         AppendRel();
                     }
 
-                    _output.Append('>');
+                    Markup.Append('>');
                     AppendEscaped(autolink.Text);
-                    _output.Append("</a>");
+                    Markup.Append("</a>");
                     break;
 
                 case MarkdownJiraLinkSyntax jira:
                 {
-                    _output.Append("<a href=\"");
-                    AppendEscaped(NormalizeUrl(jira.Destination));
-                    _output.Append('"');
+                    Markup.Append("<a href=\"");
+                    AppendAttributeEscaped(NormalizeUrl(jira.Destination));
+                    Markup.Append('"');
                     ParsedAttributes? attributes = null;
                     _ = _attributes?.TryGetValue(jira, out attributes);
                     if (options.JiraLinks.OpenInNewWindow)
@@ -1537,9 +1590,9 @@ public static class MarkdownHtmlRenderer
 
                     AppendAttributes(jira, attributes);
                     AppendRel();
-                    _output.Append('>');
+                    Markup.Append('>');
                     AppendEscaped(jira.ReferenceToken.Text);
-                    _output.Append("</a>");
+                    Markup.Append("</a>");
                     break;
                 }
 
@@ -1550,11 +1603,11 @@ public static class MarkdownHtmlRenderer
                 case MarkdownAbbreviationSyntax abbreviation:
                     if (abbreviation.Definition is { } definition)
                     {
-                        _output.Append("<abbr title=\"");
-                        AppendEscaped(definition.Title);
-                        _output.Append("\">");
+                        Markup.Append("<abbr title=\"");
+                        AppendAttributeEscaped(definition.Title);
+                        Markup.Append("\">");
                         AppendEscaped(abbreviation.Label);
-                        _output.Append("</abbr>");
+                        Markup.Append("</abbr>");
                     }
                     else
                     {
@@ -1569,45 +1622,47 @@ public static class MarkdownHtmlRenderer
                     if (reference.Definition is { } footnote && _footnotes.Footnotes.Contains(footnote))
                     {
                         var number = _footnotes.GetNumber(footnote);
-                        _output.Append("<a id=\"fnref:").Append(_footnotes.GetReferenceNumber(reference)).Append("\" href=\"#fn:").Append(number).Append("\" class=\"footnote-ref\"><sup>").Append(number).Append("</sup></a>");
+                        Markup.Append("<a id=\"fnref:").Append(_footnotes.GetReferenceNumber(reference)).Append("\" href=\"#fn:").Append(number).Append("\" class=\"footnote-ref\"><sup>");
+                        _output.Append(number);
+                        Markup.Append("</sup></a>");
                     }
 
                     break;
                 }
 
                 case MarkdownMathInlineSyntax math:
-                    _output.Append("<span");
+                    Markup.Append("<span");
                     AppendAttributes(math, leadingClasses: "math");
-                    _output.Append(">\\(");
+                    Markup.Append(">\\(");
                     AppendEscaped(math.Math);
-                    _output.Append("\\)</span>");
+                    Markup.Append("\\)</span>");
                     break;
 
-                case MarkdownLinkSyntax { IsImage: true } image when _mediaLinks && TryWriteMedia(image):
+                case MarkdownLinkSyntax { IsImage: true } image when _mediaLinks && !PlainText && TryWriteMedia(image):
                     break;
 
                 case MarkdownLinkSyntax { IsImage: true } image:
-                    _output.Append("<img src=\"");
-                    AppendEscaped(NormalizeUrl(image.Destination));
-                    _output.Append('"');
+                    Markup.Append("<img src=\"");
+                    AppendAttributeEscaped(NormalizeUrl(image.Destination));
+                    Markup.Append('"');
                     AppendAttributes(image);
-                    _output.Append(" alt=\"");
+                    Markup.Append(" alt=\"");
                     WriteAltText(image.Text);
-                    _output.Append('"');
+                    Markup.Append('"');
                     AppendTitle(image.Title);
-                    _output.Append(" />");
+                    Markup.Append(" />");
                     break;
 
                 case MarkdownLinkSyntax link:
-                    _output.Append("<a href=\"");
-                    AppendEscaped(NormalizeUrl(link.Destination));
-                    _output.Append('"');
+                    Markup.Append("<a href=\"");
+                    AppendAttributeEscaped(NormalizeUrl(link.Destination));
+                    Markup.Append('"');
                     AppendAttributes(link);
                     AppendTitle(link.Title);
                     AppendRel();
-                    _output.Append('>');
+                    Markup.Append('>');
                     WriteInlines(link.Text);
-                    _output.Append("</a>");
+                    Markup.Append("</a>");
                     break;
             }
         }
@@ -1616,7 +1671,7 @@ public static class MarkdownHtmlRenderer
         {
             if (!string.IsNullOrWhiteSpace(rendererOptions.LinkRel))
             {
-                _output.Append(" rel=\"").Append(rendererOptions.LinkRel).Append('"');
+                Markup.Append(" rel=\"").Append(rendererOptions.LinkRel).Append('"');
             }
         }
 
@@ -1654,9 +1709,9 @@ public static class MarkdownHtmlRenderer
                         return false;
                     }
 
-                    _output.Append("<iframe src=\"");
-                    AppendEscaped(NormalizeUrl(iframeUrl));
-                    _output.Append('"');
+                    Markup.Append("<iframe src=\"");
+                    AppendAttributeEscaped(NormalizeUrl(iframeUrl));
+                    Markup.Append('"');
                     AddProperty(attributes, "width", mediaOptions.Width, ifNotEmpty: true);
                     AddProperty(attributes, "height", mediaOptions.Height, ifNotEmpty: true);
                     AddClass(attributes, mediaOptions.Class);
@@ -1668,7 +1723,7 @@ public static class MarkdownHtmlRenderer
                     }
 
                     AppendAttributes(image, attributes);
-                    _output.Append("></iframe>");
+                    Markup.Append("></iframe>");
                     return true;
                 }
             }
@@ -1682,7 +1737,7 @@ public static class MarkdownHtmlRenderer
 
             var isAudio = mimeType.StartsWith("audio", StringComparison.Ordinal);
             var tag = isAudio ? "audio" : "video";
-            _output.Append('<').Append(tag);
+            Markup.Append('<').Append(tag);
             AddProperty(attributes, "width", mediaOptions.Width);
             if (!isAudio)
             {
@@ -1696,11 +1751,11 @@ public static class MarkdownHtmlRenderer
 
             AddClass(attributes, mediaOptions.Class);
             AppendAttributes(image, attributes);
-            _output.Append("><source type=\"");
-            AppendEscaped(mimeType);
-            _output.Append("\" src=\"");
-            AppendEscaped(NormalizeUrl(image.Destination));
-            _output.Append("\"></source></").Append(tag).Append('>');
+            Markup.Append("><source type=\"");
+            AppendAttributeEscaped(mimeType);
+            Markup.Append("\" src=\"");
+            AppendAttributeEscaped(NormalizeUrl(image.Destination));
+            Markup.Append("\"></source></").Append(tag).Append('>');
             return true;
 
             static bool IsHttpOrHttps(Uri uri) => uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps;
@@ -1736,7 +1791,12 @@ public static class MarkdownHtmlRenderer
 
                 if (child.AsNode() is MarkdownRawHtmlSyntax html)
                 {
-                    AppendEscaped(html.Html);
+                    // As Markdig, plain text has no HTML, even in the text of an image
+                    if (!PlainText)
+                    {
+                        AppendEscaped(html.Html);
+                    }
+
                     continue;
                 }
 
@@ -1769,9 +1829,9 @@ public static class MarkdownHtmlRenderer
         {
             if (!string.IsNullOrEmpty(title))
             {
-                _output.Append(" title=\"");
-                AppendEscaped(title);
-                _output.Append('"');
+                Markup.Append(" title=\"");
+                AppendAttributeEscaped(title);
+                Markup.Append('"');
             }
         }
 
@@ -1856,18 +1916,18 @@ public static class MarkdownHtmlRenderer
                 var index = html.IndexOfAny(_tagFilter ? "<\0" : "\0");
                 if (index < 0)
                 {
-                    _output.Append(html);
+                    Markup.Append(html);
                     return;
                 }
 
-                _output.Append(html[..index]);
+                Markup.Append(html[..index]);
                 if (html[index] == '\0')
                 {
-                    _output.Append('\uFFFD');
+                    Markup.Append('\uFFFD');
                 }
                 else
                 {
-                    _output.Append(IsDisallowedTag(html[index..]) ? "&lt;" : "<");
+                    Markup.Append(IsDisallowedTag(html[index..]) ? "&lt;" : "<");
                 }
 
                 html = html[(index + 1)..];
@@ -1903,6 +1963,7 @@ public static class MarkdownHtmlRenderer
             {
                 _ = c switch
                 {
+                    _ when PlainText && c != '\0' => _output.Append(c),
                     '<' => _output.Append("&lt;"),
                     '&' => _output.Append("&amp;"),
                     '\0' => _output.Append('\uFFFD'),
@@ -1911,6 +1972,17 @@ public static class MarkdownHtmlRenderer
             }
         }
 
+        // Plain text writes a space after each cell of a table, so that the text of a cell is not merged with the next one, as
+        // Markdig writes it
+        private void AppendPlainTextCellSeparator()
+        {
+            if (PlainText)
+            {
+                _output.Append(' ');
+            }
+        }
+
+        // Text, which plain text writes as it is
         private void AppendEscaped(ReadOnlySpan<char> text)
         {
             while (!text.IsEmpty)
@@ -1924,6 +1996,32 @@ public static class MarkdownHtmlRenderer
 
                 _output.Append(text[..index]);
                 _output.Append(text[index] switch
+                {
+                    _ when PlainText && text[index] != '\0' => text[index].ToString(),
+                    '&' => "&amp;",
+                    '<' => "&lt;",
+                    '>' => "&gt;",
+                    '"' => "&quot;",
+                    _ => "\uFFFD",
+                });
+                text = text[(index + 1)..];
+            }
+        }
+
+        // The value of an attribute, which plain text does not write
+        private void AppendAttributeEscaped(ReadOnlySpan<char> text)
+        {
+            while (!text.IsEmpty)
+            {
+                var index = text.IndexOfAny(EscapedCharacters);
+                if (index < 0)
+                {
+                    Markup.Append(text);
+                    return;
+                }
+
+                Markup.Append(text[..index]);
+                Markup.Append(text[index] switch
                 {
                     '&' => "&amp;",
                     '<' => "&lt;",

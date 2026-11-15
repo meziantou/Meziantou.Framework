@@ -237,6 +237,22 @@ Assert.Equal(4, tree.GetRoot().FindClosestLine(3));
 ```
 <!-- endref -->
 
+## Render plain text
+
+[MarkdownPlainTextRenderer.ToPlainText](cref:Meziantou.Framework.Language.Markdown.MarkdownPlainTextRenderer.ToPlainText(Meziantou.Framework.Language.Markdown.MarkdownSyntaxTree))
+writes the text of the document, as `MarkdownConverter.ToPlainText` of `Meziantou.Framework.Markdown` 1.x does: the text of
+the HTML without its tags, not escaped. Each block ends its line, HTML is not written, an image is its text, a footnote
+reference is its number, a task is `[x]` or `[ ]`, and the cells of a table are followed by a space. Unlike 1.x, the text
+after a table starts on a new line, the characters of SmartyPants are not entities, and an alert has no title.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownPlainTextRenderer_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = MarkdownSyntaxTree.ParseText("# Title\n\nSome **bold** text and [a link](https://example.com).\n\n- First\n- Second");
+
+Assert.Equal("Title\nSome bold text and a link.\nFirst\nSecond\n", MarkdownPlainTextRenderer.ToPlainText(tree));
+```
+<!-- endref -->
+
 ## GitHub Flavored Markdown
 
 [MarkdownParseOptions.GitHubFlavored](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.GitHubFlavored)

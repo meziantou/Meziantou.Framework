@@ -1241,6 +1241,66 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void RendersPlainText()
+    {
+        #region MarkdownPlainTextRenderer_Usage
+        var tree = MarkdownSyntaxTree.ParseText("# Title\n\nSome **bold** text and [a link](https://example.com).\n\n- First\n- Second");
+
+        Assert.Equal("Title\nSome bold text and a link.\nFirst\nSecond\n", MarkdownPlainTextRenderer.ToPlainText(tree));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("foo bar", "foo bar\n")]
+    [InlineData("foo\nbar", "foo\nbar\n")]
+    [InlineData("*foo\nbar*", "foo\nbar\n")]
+    [InlineData("[foo\nbar](http://example.com)", "foo\nbar\n")]
+    [InlineData("[\nfoo](/url)", "foo\n")]
+    [InlineData("<http://foo.bar.baz>", "http://foo.bar.baz\n")]
+    [InlineData("<http://foo.bar/?a&b>", "http://foo.bar/?a&b\n")]
+    [InlineData("# foo bar", "foo bar\n")]
+    [InlineData("# foo\nbar", "foo\nbar\n")]
+    [InlineData("> foo", "foo\n")]
+    [InlineData("> foo\nbar\n> baz", "foo\nbar\nbaz\n")]
+    [InlineData("`foo`", "foo\n")]
+    [InlineData("`foo\nbar`", "foo bar\n")]
+    [InlineData("```\nfoo bar\n```", "foo bar\n")]
+    [InlineData("```\nConsole.WriteLine(\"Hello, World!\");\n```", "Console.WriteLine(\"Hello, World!\");\n")]
+    [InlineData("- foo\n- bar\n- baz", "foo\nbar\nbaz\n")]
+    [InlineData("- foo<baz", "foo<baz\n")]
+    [InlineData("- foo&lt;baz", "foo<baz\n")]
+    [InlineData("## foo `bar::baz >`", "foo bar::baz >\n")]
+    [InlineData("<div>\nx\n</div>\n\nfoo", "foo\n")]
+    [InlineData("a <b>c</b>\n\n---\n\n![alt *text*](a.png)", "a c\nalt text\n")]
+    [InlineData("a  \nb\\\nc", "a\nb\nc\n")]
+    public void RendersThePlainTextOfCommonMark(string text, string expected)
+    {
+        Assert.Equal(expected, MarkdownPlainTextRenderer.ToPlainText(MarkdownSyntaxTree.ParseText(text)));
+    }
+
+    // As Meziantou.Framework.Markdown 1.x, except that the text after a table starts on a new line, and that the characters of
+    // SmartyPants and the alerts have no HTML
+    [Theory]
+    [InlineData(":::\nfoo\n:::", "foo\n", MarkdownExtensions.CustomContainers)]
+    [InlineData(":::bar\nfoo\n:::", "foo\n", MarkdownExtensions.CustomContainers | MarkdownExtensions.GenericAttributes)]
+    [InlineData("```mermaid\nA --> B & C <x> \"q\"\n```", "A --> B & C <x> \"q\"\n", MarkdownExtensions.Diagrams)]
+    [InlineData("| Header1 | Header2 | Header3 |\n|--|--|--|\nt**es**t|value2|value3", "Header1 Header2 Header3 test value2 value3 \n", MarkdownExtensions.PipeTables)]
+    [InlineData("| a | b |\n|---|---|\n| c | d |\n\ne", "a b c d \ne\n", MarkdownExtensions.Tables)]
+    [InlineData("Term 1\nTerm 2\n:   Definition 1\n:   Definition 2\n\n    More", "Term 1\nTerm 2\nDefinition 1\nDefinition 2\nMore\n", MarkdownExtensions.DefinitionLists)]
+    [InlineData("^^^\n![alt](a.png)\n^^^ The *caption*", "alt\nThe caption\n", MarkdownExtensions.Figures)]
+    [InlineData("a\n\n^^ The *footer*\n^^ on two lines", "a\nThe footer\non two lines\n", MarkdownExtensions.Footers)]
+    [InlineData("a[^1] b[^2]\n\n[^1]: First *note*\n[^2]: Second note", "a1 b2\nFirst note\nSecond note\n", MarkdownExtensions.Footnotes)]
+    [InlineData("- [x] done\n- [ ] todo", "[x] done\n[ ] todo\n", MarkdownExtensions.TaskLists)]
+    [InlineData("\"Quote\" -- it's <<here>>...", "\u201CQuote\u201D \u2013 it's \u00ABhere\u00BB\u2026\n", MarkdownExtensions.SmartyPants)]
+    [InlineData("> [!NOTE]\n> Read this.", "Read this.\n", MarkdownExtensions.Alerts)]
+    [InlineData("$$a < b$$ and *HTML*\n\n*[HTML]: Hyper Text", "a < b and HTML\n", MarkdownExtensions.Mathematics | MarkdownExtensions.Abbreviations)]
+    [InlineData(":smile: ![](https://youtu.be/x)", "\U0001F604 \n", MarkdownExtensions.Emoji | MarkdownExtensions.MediaLinks)]
+    public void RendersThePlainTextOfTheExtensions(string text, string expected, MarkdownExtensions extensions)
+    {
+        Assert.Equal(expected, MarkdownPlainTextRenderer.ToPlainText(MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = extensions })));
+    }
+
+    [Fact]
     public void EscapesTextWithMarkdownEscaper()
     {
         #region MarkdownEscaper_Usage

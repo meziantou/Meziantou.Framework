@@ -33,7 +33,7 @@ Alpha is always straight (not premultiplied), and 16-bit samples and packed valu
 machine.
 [PixelFormats](cref:Meziantou.Framework.Imaging.PixelFormats) describes each format ([HasAlpha](cref:Meziantou.Framework.Imaging.PixelFormats.HasAlpha), [HasColor](cref:Meziantou.Framework.Imaging.PixelFormats.HasColor), [IsGrayscale](cref:Meziantou.Framework.Imaging.PixelFormats.IsGrayscale), [IsFloatingPoint](cref:Meziantou.Framework.Imaging.PixelFormats.IsFloatingPoint), [IsCmyk](cref:Meziantou.Framework.Imaging.PixelFormats.IsCmyk), [GetBytesPerPixel](cref:Meziantou.Framework.Imaging.PixelFormats.GetBytesPerPixel), …).
 
-The CMYK formats hold inks, not light (0 is no ink): only JPEG and TIFF read and write them, the operations that move
+The CMYK formats hold inks, not light (0 is no ink): only JPEG, TIFF and PSD read them and only JPEG and TIFF write them, the operations that move
 pixels (crop, flip, quarter turns, orientation) keep them, and the other operations reject them. A conversion between
 them and the other formats converts colors, so it needs [PixelConversionOptions.CmykConversion](cref:Meziantou.Framework.Imaging.PixelConversionOptions.CmykConversion): see
 [Color management](../09-Color/03-ColorManagement.md#keep-cmyk-images).

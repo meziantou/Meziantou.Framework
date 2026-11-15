@@ -88,6 +88,22 @@ internal static class DefaultPixelFormats
     /// <summary>Gets the default pixel format of a Radiance HDR image: every RGBE pixel is an exact single-precision color.</summary>
     public static PixelFormat Radiance => PixelFormat.RgbaFloat;
 
+    /// <summary>Selects the default pixel format of the composite image of a PSD file of 1, 8 or 16-bit samples.</summary>
+    /// <param name="isGray">Whether the document is a bitmap, grayscale or duotone one.</param>
+    /// <param name="hasAlpha">Whether the composite has a transparency channel, or an indexed image a transparent index.</param>
+    /// <param name="is16Bit">Whether the samples have 16 bits.</param>
+    /// <returns>
+    /// The pixel format: 8-bit or 16-bit gray, gray with alpha, RGB or RGBA. Indexes are expanded to their colors, and
+    /// CMYK and Lab colors are converted to red, green and blue.
+    /// </returns>
+    public static PixelFormat ForPsd(bool isGray, bool hasAlpha, bool is16Bit) => Select(isGray, hasAlpha, is16Bit);
+
+    /// <summary>
+    /// Gets the default pixel format of the composite image of a 32-bit PSD file: its floating-point samples are stored
+    /// exactly (gray samples are repeated in the three colors, and samples without transparency are opaque).
+    /// </summary>
+    public static PixelFormat ForPsdFloatingPoint => PixelFormat.RgbaFloat;
+
     /// <summary>Selects the default pixel format of a BMP image.</summary>
     /// <param name="hasAlphaMask">Whether the DIB layout defines a real (non-padding) alpha channel.</param>
     /// <returns><see cref="PixelFormat.Rgba32"/> for layouts with an alpha mask, otherwise <see cref="PixelFormat.Rgb24"/>.</returns>

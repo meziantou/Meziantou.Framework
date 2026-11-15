@@ -34,7 +34,8 @@ anything is written, and how to tell the library what to do with what the format
 | `.ani` | Animated cursor |
 | `.exr` | OpenEXR, ZIP compression |
 
-Any other extension throws an `ArgumentException`. The JPEG 2000 extensions `.jpx` and `.jpf` are read, not written.
+Any other extension throws an `ArgumentException`. The JPEG 2000 extensions `.jpx` and `.jpf`, and the Photoshop
+extensions `.psd` and `.psb`, are read, not written.
 
 To choose the format from a name or a request rather than from the path of the file:
 

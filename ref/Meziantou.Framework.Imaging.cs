@@ -1207,6 +1207,7 @@ namespace Meziantou.Framework.Imaging
         Jpeg2000 = 16,
         OpenExr = 17,
         Radiance = 18,
+        Psd = 19,
         Custom = 1000,
     }
 

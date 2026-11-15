@@ -36,8 +36,51 @@ public static class EncodedFieldInspector
         "jp2" => InspectJpeg2000(data),
         "exr" => InspectOpenExr(data),
         "hdr" => InspectRadiance(data),
+        "psd" => InspectPsd(data),
         _ => throw new ArgumentException($"Unknown fixture format '{format}'.", nameof(format)),
     };
+
+    /// <summary>
+    /// PSD: the image resources (<see cref="Psd.ReferencePsd"/>): the resolution (1005, 16.16 fixed-point pixels per inch,
+    /// whole numbers in the fixtures), the ICC profile (1039), EXIF data (1058) and XMP metadata (1060); the samples of a
+    /// 32-bit document without ICC profile are linear light.
+    /// </summary>
+    private static EncodedFields InspectPsd(ReadOnlySpan<byte> data)
+    {
+        var picture = Psd.ReferencePsd.Read(data);
+        var result = new EncodedFields();
+        if (picture.Resources.TryGetValue(1005, out var resolution) && resolution.Length >= 16)
+        {
+            var x = BinaryPrimitives.ReadInt32BigEndian(resolution);
+            var y = BinaryPrimitives.ReadInt32BigEndian(resolution.AsSpan(8));
+            if (x > 0 && y > 0)
+            {
+                result.Resolution = new EncodedResolution { Unit = ResolutionExpectation.Inch, X = x >> 16, Y = y >> 16 };
+            }
+        }
+
+        if (picture.Resources.TryGetValue(1039, out var icc))
+        {
+            result.Icc = icc;
+        }
+        else if (picture.Depth == 32)
+        {
+            // 32-bit documents are linear light
+            result.TransferFunction = "linear";
+        }
+
+        if (picture.Resources.TryGetValue(1058, out var exif))
+        {
+            result.Exif = exif;
+        }
+
+        if (picture.Resources.TryGetValue(1060, out var xmp))
+        {
+            result.Xmp = xmp;
+        }
+
+        return result;
+    }
 
     /// <summary>
     /// Radiance HDR: the <c>PRIMARIES</c> variables of the header (<see cref="Radiance.ReferenceRadiance"/>), the last one of

@@ -3,8 +3,8 @@ title: Supported formats
 description: The formats the library reads and writes, how it detects them, which extension selects which encoder, and how to choose one.
 ---
 
-The library reads and writes every format below with its own managed codecs. This group has one page per format: what
-is read, what is written, how to save with its encoder and its options, and the pitfalls.
+The library reads every format below with its own managed codecs, and writes all of them but PSD. This group has one
+page per format: what is read, what is written, how to save with its encoder and its options, and the pitfalls.
 
 ## Support matrix
 
@@ -27,6 +27,7 @@ is read, what is written, how to save with its encoder and its options, and the 
 | [JPEG 2000](16-Jpeg2000.md) | JP2 files and codestreams, up to 16 bits, HTJ2K | Lossless (default) or lossy, up to 16 bits | No |
 | [OpenEXR](17-OpenExr.md) | Half, float and integer samples, most compressions | Lossless half or float samples | No |
 | [Radiance HDR](18-Radiance.md) | RGBE pictures, flat and run-length encoded, every orientation | RGBE pictures, run-length encoded (default) or flat | No |
+| [PSD](19-Psd.md) | The composite image of PSD and PSB files (not the layers), 1 to 32 bits, CMYK and Lab with a color conversion | Not written | No |
 
 What a format cannot store is never dropped silently: saving an animation as JPEG, transparency to a format without
 it, 16-bit samples to an 8-bit format or metadata the format has no place for throws an
@@ -73,8 +74,8 @@ recognized from its whole header, and checked last. Data that no format recogniz
 | `.exr` | [OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) | ZIP-compressed OpenEXR |
 | `.hdr`, `.pic` | [RadianceEncoder](cref:Meziantou.Framework.Imaging.Formats.RadianceEncoder) | Run-length encoded Radiance HDR |
 
-Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf`: those JPEG 2000 files are read, not
-written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
+Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf` (JPEG 2000) and `.psd` and `.psb`
+(Photoshop): those files are read, not written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
 files from photos: pass an encoder with lossy compression for them.
 
 ## Choosing a format
@@ -97,6 +98,8 @@ files from photos: pass an encoder with lossy compression for them.
   (see [JPEG XL](15-JpegXl.md)).
 - **Scanned documents**: a bilevel TIFF with CCITT Group 4 compression.
 - **Icons and cursors**: ICO, CUR and ANI.
+- **Photoshop documents**: PSD and PSB files are read (their composite image), not written: save them as PNG, TIFF
+  or another format.
 - **Tooling, game assets and test fixtures**: QOI, TGA, BMP and Netpbm are simple formats, lossless by default.
 
 To convert files from one format to another, see [Converting between formats](../03-Guides/03-ConvertBetweenFormats.md).
@@ -120,3 +123,4 @@ To convert files from one format to another, see [Converting between formats](..
 - [JPEG 2000](16-Jpeg2000.md): lossless and lossy images for archives and imaging pipelines.
 - [OpenEXR](17-OpenExr.md): linear-light, floating-point images for rendering and visual effects.
 - [Radiance HDR](18-Radiance.md): RGBE pictures of lighting simulations and HDRI environment maps.
+- [PSD](19-Psd.md): the composite image of Adobe Photoshop documents, read only.

@@ -12,6 +12,32 @@ internal static class ErrorFixtureStages
 {
     private static readonly HashSet<string> HeaderDefects = new(StringComparer.Ordinal)
     {
+        // PSD: the file header, the color mode data, the image resources and the layer and mask information
+        "invalid/psd/57-channels",
+        "invalid/psd/bitmap-depth-8",
+        "invalid/psd/cmyk32",
+        "invalid/psd/depth-4",
+        "invalid/psd/fewer-channels-than-colors",
+        "invalid/psd/indexed-color-table-length",
+        "invalid/psd/lab16",
+        "invalid/psd/layer-info-past-section",
+        "invalid/psd/mode-5",
+        "invalid/psd/multichannel",
+        "invalid/psd/psd-width-30001",
+        "invalid/psd/reserved-bytes",
+        "invalid/psd/resource-past-section",
+        "invalid/psd/resource-signature",
+        "invalid/psd/tagged-block-signature",
+        "invalid/psd/truncated-header",
+        "invalid/psd/truncated-resources",
+        "invalid/psd/version-3",
+        "invalid/psd/zero-channels",
+        "invalid/psd/zero-width",
+        "limit/psd/frame-pixels-over-limit",
+        "limit/psd/height-over-limit",
+        "limit/psd/metadata-bytes-over-limit",
+        "limit/psd/width-over-limit",
+
         // Radiance HDR: the information header and the resolution string
         "invalid/hdr/format-other",
         "invalid/hdr/resolution-lowercase",
@@ -274,6 +300,15 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> StructureDefects = new(StringComparer.Ordinal)
     {
+        // PSD: the image data (a full scan decompresses the PackBits rows)
+        "invalid/psd/compression-4",
+        "invalid/psd/rle-literal-past-length",
+        "invalid/psd/rle-row-too-long",
+        "invalid/psd/rle-row-too-short",
+        "invalid/psd/rle-run-without-byte",
+        "invalid/psd/truncated-counts",
+        "invalid/psd/truncated-image-data",
+
         // Radiance HDR: the scanlines, read by a full scan
         "invalid/hdr/old-rle-repetition-first",
         "invalid/hdr/old-rle-repetition-past-end",
@@ -421,6 +456,14 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> PixelDefects = new(StringComparer.Ordinal)
     {
+        // PSD: rejected by a load only
+        "invalid/psd/cmyk16",
+        "invalid/psd/cmyk8",
+        "invalid/psd/lab8",
+        "invalid/psd/no-composite",
+        "invalid/psd/zip",
+        "invalid/psd/zip-prediction",
+
         // Radiance HDR: XYZE samples are identified, and rejected by a load
         "invalid/hdr/xyze",
         "invalid/hdr/xyze-columns",

@@ -231,8 +231,8 @@ public sealed class DefaultsTests
         var jhc = Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("dir/a.jhc"));
         Assert.Equal((Jpeg2000BlockCoder.HighThroughput, Jpeg2000Container.Codestream), (jhc.BlockCoder, jhc.Container));
 
-        // The other members of the family are read, never written
-        foreach (var extension in new[] { ".jpx", ".jpf" })
+        // The other members of the family, and Photoshop documents, are read, never written
+        foreach (var extension in new[] { ".jpx", ".jpf", ".psd", ".PSB" })
         {
             Assert.Contains("can be read but not written", Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a" + extension)).Message, StringComparison.Ordinal);
         }
@@ -251,7 +251,7 @@ public sealed class DefaultsTests
     [Fact]
     public void PublicEncoderSelectionMatchesTheSelectionOfSave()
     {
-        string[] readOnly = [".jpx", ".jpf"];
+        string[] readOnly = [".jpx", ".jpf", ".psd", ".psb"];
         foreach (var info in ImageFormatInfo.All)
         {
             foreach (var extension in info.FileExtensions)
@@ -289,7 +289,8 @@ public sealed class DefaultsTests
     [Fact]
     public void EveryFormatHasADefaultEncoder()
     {
-        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom)))
+        // PSD is read only
+        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Psd)))
         {
             var encoder = ImageEncoder.Create(format);
             Assert.Equal(format, encoder.Format);
@@ -303,6 +304,7 @@ public sealed class DefaultsTests
         Assert.Equal(IconKind.Icon, Assert.IsType<IcoEncoder>(ImageEncoder.Create(ImageFormat.Ico)).Kind);
         Assert.Equal(IconKind.Cursor, Assert.IsType<IcoEncoder>(ImageEncoder.Create(ImageFormat.Cur)).Kind);
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Unknown));
+        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Psd));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Custom));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create((ImageFormat)999));
     }

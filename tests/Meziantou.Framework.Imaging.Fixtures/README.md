@@ -8,7 +8,7 @@ Independent reference data for the conformance and interop tests, extended with 
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
   color conversion vectors: `icc`, `IccCorpus.cs`; the AV1 conformance vectors of the `av1Vectors` section: `avif`,
   `AvifCorpus.cs`; AVIF entries: `avif-container`, `AvifCorpus.Container.cs`; HEIC entries: `heic-container`,
-  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; Radiance HDR entries: `hdr`, `RadianceCorpus.cs`; the HEVC
+  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; Radiance HDR entries: `hdr`, `RadianceCorpus.cs`; PSD entries: `psd`, `PsdCorpus.cs`; the HEVC
   conformance vectors of the `hevcVectors` section: `hevc`, `HevcCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
   its SHA-256 hash, provenance and license.
 - The tests read this folder from the Git repository root (`FixtureRoot.GetDirectory()`). They never download anything
@@ -23,7 +23,7 @@ Independent reference data for the conformance and interop tests, extended with 
 
 ```
 tests/Meziantou.Framework.Imaging.Fixtures/
-  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/   hdr/
+  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/   hdr/   psd/
                                       encoded inputs and their raw references
   invalid/<format>/                   malformed, unsupported or over-limit inputs (expected errors, no expected pixels)
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
@@ -40,7 +40,7 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   (`png` for PNG and APNG, `gif`, `jpeg`, `webp`, `qoi`, `bmp`, `tga`, `pnm` for every Netpbm variant, `avif` for AVIF
   still images and image sequences, `heic` for HEIC still images and image sequences, `jxl` for JPEG XL codestreams and
   containers, `jp2` for JPEG 2000 codestreams and files of the JP2 family, whatever their block coder, `exr` for OpenEXR
-  files, `hdr` for Radiance HDR files). The expected frames of an OpenEXR or a Radiance HDR fixture are `rgbaf32le`
+  files, `hdr` for Radiance HDR files, `psd` for PSD and PSB files). The expected frames of an OpenEXR, a Radiance HDR or a 32-bit PSD fixture are `rgbaf32le`
   buffers: the 32-bit floats of its `RgbaHalf` or `RgbaFloat` pixels (a half converts to a float exactly), compared bit
   for bit; they are no source of the encoder suites.
 - Kinds: `valid` (expected pixels and metadata), `invalid` (malformed: expected exception), `unsupported` (recognized but
@@ -782,6 +782,8 @@ header (65,536 bytes) rejects.
 | OpenEXR errors | invalid (rejected by OpenEXR too): a file cut in its last chunk, an offset after the end of the file, a chunk with the coordinates of another one, corrupt zlib data, a PIZ chunk whose Huffman data declare more bits than they have, an RLE run longer than its chunk, no channel list; unsupported: the LJ2K compression, HTJ2K256 and HTJ2K32 with a FLOAT or UINT channel, multi-part files (a stereo pair; render passes in scan lines and tiles), deep data (scan lines in NONE, RLE, ZIPS and ZSTD, clipped tiles in RLE and ZSTD, a ZBack and another layer, no alpha), a Z channel, the channels of a layer, luminance and chroma (RY, BY), a data window larger than the display window (and three sample images of the OpenEXR project whose windows differ), deep data; renderer outputs rejected by default: RGBA with a depth and a normals layer in an overscan in every compression the library reads, tiles of several layers in an overscan, mipmapped tiles of layers without a default layer, a sub-sampled extra channel (also in an HTJ2K256 file, coded without color transform); each of these (but the compressions) declares its decodings with `OpenExrDecodingOptions` (`exrDecodings`: a part, deep data flattened, a layer, the crop to the display window, the data window, and the errors left: a missing part, a missing layer, a vector layer, chroma channels, deep data without alpha), referenced by OpenEXR and cross-checked with FFmpeg (its `layer` option) or the samples given to `exr-from-raw`; limits: frame pixels and the bytes of the attributes |
 | Radiance HDR | RGBE patterns of high dynamic range in flat, "old" run-length encoded (repetitions whose count takes several pixels) and "new" run-length encoded scanlines (runs and literals longer than one code), the three mixed in one file; the seven other orientations of the resolution string (rows stored from the bottom or right to left, columns in the four directions), flat and run-length encoded; the identifier `#?RGBE` without FORMAT; commands, a comment and the variables EXPOSURE (twice), COLORCORR, PIXASPECT, GAMMA, VIEW, SOFTWARE and another one; variables whose values cannot be read (`PIXASPECT=inf`, as FFmpeg writes it); the standard primaries of Radiance, those of BT.709, BT.2020 and Display P3; exponents of 1 and 255, the exponent 0 with mantissas, a mantissa 0; one pixel; two files of the Radiance encoder of FFmpeg (run-length encoded and narrow, flat) |
 | Radiance HDR errors | invalid: a file cut in its header, its resolution string, after the marker of its first scanline and in its last scanline, two FORMAT lines, resolution strings of one axis, of the same axis twice, of a size 0 and of lowercase axes, a run-length encoded scanline whose marker declares another length, a run and a literal past the end of a scanline, a code 0, an old repetition without a previous pixel and one past the end of a scanline; unsupported: XYZE samples (rows and columns), another FORMAT; limits: frame pixels and the bytes of the header |
+| PSD | the composite image of bitmap (rows padded with 0 bits by psd-tools, 1 bits by ImageMagick), grayscale, duotone (read as gray), indexed (with a transparency index) and RGB documents of 1, 8, 16 and 32 bits, raw and PackBits; a transparency channel (a negative layer count in the layer info, the Lr16 and the Lr32 blocks) whose colors are matted over white, for RGB and gray; extra channels that are not transparency (saved selections, a spot channel after the transparency); layers (ZIP-compressed, in the layer info and in the Lr16 block), PSB files; image resources (resolution, ICC profiles, EXIF, XMP, a thumbnail, a resource of another signature, a named resource); files of psd-tools, of ImageMagick and assembled from the specification, cross-checked with psd-tools dump, ImageMagick and FFmpeg |
+| PSD errors | invalid: a version 3, a reserved byte, 0 and 57 channels, a width of 0, a PSD file wider than 30,000 pixels, a depth of 4 bits, the color mode 5, an 8-bit bitmap, fewer channels than colors, a color table of 767 bytes, a resource of another signature and one past its section, a layer info past its section, a tagged block of another signature, the compression 4, PackBits rows too long and too short, a literal past the stored length and a run without its byte, files cut in their header, resources, row lengths and image data; unsupported: CMYK samples of 8 and 16 bits and Lab samples without conversion, no composite ("Maximize Compatibility" off), ZIP and ZIP-with-prediction composites, multichannel documents, 32-bit CMYK, 16-bit Lab; limits: width, height, frame pixels, metadata bytes |
 | Errors | PNG header defects (bad IHDR CRC, IHDR not first, illegal bit depth, chunk length above 2^31 - 1, unknown critical chunk `CgBI` — unsupported), structure defects (truncated IDAT, bad IDAT CRC, non-consecutive IDAT, PLTE after IDAT, missing IEND) and pixel-data defects with valid containers (truncated zlib, missing or wrong Adler-32, bytes after the zlib datastream, one extra scanline, one missing scanline, filter type 5, out-of-range palette index); truncated GIF image data, GIF plain-text extension (unsupported), arithmetic-coded JPEG (unsupported); GIF LZW and color-table defects inside valid containers (code above the next table code, table code after a clear, end code too early, data ending without end code, an index outside the table, no color table) and block defects (unknown block, 3-byte Graphic Control Extension, minimum code size 12, missing trailer, no image, empty logical screen); resource limits: frame count, GIF displayed pixels (`MaxTotalPixels`, decode-only), width, frame pixels, encoded bytes (reached at IEND), and a `zTXt` whose 171-byte zlib stream inflates to 25,801 bytes with `MaxMetadataBytes` = 4096 (deterministic fixed-Huffman stream written by the generator) |
 
 ## Fixture coverage matrix
@@ -826,6 +828,7 @@ follows it, so keep both headings unique in this file.
 | jxl | 54 | 7 | 4 | 6 |
 | png | 109 | 31 | 1 | 6 |
 | pnm | 15 | 12 | 1 | 2 |
+| psd | 31 | 24 | 9 | 4 |
 | qoi | 10 | 12 | 0 | 4 |
 | tga | 23 | 7 | 1 | 2 |
 | webp | 21 | 15 | 1 | 5 |
@@ -1571,6 +1574,29 @@ follows it, so keep both headings unique in this file.
 | Radiance HDR SOFTWARE | `hdr.software` | 1 | 0 | 0 | 0 |
 | Radiance HDR PRIMARIES | `hdr.primaries` | 4 | 0 | 0 | 0 |
 | Radiance HDR variables whose values cannot be read | `hdr.unreadableVariables` | 1 | 0 | 0 | 0 |
+| PSD bitmap documents | `psd.mode=bitmap` | 3 | 0 | 0 | 0 |
+| PSD grayscale documents | `psd.mode=grayscale` | 8 | 0 | 0 | 0 |
+| PSD duotone documents (read as gray) | `psd.mode=duotone` | 1 | 0 | 0 | 0 |
+| PSD indexed documents | `psd.mode=indexed` | 2 | 0 | 0 | 0 |
+| PSD RGB documents | `psd.mode=rgb` | 17 | 0 | 0 | 4 |
+| PSD CMYK documents (rejected) | `psd.mode=cmyk` | 0 | 0 | 3 | 0 |
+| PSD Lab documents (rejected) | `psd.mode=lab` | 0 | 0 | 2 | 0 |
+| PSD multichannel documents (rejected) | `psd.mode=multichannel` | 0 | 0 | 1 | 0 |
+| PSD 1-bit samples | `psd.depth=1` | 3 | 0 | 0 | 0 |
+| PSD 8-bit samples | `psd.depth=8` | 18 | 0 | 0 | 4 |
+| PSD 16-bit samples | `psd.depth=16` | 7 | 0 | 0 | 0 |
+| PSD 32-bit floating-point samples | `psd.depth=32` | 3 | 0 | 0 | 0 |
+| PSD raw image data | `psd.compression=raw` | 10 | 0 | 0 | 0 |
+| PSD PackBits image data | `psd.compression=rle` | 21 | 0 | 0 | 4 |
+| PSD large documents (PSB) | `psd.version=psb` | 3 | 0 | 0 | 0 |
+| PSD transparency channel (merged alpha) | `psd.alpha=merged` | 6 | 0 | 0 | 0 |
+| PSD extra channels that are not transparency | `psd.extraChannels` | 2 | 0 | 0 | 0 |
+| PSD layers in the layer info | `psd.layers=layerInfo` | 4 | 0 | 1 | 0 |
+| PSD layers in the Lr16 block | `psd.layers=lr16` | 2 | 0 | 0 | 0 |
+| PSD image resources | `psd.resources` | 2 | 0 | 0 | 1 |
+| PSD files of psd-tools | `psd.writer=psd-tools` | 24 | 0 | 0 | 3 |
+| PSD files of ImageMagick | `psd.writer=magick` | 5 | 0 | 0 | 0 |
+| PSD files assembled from the specification | `psd.writer=builder` | 2 | 0 | 0 | 1 |
 
 Not covered by fixtures, and verified elsewhere: encoder outputs (independent readers, FFmpeg and Apple ImageIO), malformed-input robustness beyond the error
 fixtures (`FuzzTests/MutationFuzzTests`, `Tests.Shared/Suites/Decode/TruncationTests`), and limits at every boundary (`Tests.Shared/Suites/Decode/ResourceLimitBoundaryTests`).
@@ -2709,6 +2735,26 @@ tool version to see what changes; the interop CI job runs it on every build to d
   ```shell
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- hdr          # check
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- hdr --write  # replace the Radiance HDR fixtures, then review the diff
+  ```
+
+- `psd` (`PsdCorpus.cs`) generates the PSD fixtures; it replaces only the entries of format `psd` and their files
+  (`psd/`, `invalid/psd/`). The files are written from hand-defined patterns by `psd-tools write` (every color mode,
+  depth and compression, a transparency channel matted over white by the generator, layers in the layer info and in the
+  Lr16 and Lr32 blocks, PSB) and by ImageMagick (with a layer, flat, PSB), or assembled by the test harness
+  (`PsdFileBuilder`: the image resources and every malformed file), with psd-tools 1.26.1 and ImageMagick 7.1.2-35 of
+  the meziantou/prebuilt release of the `Meziantou.Prebuilt` package (pinned in `PinnedPsdTools` and `PinnedMagick`).
+  The reference is the pattern in RGBA (a bitmap sample of 1 is black, an index is its color, gray is repeated, the
+  colors of a transparency channel are un-matted from white, the stored samples kept where alpha is 0), which
+  `ReferencePsd`, an independent reader of the harness, must give back from the file. Every valid file is cross-checked
+  with `psd-tools dump` (the stored samples, exactly), ImageMagick and FFmpeg 9.0.2; their differences are declared in
+  `MagickDifferences` and `FfmpegDifferences` with their reason (ImageMagick ignores the transparency index, does not
+  un-matte gray composites and takes a second extra channel for transparency; FFmpeg does not un-matte, reads no PSB file
+  and no 32-bit RGB, rejects the PackBits rows of ImageMagick and clips floats), and the generator fails when a declared
+  difference disappears or another one appears. An invalid fixture is rejected by `ReferencePsd` too:
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- psd          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- psd --write  # replace the PSD fixtures, then review the diff
   ```
 
 - `heic-container` (`HeicCorpus.Container.cs`: tools, references, cross-check and manifest entries;

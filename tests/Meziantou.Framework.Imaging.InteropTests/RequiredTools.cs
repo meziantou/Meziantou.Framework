@@ -35,6 +35,9 @@ internal static class RequiredTools
 
     public static Task<OpenExrTool> OpenExrAsync() => OpenExrTool.LocateAsync(XunitCancellationToken);
 
+    /// <summary>Gets the KTX 2.0 reference tools: KTX-Software (<c>ktx</c>), astcenc and basisu.</summary>
+    public static Task<Ktx2Tool> Ktx2Async() => Ktx2Tool.LocateAsync(XunitCancellationToken);
+
     public static Task<RadianceTool> RadianceAsync() => RadianceTool.LocateAsync(XunitCancellationToken);
 
     /// <summary>Gets the <c>jpeg</c> tool of the ISO JPEG reference codec, which shares no code with libjpeg-turbo.</summary>

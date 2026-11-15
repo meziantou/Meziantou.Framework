@@ -9,7 +9,8 @@ namespace Meziantou.Framework.Barcodes;
 /// <remarks>
 /// The text is measured with the metrics of <see cref="Fonts"/>, and the fonts become the fonts of the scene
 /// (<see cref="Scene.Fonts"/>), so the SVG, image and PDF renderers draw it with the fonts that measured it. Set
-/// <see cref="SvgRenderOptions.EmbedFonts"/> to embed the font in an SVG document.
+/// <see cref="SvgRenderOptions.EmbedFonts"/> to embed the font in an SVG document. The text is one line: its control
+/// characters (such as the new lines a Code 128 barcode can encode) are drawn as <c>?</c>.
 /// </remarks>
 public sealed class BarcodeTextOptions
 {

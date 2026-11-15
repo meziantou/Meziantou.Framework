@@ -395,4 +395,16 @@ public class QRCodeSvgRendererTests
         Assert.Equal("Meziantou OCR-B", BarcodeFonts.OcrB.DefaultFamily);
         Assert.Same(BarcodeFonts.OcrB, BarcodeFonts.OcrB);
     }
+
+    [Fact]
+    public void CreateScene_Barcode_ControlCharactersOfTheTextAreEscaped()
+    {
+        // Code 128 encodes every ASCII character: the text is one line, as it is measured
+        var barcode = Barcode.CreateCode128("AB\nCD\u001b");
+        var scene = barcode.CreateScene(new BarcodeRenderOptions { Text = new BarcodeTextOptions() });
+        var text = Assert.IsType<SceneText>(scene.Root.Children[^1]);
+
+        Assert.Equal("AB?CD?", text.Text);
+        Assert.Equal(new FontFaceTextMeasurer(BarcodeFonts.OcrB).Measure("AB?CD?", text.Font).Width, text.MeasuredWidth);
+    }
 }

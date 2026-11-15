@@ -81,21 +81,11 @@ internal static class ConsoleBlockRenderer
 
             var lineStart = sb.Length;
             sb.Append(' ', (int)Math.Max(0, (lineLength - text.Length) / 2));
-            AppendPrintable(sb, text);
+            PrintableText.Append(sb, text);
             TrimTrailingSpaces(sb, lineStart);
         }
 
         return sb.ToString();
-    }
-
-    // A barcode can encode control characters (Code 128 and Code 93 encode every ASCII character): written as they are,
-    // a new line would break the layout and an escape sequence would be run by the terminal
-    private static void AppendPrintable(StringBuilder sb, string text)
-    {
-        foreach (var c in text)
-        {
-            sb.Append(char.IsControl(c) ? '?' : c);
-        }
     }
 
     private static void TrimTrailingSpaces(StringBuilder sb, int lineStart)

@@ -599,6 +599,31 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
+    public void DrawBarcode_TextWithANewLine_StaysInTheMeasuredBounds()
+    {
+        // Code 128 encodes the new line: the text is still one line, drawn inside the measured rectangle
+        var barcode = Barcode.CreateCode128("AB\nCD");
+        var options = new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 10, QuietZoneModules = 2, Text = new BarcodeTextOptions { Fonts = LoadAhemFonts(), FontSize = 10 } };
+        var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
+
+        using var actual = new Image<Rgba32>((int)size.Width + 20, (int)size.Height + 40, Colors.Red);
+        DrawOn(actual, (barcode, options), static (canvas, state) => canvas.DrawBarcode(state.barcode, new PointD(10, 10), state.options));
+
+        var pixels = GetPixels(actual);
+        for (var y = 0; y < actual.Height; y++)
+        {
+            for (var x = 0; x < actual.Width; x++)
+            {
+                var inside = x >= 10 && x < 10 + size.Width && y >= 10 && y < 10 + size.Height;
+                if (!inside && pixels[(y * actual.Width) + x] != Colors.Red)
+                {
+                    Assert.Fail($"Pixel ({x}, {y}) is outside the measured bounds {size} but was painted.");
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void Measure_InvalidOptions_Throw()
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);

@@ -49,7 +49,7 @@ public static class BarcodeRenderer
             options.LightPaint,
             options.SnapToPixels,
             text,
-            barcode.Text,
+            PrintableText.Create(barcode.Text),
             Logo: null,
             nameof(options.ModuleWidth),
             LogoParameterName: ""));

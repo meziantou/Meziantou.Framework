@@ -169,6 +169,10 @@ internal static class RenderFuzzTargets
         if (hasText)
         {
             FuzzAssert.True(scene.Width >= symbolWidth && scene.Height > symbolHeight, $"The scene ({scene.Width}x{scene.Height}) is smaller than the symbol and its text ({symbolWidth}x{symbolHeight})");
+
+            // The text is one line, as it is measured: its control characters are drawn as '?'
+            var sceneText = scene.Root.Children.OfType<SceneText>().Single();
+            FuzzAssert.False(sceneText.Text.Any(char.IsControl), "The text of the scene has a control character");
         }
         else
         {

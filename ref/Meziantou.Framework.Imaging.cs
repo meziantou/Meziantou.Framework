@@ -1072,7 +1072,7 @@ namespace Meziantou.Framework.Imaging
 
     public static class ImageBufferPool
     {
-        public const long DefaultMaxRetainedBytes = 33554432L;
+        public const long DefaultMaxRetainedBytes = 67108864L;
         public static long MaxRetainedBytes { get => throw null; set { } }
         public static long RetainedBytes { get => throw null; }
         public static void Trim() { }

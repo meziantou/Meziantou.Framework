@@ -4962,7 +4962,7 @@ public static Image LoadLeniently(string path)
   the cursor hotspots (see the example below).
 - **Wrapped memory.** `Image.WrapMemory` creates an image over a `Memory<byte>` or a pointer, with a stride and a pixel
   format, without copying it (see the ownership table).
-- **Buffer pool.** `ImageBufferPool.MaxRetainedBytes` bounds the bytes the process-wide pool keeps for reuse (32 MiB by
+- **Buffer pool.** `ImageBufferPool.MaxRetainedBytes` bounds the bytes the process-wide pool keeps for reuse (64 MiB by
   default, 0 disables retention, lowering it releases buffers); `ImageBufferPool.Trim` releases them all.
 
 A custom processor that changes the size of every frame:

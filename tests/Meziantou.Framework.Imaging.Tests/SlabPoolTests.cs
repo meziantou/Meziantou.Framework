@@ -235,6 +235,37 @@ public sealed class SlabPoolTests
     }
 
     [Fact]
+    public void TheDefaultBoundRetainsA4KFrameAndItsWorkingBuffers()
+    {
+        // A 4K RGBA frame is eight 4 MiB slabs (the whole of the former 32 MiB bound), so a decode or a resize dropped a
+        // slab on every call. The default bound keeps the frame and some working buffers.
+        var pool = new SlabPool();
+        var layout = PixelStorageLayout.Create(3840, 2160, 4);
+        Assert.True(layout.TryGetCapacity(pool, out var frameCapacity));
+        Assert.Equal(32L * 1024 * 1024, frameCapacity);
+
+        for (var iteration = 0; iteration < 3; iteration++)
+        {
+            var buffers = new List<byte[]>();
+            for (var slab = 0; slab < layout.SlabCount; slab++)
+            {
+                buffers.Add(pool.Rent((int)(slab == layout.SlabCount - 1 ? layout.LastSlabLength : layout.FullSlabLength), clear: true));
+            }
+
+            buffers.Add(pool.Rent(6 * 1024 * 1024, clear: false));
+            buffers.Add(pool.Rent(1024 * 1024, clear: false));
+            foreach (var buffer in buffers)
+            {
+                Assert.True(pool.Return(buffer));
+            }
+        }
+
+        var diagnostics = pool.GetDiagnostics();
+        Assert.Equal(layout.SlabCount + 2, diagnostics.NewPooledAllocations);
+        Assert.Equal(0, diagnostics.DroppedReturns);
+    }
+
+    [Fact]
     public void TheSharedPoolSettingsArePublic()
     {
         Assert.Equal(SlabPoolOptions.DefaultMaxRetainedBytes, ImageBufferPool.DefaultMaxRetainedBytes);

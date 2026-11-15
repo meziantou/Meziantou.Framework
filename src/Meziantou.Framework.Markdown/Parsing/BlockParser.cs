@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Meziantou.Framework.Markdown.Parsing;
 
 /// <summary>
@@ -27,7 +29,9 @@ internal sealed class BlockParser
 
     // The lines of all the leaf blocks: a block has a range of them. Only the last open leaf block gets lines, so its lines
     // are always the last ones.
-    private readonly List<Line> _lines;
+    // The lines of the leaf blocks, in a rented array that Parse returns
+    private Line[] _lines;
+    private int _lineCount;
     private readonly Dictionary<string, bool> _references = new(StringComparer.Ordinal);
 
     // Whether the text is the content of a cell of a grid table whose grid table at the end is kept, and whether the end closes
@@ -35,6 +39,9 @@ internal sealed class BlockParser
     private bool _keepsGridTable;
     private bool _atEnd;
     private readonly InlineParser _inlineParser;
+
+    // The nodes and tokens of the tree, which the blocks are converted to once they are all read
+    private readonly TreeBuffer _tree;
 
     // The definition that the line closes after it has been read
     private Block? _closingDefinition;
@@ -60,15 +67,16 @@ internal sealed class BlockParser
     private bool _indented;
     private bool _blank;
 
-    private BlockParser(string text, MarkdownParseOptions options)
+    private BlockParser(string text, MarkdownParseOptions options, TreeBuffer tree)
     {
         _text = text;
+        _tree = tree;
         _extensions = options.Extensions;
         _disableHtml = options.DisableHtml;
         _allowNestedAlerts = options.AllowNestedAlerts;
 
         // A block has at most every line of the text
-        _lines = new List<Line>(text.AsSpan().Count('\n') + 1);
+        _lines = ArrayPool<Line>.Shared.Rent(text.AsSpan().Count('\n') + 1);
         _tip = _document;
         _oldTip = _document;
         _lastMatchedContainer = _document;
@@ -76,9 +84,10 @@ internal sealed class BlockParser
     }
 
     /// <param name="cell">For the content of a cell of a grid table, the context of the table.</param>
-    public static (BuildNode Document, List<TriviaSpan> TriviaSpans) Parse(string text, MarkdownParseOptions options, CellContext? cell = null)
+    /// <summary>Adds the nodes and tokens of the text to <paramref name="tree"/>, the document first. Returns the trivia that is not whitespace.</summary>
+    public static List<TriviaSpan> Parse(string text, MarkdownParseOptions options, TreeBuffer tree, CellContext? cell = null)
     {
-        var parser = new BlockParser(text, options) { _keepsGridTable = cell?.KeepsGridTable ?? false };
+        var parser = new BlockParser(text, options, tree) { _keepsGridTable = cell?.KeepsGridTable ?? false };
         foreach (var label in cell?.References ?? [])
         {
             parser._references.TryAdd(label, value: true);
@@ -115,9 +124,10 @@ internal sealed class BlockParser
             parser.AddHeadingLabels(parser._document);
         }
 
-        var document = new List<BuildElement>(1);
-        parser.Convert(parser._document, document);
-        return (document[0].Node!, parser._triviaSpans);
+        parser.Convert(parser._document);
+        ArrayPool<Line>.Shared.Return(parser._lines);
+        parser._lines = [];
+        return parser._triviaSpans;
     }
 
     private char Peek(int index) => index < _lineEnd ? _text[index] : '\0';
@@ -147,7 +157,7 @@ internal sealed class BlockParser
                 }
 
                 block.Trailing.Add(BuildElement.Token(SyntaxKind.FrontMatterFenceToken, position, position + 3));
-                _document.Children.Add(block);
+                _document.AddChild(block);
                 return nextLine;
             }
 
@@ -1006,7 +1016,7 @@ internal sealed class BlockParser
         {
             var parent = paragraph.Parent!;
             var before = new Block(SyntaxKind.Paragraph, parent) { Open = false, LineStart = paragraph.LineStart, LineCount = paragraph.LineCount - 1 };
-            parent.Children.Insert(parent.Children.Count - 1, before);
+            parent.InsertChild(parent.Children.Count - 1, before);
             ParseDefinitions(before);
         }
 
@@ -1077,7 +1087,7 @@ internal sealed class BlockParser
 
         if (attributes is not null)
         {
-            block.Trailing.Add(attributes);
+            block.Trailing.AddRange(attributes);
         }
 
         AddLine(block, new Line(_offset, contentEnd, contentEnd, 0));
@@ -1086,7 +1096,7 @@ internal sealed class BlockParser
     }
 
     // The generic attributes of a block, from the first { of its line: the text after them is dropped, as Markdig drops it
-    private BuildNode? ParseBlockAttributes(int start, ref int lineEnd)
+    private BuildElement[]? ParseBlockAttributes(int start, ref int lineEnd)
     {
         if (!HasExtension(MarkdownExtensions.GenericAttributes))
         {
@@ -1100,8 +1110,6 @@ internal sealed class BlockParser
         }
 
         brace += start;
-        var node = new BuildNode(SyntaxKind.GenericAttributes, 2);
-        node.AddToken(SyntaxKind.AttributesToken, brace, end, value: 3);
         var rest = end;
         var restEnd = lineEnd;
         while (rest < restEnd && TableScanner.IsSpace(_text[rest]))
@@ -1114,9 +1122,11 @@ internal sealed class BlockParser
             restEnd--;
         }
 
-        node.AddToken(SyntaxKind.AttributesTrailingTextToken, rest, restEnd);
         lineEnd = brace;
-        return node;
+        var attributes = BuildElement.Token(SyntaxKind.AttributesToken, brace, end, value: 3);
+        return restEnd > rest
+            ? [BuildElement.Node(SyntaxKind.GenericAttributes, 2), attributes, BuildElement.Token(SyntaxKind.AttributesTrailingTextToken, rest, restEnd)]
+            : [BuildElement.Node(SyntaxKind.GenericAttributes, 1), attributes];
     }
 
     private bool TryStartFencedCodeBlock(char c)
@@ -1168,7 +1178,7 @@ internal sealed class BlockParser
 
         if (attributes is not null)
         {
-            block.Leading.Add(attributes);
+            block.Leading.AddRange(attributes);
         }
 
         _skipAddLine = true;
@@ -1264,7 +1274,7 @@ internal sealed class BlockParser
                 CloseUnmatchedBlocks();
             }
 
-            parent.Children.Remove(paragraph);
+            parent.RemoveChild(paragraph);
 
             _tip = parent;
             if (parent.LastChild is { Kind: SyntaxKind.DefinitionList } list)
@@ -1361,7 +1371,7 @@ internal sealed class BlockParser
 
         if (attributes is not null)
         {
-            block.Leading.Add(attributes);
+            block.Leading.AddRange(attributes);
         }
 
         // The rest of the line is the fence: no block starts after it
@@ -1590,18 +1600,26 @@ internal sealed class BlockParser
     {
         if (block.LineCount == 0)
         {
-            block.LineStart = _lines.Count;
+            block.LineStart = _lineCount;
         }
-        else if (block.LineStart + block.LineCount != _lines.Count)
+        else if (block.LineStart + block.LineCount != _lineCount)
         {
             throw new InvalidOperationException($"The lines of the {block.Kind} are not the last ones.");
         }
 
-        _lines.Add(line);
+        if (_lineCount == _lines.Length)
+        {
+            var lines = ArrayPool<Line>.Shared.Rent(_lineCount * 2);
+            _lines.AsSpan(0, _lineCount).CopyTo(lines);
+            ArrayPool<Line>.Shared.Return(_lines);
+            _lines = lines;
+        }
+
+        _lines[_lineCount++] = line;
         block.LineCount++;
     }
 
-    private ReadOnlySpan<Line> GetLines(Block block) => System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_lines).Slice(block.LineStart, block.LineCount);
+    private ReadOnlySpan<Line> GetLines(Block block) => _lines.AsSpan(block.LineStart, block.LineCount);
 
     private Block AddChild(SyntaxKind kind)
     {
@@ -1614,7 +1632,7 @@ internal sealed class BlockParser
         }
 
         var block = new Block(kind, _tip);
-        _tip.Children.Add(block);
+        _tip.AddChild(block);
         _tip.LastIsBlankLine = false;
         _tip = block;
         return block;
@@ -1726,13 +1744,14 @@ internal sealed class BlockParser
         var position = paragraph.ContentStart;
         while (position < subject.Length && subject.Text[position] == '[')
         {
-            var end = _inlineParser.ParseReference(subject, position, out var definition);
+            var definitions = paragraph.DefinitionsOrNull;
+            var end = _inlineParser.ParseReference(subject, position, ref definitions);
             if (end < 0)
             {
                 break;
             }
 
-            paragraph.Definitions.Add(definition!);
+            paragraph.DefinitionsOrNull = definitions;
             position = end;
         }
 
@@ -1742,100 +1761,94 @@ internal sealed class BlockParser
         paragraph.IsEmpty = subject.Text.AsSpan(position).Trim(" \t\n").IsEmpty;
     }
 
-    private void Convert(Block block, List<BuildElement> output)
+    private void Convert(Block block)
     {
         switch (block.Kind)
         {
             case SyntaxKind.Paragraph or SyntaxKind.SetextHeading:
-                if (block.DefinitionsOrNull is { } definitions)
-                {
-                    foreach (var definition in definitions)
-                    {
-                        output.Add(definition);
-                    }
-                }
+                _tree.AddRange(block.DefinitionsOrNull);
 
                 if (block == _alertParagraph)
                 {
                     // The kind of the alert is the first token of the paragraph, and its content starts on the next line
-                    var node = new BuildNode(block.Kind);
-                    node.Children.Add(BuildElement.Token(SyntaxKind.AlertKindToken, block.Subject!.ToSourceStart(_alertKind.KindStart), block.Subject.ToSourceEnd(_alertKind.KindEnd)));
-                    _inlineParser.Parse(block.Subject, _alertKind.ContentStart, node.Children);
-                    output.Add(node);
+                    var node = _tree.StartNode(block.Kind);
+                    _tree.AddToken(SyntaxKind.AlertKindToken, block.Subject!.ToSourceStart(_alertKind.KindStart), block.Subject.ToSourceEnd(_alertKind.KindEnd));
+                    _inlineParser.Parse(block.Subject, _alertKind.ContentStart, _tree);
+                    _tree.EndNode(node);
                     _alertParagraph = null;
                 }
                 else if (block.Kind == SyntaxKind.Paragraph && !block.IsEmpty && HasExtension(MarkdownExtensions.PipeTables) && block.Subject!.Text.AsSpan(block.ContentStart).Contains('|'))
                 {
-                    ConvertPipeTables(block.Subject, block.ContentStart, output, trimEnd: block.GridLineCount != block.LineCount);
+                    ConvertPipeTables(block.Subject, block.ContentStart, trimEnd: block.GridLineCount != block.LineCount);
                 }
                 else if (block.Kind == SyntaxKind.SetextHeading || !block.IsEmpty)
                 {
-                    var node = new BuildNode(block.Kind);
-                    _inlineParser.Parse(block.Subject!, block.ContentStart, node.Children, trimEnd: block.GridLineCount != block.LineCount);
-                    AddTokens(node, block.TrailingOrNull);
-                    output.Add(node);
+                    var node = _tree.StartNode(block.Kind);
+                    _inlineParser.Parse(block.Subject!, block.ContentStart, _tree, trimEnd: block.GridLineCount != block.LineCount);
+                    _tree.AddRange(block.TrailingOrNull);
+                    _tree.EndNode(node);
                 }
 
                 return;
 
             case SyntaxKind.AtxHeading:
             {
-                var node = new BuildNode(block.Kind);
-                AddTokens(node, block.LeadingOrNull);
-                _inlineParser.Parse(Subject.FromLines(_text, GetLines(block)), 0, node.Children);
-                AddTokens(node, block.TrailingOrNull);
-                output.Add(node);
+                var node = _tree.StartNode(block.Kind);
+                _tree.AddRange(block.LeadingOrNull);
+                _inlineParser.Parse(Subject.FromLines(_text, GetLines(block)), 0, _tree);
+                _tree.AddRange(block.TrailingOrNull);
+                _tree.EndNode(node);
                 return;
             }
 
             case SyntaxKind.Table:
-                output.Add(ConvertTable(block));
+                ConvertTable(block);
                 return;
 
             case SyntaxKind.Figure:
             {
                 // The opening fence and its caption, the blocks, then the closing fence and its caption
-                var node = new BuildNode(block.Kind, block.Children.Count + 4);
-                AddTokens(node, block.LeadingOrNull);
-                AddCaption(node, block.OpeningCaption);
+                var node = _tree.StartNode(block.Kind);
+                _tree.AddRange(block.LeadingOrNull);
+                AddCaption(block.OpeningCaption);
                 foreach (var child in block.Children)
                 {
-                    Convert(child, node.Children);
+                    Convert(child);
                 }
 
-                AddTokens(node, block.TrailingOrNull);
-                AddCaption(node, block.ClosingCaption);
-                output.Add(node);
+                _tree.AddRange(block.TrailingOrNull);
+                AddCaption(block.ClosingCaption);
+                _tree.EndNode(node);
                 return;
             }
 
             case SyntaxKind.DefinitionItem:
             {
                 // The terms, the marker, whose value is the number of blank lines that Markdig leaves in the definition, and the blocks
-                var node = new BuildNode(block.Kind, block.TermLineCount + 1 + block.Children.Count);
-                var terms = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_lines).Slice(block.TermLineStart, block.TermLineCount);
+                var node = _tree.StartNode(block.Kind);
+                var terms = _lines.AsSpan(block.TermLineStart, block.TermLineCount);
                 for (var i = 0; i < terms.Length; i++)
                 {
                     // Markdig keeps the whitespace at the end of a term, except at the end of a paragraph that was closed
-                    var term = new BuildNode(SyntaxKind.DefinitionTerm);
-                    _inlineParser.Parse(Subject.FromLines(_text, [terms[i]]), 0, term.Children, trimEnd: block.TermsTrimmed && i == terms.Length - 1);
-                    node.Children.Add(term);
+                    var term = _tree.StartNode(SyntaxKind.DefinitionTerm);
+                    _inlineParser.Parse(Subject.FromLines(_text, [terms[i]]), 0, _tree, trimEnd: block.TermsTrimmed && i == terms.Length - 1);
+                    _tree.EndNode(term);
                 }
 
-                node.AddToken(SyntaxKind.DefinitionMarkerToken, block.MarkerPosition, block.MarkerPosition + 1, value: block.BlankLineCount);
+                _tree.AddToken(SyntaxKind.DefinitionMarkerToken, block.MarkerPosition, block.MarkerPosition + 1, value: block.BlankLineCount);
                 foreach (var child in block.Children)
                 {
-                    Convert(child, node.Children);
+                    Convert(child);
                 }
 
-                output.Add(node);
+                _tree.EndNode(node);
                 return;
             }
 
             case SyntaxKind.FencedCodeBlock or SyntaxKind.IndentedCodeBlock or SyntaxKind.HtmlBlock or SyntaxKind.FrontMatter or SyntaxKind.MathBlock or SyntaxKind.GridTable:
             {
-                var node = new BuildNode(block.Kind, block.TokenCount + block.LineCount);
-                AddTokens(node, block.LeadingOrNull);
+                var node = _tree.StartNode(block.Kind);
+                _tree.AddRange(block.LeadingOrNull);
                 var kind = block.Kind switch
                 {
                     SyntaxKind.HtmlBlock => SyntaxKind.HtmlLineToken,
@@ -1846,11 +1859,11 @@ internal sealed class BlockParser
                 };
                 foreach (var line in GetLines(block))
                 {
-                    node.AddLineToken(kind, line.Start, line.EolEnd, line.VirtualSpaces);
+                    _tree.AddLineToken(kind, line.Start, line.EolEnd, line.VirtualSpaces);
                 }
 
-                AddTokens(node, block.TrailingOrNull);
-                output.Add(node);
+                _tree.AddRange(block.TrailingOrNull);
+                _tree.EndNode(node);
                 return;
             }
 
@@ -1858,17 +1871,17 @@ internal sealed class BlockParser
             {
                 // A block quote whose paragraph starts with [!KIND] on its own line is an alert
                 var alert = block.Kind == SyntaxKind.BlockQuote && HasExtension(MarkdownExtensions.Alerts) && !_inAlert && (_allowNestedAlerts || block.Parent == _document) && FindAlertParagraph(block);
-                var node = new BuildNode(alert ? SyntaxKind.Alert : block.Kind, block.TokenCount + block.Children.Count);
-                AddTokens(node, block.LeadingOrNull);
+                var node = _tree.StartNode(alert ? SyntaxKind.Alert : block.Kind);
+                _tree.AddRange(block.LeadingOrNull);
                 _inAlert |= alert;
                 foreach (var child in block.Children)
                 {
-                    Convert(child, node.Children);
+                    Convert(child);
                 }
 
                 _inAlert &= !alert;
-                AddTokens(node, block.TrailingOrNull);
-                output.Add(node);
+                _tree.AddRange(block.TrailingOrNull);
+                _tree.EndNode(node);
                 return;
             }
         }
@@ -1927,43 +1940,37 @@ internal sealed class BlockParser
         return false;
     }
 
-    private void AddCaption(BuildNode figure, (int Start, int End) caption)
+    private void AddCaption((int Start, int End) caption)
     {
         if (caption.End > caption.Start)
         {
-            var node = new BuildNode(SyntaxKind.FigureCaption);
-            _inlineParser.Parse(Subject.FromLines(_text, [new Line(caption.Start, caption.End, caption.End, 0)]), 0, node.Children, trimEnd: false);
-            figure.Children.Add(node);
-        }
-    }
-
-    private static void AddTokens(BuildNode node, List<BuildElement>? tokens)
-    {
-        if (tokens is not null)
-        {
-            node.Children.AddRange(tokens);
+            var node = _tree.StartNode(SyntaxKind.FigureCaption);
+            _inlineParser.Parse(Subject.FromLines(_text, [new Line(caption.Start, caption.End, caption.End, 0)]), 0, _tree, trimEnd: false);
+            _tree.EndNode(node);
         }
     }
 
     // A paragraph whose lines have pipe tables: the lines before a table are a paragraph, and the lines after it are a paragraph,
     // which can have a table, as in Markdig
     // trimEnd: whether the whitespace at the end of the lines is not text, which it is after lines that are not a grid table
-    private void ConvertPipeTables(Subject subject, int start, List<BuildElement> output, bool trimEnd)
+    private void ConvertPipeTables(Subject subject, int start, bool trimEnd)
     {
-        var node = new BuildNode(SyntaxKind.Paragraph);
-        while (_inlineParser.ScanPipeTable(subject, start, node.Children, trimEnd) is { } scan)
+        // The paragraph has the inlines of its lines when they are not a table: the scan adds them
+        var node = _tree.StartNode(SyntaxKind.Paragraph);
+        while (_inlineParser.ScanPipeTable(subject, start, _tree, trimEnd) is { } scan)
         {
+            _tree.Truncate(node);
             _inlineParser.PipeTableQuotes = scan.Quotes;
             try
             {
                 if (!subject.Text.AsSpan(start, scan.LeadingEnd - start).Trim(" \t\n\v\f\r").IsEmpty)
                 {
-                    var paragraph = new BuildNode(SyntaxKind.Paragraph);
-                    _inlineParser.ParseBeforePipeTable(subject, start, scan.LeadingEnd, scan.SplitLineBreak, paragraph.Children);
-                    output.Add(paragraph);
+                    var paragraph = _tree.StartNode(SyntaxKind.Paragraph);
+                    _inlineParser.ParseBeforePipeTable(subject, start, scan.LeadingEnd, scan.SplitLineBreak, _tree);
+                    _tree.EndNode(paragraph);
                 }
 
-                output.Add(ConvertPipeTable(subject, scan));
+                ConvertPipeTable(subject, scan);
             }
             finally
             {
@@ -1977,25 +1984,26 @@ internal sealed class BlockParser
             }
 
             start = scan.TrailingStart;
+            node = _tree.StartNode(SyntaxKind.Paragraph);
         }
 
-        output.Add(node);
+        _tree.EndNode(node);
     }
 
-    private BuildNode ConvertPipeTable(Subject subject, PipeTableScan scan)
+    private void ConvertPipeTable(Subject subject, PipeTableScan scan)
     {
-        var node = new BuildNode(SyntaxKind.PipeTable, scan.Rows.Count);
+        var node = _tree.StartNode(SyntaxKind.PipeTable);
         var elements = new List<(int Start, int End, int Kind)>();
         for (var i = 0; i < scan.Rows.Count; i++)
         {
             var row = scan.Rows[i];
-            var rowNode = new BuildNode(i switch
+            var rowNode = _tree.StartNode(i switch
             {
                 _ when !scan.HasDelimiterRow => SyntaxKind.TableRow,
                 0 => SyntaxKind.TableHeaderRow,
                 1 => SyntaxKind.TableDelimiterRow,
                 _ => SyntaxKind.TableRow,
-            }, row.Pipes.Count + row.Cells.Count);
+            });
 
             // The pipes (0), the cells (1) and the generic attributes (2), in the order of the text
             elements.Clear();
@@ -2006,40 +2014,40 @@ internal sealed class BlockParser
             var position = row.Start;
             foreach (var (start, end, kind) in elements)
             {
-                AddText(subject, rowNode, position, start);
+                AddText(subject, _tree, position, start);
                 position = Math.Max(position, end);
                 switch (kind)
                 {
                     case 0:
-                        rowNode.AddToken(SyntaxKind.PipeToken, subject.ToSourceStart(start), subject.ToSourceEnd(end));
+                        _tree.AddToken(SyntaxKind.PipeToken, subject.ToSourceStart(start), subject.ToSourceEnd(end));
                         break;
                     case 1 when i == 1 && scan.HasDelimiterRow:
-                        rowNode.AddToken(SyntaxKind.TableDelimiterToken, subject.ToSourceStart(start), subject.ToSourceEnd(end));
+                        _tree.AddToken(SyntaxKind.TableDelimiterToken, subject.ToSourceStart(start), subject.ToSourceEnd(end));
                         break;
                     case 1:
-                        var cell = new BuildNode(SyntaxKind.TableCell);
+                        var cell = _tree.StartNode(SyntaxKind.TableCell);
                         if (end > start)
                         {
-                            _inlineParser.ParseCell(subject, start, end, cell.Children);
+                            _inlineParser.ParseCell(subject, start, end, _tree);
                         }
 
-                        rowNode.Children.Add(cell);
+                        _tree.EndNode(cell);
                         break;
                     default:
-                        _inlineParser.ParseCell(subject, start, end, rowNode.Children);
+                        _inlineParser.ParseCell(subject, start, end, _tree);
                         break;
                 }
             }
 
-            AddText(subject, rowNode, position, row.End);
-            node.Children.Add(rowNode);
+            AddText(subject, _tree, position, row.End);
+            _tree.EndNode(rowNode);
         }
 
-        return node;
+        _tree.EndNode(node);
 
         // The text of the row that is in no cell, such as the Unicode whitespace that Markdig trims around a cell, is a text
         // token of the row, which the renderer does not write
-        static void AddText(Subject subject, BuildNode row, int start, int end)
+        static void AddText(Subject subject, TreeBuffer row, int start, int end)
         {
             var text = subject.Text;
             var lineStart = start;
@@ -2074,9 +2082,9 @@ internal sealed class BlockParser
 
     // A table: its header row, its delimiter row, and its other rows. The pipes are tokens of the rows, and the content of a
     // cell is its inlines.
-    private BuildNode ConvertTable(Block table)
+    private void ConvertTable(Block table)
     {
-        var node = new BuildNode(SyntaxKind.Table);
+        var node = _tree.StartNode(SyntaxKind.Table);
         var cells = new List<(int Start, int End)>();
         var pipes = new List<int>();
         for (var i = 0; i < table.LineCount; i++)
@@ -2084,7 +2092,7 @@ internal sealed class BlockParser
             var line = _lines[table.LineStart + i];
             cells.Clear();
             pipes.Clear();
-            var row = new BuildNode(i switch
+            var row = _tree.StartNode(i switch
             {
                 0 => SyntaxKind.TableHeaderRow,
                 1 => SyntaxKind.TableDelimiterRow,
@@ -2106,35 +2114,35 @@ internal sealed class BlockParser
             {
                 while (pipeIndex < pipes.Count && pipes[pipeIndex] < start)
                 {
-                    row.AddToken(SyntaxKind.PipeToken, pipes[pipeIndex], pipes[pipeIndex] + 1);
+                    _tree.AddToken(SyntaxKind.PipeToken, pipes[pipeIndex], pipes[pipeIndex] + 1);
                     pipeIndex++;
                 }
 
                 if (i == 1)
                 {
-                    row.AddToken(SyntaxKind.TableDelimiterToken, start, end);
+                    _tree.AddToken(SyntaxKind.TableDelimiterToken, start, end);
                 }
                 else
                 {
-                    var cell = new BuildNode(SyntaxKind.TableCell);
+                    var cell = _tree.StartNode(SyntaxKind.TableCell);
                     if (end > start)
                     {
-                        _inlineParser.Parse(Subject.FromTableCell(_text, start, end), 0, cell.Children);
+                        _inlineParser.Parse(Subject.FromTableCell(_text, start, end), 0, _tree);
                     }
 
-                    row.Children.Add(cell);
+                    _tree.EndNode(cell);
                 }
             }
 
             for (; pipeIndex < pipes.Count; pipeIndex++)
             {
-                row.AddToken(SyntaxKind.PipeToken, pipes[pipeIndex], pipes[pipeIndex] + 1);
+                _tree.AddToken(SyntaxKind.PipeToken, pipes[pipeIndex], pipes[pipeIndex] + 1);
             }
 
-            node.Children.Add(row);
+            _tree.EndNode(row);
         }
 
-        return node;
+        _tree.EndNode(node);
     }
 
     private void FindNextNonspace()
@@ -2215,9 +2223,25 @@ internal sealed class BlockParser
 
         public Block? Parent { get; } = parent;
 
-        public List<Block> Children { get; } = [];
+        private static readonly List<Block> NoChildren = [];
 
-        public Block? LastChild => Children.Count == 0 ? null : Children[^1];
+        private List<Block>? _children;
+
+        // The fields that few blocks use, apart so that the thousands of paragraphs and items of a document are small
+        private BlockExtra? _extra;
+
+        // The children: a leaf block has none, and allocates no list
+        public List<Block> Children => _children ?? NoChildren;
+
+        public Block? LastChild => _children is { Count: > 0 } children ? children[^1] : null;
+
+        private BlockExtra Extra => _extra ??= new();
+
+        public void AddChild(Block child) => (_children ??= []).Add(child);
+
+        public void InsertChild(int index, Block child) => (_children ??= []).Insert(index, child);
+
+        public void RemoveChild(Block child) => _children?.Remove(child);
 
         public bool Open { get; set; } = true;
 
@@ -2230,8 +2254,6 @@ internal sealed class BlockParser
 
         public List<BuildElement>? TrailingOrNull { get; private set; }
 
-        public int TokenCount => (LeadingOrNull?.Count ?? 0) + (TrailingOrNull?.Count ?? 0);
-
         // The range of the lines of a leaf block in the lines of the parser
         public int LineStart { get; set; }
 
@@ -2239,6 +2261,118 @@ internal sealed class BlockParser
 
         public ListData? ListData { get; set; }
 
+        public char FenceChar
+        {
+            get => _extra is null ? default : _extra.FenceChar;
+            set => Extra.FenceChar = value;
+        }
+
+        public int FenceLength
+        {
+            get => _extra is null ? default : _extra.FenceLength;
+            set => Extra.FenceLength = value;
+        }
+
+        public int FenceOffset
+        {
+            get => _extra is null ? default : _extra.FenceOffset;
+            set => Extra.FenceOffset = value;
+        }
+
+        public int HtmlBlockType
+        {
+            get => _extra is null ? default : _extra.HtmlBlockType;
+            set => Extra.HtmlBlockType = value;
+        }
+
+        // A definition: its terms, which are lines of the paragraph before it, where its marker is, and the blank lines that Markdig
+        // leaves in it, the last one being after its last block
+        public int TermLineStart
+        {
+            get => _extra is null ? default : _extra.TermLineStart;
+            set => Extra.TermLineStart = value;
+        }
+
+        // The captions of a figure, after its fences
+        public (int Start, int End) OpeningCaption
+        {
+            get => _extra is null ? default : _extra.OpeningCaption;
+            set => Extra.OpeningCaption = value;
+        }
+
+        public (int Start, int End) ClosingCaption
+        {
+            get => _extra is null ? default : _extra.ClosingCaption;
+            set => Extra.ClosingCaption = value;
+        }
+
+        public int TermLineCount
+        {
+            get => _extra is null ? default : _extra.TermLineCount;
+            set => Extra.TermLineCount = value;
+        }
+
+        public bool TermsTrimmed
+        {
+            get => _extra is null ? default : _extra.TermsTrimmed;
+            set => Extra.TermsTrimmed = value;
+        }
+
+        public int MarkerPosition
+        {
+            get => _extra is null ? default : _extra.MarkerPosition;
+            set => Extra.MarkerPosition = value;
+        }
+
+        public int BlankLineCount
+        {
+            get => _extra is null ? default : _extra.BlankLineCount;
+            set => Extra.BlankLineCount = value;
+        }
+
+        public bool LastIsBlankLine { get; set; }
+
+        // A footnote whose last line is blank, which a line that is not indented ends
+        public bool FootnoteLastLineBlank
+        {
+            get => _extra is null ? default : _extra.FootnoteLastLineBlank;
+            set => Extra.FootnoteLastLineBlank = value;
+        }
+
+        // A paragraph whose last line was not the header row of a table: GFM tries a paragraph once
+        public bool TableVisited { get; set; }
+
+        // A table: the number of cells of its delimiter row, and the empty cells added to its short rows
+        public int TableColumnCount
+        {
+            get => _extra is null ? default : _extra.TableColumnCount;
+            set => Extra.TableColumnCount = value;
+        }
+
+        public long TableAutocompletedCells
+        {
+            get => _extra is null ? default : _extra.TableAutocompletedCells;
+            set => Extra.TableAutocompletedCells = value;
+        }
+
+        // For a paragraph whose first lines are not a grid table, their number
+        public int GridLineCount { get; set; } = -1;
+
+        // A paragraph: its link reference definitions, then its inlines from ContentStart in its subject
+        public List<BuildElement>? DefinitionsOrNull { get; set; }
+
+        public int ContentStart { get; set; }
+
+        // The lines that the link reference definitions take
+        public int DefinitionLineCount { get; set; }
+
+        public Subject? Subject { get; set; }
+
+        public bool IsEmpty { get; set; }
+    }
+
+    private sealed class BlockExtra
+    {
         public char FenceChar { get; set; }
 
         public int FenceLength { get; set; }
@@ -2247,11 +2381,8 @@ internal sealed class BlockParser
 
         public int HtmlBlockType { get; set; }
 
-        // A definition: its terms, which are lines of the paragraph before it, where its marker is, and the blank lines that Markdig
-        // leaves in it, the last one being after its last block
         public int TermLineStart { get; set; }
 
-        // The captions of a figure, after its fences
         public (int Start, int End) OpeningCaption { get; set; }
 
         public (int Start, int End) ClosingCaption { get; set; }
@@ -2264,35 +2395,11 @@ internal sealed class BlockParser
 
         public int BlankLineCount { get; set; }
 
-        public bool LastIsBlankLine { get; set; }
-
-        // A footnote whose last line is blank, which a line that is not indented ends
         public bool FootnoteLastLineBlank { get; set; }
 
-        // A paragraph whose last line was not the header row of a table: GFM tries a paragraph once
-        public bool TableVisited { get; set; }
-
-        // A table: the number of cells of its delimiter row, and the empty cells added to its short rows
         public int TableColumnCount { get; set; }
 
         public long TableAutocompletedCells { get; set; }
-
-        // For a paragraph whose first lines are not a grid table, their number
-        public int GridLineCount { get; set; } = -1;
-
-        // A paragraph: its link reference definitions, then its inlines from ContentStart in its subject
-        public List<BuildNode> Definitions => DefinitionsOrNull ??= [];
-
-        public List<BuildNode>? DefinitionsOrNull { get; private set; }
-
-        public int ContentStart { get; set; }
-
-        // The lines that the link reference definitions take
-        public int DefinitionLineCount { get; set; }
-
-        public Subject? Subject { get; set; }
-
-        public bool IsEmpty { get; set; }
     }
 
     private sealed record ListData(bool Ordered, char BulletChar, int Start, char Delimiter, int Padding, int MarkerOffset, int MarkerStart, int MarkerEnd)

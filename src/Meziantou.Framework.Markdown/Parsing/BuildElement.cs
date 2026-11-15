@@ -3,24 +3,20 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Markdown.Parsing;
 
 /// <summary>
-/// A node or a token found by the parser, before the tree is built. A token is a range of the text: the characters that no
-/// token covers become trivia when the tree is built. A token is a value, so that the thousands of tokens of a document do
-/// not each allocate an object.
+/// A node or a token found by the parser, before the tree is built. The elements of a tree are in a flat list, in the order of
+/// the text: a node is followed by its descendants, so that building a tree allocates no list per node. A token is a range of the
+/// text: the characters that no token covers become trivia when the tree is built.
 /// </summary>
 [StructLayout(LayoutKind.Auto)]
 internal readonly struct BuildElement
 {
-    private BuildElement(BuildNode? node, SyntaxKind kind, int start, int end, int value)
+    private BuildElement(SyntaxKind kind, int start, int end, int value)
     {
-        Node = node;
         Kind = kind;
         Start = start;
         End = end;
         Value = value;
     }
-
-    /// <summary>Gets the node, or <see langword="null"/> for a token.</summary>
-    public BuildNode? Node { get; }
 
     public SyntaxKind Kind { get; }
 
@@ -28,12 +24,15 @@ internal readonly struct BuildElement
 
     public int End { get; }
 
-    /// <summary>Gets the columns of a tab that a container took part of, which a code line starts with.</summary>
+    /// <summary>
+    /// Gets the value of a token, such as the columns of a tab that a container took part of, which a code line starts with, or the
+    /// number of descendants of a node.
+    /// </summary>
     public int Value { get; }
 
-    public bool IsToken => Node is null;
+    public bool IsToken => Kind < SyntaxKind.Document;
 
-    public static BuildElement Token(SyntaxKind kind, int start, int end, int value = 0) => new(node: null, kind, start, end, value);
+    public static BuildElement Token(SyntaxKind kind, int start, int end, int value = 0) => new(kind, start, end, value);
 
-    public static implicit operator BuildElement(BuildNode node) => new(node, node.Kind, start: 0, end: 0, value: 0);
+    public static BuildElement Node(SyntaxKind kind, int descendantCount) => new(kind, start: 0, end: 0, descendantCount);
 }

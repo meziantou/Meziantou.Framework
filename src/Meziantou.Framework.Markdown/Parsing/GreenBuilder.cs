@@ -1,5 +1,3 @@
-using System.Buffers;
-using System.Runtime.InteropServices;
 using Meziantou.Framework.Language.InternalSyntax;
 using Green = Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Syntax.InternalSyntax;
@@ -21,91 +19,60 @@ internal sealed class GreenBuilder
     private static readonly Green.SyntaxTrivia CarriageReturnLineFeed = new((int)SyntaxKind.EndOfLineTrivia, "\r\n");
     private static readonly Green.SyntaxTrivia[] Spaces = [.. Enumerable.Range(1, 8).Select(count => new Green.SyntaxTrivia((int)SyntaxKind.WhitespaceTrivia, new string(' ', count)))];
 
+    // The tokens of one ASCII character without trivia, such as line endings, brackets and delimiters, by kind then character:
+    // the trees of every document share them
+    private static readonly Green.SyntaxToken?[]?[] AsciiTokens = new Green.SyntaxToken?[]?[(int)SyntaxKind.Document];
+
     private readonly string _text;
     private readonly List<TriviaSpan> _triviaSpans;
-    // Where the tokens start and end, in the order of the text
-    private readonly int[] _starts;
-    private readonly int[] _ends;
-    private int _tokenCount;
-    private readonly List<GreenNode?> _trivia = [];
+    private readonly TreeBuffer _elements;
+    private readonly GreenNodeStack _trivia = new();
+
+    // The children of the nodes being built: the children of a node are at the end, from where the node started
+    private readonly GreenNodeStack _children = new();
+
+    // The tokens of two or three characters without trivia, such as \r\n and **, which the tree shares
     private readonly Dictionary<(int Kind, int Length, long Characters), Green.SyntaxToken> _sharedTokens = [];
-    private int _tokenIndex;
+
+    // The token before the one being built: where it starts and ends
+    private bool _hasPrevious;
+    private int _previousStart;
+    private int _previousEnd;
     private int _triviaSpanIndex;
 
-    private GreenBuilder(string text, List<TriviaSpan> triviaSpans, int tokenCount)
+    private GreenBuilder(string text, TreeBuffer elements, List<TriviaSpan> triviaSpans)
     {
         _text = text;
         _triviaSpans = triviaSpans;
-        _starts = new int[tokenCount];
-        _ends = new int[tokenCount];
+        _elements = elements;
     }
 
-    public static GreenNode Build(string text, BuildNode document, List<TriviaSpan> triviaSpans)
+    /// <summary>Builds the tree of a document, the first element, which the other elements are the descendants of.</summary>
+    public static GreenNode Build(string text, TreeBuffer elements, List<TriviaSpan> triviaSpans)
     {
-        var builder = new GreenBuilder(text, triviaSpans, CountTokens(document));
-        builder.CollectTokens(document);
-
-        var children = new GreenNode?[document.Children.Count + 1];
-        for (var i = 0; i < document.Children.Count; i++)
+        var builder = new GreenBuilder(text, elements, triviaSpans);
+        var document = builder._elements[0];
+        var end = 1 + document.Value;
+        for (var index = 1; index < end;)
         {
-            children[i] = builder.BuildElement(document.Children[i]);
+            builder._children.Push(builder.BuildElement(ref index));
         }
 
         // The end of file token has the trivia after the last token
-        var index = builder._tokenCount;
-        children[^1] = new Green.SyntaxToken((int)SyntaxKind.EndOfFileToken, "", builder.CreateTrivia(builder.GetLeadingTrivia(index)), trailingTrivia: null, isMissing: false);
-        return new MarkdownNode(SyntaxKind.Document, children);
+        builder._children.Push(new Green.SyntaxToken((int)SyntaxKind.EndOfFileToken, "", builder.CreateTrivia(builder.GetTriviaSplit(text.Length), text.Length), trailingTrivia: null, isMissing: false));
+        return new MarkdownNode(SyntaxKind.Document, builder._children.From(0));
     }
 
-    private static int CountTokens(BuildNode node)
+    // Where the trivia between the previous token and a token that starts at nextStart is split: the trailing trivia of the
+    // previous token goes up to the end of its line, unless the token ends the line itself (a line ending, or a line of code)
+    private int GetTriviaSplit(int nextStart)
     {
-        var count = 0;
-        foreach (var child in node.Children)
-        {
-            count += child.Node is { } childNode ? CountTokens(childNode) : 1;
-        }
-
-        return count;
-    }
-
-    private void CollectTokens(BuildNode node)
-    {
-        foreach (var child in node.Children)
-        {
-            if (child.Node is { } childNode)
-            {
-                CollectTokens(childNode);
-                continue;
-            }
-
-            var previousEnd = _tokenCount == 0 ? 0 : _ends[_tokenCount - 1];
-            if (child.Start < previousEnd)
-            {
-                throw new InvalidOperationException($"The token {child.Kind} at {child.Start} starts before the end of the previous token, at {previousEnd}.");
-            }
-
-            _starts[_tokenCount] = child.Start;
-            _ends[_tokenCount] = child.End;
-            _tokenCount++;
-        }
-    }
-
-    // Where the trivia between the token before index and the token at index is split: the trailing trivia of the token
-    // before goes up to the end of its line, unless the token ends the line itself (a line ending, or a line of code)
-    private int GetTriviaSplit(int index)
-    {
-        var start = index == 0 ? 0 : _ends[index - 1];
-        if (index == 0)
+        var start = _previousEnd;
+        if (!_hasPrevious || (_previousEnd > _previousStart && _text[_previousEnd - 1] is '\r' or '\n'))
         {
             return start;
         }
 
-        if (_ends[index - 1] > _starts[index - 1] && _text[_ends[index - 1] - 1] is '\r' or '\n')
-        {
-            return start;
-        }
-
-        var nextStart = index < _tokenCount ? _starts[index] : _text.Length;
         var split = start;
         while (split < nextStart && _text[split] is not ('\r' or '\n'))
         {
@@ -120,67 +87,97 @@ internal sealed class GreenBuilder
         return split;
     }
 
-    private (int Start, int End) GetLeadingTrivia(int index) => (GetTriviaSplit(index), index < _tokenCount ? _starts[index] : _text.Length);
-
-    private (int Start, int End) GetTrailingTrivia(int index) => (_ends[index], GetTriviaSplit(index + 1));
-
-    private GreenNode BuildElement(BuildElement element)
+    // Where the token after the element at index starts, or where the text ends
+    private int GetNextTokenStart(int index)
     {
+        for (var i = index + 1; i < _elements.Count; i++)
+        {
+            if (_elements[i].IsToken)
+            {
+                return _elements[i].Start;
+            }
+        }
+
+        return _text.Length;
+    }
+
+    private GreenNode BuildElement(ref int index)
+    {
+        var element = _elements[index];
         if (element.IsToken)
         {
-            var token = element;
-            var index = _tokenIndex++;
-            var leading = CreateTrivia(GetLeadingTrivia(index));
-            var trailing = CreateTrivia(GetTrailingTrivia(index));
+            if (element.Start < _previousEnd)
+            {
+                throw new InvalidOperationException($"The token {element.Kind} at {element.Start} starts before the end of the previous token, at {_previousEnd}.");
+            }
+
+            var leading = CreateTrivia(GetTriviaSplit(element.Start), element.Start);
+            _hasPrevious = true;
+            _previousStart = element.Start;
+            _previousEnd = element.End;
+            var nextStart = GetNextTokenStart(index);
+            var trailing = CreateTrivia(element.End, GetTriviaSplit(nextStart));
+            index++;
 
             // The short tokens without trivia, such as line endings, brackets and delimiters, are shared: green nodes do not
             // know their position
-            var length = token.End - token.Start;
-            if (leading is null && trailing is null && token.Value == 0 && length is > 0 and <= 3)
+            var length = element.End - element.Start;
+            if (leading is null && trailing is null && element.Value == 0 && length is > 0 and <= 3)
             {
+                if (length == 1 && _text[element.Start] is var c && char.IsAscii(c))
+                {
+                    var tokens = Volatile.Read(ref AsciiTokens[(int)element.Kind]);
+                    if (tokens is null)
+                    {
+                        tokens = new Green.SyntaxToken?[128];
+                        tokens = Interlocked.CompareExchange(ref AsciiTokens[(int)element.Kind], tokens, comparand: null) ?? tokens;
+                    }
+
+                    if (Volatile.Read(ref tokens[c]) is not { } token)
+                    {
+                        token = new Green.SyntaxToken((int)element.Kind, AsciiStrings[c], leadingTrivia: null, trailingTrivia: null, isMissing: false);
+                        token = Interlocked.CompareExchange(ref tokens[c], token, comparand: null) ?? token;
+                    }
+
+                    return token;
+                }
+
                 long characters = 0;
-                for (var i = token.Start; i < token.End; i++)
+                for (var i = element.Start; i < element.End; i++)
                 {
                     characters = (characters << 16) | _text[i];
                 }
 
-                var key = ((int)token.Kind, length, characters);
+                var key = ((int)element.Kind, length, characters);
                 if (!_sharedTokens.TryGetValue(key, out var shared))
                 {
-                    shared = new Green.SyntaxToken((int)token.Kind, GetString(token.Start, token.End), leadingTrivia: null, trailingTrivia: null, isMissing: false);
+                    shared = new Green.SyntaxToken((int)element.Kind, GetString(element.Start, element.End), leadingTrivia: null, trailingTrivia: null, isMissing: false);
                     _sharedTokens.Add(key, shared);
                 }
 
                 return shared;
             }
 
-            var text = GetString(token.Start, token.End);
-            if (token.Value != 0)
+            var text = GetString(element.Start, element.End);
+            if (element.Value != 0)
             {
-                return new Green.SyntaxTokenWithValue<int>((int)token.Kind, text, token.Value, text, leading, trailing, isMissing: false);
+                return new Green.SyntaxTokenWithValue<int>((int)element.Kind, text, element.Value, text, leading, trailing, isMissing: false);
             }
 
-            return new Green.SyntaxToken((int)token.Kind, text, leading, trailing, isMissing: false);
+            return new Green.SyntaxToken((int)element.Kind, text, leading, trailing, isMissing: false);
         }
 
-        // The children are built in a rented buffer: the node copies them into its list
-        var node = element.Node!;
-        var count = node.Children.Count;
-        var children = ArrayPool<GreenNode?>.Shared.Rent(count);
-        try
+        var end = index + 1 + element.Value;
+        var first = _children.Count;
+        index++;
+        while (index < end)
         {
-            for (var i = 0; i < count; i++)
-            {
-                children[i] = BuildElement(node.Children[i]);
-            }
+            _children.Push(BuildElement(ref index));
+        }
 
-            return new MarkdownNode(node.Kind, children.AsSpan(0, count));
-        }
-        finally
-        {
-            children.AsSpan(0, count).Clear();
-            ArrayPool<GreenNode?>.Shared.Return(children);
-        }
+        var node = new MarkdownNode(element.Kind, _children.From(first));
+        _children.Truncate(first);
+        return node;
     }
 
     private string GetString(int start, int end)
@@ -193,15 +190,14 @@ internal sealed class GreenBuilder
         return _text[start..end];
     }
 
-    private GreenNode? CreateTrivia((int Start, int End) range)
+    private GreenNode? CreateTrivia(int start, int end)
     {
-        var (start, end) = range;
         if (start >= end)
         {
             return null;
         }
 
-        _trivia.Clear();
+        _trivia.Truncate(0);
         var position = start;
         while (position < end)
         {
@@ -214,7 +210,7 @@ internal sealed class GreenBuilder
             if (_triviaSpanIndex < _triviaSpans.Count && _triviaSpans[_triviaSpanIndex] is var span && span.Start <= position)
             {
                 var spanEnd = Math.Min(span.End, end);
-                _trivia.Add(new Green.SyntaxTrivia((int)span.Kind, GetString(position, spanEnd)));
+                _trivia.Push(new Green.SyntaxTrivia((int)span.Kind, GetString(position, spanEnd)));
                 position = spanEnd;
                 continue;
             }
@@ -227,11 +223,11 @@ internal sealed class GreenBuilder
                 if (c == '\r' && runEnd < end && _text[runEnd] == '\n')
                 {
                     runEnd++;
-                    _trivia.Add(CarriageReturnLineFeed);
+                    _trivia.Push(CarriageReturnLineFeed);
                 }
                 else
                 {
-                    _trivia.Add(c == '\n' ? LineFeed : new Green.SyntaxTrivia((int)SyntaxKind.EndOfLineTrivia, "\r"));
+                    _trivia.Push(c == '\n' ? LineFeed : new Green.SyntaxTrivia((int)SyntaxKind.EndOfLineTrivia, "\r"));
                 }
             }
             else if (c is ' ' or '\t' or '\v' or '\f')
@@ -244,7 +240,7 @@ internal sealed class GreenBuilder
                     runEnd++;
                 }
 
-                _trivia.Add(onlySpaces && runEnd - position <= Spaces.Length ? Spaces[runEnd - position - 1] : new Green.SyntaxTrivia((int)SyntaxKind.WhitespaceTrivia, GetString(position, runEnd)));
+                _trivia.Push(onlySpaces && runEnd - position <= Spaces.Length ? Spaces[runEnd - position - 1] : new Green.SyntaxTrivia((int)SyntaxKind.WhitespaceTrivia, GetString(position, runEnd)));
             }
             else
             {
@@ -254,13 +250,13 @@ internal sealed class GreenBuilder
                     runEnd++;
                 }
 
-                _trivia.Add(new Green.SyntaxTrivia((int)SyntaxKind.SkippedTextTrivia, GetString(position, runEnd)));
+                _trivia.Push(new Green.SyntaxTrivia((int)SyntaxKind.SkippedTextTrivia, GetString(position, runEnd)));
             }
 
             position = runEnd;
         }
 
-        return Green.SyntaxList.List(CollectionsMarshal.AsSpan(_trivia));
+        return Green.SyntaxList.List(_trivia.From(0));
     }
 
     private static string[] CreateAsciiStrings()

@@ -161,20 +161,20 @@ internal sealed class InlineParser
     }
 
     /// <summary>Parses the inlines of the subject from <paramref name="start"/>, without the whitespace around them, or only before them.</summary>
-    public void Parse(Subject subject, int start, List<BuildElement> output, bool trimEnd = true) => Parse(subject, start, subject.Length, output, trimEnd, inContext: false);
+    public void Parse(Subject subject, int start, TreeBuffer output, bool trimEnd = true) => Parse(subject, start, subject.Length, output, trimEnd, inContext: false);
 
     /// <summary>
     /// Parses the inlines of a range of the subject, a cell of a pipe table, which has no whitespace around it. The delimiters of
     /// emphasis read the characters around the range, as they do in the paragraph of the table.
     /// </summary>
-    public void ParseCell(Subject subject, int start, int end, List<BuildElement> output) => Parse(subject, start, end, output, trimEnd: false, inContext: true);
+    public void ParseCell(Subject subject, int start, int end, TreeBuffer output) => Parse(subject, start, end, output, trimEnd: false, inContext: true);
 
     /// <summary>
     /// Parses the inlines of a range of the subject, the lines of a paragraph before a pipe table, without the whitespace around
     /// them. The delimiters of emphasis after <paramref name="splitLineBreak"/> are text, as in Markdig, which moves the inlines
     /// after a line break that is in a delimiter out of it when the table has delimiters in them.
     /// </summary>
-    public void ParseBeforePipeTable(Subject subject, int start, int end, int splitLineBreak, List<BuildElement> output)
+    public void ParseBeforePipeTable(Subject subject, int start, int end, int splitLineBreak, TreeBuffer output)
     {
         // The lines can end with a hard line break that is a backslash, which Markdig does not write
         Begin(subject, start, end, trimEnd: end == start || subject.Text[end - 1] != '\n');
@@ -197,7 +197,7 @@ internal sealed class InlineParser
         Complete(output);
     }
 
-    private void Parse(Subject subject, int start, int end, List<BuildElement> output, bool trimEnd, bool inContext)
+    private void Parse(Subject subject, int start, int end, TreeBuffer output, bool trimEnd, bool inContext)
     {
         Begin(subject, start, end, trimEnd);
         if (inContext)
@@ -224,7 +224,7 @@ internal sealed class InlineParser
     }
 
     // The inlines that the delimiters make once all of them are read, and the tokens of the inlines
-    private void Complete(List<BuildElement> output)
+    private void Complete(TreeBuffer output)
     {
         ProcessEmphasis(stackBottom: null);
 
@@ -269,7 +269,6 @@ internal sealed class InlineParser
             MarkAbbreviations(_root);
         }
 
-        output.EnsureCapacity(output.Count + CountChildren(_root) + 1);
         for (var child = _root.FirstChild; child is not null; child = child.Next)
         {
             AddBuildElements(child, output);
@@ -282,7 +281,7 @@ internal sealed class InlineParser
     /// there is none, and adds the inlines of the paragraph to <paramref name="paragraph"/>. Else the inlines are not kept: the
     /// cells, and the lines around the table, are parsed afterwards.
     /// </summary>
-    public PipeTableScan? ScanPipeTable(Subject subject, int start, List<BuildElement> paragraph, bool trimEnd = true)
+    public PipeTableScan? ScanPipeTable(Subject subject, int start, TreeBuffer paragraph, bool trimEnd = true)
     {
         Begin(subject, start, subject.Length, trimEnd);
         _scanningPipeTable = true;
@@ -929,13 +928,16 @@ internal sealed class InlineParser
     }
 
     // Parses a link reference definition at the start of the subject. Returns where it ends, or -1 when there is none.
-    public int ParseReference(Subject subject, int start, out BuildNode? definition)
+    /// <summary>
+    /// Parses a link reference definition at the start of the subject, which is added to <paramref name="definitions"/>. Returns
+    /// where it ends, or -1 when there is none.
+    /// </summary>
+    public int ParseReference(Subject subject, int start, ref List<BuildElement>? definitions)
     {
         _subject = subject;
         _text = subject.Text;
         _end = _text.Length;
         _pos = start;
-        definition = null;
 
         var labelLength = ScanLinkLabel();
         if (labelLength == 0)
@@ -1000,16 +1002,20 @@ internal sealed class InlineParser
 
         _references.TryAdd(normalized, value: true);
 
-        definition = new BuildNode(SyntaxKind.LinkReferenceDefinition);
-        AddRange(definition, SyntaxKind.OpenBracketToken, start, start + 1);
-        AddRange(definition, SyntaxKind.LinkLabelToken, start + 1, labelEnd - 1);
-        AddRange(definition, SyntaxKind.CloseBracketToken, labelEnd - 1, labelEnd);
-        AddRange(definition, SyntaxKind.ColonToken, colon, colon + 1);
-        AddRange(definition, SyntaxKind.LinkDestinationToken, destinationStart, destinationEnd);
+        definitions ??= [];
+        var definition = definitions.Count;
+        definitions.Add(BuildElement.Node(SyntaxKind.LinkReferenceDefinition, 0));
+        AddRange(definitions, SyntaxKind.OpenBracketToken, start, start + 1);
+        AddRange(definitions, SyntaxKind.LinkLabelToken, start + 1, labelEnd - 1);
+        AddRange(definitions, SyntaxKind.CloseBracketToken, labelEnd - 1, labelEnd);
+        AddRange(definitions, SyntaxKind.ColonToken, colon, colon + 1);
+        AddRange(definitions, SyntaxKind.LinkDestinationToken, destinationStart, destinationEnd);
         if (titleStart >= 0)
         {
-            AddRange(definition, SyntaxKind.LinkTitleToken, titleStart, titleEnd);
+            AddRange(definitions, SyntaxKind.LinkTitleToken, titleStart, titleEnd);
         }
+
+        definitions[definition] = BuildElement.Node(SyntaxKind.LinkReferenceDefinition, definitions.Count - definition - 1);
 
         // The end of the line is part of the definition
         while (_pos < _end && _text[_pos] == ' ')
@@ -3553,36 +3559,25 @@ internal sealed class InlineParser
         }
     }
 
-    private void AddBuildElements(InlineNode node, List<BuildElement> result)
+    private void AddBuildElements(InlineNode node, TreeBuffer result)
     {
         if (node.IsToken)
         {
             if (node.End > node.Start)
             {
-                result.Add(BuildElement.Token(node.Kind, _subject.ToSourceStart(node.Start), _subject.ToSourceEnd(node.End), node.Value));
+                result.AddToken(node.Kind, _subject.ToSourceStart(node.Start), _subject.ToSourceEnd(node.End), node.Value);
             }
 
             return;
         }
 
-        var buildNode = new BuildNode(node.Kind, CountChildren(node));
+        var index = result.StartNode(node.Kind);
         for (var child = node.FirstChild; child is not null; child = child.Next)
         {
-            AddBuildElements(child, buildNode.Children);
+            AddBuildElements(child, result);
         }
 
-        result.Add(buildNode);
-    }
-
-    private static int CountChildren(InlineNode node)
-    {
-        var count = 0;
-        for (var child = node.FirstChild; child is not null; child = child.Next)
-        {
-            count++;
-        }
-
-        return count;
+        result.EndNode(index);
     }
 
     private InlineNode NewNode(SyntaxKind kind, int start, int end)
@@ -3596,22 +3591,22 @@ internal sealed class InlineParser
     }
 
     // Adds the tokens of a range of the subject, split at the line breaks
-    private void AddRange(BuildNode node, SyntaxKind kind, int start, int end)
+    private void AddRange(List<BuildElement> elements, SyntaxKind kind, int start, int end)
     {
         var lineStart = start;
         for (var i = start; i < end; i++)
         {
             if (_text[i] == '\n')
             {
-                node.AddToken(kind, _subject.ToSourceStart(lineStart), _subject.ToSourceEnd(i));
-                node.AddToken(SyntaxKind.LineEndingToken, _subject.ToSourceStart(i), _subject.ToSourceEnd(i + 1));
+                elements.Add(BuildElement.Token(kind, _subject.ToSourceStart(lineStart), _subject.ToSourceEnd(i)));
+                elements.Add(BuildElement.Token(SyntaxKind.LineEndingToken, _subject.ToSourceStart(i), _subject.ToSourceEnd(i + 1)));
                 lineStart = i + 1;
             }
         }
 
         if (end > lineStart)
         {
-            node.AddToken(kind, _subject.ToSourceStart(lineStart), _subject.ToSourceEnd(end));
+            elements.Add(BuildElement.Token(kind, _subject.ToSourceStart(lineStart), _subject.ToSourceEnd(end)));
         }
     }
 

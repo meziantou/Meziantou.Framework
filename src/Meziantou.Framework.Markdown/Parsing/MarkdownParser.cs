@@ -6,7 +6,8 @@ internal static class MarkdownParser
 {
     public static GreenNode Parse(string text, MarkdownParseOptions options, CellContext? cell = null)
     {
-        var (document, triviaSpans) = BlockParser.Parse(text, options, cell);
-        return GreenBuilder.Build(text, document, triviaSpans);
+        using var elements = new TreeBuffer(Math.Max(256, text.Length / 8));
+        var triviaSpans = BlockParser.Parse(text, options, elements, cell);
+        return GreenBuilder.Build(text, elements, triviaSpans);
     }
 }

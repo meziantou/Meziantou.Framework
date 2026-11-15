@@ -149,6 +149,44 @@ Assert.HasCount(3, updated.GetRoot().DescendantNodes().OfType<MarkdownListItemSy
 The text is inserted as it is: separate the new blocks from the others with a blank line when they would otherwise be
 read as one, such as two paragraphs. Removing the first block of a list item keeps the marker of the item.
 
+## Write Markdown
+
+[MarkdownEscaper](cref:Meziantou.Framework.Language.Markdown.MarkdownEscaper) writes text into Markdown, so that it is
+parsed back to the same text: [Escape](cref:Meziantou.Framework.Language.Markdown.MarkdownEscaper.Escape(System.String))
+escapes the ASCII punctuation of a text, and the other methods write a code span, a fenced code block, the destination, the
+title and the label of a link, and the text of a table cell.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownEscaper_Usage;format=md-fenced-code-block;dedent=true -->
+````csharp
+// Escape the text so that Markdown displays it as is: every ASCII punctuation character is escaped
+Assert.Equal(@"\*Note\* \[docs\]\!", MarkdownEscaper.Escape("*Note* [docs]!"));
+
+// The delimiters of code are longer than the runs of backticks of the content
+Assert.Equal("``a`b``", MarkdownEscaper.CreateCodeSpan("a`b"));
+Assert.Equal("`` `code` ``", MarkdownEscaper.CreateCodeSpan("`code`"));
+Assert.Equal("```csharp\nvar a = 1;\n```\n", MarkdownEscaper.CreateFencedCodeBlock("var a = 1;", "csharp"));
+
+// Build a link from untrusted parts
+var text = MarkdownEscaper.Escape("Docs [v2]");
+var destination = MarkdownEscaper.EscapeLinkDestination("https://example.com/a b");
+var title = MarkdownEscaper.EscapeLinkTitle("Say \"hi\"");
+Assert.Equal("<https://example.com/a b>", destination);
+Assert.Equal("\"Say \\\"hi\\\"\"", title);
+
+var html = MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText($"[{text}]({destination} {title})"));
+Assert.Equal("<p><a href=\"https://example.com/a%20b\" title=\"Say &quot;hi&quot;\">Docs [v2]</a></p>\n", html);
+
+// The label of a reference link
+Assert.Equal(@"see \[1\]", MarkdownEscaper.EscapeLinkLabel("see [1]"));
+
+// A cell of a pipe table cannot contain a pipe or a line ending
+Assert.Equal(@"a \| b c", MarkdownEscaper.EscapeTableCell("a | b\nc"));
+````
+<!-- endref -->
+
+The whitespace at the start and at the end of a line of escaped text is not kept, and a blank line starts a new paragraph.
+The line endings of a title are written as entities, as a line could start a block, and the ones of a table cell are spaces.
+
 ## Render HTML
 
 [MarkdownHtmlRenderer.ToHtml](cref:Meziantou.Framework.Language.Markdown.MarkdownHtmlRenderer.ToHtml(Meziantou.Framework.Language.Markdown.MarkdownSyntaxTree))

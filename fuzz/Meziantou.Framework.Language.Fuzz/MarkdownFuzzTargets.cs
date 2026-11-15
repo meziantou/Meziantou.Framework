@@ -46,12 +46,65 @@ internal static class MarkdownFuzzTargets
         EscapeNonAsciiUrlCharacters = false,
     };
 
+    private static readonly string[] EscaperTokens = ["\\", "`", "``", "```", "~~~", "*", "_", "[", "]", "(", ")", "<", ">", "&", "&amp;", "&#35;", "\"", "'", "|", "#", "-", "=", "!", " ", "\t", "\n", "\r\n", "\n\n", "\u00A0", "\u0000", "\u0085", "https://"];
+
     public static IReadOnlyList<FuzzTarget> Targets { get; } =
     [
         new("language-markdown", data => Parse(data, MarkdownParseOptions.Default)) { Seeds = GetSeeds, Dictionary = Tokens },
         new("language-markdown-gfm", data => Parse(data, MarkdownParseOptions.GitHubFlavored)) { Seeds = GetGfmSeeds, Dictionary = GfmTokens },
         new("language-markdown-extensions", data => Parse(data, (data.Length % 4) switch { 0 => AllExtensions, 2 => AllExtensionsWithPipeTableOptions, _ => AllExtensionsWithoutHtml })) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
+        new("language-markdown-escaper", Escape) { Seeds = GetEscaperSeeds, Dictionary = EscaperTokens },
     ];
+
+    // The text that MarkdownEscaper writes is parsed back to the same text, code, destination, title and label
+    private static void Escape(ReadOnlySpan<byte> data)
+    {
+        var text = FuzzText.Decode(data);
+
+        // The whitespace around the lines of a paragraph is not text, a blank line ends it, and the parser replaces NUL
+        var line = ToMarkdownLineEndings(text).Replace('\n', ' ').Replace('\0', ' ').Trim(' ', '\t');
+        if (line.Length > 0)
+        {
+            var escaped = MarkdownEscaper.Escape(line);
+            var paragraph = MarkdownSyntaxTree.ParseText(escaped).GetRoot().Blocks.Single();
+            FuzzAssert.True(paragraph is MarkdownParagraphSyntax && paragraph.GetPlainText() == line, $"The escaped text {FuzzAssert.Format(escaped)} is not the text {FuzzAssert.Format(line)}");
+
+            var cell = MarkdownEscaper.EscapeTableCell(line);
+            var table = MarkdownSyntaxTree.ParseText($"| a |\n|---|\n| {cell} |\n", MarkdownParseOptions.GitHubFlavored).GetRoot().Blocks.OfType<MarkdownTableSyntax>().Single();
+            FuzzAssert.True(table.Rows.Single().Cells.Single().GetPlainText() == line, $"The escaped cell {FuzzAssert.Format(cell)} is not the text {FuzzAssert.Format(line)}");
+        }
+
+        var content = text.Replace('\0', ' ');
+        if (content.Length > 0)
+        {
+            var codeSpan = MarkdownEscaper.CreateCodeSpan(content);
+            var code = MarkdownSyntaxTree.ParseText(codeSpan).GetRoot().DescendantNodes().OfType<MarkdownCodeSpanSyntax>().ToList();
+            var expected = ToMarkdownLineEndings(content).Replace('\n', ' ');
+            FuzzAssert.True(content.AsSpan().ContainsAny('\r', '\n') || (code.Count == 1 && code[0].Code == expected), $"The code span {FuzzAssert.Format(codeSpan)} is not the content {FuzzAssert.Format(content)}");
+        }
+
+        var destination = MarkdownEscaper.EscapeLinkDestination(content);
+        var title = MarkdownEscaper.EscapeLinkTitle(content);
+        var link = MarkdownSyntaxTree.ParseText($"[x]({destination} {title})").GetRoot().DescendantNodes().OfType<MarkdownLinkSyntax>().ToList();
+        FuzzAssert.True(link.Count == 1 && link[0].Destination == content && link[0].Title == content, $"The link destination {FuzzAssert.Format(destination)} or title {FuzzAssert.Format(title)} is not the text {FuzzAssert.Format(content)}");
+
+        var fence = MarkdownEscaper.CreateFencedCodeBlock(ToMarkdownLineEndings(content));
+        var block = MarkdownSyntaxTree.ParseText(fence).GetRoot().Blocks[0];
+        var expectedCode = ToMarkdownLineEndings(content);
+        FuzzAssert.True(block is MarkdownCodeBlockSyntax { IsFenced: true } codeBlock && codeBlock.Code == (expectedCode.Length == 0 || expectedCode[^1] == '\n' ? expectedCode : expectedCode + "\n"), $"The fenced code block {FuzzAssert.Format(fence)} is not the code {FuzzAssert.Format(content)}");
+    }
+
+    // The line endings of Markdown: string.ReplaceLineEndings also replaces U+0085, U+2028 and U+2029, which are text
+    private static string ToMarkdownLineEndings(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+
+    private static IEnumerable<FuzzSeed> GetEscaperSeeds()
+    {
+        string[] texts = ["plain text", "*test* **test** ***test*** _test_ ~test~", "1. test", "- test", "> test", "# header", "---", "===", "[test](url) ![test](url)", "&quot; &#35; &amp", "<div> <https://example.com> <a@b.c>", "`code` ``code``", "C:\\path\\file.txt \\\\ \\", "a | b", "a\n# b\n- c\n> d", "\u00E9 \u2713", "`teste```testr`", " a ", "a(b", "<a>", "a\"b'c", "a\n\nb", "```\ncode\n```", "    ```"];
+        for (var i = 0; i < texts.Length; i++)
+        {
+            yield return FuzzSeed.FromText($"escaper-{i + 1}", texts[i]);
+        }
+    }
 
     private static void Parse(ReadOnlySpan<byte> data, MarkdownParseOptions options)
     {

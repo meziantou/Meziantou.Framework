@@ -12,11 +12,12 @@ namespace Meziantou.Framework.Barcodes.Fuzz;
 /// with an <see cref="ArgumentOutOfRangeException"/>, and logo data that is not an image with an <see cref="ArgumentException"/>,
 /// exactly when the option is invalid; the scene has the size of the modules and the quiet zone, which Imaging measures, the
 /// SVG is XML and the image has the size of the scene, rounded up. The console renderers reject invalid options the same
-/// way, and give a line per two pixel rows of the modules, followed by the centered text of a linear barcode.
+/// way, and give a line per two pixel rows of the modules, followed by the centered text of a linear barcode. The text of
+/// EAN and UPC symbols is in groups, inside the scene, overlapping neither the bars nor the other groups.
 /// </summary>
 internal static class RenderFuzzTargets
 {
-    private const int KindCount = 15;
+    private const int KindCount = 16;
 
     private static readonly double[] ModuleSizes = [1, 2, 3, 0.5, 1.5, 2.6, 4, 7.3, 0.1, 0, -1, double.NaN, double.PositiveInfinity, 1e7, double.NegativeInfinity, 1e-300];
 
@@ -29,20 +30,25 @@ internal static class RenderFuzzTargets
     // A PNG image of 1x1 green pixel, the logo of the unit tests
     private static readonly byte[] GreenPng = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mNg+M8AAAICAQBF9FLUAAAAAElFTkSuQmCC");
 
-    // The data of each kind of symbol in the unit tests: QR codes, the linear barcodes, a stacked one, then 2D symbols
+    // The data of each kind of symbol in the unit tests: QR codes, the linear barcodes, a stacked one, then 2D symbols, and
+    // UPC-E. The data of EAN and UPC is followed by "+" and the add-on, if any.
     private static readonly string[] SeedTexts =
     [
         "HELLO WORLD", "12345", "HELLO",
         "ABC-123", "Hello 12345678", "Hello 12345678", "5512345", "590123412345", "03600029145", "40156", "12345678",
         "0950110153001",
         "Hello", "Hello", "Hello",
+        "0425261",
     ];
+
+    // The EAN and UPC data of the unit tests, with an add-on
+    private static readonly (int Kind, string Text)[] AddOnSeedTexts = [(6, "5512345+12"), (7, "978020137962+52499"), (8, "03600029145+12"), (15, "0425261+52495")];
 
     // The signatures of the image formats a logo can be, and the elements of an SVG document
     private static readonly string[] Tokens =
     [
         "\u0089PNG\r\n\u001A\n", "IHDR", "IDAT", "IEND", "ÿØÿ", "GIF89a", "GIF87a", "RIFF", "WEBP", "VP8 ", "VP8L",
-        "HELLO WORLD", "12345", "ABC-123", "590123412345", "0950110153001", "<", ">", "&", "\"", "'", "]]>", "\u0001", "\n", "\u001b[", "\u0085", "￾", "😀",
+        "HELLO WORLD", "12345", "ABC-123", "590123412345", "0950110153001", "0425261", "+12", "+52499", "<", ">", "&", "\"", "'", "]]>", "\u0001", "\n", "\u001b[", "\u0085", "￾", "😀",
     ];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
@@ -176,6 +182,10 @@ internal static class RenderFuzzTargets
         }
 
         FuzzAssert.Equal(new RectangleD(0, 0, scene.Width, scene.Height), measure(), "The measured rectangle is the size of the scene");
+        if (hasText && symbol is Barcode { EanUpcLayout: not null } eanUpc)
+        {
+            AssertEanUpcLayout(eanUpc, scene, fonts);
+        }
 
         var svg = toSvg();
         XDocument document;
@@ -328,15 +338,16 @@ internal static class RenderFuzzTargets
                 3 => Barcode.CreateCode39(text),
                 4 => Barcode.CreateCode93(text),
                 5 => Barcode.CreateCode128(text),
-                6 => Barcode.CreateEan8(text),
-                7 => Barcode.CreateEan13(text),
-                8 => Barcode.CreateUpcA(text),
+                6 => Barcode.CreateEan8(GetData(text), GetAddOn(text)),
+                7 => Barcode.CreateEan13(GetData(text), GetAddOn(text)),
+                8 => Barcode.CreateUpcA(GetData(text), GetAddOn(text)),
                 9 => Barcode.CreateCodabar(text),
                 10 => Barcode.CreateItf(text),
                 11 => Barcode.CreateGs1DataBarStacked(text),
                 12 => Barcode2D.CreateDataMatrix(text),
                 13 => Barcode2D.CreatePdf417(text),
-                _ => Barcode2D.CreateAztec(text),
+                14 => Barcode2D.CreateAztec(text),
+                _ => Barcode.CreateUpcE(GetData(text), GetAddOn(text)),
             };
         }
         catch (ArgumentException)
@@ -348,6 +359,48 @@ internal static class RenderFuzzTargets
             // The data does not fit
             return null;
         }
+    }
+
+    // The data of EAN and UPC, and the add-on after a "+"
+    private static string GetData(string text) => text.IndexOf('+', StringComparison.Ordinal) is var index and >= 0 ? text[..index] : text;
+
+    private static string? GetAddOn(string text) => text.IndexOf('+', StringComparison.Ordinal) is var index and >= 0 ? text[(index + 1)..] : null;
+
+    // The groups of digits are the text without its space, inside the scene, and overlap neither the bars nor each other; the
+    // start guard reaches the bottom of the bars
+    private static void AssertEanUpcLayout(Barcode barcode, Scene scene, SceneFontCollection fonts)
+    {
+        var tolerance = 1e-9 * Math.Max(1, Math.Max(scene.Width, scene.Height));
+        var measurer = new FontFaceTextMeasurer(fonts);
+        var texts = scene.Root.Children.OfType<SceneText>().ToArray();
+        FuzzAssert.Equal(barcode.Text.Replace(" ", "", StringComparison.Ordinal), string.Concat(texts.Select(text => text.Text)), "The groups of digits are the text");
+
+        var boxes = texts.Select(text => new RectangleD(text.X, text.Y, text.MeasuredWidth, measurer.Measure(text.Text, text.Font).Height)).ToArray();
+        var commands = scene.Root.Children.OfType<ScenePath>().Single().Data.Commands;
+        var bars = new RectangleD[commands.Count / 5];
+        for (var i = 0; i < bars.Length; i++)
+        {
+            var (left, top) = (commands[i * 5].X, commands[i * 5].Y);
+            bars[i] = new RectangleD(left, top, commands[(i * 5) + 2].X - left, commands[(i * 5) + 2].Y - top);
+        }
+
+        FuzzAssert.Equal(bars.Max(bar => bar.Bottom), bars[0].Bottom, "The start guard extends below the data bars");
+        for (var i = 0; i < boxes.Length; i++)
+        {
+            var box = boxes[i];
+            FuzzAssert.True(box.X >= -tolerance && box.Y >= -tolerance && box.Right <= scene.Width + tolerance && box.Bottom <= scene.Height + tolerance, $"The text '{texts[i].Text}' {box} is outside the scene ({scene.Width}x{scene.Height})");
+            foreach (var bar in bars)
+            {
+                FuzzAssert.False(Overlap(box, bar), $"The text '{texts[i].Text}' {box} overlaps the bar {bar}");
+            }
+
+            for (var j = i + 1; j < boxes.Length; j++)
+            {
+                FuzzAssert.False(Overlap(box, boxes[j]), $"The texts '{texts[i].Text}' and '{texts[j].Text}' overlap");
+            }
+        }
+
+        bool Overlap(RectangleD a, RectangleD b) => a.X < b.Right - tolerance && b.X < a.Right - tolerance && a.Y < b.Bottom - tolerance && b.Y < a.Bottom - tolerance;
     }
 
     private static (int Columns, int Rows, Func<int, int, bool> IsDark) GetModules(object symbol) => symbol switch
@@ -401,6 +454,22 @@ internal static class RenderFuzzTargets
             {
                 byte[] logo = variant.Logo ? [0, .. GreenPng] : [0, 1, 2, 3];
                 yield return new FuzzSeed($"scene-{kind}-{variant.Name}", (byte[])[(byte)kind, variant.ModuleSize, variant.ModuleHeight, variant.QuietZone, variant.Flags, variant.TextByte, variant.LogoSizePercent, .. FuzzText.Encode(SeedTexts[kind]), .. logo]);
+            }
+        }
+
+        // The layout of the digits of EAN and UPC with an add-on: the default text, a large font that shrinks to fit between
+        // the guards, no quiet zone, which widens the drawing for the digits outside the bars, and fractional sizes
+        (string Name, byte ModuleSize, byte ModuleHeight, byte QuietZone, byte Flags, byte TextByte)[] textVariants =
+        [
+            ("text", 1, 6, 12, 8, 0x00),
+            ("text-large-font", 0, 6, 2, 8, 0x04),
+            ("text-fractional", 4, 5, 3, 9, 0x2B),
+        ];
+        foreach (var (kind, text) in AddOnSeedTexts)
+        {
+            foreach (var variant in textVariants)
+            {
+                yield return new FuzzSeed($"scene-{kind}-addon-{variant.Name}", (byte[])[(byte)kind, variant.ModuleSize, variant.ModuleHeight, variant.QuietZone, variant.Flags, variant.TextByte, 0, .. FuzzText.Encode(text), 0]);
             }
         }
     }

@@ -222,7 +222,7 @@ that is not one of these formats throws an `ArgumentException`.
 
 ## Print the text under a barcode
 
-[Text](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.Text) prints the human-readable text ([Barcode.Text](cref:Meziantou.Framework.Barcodes.Barcode.Text)) centered under the
+[Text](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.Text) prints the human-readable text ([Barcode.Text](cref:Meziantou.Framework.Barcodes.Barcode.Text)) under the
 bars, in every format. The default font is OCR-B ([BarcodeFonts.OcrB](cref:Meziantou.Framework.Barcodes.BarcodeFonts.OcrB)), the font usually
 printed under EAN and UPC barcodes; [BarcodeFonts.OcrA](cref:Meziantou.Framework.Barcodes.BarcodeFonts.OcrA) and any font loaded with
 [SceneFontCollection](cref:Meziantou.Framework.VectorGraphics.SceneFontCollection) work too. The text is measured with the metrics of its font, so a viewer that draws the SVG
@@ -245,8 +245,20 @@ using var image = barcode.ToImage(options);
 ```
 <!-- endref -->
 
-![An EAN-13 barcode with its 13 digits printed in OCR-B under the bars](images/BarcodeText.png)
+![An EAN-13 barcode: its first digit left of the bars, then two groups of 6 digits between the longer guard bars](images/BarcodeText.png)
 
-A text wider than the bars widens the drawing, and the bars are centered above it. The
-[BarcodeTextOptions](cref:Meziantou.Framework.Barcodes.BarcodeTextOptions) also set the size of the font (14), the space between the bars and the
-text (2), and the paint of the text (the paint of the bars by default).
+EAN-8, EAN-13, UPC-A and UPC-E print their digits as the GS1 General Specifications do:
+
+- The guard bars (start, center and end) extend 5 modules below the other bars, and the digits are printed between
+  them: 4 and 4 digits for EAN-8, 6 and 6 for EAN-13, 5 and 5 for UPC-A, and 6 for UPC-E.
+- The digits that have no bars of their own are printed outside the bars: the first digit of EAN-13 on the left, the
+  number system digit of UPC-A and UPC-E on the left and their check digit on the right, smaller. The bars of the
+  first and last characters of UPC-A extend like the guards.
+- The digits of an add-on are printed above its bars, which start lower and end with the guard bars.
+- The quiet zone widens when it is too narrow for the digits outside the bars, and the font shrinks when a group of
+  digits is wider than the bars it is printed under: the font size is a maximum.
+
+The other symbologies print the text on one line, centered under the bars. A text wider than the bars widens the
+drawing, and the bars are centered above it. The [BarcodeTextOptions](cref:Meziantou.Framework.Barcodes.BarcodeTextOptions) also set the size of the font
+(14), the space between the bars and the text (2; for EAN and UPC, between the shorter bars and the digits), and the
+paint of the text (the paint of the bars by default).

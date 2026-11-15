@@ -35,8 +35,16 @@ public sealed class BarcodeRenderOptions
 
     /// <summary>Gets or sets the style of the human-readable text (<see cref="Barcode.Text"/>) printed under the bars. Default is <see langword="null"/>: no text.</summary>
     /// <remarks>
-    /// The text is centered under the bars. A text wider than the barcode widens the drawing, and the barcode is centered
-    /// above it.
+    /// <para>
+    /// EAN-8, EAN-13, UPC-A and UPC-E print their digits as the GS1 General Specifications do: the guard bars extend 5 modules
+    /// below the other bars, the digits are grouped between them, the digits that have no bars of their own are printed
+    /// outside the bars (widening the quiet zone when it is too narrow), and the digits of an add-on are printed above its
+    /// bars, which start lower. The font shrinks when a group is wider than the bars it is printed under.
+    /// </para>
+    /// <para>
+    /// The other symbologies print the text centered under the bars. A text wider than the barcode widens the drawing, and
+    /// the barcode is centered above it.
+    /// </para>
     /// </remarks>
     public BarcodeTextOptions? Text { get; set; }
 }

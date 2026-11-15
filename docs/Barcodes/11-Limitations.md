@@ -32,7 +32,6 @@ description: What the barcode packages do not do.
   encodes bytes without an ECI designator: there is no option to declare another encoding.
 - **Logos on QR codes only**, from the bytes of a PNG, JPEG, GIF or WebP file: not an SVG image, nor a URL. The
   modules under the logo are not cleared, and it has no backdrop.
-- **The human-readable text is one centered line**: the digits of EAN and UPC barcodes are not split into groups
-  around the guard bars, and the guard bars are not longer than the other bars. In the terminal, the text is written
-  in the font of the terminal.
+- **The human-readable text in the terminal is one centered line**, written in the font of the terminal: the digits of
+  EAN and UPC barcodes are grouped around longer guard bars in SVG, images and PDF only.
 - **Larger SVG documents than a hand-written path**: each run of dark modules is a rectangle of absolute coordinates.

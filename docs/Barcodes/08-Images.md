@@ -153,7 +153,7 @@ var options = new BarcodeRenderOptions
     ModuleHeight = 60,
     QuietZoneModules = 9,
     DarkPaint = new SceneColor(0x00, 0x33, 0x66),
-    Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 24 }, // prints barcode.Text, "5901234123457", under the bars
+    Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 24 }, // prints the digits of barcode.Text in groups under the bars
 };
 
 var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);

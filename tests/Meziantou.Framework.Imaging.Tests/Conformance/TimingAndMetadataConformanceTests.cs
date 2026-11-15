@@ -87,10 +87,10 @@ public sealed class TimingAndMetadataConformanceTests
             Assert.Equal(expected.Orientation, fields.TransformOrientation);
             Assert.Equal(expected.Cicp?.ToString(), fields.ContainerCicp?.ToString());
         }
-        else if (fixture.Entry.Format is "exr" or "hdr")
+        else if (fixture.Entry.Format is "exr" or "hdr" or "dds")
         {
             // The chromaticities of an OpenEXR file and the primaries of a Radiance HDR file: a CICP description for BT.2020
-            // and P3, the linear transfer function for BT.709
+            // and P3, the linear transfer function for BT.709; the sRGB description of the _SRGB formats of a DDS file
             Assert.Equal(expected.Cicp?.ToString(), fields.ContainerCicp?.ToString());
         }
         else

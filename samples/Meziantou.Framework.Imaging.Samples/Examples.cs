@@ -1674,6 +1674,29 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>DDS: the surfaces of a texture (mipmap levels, cube map faces, array elements, depth slices).</summary>
+    #region Imaging_DdsTexture
+    public static IReadOnlyList<string> ExportCubeFaces(string ddsPath, string outputDirectory)
+    {
+        // Image.Load gives the top level of the first face; a collection reaches every surface, decoded on demand
+        using var texture = ImageCollection.Load(ddsPath);
+        var written = new List<string>();
+        foreach (var entry in texture.Entries)
+        {
+            // Each entry says where it is in the texture: keep the full-size level of every face
+            if (entry.TextureSurface is not { MipLevel: 0, Face: { } face } surface)
+                continue;
+
+            var path = Path.Combine(outputDirectory, $"{surface.ArrayIndex}-{face}.png");
+            using var image = entry.Decode();
+            image.Save(path);
+            written.Add(path);
+        }
+
+        return written;
+    }
+    #endregion
+
     /// <summary>OpenEXR renderer outputs: one layer of a file with other channels, cropped to its display window.</summary>
     #region Imaging_OpenExrLayers
     public static (Image Image, Point Origin) LoadRenderLayer(string exrPath, string layer)

@@ -135,6 +135,7 @@ public sealed class CorpusManifestTests
                 "hdr" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/RadianceCorpus.cs",
                 "psd" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/PsdCorpus.cs",
                 "dng" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/DngCorpus.cs",
+                "dds" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/DdsCorpus.cs",
                 _ => "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs",
             };
             Assert.StartsWith(generator, fixture.Provenance.Generator);

@@ -58,6 +58,8 @@
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Psd\*.cs" LinkBase="TestHarness\Psd" />
     <!-- The builder of DNG files, their scenes and the independent renderer of their references -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Dng\*.cs" LinkBase="TestHarness\Dng" />
+    <!-- The builder of DDS files, the independent reader of their headers and uncompressed pixels, and the exact reference of the S3TC and RGTC blocks -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Dds\*.cs" LinkBase="TestHarness\Dds" />
   </ItemGroup>
 
   <ItemGroup>

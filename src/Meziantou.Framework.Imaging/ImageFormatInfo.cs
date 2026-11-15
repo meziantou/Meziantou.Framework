@@ -53,6 +53,7 @@ public sealed class ImageFormatInfo
         new(ImageFormat.Radiance, ["image/vnd.radiance", "image/x-hdr"], [".hdr", ".pic"]),
         new(ImageFormat.Psd, ["image/vnd.adobe.photoshop", "application/x-photoshop", "image/x-photoshop"], [".psd", ".psb"]),
         new(ImageFormat.Dng, ["image/x-adobe-dng", "image/dng"], [".dng"]),
+        new(ImageFormat.Dds, ["image/vnd-ms.dds", "image/x-dds"], [".dds"]),
     ];
 
     private static readonly ReadOnlyCollection<ImageFormatInfo> AllFormats = Array.AsReadOnly(Formats);

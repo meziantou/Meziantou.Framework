@@ -66,6 +66,7 @@ public static class FixtureOptions
             "hdr" => ImageFormat.Radiance,
             "psd" => ImageFormat.Psd,
             "dng" => ImageFormat.Dng,
+            "dds" => ImageFormat.Dds,
             _ => ImageFormat.Unknown,
         };
     }

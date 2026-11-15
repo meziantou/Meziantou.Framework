@@ -56,6 +56,7 @@
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Qoi.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Radiance.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Dng.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Dds.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tga.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tiff.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.WebP.Tests" />

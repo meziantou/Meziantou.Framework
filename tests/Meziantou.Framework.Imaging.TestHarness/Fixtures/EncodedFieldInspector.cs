@@ -38,6 +38,7 @@ public static class EncodedFieldInspector
         "hdr" => InspectRadiance(data),
         "psd" => InspectPsd(data),
         "dng" => InspectDng(data),
+        "dds" => InspectDds(data),
         _ => throw new ArgumentException($"Unknown fixture format '{format}'.", nameof(format)),
     };
 
@@ -100,6 +101,26 @@ public static class EncodedFieldInspector
         if (Dng.DngExifReference.Build(data.ToArray()) is { } exif)
         {
             result.Exif = exif;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// DDS: the color labels of the pixel format (<see cref="Dds.ReferenceDds"/>): the CICP description of sRGB for the
+    /// <c>_SRGB</c> formats, the linear transfer function for the floating-point formats.
+    /// </summary>
+    private static EncodedFields InspectDds(ReadOnlySpan<byte> data)
+    {
+        var (isSrgb, isLinear) = Dds.ReferenceDds.ReadColorLabels(data);
+        var result = new EncodedFields();
+        if (isSrgb)
+        {
+            result.ContainerCicp = new CicpExpectation { ColorPrimaries = 1, TransferCharacteristics = 13, MatrixCoefficients = 0, FullRange = true };
+        }
+        else if (isLinear)
+        {
+            result.TransferFunction = "linear";
         }
 
         return result;

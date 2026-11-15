@@ -4,7 +4,8 @@ using Meziantou.Framework.Imaging.Metadata;
 namespace Meziantou.Framework.Imaging;
 
 /// <summary>
-/// One entry of an <see cref="ImageCollection"/>: a page of a document or an alternative representation of a drawing.
+/// One entry of an <see cref="ImageCollection"/>: a page of a document, an alternative representation of a drawing, or a
+/// surface of a texture.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -75,6 +76,13 @@ public sealed class ImageCollectionEntry
     /// (<see cref="FrameMetadata.Hotspot"/>).
     /// </remarks>
     public Point? Hotspot { get; }
+
+    /// <summary>
+    /// Gets where the entry is in its texture (the element of the array, the face of the cube map, the mipmap level and the
+    /// depth slice) for an entry of a <see cref="ImageCollectionKind.TextureSurfaces"/> collection, otherwise
+    /// <see langword="null"/>.
+    /// </summary>
+    public TextureSurface? TextureSurface => _descriptor?.TextureSurface;
 
     /// <summary>Gets the metadata of the entry. Entries of one collection have independent metadata.</summary>
     public ImageMetadata Metadata => _descriptor?.Metadata ?? OwnedImage.Metadata;

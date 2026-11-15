@@ -4,7 +4,8 @@ using Meziantou.Framework.Fuzzing;
 namespace Meziantou.Framework.Imaging.Fuzz;
 
 /// <summary>
-/// The Radiance HDR and PSD codecs and the DNG decoder of <c>Meziantou.Framework.Imaging</c>, the image data of PNG files (inflation and
+/// The Radiance HDR, PSD and DDS codecs and the DNG decoder of <c>Meziantou.Framework.Imaging</c> (and the decoders of
+/// the BC1 to BC7 blocks), the image data of PNG files (inflation and
 /// reconstruction), the lossy compression of its GIF encoder, and its processing operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
 /// homography estimation and resizing; and the merging of the pieces of strokes. The inputs of the processing targets are
@@ -31,6 +32,8 @@ public static partial class ImagingFuzzTargets
         new("imaging-radiance", RadianceTarget) { Seeds = GetRadianceSeeds, Dictionary = RadianceTokens },
         new("imaging-psd", PsdTarget) { Seeds = GetPsdSeeds, Dictionary = PsdTokens },
         new("imaging-dng", DngTarget) { Seeds = GetDngSeeds, Dictionary = DngTokens },
+        new("imaging-dds", DdsTarget) { Seeds = GetDdsSeeds, Dictionary = DdsTokens },
+        new("imaging-dds-blocks", DdsBlockTarget) { Seeds = GetDdsBlockSeeds, Dictionary = Tokens },
         new("imaging-png-image-data", PngImageDataTarget) { Seeds = GetPngImageDataSeeds, Dictionary = PngImageDataTokens },
         new("imaging-gif-lossy", GifLossyTarget) { Seeds = GetGifLossySeeds, Dictionary = Tokens },
         new("imaging-processor", ProcessorTarget) { Seeds = GetProcessorSeeds, Dictionary = Tokens },

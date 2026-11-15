@@ -25,6 +25,7 @@ internal static class ImageFormatNames
         ImageFormat.Radiance => "Radiance HDR",
         ImageFormat.Psd => "PSD",
         ImageFormat.Dng => "DNG",
+        ImageFormat.Dds => "DDS",
         ImageFormat.Custom => "custom",
         _ => "image",
     };

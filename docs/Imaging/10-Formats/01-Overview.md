@@ -29,6 +29,7 @@ page per format: what is read, what is written, how to save with its encoder and
 | [Radiance HDR](18-Radiance.md) | RGBE pictures, flat and run-length encoded, every orientation | RGBE pictures, run-length encoded (default) or flat | No |
 | [PSD](19-Psd.md) | The composite image of PSD and PSB files (not the layers), 1 to 32 bits, CMYK and Lab with a color conversion | Not written | No |
 | [DNG](20-Dng.md) | Raw photos rendered to linear light, their raw mosaic, previews | Not written | No |
+| [DDS](21-Dds.md) | Textures: BC1 to BC7 and the common uncompressed formats, mipmaps, cube maps, arrays, volume textures | Not written | No (surfaces) |
 
 What a format cannot store is never dropped silently: saving an animation as JPEG, transparency to a format without
 it, 16-bit samples to an 8-bit format or metadata the format has no place for throws an
@@ -76,7 +77,7 @@ recognized from its whole header, and checked last. Data that no format recogniz
 | `.hdr`, `.pic` | [RadianceEncoder](cref:Meziantou.Framework.Imaging.Formats.RadianceEncoder) | Run-length encoded Radiance HDR |
 
 Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf` (JPEG 2000), `.psd` and `.psb`
-(Photoshop) and `.dng`: those files are read, not written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
+(Photoshop), `.dng` and `.dds`: those files are read, not written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
 files from photos: pass an encoder with lossy compression for them.
 
 ## Choosing a format
@@ -101,7 +102,8 @@ files from photos: pass an encoder with lossy compression for them.
 - **Icons and cursors**: ICO, CUR and ANI.
 - **Photoshop documents**: PSD and PSB files are read (their composite image), not written: save them as PNG, TIFF
   or another format.
-- **Tooling, game assets and test fixtures**: QOI, TGA, BMP and Netpbm are simple formats, lossless by default.
+- **Tooling, game assets and test fixtures**: QOI, TGA, BMP and Netpbm are simple formats, lossless by default. The
+  block-compressed textures of game engines (DDS) are read: decode their surfaces and save them in another format.
 
 To convert files from one format to another, see [Converting between formats](../03-Guides/03-ConvertBetweenFormats.md).
 
@@ -126,3 +128,4 @@ To convert files from one format to another, see [Converting between formats](..
 - [Radiance HDR](18-Radiance.md): RGBE pictures of lighting simulations and HDRI environment maps.
 - [PSD](19-Psd.md): the composite image of Adobe Photoshop documents, read only.
 - [DNG](20-Dng.md): raw photos of cameras and phones.
+- [DDS](21-Dds.md): the textures of Direct3D and game engines, and their mipmaps, cube maps and arrays.

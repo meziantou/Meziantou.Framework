@@ -8,7 +8,7 @@ Independent reference data for the conformance and interop tests, extended with 
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
   color conversion vectors: `icc`, `IccCorpus.cs`; the AV1 conformance vectors of the `av1Vectors` section: `avif`,
   `AvifCorpus.cs`; AVIF entries: `avif-container`, `AvifCorpus.Container.cs`; HEIC entries: `heic-container`,
-  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; Radiance HDR entries: `hdr`, `RadianceCorpus.cs`; PSD entries: `psd`, `PsdCorpus.cs`; DNG entries: `dng`, `DngCorpus.cs`; the HEVC
+  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; Radiance HDR entries: `hdr`, `RadianceCorpus.cs`; PSD entries: `psd`, `PsdCorpus.cs`; DNG entries: `dng`, `DngCorpus.cs`; DDS entries: `dds`, `DdsCorpus.cs`; the HEVC
   conformance vectors of the `hevcVectors` section: `hevc`, `HevcCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
   its SHA-256 hash, provenance and license.
 - The tests read this folder from the Git repository root (`FixtureRoot.GetDirectory()`). They never download anything
@@ -23,7 +23,7 @@ Independent reference data for the conformance and interop tests, extended with 
 
 ```
 tests/Meziantou.Framework.Imaging.Fixtures/
-  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/   hdr/   psd/   dng/
+  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/   hdr/   psd/   dng/   dds/
                                       encoded inputs and their raw references
   invalid/<format>/                   malformed, unsupported or over-limit inputs (expected errors, no expected pixels)
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
@@ -40,10 +40,13 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   (`png` for PNG and APNG, `gif`, `jpeg`, `webp`, `qoi`, `bmp`, `tga`, `pnm` for every Netpbm variant, `avif` for AVIF
   still images and image sequences, `heic` for HEIC still images and image sequences, `jxl` for JPEG XL codestreams and
   containers, `jp2` for JPEG 2000 codestreams and files of the JP2 family, whatever their block coder, `exr` for OpenEXR
-  files, `hdr` for Radiance HDR files, `psd` for PSD and PSB files, `dng` for DNG files). The expected frames of an
-  OpenEXR, a Radiance HDR, a 32-bit PSD or a DNG fixture are `rgbaf32le`
-  buffers: the 32-bit floats of its `RgbaHalf` or `RgbaFloat` pixels (a half converts to a float exactly), compared bit
-  for bit; they are no source of the encoder suites.
+  files, `hdr` for Radiance HDR files, `psd` for PSD and PSB files, `dng` for DNG files, `dds` for DDS textures). The
+  expected frames of an OpenEXR, a Radiance HDR, a 32-bit PSD or a DNG fixture, and of a DDS fixture of a floating-point
+  format, are `rgbaf32le` buffers: the 32-bit floats of its `RgbaHalf` or `RgbaFloat` pixels (a half converts to a float
+  exactly), compared bit for bit; they are no source of the encoder suites.
+  A DDS fixture of several surfaces (mipmaps, cube map faces, array elements, depth slices) lists them in `ddsSurfaces`,
+  in file order, each with its place in the texture and its pixels in the layout of the frame; the first one is the
+  image of the fixture.
 - Kinds: `valid` (expected pixels and metadata), `invalid` (malformed: expected exception), `unsupported` (recognized but
   unsupported feature: `UnsupportedImageFeatureException`), `limit` (decoded with `decodeOptions.limits`:
   `ImageResourceLimitException` with `limitKind`). Error fixtures never carry fabricated expected pixels and are kept
@@ -820,6 +823,7 @@ follows it, so keep both headings unique in this file.
 | --- | --- | --- | --- | --- |
 | avif | 189 | 45 | 28 | 12 |
 | bmp | 24 | 21 | 2 | 2 |
+| dds | 114 | 27 | 12 | 2 |
 | dng | 31 | 9 | 6 | 2 |
 | exr | 59 | 7 | 35 | 2 |
 | gif | 24 | 13 | 1 | 2 |
@@ -1635,6 +1639,84 @@ follows it, so keep both headings unique in this file.
 | DNG orientation other than 1 | `dng.orientation` | 1 | 0 | 0 | 0 |
 | DNG RowInterleaveFactor and ColumnInterleaveFactor | `dng.interleave` | 1 | 0 | 0 | 0 |
 | DNG XMP packet | `dng.xmp` | 1 | 0 | 0 | 0 |
+| DDS DX10 header | `dds.header=dx10` | 56 | 0 | 0 | 0 |
+| DDS legacy header | `dds.header=legacy` | 51 | 0 | 0 | 0 |
+| DDS BC1 blocks | `dds.format=bc1` | 13 | 0 | 0 | 0 |
+| DDS BC2 blocks | `dds.format=bc2` | 3 | 0 | 0 | 0 |
+| DDS BC3 blocks | `dds.format=bc3` | 6 | 0 | 0 | 0 |
+| DDS BC4 unsigned blocks | `dds.format=bc4` | 4 | 0 | 0 | 0 |
+| DDS BC4 signed blocks | `dds.format=bc4s` | 3 | 0 | 0 | 0 |
+| DDS BC5 unsigned blocks | `dds.format=bc5` | 5 | 0 | 0 | 0 |
+| DDS BC5 signed blocks | `dds.format=bc5s` | 3 | 0 | 0 | 0 |
+| DDS BC6H unsigned blocks | `dds.format=bc6h` | 3 | 0 | 0 | 0 |
+| DDS BC6H signed blocks | `dds.format=bc6hs` | 2 | 0 | 0 | 0 |
+| DDS BC7 blocks | `dds.format=bc7` | 7 | 0 | 0 | 0 |
+| DDS random blocks (every BC6H and BC7 mode) | `dds.blocks=random` | 29 | 0 | 0 | 0 |
+| DDS R8G8B8A8_UNORM | `dds.format=r8g8b8a8-unorm` | 5 | 0 | 0 | 0 |
+| DDS R8G8B8A8_UNORM_SRGB | `dds.format=r8g8b8a8-unorm-srgb` | 1 | 0 | 0 | 0 |
+| DDS R8G8B8A8_TYPELESS | `dds.format=r8g8b8a8-typeless` | 1 | 0 | 0 | 0 |
+| DDS B8G8R8A8_UNORM | `dds.format=b8g8r8a8-unorm` | 1 | 0 | 0 | 0 |
+| DDS B8G8R8A8_UNORM_SRGB | `dds.format=b8g8r8a8-unorm-srgb` | 1 | 0 | 0 | 0 |
+| DDS B8G8R8X8_UNORM | `dds.format=b8g8r8x8-unorm` | 1 | 0 | 0 | 0 |
+| DDS B5G6R5_UNORM | `dds.format=b5g6r5-unorm` | 1 | 0 | 0 | 0 |
+| DDS B5G5R5A1_UNORM | `dds.format=b5g5r5a1-unorm` | 1 | 0 | 0 | 0 |
+| DDS B4G4R4A4_UNORM | `dds.format=b4g4r4a4-unorm` | 1 | 0 | 0 | 0 |
+| DDS R10G10B10A2_UNORM | `dds.format=r10g10b10a2-unorm` | 1 | 0 | 0 | 0 |
+| DDS R16G16B16A16_UNORM | `dds.format=r16g16b16a16-unorm` | 1 | 0 | 0 | 0 |
+| DDS R16G16_UNORM | `dds.format=r16g16-unorm` | 1 | 0 | 0 | 0 |
+| DDS R8G8_UNORM | `dds.format=r8g8-unorm` | 1 | 0 | 0 | 0 |
+| DDS R8_UNORM | `dds.format=r8-unorm` | 1 | 0 | 0 | 0 |
+| DDS R16_UNORM | `dds.format=r16-unorm` | 1 | 0 | 0 | 0 |
+| DDS A8_UNORM | `dds.format=a8-unorm` | 1 | 0 | 0 | 0 |
+| DDS R16G16B16A16_FLOAT | `dds.format=r16g16b16a16-float` | 1 | 0 | 0 | 0 |
+| DDS R16G16_FLOAT | `dds.format=r16g16-float` | 1 | 0 | 0 | 0 |
+| DDS R16_FLOAT | `dds.format=r16-float` | 1 | 0 | 0 | 0 |
+| DDS R32G32B32A32_FLOAT | `dds.format=r32g32b32a32-float` | 1 | 0 | 0 | 0 |
+| DDS R32G32B32_FLOAT | `dds.format=r32g32b32-float` | 1 | 0 | 0 | 0 |
+| DDS R32G32_FLOAT | `dds.format=r32g32-float` | 1 | 0 | 0 | 0 |
+| DDS R32_FLOAT | `dds.format=r32-float` | 1 | 0 | 0 | 0 |
+| DDS R11G11B10_FLOAT | `dds.format=r11g11b10-float` | 1 | 0 | 0 | 0 |
+| DDS R9G9B9E5_SHAREDEXP | `dds.format=r9g9b9e5-sharedexp` | 1 | 0 | 0 | 0 |
+| DDS legacy A8R8G8B8 | `dds.format=legacy-a8r8g8b8` | 1 | 0 | 0 | 0 |
+| DDS legacy X8R8G8B8 | `dds.format=legacy-x8r8g8b8` | 1 | 0 | 0 | 0 |
+| DDS legacy A8B8G8R8 | `dds.format=legacy-a8b8g8r8` | 1 | 0 | 0 | 0 |
+| DDS legacy R8G8B8 (24 bits) | `dds.format=legacy-r8g8b8` | 1 | 0 | 0 | 0 |
+| DDS legacy R5G6B5 | `dds.format=legacy-r5g6b5` | 1 | 0 | 0 | 0 |
+| DDS legacy X1R5G5B5 | `dds.format=legacy-x1r5g5b5` | 1 | 0 | 0 | 0 |
+| DDS legacy A1R5G5B5 | `dds.format=legacy-a1r5g5b5` | 1 | 0 | 0 | 0 |
+| DDS legacy A4R4G4B4 | `dds.format=legacy-a4r4g4b4` | 1 | 0 | 0 | 0 |
+| DDS legacy X4R4G4B4 | `dds.format=legacy-x4r4g4b4` | 1 | 0 | 0 | 0 |
+| DDS legacy A8R3G3B2 | `dds.format=legacy-a8r3g3b2` | 1 | 0 | 0 | 0 |
+| DDS legacy R3G3B2 | `dds.format=legacy-r3g3b2` | 1 | 0 | 0 | 0 |
+| DDS legacy A2B10G10R10 | `dds.format=legacy-a2b10g10r10` | 1 | 0 | 0 | 0 |
+| DDS legacy A2R10G10B10 | `dds.format=legacy-a2r10g10b10` | 1 | 0 | 0 | 0 |
+| DDS legacy G16R16 | `dds.format=legacy-g16r16` | 1 | 0 | 0 | 0 |
+| DDS legacy L8 | `dds.format=legacy-l8` | 1 | 0 | 0 | 0 |
+| DDS legacy L16 | `dds.format=legacy-l16` | 1 | 0 | 0 | 0 |
+| DDS legacy A8L8 | `dds.format=legacy-a8l8` | 1 | 0 | 0 | 0 |
+| DDS legacy A4L4 | `dds.format=legacy-a4l4` | 1 | 0 | 0 | 0 |
+| DDS legacy A8 (DDPF_ALPHA) | `dds.format=legacy-a8` | 1 | 0 | 0 | 0 |
+| DDS FourCC 36 (A16B16G16R16) | `dds.format=fourcc-a16b16g16r16` | 1 | 0 | 0 | 0 |
+| DDS FourCC 111 (R16F) | `dds.format=fourcc-r16f` | 1 | 0 | 0 | 0 |
+| DDS FourCC 112 (G16R16F) | `dds.format=fourcc-g16r16f` | 1 | 0 | 0 | 0 |
+| DDS FourCC 113 (A16B16G16R16F) | `dds.format=fourcc-a16b16g16r16f` | 1 | 0 | 0 | 0 |
+| DDS FourCC 114 (R32F) | `dds.format=fourcc-r32f` | 1 | 0 | 0 | 0 |
+| DDS FourCC 115 (G32R32F) | `dds.format=fourcc-g32r32f` | 1 | 0 | 0 | 0 |
+| DDS FourCC 116 (A32B32G32R32F) | `dds.format=fourcc-a32b32g32r32f` | 1 | 0 | 0 | 0 |
+| DDS mipmaps | `dds.mips` | 11 | 0 | 0 | 0 |
+| DDS cube maps | `dds.cube` | 6 | 0 | 0 | 0 |
+| DDS partial cube maps | `dds.cube.partial` | 1 | 0 | 0 | 0 |
+| DDS texture arrays | `dds.array` | 5 | 0 | 0 | 0 |
+| DDS volume textures | `dds.volume` | 3 | 0 | 0 | 0 |
+| DDS 1D textures | `dds.dimension=1d` | 1 | 0 | 0 | 0 |
+| DDS surfaces after the first one (not read by a load) | `dds.trailingSurfaces` | 16 | 0 | 0 | 0 |
+| DDS sizes that are not multiples of 4 | `dds.oddSize` | 6 | 0 | 0 | 0 |
+| DDS alpha mode straight | `dds.alphaMode=straight` | 1 | 0 | 0 | 0 |
+| DDS alpha mode opaque | `dds.alphaMode=opaque` | 1 | 0 | 0 | 0 |
+| DDS alpha mode custom | `dds.alphaMode=custom` | 1 | 0 | 0 | 0 |
+| DDS written by texconv | `dds.writer=texconv` | 19 | 0 | 0 | 0 |
+| DDS assembled by texassemble | `dds.writer=texassemble` | 4 | 0 | 0 | 0 |
+| DDS written by ImageMagick | `dds.writer=magick` | 4 | 0 | 0 | 0 |
 
 Not covered by fixtures, and verified elsewhere: encoder outputs (independent readers, FFmpeg and Apple ImageIO), malformed-input robustness beyond the error
 fixtures (`FuzzTests/MutationFuzzTests`, `Tests.Shared/Suites/Decode/TruncationTests`), and limits at every boundary (`Tests.Shared/Suites/Decode/ResourceLimitBoundaryTests`).
@@ -2814,6 +2896,34 @@ tool version to see what changes; the interop CI job runs it on every build to d
   ```shell
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- psd          # check
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- psd --write  # replace the PSD fixtures, then review the diff
+  ```
+
+- `dds` (`DdsCorpus.cs`) generates the DDS fixtures; it replaces only the entries of format `dds` and their files (`dds/`,
+  `invalid/dds/`, `limit/dds/`). It runs on Windows: `texconv` and `texassemble` of DirectXTex (pinned in
+  `PinnedDirectXTex`, currently may2026, by the meziantou/prebuilt release of the `Meziantou.Prebuilt` package) are
+  Windows-only. The test harness assembles most files (`DdsFileBuilder`, written from the DDS reference of Microsoft
+  Learn): every uncompressed DXGI and legacy pixel format from random bytes or floating-point patterns, random blocks of
+  every block-compressed format (the mode bits of the BC7 and BC6H blocks cycle through every mode and a reserved one),
+  partial cube maps, a legacy volume texture, alpha modes and the malformed headers. `texconv` encodes patterns to the
+  block-compressed formats and generates mipmaps, `texassemble` builds a cube map, an array, a volume texture and an
+  array of cube maps, and ImageMagick (pinned in `PinnedMagick`) writes the files of a common third-party writer. The
+  references: the uncompressed formats are hand-computed by `ReferenceDds` (an independent reader of the harness) from
+  the definitions of their samples; BC1 to BC5 by `ReferenceS3tc`, from the rational numbers of the Khronos Data Format
+  Specification rounded once to the precision of the format; BC6H and BC7, defined in half-float bit patterns and
+  integers, are what `texconv` decodes, cross-checked with the raw samples `oiiotool --dumpdata` prints (OpenImageIO,
+  pinned in `PinnedOpenImageIo`), which must agree exactly. Every hand-computed reference is cross-checked with
+  `texconv` (decoding to 32-bit floats, which carry the exact fractions: its direct conversion to 8 bits replicates the
+  bits of 5-bit and 6-bit channels); the disagreements are recorded, and the generator fails on any other one:
+  DirectXTex rounds the exact midpoints of the three-color mode of BC1 either way (single precision), multiplies the
+  signed BC5 values by 1/127 (1 ulp from the nearest float), swaps the red and blue masks of the legacy 10:10:10:2
+  layouts, reads the 3:3:2 layouts through a wider format, and reads a legacy luminance with alpha as two channels. The
+  partial cube map, which `texconv` rejects, is cross-checked with ImageMagick (which misplaces the faces after the first
+  when they have mipmaps: the fixture has none). `texconv` must reject the invalid fixtures except the two wrong pitches,
+  which it ignores (as lenient decoding does), and the notes say which ones it reads:
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dds          # check (Windows)
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dds --write  # replace the DDS fixtures, then review the diff
   ```
 
 - `heic-container` (`HeicCorpus.Container.cs`: tools, references, cross-check and manifest entries;

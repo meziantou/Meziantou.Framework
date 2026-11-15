@@ -663,6 +663,16 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.CubeLut Parse(string text) => throw null;
     }
 
+    public enum CubeMapFace
+    {
+        PositiveX = 0,
+        NegativeX = 1,
+        PositiveY = 2,
+        NegativeY = 3,
+        PositiveZ = 4,
+        NegativeZ = 5,
+    }
+
     public abstract class CustomImageCodec
     {
         public Meziantou.Framework.Imaging.ImageFormatInfo FormatInfo { get => throw null; }
@@ -1142,6 +1152,7 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.ImageFormat PayloadFormat { get => throw null; }
         public Meziantou.Framework.Imaging.PixelFormat PixelFormat { get => throw null; }
         public Meziantou.Framework.Imaging.Size Size { get => throw null; }
+        public Meziantou.Framework.Imaging.TextureSurface? TextureSurface { get => throw null; }
         public Meziantou.Framework.Imaging.Image Decode(Meziantou.Framework.Imaging.ImageDecodeOptions? options) => throw null;
         public Meziantou.Framework.Imaging.Image Decode(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public Meziantou.Framework.Imaging.Image<TPixel> Decode<TPixel>(Meziantou.Framework.Imaging.ImageDecodeOptions? options) where TPixel : unmanaged => throw null;
@@ -1153,6 +1164,7 @@ namespace Meziantou.Framework.Imaging
         Unknown = 0,
         Pages = 1,
         Representations = 2,
+        TextureSurfaces = 3,
     }
 
     public enum ImageColorModel
@@ -1237,6 +1249,7 @@ namespace Meziantou.Framework.Imaging
         Radiance = 18,
         Psd = 19,
         Dng = 20,
+        Dds = 21,
         Custom = 1000,
     }
 
@@ -2300,6 +2313,15 @@ namespace Meziantou.Framework.Imaging
         public bool Contains(int dx, int dy) => throw null;
         public static Meziantou.Framework.Imaging.StructuringElement CreateEllipse(int radiusX, int radiusY) => throw null;
         public static Meziantou.Framework.Imaging.StructuringElement CreateRectangle(int radiusX, int radiusY) => throw null;
+    }
+
+    public sealed class TextureSurface
+    {
+        public int ArrayIndex { get => throw null; }
+        public int DepthSlice { get => throw null; }
+        public Meziantou.Framework.Imaging.CubeMapFace? Face { get => throw null; }
+        public int MipLevel { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     public enum ThresholdMethod

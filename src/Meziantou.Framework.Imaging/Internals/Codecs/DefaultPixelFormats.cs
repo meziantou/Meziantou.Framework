@@ -110,6 +110,28 @@ internal static class DefaultPixelFormats
     /// </summary>
     public static PixelFormat Dng => PixelFormat.RgbaFloat;
 
+    /// <summary>Selects the default pixel format of a DDS surface.</summary>
+    /// <param name="floatingPoint">
+    /// <see cref="PixelFormat.RgbaHalf"/> for the formats whose values are halves (half floats, BC6H, R11G11B10_FLOAT,
+    /// R9G9B9E5_SHAREDEXP), <see cref="PixelFormat.RgbaFloat"/> for single-precision floats and the signed BC4 and BC5
+    /// formats, or <see langword="null"/> for the unsigned normalized formats.
+    /// </param>
+    /// <param name="hasColor">Whether the format has a color channel (A8 has none).</param>
+    /// <param name="isGray">Whether the colors are one channel (red or luminance).</param>
+    /// <param name="hasAlpha">Whether the format stores alpha.</param>
+    /// <param name="is16Bit">Whether a channel is wider than 8 bits.</param>
+    /// <returns>The pixel format: <see cref="PixelFormat.A8"/> for an alpha mask, otherwise 8-bit or 16-bit gray, gray with alpha, RGB or RGBA, or the floating-point format.</returns>
+    public static PixelFormat ForDds(PixelFormat? floatingPoint, bool hasColor, bool isGray, bool hasAlpha, bool is16Bit)
+    {
+        if (floatingPoint is { } format)
+            return format;
+
+        if (!hasColor)
+            return PixelFormat.A8;
+
+        return Select(isGray, hasAlpha, is16Bit);
+    }
+
     /// <summary>Selects the default pixel format of a BMP image.</summary>
     /// <param name="hasAlphaMask">Whether the DIB layout defines a real (non-padding) alpha channel.</param>
     /// <returns><see cref="PixelFormat.Rgba32"/> for layouts with an alpha mask, otherwise <see cref="PixelFormat.Rgb24"/>.</returns>

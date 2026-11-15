@@ -1501,6 +1501,30 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ExportCubeFacesWritesTheTopLevelOfEveryFace()
+    {
+        // A cube map of 2x2 faces with two levels, R8G8B8A8_UNORM: the texels of a face are its index
+        var data = new byte[6 * (4 + 1) * 4];
+        for (var face = 0; face < 6; face++)
+        {
+            data.AsSpan(face * 20 * 1, 20).Fill((byte)(face * 40));
+        }
+
+        var builder = TestHarness.Dds.DdsFileBuilder.Dx10(2, 2, 28, data);
+        builder.MiscFlag = 4;
+        builder.MipMapCount = 2;
+        var path = GetPath("cube.dds");
+        File.WriteAllBytes(path, builder.Build());
+
+        var written = Examples.ExportCubeFaces(path, _directory);
+        Assert.HasCount(6, written);
+        Assert.EndsWith("0-NegativeZ.png", written[5], StringComparison.Ordinal);
+        using var negativeZ = Image.Load<Rgba32>(written[5]);
+        Assert.Equal(new Size(2, 2), negativeZ.Size);
+        Assert.Equal(new Rgba32(200, 200, 200, 200), negativeZ.Frames[0][1, 1]);
+    }
+
+    [Fact]
     public void ConvertRadianceKeepsTheHighlightsAndReportsTheExposure()
     {
         var hdr = GetPath("environment.hdr");

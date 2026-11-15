@@ -130,6 +130,115 @@ public sealed class DrawingFuzzTests
             Assert.Fail($"{failures.Count} fuzz failure(s):{Environment.NewLine}{string.Join(Environment.NewLine + Environment.NewLine, failures)}");
     }
 
+    [Fact]
+    public void StrokesPaintLikeTheirSeparatePieces()
+    {
+        // The pieces of a stroke that go to edges share the halves of their sides around each vertex, which cancel
+        // (EdgeBuilder.CancelOpposites), and the round joins of a curve that the bodies of its chords contain are not made
+        // (Stroker.CanDeferSmoothJoin). The union of the pieces is the same: the pixels must be those of the pieces kept
+        // apart, whatever the path, the pen, its dashes, the transformation and the antialiasing.
+        var random = new FuzzRandom(FuzzSettings.Seed ^ 0x5374726F6B655069UL);
+        var stopwatch = Stopwatch.StartNew();
+        var iterations = Math.Max(FuzzSettings.Iterations / 5, 1);
+        var failures = new List<string>();
+        var executed = 0;
+        for (var iteration = 0; iteration < iterations && failures.Count < 4; iteration++)
+        {
+            if (FuzzSettings.Duration is { } budget && stopwatch.Elapsed > budget)
+                break;
+
+            var caseSeed = random.NextUInt64();
+            executed++;
+            var failure = CheckStrokeAgainstSeparatePieces(caseSeed);
+            if (failure is not null)
+            {
+                failures.Add($"case seed {caseSeed}: {failure}");
+            }
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(FormattableString.Invariant($"strokes and their separate pieces: {executed} cases (base seed {FuzzSettings.Seed}) in {stopwatch.Elapsed.TotalSeconds:F1} s"));
+        if (failures.Count > 0)
+            Assert.Fail($"{failures.Count} fuzz failure(s):{Environment.NewLine}{string.Join(Environment.NewLine + Environment.NewLine, failures)}");
+    }
+
+    private static string? CheckStrokeAgainstSeparatePieces(ulong seed)
+    {
+        var random = new FuzzRandom(seed);
+        var width = random.Next(1, 48);
+        var height = random.Next(1, 48);
+        using var sprite = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 2, 2, random.Next);
+        var context = new FuzzContext(sprite.Frames[0], Erases: false);
+        using var merged = DrawingTestSupport.Create(PixelFormat.Rgba32, width, height, new ImageConfiguration { MaxDegreeOfParallelism = 1 });
+        using var separate = DrawingTestSupport.Create(PixelFormat.Rgba32, width, height, new ImageConfiguration { MaxDegreeOfParallelism = 1 });
+        var drawSeed = random.NextUInt64();
+        try
+        {
+            merged.Draw(canvas => Draw(canvas, new FuzzRandom(drawSeed), context));
+            Stroker.KeepsPiecesApartOnCurrentThread = true;
+            try
+            {
+                separate.Draw(canvas => Draw(canvas, new FuzzRandom(drawSeed), context));
+            }
+            finally
+            {
+                Stroker.KeepsPiecesApartOnCurrentThread = false;
+            }
+        }
+        catch (Exception exception) when (exception is ArgumentOutOfRangeException or UnsupportedImageFeatureException or ImageResourceLimitException)
+        {
+            // The stroke goes beyond the largest coordinate, what the session rejects, or edges beyond the allocation limit
+            // (the pieces kept apart have more of them)
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return $"exception: {exception}";
+        }
+
+        var expected = DrawingTestSupport.ReadSamples(separate.Frames[0]);
+        var actual = DrawingTestSupport.ReadSamples(merged.Frames[0]);
+        if (expected.AsSpan().SequenceEqual(actual))
+            return null;
+
+        var differences = 0;
+        var largest = 0;
+        for (var i = 0; i < expected.Length; i++)
+        {
+            if (expected[i] != actual[i])
+            {
+                differences++;
+                largest = Math.Max(largest, Math.Abs(expected[i] - actual[i]));
+            }
+        }
+
+        return FormattableString.Invariant($"the stroke and its separate pieces differ on {differences} samples (at most {largest}) in {width}x{height}");
+
+        static void Draw(DrawingCanvas canvas, FuzzRandom random, FuzzContext context)
+        {
+            // The pens far wider than the canvas cost seconds a case, twice: their strokes are fuzzed by Paint
+            var pen = random.Chance(25) ? CreateDashedPen(random, canvas, context) : CreatePen(random, canvas, context, widest: false);
+            if (pen.Width > 200)
+            {
+                pen = CreatePen(random, canvas, context, widest: false);
+            }
+
+            var path = random.Chance(30) ? CreatePolyline(random, canvas) : CreatePath(random, canvas);
+            var antialiasing = !random.Chance(20);
+            var transform = random.Chance(30) ? CreateTransform(random, canvas) : (AffineTransform?)null;
+            canvas.Antialiasing(antialiasing, canvas =>
+            {
+                if (transform is { } value)
+                {
+                    canvas.Transform(value, canvas => canvas.Stroke(pen, path));
+                }
+                else
+                {
+                    canvas.Stroke(pen, path);
+                }
+            });
+        }
+    }
+
     private static string? CheckWholePixelRectangle(ulong seed)
     {
         var random = new FuzzRandom(seed);

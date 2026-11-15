@@ -823,12 +823,51 @@ public sealed class DrawingReferenceTests
         return cases;
     }
 
+    [Theory]
+    [MemberData(nameof(StrokeCases))]
+    public void TheMergedPiecesOfAStrokeHaveTheAreaOfThePiecesKeptApart(string name)
+    {
+        var (_, path, pen) = CreateStrokeCases().Single(item => item.Name == name);
+
+        // The same shapes at a quarter of the size, to keep the exact reference fast
+        const int Size = 12;
+        var builder = new VectorPathBuilder();
+        PathFlattener.Flatten(path, new ScalingSink(builder, 0.25));
+        var small = builder.Build();
+        var smallPen = new Pen(pen.Brush, pen.Width / 4) { LineJoin = pen.LineJoin, LineCap = pen.LineCap, MiterLimit = pen.MiterLimit };
+
+        // The halves of sides that the pieces share cancel, and the joins of curves that their bodies contain are not made:
+        // the same area in every pixel, up to the rounding of the points where the sides are cut
+        var merged = GetStrokeEdges(small, smallPen, Size, Size);
+        var apart = GetStrokeEdges(small, smallPen, Size, Size, keepPiecesApart: true);
+        var mergedAreas = ReferenceCoverage.Compute([.. merged.Select(edge => new ReferenceEdge(edge.X0, edge.Y0, edge.X1, edge.Y1))], Size, Size, evenOdd: false);
+        var apartAreas = ReferenceCoverage.Compute([.. apart.Select(edge => new ReferenceEdge(edge.X0, edge.Y0, edge.X1, edge.Y1))], Size, Size, evenOdd: false);
+        var tolerance = Fraction.FromDouble(1e-9);
+        for (var i = 0; i < mergedAreas.Length; i++)
+        {
+            var difference = mergedAreas[i] - apartAreas[i];
+            if (!(difference <= tolerance && apartAreas[i] - mergedAreas[i] <= tolerance))
+            {
+                Assert.Fail(FormattableString.Invariant($"pixel {i}: the merged pieces differ by {(double)difference.Numerator / (double)difference.Denominator} from the pieces kept apart"));
+            }
+        }
+    }
+
     /// <summary>Runs the stroker of the library on a path and returns the directed edges of the pieces it fills.</summary>
-    private static List<(double X0, double Y0, double X1, double Y1)> GetStrokeEdges(VectorPath path, Pen pen, int width, int height)
+    private static List<(double X0, double Y0, double X1, double Y1)> GetStrokeEdges(VectorPath path, Pen pen, int width, int height, bool keepPiecesApart = false)
     {
         using var edges = new EdgeBuilder(AllocationScope.Create(configuration: null), width, height);
         var stroker = new Stroker(edges);
-        stroker.Configure(pen);
+        Stroker.KeepsPiecesApartOnCurrentThread = keepPiecesApart;
+        try
+        {
+            stroker.Configure(pen);
+        }
+        finally
+        {
+            Stroker.KeepsPiecesApartOnCurrentThread = false;
+        }
+
         PathFlattener.Flatten(path, stroker);
         var result = new List<(double X0, double Y0, double X1, double Y1)>();
         foreach (var edge in edges.Edges)

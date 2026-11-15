@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Markdown.Parsing;
 using GreenNode = Meziantou.Framework.Language.InternalSyntax.GreenNode;
+using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
 
 namespace Meziantou.Framework.Markdown;
 
@@ -21,6 +22,10 @@ public static class MarkdownHtmlRenderer
     };
 
     private static readonly SearchValues<char> EscapedCharacters = SearchValues.Create("&<>\"\0");
+
+    // The characters that code escapes: plain text only replaces \0
+    private static readonly SearchValues<char> SoftEscapedCharacters = SearchValues.Create("&<\0");
+    private static readonly SearchValues<char> PlainTextSoftEscapedCharacters = SearchValues.Create("\0");
 
     // The characters a URL keeps as they are: a % is kept only before two hexadecimal digits, so it is not one of them
     private static readonly SearchValues<char> UriSafeCharacters = SearchValues.Create("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;/?:@&=+$,-_.!~*'()#");
@@ -808,7 +813,7 @@ public static class MarkdownHtmlRenderer
                         AppendPragmaAnchor(heading);
                     }
 
-                    WriteInlines(heading.Inlines, keepTrailingLineBreak: true);
+                    WriteInlines(heading.ChildNodesAndTokens(), keepTrailingLineBreak: true, skippedKind: SyntaxKind.AtxHeadingMarkerToken, otherSkippedKind: SyntaxKind.AtxHeadingClosingSequenceToken, lastSkippedKind: SyntaxKind.SetextHeadingUnderlineToken);
                     Markup.Append("</h").Append(heading.Level).Append('>');
                     Cr();
                     break;
@@ -939,27 +944,30 @@ public static class MarkdownHtmlRenderer
                     Cr();
                     break;
 
-                case MarkdownCodeBlockSyntax { IsFenced: true, Language: "mermaid" or "nomnoml" } diagram when _diagrams:
-                {
-                    // A diagram is its code, where only < and & are escaped, in the element that its script reads
-                    var tag = diagram.Language == "mermaid" ? "pre" : "div";
-                    Cr();
-                    Markup.Append('<').Append(tag).Append(" class=\"").Append(diagram.Language).Append("\">");
-                    AppendCode(diagram, soft: true);
-                    Markup.Append("</").Append(tag).Append('>');
-                    Cr();
-                    break;
-                }
-
                 case MarkdownCodeBlockSyntax code:
+                {
+                    var language = code.Language;
+                    if (_diagrams && code.IsFenced && language is "mermaid" or "nomnoml")
+                    {
+                        // A diagram is its code, where only < and & are escaped, in the element that its script reads
+                        var tag = language == "mermaid" ? "pre" : "div";
+                        Cr();
+                        Markup.Append('<').Append(tag).Append(" class=\"").Append(language).Append("\">");
+                        AppendCode(code, soft: true);
+                        Markup.Append("</").Append(tag).Append('>');
+                        Cr();
+                        break;
+                    }
+
                     Cr();
                     Markup.Append("<pre><code");
-                    AppendAttributes(code, trailingClasses: code.Language is { } language ? "language-" + language : null);
+                    AppendAttributes(code, trailingClasses: language is not null ? "language-" + language : null);
                     Markup.Append('>');
                     AppendCode(code, soft: false);
                     Markup.Append("</code></pre>");
                     Cr();
                     break;
+                }
 
                 case MarkdownMathBlockSyntax math:
                     Cr();
@@ -1360,7 +1368,7 @@ public static class MarkdownHtmlRenderer
                     }
 
                     _trimmedCellTokens = GetTrimmedCellTokens(inlines);
-                    WriteInlines(first == 0 ? inlines : inlines.Skip(first));
+                    WriteInlines(inlines, first);
                     _trimmedCellTokens = default;
                 }
 
@@ -1394,15 +1402,32 @@ public static class MarkdownHtmlRenderer
             Markup.Append("</tr>\n");
         }
 
-        private void WriteInlines(IEnumerable<SyntaxNodeOrToken> inlines, bool keepTrailingLineBreak = false)
+        /// <summary>
+        /// Writes the inlines from <paramref name="start"/> to <paramref name="end"/>, or to the last one, without the tokens of the
+        /// kinds to skip: the delimiters that the Inlines property of a node leaves out. The children are enumerated as a
+        /// <see cref="ChildSyntaxList"/>, which allocates nothing.
+        /// </summary>
+        private void WriteInlines(ChildSyntaxList inlines, int start = 0, int end = int.MaxValue, bool keepTrailingLineBreak = false, SyntaxKind skippedKind = SyntaxKind.None, SyntaxKind otherSkippedKind = SyntaxKind.None, SyntaxKind lastSkippedKind = SyntaxKind.None)
         {
             // As in Markdig, a line break that only attributes follow ends the text, and is not written, as a hard line break that
             // ends the text, such as the one before a pipe table. In a heading, Markdig reads the line endings as text, and the back
             // links of a footnote come after the line break.
             SyntaxToken pendingLineBreak = default;
+            var index = -1;
             foreach (var child in inlines)
             {
-                if (child.AsNode() is MarkdownGenericAttributesSyntax)
+                index++;
+                if (index < start)
+                {
+                    continue;
+                }
+
+                if (index >= end)
+                {
+                    break;
+                }
+
+                if (child.AsNode() is MarkdownGenericAttributesSyntax || (child.IsToken && skippedKind != SyntaxKind.None && (SyntaxKind)child.RawKind is var kind && (kind == skippedKind || kind == otherSkippedKind || kind == lastSkippedKind)))
                 {
                     continue;
                 }
@@ -1537,7 +1562,7 @@ public static class MarkdownHtmlRenderer
                     Markup.Append('<').Append(tag);
                     AppendAttributes(emphasis);
                     Markup.Append('>');
-                    WriteInlines(emphasis.Inlines);
+                    WriteInlines(emphasis.ChildNodesAndTokens(), skippedKind: SyntaxKind.EmphasisDelimiterToken);
                     Markup.Append("</").Append(tag).Append('>');
                     break;
                 }
@@ -1546,7 +1571,7 @@ public static class MarkdownHtmlRenderer
                     Markup.Append("<del");
                     AppendAttributes(strikethrough);
                     Markup.Append('>');
-                    WriteInlines(strikethrough.Inlines);
+                    WriteInlines(strikethrough.ChildNodesAndTokens(), skippedKind: SyntaxKind.StrikethroughDelimiterToken);
                     Markup.Append("</del>");
                     break;
 
@@ -1565,7 +1590,9 @@ public static class MarkdownHtmlRenderer
                     Markup.Append('<').Append(tag);
                     AppendAttributes(extra);
                     Markup.Append('>');
-                    WriteInlines(extra.Inlines);
+                    // The inlines are between the two delimiters
+                    var children = extra.ChildNodesAndTokens();
+                    WriteInlines(children, start: 1, end: children.Count - 1);
                     Markup.Append("</").Append(tag).Append('>');
                     break;
                 }
@@ -1690,7 +1717,8 @@ public static class MarkdownHtmlRenderer
                     AppendTitle(link.Title);
                     AppendRel();
                     Markup.Append('>');
-                    WriteInlines(link.Text);
+                    // The text is between the opening bracket and the closing one
+                    WriteInlines(link.ChildNodesAndTokens(), start: 1, end: link.CloseIndex);
                     Markup.Append("</a>");
                     break;
             }
@@ -1987,17 +2015,24 @@ public static class MarkdownHtmlRenderer
         }
 
         // The code of a code block, as MarkdownCodeBlockSyntax.Code reads it, without building the string
+        // The lines are read from the green tokens: the renderer needs their text, not their position
         private void AppendCode(MarkdownCodeBlockSyntax code, bool soft)
         {
-            foreach (var token in code.ChildTokens())
+            if (code.Green.GetSlot(0) is not { } children)
             {
-                if (token.RawKind != (int)SyntaxKind.CodeLineToken)
+                return;
+            }
+
+            var count = children.IsList ? children.SlotCount : 1;
+            for (var i = 0; i < count; i++)
+            {
+                if ((children.IsList ? children.GetSlot(i) : children) is not GreenToken { RawKind: (int)SyntaxKind.CodeLineToken } token)
                 {
                     continue;
                 }
 
                 // The columns of a tab that a container took part of are spaces of the code
-                if (token.Value is int virtualSpaces)
+                if (token.GetValue() is int virtualSpaces)
                 {
                     _output.Append(' ', virtualSpaces);
                 }
@@ -2018,16 +2053,25 @@ public static class MarkdownHtmlRenderer
 
         private void AppendSoftEscaped(ReadOnlySpan<char> text)
         {
-            foreach (var c in text)
+            // The runs without a character to escape are written at once
+            var escaped = PlainText ? PlainTextSoftEscapedCharacters : SoftEscapedCharacters;
+            while (!text.IsEmpty)
             {
-                _ = c switch
+                var index = text.IndexOfAny(escaped);
+                if (index < 0)
                 {
-                    _ when PlainText && c != '\0' => _output.Append(c),
+                    _output.Append(text);
+                    return;
+                }
+
+                _output.Append(text[..index]);
+                _ = text[index] switch
+                {
                     '<' => _output.Append("&lt;"),
                     '&' => _output.Append("&amp;"),
-                    '\0' => _output.Append('\uFFFD'),
-                    _ => _output.Append(c),
+                    _ => _output.Append('\uFFFD'),
                 };
+                text = text[(index + 1)..];
             }
         }
 

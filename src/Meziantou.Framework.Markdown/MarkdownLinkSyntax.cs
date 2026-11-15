@@ -71,7 +71,7 @@ public sealed class MarkdownLinkSyntax : MarkdownInlineSyntax
     public SyntaxToken DestinationToken => GetToken(SyntaxKind.LinkDestinationToken);
 
     // The index of the bracket that ends the text: the first closing bracket that is a child of the link
-    private int CloseIndex
+    internal int CloseIndex
     {
         get
         {

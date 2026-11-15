@@ -17,7 +17,7 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
     public bool IsFenced => Kind() == SyntaxKind.FencedCodeBlock;
 
     /// <summary>Gets the opening fence, or the default token for an indented code block.</summary>
-    public SyntaxToken OpeningFenceToken => GetToken(SyntaxKind.CodeFenceToken);
+    public SyntaxToken OpeningFenceToken => GetLeadingToken(SyntaxKind.CodeFenceToken);
 
     /// <summary>Gets the closing fence, or the default token when there is none.</summary>
     public SyntaxToken ClosingFenceToken
@@ -30,10 +30,10 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
     }
 
     /// <summary>Gets the info string after the opening fence, or the default token when there is none.</summary>
-    public SyntaxToken InfoToken => GetToken(SyntaxKind.InfoStringToken);
+    public SyntaxToken InfoToken => GetLeadingToken(SyntaxKind.InfoStringToken);
 
     /// <summary>Gets the info string, without its escapes and entities, or <see langword="null"/> when there is none.</summary>
-    public string? Info => InfoToken.RawKind == 0 ? null : MarkdownText.Unescape(InfoToken.Text);
+    public string? Info => InfoToken is { RawKind: not 0 } info ? MarkdownText.Unescape(info.Text) : null;
 
     /// <summary>Gets the first word of the info string, which names the language of the code, or <see langword="null"/>.</summary>
     public string? Language
@@ -49,6 +49,25 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
             var language = space < 0 ? info : info[..space];
             return language.Length == 0 ? null : language;
         }
+    }
+
+    // A token of the opening fence: the fence and the info string are before the lines of the code
+    private SyntaxToken GetLeadingToken(SyntaxKind kind)
+    {
+        foreach (var token in ChildTokens())
+        {
+            if (token.RawKind == (int)kind)
+            {
+                return token;
+            }
+
+            if (token.RawKind == (int)SyntaxKind.CodeLineToken)
+            {
+                break;
+            }
+        }
+
+        return default;
     }
 
     /// <summary>Gets the tokens of the lines of the code, with their line endings.</summary>

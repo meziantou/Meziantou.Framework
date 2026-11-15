@@ -61,6 +61,39 @@ public sealed class SyntaxTreeInvariantTests
 
     [Theory]
     [MemberData(nameof(Documents))]
+    public void EnumeratingChildren_MatchesReadingThemByIndex(string text)
+    {
+        foreach (var node in Descendants(TestSyntax.ParseRoot(text)))
+        {
+            var children = node.ChildNodesAndTokens();
+            var index = 0;
+            foreach (var child in children)
+            {
+                Assert.Equal(children[index], child);
+                Assert.Equal(children[index].FullSpan, child.FullSpan);
+                index++;
+            }
+
+            Assert.Equal(children.Count, index);
+
+            // An enumerator that is reset walks the children again from the first one
+            var enumerator = children.GetEnumerator();
+            for (var pass = 0; pass < 2; pass++)
+            {
+                for (var i = 0; i < children.Count; i++)
+                {
+                    Assert.True(enumerator.MoveNext());
+                    Assert.Equal(children[i], enumerator.Current);
+                }
+
+                Assert.False(enumerator.MoveNext());
+                enumerator.Reset();
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Documents))]
     public void SpanIsInsideFullSpan(string text)
     {
         foreach (var node in Descendants(TestSyntax.ParseRoot(text)))

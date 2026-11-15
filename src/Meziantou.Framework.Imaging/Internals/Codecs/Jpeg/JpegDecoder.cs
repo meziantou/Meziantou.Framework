@@ -1465,9 +1465,6 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     {
         var (width, height) = _outputSize;
         var bandRows = _blockSize * _maxVertical;
-        if (_precision == 8 && _components.Length == 2)
-            throw Unsupported("Lossless JPEG frames of two components of 8-bit samples are not supported.", "JPEG 2 components of 8 bits");
-
         if (_precision != 8)
         {
             return _receiver is not null

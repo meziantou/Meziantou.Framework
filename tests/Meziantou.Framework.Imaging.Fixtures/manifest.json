@@ -31372,7 +31372,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -31474,7 +31474,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -31576,7 +31576,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -31677,7 +31677,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -31778,7 +31778,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -31879,7 +31879,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -31980,7 +31980,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -32082,7 +32082,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -32284,7 +32284,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -32385,7 +32385,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -32488,7 +32488,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -32587,9 +32587,10 @@
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
             "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
-            "result": "differs",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: dng_validate 1.7.1 leaves the samples unchanged with DeltaPerRow and DeltaPerColumn (measured with each opcode alone), where the specification adds the deltas; the other opcodes of the list agree."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -32689,9 +32690,10 @@
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
             "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
-            "result": "differs",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: dng_validate 1.7.1 leaves the samples unchanged with DeltaPerRow and DeltaPerColumn (measured with each opcode alone), where the specification adds the deltas; the other opcodes of the list agree."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -32793,7 +32795,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -32896,7 +32898,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -33060,7 +33062,7 @@
       "format": "dng",
       "input": {
         "path": "dng/float-32.dng",
-        "sha256": "a3239f05ea16118928550e55472668e75d447fd542d9f742247744ce9a35c914",
+        "sha256": "476534b3a115acaf828e15d1783614950e373efe07128e8e35e49c67d54b0b26",
         "role": "encoded"
       },
       "provenance": {
@@ -33106,9 +33108,9 @@
             "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
             "result": "differs",
             "excludedFromTolerance": true,
-            "maxAbsoluteError": 51,
-            "meanAbsoluteError": 2.0798,
-            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 50.2, mean 2.0798. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0079,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 0.41, mean 0.0079. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
           }
         ]
       },
@@ -33136,7 +33138,7 @@
             "buffers": [
               {
                 "path": "dng/float-32.frame-0.rgbaf32le.raw",
-                "sha256": "276a8f5a36cb8e75740aba3481884905fb6d972d4d5756dff73df76f7ce1a9d7",
+                "sha256": "0200ddaa41972c7eabbf8a51ef9015588c1131b11570f0cfba6b5e09bc4ba805",
                 "layout": "rgbaf32le",
                 "width": 32,
                 "height": 20,
@@ -33202,7 +33204,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -33264,7 +33266,7 @@
       "format": "dng",
       "input": {
         "path": "dng/linear-raw-rgb.dng",
-        "sha256": "a0f1dba48ef99c987a19769af79cc7864f5d68b11539993cc2f04824d3eb051b",
+        "sha256": "e9273137d584cfe67e55b5eb8505f1d55b29fe943ab55ff159adbe8f9e0ae5c8",
         "role": "encoded"
       },
       "provenance": {
@@ -33302,16 +33304,16 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
             "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
             "result": "differs",
             "excludedFromTolerance": true,
-            "maxAbsoluteError": 51,
-            "meanAbsoluteError": 2.0565,
-            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 50.2, mean 2.0565. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.008,
+            "notes": "Compared with the reference encoded to sRGB and clipped to [0, 1], in 8-bit units: max 0.42, mean 0.008. The DNG SDK demosaics with its own algorithm (the library interpolates bilinearly), and rolls off the highlights its exposure raises; the identity ProfileToneCurve and DefaultBlackRender 1 of the scene keep its rendering colorimetric."
           }
         ]
       },
@@ -33339,7 +33341,7 @@
             "buffers": [
               {
                 "path": "dng/linear-raw-rgb.frame-0.rgbaf32le.raw",
-                "sha256": "955bd9d395e494abf732b2b573de9c70dc5fbf0c31c0b776c8e9a4f13b6af581",
+                "sha256": "a190281bfb561985ca8b8dea6eb0107e353402c05bf4b7f05dff37cf919227bd",
                 "layout": "rgbaf32le",
                 "width": 40,
                 "height": 24,
@@ -33404,7 +33406,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -33501,9 +33503,10 @@
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
             "command": "dng_validate -1 {stage1} -2 {stage2} -32 -tif {render} {input}",
-            "result": "differs",
+            "result": "equivalent",
+            "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.501 units of 1/65535: dng_validate 1.7.1 leaves the samples unchanged with DeltaPerRow and DeltaPerColumn (measured with each opcode alone), where the specification adds the deltas; the other opcodes of the list agree."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.501 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -33807,7 +33810,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -33908,7 +33911,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.498 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.498 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -34009,7 +34012,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -34115,7 +34118,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -34226,7 +34229,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.5 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -34336,7 +34339,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",
@@ -34442,7 +34445,7 @@
             "result": "equivalent",
             "maxAbsoluteError": 0,
             "excludedFromTolerance": true,
-            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples."
+            "notes": "Its stage 1 is the samples of the scene, exactly. Its stage 2 differs from the linear values of the reference by at most 0.002 units of 1/65535: the rounding of its 16-bit samples (and the single precision of the reference)."
           },
           {
             "decoder": "Adobe DNG SDK 1.7.1 (dng_validate -32 -tif: the rendering, sRGB-encoded)",

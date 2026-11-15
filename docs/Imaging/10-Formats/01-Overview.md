@@ -27,6 +27,7 @@ is read, what is written, how to save with its encoder and its options, and the 
 | [JPEG 2000](16-Jpeg2000.md) | JP2 files and codestreams, up to 16 bits, HTJ2K | Lossless (default) or lossy, up to 16 bits | No |
 | [OpenEXR](17-OpenExr.md) | Half, float and integer samples, most compressions | Lossless half or float samples | No |
 | [Radiance HDR](18-Radiance.md) | RGBE pictures, flat and run-length encoded, every orientation | RGBE pictures, run-length encoded (default) or flat | No |
+| [DNG](19-Dng.md) | Raw photos rendered to linear light, their raw mosaic, previews | Not written | No |
 
 What a format cannot store is never dropped silently: saving an animation as JPEG, transparency to a format without
 it, 16-bit samples to an 8-bit format or metadata the format has no place for throws an
@@ -73,8 +74,8 @@ recognized from its whole header, and checked last. Data that no format recogniz
 | `.exr` | [OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) | ZIP-compressed OpenEXR |
 | `.hdr`, `.pic` | [RadianceEncoder](cref:Meziantou.Framework.Imaging.Formats.RadianceEncoder) | Run-length encoded Radiance HDR |
 
-Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf`: those JPEG 2000 files are read, not
-written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
+Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf` (JPEG 2000 files) and `.dng`: those
+files are read, not written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
 files from photos: pass an encoder with lossy compression for them.
 
 ## Choosing a format
@@ -120,3 +121,4 @@ To convert files from one format to another, see [Converting between formats](..
 - [JPEG 2000](16-Jpeg2000.md): lossless and lossy images for archives and imaging pipelines.
 - [OpenEXR](17-OpenExr.md): linear-light, floating-point images for rendering and visual effects.
 - [Radiance HDR](18-Radiance.md): RGBE pictures of lighting simulations and HDRI environment maps.
+- [DNG](19-Dng.md): raw photos of cameras and phones.

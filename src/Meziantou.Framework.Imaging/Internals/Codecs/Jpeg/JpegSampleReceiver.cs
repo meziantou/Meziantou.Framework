@@ -10,7 +10,7 @@ internal abstract class JpegSampleReceiver
     /// <summary>Validates the frame of the datastream against what the container declares, before anything is allocated.</summary>
     /// <param name="width">The width of the frame.</param>
     /// <param name="height">The height of the frame.</param>
-    /// <param name="componentCount">The number of components of the frame: 1, 3 or 4.</param>
+    /// <param name="componentCount">The number of components of the frame: 1, 3 or 4 (or 2 for a lossless frame whose receiver takes the stored samples).</param>
     /// <param name="precision">The number of bits of a sample: 8 or 12, or 2 to 16 for a lossless frame.</param>
     public abstract void OnFrame(int width, int height, int componentCount, int precision);
 

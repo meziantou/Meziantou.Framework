@@ -71,6 +71,9 @@ internal static class DngPipeline
                     for (var sample = 0; sample < samples; sample++)
                     {
                         double value = source[(x * samples) + sample];
+                        if (raw.IsFloatingPoint && !double.IsFinite(value))
+                            throw DngFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The raw image of the DNG file stores the floating-point sample {value} at ({area.X + x}, {area.Y + y}), which is not a light level."));
+
                         if (!raw.IsFloatingPoint)
                         {
                             var stored = DngSampleReader.Denormalize((float)value);

@@ -49,7 +49,8 @@ public static class DngScenes
             {
                 for (var p = 0; p < planes; p++)
                 {
-                    var value = black + (Field(x, y, width, height, (byte)p, 0) * (white - black));
+                    var response = p switch { 0 => 0.5, 2 => 0.7, _ => 1 };
+                    var value = black + (Field(x, y, width, height, (byte)p, 0) * (planes == 1 ? 1 : response) * (white - black));
                     samples[(((y * width) + x) * planes) + p] = round ? Math.Round(value, MidpointRounding.AwayFromZero) : value;
                 }
             }

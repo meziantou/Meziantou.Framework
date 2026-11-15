@@ -356,7 +356,7 @@ internal static partial class DngCorpus
             max2 = Math.Max(max2, Math.Abs((rendering.Stage2[i] * scale) - s2[i]) * (65535 / scale));
         }
 
-        var stage2Agrees = max2 <= 0.5000001 || (builder.IsFloatingPoint && max2 <= 0.01);
+        var stage2Agrees = max2 <= 0.501 || (builder.IsFloatingPoint && max2 <= 0.01);
         var stage2Check = new Obj
         {
             ["decoder"] = $"Adobe DNG SDK {c.Tools.DngSdkVersion} (dng_validate -1 and -2: the stored samples and the linear values of the active area, before demosaicing)",
@@ -367,7 +367,7 @@ internal static partial class DngCorpus
             ["notes"] = (hasList1 ? "Opcode list 1 changes the stored samples. " : "Its stage 1 is the samples of the scene, exactly. ")
                 + string.Create(CultureInfo.InvariantCulture, $"Its stage 2 differs from the linear values of the reference by at most {max2:0.###} units of 1/65535")
                 + (stage2Agrees
-                    ? (builder.IsFloatingPoint ? "." : ": the rounding of its 16-bit samples.")
+                    ? (builder.IsFloatingPoint ? "." : ": the rounding of its 16-bit samples (and the single precision of the reference).")
                     : (features.Contains("dng.opcodes=1")
                         ? ": the DNG SDK repairs bad pixels with its own interpolation, which the specification leaves to the reader (the library uses the mean of the good neighbors of the same color)."
                         : features.Contains("dng.black-level-pattern")

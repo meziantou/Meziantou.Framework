@@ -1652,6 +1652,28 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>DNG: a raw photo rendered, its raw mosaic before the demosaicing, and a display version.</summary>
+    #region Imaging_Dng
+    public static (Image<RgbaFloat> Rendering, Image<Rgba32> Display, string? Camera, float FirstLinearValue) ReadDng(string dngPath)
+    {
+        // DNG files render to RgbaFloat: scene-referred linear light (BT.709 primaries), the size of the default crop
+        var rendering = Image.Load<RgbaFloat>(dngPath);
+        var camera = rendering.Metadata.DngProperties?.UniqueCameraModel;
+
+        // The raw image before the demosaicing: the stored samples, the levels, the pattern and the linear values
+        using var raw = DngRawImage.Load(dngPath);
+        var row = new float[raw.ActiveArea.Width * raw.SamplesPerPixel];
+        raw.CopyLinearRow(0, row);
+
+        // The highlights are above 1: a display version tone maps them into 8-bit sRGB
+        var display = Image.Load<Rgba32>(dngPath, new ImageDecodeOptions
+        {
+            Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
+        });
+        return (rendering, display, camera, row[0]);
+    }
+    #endregion
+
     /// <summary>OpenEXR renderer outputs: one layer of a file with other channels, cropped to its display window.</summary>
     #region Imaging_OpenExrLayers
     public static (Image Image, Point Origin) LoadRenderLayer(string exrPath, string layer)

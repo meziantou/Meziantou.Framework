@@ -12,12 +12,12 @@ namespace Meziantou.Framework.Barcodes;
 /// </remarks>
 public static class QRCodeRenderer
 {
-    /// <summary>Creates the scene of the QR code: the quiet zone, the modules and the logo.</summary>
+    /// <summary>Creates the scene of the QR code: the quiet zone, the modules and the logo, on the modules it clears.</summary>
     /// <param name="qrCode">The QR code to render.</param>
     /// <param name="options">The rendering options, or <see langword="null"/> for the defaults.</param>
     /// <returns>The scene of the QR code, as large as the QR code and its quiet zone.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="qrCode"/> or <see cref="QRCodeRenderOptions.DarkPaint"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">An option is out of range, or the dimensions of the drawing are too large.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">An option is out of range, the dimensions of the drawing are too large, or the QR code cannot lose the modules cleared under the logo (<see cref="BarcodeLogo.ClearModules"/>).</exception>
     /// <exception cref="ArgumentException">The data of the logo is not a PNG, JPEG, GIF or WebP file.</exception>
     public static Scene CreateScene(this QRCode qrCode, QRCodeRenderOptions? options = null)
     {
@@ -26,6 +26,15 @@ public static class QRCodeRenderer
         ArgumentNullException.ThrowIfNull(options.DarkPaint);
         ArgumentOutOfRangeException.ThrowIfNegative(options.QuietZoneModules);
         var moduleSize = SymbolSceneBuilder.GetModuleSize(options.ModuleSize, options.SnapToPixels, nameof(options.ModuleSize));
+        SymbolLogo? logo = null;
+        if (options.Logo is not null)
+        {
+            logo = SymbolLogo.Create(options.Logo, qrCode.Height, qrCode.Width, moduleSize, moduleSize, options.QuietZoneModules, options.QuietZoneModules, options.SnapToPixels, nameof(options.Logo));
+            if (logo.ClearedModules is { } clearedModules)
+            {
+                QRLogoClearing.Validate(qrCode, clearedModules, nameof(options.Logo));
+            }
+        }
 
         return SymbolSceneBuilder.Create(new SymbolSceneContent(
             qrCode.Modules,
@@ -38,9 +47,8 @@ public static class QRCodeRenderer
             options.SnapToPixels,
             Text: null,
             TextValue: null,
-            options.Logo,
-            nameof(options.ModuleSize),
-            nameof(options.Logo)));
+            logo,
+            nameof(options.ModuleSize)));
     }
 
     /// <summary>Renders the QR code as an SVG document.</summary>
@@ -49,7 +57,7 @@ public static class QRCodeRenderer
     /// <param name="svgOptions">The options of the SVG writer, or <see langword="null"/> for the defaults.</param>
     /// <returns>The SVG document, without an XML declaration.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="qrCode"/> or <see cref="QRCodeRenderOptions.DarkPaint"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">An option is out of range, or the dimensions of the drawing are too large.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">An option is out of range, the dimensions of the drawing are too large, or the QR code cannot lose the modules cleared under the logo (<see cref="BarcodeLogo.ClearModules"/>).</exception>
     /// <exception cref="ArgumentException">The data of the logo is not a PNG, JPEG, GIF or WebP file.</exception>
     public static string ToSvg(this QRCode qrCode, QRCodeRenderOptions? options = null, SvgRenderOptions? svgOptions = null)
     {

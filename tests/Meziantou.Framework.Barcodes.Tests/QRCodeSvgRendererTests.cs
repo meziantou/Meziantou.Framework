@@ -166,7 +166,7 @@ public class QRCodeSvgRendererTests
         {
             ModuleSize = 10,
             QuietZoneModules = 4,
-            Logo = new BarcodeLogo(GreenPng) { SizePercent = 20 },
+            Logo = new BarcodeLogo(GreenPng) { SizePercent = 20, ClearModules = false },
         };
         var svg = qr.ToSvg(options);
 
@@ -188,6 +188,230 @@ public class QRCodeSvgRendererTests
         Snapshot.Validate(svg, SnapshotType.Svg);
     }
 
+    [Fact]
+    public void ToSvg_WithLogo_Backdrop_Snapshot()
+    {
+        var qr = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.H);
+        var options = new QRCodeRenderOptions
+        {
+            ModuleSize = 10,
+            QuietZoneModules = 4,
+            LightPaint = null,
+            Logo = new BarcodeLogo(GreenPng) { SizePercent = 20, MarginModules = 1, BackdropPaint = new SceneColor(0xee, 0xee, 0xee), BackdropCornerRadius = 1.5 },
+        };
+        var svg = qr.ToSvg(options);
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void Logo_ClearModules_SkipsExactlyTheModulesAroundTheLogo(int margin)
+    {
+        // Version 4 (33x33): the logo is 82x82 at (164, 164), over modules 12 to 20
+        var qr = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.H);
+        var scene = qr.CreateScene(new QRCodeRenderOptions { ModuleSize = 10, QuietZoneModules = 4, Logo = new BarcodeLogo(GreenPng) { MarginModules = margin } });
+        var image = Assert.IsType<SceneImage>(scene.Root.Children[^1]);
+        Assert.Equal((164d, 164d, 82d, 82d), (image.X, image.Y, image.Width, image.Height));
+
+        var first = 12 - margin;
+        var end = 21 + margin;
+        var drawn = GetDrawnModules(scene, qr, moduleSize: 10, quietZoneModules: 4);
+        for (var row = 0; row < qr.Height; row++)
+        {
+            for (var column = 0; column < qr.Width; column++)
+            {
+                var isCleared = row >= first && row < end && column >= first && column < end;
+                Assert.Equal(qr[row, column] && !isCleared, drawn[row, column]);
+            }
+        }
+
+        // No backdrop without a backdrop paint: the light paint shows
+        Assert.Equal(2, scene.Root.Children.OfType<SceneRectangle>().Count() + scene.Root.Children.OfType<ScenePath>().Count());
+    }
+
+    [Theory]
+    [InlineData(64, 32, 14, 19, 12, 21)]
+    [InlineData(32, 64, 12, 21, 14, 19)]
+    public void Logo_ClearModules_NonSquareLogo_ClearsTheBandItCovers(int logoWidth, int logoHeight, int firstRow, int endRow, int firstColumn, int endColumn)
+    {
+        // The logo keeps its proportions in its 82x82 square at (164, 164): a 2:1 logo covers 82x41 at (164, 184.5)
+        using var logoImage = new Image<Rgba32>(logoWidth, logoHeight, new Rgba32(0x25, 0x63, 0xeb));
+        using var logoStream = new MemoryStream();
+        logoImage.Save(logoStream, new PngEncoder());
+        var qr = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.H);
+        var scene = qr.CreateScene(new QRCodeRenderOptions { ModuleSize = 10, QuietZoneModules = 4, Logo = new BarcodeLogo(logoStream.ToArray()) });
+
+        var drawn = GetDrawnModules(scene, qr, moduleSize: 10, quietZoneModules: 4);
+        for (var row = 0; row < qr.Height; row++)
+        {
+            for (var column = 0; column < qr.Width; column++)
+            {
+                var isCleared = row >= firstRow && row < endRow && column >= firstColumn && column < endColumn;
+                Assert.Equal(qr[row, column] && !isCleared, drawn[row, column]);
+            }
+        }
+    }
+
+    public static TheoryData<string> LogoEncoders() => ["png", "gif", "jpeg", "webp-lossless", "webp-lossy"];
+
+    [Theory]
+    [MemberData(nameof(LogoEncoders))]
+    public void LogoImageSize_IsTheSizeOfTheDecodedImage(string format)
+    {
+        using var image = new Image<Rgba32>(37, 21, new Rgba32(0x25, 0x63, 0xeb));
+        using var stream = new MemoryStream();
+        image.Save(stream, format switch
+        {
+            "png" => new PngEncoder(),
+            "gif" => new GifEncoder(),
+            "jpeg" => new JpegEncoder(),
+            "webp-lossless" => new WebPEncoder(),
+            _ => new WebPEncoder { Compression = WebPCompression.Lossy },
+        });
+
+        Assert.True(Internal.LogoImageSize.TryGetSize(stream.ToArray(), out var width, out var height));
+        Assert.Equal((37, 21), (width, height));
+    }
+
+    [Fact]
+    public void LogoImageSize_ImageWithExif_IsUnknown()
+    {
+        // The orientation of the Exif metadata can turn the image: SOI, APP1 "Exif", then a start of frame of 2x1 pixels
+        byte[] jpeg = [0xFF, 0xD8, 0xFF, 0xE1, 0x00, 0x08, (byte)'E', (byte)'x', (byte)'i', (byte)'f', 0x00, 0x00, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x02, 0x01, 0x01, 0x11, 0x00];
+        Assert.False(Internal.LogoImageSize.TryGetSize(jpeg, out _, out _));
+
+        jpeg[6] = (byte)'X';
+        Assert.True(Internal.LogoImageSize.TryGetSize(jpeg, out var width, out var height));
+        Assert.Equal((2, 1), (width, height));
+    }
+
+    [Fact]
+    public void Logo_Backdrop_IsOnTheModuleBoundaries()
+    {
+        var qr = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.H);
+        var backdropPaint = new SceneColor(0xee, 0xee, 0xee);
+        var scene = qr.CreateScene(new QRCodeRenderOptions { ModuleSize = 10, QuietZoneModules = 4, Logo = new BarcodeLogo(GreenPng) { MarginModules = 1, BackdropPaint = backdropPaint, BackdropCornerRadius = 100 } });
+
+        // Modules 11 to 21, under the logo
+        var backdrop = Assert.IsType<SceneRectangle>(scene.Root.Children[^2]);
+        Assert.Equal((150d, 150d, 110d, 110d), (backdrop.X, backdrop.Y, backdrop.Width, backdrop.Height));
+        Assert.Equal(backdropPaint, Assert.IsType<SolidPaint>(backdrop.Fill).Color);
+
+        // The radius is at most half the side
+        Assert.Equal(55, backdrop.CornerRadius);
+    }
+
+    [Fact]
+    public void Logo_ClearModulesFalse_DrawsEveryModule()
+    {
+        var qr = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.L);
+        var scene = qr.CreateScene(new QRCodeRenderOptions { ModuleSize = 10, QuietZoneModules = 4, Logo = new BarcodeLogo(GreenPng) { ClearModules = false, BackdropPaint = SceneColor.White } });
+        var drawn = GetDrawnModules(scene, qr, moduleSize: 10, quietZoneModules: 4);
+
+        for (var row = 0; row < qr.Height; row++)
+        {
+            for (var column = 0; column < qr.Width; column++)
+            {
+                Assert.Equal(qr[row, column], drawn[row, column]);
+            }
+        }
+
+        Assert.Single(scene.Root.Children.OfType<SceneRectangle>());
+    }
+
+    [Theory]
+    [InlineData(ErrorCorrectionLevel.L)]
+    [InlineData(ErrorCorrectionLevel.M)]
+    public void Logo_ClearedAreaExceedsTheErrorCorrection_ThrowsArgumentOutOfRangeException(ErrorCorrectionLevel level)
+    {
+        // The 7x7 modules under the logo have modules of 10 codewords of a block, more than levels L and M recover
+        var qr = QRCode.Create("https://www.meziantou.net", level);
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => qr.CreateScene(new QRCodeRenderOptions { Logo = new BarcodeLogo(GreenPng) }));
+
+        Assert.Equal("Logo", exception.ParamName);
+        Assert.Contains("has modules of 10 codewords of an error correction block", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Logo_ClearedAreaCoversTheFormatInformation_ThrowsArgumentOutOfRangeException()
+    {
+        // Version 1 (21x21): a logo of 20% reaches the separators of the finder patterns
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.H);
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToSvg(new QRCodeRenderOptions { Logo = new BarcodeLogo(GreenPng) }));
+
+        Assert.Equal("Logo", exception.ParamName);
+        Assert.Contains("covers the module (7, 7) of a finder pattern", exception.Message, StringComparison.Ordinal);
+
+        // Drawing the modules under the logo is not checked
+        Assert.Contains("<image", qr.ToSvg(new QRCodeRenderOptions { Logo = new BarcodeLogo(GreenPng) { ClearModules = false } }), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Logo_SmallSymbols_ClearAccordingToTheirErrorCorrection()
+    {
+        // Micro QR codes and rMQR codes are small: a centered logo hits a codeword-heavy area, or the timing pattern of an rMQR code
+        var microQR = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.M);
+        Assert.Throws<ArgumentOutOfRangeException>(() => microQR.CreateScene(new QRCodeRenderOptions { Logo = new BarcodeLogo(GreenPng) { SizePercent = 10 } }));
+
+        var rmqr = QRCode.CreateRMQR("HELLO WORLD", ErrorCorrectionLevel.H);
+        Assert.Throws<ArgumentOutOfRangeException>(() => rmqr.CreateScene(new QRCodeRenderOptions { Logo = new BarcodeLogo(GreenPng) { SizePercent = 10 } }));
+    }
+
+    [Theory]
+    [InlineData(-1, 0d)]
+    [InlineData(0, -1d)]
+    [InlineData(0, double.NaN)]
+    [InlineData(0, double.PositiveInfinity)]
+    public void Logo_InvalidMarginOrCornerRadius_ThrowsArgumentOutOfRangeException(int margin, double cornerRadius)
+    {
+        var qr = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.H);
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => qr.CreateScene(new QRCodeRenderOptions { Logo = new BarcodeLogo(GreenPng) { MarginModules = margin, BackdropCornerRadius = cornerRadius } }));
+
+        Assert.Equal("Logo", exception.ParamName);
+    }
+
+    // The modules the dark path covers: the center of each module is in one of its rectangles
+    private static bool[,] GetDrawnModules(Scene scene, QRCode qr, double moduleSize, int quietZoneModules)
+    {
+        var path = Assert.Single(scene.Root.Children.OfType<ScenePath>()).Data;
+        var vertices = new List<(double X, double Y)>();
+        var rectangles = new List<(double Left, double Top, double Right, double Bottom)>();
+        foreach (var command in path.Commands)
+        {
+            if (command.Kind is PathCommandKind.MoveTo && vertices.Count > 0)
+            {
+                AddRectangle();
+            }
+
+            if (command.Kind is not PathCommandKind.Close)
+            {
+                vertices.Add((command.X, command.Y));
+            }
+        }
+
+        AddRectangle();
+        var drawn = new bool[qr.Height, qr.Width];
+        for (var row = 0; row < qr.Height; row++)
+        {
+            for (var column = 0; column < qr.Width; column++)
+            {
+                var x = (quietZoneModules + column + 0.5) * moduleSize;
+                var y = (quietZoneModules + row + 0.5) * moduleSize;
+                drawn[row, column] = rectangles.Any(rectangle => x > rectangle.Left && x < rectangle.Right && y > rectangle.Top && y < rectangle.Bottom);
+            }
+        }
+
+        return drawn;
+
+        void AddRectangle()
+        {
+            rectangles.Add((vertices.Min(point => point.X), vertices.Min(point => point.Y), vertices.Max(point => point.X), vertices.Max(point => point.Y)));
+            vertices.Clear();
+        }
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(101)]
@@ -205,14 +429,14 @@ public class QRCodeSvgRendererTests
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
 
-        Assert.Throws<ArgumentException>(() => qr.ToSvg(new QRCodeRenderOptions { Logo = new BarcodeLogo("<svg/>"u8.ToArray()) }));
+        Assert.Throws<ArgumentException>(() => qr.ToSvg(new QRCodeRenderOptions { Logo = new BarcodeLogo("<svg/>"u8.ToArray()) { ClearModules = false } }));
     }
 
     [Fact]
     public void ToSvg_Logo_IsCenteredOnTheSymbol()
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.H);
-        var scene = qr.CreateScene(new QRCodeRenderOptions { ModuleSize = 10, QuietZoneModules = 4, Logo = new BarcodeLogo(GreenPng) { SizePercent = 20 } });
+        var scene = qr.CreateScene(new QRCodeRenderOptions { ModuleSize = 10, QuietZoneModules = 4, Logo = new BarcodeLogo(GreenPng) { SizePercent = 20, ClearModules = false } });
         var image = Assert.IsType<SceneImage>(scene.Root.Children[^1]);
 
         // 290 * 20% = 58, centered in 290
@@ -258,12 +482,16 @@ public class QRCodeSvgRendererTests
         using var logoStream = new MemoryStream();
         logoImage.Save(logoStream, new PngEncoder());
 
-        // The error correction of level H recovers the modules under the logo
+        // The modules around the logo are not drawn: the error correction of level H recovers them
         var qrCode = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.H);
         var options = new QRCodeRenderOptions
         {
             ModuleSize = 4,
-            Logo = new BarcodeLogo(logoStream.ToArray()) { SizePercent = 20 },
+            Logo = new BarcodeLogo(logoStream.ToArray())
+            {
+                SizePercent = 20,
+                MarginModules = 1, // A ring of light modules around the logo
+            },
         };
 
         // Every output draws the logo

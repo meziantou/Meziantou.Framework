@@ -51,6 +51,46 @@ public sealed class DecodeInteropTests
 
     [Theory]
     [MemberData(nameof(DrawingVariants))]
+    public async Task QRCodesWithLogo_AreDecoded(string variant)
+    {
+        // At each level, a large logo the level accepts on the modules it clears in every variant (fractional sizes clear
+        // the modules the logo partly covers), then one with a backdrop
+        using var logoImage = new Image<Rgba32>(32, 32, Colors.White);
+        logoImage.Draw(canvas => canvas.FillCircle(new SolidBrush(new Rgba32(0x25, 0x63, 0xeb)), new PointD(16, 16), 14));
+        var logo = PngRendering.Encode(logoImage);
+        var data = new string('a', 120);
+        (ErrorCorrectionLevel Level, int SizePercent, int Margin, bool Backdrop)[] logos =
+        [
+            (ErrorCorrectionLevel.L, 10, 0, false),
+            (ErrorCorrectionLevel.M, 20, 1, false),
+            (ErrorCorrectionLevel.Q, 25, 1, false),
+            (ErrorCorrectionLevel.H, 30, 1, false),
+            (ErrorCorrectionLevel.H, 20, 1, true),
+        ];
+
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, ErrorCorrectionLevel Level)>();
+        foreach (var (level, sizePercent, margin, backdrop) in logos)
+        {
+            var path = directory.FullPath / $"qr-logo-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            var barcodeLogo = new BarcodeLogo(logo) { SizePercent = sizePercent, MarginModules = margin, BackdropPaint = backdrop ? (ScenePaint)new SceneColor(0xf0, 0xf0, 0xf0) : null, BackdropCornerRadius = backdrop ? 1.5 : 0 };
+            await File.WriteAllBytesAsync(path, RenderQRCode(QRCode.Create(data, level), variant, barcodeLogo), XunitCancellationToken);
+            cases.Add((path, level));
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, level) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: $"{level} {path}");
+            Assert.Equal(data, result.Text);
+            Assert.Equal(level.ToString(), result.ErrorCorrectionLevel);
+            Assert.Equal(["QR-Code:" + data], await tools.ReadWithZBarAsync(path));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingVariants))]
     public async Task Barcodes_AreDecoded(string variant)
     {
         var tools = await BarcodeTools.GetAsync();
@@ -820,13 +860,13 @@ public sealed class DecodeInteropTests
         yield return Barcode.CreateUpcE("0123456", extension: "12");
     }
 
-    private static byte[] RenderQRCode(QRCode qr, string variant)
+    private static byte[] RenderQRCode(QRCode qr, string variant, BarcodeLogo? logo = null)
     {
         if (variant is "ToImageScaled")
-            return qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 2 }, new SceneImageOptions { Scale = 2 });
+            return qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 2, Logo = logo }, new SceneImageOptions { Scale = 2 });
 
         if (variant is "ToImage")
-            return qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 4 });
+            return qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 4, Logo = logo });
 
         var options = variant switch
         {
@@ -835,6 +875,7 @@ public sealed class DecodeInteropTests
             "CanvasGradient" => new QRCodeRenderOptions { ModuleSize = 4, DarkPaint = new LinearGradientPaint(0, 0, 400, 400, [new SceneGradientStop(0, SceneColor.Black), new SceneGradientStop(1, new SceneColor(0x00, 0x33, 0x66))]) },
             _ => new QRCodeRenderOptions { ModuleSize = 4 },
         };
+        options.Logo = logo;
 
         var size = QRCodeImageRenderer.MeasureQRCode(qr, options);
         if (variant is "CanvasRotated")

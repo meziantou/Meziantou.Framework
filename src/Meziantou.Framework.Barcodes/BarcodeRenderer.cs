@@ -51,8 +51,7 @@ public static class BarcodeRenderer
             text,
             PrintableText.Create(barcode.Text),
             Logo: null,
-            nameof(options.ModuleWidth),
-            LogoParameterName: "");
+            nameof(options.ModuleWidth));
 
         // EAN and UPC print their digits in groups between the guards, which extend below the other bars
         if (text is not null && barcode.EanUpcLayout is { } layout)

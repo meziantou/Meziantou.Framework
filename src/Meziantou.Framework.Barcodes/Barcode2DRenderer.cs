@@ -38,8 +38,7 @@ public static class Barcode2DRenderer
             Text: null,
             TextValue: null,
             Logo: null,
-            nameof(options.ModuleSize),
-            LogoParameterName: ""));
+            nameof(options.ModuleSize)));
     }
 
     /// <summary>Renders the barcode as an SVG document.</summary>

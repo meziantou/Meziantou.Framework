@@ -364,6 +364,15 @@ public sealed class DrawingFuzzTests
         using var polygon = DrawingTestSupport.Create(format, width, height, configuration);
         DrawingTestSupport.WriteSamples(rectangle.Frames[0], samples);
         DrawingTestSupport.WriteSamples(polygon.Frames[0], samples);
+
+        // Several frames receive every row of the rectangle: the rows that copy the first one are copied on each frame
+        var hasSecondFrame = random.Chance(20);
+        if (hasSecondFrame)
+        {
+            rectangle.AppendFrame();
+            polygon.AppendFrame();
+        }
+
         var context = new FuzzContext(sprite.Frames[0], erases);
         var drawSeed = random.NextUInt64();
         try
@@ -380,7 +389,13 @@ public sealed class DrawingFuzzTests
             return $"exception: {exception}";
         }
 
-        return DrawingTestSupport.ReadSamples(rectangle.Frames[0]).AsSpan().SequenceEqual(DrawingTestSupport.ReadSamples(polygon.Frames[0])) ? null : $"the rectangle and the polygon differ on {format} {width}x{height}";
+        for (var i = 0; i < rectangle.Frames.Count; i++)
+        {
+            if (!DrawingTestSupport.ReadSamples(rectangle.Frames[i]).AsSpan().SequenceEqual(DrawingTestSupport.ReadSamples(polygon.Frames[i])))
+                return $"the rectangle and the polygon differ on frame {i} of {format} {width}x{height}";
+        }
+
+        return null;
 
         static void Draw(DrawingCanvas canvas, FuzzRandom random, FuzzContext context, bool asPolygon)
         {
@@ -388,7 +403,11 @@ public sealed class DrawingFuzzTests
             var top = random.Next(-5, canvas.Height + 5);
             var right = left + random.Next(0, canvas.Width + 5);
             var bottom = top + random.Next(0, canvas.Height + 5);
-            var brush = CreateBrush(random, canvas, context);
+            // An opaque color, or a color that replaces the pixels: the first row of a rectangle is copied to the others
+            // (DrawingSession.TryPaintUniformRectangle)
+            var brush = random.Chance(25)
+                ? new SolidBrush(CreateColor(random) with { A = random.Chance(70) ? ushort.MaxValue : (ushort)random.Next(65536) }) { CompositeMode = random.Chance(50) ? CompositeMode.SourceOver : CompositeMode.Source }
+                : CreateBrush(random, canvas, context);
             var antialiasing = !random.Chance(30);
             var clip = random.Next(3) switch
             {

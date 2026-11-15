@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -440,6 +441,20 @@ internal sealed class CoverageRasterizer : IDisposable
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Moves past the rows of a rectangle of whole pixels (<see cref="IsFullyCovered"/>) that <see cref="MoveNext"/> has
+    /// not returned yet, which all have the run of the current one. The caller checks the cancellation every
+    /// <see cref="ProcessingKernels.RowsPerCancellationCheck"/> rows, as <see cref="MoveNext"/> does.
+    /// </summary>
+    /// <returns>The first of these rows and the row after the last one.</returns>
+    public (int Top, int Bottom) TakeRemainingRectangleRows()
+    {
+        Debug.Assert(_isRectangle && Count != 0);
+        var top = _row;
+        _row = _lastRow;
+        return (top, _lastRow);
     }
 
     public void Dispose()

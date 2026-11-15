@@ -1094,7 +1094,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     the largest number of edges on one row. Two vertical edges of opposite directions on whole columns and between the
     same whole rows (a rectangle of whole pixels: `FillRectangle`, `Fill` and `Clear` of the canvas) are not swept:
     every row is the same run of full coverage (`TryGetWholePixelRectangle`), which `IsFullyCovered` hands to the
-    kernels so that they do not search it (`DrawingSource.IsFullyCovered`).
+    kernels so that they do not search it (`DrawingSource.IsFullyCovered`). When the paint gives every pixel of such a
+    run the same samples whatever they were (`DrawingKernels.IsUniformOverFullCoverage`: an opaque color, or a color
+    with `CompositeMode.Source`, through `TryCompositeFullRuns`), `DrawingSession.TryPaintUniformRectangle` composites
+    the first row and copies its pixel to the other rows (`ReplicateUniformRun`), checking the cancellation every
+    `RowsPerCancellationCheck` rows as the sweep does. The same paints never go to the parallel workers
+    (`IsWrittenFasterThanCopied`): copying the coverages to a batch costs what writing the pixels costs.
     `DrawingFuzzTests.WholePixelRectanglesPaintLikeTheirPolygons` compares it with the sweep of the same rectangle.
   - The glyphs of a line of text share their baseline and their x-height: the events of one height are spread over the
     whole sweep line, and the walk that follows them spans it. The walk passes quickly over the edges whose winding

@@ -111,6 +111,9 @@ public sealed class ImageFrame<TPixel> : ImageFrame
     internal override void CompositePixels(PixelStorage storage, int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
         => DrawingKernels.Composite<TPixel>(storage, y, x, coverage, source);
 
+    internal override bool IsUniformOverFullCoverage(scoped in DrawingSource source, int length)
+        => DrawingKernels.IsUniformOverFullCoverage<TPixel>(source, length);
+
     internal override void ApplyColorMatrix(PixelStorage storage, int y, int x, ColorMatrix matrix, Span<ushort> destination)
         => ColorMatrixKernel.Apply<TPixel>(storage, y, x, matrix, destination);
 

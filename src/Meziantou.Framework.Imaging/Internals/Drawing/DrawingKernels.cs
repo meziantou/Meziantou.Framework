@@ -713,6 +713,121 @@ internal static class DrawingKernels
     }
 
     /// <summary>
+    /// Gets a value indicating whether <see cref="Composite{TPixel}(PixelStorage, int, int, ReadOnlySpan{uint}, in DrawingSource)"/> gives each pixel of a run covered entirely the same
+    /// samples, whatever the pixel was: the run goes through <see cref="TryCompositeFullRuns"/>, which writes the samples of
+    /// one pixel to all of them. Another run of the same length and paint then gets the same samples.
+    /// </summary>
+    /// <param name="source">The paint, converted to the pixel format of the frame.</param>
+    /// <param name="length">The number of pixels of the run.</param>
+    public static bool IsUniformOverFullCoverage<TPixel>(scoped in DrawingSource source, int length)
+        where TPixel : unmanaged
+    {
+        int channels;
+        ushort opaque;
+        if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
+        {
+            (channels, opaque) = (4, byte.MaxValue);
+        }
+        else if (typeof(TPixel) == typeof(Rgb24))
+        {
+            (channels, opaque) = (3, byte.MaxValue);
+        }
+        else if (typeof(TPixel) == typeof(Gray8))
+        {
+            (channels, opaque) = (1, byte.MaxValue);
+        }
+        else if (typeof(TPixel) == typeof(Rgba64))
+        {
+            (channels, opaque) = (4, ushort.MaxValue);
+        }
+        else if (typeof(TPixel) == typeof(Rgb48))
+        {
+            (channels, opaque) = (3, ushort.MaxValue);
+        }
+        else if (typeof(TPixel) == typeof(Gray16))
+        {
+            (channels, opaque) = (1, ushort.MaxValue);
+        }
+        else
+        {
+            return false;
+        }
+
+        // The conditions of the path of Composite to TryCompositeFullRuns, then those of a constant result: the paint
+        // modes accepted here have no table (SampleTable.IsSeparable)
+        if (!source.Colors.IsEmpty || !source.FloatColors.IsEmpty || source.IsLinearLight || source.Blend != BlendMode.Normal || length < MinFullRunSearchLength)
+            return false;
+
+        return source.Mode switch
+        {
+            CompositeMode.SourceOver => source.Color.Alpha == opaque,
+            CompositeMode.Source => source.Color.Alpha != 0 || channels != 4,
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// Copies a run of pixels of a row to the same columns of other rows: the pixels of the run are the same, so they are
+    /// written as one repeated pixel when its size allows it.
+    /// </summary>
+    /// <param name="storage">The storage of the frame, leased by the caller.</param>
+    /// <param name="sourceY">The row whose pixels are copied; they are all the same.</param>
+    /// <param name="top">The first row the pixels are written to.</param>
+    /// <param name="bottom">The row after the last one the pixels are written to.</param>
+    /// <param name="x">The first column of the run.</param>
+    /// <param name="length">The number of pixels of the run.</param>
+    public static void ReplicateUniformRun(PixelStorage storage, int sourceY, int top, int bottom, int x, int length)
+    {
+        var bytesPerPixel = storage.BytesPerPixel;
+        var start = x * bytesPerPixel;
+        var byteCount = length * bytesPerPixel;
+        ReadOnlySpan<byte> source = storage.GetRowSpanCore(sourceY).Slice(start, byteCount);
+        switch (bytesPerPixel)
+        {
+            case 1:
+                {
+                    var pixel = source[0];
+                    for (var y = top; y < bottom; y++)
+                    {
+                        storage.GetRowSpanCore(y).Slice(start, byteCount).Fill(pixel);
+                    }
+                }
+
+                break;
+
+            case 2:
+                FillRows(storage, unsafe(MemoryMarshal.Read<ushort>(source)), top, bottom, start, byteCount);
+                break;
+
+            case 4:
+                FillRows(storage, unsafe(MemoryMarshal.Read<uint>(source)), top, bottom, start, byteCount);
+                break;
+
+            case 8:
+                FillRows(storage, unsafe(MemoryMarshal.Read<ulong>(source)), top, bottom, start, byteCount);
+                break;
+
+            default:
+                for (var y = top; y < bottom; y++)
+                {
+                    source.CopyTo(storage.GetRowSpanCore(y).Slice(start, byteCount));
+                }
+
+                break;
+        }
+
+        static void FillRows<T>(PixelStorage storage, T pixel, int top, int bottom, int start, int byteCount)
+            where T : unmanaged
+        {
+            for (var y = top; y < bottom; y++)
+            {
+                var pixels = unsafe(MemoryMarshal.Cast<byte, T>(storage.GetRowSpanCore(y).Slice(start, byteCount)));
+                pixels.Fill(pixel);
+            }
+        }
+    }
+
+    /// <summary>
     /// Composites a paint over pixels of a format that has no kernel of its own (gray with alpha, alpha only, the
     /// interoperability formats): each chunk of the run is converted to the format of its kernels
     /// (<see cref="ProcessingBridge.GetKernelFormat"/>), composited, and converted back. The paints of the gray formats

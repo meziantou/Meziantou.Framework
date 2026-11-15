@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec, the image data of PNG files, the lossy GIF compression, the processing operations and the strokes. The other codecs
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR and KTX 2.0 codecs, the image data of PNG files, the lossy GIF compression, the processing operations and the strokes. The other codecs
     are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
   -->
   <PropertyGroup>
@@ -13,6 +13,10 @@
     <!-- The seeds of imaging-radiance: the Radiance HDR files of the golden corpus, valid, invalid, unsupported and over the limits -->
     <SeedPicture Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\hdr\*.hdr;..\..\tests\Meziantou.Framework.Imaging.Fixtures\invalid\hdr\*.hdr;..\..\tests\Meziantou.Framework.Imaging.Fixtures\limit\hdr\*.hdr" />
     <EmbeddedResource Include="@(SeedPicture)" LogicalName="Seeds/radiance/%(Filename)%(Extension)" Link="Seeds\radiance\%(Filename)%(Extension)" />
+
+    <!-- The seeds of imaging-ktx2: the conformance files of the KTX 2.0 tests, written by KTX-Software, astcenc and basisu -->
+    <SeedTexture Include="..\..\tests\Meziantou.Framework.Imaging.Ktx2.Tests\Files\*.ktx2" />
+    <EmbeddedResource Include="@(SeedTexture)" LogicalName="Seeds/ktx2/%(Filename)%(Extension)" Link="Seeds\ktx2\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

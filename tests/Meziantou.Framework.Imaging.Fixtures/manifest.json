@@ -43879,7 +43879,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc",
@@ -43980,7 +43980,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc",
@@ -44082,7 +44082,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc",
@@ -44183,7 +44183,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -44296,7 +44296,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -44410,7 +44410,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 18x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --chromaloc 0 -o {stream}.hevc"
@@ -44521,7 +44521,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 18x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --chromaloc 1 -o {stream}.hevc"
@@ -44632,7 +44632,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 18x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --chromaloc 2 -o {stream}.hevc"
@@ -44743,7 +44743,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --chromaloc 1 -o {stream}.hevc"
@@ -44855,7 +44855,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -44967,7 +44967,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 80 -p chroma=420 --cut-tiles 64 source.png -o {output}.heic"
@@ -45084,7 +45084,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 80 -p chroma=420 -p x265:chromaloc=1 --cut-tiles 64 source.png -o {output}.heic"
@@ -45202,7 +45202,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=444 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 --cut-tiles 64 source.png -o {output}.heic"
@@ -45306,7 +45306,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "tileWidth": 16,
@@ -45417,7 +45417,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/grid-2x2-lossless"
@@ -45531,7 +45531,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --cut-tiles 64 source.png -o {output}.heic"
@@ -45644,7 +45644,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --cut-tiles 64 source.png -o {output}.heic"
@@ -45758,7 +45758,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -45869,7 +45869,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/no-colr-no-signal-444"
@@ -45987,7 +45987,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/no-colr-no-signal-444"
@@ -46105,7 +46105,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -46215,7 +46215,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -46340,7 +46340,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --flip-v source.png -o {output}.heic"
@@ -46454,7 +46454,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --flip-h source.png -o {output}.heic"
@@ -46568,7 +46568,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --rotate-cw 270 source.png -o {output}.heic"
@@ -46682,7 +46682,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --rotate-cw 90 source.png -o {output}.heic"
@@ -46796,7 +46796,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L --rotate-cw 270 --flip-h source.png -o {output}.heic"
@@ -46911,7 +46911,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -47025,7 +47025,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -47140,7 +47140,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -47254,7 +47254,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -47368,7 +47368,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -47482,7 +47482,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -47584,7 +47584,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 10 source.png -o {output}.heic"
@@ -47696,7 +47696,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 12 source.png -o {output}.heic"
@@ -47808,7 +47808,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -47919,7 +47919,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 10 source.png -o {output}.heic"
@@ -48020,7 +48020,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 12 source.png -o {output}.heic"
@@ -48121,7 +48121,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -48233,7 +48233,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -48345,7 +48345,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -48456,7 +48456,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 10 source.png -o {output}.heic"
@@ -48560,7 +48560,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -b 12 source.png -o {output}.heic"
@@ -48664,7 +48664,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L source.png -o {output}.heic"
@@ -48768,7 +48768,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 source.png -o {output}.heic"
@@ -48859,6 +48859,111 @@
       }
     },
     {
+      "id": "heic/lossy-420-bt2020-constant-luminance-10bit",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/lossy-420-bt2020-constant-luminance-10bit.heic",
+        "sha256": "209950c86f51d474a3fdd73d6f3f99194e52b1eb5ed1cf0899f4862cc0b339b6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libheif 1.23.6 heif-enc (x265 4.2)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "heif-enc -q 70 -b 10 -p chroma=420 --matrix_coefficients 10 --colour_primaries 9 --transfer_characteristic 14 source.png -o {output}.heic"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=10",
+        "heic.chromaLoc=default",
+        "heic.clap",
+        "heic.colr=nclx",
+        "heic.hvcc.incompleteArrays",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=10",
+        "heic.range=full",
+        "heic.subsampling=4:2:0",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "maxAbsoluteError": 60,
+            "meanAbsoluteError": 14.8781,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgb48",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 10,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 14,
+          "matrixCoefficients": 10,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/lossy-420-bt2020-constant-luminance-10bit.frame-0.rgba16le.raw",
+                "sha256": "8e9d9dec2ab2cdf4cadbcb41eb11ce49118ff0bc00743771fdb4dd3b6ba26345",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 64,
+                "byteLength": 512,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 61, mean 22.42."
+      },
+      "notes": "BT.2020 constant luminance matrix coefficients: the luma is the transfer characteristics function of the luminance."
+    },
+    {
       "id": "heic/lossy-420-bt2020-limited-10bit",
       "kind": "valid",
       "format": "heic",
@@ -48875,7 +48980,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=420 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 --full_range_flag 0 source.png -o {output}.heic"
@@ -48980,7 +49085,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 source.png -o {output}.heic"
@@ -49096,7 +49201,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 12 -p chroma=420 source.png -o {output}.heic"
@@ -49200,7 +49305,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 60 -p chroma=420 source.png -o {output}.heic"
@@ -49316,7 +49421,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 source.png -o {output}.heic"
@@ -49432,7 +49537,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 --matrix_coefficients 1 --colour_primaries 1 --transfer_characteristic 13 --full_range_flag 0 source.png -o {output}.heic"
@@ -49548,7 +49653,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=420 -p x265:chromaloc=1 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 --full_range_flag 0 source.png -o {output}.heic"
@@ -49652,7 +49757,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 -p x265:chromaloc=1 source.png -o {output}.heic"
@@ -49768,7 +49873,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 -p x265:chromaloc=1 source.png -o {output}.heic"
@@ -49884,7 +49989,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 50 -p chroma=420 -p x265:chromaloc=1 --matrix_coefficients 1 --colour_primaries 1 --transfer_characteristic 13 --full_range_flag 0 source.png -o {output}.heic"
@@ -50002,7 +50107,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=420 -p x265:chromaloc=2 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 source.png -o {output}.heic"
@@ -50106,7 +50211,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=420 -p x265:chromaloc=2 source.png -o {output}.heic"
@@ -50222,7 +50327,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=422 source.png -o {output}.heic"
@@ -50328,7 +50433,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 12 -p chroma=422 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 source.png -o {output}.heic"
@@ -50431,7 +50536,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=422 source.png -o {output}.heic"
@@ -50546,7 +50651,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=422 source.png -o {output}.heic"
@@ -50661,7 +50766,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=422 --matrix_coefficients 1 --colour_primaries 1 --transfer_characteristic 13 --full_range_flag 0 source.png -o {output}.heic"
@@ -50764,7 +50869,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=444 source.png -o {output}.heic"
@@ -50866,7 +50971,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=444 --matrix_coefficients 1 --colour_primaries 1 --transfer_characteristic 13 --full_range_flag 0 source.png -o {output}.heic"
@@ -50973,7 +51078,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 10 -p chroma=444 --matrix_coefficients 9 --colour_primaries 9 --transfer_characteristic 16 source.png -o {output}.heic"
@@ -51077,7 +51182,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -b 12 -p chroma=444 --matrix_coefficients 5 --colour_primaries 5 --transfer_characteristic 6 --full_range_flag 0 source.png -o {output}.heic"
@@ -51180,7 +51285,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=444 source.png -o {output}.heic"
@@ -51291,7 +51396,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=444 --matrix_coefficients 1 --colour_primaries 1 --transfer_characteristic 13 --full_range_flag 0 source.png -o {output}.heic"
@@ -51390,6 +51495,234 @@
       }
     },
     {
+      "id": "heic/lossy-444-chromaticity-bt2020",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/lossy-444-chromaticity-bt2020.heic",
+        "sha256": "4af4123b0610a711af3a7a0d42da8e2b0216957e0b1b9eaf37bfc46765027640",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libheif 1.23.6 heif-enc (x265 4.2)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "heif-enc -q 70 -p chroma=444 --matrix_coefficients 12 --colour_primaries 9 --transfer_characteristic 14 source.png -o {output}.heic"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=8",
+        "heic.clap",
+        "heic.colr=nclx",
+        "heic.hvcc.incompleteArrays",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=12",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 14,
+          "matrixCoefficients": 12,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/lossy-444-chromaticity-bt2020.frame-0.rgba8.raw",
+                "sha256": "84d74e30507fa7d6cacb1e0a55e3f30c0e0d99bf8658bca2ab6f92853949cb81",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "heic/lossy-444-chromaticity-bt2020.frame-0.rgb8.raw",
+                "sha256": "93ec151866f86ffc251487ef210ef58670a1499a62ec27bb2e05c7b3e8cb1a36",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Chromaticity-derived matrix coefficients with the BT.2020 primaries: KR and KB are the luminance of the red and of the blue primary."
+    },
+    {
+      "id": "heic/lossy-444-chromaticity-constant-luminance-p3",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/lossy-444-chromaticity-constant-luminance-p3.heic",
+        "sha256": "844899840c79d4278a17e7d2ebd408a865fb7cac12a4e73cf5cc5710b3ca6a0e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libheif 1.23.6 heif-enc (x265 4.2)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "heif-enc -q 70 -p chroma=444 --matrix_coefficients 13 --colour_primaries 12 --transfer_characteristic 13 source.png -o {output}.heic"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=8",
+        "heic.clap",
+        "heic.colr=nclx",
+        "heic.hvcc.incompleteArrays",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=13",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "maxAbsoluteError": 44,
+            "meanAbsoluteError": 6.7292,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 12,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 13,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/lossy-444-chromaticity-constant-luminance-p3.frame-0.rgba8.raw",
+                "sha256": "1485332e699d45422030202b3bda1a8e131f240ade8dc02da06a17acf55666b3",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "heic/lossy-444-chromaticity-constant-luminance-p3.frame-0.rgb8.raw",
+                "sha256": "eb100933f8830f22e34185c15991a2ae498c6e4a6f7bfb3c33fcc460e791bf60",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 45, mean 10.2."
+      },
+      "notes": "Chromaticity-derived constant luminance matrix coefficients with the Display P3 primaries and the sRGB transfer characteristics."
+    },
+    {
       "id": "heic/lossy-444-unspecified-limited",
       "kind": "valid",
       "format": "heic",
@@ -51406,7 +51739,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=444 --matrix_coefficients 2 --colour_primaries 2 --transfer_characteristic 2 --full_range_flag 0 source.png -o {output}.heic"
@@ -51522,7 +51855,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 70 -p chroma=444 --matrix_coefficients 8 source.png -o {output}.heic"
@@ -51633,7 +51966,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 60 -b 10 source.png -o {output}.heic"
@@ -51744,7 +52077,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 60 source.png -o {output}.heic"
@@ -51854,7 +52187,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -q 60 --full_range_flag 0 source.png -o {output}.heic"
@@ -51966,7 +52299,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -52075,6 +52408,224 @@
       "notes": "Exif and XMP items, an ICC profile beside the nclx description, and a half turn after the clap property. The Exif orientation tag is 6: the orientation is 3 (the format takes it from irot and imir only)."
     },
     {
+      "id": "heic/nclx-ictcp-hlg",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/nclx-ictcp-hlg.heic",
+        "sha256": "4ae113325cc3c7b009438772461b786122a9ac3ce47260845c19e6e541943552",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildWrapped)",
+        "tools": [
+          "x265 4.2 (payloads)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt709 --transfer bt709 --colormatrix bt709 -o {stream}.hevc"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=8",
+        "heic.colr=nclx",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=14",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "result": "differs",
+            "notes": "heif-dec rejects the file: Could not decode image: Unsupported feature: Unsupported color conversion"
+          }
+        ]
+      },
+      "expected": {
+        "width": 16,
+        "height": 16,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 18,
+          "matrixCoefficients": 14,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/nclx-ictcp-hlg.frame-0.rgba8.raw",
+                "sha256": "83f2eac82ea5565706e06768d933946e55eb531dd666db69033445054f385671",
+                "layout": "rgba8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 64,
+                "byteLength": 1024,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "heic/nclx-ictcp-hlg.frame-0.rgb8.raw",
+                "sha256": "6f88af06679c3105a9b3a0cebd9d30f1cf83c13c246fc08351f1805e08d1bf9b",
+                "layout": "rgb8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 48,
+                "byteLength": 768,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "ICtCp with the HLG transfer characteristics, whose coefficients are not the ones of PQ, on arbitrary 4:4:4 planes."
+    },
+    {
+      "id": "heic/nclx-ictcp-pq",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/nclx-ictcp-pq.heic",
+        "sha256": "006c3200d3d31e340474c11c3545c72bfba05546b35c2ad21b3d07ed72d82224",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildWrapped)",
+        "tools": [
+          "x265 4.2 (payloads)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt709 --transfer bt709 --colormatrix bt709 -o {stream}.hevc"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=8",
+        "heic.colr=nclx",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=14",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "result": "differs",
+            "notes": "heif-dec rejects the file: Could not decode image: Unsupported feature: Unsupported color conversion"
+          }
+        ]
+      },
+      "expected": {
+        "width": 16,
+        "height": 16,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 16,
+          "matrixCoefficients": 14,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/nclx-ictcp-pq.frame-0.rgba8.raw",
+                "sha256": "0db24fd93e059ba65a216573285b29f11676f466693af04fc23f593fc22c7a7c",
+                "layout": "rgba8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 64,
+                "byteLength": 1024,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "heic/nclx-ictcp-pq.frame-0.rgb8.raw",
+                "sha256": "dbc70f4f95f64d5b1f3cfdddfa53c6e21a4f757db87eca274e815813bc66fc62",
+                "layout": "rgb8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 48,
+                "byteLength": 768,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "ICtCp with the PQ transfer characteristics (Rec. ITU-R BT.2100) on arbitrary 4:4:4 planes: the colr box describes the colors."
+    },
+    {
       "id": "heic/nclx-overrides-bitstream",
       "kind": "valid",
       "format": "heic",
@@ -52091,7 +52642,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt709 --transfer bt709 --colormatrix bt709 -o {stream}.hevc"
@@ -52185,6 +52736,115 @@
       "notes": "The bitstream signals BT.709 limited range and the colr box BT.601 full range: the colr box describes the colors."
     },
     {
+      "id": "heic/nclx-smpte2085",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/nclx-smpte2085.heic",
+        "sha256": "23e6ee36306d7d0f179b8754ff4db5d9fa7f2ef670a2b99f9287a573d429fb24",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildWrapped)",
+        "tools": [
+          "x265 4.2 (payloads)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt709 --transfer bt709 --colormatrix bt709 -o {stream}.hevc"
+        ]
+      },
+      "features": [
+        "heic.bitDepth=8",
+        "heic.colr=nclx",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heix",
+        "heic.matrix=11",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "result": "differs",
+            "notes": "heif-dec rejects the file: Could not decode image: Unsupported feature: Unsupported color conversion"
+          }
+        ]
+      },
+      "expected": {
+        "width": 16,
+        "height": 16,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 16,
+          "matrixCoefficients": 11,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/nclx-smpte2085.frame-0.rgba8.raw",
+                "sha256": "bc14709cc60169b8c7c192e669f3c0e769f73b1c81607a5e1d98243ede078a91",
+                "layout": "rgba8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 64,
+                "byteLength": 1024,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "heic/nclx-smpte2085.frame-0.rgb8.raw",
+                "sha256": "849bed3b00b0813af5024bba9ed67e6a9d278e1071725a06dd73f519257c35c5",
+                "layout": "rgb8",
+                "width": 16,
+                "height": 16,
+                "rowBytes": 48,
+                "byteLength": 768,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "SMPTE ST 2085 matrix coefficients (Y'D'zD'x) on arbitrary 4:4:4 planes."
+    },
+    {
       "id": "heic/no-colr-bitstream-bt709",
       "kind": "valid",
       "format": "heic",
@@ -52201,7 +52861,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossy-444-bt709-limited"
@@ -52317,7 +52977,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt709 --transfer bt709 --colormatrix bt709 -o {stream}.hevc"
@@ -52431,7 +53091,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited -o {stream}.hevc"
@@ -52540,7 +53200,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -52653,7 +53313,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/lossless-rgb8"
@@ -52767,7 +53427,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -52876,7 +53536,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 16x16 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -52986,7 +53646,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "tileWidth": 32,
@@ -53125,7 +53785,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "tileWidth": 32,
@@ -53252,7 +53912,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "tileWidth": 32,
@@ -53375,6 +54035,221 @@
       "notes": "The layout of a phone: a 64x24 grid of 2x2 tiles of 32x16 (the last row exceeds the image), a rotation, an ICC profile, an Exif item, and a hidden 16x16 thumbnail and a hidden depth map (an auxiliary image of type urn:mpeg:hevc:2015:auxid:2), neither of which is read: 8-bit 4:2:0 tiles whose bitstream signals centered chroma samples."
     },
     {
+      "id": "heic/premultiplied-alpha",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/premultiplied-alpha.heic",
+        "sha256": "3d73f22f5a08ba8f4d3199c8b70710c9981dff9a154ab1228ea9214bd6514cc9",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libheif 1.23.6 heif-enc (x265 4.2)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "heif-enc -L --premultiplied-alpha source.png -o {output}.heic"
+        ]
+      },
+      "features": [
+        "heic.alpha",
+        "heic.alpha.subsampling=4:0:0",
+        "heic.alpha.urn=hevc",
+        "heic.bitDepth=8",
+        "heic.clap",
+        "heic.colr=nclx",
+        "heic.hvcc.incompleteArrays",
+        "heic.hvcc.lengthSize=4",
+        "heic.lossless",
+        "heic.majorBrand=heix",
+        "heic.matrix=0",
+        "heic.premultiplied",
+        "heic.range=full",
+        "heic.subsampling=4:4:4",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc) and libde265 1.1.3 (dec265), scaled without matrix. HM 18.0 (TAppDecoder) is left out (rejects: Assertion failed: (uiCode >= minLog2DiffMaxMinLumaCodingBlockSize && uiCode <= maxLog2DiffMaxMinLumaCodingBlockSize), function parseSPS, file TDecCAVLC.cpp, line 742.): HM 18.0 rejects a 16x16 coding tree block from level 5 (the limit of clause A.4.1); x265 codes a small picture with 16x16 coding tree blocks (libheif asks for them, and a picture smaller than 32x32 has no other size) and signals level 8.5 for a lossless stream.",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "maxAbsoluteError": 255,
+            "meanAbsoluteError": 69.6181,
+            "result": "differs",
+            "notes": "Its own sample scaling. Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/premultiplied-alpha.frame-0.rgba8.raw",
+                "sha256": "56c45040718ab0f384f38db304b1bc2103300e9e457b8f38cd600a2d1b42277a",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Lossless premultiplied colors: the division by the alpha rounds to the nearest sample, and a color under an alpha of 0 is 0."
+    },
+    {
+      "id": "heic/premultiplied-alpha-lossy-420",
+      "kind": "valid",
+      "format": "heic",
+      "input": {
+        "path": "heic/premultiplied-alpha-lossy-420.heic",
+        "sha256": "416471c5f2297fb0e656abe1012506c1ce4d3e18ff829346c501b56d79054ed9",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libheif 1.23.6 heif-enc (x265 4.2)",
+          "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "heif-enc -q 70 --premultiplied-alpha -p chroma=420 source.png -o {output}.heic"
+        ]
+      },
+      "features": [
+        "heic.alpha",
+        "heic.alpha.subsampling=4:0:0",
+        "heic.alpha.urn=hevc",
+        "heic.bitDepth=8",
+        "heic.chromaLoc=default",
+        "heic.clap",
+        "heic.colr=nclx",
+        "heic.hvcc.incompleteArrays",
+        "heic.hvcc.lengthSize=4",
+        "heic.majorBrand=heic",
+        "heic.matrix=6",
+        "heic.premultiplied",
+        "heic.range=full",
+        "heic.subsampling=4:2:0",
+        "heic.videoSignal=colour"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by ffmpeg 9.0.2 (hevc), libde265 1.1.3 (dec265), HM 18.0 (TAppDecoder), converted with exact rationals (matrix, range and chroma sample location of the file).",
+        "decoder": "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
+        "backend": "ReferenceHeif and ReferenceYuvConverter (test harness)",
+        "command": "hevcVectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libheif 1.23.6 heif-dec (libde265)",
+            "command": "heif-dec --quiet {input} {output}.png",
+            "maxAbsoluteError": 215,
+            "meanAbsoluteError": 77.1458,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgba32",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 6,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "heic/premultiplied-alpha-lossy-420.frame-0.rgba8.raw",
+                "sha256": "dfc27ee79f90e02609375db76e43c8deab5fb385fbbeb8e6d8f2a2a7d9c157c8",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 216, mean 115.82."
+      },
+      "notes": "Premultiplied colors that are matrixed and subsampled, under a lossy alpha plane: a color that the coding left above its alpha is clipped."
+    },
+    {
       "id": "heic/sequence-420",
       "kind": "valid",
       "format": "heic",
@@ -53391,7 +54266,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -53590,7 +54465,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -53788,7 +54663,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -53985,7 +54860,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -54146,7 +55021,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 2
@@ -54286,7 +55161,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -54514,7 +55389,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2) (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-reordered-444"
@@ -54774,7 +55649,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 4 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --keyint 8 --bframes 0 --qp 22 --ctu 16 --scenecut 0 -o {stream}.hevc"
@@ -55002,7 +55877,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 4 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --ctu 16 --keyint 8 --bframes 0 --qp 12 --range full --scenecut 0 -o {stream}.hevc",
@@ -55187,7 +56062,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -55421,7 +56296,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -55664,7 +56539,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -55852,7 +56727,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 8 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --keyint 8 --min-keyint 8 --bframes 2 --b-adapt 0 --ref 2 --qp 14 --range full --ctu 16 --scenecut 0 --rc-lookahead 4 -o {stream}.hevc"
@@ -56214,7 +57089,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 8 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --keyint 8 --min-keyint 8 --bframes 2 --b-adapt 0 --ref 2 --qp 14 --range full --ctu 16 --scenecut 0 --rc-lookahead 4 -o {stream}.hevc"
@@ -56575,7 +57450,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 3
@@ -56773,7 +57648,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 4
@@ -57005,7 +57880,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -57233,7 +58108,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -57460,7 +58335,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 8 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --keyint 8 --min-keyint 8 --bframes 2 --b-adapt 0 --ref 2 --qp 14 --range full --ctu 16 --scenecut 0 --rc-lookahead 4 -o {stream}.hevc"
@@ -57816,7 +58691,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "frames": 5
@@ -58078,7 +58953,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "payloadsOf": "heic/sequence-window-rgb"
@@ -58314,7 +59189,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i420 --input-depth 8 --output-depth 8 --frames 4 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --keyint 8 --bframes 0 --qp 22 --ctu 16 --scenecut 0 -o {stream}.hevc"
@@ -58541,7 +59416,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 8 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --keyint 8 --min-keyint 8 --bframes 2 --b-adapt 0 --ref 2 --qp 14 --range full --ctu 16 --scenecut 0 --rc-lookahead 4 -o {stream}.hevc"
@@ -58902,7 +59777,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 4 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --ctu 16 --keyint 8 --bframes 0 --qp 12 --range full --scenecut 0 -o {stream}.hevc"
@@ -59129,7 +60004,7 @@
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "heif-enc -L -t 16 source.png -o {output}.heic"
@@ -59243,7 +60118,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x18 --fps 10 --input-csp i420 --input-depth 10 --output-depth 10 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range limited --colorprim bt2020 --transfer smpte2084 --colormatrix bt2020nc -o {stream}.hevc"
@@ -59347,7 +60222,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x17 --fps 10 --input-csp i422 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 -o {stream}.hevc"
@@ -59457,7 +60332,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 32x32 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 32 --keyint 1 --qp 20 --range full --colorprim bt709 --transfer iec61966-2-1 --colormatrix bt470bg -o {stream}.hevc && ffmpeg -hide_banner -nostdin -loglevel error -y -f hevc -i {stream}.hevc -c copy -bsf:v hevc_metadata=crop_right=12:crop_bottom=14 -flags +bitexact -f hevc {filtered}.hevc"
@@ -59569,7 +60444,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 32x18 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --qp 20 --range full --colorprim bt709 --transfer iec61966-2-1 --colormatrix bt470bg -o {stream}.hevc && ffmpeg -hide_banner -nostdin -loglevel error -y -f hevc -i {stream}.hevc -c copy -bsf:v hevc_metadata=crop_right=12:crop_bottom=6 -flags +bitexact -f hevc {filtered}.hevc"
@@ -59681,7 +60556,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 19x17 --fps 10 --input-csp i400 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --ctu 16 --keyint 1 --lossless -o {stream}.hevc"
@@ -59788,7 +60663,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 18x17 --fps 10 --input-csp i444 --input-depth 10 --output-depth 10 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --ctu 16 --keyint 1 --lossless --range full -o {stream}.hevc"
@@ -59889,7 +60764,7 @@
         "tools": [
           "x265 4.2 (payloads)",
           "ffmpeg 9.0.2 (hevc) + libde265 1.1.3 (dec265) + HM 18.0 (TAppDecoder)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "x265 --input {source}.yuv --input-res 20x17 --fps 10 --input-csp i444 --input-depth 8 --output-depth 8 --frames 1 --no-info --pools 1 --no-wpp --frame-threads 1 --log-level error --hash 1 --colormatrix gbr --ctu 16 --keyint 1 --lossless --range full -o {stream}.hevc"
@@ -67070,7 +67945,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67098,7 +67973,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "HM 18.0 (payload: the committed HEVC vector)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67126,7 +68001,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "HM 18.0 (payload: the committed HEVC vector)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67154,7 +68029,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67179,7 +68054,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67204,7 +68079,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67232,7 +68107,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67260,7 +68135,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67288,7 +68163,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67316,7 +68191,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67344,7 +68219,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67369,7 +68244,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67397,7 +68272,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67422,7 +68297,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67447,7 +68322,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67475,7 +68350,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67500,7 +68375,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67525,7 +68400,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67550,7 +68425,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67575,7 +68450,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67600,7 +68475,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67625,7 +68500,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67653,7 +68528,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67677,7 +68552,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
-          ".NET 10.0 (payload: the committed fixture avif/lossy-444-bt601-full)"
+          ".NET 11.0 (payload: the committed fixture avif/lossy-444-bt601-full)"
         ]
       },
       "expectedError": {
@@ -67705,7 +68580,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67733,7 +68608,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67758,7 +68633,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67771,12 +68646,12 @@
       "notes": "An lsel property selects layer 1: only the base layer of an HEVC bitstream is decoded."
     },
     {
-      "id": "invalid/heic/matrix-ictcp",
+      "id": "invalid/heic/matrix-ictcp-sdr-transfer",
       "kind": "unsupported",
       "format": "heic",
       "input": {
-        "path": "invalid/heic/matrix-ictcp.heic",
-        "sha256": "bc4f362c120b2f6a3169fae8763989be66209a73714b6f1514f3fda8993e7648",
+        "path": "invalid/heic/matrix-ictcp-sdr-transfer.heic",
+        "sha256": "2a52b0e44eeb4885a3b5cd469586f3d76d3d6ce37023e8852818f333ea00f7b6",
         "role": "encoded"
       },
       "provenance": {
@@ -67786,7 +68661,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67796,7 +68671,7 @@
       "features": [
         "heic.unsupported=matrix"
       ],
-      "notes": "The colr box declares the ICtCp matrix coefficients (14)."
+      "notes": "The colr box declares the ICtCp matrix coefficients (14) with the sRGB transfer characteristics: ICtCp is defined for PQ and for HLG only."
     },
     {
       "id": "invalid/heic/missing-ftyp",
@@ -67814,7 +68689,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67838,7 +68713,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67863,7 +68738,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67888,7 +68763,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67913,7 +68788,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67938,7 +68813,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67963,7 +68838,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -67971,34 +68846,6 @@
         "format": "Heic"
       },
       "notes": "The data of the item hold the SEI message of the picture (its decoded picture hash) and no slice: an item with no picture."
-    },
-    {
-      "id": "invalid/heic/premultiplied-alpha",
-      "kind": "unsupported",
-      "format": "heic",
-      "input": {
-        "path": "invalid/heic/premultiplied-alpha.heic",
-        "sha256": "3d73f22f5a08ba8f4d3199c8b70710c9981dff9a154ab1228ea9214bd6514cc9",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
-        "tools": [
-          "libheif 1.23.6 heif-enc (x265 4.2)",
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Heic"
-      },
-      "features": [
-        "heic.unsupported=premultiplied-alpha"
-      ],
-      "notes": "Written by heif-enc --premultiplied-alpha: a prem item reference declares that the color image is premultiplied by its alpha plane."
     },
     {
       "id": "invalid/heic/sequence-ctts-collision",
@@ -68016,7 +68863,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68041,7 +68888,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68069,7 +68916,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68097,7 +68944,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68122,7 +68969,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68147,7 +68994,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68172,7 +69019,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "libheif 1.23.6 heif-enc (x265 4.2)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68200,7 +69047,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68225,7 +69072,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68253,7 +69100,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68278,7 +69125,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68303,7 +69150,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68328,7 +69175,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68353,7 +69200,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -68378,7 +69225,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "x265 4.2 (payloads)",
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -99402,7 +100249,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -99431,7 +100278,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -99460,7 +100307,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -99489,7 +100336,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -99518,7 +100365,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -99547,7 +100394,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -99576,7 +100423,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -99605,7 +100452,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -99634,7 +100481,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -99663,7 +100510,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {
@@ -99692,7 +100539,7 @@
         "author": "Meziantou.Framework.Imaging contributors",
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildLimits)",
         "tools": [
-          ".NET 10.0"
+          ".NET 11.0"
         ]
       },
       "expectedError": {

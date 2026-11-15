@@ -28,6 +28,7 @@ internal sealed class GreenBuilder
     private readonly int[] _ends;
     private int _tokenCount;
     private readonly List<GreenNode?> _trivia = [];
+    private readonly Dictionary<(int Kind, int Length, long Characters), Green.SyntaxToken> _sharedTokens = [];
     private int _tokenIndex;
     private int _triviaSpanIndex;
 
@@ -130,8 +131,30 @@ internal sealed class GreenBuilder
             var token = element;
             var index = _tokenIndex++;
             var leading = CreateTrivia(GetLeadingTrivia(index));
-            var text = GetString(token.Start, token.End);
             var trailing = CreateTrivia(GetTrailingTrivia(index));
+
+            // The short tokens without trivia, such as line endings, brackets and delimiters, are shared: green nodes do not
+            // know their position
+            var length = token.End - token.Start;
+            if (leading is null && trailing is null && token.Value == 0 && length is > 0 and <= 3)
+            {
+                long characters = 0;
+                for (var i = token.Start; i < token.End; i++)
+                {
+                    characters = (characters << 16) | _text[i];
+                }
+
+                var key = ((int)token.Kind, length, characters);
+                if (!_sharedTokens.TryGetValue(key, out var shared))
+                {
+                    shared = new Green.SyntaxToken((int)token.Kind, GetString(token.Start, token.End), leadingTrivia: null, trailingTrivia: null, isMissing: false);
+                    _sharedTokens.Add(key, shared);
+                }
+
+                return shared;
+            }
+
+            var text = GetString(token.Start, token.End);
             if (token.Value != 0)
             {
                 return new Green.SyntaxTokenWithValue<int>((int)token.Kind, text, token.Value, text, leading, trailing, isMissing: false);

@@ -68,20 +68,33 @@ namespace Meziantou.Framework.Markdown;
 public static class MarkdownFormatter
 {
     /// <summary>Formats a document with <see cref="MarkdownFormattingOptions.Default"/>.</summary>
-    /// <returns>The tree of the formatted text, parsed with the options of <paramref name="tree"/>.</returns>
+    /// <returns>
+    /// The tree of the formatted text, parsed with the options of <paramref name="tree"/>, or <paramref name="tree"/> when its
+    /// text is already formatted or when the formatted text would not render as the same HTML.
+    /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="tree"/> is <see langword="null"/>.</exception>
     public static MarkdownSyntaxTree Format(MarkdownSyntaxTree tree) => Format(tree, options: null);
 
     /// <summary>Formats a document.</summary>
     /// <param name="tree">The document.</param>
     /// <param name="options">How to write the document, or <see langword="null"/> for <see cref="MarkdownFormattingOptions.Default"/>.</param>
-    /// <returns>The tree of the formatted text, parsed with the options of <paramref name="tree"/>.</returns>
+    /// <returns>
+    /// The tree of the formatted text, parsed with the options of <paramref name="tree"/>, or <paramref name="tree"/> when its
+    /// text is already formatted or when the formatted text would not render as the same HTML.
+    /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="tree"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A character or the line ending of <paramref name="options"/> is not one that it allows.</exception>
     public static MarkdownSyntaxTree Format(MarkdownSyntaxTree tree, MarkdownFormattingOptions? options)
     {
         ArgumentNullException.ThrowIfNull(tree);
         var text = WriteText(tree, options);
+
+        // A document that is already formatted is written as it is
+        if (string.Equals(text, tree.GetRoot().ToFullString(), StringComparison.Ordinal))
+        {
+            return tree;
+        }
+
         var formatted = MarkdownSyntaxTree.ParseText(text, tree.Options, tree.FilePath);
         return RendersAsTheSameHtml(tree, formatted) ? formatted : tree;
     }
@@ -95,7 +108,13 @@ public static class MarkdownFormatter
     {
         ArgumentNullException.ThrowIfNull(tree);
         var text = WriteText(tree, options);
-        return RendersAsTheSameHtml(tree, MarkdownSyntaxTree.ParseText(text, tree.Options, tree.FilePath)) ? text : tree.GetRoot().ToFullString();
+        var original = tree.GetRoot().ToFullString();
+        if (string.Equals(text, original, StringComparison.Ordinal))
+        {
+            return text;
+        }
+
+        return RendersAsTheSameHtml(tree, MarkdownSyntaxTree.ParseText(text, tree.Options, tree.FilePath)) ? text : original;
     }
 
     // The line endings of the code change with the line ending of the document
@@ -525,7 +544,42 @@ public static class MarkdownFormatter
             return blocks.Count >= 2 && blocks[^2].Kind() == continuedBlock.Kind && blocks[^1].Kind() == kind;
         }
 
-        private static bool IsSingleParagraph(string text, MarkdownParseOptions options) => MarkdownSyntaxTree.ParseText(text, options).GetRoot().Blocks is [MarkdownParagraphSyntax];
+        private static bool IsSingleParagraph(string text, MarkdownParseOptions options) => IsText(text, options) || MarkdownSyntaxTree.ParseText(text, options).GetRoot().Blocks is [MarkdownParagraphSyntax];
+
+        // Text whose lines all start with a letter is a paragraph, without parsing it: a block starts with punctuation, a digit
+        // or whitespace, or with letters followed by . or ) for the list items of ListExtras. A table starts on a line with a pipe.
+        private static bool IsText(string text, MarkdownParseOptions options)
+        {
+            if (text.Contains('\r', StringComparison.Ordinal)
+                || ((options.Extensions & (MarkdownExtensions.Tables | MarkdownExtensions.PipeTables | MarkdownExtensions.GridTables)) != MarkdownExtensions.None && text.Contains('|', StringComparison.Ordinal)))
+            {
+                return false;
+            }
+
+            foreach (var range in text.AsSpan().Split('\n'))
+            {
+                var line = text.AsSpan(range);
+                if (line.IsEmpty)
+                {
+                    return false;
+                }
+
+                if (char.IsAsciiLetter(line[0]))
+                {
+                    var letters = line.IndexOfAnyExceptInRange('A', 'z');
+                    if (letters >= 0 && line[letters] is '.' or ')')
+                    {
+                        return false;
+                    }
+                }
+                else if (line[0] < 0x80 || !char.IsLetter(line[0]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         private MarkdownParseOptions WithoutTables => field ??= parseOptions with { Extensions = parseOptions.Extensions & ~(MarkdownExtensions.Tables | MarkdownExtensions.PipeTables) };
 

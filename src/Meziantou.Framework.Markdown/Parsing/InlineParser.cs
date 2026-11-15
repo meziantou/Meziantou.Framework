@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text;
 
@@ -78,6 +80,14 @@ internal sealed class InlineParser
     private int _colonLineStart;
     private bool _colonLineResult;
 
+    // The characters where a run of text can end, for each set of enabled extensions: a superset of the characters that
+    // ParseString stops at, so that it can skip the others with a vectorized search
+    private const string TextStopCharacters = "\n\\`*_[]!<&|";
+    private const int MaximumCachedStopCharacterSets = 64;
+    private static readonly ConcurrentDictionary<string, SearchValues<char>> StopCharacterSets = new(StringComparer.Ordinal);
+
+    private readonly SearchValues<char> _textStopCharacters;
+
     public InlineParser(Dictionary<string, bool> references, MarkdownParseOptions options)
     {
         var extensions = options.Extensions;
@@ -100,6 +110,54 @@ internal sealed class InlineParser
         _cjkFriendly = extensions.HasFlag(MarkdownExtensions.CjkFriendlyEmphasis);
         _markdigAutolinks = extensions.HasFlag(MarkdownExtensions.MarkdigAutolinks) ? options.AutolinkOptions : null;
         _pipeTableOptions = options.PipeTableOptions;
+        _textStopCharacters = GetTextStopCharacters();
+    }
+
+    private SearchValues<char> GetTextStopCharacters()
+    {
+        var characters = new StringBuilder(TextStopCharacters);
+        AppendIf(_strikethrough || _subscript, "~");
+        AppendIf(_superscript, "^");
+        AppendIf(_inserted, "+");
+        AppendIf(_marked, "=");
+        AppendIf(_mathematics, "$");
+        AppendIf(_genericAttributes, "{");
+        AppendIf(_autolinks || _customContainers, ":");
+        AppendIf(_autolinks, "w");
+        AppendIf(_jiraLinks, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        AppendIf(_markdigAutolinks is not null, "hfmtw");
+        AppendIf(_smartyPants, "'\">.");
+        AppendIf(_citations, "\"");
+        if (_emoji is not null)
+        {
+            foreach (var c in _emoji.FirstCharacters)
+            {
+                characters.Append(c);
+            }
+        }
+
+        var key = characters.ToString();
+        if (StopCharacterSets.TryGetValue(key, out var values))
+        {
+            return values;
+        }
+
+        // Custom emoji mappings can make many sets: only the first ones are kept
+        values = SearchValues.Create(key);
+        if (StopCharacterSets.Count < MaximumCachedStopCharacterSets)
+        {
+            StopCharacterSets.TryAdd(key, values);
+        }
+
+        return values;
+
+        void AppendIf(bool condition, string value)
+        {
+            if (condition)
+            {
+                characters.Append(value);
+            }
+        }
     }
 
     /// <summary>Parses the inlines of the subject from <paramref name="start"/>, without the whitespace around them, or only before them.</summary>
@@ -1159,8 +1217,22 @@ internal sealed class InlineParser
     {
         var start = _pos;
         _pos++;
-        while (_pos < _end && _text[_pos] is not ('\n' or '\\' or '`' or '*' or '_' or '[' or ']' or '!' or '<' or '&') && !IsExtensionCharacter(_text[_pos]) && !((_scanningPipeTable || _pipeTableCell) && _text[_pos] == '|'))
+        while (_pos < _end)
         {
+            // Skip the characters that cannot end the text, then check the one found
+            var index = _text.AsSpan(_pos, _end - _pos).IndexOfAny(_textStopCharacters);
+            if (index < 0)
+            {
+                _pos = _end;
+                break;
+            }
+
+            _pos += index;
+            if (_text[_pos] is '\n' or '\\' or '`' or '*' or '_' or '[' or ']' or '!' or '<' or '&' || IsExtensionCharacter(_text[_pos]) || ((_scanningPipeTable || _pipeTableCell) && _text[_pos] == '|'))
+            {
+                break;
+            }
+
             _pos++;
         }
 

@@ -1,7 +1,9 @@
 using System.Buffers;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Markdown.Parsing;
+using GreenNode = Meziantou.Framework.Language.InternalSyntax.GreenNode;
 
 namespace Meziantou.Framework.Markdown;
 
@@ -39,7 +41,8 @@ public static class MarkdownHtmlRenderer
         ArgumentNullException.ThrowIfNull(tree);
 
         var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default) { PlainText = plainText };
-        if (tree.Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes))
+        // Finding the targets of the attributes walks every node and token: skip it for the documents that have none
+        if (tree.Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes) && ContainsKind(tree.GetRoot().Green, SyntaxKind.GenericAttributes))
         {
             writer.CollectAttributes(tree.GetRoot());
         }
@@ -66,6 +69,30 @@ public static class MarkdownHtmlRenderer
         }
 
         return writer.ToString();
+    }
+
+    // Whether a node of the kind is under the node, read from the green tree, which does not create the nodes it visits
+    private static bool ContainsKind(GreenNode root, SyntaxKind kind)
+    {
+        var stack = new Stack<GreenNode>();
+        stack.Push(root);
+        while (stack.TryPop(out var node))
+        {
+            if (node.RawKind == (int)kind)
+            {
+                return true;
+            }
+
+            for (var i = 0; i < node.SlotCount; i++)
+            {
+                if (node.GetSlot(i) is { IsToken: false } child)
+                {
+                    stack.Push(child);
+                }
+            }
+        }
+
+        return false;
     }
 
     private sealed class Writer(int sourceLength, MarkdownParseOptions options, MarkdownHtmlRendererOptions rendererOptions)
@@ -111,6 +138,7 @@ public static class MarkdownHtmlRenderer
         private readonly bool _diagrams = options.Extensions.HasFlag(MarkdownExtensions.Diagrams);
         private readonly bool _autoIdentifiers = options.Extensions.HasFlag(MarkdownExtensions.AutoIdentifiers);
         private readonly bool _mediaLinks = options.Extensions.HasFlag(MarkdownExtensions.MediaLinks);
+        private readonly bool _genericAttributes = options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes);
 
         // Whether the next block is the first of a custom container or of a definition
         private bool _firstInContainer;
@@ -588,7 +616,7 @@ public static class MarkdownHtmlRenderer
                 Markup.Append('"');
             }
 
-            foreach (var property in attributes?.Properties ?? [])
+            foreach (var property in attributes is null ? [] : CollectionsMarshal.AsSpan(attributes.Properties))
             {
                 Markup.Append(' ').Append(property.Key).Append("=\"");
                 AppendAttributeEscaped(property.Value ?? "");
@@ -596,7 +624,7 @@ public static class MarkdownHtmlRenderer
             }
 
             // The attributes of Bootstrap and of the direction of the text, unless the element has them
-            foreach (var property in extra.Properties ?? [])
+            foreach (var property in extra.Properties is null ? [] : CollectionsMarshal.AsSpan(extra.Properties))
             {
                 if (attributes is null || !attributes.Properties.Exists(existing => string.Equals(existing.Key, property.Key, StringComparison.Ordinal)))
                 {
@@ -917,7 +945,7 @@ public static class MarkdownHtmlRenderer
                     var tag = diagram.Language == "mermaid" ? "pre" : "div";
                     Cr();
                     Markup.Append('<').Append(tag).Append(" class=\"").Append(diagram.Language).Append("\">");
-                    AppendSoftEscaped(diagram.Code);
+                    AppendCode(diagram, soft: true);
                     Markup.Append("</").Append(tag).Append('>');
                     Cr();
                     break;
@@ -928,7 +956,7 @@ public static class MarkdownHtmlRenderer
                     Markup.Append("<pre><code");
                     AppendAttributes(code, trailingClasses: code.Language is { } language ? "language-" + language : null);
                     Markup.Append('>');
-                    AppendEscaped(code.Code);
+                    AppendCode(code, soft: false);
                     Markup.Append("</code></pre>");
                     Cr();
                     break;
@@ -963,11 +991,12 @@ public static class MarkdownHtmlRenderer
         public void WriteFootnotes(MarkdownDocumentSyntax document)
         {
             // A document with footnotes has the list of the footnotes, even when none is referred to, as 1.x writes it
-            _footnotes = new MarkdownFootnotes(document);
             if (!document.Blocks.OfType<MarkdownFootnoteDefinitionSyntax>().Any())
             {
                 return;
             }
+
+            _footnotes = new MarkdownFootnotes(document);
 
             Cr();
             Markup.Append("<div class=\"footnotes\">\n<hr />\n<ol>\n");
@@ -1273,12 +1302,12 @@ public static class MarkdownHtmlRenderer
         private string RenderCell(MarkdownSyntaxTree content)
         {
             var writer = new Writer(content.GetText().Length, content.Options, rendererOptions) { PlainText = PlainText };
-            if (content.Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes))
+            if (content.Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes) && ContainsKind(content.GetRoot().Green, SyntaxKind.GenericAttributes))
             {
                 writer.CollectAttributes(content.GetRoot());
             }
 
-            if (content.GetRoot().Blocks is [MarkdownParagraphSyntax paragraph] && !(writer._attributes is not null && IsAttributesParagraph(paragraph)))
+            if (content.GetRoot().Blocks is [MarkdownParagraphSyntax paragraph] && !(writer._attributes is not null && writer.IsAttributesParagraph(paragraph)))
             {
                 writer.WriteInlines(paragraph.Inlines);
             }
@@ -1388,7 +1417,7 @@ public static class MarkdownHtmlRenderer
                 {
                     WriteInline(inline);
                 }
-                else if (!keepTrailingLineBreak && child.AsToken().RawKind is (int)SyntaxKind.HardLineBreakToken || (_attributes is not null && !keepTrailingLineBreak && child.AsToken().RawKind == (int)SyntaxKind.LineEndingToken))
+                else if (!keepTrailingLineBreak && child.AsToken().RawKind is (int)SyntaxKind.HardLineBreakToken || (_genericAttributes && !keepTrailingLineBreak && child.AsToken().RawKind == (int)SyntaxKind.LineEndingToken))
                 {
                     pendingLineBreak = child.AsToken();
                 }
@@ -1957,7 +1986,37 @@ public static class MarkdownHtmlRenderer
             return false;
         }
 
-        private void AppendSoftEscaped(string text)
+        // The code of a code block, as MarkdownCodeBlockSyntax.Code reads it, without building the string
+        private void AppendCode(MarkdownCodeBlockSyntax code, bool soft)
+        {
+            foreach (var token in code.ChildTokens())
+            {
+                if (token.RawKind != (int)SyntaxKind.CodeLineToken)
+                {
+                    continue;
+                }
+
+                // The columns of a tab that a container took part of are spaces of the code
+                if (token.Value is int virtualSpaces)
+                {
+                    _output.Append(' ', virtualSpaces);
+                }
+
+                var line = MarkdownText.TrimLineEnding(token.Text);
+                if (soft)
+                {
+                    AppendSoftEscaped(line);
+                }
+                else
+                {
+                    AppendEscaped(line);
+                }
+
+                _output.Append('\n');
+            }
+        }
+
+        private void AppendSoftEscaped(ReadOnlySpan<char> text)
         {
             foreach (var c in text)
             {

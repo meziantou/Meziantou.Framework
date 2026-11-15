@@ -72,6 +72,8 @@ public sealed class MarkdownEmojiMapping
 
     internal bool IsFirstCharacter(char c) => _lengthsByFirstCharacter.ContainsKey(c);
 
+    internal IEnumerable<char> FirstCharacters => _lengthsByFirstCharacter.Keys;
+
     // The longest shortcode or smiley that the text starts with
     internal string? MatchLongest(ReadOnlySpan<char> text)
     {

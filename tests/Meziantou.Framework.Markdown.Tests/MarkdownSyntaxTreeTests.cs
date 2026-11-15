@@ -1376,6 +1376,16 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void FormatterReturnsTheTreeOfAFormattedDocument()
+    {
+        var text = "# Title\n\nSome text\non two lines.\n\n- a\n- b\n";
+        var tree = MarkdownSyntaxTree.ParseText(text);
+
+        Assert.Same(tree, MarkdownFormatter.Format(tree));
+        Assert.Equal(text, MarkdownFormatter.FormatText(tree, options: null));
+    }
+
+    [Fact]
     public void FormatterKeepsTheTextWhenTheHtmlWouldChange()
     {
         // The lazy line |-|-| of the paragraph of the list item would not be lazy with the indentation of the item, and the

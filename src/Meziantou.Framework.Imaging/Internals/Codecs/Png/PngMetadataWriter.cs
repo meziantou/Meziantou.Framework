@@ -330,7 +330,7 @@ internal sealed class PngMetadataWriter
         var buffer = new ImageOutputBuffer(_scope);
         try
         {
-            using (var zlib = new ZLibStream(new BufferWriterStream(buffer), _compressionLevel, leaveOpen: false))
+            using (var zlib = PngZlib.Create(new BufferWriterStream(buffer), _compressionLevel, leaveOpen: false))
             {
                 zlib.Write(data);
             }

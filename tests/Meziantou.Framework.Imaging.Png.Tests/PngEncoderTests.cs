@@ -150,6 +150,34 @@ public sealed class PngEncoderTests
         }
     }
 
+    [Fact]
+    public void FastestCompressionWritesDynamicHuffmanCodes()
+    {
+        // zlib level 1 writes fixed Huffman codes, which compress filtered photographs poorly: Fastest uses level 2
+        const int Width = 256;
+        const int Height = 64;
+        var data = new byte[Width * Height * 3];
+        var noise = new byte[data.Length];
+        FillRandom(noise, seed: 42);
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var offset = ((y * Width) + x) * 3;
+                data[offset] = (byte)(x + (noise[offset] & 3));
+                data[offset + 1] = (byte)((y * 4) + (noise[offset + 1] & 3));
+                data[offset + 2] = (byte)((x + y) / 2);
+            }
+        }
+
+        using var image = Image.ImportPixelBytes<Rgb24>(data, Width, Height);
+        var png = Encode(image, new PngEncoder { CompressionLevel = CompressionLevel.Fastest });
+        var reference = AssertDecodesIndependently(png, image, interlaced: false);
+        var zlib = reference.GetChunks("IDAT").First().Data.Span;
+        Assert.Equal(1, zlib[1] >> 6); // FLEVEL 1: zlib levels 2 to 5
+        Assert.Equal(2, (zlib[2] >> 1) & 3); // BTYPE 2: dynamic Huffman codes
+    }
+
     [Theory]
     [InlineData(PixelFormat.Rgba32)]
     [InlineData(PixelFormat.Rgba64)]

@@ -40,6 +40,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// of the outline, not what a pen sweeps.
 /// </para>
 /// <para>
+/// On edges, the pieces of a contour are merged without changing their union: the sides of a body across the ends of its
+/// chord are cut at those ends, so that the halves it shares with the join, the cap or the body next to it are exact
+/// reverses of each other and cancel (<see cref="EdgeBuilder.CancelOpposites"/>); a round join at a vertex of a curve that
+/// the bodies on both sides contain is not made (<see cref="CanDeferSmoothJoin"/>). The sweep of the rasterizer no longer
+/// meets an edge crossing each piece where it meets the next one. The pieces given to a path or a sink are kept apart.
+/// </para>
+/// <para>
 /// The pieces go to the edges of a draw call, or to a path as closed contours (<see cref="VectorPath.Widen"/>): the same
 /// points in the same order, so that filling that path is stroking. They can also go to a sink as closed contours
 /// (<see cref="VectorPath.StrokeContains"/>): a <see cref="WindingSink"/> counts how they wind around a point without
@@ -65,6 +72,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class Stroker : PathSink
 {
+    /// <summary>The number of edges before a piece that its edges can cancel: those of the few pieces around a vertex.</summary>
+    private const int CancelWindow = 16;
+
     private readonly EdgeBuilder? _edges;
     private readonly VectorPathBuilder? _outline;
     private readonly PathSink? _pieces;
@@ -125,6 +135,23 @@ internal sealed class Stroker : PathSink
     private double _pieceMaxX;
     private int _pieceFirstEdge;
 
+    // The edges the pieces since the last edges that are not theirs ended with, and the first of them: the edges of a
+    // piece that are the reverse of edges of the pieces just before it cancel them
+    private int _piecesEnd = -1;
+    private int _cancelFloor;
+
+    // Whether the ends of the chord being made have nothing beyond them (the butt ends of an open contour), and whether
+    // its body contains its half of the round joins at its ends (see CanDeferSmoothJoin)
+    private bool _isStartBare;
+    private bool _isEndBare;
+    private bool _bodyContainsJoins;
+
+    // Whether the pieces of the stroke go to edges, where the halves of sides they share cancel and the joins their bodies
+    // contain are not made; a test can turn it off on its thread, to compare with the pieces as they are made otherwise
+    [ThreadStatic]
+    private static bool s_keepsPiecesApart;
+    private bool _mergesPieces;
+
     // Whether the corners of the frame are strictly inside the piece being emitted (top-left, top-right, bottom-left,
     // bottom-right)
     private bool _testFrame;
@@ -133,6 +160,17 @@ internal sealed class Stroker : PathSink
     private bool _topRightInside;
     private bool _bottomLeftInside;
     private bool _bottomRightInside;
+
+    /// <summary>
+    /// Sets whether the strokes drawn on the current thread keep every piece as it is made, as when they are widened into a
+    /// path, instead of cancelling the halves of sides they share and leaving out the joins their bodies contain. The
+    /// pixels must be the same either way: a fuzz test compares them.
+    /// </summary>
+    internal static bool KeepsPiecesApartOnCurrentThread
+    {
+        get => s_keepsPiecesApart;
+        set => s_keepsPiecesApart = value;
+    }
 
     public Stroker(EdgeBuilder edges)
     {
@@ -220,6 +258,8 @@ internal sealed class Stroker : PathSink
         _miterLimitSquared = pen.MiterLimit * pen.MiterLimit;
         _sweepsCurves = true;
         _hasStart = false;
+        _piecesEnd = -1;
+        _mergesPieces = _edges is not null && !s_keepsPiecesApart;
 
         // The pieces are within half the width of their chord, the miters (up to the limit) and the corners of the
         // square caps of its ends excepted
@@ -245,6 +285,8 @@ internal sealed class Stroker : PathSink
         _miterLimitSquared = miterLimit * miterLimit;
         _sweepsCurves = false;
         _hasStart = false;
+        _piecesEnd = -1;
+        _mergesPieces = _edges is not null && !s_keepsPiecesApart;
     }
 
     public override void MoveTo(double x, double y)
@@ -345,7 +387,14 @@ internal sealed class Stroker : PathSink
 
             if (smooth)
             {
-                AddJoin(_x, _y, _last.DirectionX, _last.DirectionY, directionX, directionY, smooth: true);
+                if (!_isLastFirst && CanDeferSmoothJoin(_last.DirectionX, _last.DirectionY, directionX, directionY))
+                {
+                    chord.HasSmoothJoin = true;
+                }
+                else
+                {
+                    AddJoin(_x, _y, _last.DirectionX, _last.DirectionY, directionX, directionY, smooth: true);
+                }
             }
             else
             {
@@ -390,7 +439,14 @@ internal sealed class Stroker : PathSink
                 _first.PreviousY = _last.DirectionY;
                 if (smooth)
                 {
-                    AddJoin(_startX, _startY, _last.DirectionX, _last.DirectionY, _first.DirectionX, _first.DirectionY, smooth: true);
+                    if (CanDeferSmoothJoin(_last.DirectionX, _last.DirectionY, _first.DirectionX, _first.DirectionY))
+                    {
+                        _first.HasSmoothJoin = true;
+                    }
+                    else
+                    {
+                        AddJoin(_startX, _startY, _last.DirectionX, _last.DirectionY, _first.DirectionX, _first.DirectionY, smooth: true);
+                    }
                 }
                 else
                 {
@@ -427,16 +483,26 @@ internal sealed class Stroker : PathSink
 
         if (_hasSegment)
         {
+            // The ends of a contour with butt caps have no piece beyond them
+            var isButt = _cap == LineCap.Butt;
             double startX, startY, endX, endY;
             if (_isLastFirst)
             {
+                _isStartBare = isButt;
+                _isEndBare = isButt;
                 AddChord(in _last, endSmooth: false, 0, 0, out startX, out startY, out endX, out endY);
             }
             else
             {
+                _isEndBare = isButt;
                 AddChord(in _last, endSmooth: false, 0, 0, out _, out _, out endX, out endY);
+                _isEndBare = false;
+                _isStartBare = isButt;
                 AddChord(in _first, _firstEndSmooth, _firstNextX, _firstNextY, out startX, out startY, out _, out _);
             }
+
+            _isStartBare = false;
+            _isEndBare = false;
 
             AddCap(_startX, _startY, -startX, -startY);
             AddCap(_x, _y, endX, endY);
@@ -496,11 +562,16 @@ internal sealed class Stroker : PathSink
             AddJoin(chord.StartX, chord.StartY, chord.JoinX, chord.JoinY, startX, startY, smooth: false);
         }
 
+        // The sides of the body across the ends of the chord are cut at those ends, so that the halves that the pieces
+        // around a vertex share cancel (see EdgeBuilder.CancelOpposites); an end with nothing beyond it is not cut
+        var splitStart = _mergesPieces && !_isStartBare;
+        var splitEnd = _mergesPieces && !_isEndBare;
+        _bodyContainsJoins = false;
         var dx = chord.DirectionX;
         var dy = chord.DirectionY;
         if (!_sweepsCurves || (!chord.StartSmooth && !endSmooth))
         {
-            AddBody(chord.StartX, chord.StartY, chord.EndX, chord.EndY, dx, dy);
+            AddBody(chord.StartX, chord.StartY, chord.EndX, chord.EndY, dx, dy, splitStart, splitEnd);
             return;
         }
 
@@ -512,7 +583,43 @@ internal sealed class Stroker : PathSink
         // How the curve turns at each end: toward +n when the cross product is positive
         var startTurn = chord.StartSmooth ? Cross(chord.PreviousX, chord.PreviousY, dx, dy) : startCorrected ? Cross(dx, dy, nextX, nextY) : 0;
         var endTurn = endSmooth ? Cross(dx, dy, nextX, nextY) : endCorrected ? Cross(chord.PreviousX, chord.PreviousY, dx, dy) : 0;
-        AddSweptBody(chord.StartX, chord.StartY, chord.EndX, chord.EndY, dx, dy, startNormalX, startNormalY, endNormalX, endNormalY, startTurn, endTurn);
+        AddSweptBody(chord.StartX, chord.StartY, chord.EndX, chord.EndY, dx, dy, startNormalX, startNormalY, endNormalX, endNormalY, startTurn, endTurn, splitStart, splitEnd);
+
+        // The round join at its start waited for its body: a body that does not contain the join needs it
+        if (chord.HasSmoothJoin && !_bodyContainsJoins)
+        {
+            AddJoin(chord.StartX, chord.StartY, chord.PreviousX, chord.PreviousY, dx, dy, smooth: true);
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the round join at a vertex of a curve can wait for the body of the chord after it:
+    /// the body of the chord before it contains its half of the join, and, when the body after it does too, the join
+    /// adds nothing to the stroke.
+    /// </summary>
+    /// <remarks>
+    /// The body of a chord of a curve that turns one way only goes, on the outer side of the turn, to the corners of the
+    /// rectangle of the chord and to the points at half the width along the normals at its ends (between those of the
+    /// chords): at a vertex, the two bodies contain the quadrilateral of the vertex, the two corners and the point
+    /// between them, which contains the triangle of the vertex and the two corners. That triangle is the join when its
+    /// arc is not cut, its chord within the flattening tolerance of it.
+    /// </remarks>
+    private bool CanDeferSmoothJoin(double d0x, double d0y, double d1x, double d1y)
+    {
+        if (!_mergesPieces || !_bodyContainsJoins || _isProjectiveOutput || _testFrame)
+            return false;
+
+        var cross = (d0x * d1y) - (d0y * d1x);
+        var dot = (d0x * d1x) + (d0y * d1y);
+        if (cross == 0 || dot < 0)
+            return false;
+
+        // The arc of the join is not cut (AddArc): the sum of its two normals is as long as the sum of the normals of
+        // the chords
+        var mx = d0y + d1y;
+        var my = d0x + d1x;
+        var length = Math.Sqrt((mx * mx) + (my * my));
+        return !(_halfWidth * Scale * (1 - (length / 2)) > Tolerance);
     }
 
     /// <summary>Gets the direction of the stroke at the end of a chord: the direction of the curve there when the chord ends a curve, the one of the chord otherwise.</summary>
@@ -558,7 +665,7 @@ internal sealed class Stroker : PathSink
     /// outer side of its turns, which the round joins continue. When the two normals cross within the pen (on the other
     /// side of the center of a curve narrower than the pen), the area swept is two triangles that meet there.
     /// </summary>
-    private void AddSweptBody(double ax, double ay, double bx, double by, double dx, double dy, double nax, double nay, double nbx, double nby, double startTurn, double endTurn)
+    private void AddSweptBody(double ax, double ay, double bx, double by, double dx, double dy, double nax, double nay, double nbx, double nby, double startTurn, double endTurn, bool splitStart, bool splitEnd)
     {
         var h = _halfWidth;
         var nx = -dy * h;
@@ -576,10 +683,12 @@ internal sealed class Stroker : PathSink
         // opposite directions has both.
         var outerPlus = startTurn < 0 || endTurn < 0;
         var outerMinus = startTurn > 0 || endTurn > 0;
-        Span<double> points = stackalloc double[12];
+        // The sides of the piece across the ends of the chord pass through those ends: they are cut there, so that the
+        // halves that the pieces around the vertex share cancel (see CancelOpposites)
+        Span<double> points = stackalloc double[16];
         if (outerPlus && outerMinus)
         {
-            AddBody(ax, ay, bx, by, dx, dy);
+            AddBody(ax, ay, bx, by, dx, dy, splitStart, splitEnd);
             outerPlus = false;
             outerMinus = false;
         }
@@ -620,32 +729,69 @@ internal sealed class Stroker : PathSink
             }
         }
 
+        var count = 0;
+        var startSplit = -1;
+        var endSplit = -1;
+        AddPoint(points, ref count, outerAX, outerAY);
+        if (splitStart)
+        {
+            startSplit = count / 2;
+            AddPoint(points, ref count, ax, ay);
+        }
+
+        AddPoint(points, ref count, innerAX, innerAY);
+        if (outerMinus)
+        {
+            AddPoint(points, ref count, ax - nx, ay - ny);
+            AddPoint(points, ref count, bx - nx, by - ny);
+        }
+
+        AddPoint(points, ref count, innerBX, innerBY);
+        if (splitEnd)
+        {
+            endSplit = count / 2;
+            AddPoint(points, ref count, bx, by);
+        }
+
+        AddPoint(points, ref count, outerBX, outerBY);
         if (outerPlus)
         {
-            SetPoints(points, outerAX, outerAY, innerAX, innerAY, innerBX, innerBY, outerBX, outerBY, bx + nx, by + ny, ax + nx, ay + ny);
-            AddOrientedPiece(points);
+            AddPoint(points, ref count, bx + nx, by + ny);
+            AddPoint(points, ref count, ax + nx, ay + ny);
         }
-        else if (outerMinus)
-        {
-            SetPoints(points, outerAX, outerAY, innerAX, innerAY, ax - nx, ay - ny, bx - nx, by - ny, innerBX, innerBY, outerBX, outerBY);
-            AddOrientedPiece(points);
-        }
-        else
-        {
-            SetPoints(points[..8], outerAX, outerAY, innerAX, innerAY, innerBX, innerBY, outerBX, outerBY);
-            AddOrientedPiece(points[..8]);
-        }
+
+        AddOrientedPiece(points[..count], startSplit, endSplit);
+        _bodyContainsJoins = outerPlus || outerMinus;
+    }
+
+    private static void AddPoint(Span<double> points, ref int count, double x, double y)
+    {
+        points[count] = x;
+        points[count + 1] = y;
+        count += 2;
     }
 
     /// <summary>Adds a polygon as a piece with the orientation of the pieces (a positive shoelace sum), reversed when it turns the other way; nothing when it has no area.</summary>
-    private void AddOrientedPiece(ReadOnlySpan<double> points)
+    /// <remarks>
+    /// The vertices <paramref name="skip1"/> and <paramref name="skip2"/>, when not -1, cut a side of the polygon (see
+    /// AddBody): they are emitted, but the shoelace sum is the one of the polygon without them. The body of a chord of a
+    /// curve that turns back crosses itself and has a sum of almost zero: its orientation is the one it had before the
+    /// sides were cut.
+    /// </remarks>
+    private void AddOrientedPiece(ReadOnlySpan<double> points, int skip1 = -1, int skip2 = -1)
     {
         var count = points.Length / 2;
         var area = 0d;
-        for (var i = 0; i < count; i++)
+        var first = skip1 == 0 ? (skip2 == 1 ? 2 : 1) : 0;
+        var previous = first;
+        for (var i = first + 1; i <= count; i++)
         {
-            var j = i + 1 == count ? 0 : i + 1;
-            area += (points[2 * i] * points[(2 * j) + 1]) - (points[2 * j] * points[(2 * i) + 1]);
+            var j = i == count ? first : i;
+            if (j == skip1 || j == skip2)
+                continue;
+
+            area += (points[2 * previous] * points[(2 * j) + 1]) - (points[2 * j] * points[(2 * previous) + 1]);
+            previous = j;
         }
 
         // Written so that an area that is not a number is skipped too
@@ -686,13 +832,24 @@ internal sealed class Stroker : PathSink
     }
 
     /// <summary>Adds the rectangle of a segment: with the normal <c>n</c> of length half the width, <c>A + n, A - n, B - n, B + n</c>.</summary>
-    private void AddBody(double ax, double ay, double bx, double by, double directionX, double directionY)
+    /// <remarks>The sides across <c>A</c> and <c>B</c> are cut there when <c>splitStart</c> and <c>splitEnd</c> say so.</remarks>
+    private void AddBody(double ax, double ay, double bx, double by, double directionX, double directionY, bool splitStart = false, bool splitEnd = false)
     {
         var nx = -directionY * _halfWidth;
         var ny = directionX * _halfWidth;
         BeginPiece(ax + nx, ay + ny);
+        if (splitStart)
+        {
+            PieceLineTo(ax, ay);
+        }
+
         PieceLineTo(ax - nx, ay - ny);
         PieceLineTo(bx - nx, by - ny);
+        if (splitEnd)
+        {
+            PieceLineTo(bx, by);
+        }
+
         PieceLineTo(bx + nx, by + ny);
         ClosePiece();
     }
@@ -778,7 +935,7 @@ internal sealed class Stroker : PathSink
                 break;
 
             case LineCap.Square:
-                AddBody(x, y, x + (_halfWidth * directionX), y + (_halfWidth * directionY), directionX, directionY);
+                AddBody(x, y, x + (_halfWidth * directionX), y + (_halfWidth * directionY), directionX, directionY, splitStart: _mergesPieces);
                 break;
         }
     }
@@ -835,6 +992,12 @@ internal sealed class Stroker : PathSink
         BeginPiece(x - (_halfWidth * nx), y - (_halfWidth * ny));
         AddArc(x, y, -nx, -ny, directionX, directionY, depth: 0);
         AddArc(x, y, directionX, directionY, nx, ny, depth: 0);
+        if (_mergesPieces)
+        {
+            // The diameter is cut at the center, as the side of the body it shares is (see AddBody)
+            PieceLineTo(x, y);
+        }
+
         ClosePiece();
     }
 
@@ -992,6 +1155,12 @@ internal sealed class Stroker : PathSink
         }
 
         _pieceFirstEdge = _edges.Count;
+        if (_pieceFirstEdge != _piecesEnd)
+        {
+            // Edges that are not those of the pieces came since the last one: they are not cancelled
+            _cancelFloor = _pieceFirstEdge;
+        }
+
         if (_testFrame)
         {
             _topLeftInside = true;
@@ -1087,6 +1256,12 @@ internal sealed class Stroker : PathSink
         {
             _edges.Truncate(_pieceFirstEdge);
         }
+        else if (_mergesPieces && !CoversFrame)
+        {
+            _edges.CancelOpposites(Math.Max(_cancelFloor, _pieceFirstEdge - CancelWindow), _pieceFirstEdge);
+        }
+
+        _piecesEnd = _edges.Count;
     }
 
     /// <summary>Places a vertex of a piece on the canvas.</summary>
@@ -1146,6 +1321,10 @@ internal sealed class Stroker : PathSink
         public bool StartSmooth;
         public double PreviousX;
         public double PreviousY;
+
+        // A round join at its start, a vertex of a curve, that waits for its body: only made when the body does not
+        // contain it (see CanDeferSmoothJoin)
+        public bool HasSmoothJoin;
 
         // A join at its start, a corner, waits for the direction the stroke starts the chord with; it comes from the
         // direction the stroke ends the chord before it with

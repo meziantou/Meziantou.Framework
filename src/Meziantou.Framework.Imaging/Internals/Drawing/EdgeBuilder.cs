@@ -106,6 +106,55 @@ internal sealed class EdgeBuilder : IDisposable
         }
     }
 
+    /// <summary>
+    /// Removes each edge added since the builder had <paramref name="first"/> edges that is the exact reverse of an edge
+    /// added since it had <paramref name="windowStart"/> edges and before <paramref name="first"/>, together with that
+    /// edge. The two add nothing to the winding number of any point: removing them keeps the coverage.
+    /// </summary>
+    public void CancelOpposites(int windowStart, int first)
+    {
+        if (windowStart == first || first == Count)
+            return;
+
+        var edges = Edges;
+        var firstRemoved = -1;
+        for (var i = first; i < edges.Length; i++)
+        {
+            ref var edge = ref edges[i];
+
+            // The edge it cancels is most often among the last ones of the pieces before
+            for (var j = first - 1; j >= windowStart; j--)
+            {
+                ref var other = ref edges[j];
+                if (other.Y0 == edge.Y0 && other.Y1 == edge.Y1 && other.X0 == edge.X0 && other.X1 == edge.X1 && other.Direction == -edge.Direction)
+                {
+                    other.Direction = 0;
+                    edge.Direction = 0;
+                    if (firstRemoved < 0 || j < firstRemoved)
+                    {
+                        firstRemoved = j;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        if (firstRemoved < 0)
+            return;
+
+        var count = firstRemoved;
+        for (var i = firstRemoved; i < edges.Length; i++)
+        {
+            if (edges[i].Direction != 0)
+            {
+                edges[count++] = edges[i];
+            }
+        }
+
+        Count = count;
+    }
+
     public void Dispose()
     {
         _buffer?.Dispose();

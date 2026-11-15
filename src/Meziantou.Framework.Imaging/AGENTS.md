@@ -1176,6 +1176,16 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   models the same definition: change both together. `Offset` and the emboldening of glyphs (`Configure(width, join,
   miterLimit)`) keep the rectangles: they need the Minkowski band, and the folded lobes meet at points that the grid of
   `PathCombiner` parts into slivers.
+- On a canvas, the stroker merges its pieces without changing their union, which is most of the cost of a narrow stroke
+  (each piece crossed its neighbors in the sweep): the sides of a body across the ends of its chord are cut at those
+  ends, so that the halves a body shares with the join, the cap or the body next to it are exact reverses and cancel
+  (`EdgeBuilder.CancelOpposites`, among the edges of the few pieces before, only while nothing else added edges in
+  between), and the round join at a vertex of a curve is left out when both bodies around it contain it (a single turn
+  and an arc that is not cut, `CanDeferSmoothJoin`). The orientation of a body is still decided on its points without
+  the cut points: the body of a chord where a curve turns back crosses itself, its shoelace sum is almost zero, and
+  its sign must stay what it was. A widened path (`Widen`) and `StrokeContains` keep every piece as it is.
+  `DrawingFuzzTests.StrokesPaintLikeTheirSeparatePieces` compares the pixels with the pieces kept apart
+  (`Stroker.KeepsPiecesApartOnCurrentThread`); they must be the same.
 - Dashes are cut before the stroker (`Dasher`), which strokes each dash as an open contour. The first dash of a contour
   is held back until the contour ends, because the last dash of a closed contour continues with it. On a canvas, only
   the parts of a segment whose dashes can change a pixel are cut (the canvas seen along the segment, plus the reach of

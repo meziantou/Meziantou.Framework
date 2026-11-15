@@ -3507,6 +3507,7 @@ public sealed class VectorizedKernelTests
         // with every intermediate precision the weights allow
         var random = new Random(channels + 40);
         var lanes = FixedPointResampler.GetLanes(channels);
+        var bytesChecked = 0;
         (int Source, int Output)[] sizes = [(1, 1), (2, 5), (7, 3), (37, 11), (37, 80), (101, 100), (300, 7), (64, 129), (3, 30), (1000, 9), (5, 23)];
         foreach (var filter in new[] { ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
         {
@@ -3553,6 +3554,17 @@ public sealed class VectorizedKernelTests
                 Assert.Equal(expected, actual[..expected.Length]);
                 Assert.All(actual[expected.Length..], value => Assert.Equal(-1, value));
 
+                // 4-sample pixels read from their bytes (x64), when no padded window reads after the row
+                if (FixedPointResampler.CanResampleBytes(table, channels, bytes.Length))
+                {
+                    var fromBytes = new short[(outputLength * lanes) + 8];
+                    fromBytes.AsSpan(expected.Length).Fill(-1);
+                    FixedPointResampler.ResampleHorizontalBytes(bytes, fromBytes.AsSpan(0, expected.Length), table, shift);
+                    Assert.Equal(expected, fromBytes[..expected.Length]);
+                    Assert.All(fromBytes[expected.Length..], value => Assert.Equal(-1, value));
+                    bytesChecked++;
+                }
+
                 // Each window adds up to exactly 1 in fixed point
                 for (var d = 0; d < outputLength; d++)
                 {
@@ -3560,6 +3572,8 @@ public sealed class VectorizedKernelTests
                 }
             }
         }
+
+        Assert.Equal(channels is 4 && FixedPointResampler.IsByteRowAccelerated, bytesChecked > 0);
     }
 
     [Fact]

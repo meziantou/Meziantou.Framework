@@ -172,6 +172,7 @@
         "destination": { "type": "string", "description": "Id of the destination colorProfile." },
         "intent": { "enum": ["perceptual", "relative-colorimetric", "saturation", "absolute-colorimetric"] },
         "blackPointCompensation": { "type": "boolean" },
+        "sourceSamples": { "enum": ["named-color-index"], "description": "Absent for device samples; 'named-color-index' when the source is a named color profile and each source sample is the index of a color." },
         "sourceChannels": { "enum": [1, 3, 4] },
         "destinationChannels": { "enum": [1, 3, 4] },
         "sampleCount": { "type": "integer", "minimum": 1 },
@@ -181,7 +182,7 @@
           "additionalProperties": false,
           "required": ["tool", "command", "generator"],
           "properties": {
-            "tool": { "type": "string", "description": "Tool and exact version, e.g. 'transicc (LittleCMS 2.19)'." },
+            "tool": { "type": "string", "description": "Tool and exact version, e.g. 'transicc (LittleCMS 2.19)' or 'iccApplyNamedCmm (iccDEV 2.4.2.5)'." },
             "command": { "type": "string", "description": "Exact command line; the colors are its standard input." },
             "generator": { "type": "string", "description": "Committed script path and function." }
           }

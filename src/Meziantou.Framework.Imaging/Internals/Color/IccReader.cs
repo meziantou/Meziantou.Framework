@@ -45,6 +45,10 @@ internal static class IccReader
     public const uint TagBToA0 = 0x42324130; // 'B2A0'
     public const uint TagBToA1 = 0x42324131; // 'B2A1'
     public const uint TagBToA2 = 0x42324132; // 'B2A2'
+    public const uint TagAToB3 = 0x41324233; // 'A2B3'
+    public const uint TagBToA3 = 0x42324133; // 'B2A3'
+    public const uint TagCustomToStandardPcc = 0x63327370; // 'c2sp'
+    public const uint TagStandardToCustomPcc = 0x73326370; // 's2cp'
 
     public const uint TypeXyz = 0x58595A20; // 'XYZ '
     public const uint TypeCurve = 0x63757276; // 'curv'

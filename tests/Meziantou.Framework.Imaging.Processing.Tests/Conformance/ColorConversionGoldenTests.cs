@@ -124,10 +124,12 @@ public sealed class ColorConversionGoldenTests
             ["icc/synthetic-gray-paper"] = IccTestProfiles.GrayPaper,
             ["icc/synthetic-rgb-scanner"] = IccTestProfiles.RgbScanner,
             ["icc/synthetic-gray-printer-lut8"] = IccTestProfiles.GrayPrinterLut8,
+            ["icc/synthetic-named-lab-v2"] = IccTestProfiles.NamedColorLabV2,
         };
 
+        // The iccMAX profiles are built from XML by iccFromXml of iccDEV, which the tests do not run
         var root = FixtureRoot.GetDirectory();
-        var generated = (Manifest.ColorProfiles ?? []).Where(profile => profile.Provenance.Origin == "generated").ToList();
+        var generated = (Manifest.ColorProfiles ?? []).Where(profile => profile.Provenance.Origin == "generated" && profile.Provenance.Generator?.Contains("iccFromXml", StringComparison.Ordinal) != true).ToList();
         Assert.Equal(builders.Keys.Order(StringComparer.Ordinal), generated.Select(profile => profile.Id).Order(StringComparer.Ordinal));
         foreach (var profile in generated)
         {
@@ -141,20 +143,8 @@ public sealed class ColorConversionGoldenTests
     {
         var root = FixtureRoot.GetDirectory();
         var entry = Manifest.ColorTransforms!.Single(transform => transform.Id == id);
-        var source = LoadProfile(root, entry.Source);
-        var destination = LoadProfile(root, entry.Destination);
         var (samples, expected) = ColorTransformVectors.Read(root, entry);
-
-        var transform = IccColorTransform.Create(source, destination, new IccColorTransformOptions
-        {
-            Intent = (IccRenderingIntent)ColorTransformEntry.Intents.ToList().IndexOf(entry.Intent),
-            BlackPointCompensation = entry.BlackPointCompensation,
-        });
-        Assert.Equal(entry.SourceChannels, transform.SourceChannelCount);
-        Assert.Equal(entry.DestinationChannels, transform.DestinationChannelCount);
-
-        var actual = new ushort[expected.Length];
-        transform.Convert(samples, actual);
+        var actual = Convert(root, entry, samples);
         var (maximum, mean, worst) = Measure(expected, actual);
         var description = string.Create(CultureInfo.InvariantCulture, $"{id}: maximum difference {maximum} (limit {entry.Comparison.MaxAbsoluteError}), mean {mean:F3} (limit {entry.Comparison.MaxMeanAbsoluteError}), worst color {worst / entry.DestinationChannels}");
         Assert.True(maximum <= entry.Comparison.MaxAbsoluteError && mean <= entry.Comparison.MaxMeanAbsoluteError, description);
@@ -172,16 +162,40 @@ public sealed class ColorConversionGoldenTests
         var root = FixtureRoot.GetDirectory();
         var entry = Manifest.ColorTransforms!.Single(transform => transform.Id == id);
         var (samples, expected) = ColorTransformVectors.Read(root, entry);
-        var transform = IccColorTransform.Create(LoadProfile(root, entry.Source), LoadProfile(root, entry.Destination), new IccColorTransformOptions
+        var actual = Convert(root, entry, samples);
+        var (maximum, _, _) = Measure(expected, actual);
+        Assert.True(entry.Comparison.MaxAbsoluteError <= Math.Max(4, 2 * maximum), string.Create(CultureInfo.InvariantCulture, $"{id}: the limit {entry.Comparison.MaxAbsoluteError} is more than twice the measured maximum {maximum}"));
+    }
+
+    // The samples of a named color source are the indexes of its colors
+    private static ushort[] Convert(FullPath root, ColorTransformEntry entry, ushort[] samples)
+    {
+        var source = LoadProfile(root, entry.Source);
+        var destination = LoadProfile(root, entry.Destination);
+        var options = new IccColorTransformOptions
         {
             Intent = (IccRenderingIntent)ColorTransformEntry.Intents.ToList().IndexOf(entry.Intent),
             BlackPointCompensation = entry.BlackPointCompensation,
-        });
+        };
 
-        var actual = new ushort[expected.Length];
+        var actual = new ushort[entry.SampleCount * entry.DestinationChannels];
+        if (entry.SourceSamples == ColorTransformEntry.NamedColorIndexSamples)
+        {
+            var named = IccNamedColorTransform.Create(source, destination, options);
+            Assert.Equal(entry.DestinationChannels, named.DestinationChannelCount);
+            for (var i = 0; i < samples.Length; i++)
+            {
+                named.Convert(named.Colors[samples[i]], actual.AsSpan(i * entry.DestinationChannels, entry.DestinationChannels));
+            }
+
+            return actual;
+        }
+
+        var transform = IccColorTransform.Create(source, destination, options);
+        Assert.Equal(entry.SourceChannels, transform.SourceChannelCount);
+        Assert.Equal(entry.DestinationChannels, transform.DestinationChannelCount);
         transform.Convert(samples, actual);
-        var (maximum, _, _) = Measure(expected, actual);
-        Assert.True(entry.Comparison.MaxAbsoluteError <= Math.Max(4, 2 * maximum), string.Create(CultureInfo.InvariantCulture, $"{id}: the limit {entry.Comparison.MaxAbsoluteError} is more than twice the measured maximum {maximum}"));
+        return actual;
     }
 
     private static (int Maximum, double Mean, int WorstIndex) Measure(ushort[] expected, ushort[] actual)

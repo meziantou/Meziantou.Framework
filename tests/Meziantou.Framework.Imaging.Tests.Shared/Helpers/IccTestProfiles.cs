@@ -49,6 +49,12 @@ internal static class IccTestProfiles
     public static byte[] BuildBytes(string colorSpace, string connectionSpace, (string Signature, byte[] Data)[] tags, Action<byte[]>? configureHeader = null)
         => IccProfileBuilder.BuildBytes(colorSpace, connectionSpace, tags, configureHeader);
 
+    /// <inheritdoc cref="IccProfileBuilder.NamedColorLabV2"/>
+    public static IccProfile NamedColorLabV2() => Wrap(IccProfileBuilder.NamedColorLabV2());
+
+    /// <inheritdoc cref="IccProfileBuilder.NamedColorXyzV4"/>
+    public static IccProfile NamedColorXyzV4() => Wrap(IccProfileBuilder.NamedColorXyzV4());
+
     /// <summary>A version 4 display profile with the given tags.</summary>
     public static IccProfile Build(string colorSpace, string connectionSpace, params (string Signature, byte[] Data)[] tags)
         => Wrap(IccProfileBuilder.BuildBytes(colorSpace, connectionSpace, tags));

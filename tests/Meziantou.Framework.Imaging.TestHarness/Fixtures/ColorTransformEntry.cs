@@ -31,6 +31,16 @@ public sealed class ColorTransformEntry
     [JsonPropertyName("blackPointCompensation")]
     public required bool BlackPointCompensation { get; init; }
 
+    /// <summary>The value of <see cref="SourceSamples"/> for a named color profile as the source.</summary>
+    public const string NamedColorIndexSamples = "named-color-index";
+
+    /// <summary>
+    /// Gets what the source samples are: <see langword="null"/> for device values, <see cref="NamedColorIndexSamples"/>
+    /// for the indexes of the colors of a named color profile (one sample per color).
+    /// </summary>
+    [JsonPropertyName("sourceSamples")]
+    public string? SourceSamples { get; init; }
+
     /// <summary>Gets the number of source device channels.</summary>
     [JsonPropertyName("sourceChannels")]
     public required int SourceChannels { get; init; }

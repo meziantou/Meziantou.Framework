@@ -621,6 +621,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
     public override bool IsEmbedded => _receiver is not null;
 
+    public override bool AcceptsTwoComponentLosslessFrames => _receiver is { ReceivesStoredSamples: true };
+
     // Lenient decoding applies to JPEG files, not to the datastreams of another format
     private bool IsLenient => _context.IsLenient && _receiver is null;
 
@@ -1463,6 +1465,9 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     {
         var (width, height) = _outputSize;
         var bandRows = _blockSize * _maxVertical;
+        if (_precision == 8 && _components.Length == 2)
+            throw Unsupported("Lossless JPEG frames of two components of 8-bit samples are not supported.", "JPEG 2 components of 8 bits");
+
         if (_precision != 8)
         {
             return _receiver is not null

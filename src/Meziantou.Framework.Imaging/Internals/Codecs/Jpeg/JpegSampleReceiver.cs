@@ -14,6 +14,15 @@ internal abstract class JpegSampleReceiver
     /// <param name="precision">The number of bits of a sample: 8 or 12, or 2 to 16 for a lossless frame.</param>
     public abstract void OnFrame(int width, int height, int componentCount, int precision);
 
+    /// <summary>
+    /// Gets a value indicating whether the receiver takes the samples as the frame stores them: the components interleaved
+    /// in their order, never converted from YCbCr nor scaled to 16 bits, so that <see cref="OnDeepRow"/> gives the values
+    /// of the precision of the frame. Such a receiver also accepts the lossless frames of two components, which DNG writes
+    /// for the samples of a color filter array (DNG specification 1.7.1, Compression: "only the total sample counts need to
+    /// match").
+    /// </summary>
+    public virtual bool ReceivesStoredSamples => false;
+
     /// <summary>Receives one row of a frame of 8-bit samples, from the top one down.</summary>
     /// <param name="y">The index of the row in the frame.</param>
     /// <param name="samples">

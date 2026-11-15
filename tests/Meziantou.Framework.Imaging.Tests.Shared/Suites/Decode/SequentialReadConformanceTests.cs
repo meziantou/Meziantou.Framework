@@ -16,7 +16,7 @@ public sealed class SequentialReadConformanceTests
 
     public static TheoryData<string, InputVariant> ErrorCases => CreateCases(valid: false);
 
-    [Theory]
+    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ValidCases))]
     public async Task ReadFrameMatchesReferences(string id, InputVariant variant)
     {
@@ -27,7 +27,7 @@ public sealed class SequentialReadConformanceTests
         GoldenAssert.ImageMatches(fixture, snapshot);
     }
 
-    [Theory]
+    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ValidCases))]
     public async Task ReadFrameIntoMatchesReferences(string id, InputVariant variant)
     {
@@ -38,7 +38,7 @@ public sealed class SequentialReadConformanceTests
         GoldenAssert.ImageMatches(fixture, snapshot);
     }
 
-    [Theory]
+    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ErrorCases))]
     public async Task ErrorFixturesFailExplicitly(string id, InputVariant variant)
     {
@@ -148,7 +148,8 @@ public sealed class SequentialReadConformanceTests
     private static TheoryData<string, InputVariant> CreateCases(bool valid)
     {
         var data = new TheoryData<string, InputVariant>();
-        foreach (var fixture in CorpusScope.Fixtures.Where(fixture => fixture.IsValid == valid))
+        // A random-access container is not read sequentially: the reader rejects it when it is opened
+        foreach (var fixture in CorpusScope.Fixtures.Where(fixture => fixture.IsValid == valid && !FixtureTraits.IsReadByRandomAccessOnly(fixture)))
         {
             foreach (var variant in InputVariants.ReaderVariants)
             {

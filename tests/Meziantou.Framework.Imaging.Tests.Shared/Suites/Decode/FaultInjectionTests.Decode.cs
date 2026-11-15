@@ -9,7 +9,27 @@ public sealed partial class FaultInjectionTests
 {
     private static readonly ConvolutionOptions Sharpen = new(new ConvolutionKernel(3, 3, [0, -1, 0, -1, 5, -1, 0, -1, 0]));
 
-    public static TheoryData<string, string> DecodeCases => Combine(ValidIds, ["load", "load-async", "reader", "reader-async", "reader-into", "identify-full"]);
+    public static TheoryData<string, string> DecodeCases
+    {
+        get
+        {
+            // A random-access container is not read sequentially (FixtureTraits.IsReadByRandomAccessOnly)
+            var data = new TheoryData<string, string>();
+            foreach (var id in ValidIds)
+            {
+                var randomAccessOnly = FixtureTraits.IsReadByRandomAccessOnly(GoldenCorpus.Default.Get(id));
+                foreach (var operation in (string[])["load", "load-async", "reader", "reader-async", "reader-into", "identify-full"])
+                {
+                    if (!randomAccessOnly || !operation.StartsWith("reader", StringComparison.Ordinal))
+                    {
+                        data.Add(id, operation);
+                    }
+                }
+            }
+
+            return data;
+        }
+    }
 
     public static TheoryData<string, string> GeometryCases => Combine(ValidIds, ["crop", "auto-crop", "resize", "rotate", "auto-orient"]);
 

@@ -97,6 +97,12 @@ public enum ImageFormat
     Radiance = 18,
 
     /// <summary>
+    /// Adobe Digital Negative (DNG): the raw samples of a camera sensor (a color filter array or linear raw data) in a TIFF
+    /// profile, rendered to scene-referred linear light. DNG is read, never written.
+    /// </summary>
+    Dng = 19,
+
+    /// <summary>
     /// A format read or written by a <see cref="CustomImageCodec"/> of <see cref="ImageConfiguration.Codecs"/>, not by the
     /// library itself. <see cref="ImageInfo.FormatInfo"/> and <see cref="Formats.CustomImageEncoder.FormatInfo"/> tell which one.
     /// </summary>

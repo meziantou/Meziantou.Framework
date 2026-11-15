@@ -33,6 +33,9 @@ internal sealed class TiffCollectionReader : ImageCollectionReader
         var context = new ImageCodecContext(configuration, "TiffDocument", CancellationToken.None);
         var source = new RandomAccessSource(input, context, ImageFormat.Tiff);
         var header = TiffHeader.Read(source);
+        if (DngDocument.IsDng(TiffDirectory.Read(source, header, header.FirstDirectoryOffset)))
+            throw new UnsupportedImageFeatureException("DNG stores a single raw image, not a collection of pages: use Image.Load to render it, and AuxiliaryImageCollection for its previews.", ImageFormat.Dng, "Image collection");
+
         var pages = new List<TiffPage>();
         foreach (var directory in TiffDirectoryChain.Enumerate(source, header, configuration.Limits))
         {

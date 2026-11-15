@@ -47,6 +47,8 @@ public sealed class AuxiliaryImage
 
     internal uint? HeifItemId { get; init; }
 
+    internal int? DngDirectoryIndex { get; init; }
+
     internal (int Offset, int Length)? JpegRange { get; init; }
 
     internal byte? AlternatePrimaries { get; set; }

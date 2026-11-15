@@ -56,6 +56,15 @@ internal sealed class TiffDirectory
     /// <summary>Gets the entries, in file order.</summary>
     public ReadOnlySpan<TiffField> Fields => _fields;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the values read from the input are kept, so that reading the values of a tag
+    /// again reads (and charges to the encoded-byte limit) nothing: the DNG decoder reads some tags of IFD 0 for several
+    /// purposes (the camera profile, the properties, the EXIF profile).
+    /// </summary>
+    public bool CachesValues { get; set; }
+
+    private Dictionary<ushort, byte[]>? _cachedValues;
+
     /// <summary>Reads the directory at an offset.</summary>
     /// <param name="source">The input.</param>
     /// <param name="header">The file header.</param>
@@ -161,7 +170,20 @@ internal sealed class TiffDirectory
         }
 
         var offset = GetValueOffset(field);
-        return _source.ReadToBuffer(offset, length);
+        if (!CachesValues)
+            return _source.ReadToBuffer(offset, length);
+
+        _cachedValues ??= [];
+        if (!_cachedValues.TryGetValue(field.Tag, out var cached))
+        {
+            using var read = _source.ReadToBuffer(offset, length);
+            cached = read.Span.ToArray();
+            _cachedValues[field.Tag] = cached;
+        }
+
+        var copy = _source.Scope.Rent(cached.Length, AllocationKind.DecoderState, clear: false);
+        cached.CopyTo(copy.Span);
+        return copy;
     }
 
     /// <summary>Gets the offset of the out-of-line values of an entry.</summary>

@@ -12,6 +12,25 @@ internal static class ErrorFixtureStages
 {
     private static readonly HashSet<string> HeaderDefects = new(StringComparer.Ordinal)
     {
+        // DNG: the tags of IFD 0 and of the raw IFD, the opcode lists and the camera profile, resolved by an identification
+        "invalid/dng/active-area-outside",
+        "invalid/dng/backward-version",
+        "invalid/dng/cfa-layout-staggered",
+        "invalid/dng/cfa-pattern-color-unlisted",
+        "invalid/dng/color-matrix-singular",
+        "invalid/dng/default-crop-outside",
+        "invalid/dng/default-scale",
+        "invalid/dng/dng-version-zero",
+        "invalid/dng/missing-cfa-pattern",
+        "invalid/dng/opcode-list-truncated",
+        "invalid/dng/required-opcode",
+        "invalid/dng/signed-samples",
+        "invalid/dng/third-illuminant",
+        "invalid/dng/truncated-samples",
+        "invalid/dng/white-below-black",
+        "limit/dng/frame-pixels-over-limit",
+        "limit/dng/metadata-bytes-over-limit",
+
         // Radiance HDR: the information header and the resolution string
         "invalid/hdr/format-other",
         "invalid/hdr/resolution-lowercase",

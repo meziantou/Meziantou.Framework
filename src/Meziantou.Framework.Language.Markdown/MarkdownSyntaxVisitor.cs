@@ -74,6 +74,15 @@ public abstract class MarkdownSyntaxVisitor
     /// <summary>Visits a <see cref="MarkdownCustomContainerSyntax"/>.</summary>
     public virtual void VisitMarkdownCustomContainer(MarkdownCustomContainerSyntax node) => DefaultVisit(node);
 
+    /// <summary>Visits a <see cref="MarkdownFooterSyntax"/>.</summary>
+    public virtual void VisitMarkdownFooter(MarkdownFooterSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownFigureCaptionSyntax"/>.</summary>
+    public virtual void VisitMarkdownFigureCaption(MarkdownFigureCaptionSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownFigureSyntax"/>.</summary>
+    public virtual void VisitMarkdownFigure(MarkdownFigureSyntax node) => DefaultVisit(node);
+
     /// <summary>Visits a <see cref="MarkdownDefinitionTermSyntax"/>.</summary>
     public virtual void VisitMarkdownDefinitionTerm(MarkdownDefinitionTermSyntax node) => DefaultVisit(node);
 
@@ -182,6 +191,15 @@ public abstract class MarkdownSyntaxVisitor<TResult>
 
     /// <summary>Visits a <see cref="MarkdownCustomContainerSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownCustomContainer(MarkdownCustomContainerSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownFooterSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownFooter(MarkdownFooterSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownFigureCaptionSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownFigureCaption(MarkdownFigureCaptionSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownFigureSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownFigure(MarkdownFigureSyntax node) => DefaultVisit(node);
 
     /// <summary>Visits a <see cref="MarkdownDefinitionTermSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownDefinitionTerm(MarkdownDefinitionTermSyntax node) => DefaultVisit(node);

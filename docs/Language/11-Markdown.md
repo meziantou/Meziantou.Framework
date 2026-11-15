@@ -399,11 +399,32 @@ Assert.Equal("<p>\u2705 \u2705 :rocket:</p>\n", MarkdownHtmlRenderer.ToHtml(Mark
 ```
 <!-- endref -->
 
+- [Figures](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Figures): blocks between a fence of three carets
+  or more, `^^^`, and a fence as long are a
+  [MarkdownFigureSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownFigureSyntax), rendered as `<figure>`. The text
+  after a fence is a [MarkdownFigureCaptionSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownFigureCaptionSyntax),
+  rendered as `<figcaption>`.
+- [Footers](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Footers): lines that start with `^^`, as a block
+  quote does with `>`, are a [MarkdownFooterSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownFooterSyntax),
+  rendered as `<footer>` with its paragraphs without `<p>`. A blank line ends it.
+- [Citations](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.Citations): text between `""` is a
+  [MarkdownEmphasisExtraSyntax](cref:Meziantou.Framework.Language.Markdown.MarkdownEmphasisExtraSyntax) of style
+  `Citation`, rendered as `<cite>`. As `_`, the quotes cannot open or close in a word.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_FiguresFootersCitations;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Figures | MarkdownExtensions.Footers | MarkdownExtensions.Citations };
+var tree = MarkdownSyntaxTree.ParseText("^^^\n![Logo](logo.png)\n^^^ The *logo*\n\n^^ From \"\"The Book\"\"\n", options);
+
+Assert.Equal("<figure>\n<p><img src=\"logo.png\" alt=\"Logo\" /></p>\n<figcaption>The <em>logo</em></figcaption>\n</figure>\n<footer>From <cite>The Book</cite></footer>\n", MarkdownHtmlRenderer.ToHtml(tree));
+```
+<!-- endref -->
+
 [DisableHtml](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.DisableHtml) reads HTML as text: the
 renderer escapes it, and autolinks such as `<https://example.com>` are still links.
 
 ## Limitations of the prototype
 
-- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no grid tables, figures, media links...
+- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no grid tables, Markdig pipe tables, media links...
 - Inserting and removing blocks parses the whole text again.
 - Parsing allocates more and is slower than [Meziantou.Framework.Markdown](../Markdown/01-Introduction.md).

@@ -258,7 +258,7 @@ internal sealed class BlockParser
 
     private static bool CanContain(SyntaxKind parent, SyntaxKind child) => parent switch
     {
-        SyntaxKind.Document or SyntaxKind.BlockQuote or SyntaxKind.ListItem or SyntaxKind.FootnoteDefinition or SyntaxKind.CustomContainer or SyntaxKind.DefinitionItem => child is not (SyntaxKind.ListItem or SyntaxKind.DefinitionItem),
+        SyntaxKind.Document or SyntaxKind.BlockQuote or SyntaxKind.ListItem or SyntaxKind.FootnoteDefinition or SyntaxKind.CustomContainer or SyntaxKind.DefinitionItem or SyntaxKind.Figure or SyntaxKind.Footer => child is not (SyntaxKind.ListItem or SyntaxKind.DefinitionItem),
         SyntaxKind.List => child == SyntaxKind.ListItem,
         SyntaxKind.DefinitionList => child == SyntaxKind.DefinitionItem,
         _ => false,
@@ -268,7 +268,7 @@ internal sealed class BlockParser
 
     // Whether the line can start a block of an extension: a delimiter row under a paragraph, a row of a table, or the task
     // list item marker after the marker of a list item
-    private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || (c == ':' && HasExtension(MarkdownExtensions.CustomContainers)) || (c is ':' or '~' && HasExtension(MarkdownExtensions.DefinitionLists)) || (char.IsAsciiLetter(c) && HasExtension(MarkdownExtensions.ListExtras)) || (c == '[' && IsFootnoteContainer(container)) || container.Kind switch
+    private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || (c == ':' && HasExtension(MarkdownExtensions.CustomContainers)) || (c is ':' or '~' && HasExtension(MarkdownExtensions.DefinitionLists)) || (char.IsAsciiLetter(c) && HasExtension(MarkdownExtensions.ListExtras)) || (c == '^' && (HasExtension(MarkdownExtensions.Figures) || HasExtension(MarkdownExtensions.Footers))) || (c == '[' && IsFootnoteContainer(container)) || container.Kind switch
     {
         SyntaxKind.Paragraph => HasExtension(MarkdownExtensions.Tables) && c is '|' or ':',
         SyntaxKind.Table => true,
@@ -412,6 +412,61 @@ internal sealed class BlockParser
                 return 0;
             }
 
+            case SyntaxKind.Figure:
+                // As in Markdig: a fence of carets as long as the opening one closes the figure, and the text after it is a caption
+                if (_indent <= 3 && Peek(_nextNonspace) == '^')
+                {
+                    var end = _nextNonspace;
+                    while (end < _lineEnd && _text[end] == '^')
+                    {
+                        end++;
+                    }
+
+                    if (end - _nextNonspace >= block.FenceLength)
+                    {
+                        while (_tip != block)
+                        {
+                            Finalize(_tip);
+                        }
+
+                        block.Trailing.Add(BuildElement.Token(SyntaxKind.FigureFenceToken, _nextNonspace, end));
+                        block.ClosingCaption = GetCaption(end);
+                        Finalize(block);
+                        return 2;
+                    }
+                }
+
+                return 0;
+
+            case SyntaxKind.Footer:
+                // As a block quote, with ^^ and a space: a blank line ends the footer, and takes the line
+                if (!_indented && Peek(_nextNonspace) == '^' && Peek(_nextNonspace + 1) == '^')
+                {
+                    AdvanceNextNonspace();
+                    var marker = _offset;
+                    AdvanceOffset(2, columns: false);
+                    _triviaSpans.Add(new TriviaSpan(marker, marker + 2, SyntaxKind.FooterMarkerTrivia));
+                    if (Scanners.IsSpaceOrTab(Peek(_offset)))
+                    {
+                        AdvanceOffset(1, columns: true);
+                    }
+
+                    return 0;
+                }
+
+                if (_blank && !_indented)
+                {
+                    while (_tip != block)
+                    {
+                        Finalize(_tip);
+                    }
+
+                    Finalize(block);
+                    return 2;
+                }
+
+                return 1;
+
             case SyntaxKind.CustomContainer:
                 // As in Markdig: a fence of colons as long as the opening one closes the container and its blocks, even in a code
                 // block. The indentation of the other lines is kept.
@@ -524,6 +579,43 @@ internal sealed class BlockParser
         if (!_indented && c is ':' or '~' && HasExtension(MarkdownExtensions.DefinitionLists) && TryStartDefinition(container))
         {
             return 1;
+        }
+
+        // Figure and footer, which Markdig tries first
+        if (!_indented && c == '^' && (HasExtension(MarkdownExtensions.Figures) || HasExtension(MarkdownExtensions.Footers)))
+        {
+            var carets = _nextNonspace;
+            while (carets < _lineEnd && _text[carets] == '^')
+            {
+                carets++;
+            }
+
+            if (carets - _nextNonspace >= 3 && HasExtension(MarkdownExtensions.Figures))
+            {
+                CloseUnmatchedBlocks();
+                var figure = AddChild(SyntaxKind.Figure);
+                figure.FenceLength = carets - _nextNonspace;
+                figure.Leading.Add(BuildElement.Token(SyntaxKind.FigureFenceToken, _nextNonspace, carets));
+                figure.OpeningCaption = GetCaption(carets);
+                AdvanceNextNonspace();
+                AdvanceOffset(_lineEnd - _offset, columns: false);
+                return 2;
+            }
+
+            if (carets - _nextNonspace >= 2 && HasExtension(MarkdownExtensions.Footers))
+            {
+                AdvanceNextNonspace();
+                var marker = _offset;
+                AdvanceOffset(2, columns: false);
+                if (Scanners.IsSpaceOrTab(Peek(_offset)))
+                {
+                    AdvanceOffset(1, columns: true);
+                }
+
+                CloseUnmatchedBlocks();
+                AddChild(SyntaxKind.Footer).Leading.Add(BuildElement.Token(SyntaxKind.FooterMarkerToken, marker, marker + 2));
+                return 1;
+            }
         }
 
         // Custom container, which Markdig tries first: its opening fence is the whole line
@@ -991,6 +1083,19 @@ internal sealed class BlockParser
 
         _skipAddLine = true;
         return true;
+    }
+
+    // The text after a fence of a figure, without the whitespace before it, which is its caption: Markdig keeps the whitespace
+    // after it
+    private (int Start, int End) GetCaption(int fenceEnd)
+    {
+        var start = fenceEnd;
+        while (start < _lineEnd && Scanners.IsSpaceOrTab(_text[start]))
+        {
+            start++;
+        }
+
+        return (start, _lineEnd);
     }
 
     // The columns from the start of the line, after the containers, to the content after the marker of a definition: the marker,
@@ -1571,6 +1676,23 @@ internal sealed class BlockParser
                 output.Add(ConvertTable(block));
                 return;
 
+            case SyntaxKind.Figure:
+            {
+                // The opening fence and its caption, the blocks, then the closing fence and its caption
+                var node = new BuildNode(block.Kind, block.Children.Count + 4);
+                AddTokens(node, block.LeadingOrNull);
+                AddCaption(node, block.OpeningCaption);
+                foreach (var child in block.Children)
+                {
+                    Convert(child, node.Children);
+                }
+
+                AddTokens(node, block.TrailingOrNull);
+                AddCaption(node, block.ClosingCaption);
+                output.Add(node);
+                return;
+            }
+
             case SyntaxKind.DefinitionItem:
             {
                 // The terms, the marker, whose value is the number of blank lines that Markdig leaves in the definition, and the blocks
@@ -1686,6 +1808,16 @@ internal sealed class BlockParser
         }
 
         return false;
+    }
+
+    private void AddCaption(BuildNode figure, (int Start, int End) caption)
+    {
+        if (caption.End > caption.Start)
+        {
+            var node = new BuildNode(SyntaxKind.FigureCaption);
+            _inlineParser.Parse(Subject.FromLines(_text, [new Line(caption.Start, caption.End, caption.End, 0)]), 0, node.Children, trimEnd: false);
+            figure.Children.Add(node);
+        }
     }
 
     private static void AddTokens(BuildNode node, List<BuildElement>? tokens)
@@ -1874,6 +2006,11 @@ internal sealed class BlockParser
         // A definition: its terms, which are lines of the paragraph before it, where its marker is, and the blank lines that Markdig
         // leaves in it, the last one being after its last block
         public int TermLineStart { get; set; }
+
+        // The captions of a figure, after its fences
+        public (int Start, int End) OpeningCaption { get; set; }
+
+        public (int Start, int End) ClosingCaption { get; set; }
 
         public int TermLineCount { get; set; }
 

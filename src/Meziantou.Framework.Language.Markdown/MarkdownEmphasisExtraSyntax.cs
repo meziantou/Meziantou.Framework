@@ -18,6 +18,7 @@ public sealed class MarkdownEmphasisExtraSyntax : MarkdownInlineSyntax
         SyntaxKind.Superscript => MarkdownEmphasisExtraStyle.Superscript,
         SyntaxKind.Inserted => MarkdownEmphasisExtraStyle.Inserted,
         SyntaxKind.CustomContainerInline => MarkdownEmphasisExtraStyle.CustomContainer,
+        SyntaxKind.Citation => MarkdownEmphasisExtraStyle.Citation,
         _ => MarkdownEmphasisExtraStyle.Marked,
     };
 

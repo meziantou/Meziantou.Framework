@@ -21,6 +21,7 @@ internal sealed class InlineParser
     private readonly bool _genericAttributes;
     private readonly bool _customContainers;
     private readonly bool _smartyPants;
+    private readonly bool _citations;
     private readonly MarkdownEmojiMapping? _emoji;
 
     // The text before the end of an emoji whose last characters are a delimiter of emphasis, with the length of the emoji: it is
@@ -63,6 +64,7 @@ internal sealed class InlineParser
         _genericAttributes = extensions.HasFlag(MarkdownExtensions.GenericAttributes);
         _customContainers = extensions.HasFlag(MarkdownExtensions.CustomContainers);
         _smartyPants = extensions.HasFlag(MarkdownExtensions.SmartyPants);
+        _citations = extensions.HasFlag(MarkdownExtensions.Citations);
         _emoji = extensions.HasFlag(MarkdownExtensions.Emoji) ? options.EmojiMapping : null;
         _autolinks = extensions.HasFlag(MarkdownExtensions.Autolinks);
     }
@@ -340,6 +342,9 @@ internal sealed class InlineParser
             case ']':
                 ParseCloseBracket();
                 break;
+            case '"' when _citations && CharAt(_pos + 1) == '"':
+                HandleDelimiter(c);
+                break;
             case '\'' or '"' or '>' or '.' when _smartyPants:
                 if (!ParseSmartyPant())
                 {
@@ -395,6 +400,7 @@ internal sealed class InlineParser
         '{' => _genericAttributes,
         ':' => _autolinks || _customContainers,
         '\'' or '"' or '>' or '.' when _smartyPants => true,
+        '"' when _citations => true,
         'w' => _autolinks && _pos + 3 < _end && _text[_pos + 1] == 'w' && _text[_pos + 2] == 'w' && _text[_pos + 3] == '.',
         _ => false,
     };
@@ -581,15 +587,29 @@ internal sealed class InlineParser
         var rightFlanking = !beforeIsWhitespace && (!(beforeIsPunctuation && !(extra && IsPunctuationException(before))) || afterIsWhitespace || Scanners.IsUnicodePunctuation(after));
         bool canOpen;
         bool canClose;
-        if (c == '_')
+        // As in Markdig, the quotes of a citation cannot open or close in a word, as _, whatever the punctuation around them
+        if (c is '_' or '"')
         {
             canOpen = leftFlanking && (!rightFlanking || beforeIsPunctuation);
-            canClose = rightFlanking && (!leftFlanking || afterIsPunctuation);
+            canClose = rightFlanking && (!leftFlanking || Scanners.IsUnicodePunctuation(after));
         }
         else
         {
             canOpen = leftFlanking;
             canClose = rightFlanking;
+        }
+
+        // Markdig reads the quotes of a citation that cannot open or close as SmartyPants, one by one
+        if (c == '"' && _smartyPants && !canOpen && !canClose)
+        {
+            _pos = start;
+            if (!ParseSmartyPant())
+            {
+                AppendText(_pos, _pos + 1);
+                _pos++;
+            }
+
+            return;
         }
 
         var node = AppendText(start, _pos);
@@ -1017,6 +1037,7 @@ internal sealed class InlineParser
         '+' => _inserted,
         '=' => _marked,
         ':' => _customContainers,
+        '"' => _citations,
         _ => false,
     };
 
@@ -1297,7 +1318,7 @@ internal sealed class InlineParser
     private bool IsExtraEmphasis(char c) => c switch
     {
         '~' => _subscript,
-        '^' or '+' or '=' or ':' => true,
+        '^' or '+' or '=' or ':' or '"' => true,
         _ => false,
     };
 
@@ -1305,7 +1326,7 @@ internal sealed class InlineParser
     {
         '~' when _subscript => 1,
         '~' => 2,
-        '+' or '=' or ':' => 2,
+        '+' or '=' or ':' or '"' => 2,
         _ => 1,
     };
 
@@ -1774,6 +1795,7 @@ internal sealed class InlineParser
                 '+' => SyntaxKind.Inserted,
                 '=' => SyntaxKind.Marked,
                 ':' => SyntaxKind.CustomContainerInline,
+                '"' => SyntaxKind.Citation,
                 _ => use == 1 ? SyntaxKind.Emphasis : SyntaxKind.StrongEmphasis,
             };
             var delimiterKind = kind == SyntaxKind.Strikethrough ? SyntaxKind.StrikethroughDelimiterToken : SyntaxKind.EmphasisDelimiterToken;
@@ -2035,7 +2057,7 @@ internal sealed class InlineParser
             {
                 LinkEmailAddresses(run);
                 run.Clear();
-                if (child.Kind is SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis or SyntaxKind.Strikethrough or SyntaxKind.Subscript or SyntaxKind.Superscript or SyntaxKind.Inserted or SyntaxKind.Marked or SyntaxKind.CustomContainerInline or SyntaxKind.Image)
+                if (child.Kind is SyntaxKind.Emphasis or SyntaxKind.StrongEmphasis or SyntaxKind.Strikethrough or SyntaxKind.Subscript or SyntaxKind.Superscript or SyntaxKind.Inserted or SyntaxKind.Marked or SyntaxKind.CustomContainerInline or SyntaxKind.Citation or SyntaxKind.Image)
                 {
                     LinkEmailAddresses(child);
                 }

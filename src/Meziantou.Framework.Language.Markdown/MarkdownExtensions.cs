@@ -76,6 +76,15 @@ public enum MarkdownExtensions
     /// <summary>Emoji: shortcodes such as <c>:smile:</c> and smileys such as <c>:)</c>, which are not after a letter or a digit, are written as their emoji, as configured by <see cref="MarkdownParseOptions.EmojiMapping"/>.</summary>
     Emoji = 1 << 22,
 
+    /// <summary>Figures: blocks between a fence of three carets or more, <c>^^^</c>, and a fence as long, rendered as <c>&lt;figure&gt;</c>, whose caption is the text after the fences.</summary>
+    Figures = 1 << 23,
+
+    /// <summary>Footers: lines that start with <c>^^</c>, as a block quote does with <c>&gt;</c>, rendered as <c>&lt;footer&gt;</c>.</summary>
+    Footers = 1 << 24,
+
+    /// <summary>Citations: text between <c>""</c>, rendered as <c>&lt;cite&gt;</c>.</summary>
+    Citations = 1 << 25,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

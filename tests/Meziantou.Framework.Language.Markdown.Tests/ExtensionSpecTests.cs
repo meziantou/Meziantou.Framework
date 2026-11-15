@@ -58,6 +58,9 @@ public sealed class ExtensionSpecTests
         ["definitionlists"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.DefinitionLists },
         ["listextras"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.ListExtras },
         ["smartypants"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.SmartyPants },
+        ["figures"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Figures },
+        ["footers"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Footers },
+        ["citations"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Citations },
         ["autoidentifiers"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.AutoIdentifiers },
     };
 

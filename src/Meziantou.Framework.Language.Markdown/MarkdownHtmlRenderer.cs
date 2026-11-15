@@ -274,12 +274,15 @@ public static class MarkdownHtmlRenderer
                 {
                     // The paragraphs of a tight list have no <p>, as the ones of its custom containers in Markdig
                     var parent = paragraph.Parent;
-                    while (parent is MarkdownCustomContainerSyntax or MarkdownDefinitionItemSyntax or MarkdownDefinitionListSyntax)
+                    while (parent is MarkdownCustomContainerSyntax or MarkdownDefinitionItemSyntax or MarkdownDefinitionListSyntax or MarkdownFigureSyntax)
                     {
                         parent = parent.Parent;
                     }
 
-                    var tight = parent is MarkdownListItemSyntax { Parent: MarkdownListSyntax { IsTight: true } };
+                    // The paragraphs of a footer have no <p> either
+                    var tight = parent is MarkdownListItemSyntax { Parent: MarkdownListSyntax { IsTight: true } } or MarkdownFooterSyntax;
+                    // In a footer, Markdig does not start a heading, a thematic break or HTML on a new line after a paragraph
+                    var inFooter = parent is MarkdownFooterSyntax;
                     if (tight)
                     {
                         _firstInContainer = false;
@@ -302,6 +305,11 @@ public static class MarkdownHtmlRenderer
                     if (paragraph == _backLinksParagraph)
                     {
                         _output.Append(_backLinks);
+                    }
+
+                    if (inFooter)
+                    {
+                        _firstInContainer = true;
                     }
 
                     if (!tight)
@@ -362,6 +370,40 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownDefinitionListSyntax list:
                     WriteDefinitionList(list);
+                    break;
+
+                case MarkdownFigureSyntax figure:
+                    Cr();
+                    _output.Append("<figure");
+                    AppendAttributes(figure);
+                    _output.Append(">\n");
+                    // Markdig writes the </figure> just after the last block
+                    WriteBlocks(figure.Blocks);
+                    _output.Append("</figure>");
+                    Cr();
+                    break;
+
+                case MarkdownFigureCaptionSyntax caption:
+                    Cr();
+                    _output.Append("<figcaption");
+                    AppendAttributes(caption);
+                    _output.Append('>');
+                    WriteInlines(caption.Inlines);
+                    _output.Append("</figcaption>");
+                    Cr();
+                    break;
+
+                case MarkdownFooterSyntax footer:
+                    // Markdig writes the first block just after the <footer>, and the </footer> just after the last block
+                    Cr();
+                    _output.Append("<footer");
+                    AppendAttributes(footer);
+                    _output.Append('>');
+                    _firstInContainer = true;
+                    WriteBlocks(footer.Blocks);
+                    _firstInContainer = false;
+                    _output.Append("</footer>");
+                    Cr();
                     break;
 
                 case MarkdownBlockQuoteSyntax quote:
@@ -669,6 +711,7 @@ public static class MarkdownHtmlRenderer
                         MarkdownEmphasisExtraStyle.Superscript => "sup",
                         MarkdownEmphasisExtraStyle.Inserted => "ins",
                         MarkdownEmphasisExtraStyle.CustomContainer => "span",
+                        MarkdownEmphasisExtraStyle.Citation => "cite",
                         _ => "mark",
                     };
 

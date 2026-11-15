@@ -17,4 +17,7 @@ public enum MarkdownEmphasisExtraStyle
 
     /// <summary>The text of an inline custom container, between <c>::</c>, rendered as <c>&lt;span&gt;</c>.</summary>
     CustomContainer,
+
+    /// <summary>A citation, between <c>""</c>, rendered as <c>&lt;cite&gt;</c>.</summary>
+    Citation,
 }

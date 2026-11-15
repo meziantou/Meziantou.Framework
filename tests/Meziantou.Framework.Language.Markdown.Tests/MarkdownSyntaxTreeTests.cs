@@ -799,6 +799,44 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void ReadmeExample_FiguresFootersCitations()
+    {
+        #region MarkdownSyntaxTree_FiguresFootersCitations
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Figures | MarkdownExtensions.Footers | MarkdownExtensions.Citations };
+        var tree = MarkdownSyntaxTree.ParseText("^^^\n![Logo](logo.png)\n^^^ The *logo*\n\n^^ From \"\"The Book\"\"\n", options);
+
+        Assert.Equal("<figure>\n<p><img src=\"logo.png\" alt=\"Logo\" /></p>\n<figcaption>The <em>logo</em></figcaption>\n</figure>\n<footer>From <cite>The Book</cite></footer>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("^^^ top\nx\n^^^ bottom\n", "<figure>\n<figcaption>top</figcaption>\n<p>x</p>\n<figcaption>bottom</figcaption>\n</figure>\n")]
+    [InlineData("^^^^\n^^^\nx\n^^^^more\n", "<figure>\n<figure>\n<p>x</p>\n</figure>\n<figcaption>more</figcaption>\n</figure>\n")]
+    [InlineData("^^^\n```\n^^^\n```\n", "<figure>\n<pre><code></code></pre>\n</figure>\n<pre><code></code></pre>\n")]
+    [InlineData("^^ a\n^^ b\nlazy\n\nc\n", "<footer>a\nb\nlazy</footer>\n<p>c</p>\n")]
+    [InlineData("^^ f\n^^ # h\n", "<footer>f<h1>h</h1>\n</footer>\n")]
+    [InlineData("^^ > q\n", "<footer>\n<blockquote>\n<p>q</p>\n</blockquote>\n</footer>\n")]
+    [InlineData("a \"\"b\"\" c\"\"d\"\"e\n", "<p>a <cite>b</cite> c&quot;&quot;d&quot;&quot;e</p>\n")]
+    public void RendersFiguresFootersAndCitations(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Figures | MarkdownExtensions.Footers | MarkdownExtensions.Citations });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
+    public void FigureHasItsFencesAndCaptions()
+    {
+        var figure = Assert.IsType<MarkdownFigureSyntax>(MarkdownSyntaxTree.ParseText("^^^ A\nx\n^^^^ B\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Figures }).GetRoot().Blocks.Single());
+
+        Assert.Equal("^^^", figure.OpeningFenceToken.Text);
+        Assert.Equal("^^^^", figure.ClosingFenceToken.Text);
+        Assert.Equal(["A", "B"], figure.Blocks.OfType<MarkdownFigureCaptionSyntax>().Select(caption => caption.GetPlainText()).ToArray());
+        Assert.Equal("^^", Assert.IsType<MarkdownFooterSyntax>(MarkdownSyntaxTree.ParseText("^^ f\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Footers }).GetRoot().Blocks.Single()).MarkerToken.Text);
+    }
+
+    [Fact]
     public void AlertHasItsKind()
     {
         var alert = Assert.IsType<MarkdownAlertSyntax>(MarkdownSyntaxTree.ParseText("> [!Warning]  \n> Be *careful*\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts }).GetRoot().Blocks.Single());

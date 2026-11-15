@@ -13,6 +13,7 @@ public enum SyntaxKind
     EndOfLineTrivia,
     BlockQuoteMarkerTrivia,
     ListItemIndentTrivia,
+    FooterMarkerTrivia,
     SkippedTextTrivia,
 
     // Tokens of the blocks
@@ -73,6 +74,8 @@ public enum SyntaxKind
     DefinitionMarkerToken,
     SmartyPantToken,
     EmojiToken,
+    FigureFenceToken,
+    FooterMarkerToken,
 
     // Blocks
     Document,
@@ -101,6 +104,9 @@ public enum SyntaxKind
     DefinitionList,
     DefinitionItem,
     DefinitionTerm,
+    Figure,
+    FigureCaption,
+    Footer,
 
     // Inlines
     Emphasis,
@@ -121,4 +127,5 @@ public enum SyntaxKind
     FootnoteReference,
     GenericAttributes,
     CustomContainerInline,
+    Citation,
 }

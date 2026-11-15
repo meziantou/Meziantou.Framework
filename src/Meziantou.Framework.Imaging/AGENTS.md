@@ -1863,7 +1863,7 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   (`MEZIANTOU_FRAMEWORK_IMAGING_HEVC_DIFF_SEED`, `MEZIANTOU_FRAMEWORK_IMAGING_HEVC_DIFF_CASES`).
 - Interop tests download ffmpeg (with x265 and kvazaar), libwebp, libavif, libjxl (`cjxl`, `djxl`, `jxlinfo`,
   `jxl_from_tree`), jxl-oxide, libde265 (`dec265`), libheif (`heif-enc`, `heif-dec`, `heif-info`), HM (`TAppEncoder`,
-  `TAppDecoder`), OpenJPEG (`opj_compress`, `opj_decompress`, `opj_dump`) and OpenJPH (`ojph_compress`, `ojph_expand`) from the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
+  `TAppDecoder`), OpenJPEG (`opj_compress`, `opj_decompress`, `opj_dump`), OpenJPH (`ojph_compress`, `ojph_expand`) and `opencv-oracle` (OpenCV, the oracle of the line, corner, homography, inpainting and deskew comparisons of `OpenCvProcessingInteropTests`) from the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
   capability fails the test; it is never skipped. The Apple ImageIO cases need `swift` and only run on macOS.
 - Interop tests start every tool through `ProcessRunner` (test harness), never through `System.Diagnostics.Process`
   directly: on macOS, `Process` forks before .NET 11, which makes the thousands of tool runs of a test process wait on

@@ -97,3 +97,18 @@ Both analyses read the Rec. 709 luma of the frame, premultiplied by alpha for th
 corner. The results do not depend on the platform: the votes are integers, and equal votes or responses are sorted in a
 fixed order. The working memory is charged to the image: for the lines, 18 bytes per pixel for the edges and 12 bytes
 per cell of the accumulator; for the corners, up to 48 bytes per pixel.
+
+## Compared with OpenCV
+
+- **Lines.** `HoughLines` gives the angles in radians and the distances for the pixel indices: subtract
+  `(cos θ + sin θ) / 2` from a [Distance](cref:Meziantou.Framework.Imaging.HoughLine.Distance) to compare it. On the same
+  edges, the strongest lines are in the same cells; OpenCV counts a few more votes where the edges turn a corner, since
+  its pixels vote for every angle, and it has no probabilistic variant here (`HoughLinesP`).
+- **Harris and Shi-Tomasi.** `cornerHarris` and `goodFeaturesToTrack` sum the gradients over a box of `blockSize` pixels
+  where this detector weights them by a Gaussian: a `blockSize` of 3 is closest to a
+  [Sigma](cref:Meziantou.Framework.Imaging.CornerDetectionOptions.Sigma) of 0.8, and the strong corners then agree within a
+  pixel. With an aperture of 3, the response of OpenCV is 16 times this one.
+- **FAST.** A threshold `t` of OpenCV tests the same pixels as a
+  [FastThreshold](cref:Meziantou.Framework.Imaging.CornerDetectionOptions.FastThreshold) of `(t + 0.5) / 255`. The scores
+  differ (OpenCV keeps the largest threshold a pixel passes, this detector the sum of the differences beyond it), so the
+  two keep different pixels of a cluster of candidates.

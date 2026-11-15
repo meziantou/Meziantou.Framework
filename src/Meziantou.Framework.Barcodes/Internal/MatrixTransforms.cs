@@ -33,6 +33,14 @@ internal static class MatrixTransforms
         return result;
     }
 
+    /// <summary>Gets the module at (row, column) of the transformed matrix, without transforming the whole matrix.</summary>
+    public static bool Get(bool[,] modules, int transform, int row, int column)
+    {
+        var (height, width) = GetSize(modules, transform);
+        var (sourceRow, sourceColumn) = GetSource(row, column, height, width, transform);
+        return modules[sourceRow, sourceColumn];
+    }
+
     /// <summary>Gets whether the transform is a reflection.</summary>
     public static bool IsMirrored(int transform) => transform >= 4;
 

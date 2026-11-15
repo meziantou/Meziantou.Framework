@@ -1,0 +1,12 @@
+1.webp	0	symbol 0	read
+1.webp	180	symbol 0	read
+2.webp	0	symbol 0	read
+2.webp	180	symbol 0	read
+3.webp	0	symbol 0	read
+3.webp	180	symbol 0	read
+4.webp	0	symbol 0	read
+4.webp	180	symbol 0	read
+7.webp	0	symbol 0	read
+7.webp	180	symbol 0	read
+8.webp	0	symbol 0	read
+8.webp	180	symbol 0	read

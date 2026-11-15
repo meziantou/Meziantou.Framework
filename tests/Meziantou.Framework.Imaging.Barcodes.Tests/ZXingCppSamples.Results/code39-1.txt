@@ -1,0 +1,10 @@
+1.png	0	symbol 0	read
+1.png	180	symbol 0	read
+2.webp	0	symbol 0	read
+2.webp	180	symbol 0	read
+4.png	0	symbol 0	read
+4.png	180	symbol 0	read
+code32-1.png	0	unexpected	Code39	3PRM8N
+code32-1.png	180	unexpected	Code39	3PRM8N
+pzn-1.png	0	symbol 0	read
+pzn-1.png	180	symbol 0	read

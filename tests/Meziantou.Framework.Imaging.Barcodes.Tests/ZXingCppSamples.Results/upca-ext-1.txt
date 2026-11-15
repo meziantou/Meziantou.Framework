@@ -1,0 +1,14 @@
+601-1!f.webp	0	symbol 0	read
+601-1!f.webp	180	symbol 0	read
+601-2.webp	0	symbol 0	read
+601-2.webp	180	symbol 0	read
+800-1.webp	0	symbol 0	read
+800-1.webp	180	symbol 0	read
+800-2!.webp	0	symbol 0	missing
+800-2!.webp	180	symbol 0	missing
+868-1.webp	0	symbol 0	missing
+868-1.webp	0	unexpected	UpcA	071831007995
+868-1.webp	180	symbol 0	missing
+868-1.webp	180	unexpected	UpcA	071831007995
+868-2.webp	0	symbol 0	read
+868-2.webp	180	symbol 0	read

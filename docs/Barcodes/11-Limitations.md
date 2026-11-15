@@ -3,13 +3,13 @@ title: Limitations
 description: What the barcode packages do not do.
 ---
 
-- **Reading clean images.** [ReadQRCodes](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageReader.ReadQRCodes),
+- **Reading photographs.** [ReadQRCodes](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageReader.ReadQRCodes),
   [ReadBarcodes2D](cref:Meziantou.Framework.Imaging.Barcodes.Barcode2DImageReader.ReadBarcodes2D) and
-  [ReadBarcodes](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeImageReader.ReadBarcodes) read generated, printed or
-  scanned codes, photographed straight on: not damaged symbols, curved labels or heavily distorted photos. The rows of a
-  PDF417 symbol must be about horizontal or vertical, and a linear barcode is read when one of the scan lines (at 0°,
-  30°, 60°, 90°, 120° and 150°) crosses all its bars: a long and short barcode turned between two of these angles can
-  be missed.
+  [ReadBarcodes](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeImageReader.ReadBarcodes) read blurred, unevenly lit
+  photographs taken at an angle, but not damaged symbols, labels on curved surfaces, symbols with modules smaller than 2
+  pixels, or Data Matrix symbols marked on metal (dot peen). The rows of a PDF417 symbol must be about horizontal or
+  vertical, and a linear barcode is read when one of the scan lines (at 0°, 30°, 60°, 90°, 120° and 150°) crosses all
+  its bars: a long and short barcode turned between two of these angles can be missed.
 - **Not every option of the symbologies is read.** The decoders do not read the FNC1 modes of GS1 QR codes, Macro
   PDF417, the structured append of Data Matrix and Aztec symbols, the Aztec runes, the Data Matrix rectangular extension
   (DMRE), nor the 2D composite components of the GS1 DataBar symbols.

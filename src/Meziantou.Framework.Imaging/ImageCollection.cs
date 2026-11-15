@@ -5,8 +5,9 @@ using Meziantou.Framework.Imaging.Internals;
 namespace Meziantou.Framework.Imaging;
 
 /// <summary>
-/// A disposable collection of images that are not animation frames: the pages of a document (TIFF, BigTIFF) or the
-/// alternative representations of a drawing (ICO, CUR). Entries may differ in size, pixel format and metadata, and are
+/// A disposable collection of images that are not animation frames: the pages of a document (TIFF, BigTIFF), the
+/// alternative representations of a drawing (ICO, CUR), or the surfaces of a texture (DDS: mipmap levels, cube map
+/// faces, array elements and depth slices). Entries may differ in size, pixel format and metadata, and are
 /// never resized or converted implicitly.
 /// </summary>
 /// <remarks>
@@ -465,13 +466,16 @@ public sealed class ImageCollection : IDisposable
         if (format == ImageFormat.Pnm)
             return PnmCollectionReader.Create(input, configuration);
 
+        if (format == ImageFormat.Dds)
+            return DdsCollectionReader.Create(input, configuration);
+
         if (format == ImageFormat.Ani)
             throw new UnsupportedImageFeatureException("ANI stores an animation, not a collection of pages or representations: its frames are played in order. Use Image.Load instead.", format, "Image collection");
 
         if (format != ImageFormat.Unknown)
             throw new UnsupportedImageFeatureException($"{ImageFormatNames.Get(format)} stores a single image, not a collection of pages or representations. Use Image.Load instead.", format, "Image collection");
 
-        throw new UnknownImageFormatException("The image format is not recognized: the data does not start with the signature of a supported multi-entry format (TIFF, BigTIFF, ICO, CUR or Netpbm).");
+        throw new UnknownImageFormatException("The image format is not recognized: the data does not start with the signature of a supported multi-entry format (TIFF, BigTIFF, ICO, CUR, Netpbm or DDS).");
     }
 
     private ImageCollectionEntry CreateOwnedEntry(Image image, Point? hotspot)

@@ -12,6 +12,47 @@ internal static class ErrorFixtureStages
 {
     private static readonly HashSet<string> HeaderDefects = new(StringComparer.Ordinal)
     {
+        // DDS: the headers (DDS_HEADER, DDS_PIXELFORMAT, DDS_HEADER_DXT10), and the pixel formats the library rejects
+        "invalid/dds/alpha-mode-invalid",
+        "invalid/dds/array-size-zero",
+        "invalid/dds/bc6h-typeless",
+        "invalid/dds/bit-count",
+        "invalid/dds/cube-and-volume",
+        "invalid/dds/cube-no-face",
+        "invalid/dds/cube-not-square",
+        "invalid/dds/depth-d24-s8",
+        "invalid/dds/dimension-invalid",
+        "invalid/dds/dxgi-unknown",
+        "invalid/dds/dxt2",
+        "invalid/dds/dxt4",
+        "invalid/dds/fourcc-q16w16v16u16",
+        "invalid/dds/fourcc-unknown",
+        "invalid/dds/header-size",
+        "invalid/dds/height-zero",
+        "invalid/dds/legacy-yuv",
+        "invalid/dds/linear-size-wrong",
+        "invalid/dds/mask-not-contiguous",
+        "invalid/dds/mask-outside-pixel",
+        "invalid/dds/mask-overlap",
+        "invalid/dds/masks-zero",
+        "invalid/dds/no-pixel-format",
+        "invalid/dds/pitch-wrong",
+        "invalid/dds/pixel-format-size",
+        "invalid/dds/premultiplied-alpha",
+        "invalid/dds/texture-1d-height",
+        "invalid/dds/too-many-mips",
+        "invalid/dds/truncated-dx10-header",
+        "invalid/dds/truncated-header",
+        "invalid/dds/typeless-r32g32b32a32",
+        "invalid/dds/uint-r8g8b8a8",
+        "invalid/dds/video-nv12",
+        "invalid/dds/volume-array",
+        "invalid/dds/volume-depth-zero",
+        "invalid/dds/width-zero",
+        "invalid/dds/yuy2",
+        "limit/dds/frame-pixels-over-limit",
+        "limit/dds/width-over-limit",
+
         // Radiance HDR: the information header and the resolution string
         "invalid/hdr/format-other",
         "invalid/hdr/resolution-lowercase",
@@ -273,6 +314,10 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> StructureDefects = new(StringComparer.Ordinal)
     {
+        // DDS: the data of the surfaces
+        "invalid/dds/truncated-block-data",
+        "invalid/dds/truncated-data",
+
         // Radiance HDR: the scanlines, read by a full scan
         "invalid/hdr/old-rle-repetition-first",
         "invalid/hdr/old-rle-repetition-past-end",

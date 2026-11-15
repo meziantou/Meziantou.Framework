@@ -36,8 +36,29 @@ public static class EncodedFieldInspector
         "jp2" => InspectJpeg2000(data),
         "exr" => InspectOpenExr(data),
         "hdr" => InspectRadiance(data),
+        "dds" => InspectDds(data),
         _ => throw new ArgumentException($"Unknown fixture format '{format}'.", nameof(format)),
     };
+
+    /// <summary>
+    /// DDS: the color labels of the pixel format (<see cref="Dds.ReferenceDds"/>): the CICP description of sRGB for the
+    /// <c>_SRGB</c> formats, the linear transfer function for the floating-point formats.
+    /// </summary>
+    private static EncodedFields InspectDds(ReadOnlySpan<byte> data)
+    {
+        var (isSrgb, isLinear) = Dds.ReferenceDds.ReadColorLabels(data);
+        var result = new EncodedFields();
+        if (isSrgb)
+        {
+            result.ContainerCicp = new CicpExpectation { ColorPrimaries = 1, TransferCharacteristics = 13, MatrixCoefficients = 0, FullRange = true };
+        }
+        else if (isLinear)
+        {
+            result.TransferFunction = "linear";
+        }
+
+        return result;
+    }
 
     /// <summary>
     /// Radiance HDR: the <c>PRIMARIES</c> variables of the header (<see cref="Radiance.ReferenceRadiance"/>), the last one of

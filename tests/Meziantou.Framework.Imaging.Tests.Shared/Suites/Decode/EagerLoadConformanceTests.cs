@@ -71,6 +71,7 @@ public sealed class EagerLoadConformanceTests
         PixelFormat.Abgr32 => await InputVariants.LoadAsync<Abgr32>(variant, data, format, options: null, XunitCancellationToken),
         PixelFormat.Bgr565 => await InputVariants.LoadAsync<Bgr565>(variant, data, format, options: null, XunitCancellationToken),
         PixelFormat.Rgba1010102 => await InputVariants.LoadAsync<Rgba1010102>(variant, data, format, options: null, XunitCancellationToken),
+        PixelFormat.A8 => await InputVariants.LoadAsync<A8>(variant, data, format, options: null, XunitCancellationToken),
         _ => await InputVariants.LoadAsync<Bgra32>(variant, data, format, options: null, XunitCancellationToken),
     };
 }

@@ -22,4 +22,12 @@ public enum ImageCollectionKind
     /// Their order carries no meaning; <see cref="ImageCollection.SelectBySize"/> picks one.
     /// </summary>
     Representations = 2,
+
+    /// <summary>
+    /// The entries are the surfaces of a texture (DDS): every mipmap level of every face of a cube map and of every element
+    /// of a texture array, and every depth slice of a level of a volume texture, in file order.
+    /// <see cref="ImageCollectionEntry.TextureSurface"/> tells which one an entry is. Such a collection is read, never
+    /// created or saved.
+    /// </summary>
+    TextureSurfaces = 3,
 }

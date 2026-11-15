@@ -67,6 +67,13 @@ public sealed class FixtureEntry
     [JsonPropertyName("exrDecodings")]
     public IReadOnlyList<ExrDecodingDefinition>? ExrDecodings { get; init; }
 
+    /// <summary>
+    /// Gets, for a valid DDS fixture of several surfaces, every surface of the texture in file order (the first one is the
+    /// image of <see cref="Expected"/>) and its pixels.
+    /// </summary>
+    [JsonPropertyName("ddsSurfaces")]
+    public IReadOnlyList<DdsSurfaceDefinition>? DdsSurfaces { get; init; }
+
     /// <summary>Gets free-form notes for reviewers.</summary>
     [JsonPropertyName("notes")]
     public string? Notes { get; init; }

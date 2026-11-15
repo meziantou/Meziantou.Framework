@@ -523,6 +523,21 @@
         "frameLimit": { "type": "integer", "minimum": 1 }
       }
     },
+    "ddsSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["arrayIndex", "face", "mipLevel", "depthSlice", "width", "height", "buffer"],
+      "description": "Valid DDS fixtures of several surfaces only: a surface of the texture (an entry of ImageCollection, in file order) and its pixels, in the layout of the frame of the fixture. The first one is the image of the fixture.",
+      "properties": {
+        "arrayIndex": { "type": "integer", "minimum": 0 },
+        "face": { "enum": [null, "PositiveX", "NegativeX", "PositiveY", "NegativeY", "PositiveZ", "NegativeZ"] },
+        "mipLevel": { "type": "integer", "minimum": 0 },
+        "depthSlice": { "type": "integer", "minimum": 0 },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "buffer": { "$ref": "#/$defs/buffer" }
+      }
+    },
     "exrDecoding": {
       "type": "object",
       "additionalProperties": false,
@@ -677,7 +692,7 @@
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
         "kind": { "enum": ["valid", "invalid", "unsupported", "limit"] },
-        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2", "exr", "hdr"] },
+        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2", "exr", "hdr", "dds"] },
         "input": { "$ref": "#/$defs/file" },
         "provenance": { "$ref": "#/$defs/provenance" },
         "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
@@ -688,6 +703,7 @@
         "decodeOptions": { "$ref": "#/$defs/decodeOptions" },
         "inkConversion": { "$ref": "#/$defs/inkConversion" },
         "exrDecodings": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/exrDecoding" } },
+        "ddsSurfaces": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/ddsSurface" } },
         "notes": { "type": "string" }
       },
       "allOf": [

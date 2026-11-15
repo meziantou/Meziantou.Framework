@@ -25,14 +25,15 @@ internal static class FixtureTraits
 
     /// <summary>
     /// Gets a value indicating whether the input has bytes after the image data that the decoder never reads: the boxes of
-    /// an AVIF or HEIC file that follow the last byte of the items of the image (the walk ends there). The decoder then consumes
+    /// an AVIF or HEIC file that follow the last byte of the items of the image (the walk ends there), and the surfaces of a
+    /// DDS texture after the first one (a load reads the top level of the first face or element). The decoder then consumes
     /// fewer bytes than the file holds, so the encoded-byte requirement is smaller than the file length and no I/O failure
     /// in the trailing bytes can be observed.
     /// </summary>
     public static bool HasUnreadTrailingBytes(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        return fixture.Entry.HasFeature("avif.trailingData") || fixture.Entry.HasFeature("heic.trailingData");
+        return fixture.Entry.HasFeature("avif.trailingData") || fixture.Entry.HasFeature("heic.trailingData") || fixture.Entry.HasFeature("dds.trailingSurfaces");
     }
 
     /// <summary>

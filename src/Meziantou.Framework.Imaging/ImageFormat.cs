@@ -97,6 +97,12 @@ public enum ImageFormat
     Radiance = 18,
 
     /// <summary>
+    /// DDS (DirectDraw Surface): textures of Direct3D, block-compressed (BC1 to BC7) or uncompressed, with mipmaps, cube
+    /// maps, arrays and volume textures (<c>.dds</c>). Read only; <see cref="ImageCollection"/> reaches every surface.
+    /// </summary>
+    Dds = 19,
+
+    /// <summary>
     /// A format read or written by a <see cref="CustomImageCodec"/> of <see cref="ImageConfiguration.Codecs"/>, not by the
     /// library itself. <see cref="ImageInfo.FormatInfo"/> and <see cref="Formats.CustomImageEncoder.FormatInfo"/> tell which one.
     /// </summary>

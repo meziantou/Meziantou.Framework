@@ -109,7 +109,7 @@ public abstract class ImageEncoder
     /// <remarks>This method is thread-safe. To change a setting, create the encoder type directly with an object initializer.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="format"/> is <see cref="ImageFormat.Unknown"/>, <see cref="ImageFormat.Custom"/> (use
-    /// <see cref="CustomImageCodec.CreateEncoder"/>) or not a defined value.
+    /// <see cref="CustomImageCodec.CreateEncoder"/>), <see cref="ImageFormat.Dds"/> (read only) or not a defined value.
     /// </exception>
     public static ImageEncoder Create(ImageFormat format) => format switch
     {
@@ -131,6 +131,7 @@ public abstract class ImageEncoder
         ImageFormat.Jpeg2000 => new Jpeg2000Encoder(),
         ImageFormat.OpenExr => new OpenExrEncoder(),
         ImageFormat.Radiance => new RadianceEncoder(),
+        ImageFormat.Dds => throw new ArgumentOutOfRangeException(nameof(format), format, "DDS files can be read but not written: the library has no DDS encoder."),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is unknown or not a defined value."),
     };
 
@@ -155,7 +156,7 @@ public abstract class ImageEncoder
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="extension"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
-    /// The extension is not recognized, or names files the library reads but does not write (<c>.jpx</c>, <c>.jpf</c>).
+    /// The extension is not recognized, or names files the library reads but does not write (<c>.jpx</c>, <c>.jpf</c>, <c>.dds</c>).
     /// </exception>
     public static ImageEncoder FromFileExtension(string extension)
     {
@@ -215,6 +216,9 @@ public abstract class ImageEncoder
         // The files of these extensions are read, never written: the extended file format
         if (extension.Equals(".jpx", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpf", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException($"JPEG 2000 files of the extended format ('{extension}') can be read but not written. Use the extension '.jp2', or specify an encoder explicitly.", parameterName);
+
+        if (extension.Equals(".dds", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("DDS files can be read but not written: the library has no DDS encoder. Specify an encoder of another format explicitly.", parameterName);
 
         if (extension.Length > 1 && ImageFormatInfo.TryGetByFileExtension(extension, out var info))
             return Create(info.Format);

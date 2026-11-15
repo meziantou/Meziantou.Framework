@@ -42,6 +42,10 @@ const string Usage = """
         hdr           Radiance HDR fixtures: flat, old and new run-length encoded scanlines, the eight orientations,
                       header variables and primaries, XYZE, malformed and over-limit files (assembled from the
                       specification, and the ffmpeg of the pinned meziantou/prebuilt release; any OS)
+        dds           DDS fixtures: every uncompressed DXGI and legacy pixel format, random and encoded BC1 to BC7 blocks,
+                      mipmaps, cube maps (partial ones included), arrays, volume textures, alpha modes, malformed,
+                      unsupported and over-limit files (Windows: texconv and texassemble of DirectXTex, oiiotool of
+                      OpenImageIO, ImageMagick and the ffmpeg of the pinned meziantou/prebuilt release)
         icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
         icc-builtin   the source of the CMYK profile provided by the library, transcribed from the committed corpus
                       (no tool; any OS)
@@ -181,6 +185,8 @@ try
             return ExrCorpus.Run(options);
         case "hdr":
             return RadianceCorpus.Run(options);
+        case "dds":
+            return DdsCorpus.Run(options);
         case "icc":
             if (iccProfiles is null)
             {

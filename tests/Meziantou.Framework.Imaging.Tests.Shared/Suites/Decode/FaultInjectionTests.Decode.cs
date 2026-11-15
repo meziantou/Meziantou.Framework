@@ -221,8 +221,9 @@ public sealed partial class FaultInjectionTests
                 break;
             case "auto-crop":
                 // A known analysis whose padded box reaches outside the canvas: every fixture runs the enlarging transaction,
-                // with a background (opaque white) that every pixel format represents exactly
-                var analysis = image.CreateAutoCropAnalysis(success: true, new Rectangle(0, 0, image.Width, image.Height), new Rgba64(ushort.MaxValue, ushort.MaxValue, ushort.MaxValue), weightX: 0, weightY: 0);
+                // with a background that its pixel format represents exactly (opaque white; transparent black for an alpha mask)
+                var background = image.PixelFormat == PixelFormat.A8 ? new Rgba64(0, 0, 0, 0) : new Rgba64(ushort.MaxValue, ushort.MaxValue, ushort.MaxValue);
+                var analysis = image.CreateAutoCropAnalysis(success: true, new Rectangle(0, 0, image.Width, image.Height), background, weightX: 0, weightY: 0);
                 Assert.True(image.AutoCrop(analysis, new AutoCropOptions { PaddingX = 1, PaddingY = 2 }, cancellationToken));
                 break;
             case "resize":

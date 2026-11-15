@@ -57,6 +57,13 @@ internal static partial class CorpusDriver
                         paths.Add((string)bufferEntry["path"]!);
                 }
             }
+
+            // The pixels of every surface of a DDS texture of several surfaces
+            if (fixture.TryGetValue("ddsSurfaces", out var surfaces) && surfaces is List<object?> ddsSurfaces)
+            {
+                foreach (var surface in ddsSurfaces.Cast<Obj>())
+                    paths.Add((string)((Obj)surface["buffer"]!)["path"]!);
+            }
         }
 
         return paths;

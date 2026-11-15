@@ -1591,9 +1591,44 @@ public sealed class DocumentationExampleTests : IDisposable
             Assert.Equal(pixels, decodedPixels);
         }
 
+        // Two layers: the first one alone decodes too
         Assert.InRange(new FileInfo(codestream).Length, 90_000, 100_000);
         using var lossy = Image.Load(codestream);
         Assert.Equal((640, 480), (lossy.Width, lossy.Height));
+        using var firstLayer = Image.Load(codestream, new ImageDecodeOptions { Configuration = new ImageConfiguration { Jpeg2000Decoding = new Jpeg2000DecodingOptions { QualityLayerLimit = 1 } } });
+        Assert.Equal((640, 480), (firstLayer.Width, firstLayer.Height));
+    }
+
+    [Fact]
+    public void SaveJpeg2000ForStreamingWritesPrecinctsTilePartsAndLengthMarkers()
+    {
+        var input = GetPath("pattern-streaming.png");
+        var pixels = new Rgb24[1200 * 700];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var (x, y) = (i % 1200, i / 1200);
+            pixels[i] = new Rgb24((byte)(x / 5), (byte)((x * y) >> 11), (byte)((x ^ y) & 0xFF));
+        }
+
+        using (var source = Image.ImportPixelData<Rgb24>(pixels, 1200, 700))
+        {
+            source.Save(input);
+        }
+
+        var path = GetPath("streaming.jp2");
+        Examples.SaveJpeg2000ForStreaming(input, path);
+
+        // Two tiles of six resolution levels: a tile-part per level; the file is lossless
+        var data = File.ReadAllBytes(path);
+        var structure = Meziantou.Framework.Imaging.TestHarness.Jpeg2000.ReferenceJpeg2000.Parse(data);
+        Assert.Equal(2, structure.TileCount);
+        Assert.Equal(12, structure.TileParts.Count);
+        Assert.True(structure.HasTilePartLengths && structure.HasPacketLengths);
+        Assert.All(structure.CodingStyles, style => Assert.True(style.HasPrecincts));
+        using var decoded = Image.Load<Rgb24>(path);
+        var decodedPixels = new Rgb24[pixels.Length];
+        decoded.Frames[0].CopyPixelDataTo(decodedPixels);
+        Assert.Equal(pixels, decodedPixels);
     }
 
     [Fact]

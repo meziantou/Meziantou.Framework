@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 
 /// <summary>
 /// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, the image data of PNG files (inflation and
-/// reconstruction), the lossy compression of its GIF encoder, and its processing operations that read pixels or points
+/// reconstruction), the lossy compression of its GIF encoder, the structure of the outputs of its JPEG 2000 encoder, and its processing operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
 /// homography estimation and resizing; and the merging of the pieces of strokes. The inputs of the processing targets are
 /// small images whose pixel format, size, frames and bytes come from the fuzzer, followed by the options of the operation.
@@ -42,6 +42,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-resize", ResizeTarget) { Seeds = GetResizeSeeds, Dictionary = Tokens },
         new("imaging-color-matrix", ColorMatrixTarget) { Seeds = GetColorMatrixSeeds, Dictionary = Tokens },
         new("imaging-resize-float", ResizeFloatTarget) { Seeds = GetResizeFloatSeeds, Dictionary = Tokens },
+        new("imaging-jpeg2000-encoder", Jpeg2000EncoderTarget) { Seeds = GetJpeg2000EncoderSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>

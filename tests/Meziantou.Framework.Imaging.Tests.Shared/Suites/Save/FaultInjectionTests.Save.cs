@@ -291,6 +291,17 @@ public sealed partial class FaultInjectionTests
 
                 image.Dispose();
                 return null;
+            case "dds":
+            case "ktx2":
+                // The uncompressed texels of the pixels, reduced to the formats of the container when they cannot store them
+                encoder = encoderName is "dds"
+                    ? new DdsEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, AllowChannelReduction = true }
+                    : new Ktx2Encoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, AllowChannelReduction = true };
+                if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated && !PixelFormats.IsCmyk(image.PixelFormat))
+                    return image;
+
+                image.Dispose();
+                return null;
             case "dng":
             case "cin":
                 // A DNG file stores lossless JPEG tiles of linear raw data, a Cineon file 10-bit film scans: neither stores

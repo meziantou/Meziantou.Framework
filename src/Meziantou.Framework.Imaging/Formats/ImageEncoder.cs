@@ -113,7 +113,7 @@ public abstract class ImageEncoder
     /// <remarks>This method is thread-safe. To change a setting, create the encoder type directly with an object initializer.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="format"/> is <see cref="ImageFormat.Unknown"/>, <see cref="ImageFormat.Custom"/> (use
-    /// <see cref="CustomImageCodec.CreateEncoder"/>), <see cref="ImageFormat.Dds"/>, <see cref="ImageFormat.Ktx2"/> (read only) or not a defined value.
+    /// <see cref="CustomImageCodec.CreateEncoder"/>) or not a defined value.
     /// </exception>
     public static ImageEncoder Create(ImageFormat format) => format switch
     {
@@ -137,10 +137,10 @@ public abstract class ImageEncoder
         ImageFormat.Radiance => new RadianceEncoder(),
         ImageFormat.Psd => new PsdEncoder(),
         ImageFormat.Dng => new DngEncoder(),
-        ImageFormat.Dds => throw new ArgumentOutOfRangeException(nameof(format), format, "DDS files can be read but not written: the library has no DDS encoder."),
+        ImageFormat.Dds => new DdsEncoder(),
         ImageFormat.Dpx => new DpxEncoder(),
         ImageFormat.Cineon => new CineonEncoder(),
-        ImageFormat.Ktx2 => throw new ArgumentOutOfRangeException(nameof(format), format, "KTX 2.0 files can be read but not written: the library has no KTX 2.0 encoder."),
+        ImageFormat.Ktx2 => new Ktx2Encoder(),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is unknown or not a defined value."),
     };
 
@@ -167,7 +167,7 @@ public abstract class ImageEncoder
     /// <exception cref="ArgumentNullException"><paramref name="extension"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
     /// The extension is not recognized, or names files the library reads but does not write (<c>.jpx</c>, <c>.jpf</c>,
-    /// <c>.dds</c>, <c>.ktx2</c>).
+    /// <c>.jpx</c>, <c>.jpf</c>).
     /// </exception>
     public static ImageEncoder FromFileExtension(string extension)
     {
@@ -230,12 +230,6 @@ public abstract class ImageEncoder
 
         if (extension.Equals(".psb", StringComparison.OrdinalIgnoreCase))
             return new PsdEncoder { LargeDocument = true };
-
-        if (extension.Equals(".dds", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("DDS files can be read but not written: the library has no DDS encoder. Specify an encoder of another format explicitly.", parameterName);
-
-        if (extension.Equals(".ktx2", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException($"KTX 2.0 files ('{extension}') can be read but not written: the library has no KTX 2.0 encoder. Specify an encoder of another format explicitly.", parameterName);
 
         if (extension.Length > 1 && ImageFormatInfo.TryGetByFileExtension(extension, out var info))
             return Create(info.Format);

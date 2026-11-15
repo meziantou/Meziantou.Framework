@@ -420,13 +420,10 @@ public sealed class ApiSurfaceTests
         Assert.Equal(21, (int)ImageFormat.Dds);
         Assert.Equal(3, (int)ImageCollectionKind.TextureSurfaces);
 
-        // DDS is read only: no encoder type
-        Assert.DoesNotContain(typeof(ImageEncoder).Assembly.GetExportedTypes(), type => type.Name.StartsWith("Dds", StringComparison.Ordinal));
-
         var type = typeof(TextureSurface);
         Assert.Equal("Meziantou.Framework.Imaging", type.Namespace);
         Assert.True(type.IsPublic && type.IsSealed);
-        Assert.Empty(type.GetConstructors());
+        Assert.Equal([typeof(int), typeof(CubeMapFace?), typeof(int)], Assert.Single(type.GetConstructors()).GetParameters().Select(parameter => parameter.ParameterType));
         Assert.Equal(
             [nameof(TextureSurface.ArrayIndex), nameof(TextureSurface.DepthSlice), nameof(TextureSurface.Face), nameof(TextureSurface.MipLevel)],
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
@@ -494,10 +491,10 @@ public sealed class ApiSurfaceTests
         Assert.Equal(24, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
         Assert.Equal(3, (int)ImageCollectionKind.TextureSurfaces);
 
-        // Where a texture entry is: an immutable description created by the decoders
+        // Where a texture entry is: an immutable description, created by the decoders or for a texture to save
         var surface = typeof(TextureSurface);
         Assert.True(surface.IsPublic && surface.IsSealed && surface.IsClass);
-        Assert.Empty(surface.GetConstructors());
+        Assert.Single(surface.GetConstructors());
         Assert.Equal(
             [nameof(TextureSurface.ArrayIndex), nameof(TextureSurface.DepthSlice), nameof(TextureSurface.Face), nameof(TextureSurface.MipLevel)],
             surface.GetProperties(BindingFlags.Instance | BindingFlags.Public).Select(property => property.Name).Order(StringComparer.Ordinal));
@@ -545,6 +542,39 @@ public sealed class ApiSurfaceTests
         var property = GetDeclaredProperty(typeof(ImageConfiguration), nameof(ImageConfiguration.BufferAllocator));
         Assert.Equal(allocator, property.PropertyType);
         Assert.True(property.GetSetMethod()!.ReturnParameter.GetRequiredCustomModifiers().Contains(typeof(System.Runtime.CompilerServices.IsExternalInit)));
+    }
+
+    [Fact]
+    public void TextureEncoderAdditionsHaveTheirPublicShape()
+    {
+        foreach (var type in new[] { typeof(DdsEncoder), typeof(Ktx2Encoder) })
+        {
+            Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
+            Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
+            Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
+            Assert.Equal(typeof(TextureCompressionQuality), GetDeclaredProperty(type, "Quality").PropertyType);
+        }
+
+        Assert.Equal(
+            [nameof(DdsEncoder.AllowBitDepthReduction), nameof(DdsEncoder.AllowChannelReduction), nameof(DdsEncoder.Format), nameof(DdsEncoder.GenerateMipmaps), nameof(DdsEncoder.HeaderVersion), nameof(DdsEncoder.Quality), nameof(DdsEncoder.TextureFormat)],
+            typeof(DdsEncoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(
+            [nameof(Ktx2Encoder.AllowBitDepthReduction), nameof(Ktx2Encoder.AllowChannelReduction), nameof(Ktx2Encoder.Format), nameof(Ktx2Encoder.GenerateMipmaps), nameof(Ktx2Encoder.Quality), nameof(Ktx2Encoder.Supercompression), nameof(Ktx2Encoder.TextureFormat)],
+            typeof(Ktx2Encoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(DdsTextureFormat?), GetDeclaredProperty(typeof(DdsEncoder), nameof(DdsEncoder.TextureFormat)).PropertyType);
+        Assert.Equal(typeof(Ktx2TextureFormat?), GetDeclaredProperty(typeof(Ktx2Encoder), nameof(Ktx2Encoder.TextureFormat)).PropertyType);
+
+        // The values of the enumerations are their identity: appended, never renumbered
+        Assert.Equal([0, 1], Enum.GetValues<TextureCompressionQuality>().Select(value => (int)value));
+        Assert.Equal([0, 1, 2], Enum.GetValues<DdsHeaderVersion>().Select(value => (int)value));
+        Assert.Equal([0, 3], Enum.GetValues<Ktx2Supercompression>().Select(value => (int)value));
+        Assert.Equal(Enumerable.Range(0, 24), Enum.GetValues<DdsTextureFormat>().Select(value => (int)value));
+        Assert.Equal(Enumerable.Range(0, 39), Enum.GetValues<Ktx2TextureFormat>().Select(value => (int)value));
+        Assert.Equal(23, (int)DdsTextureFormat.Bc7UnormSrgb);
+        Assert.Equal(38, (int)Ktx2TextureFormat.Astc12x12);
+
+        // A collection of texture surfaces can be created and filled
+        Assert.NotNull(typeof(ImageCollection).GetMethod(nameof(ImageCollection.Add), [typeof(Image), typeof(TextureSurface)]));
     }
 
     [Theory]

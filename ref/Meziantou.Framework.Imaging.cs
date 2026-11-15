@@ -1168,6 +1168,7 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.ImageCollectionEntry this[int index] { get => throw null; }
         public Meziantou.Framework.Imaging.ImageCollectionKind Kind { get => throw null; }
         public Meziantou.Framework.Imaging.ImageCollectionEntry Add(Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Point? hotspot = null) => throw null;
+        public Meziantou.Framework.Imaging.ImageCollectionEntry Add(Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.TextureSurface surface) => throw null;
         public static Meziantou.Framework.Imaging.ImageCollection Create(Meziantou.Framework.Imaging.ImageCollectionKind kind, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
         public void Dispose() { }
         public Meziantou.Framework.Imaging.ImageCollectionEntry Insert(int index, Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Point? hotspot = null) => throw null;
@@ -2400,6 +2401,7 @@ namespace Meziantou.Framework.Imaging
         public int DepthSlice { get => throw null; }
         public Meziantou.Framework.Imaging.CubeMapFace? Face { get => throw null; }
         public int MipLevel { get => throw null; }
+        public TextureSurface(int arrayIndex = 0, Meziantou.Framework.Imaging.CubeMapFace? face = null, int mipLevel = 0) { }
         public override string ToString() => throw null;
     }
 
@@ -3507,6 +3509,52 @@ namespace Meziantou.Framework.Imaging.Formats
         public virtual System.Threading.Tasks.ValueTask EncodeAsync(Meziantou.Framework.Imaging.Image image, System.IO.Stream destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
+    public sealed class DdsEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public bool AllowBitDepthReduction { get => throw null; init { } }
+        public bool AllowChannelReduction { get => throw null; init { } }
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public bool GenerateMipmaps { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.DdsHeaderVersion HeaderVersion { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.TextureCompressionQuality Quality { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.DdsTextureFormat? TextureFormat { get => throw null; init { } }
+    }
+
+    public enum DdsHeaderVersion
+    {
+        Automatic = 0,
+        Legacy = 1,
+        Dx10 = 2,
+    }
+
+    public enum DdsTextureFormat
+    {
+        R8G8B8A8Unorm = 0,
+        R8G8B8A8UnormSrgb = 1,
+        B8G8R8A8Unorm = 2,
+        B8G8R8A8UnormSrgb = 3,
+        R8Unorm = 4,
+        R8G8Unorm = 5,
+        R16Unorm = 6,
+        R16G16B16A16Unorm = 7,
+        R16G16B16A16Float = 8,
+        R32G32B32A32Float = 9,
+        Bc1Unorm = 10,
+        Bc1UnormSrgb = 11,
+        Bc2Unorm = 12,
+        Bc2UnormSrgb = 13,
+        Bc3Unorm = 14,
+        Bc3UnormSrgb = 15,
+        Bc4Unorm = 16,
+        Bc4Snorm = 17,
+        Bc5Unorm = 18,
+        Bc5Snorm = 19,
+        Bc6HUf16 = 20,
+        Bc6HSf16 = 21,
+        Bc7Unorm = 22,
+        Bc7UnormSrgb = 23,
+    }
+
     public enum DngCompression
     {
         None = 0,
@@ -3746,6 +3794,66 @@ namespace Meziantou.Framework.Imaging.Formats
         public int Quality { get => throw null; init { } }
     }
 
+    public sealed class Ktx2Encoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public bool AllowBitDepthReduction { get => throw null; init { } }
+        public bool AllowChannelReduction { get => throw null; init { } }
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public bool GenerateMipmaps { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.TextureCompressionQuality Quality { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.Ktx2Supercompression Supercompression { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.Ktx2TextureFormat? TextureFormat { get => throw null; init { } }
+    }
+
+    public enum Ktx2Supercompression
+    {
+        None = 0,
+        Zlib = 3,
+    }
+
+    public enum Ktx2TextureFormat
+    {
+        R8 = 0,
+        R8G8 = 1,
+        R8G8B8A8 = 2,
+        R16 = 3,
+        R16G16B16A16 = 4,
+        R16G16B16A16Sfloat = 5,
+        R32G32B32A32Sfloat = 6,
+        Bc1Rgb = 7,
+        Bc1Rgba = 8,
+        Bc2 = 9,
+        Bc3 = 10,
+        Bc4Unorm = 11,
+        Bc4Snorm = 12,
+        Bc5Unorm = 13,
+        Bc5Snorm = 14,
+        Bc6HUfloat = 15,
+        Bc6HSfloat = 16,
+        Bc7 = 17,
+        Etc2Rgb = 18,
+        Etc2RgbA1 = 19,
+        Etc2Rgba = 20,
+        EacR11Unorm = 21,
+        EacR11Snorm = 22,
+        EacR11G11Unorm = 23,
+        EacR11G11Snorm = 24,
+        Astc4x4 = 25,
+        Astc5x4 = 26,
+        Astc5x5 = 27,
+        Astc6x5 = 28,
+        Astc6x6 = 29,
+        Astc8x5 = 30,
+        Astc8x6 = 31,
+        Astc8x8 = 32,
+        Astc10x5 = 33,
+        Astc10x6 = 34,
+        Astc10x8 = 35,
+        Astc10x10 = 36,
+        Astc12x10 = 37,
+        Astc12x12 = 38,
+    }
+
     public enum MetadataHandling
     {
         Strict = 0,
@@ -3872,6 +3980,12 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.RadianceCompression Compression { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+    }
+
+    public enum TextureCompressionQuality
+    {
+        Fast = 0,
+        Thorough = 1,
     }
 
     public enum TgaCompression

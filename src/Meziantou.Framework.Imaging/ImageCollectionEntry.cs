@@ -24,6 +24,7 @@ public sealed class ImageCollectionEntry
     private readonly ImageCollection _collection;
     private readonly int _sourceIndex;
     private readonly ImageCollectionEntryDescriptor? _descriptor;
+    private readonly TextureSurface? _ownedSurface;
     private Image? _owned;
 
     /// <summary>Creates an entry backed by the encoded data of a loaded collection.</summary>
@@ -36,12 +37,13 @@ public sealed class ImageCollectionEntry
     }
 
     /// <summary>Creates an entry that owns a copy of an image.</summary>
-    internal ImageCollectionEntry(ImageCollection collection, Image owned, Point? hotspot)
+    internal ImageCollectionEntry(ImageCollection collection, Image owned, Point? hotspot, TextureSurface? surface = null)
     {
         _collection = collection;
         _sourceIndex = -1;
         _owned = owned;
         Hotspot = hotspot;
+        _ownedSurface = surface;
     }
 
     /// <summary>Gets the size of the entry, in pixels. Entries of one collection may differ in size.</summary>
@@ -82,7 +84,7 @@ public sealed class ImageCollectionEntry
     /// depth slice) for an entry of a <see cref="ImageCollectionKind.TextureSurfaces"/> collection, otherwise
     /// <see langword="null"/>.
     /// </summary>
-    public TextureSurface? TextureSurface => _descriptor?.TextureSurface;
+    public TextureSurface? TextureSurface => _descriptor?.TextureSurface ?? _ownedSurface;
 
     /// <summary>Gets the metadata of the entry. Entries of one collection have independent metadata.</summary>
     public ImageMetadata Metadata => _descriptor?.Metadata ?? OwnedImage.Metadata;

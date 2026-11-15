@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
     <ImagingTestFixtureFormats>dds</ImagingTestFixtureFormats>
+    <ImagingTestEncoders>dds</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

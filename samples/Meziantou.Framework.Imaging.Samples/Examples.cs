@@ -1788,6 +1788,48 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>DDS writing: a BC7 texture with its mipmaps, and a cube map from six images.</summary>
+    #region Imaging_DdsEncode
+    public static void SaveDdsTextures(string albedoPath, IReadOnlyList<string> skyFacePaths, string outputDirectory)
+    {
+        // A color texture: BC7 with sRGB colors, and the full chain of mipmaps averaged in linear light
+        using (var albedo = Image.Load(albedoPath))
+        {
+            albedo.Save(Path.Combine(outputDirectory, "albedo.dds"), new DdsEncoder
+            {
+                TextureFormat = DdsTextureFormat.Bc7UnormSrgb,
+                GenerateMipmaps = true,
+            });
+        }
+
+        // A cube map: the six faces (+X, -X, +Y, -Y, +Z, -Z) are the entries of a collection of texture surfaces
+        using var sky = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+        for (var i = 0; i < 6; i++)
+        {
+            using var face = Image.Load(skyFacePaths[i]);
+            sky.Add(face, new TextureSurface(face: (CubeMapFace)i));
+        }
+
+        sky.Save(Path.Combine(outputDirectory, "sky.dds"), new DdsEncoder { TextureFormat = DdsTextureFormat.Bc1UnormSrgb, GenerateMipmaps = true });
+    }
+    #endregion
+
+    /// <summary>KTX 2.0 writing: an ASTC texture with its mip levels, supercompressed with ZLIB.</summary>
+    #region Imaging_Ktx2Encode
+    public static void SaveKtx2Texture(string inputPath, string outputPath)
+    {
+        // ASTC 6x6 blocks (3.56 bits per texel); an image labeled sRGB (the default) gives ASTC_6x6_SRGB_BLOCK
+        using var image = Image.Load(inputPath);
+        image.Save(outputPath, new Ktx2Encoder
+        {
+            TextureFormat = Ktx2TextureFormat.Astc6x6,
+            Quality = TextureCompressionQuality.Fast,
+            GenerateMipmaps = true,
+            Supercompression = Ktx2Supercompression.Zlib,
+        });
+    }
+    #endregion
+
     /// <summary>OpenEXR renderer outputs: one layer of a file with other channels, cropped to its display window.</summary>
     #region Imaging_OpenExrLayers
     public static (Image Image, Point Origin) LoadRenderLayer(string exrPath, string layer)

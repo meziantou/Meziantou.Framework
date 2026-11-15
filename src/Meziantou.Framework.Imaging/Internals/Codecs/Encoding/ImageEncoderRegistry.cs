@@ -21,7 +21,7 @@ internal sealed class ImageEncoderRegistry
         }
     }
 
-    /// <summary>Gets the built-in encoders: static PNG and APNG, through the PNG codec, GIF, baseline and progressive JPEG, WebP (lossless and lossy), QOI, BMP, TGA, PNM, TIFF and BigTIFF, ICO and CUR, ANI, AVIF, HEIC, JPEG XL, JPEG 2000, OpenEXR, Radiance HDR, DPX, PSD and PSB, DNG, and Cineon.</summary>
+    /// <summary>Gets the built-in encoders: static PNG and APNG, through the PNG codec, GIF, baseline and progressive JPEG, WebP (lossless and lossy), QOI, BMP, TGA, PNM, TIFF and BigTIFF, ICO and CUR, ANI, AVIF, HEIC, JPEG XL, JPEG 2000, OpenEXR, Radiance HDR, DPX, PSD and PSB, DNG, Cineon, DDS and KTX 2.0.</summary>
     public static ImageEncoderRegistry Default { get; } = new(
     [
         PngEncoderCodec.Instance,
@@ -46,6 +46,8 @@ internal sealed class ImageEncoderRegistry
         PsdEncoderCodec.Instance,
         DngEncoderCodec.Instance,
         CineonEncoderCodec.Instance,
+        DdsEncoderCodec.Instance,
+        Ktx2EncoderCodec.Instance,
     ]);
 
     /// <summary>Gets the registry used by the public API in the current asynchronous flow.</summary>

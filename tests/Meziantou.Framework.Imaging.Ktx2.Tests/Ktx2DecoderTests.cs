@@ -755,10 +755,8 @@ public sealed class Ktx2DecoderTests
     }
 
     [Fact]
-    public void Ktx2IsReadOnly()
+    public void Ktx2DefaultFileExtension()
     {
-        Assert.Throws<ArgumentException>("extension", () => ImageEncoder.FromFileExtension(".ktx2"));
-        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Ktx2));
         Assert.Equal(".ktx2", ImageFormatInfo.Get(ImageFormat.Ktx2).DefaultFileExtension);
     }
 }

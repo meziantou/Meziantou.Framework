@@ -27,10 +27,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal static class AstcBlockDecoder
 {
-    private const int MaxWeights = 64;
+    internal const int MaxWeights = 64;
 
     // The color endpoint ranges, the largest first (section 23.13): (trits, quints, bits)
-    private static readonly (int Trits, int Quints, int Bits)[] ColorRanges =
+    internal static readonly (int Trits, int Quints, int Bits)[] ColorRanges =
     [
         (0, 0, 8), (1, 0, 6), (0, 1, 5), (0, 0, 7), (1, 0, 5), (0, 1, 4), (0, 0, 6), (1, 0, 4), (0, 1, 3), (0, 0, 5),
         (1, 0, 3), (0, 1, 2), (0, 0, 4), (1, 0, 2), (0, 1, 1), (0, 0, 3), (1, 0, 1),
@@ -185,8 +185,8 @@ internal static class AstcBlockDecoder
         }
 
         var smallBlock = blockWidth * blockHeight < 31;
-        var ds = (1024 + (blockWidth / 2)) / (blockWidth - 1);
-        var dt = (1024 + (blockHeight / 2)) / (blockHeight - 1);
+        var ds = GetInfillScale(blockWidth);
+        var dt = GetInfillScale(blockHeight);
         Span<int> texel = stackalloc int[4];
         Span<int> effective = stackalloc int[2];
         for (var y = 0; y < blockHeight; y++)
@@ -196,16 +196,7 @@ internal static class AstcBlockDecoder
                 var partition = partitions == 1 ? 0 : SelectPartition(partitionIndex, x, y, 0, partitions, smallBlock);
                 var endpoint = endpoints.Slice(partition * 8, 8);
 
-                // Section 23.17: the bilinear infill of the weight grid
-                var gs = ((ds * x * (gridWidth - 1)) + 32) >> 6;
-                var gt = ((dt * y * (gridHeight - 1)) + 32) >> 6;
-                var (js, fs) = (gs >> 4, gs & 0xF);
-                var (jt, ft) = (gt >> 4, gt & 0xF);
-                var w11 = ((fs * ft) + 8) >> 4;
-                var w10 = ft - w11;
-                var w01 = fs - w11;
-                var w00 = 16 - fs - ft + w11;
-                var v0 = js + (jt * gridWidth);
+                var (v0, w00, w01, w10, w11) = GetInfill(x, y, ds, dt, gridWidth, gridHeight);
                 var planes = dualPlane ? 2 : 1;
                 for (var plane = 0; plane < planes; plane++)
                 {
@@ -227,6 +218,26 @@ internal static class AstcBlockDecoder
                 WriteTexel(texel, profile, destination, (y * stride) + (x * (IsByte(profile) ? 4 : 8)));
             }
         }
+    }
+
+    /// <summary>The scale factors of the weight infill of a footprint dimension (section 23.17): Ds or Dt.</summary>
+    internal static int GetInfillScale(int blockSize) => (1024 + (blockSize / 2)) / (blockSize - 1);
+
+    /// <summary>
+    /// The bilinear infill of the weight grid (section 23.17): the index of the top-left grid weight of a texel and the
+    /// four factors (in 1/16) of the grid weights v0, v0 + 1, v0 + gridWidth and v0 + gridWidth + 1.
+    /// </summary>
+    internal static (int V0, int W00, int W01, int W10, int W11) GetInfill(int x, int y, int ds, int dt, int gridWidth, int gridHeight)
+    {
+        var gs = ((ds * x * (gridWidth - 1)) + 32) >> 6;
+        var gt = ((dt * y * (gridHeight - 1)) + 32) >> 6;
+        var (js, fs) = (gs >> 4, gs & 0xF);
+        var (jt, ft) = (gt >> 4, gt & 0xF);
+        var w11 = ((fs * ft) + 8) >> 4;
+        var w10 = ft - w11;
+        var w01 = fs - w11;
+        var w00 = 16 - fs - ft + w11;
+        return (js + (jt * gridWidth), w00, w01, w10, w11);
     }
 
     private static int Weight(ReadOnlySpan<int> weights, int index, int plane, int planes, int count)
@@ -306,7 +317,7 @@ internal static class AstcBlockDecoder
     // Block mode (section 23.10)
     // -----------------------------------------------------------------------------------------------------------------
 
-    private static bool TryDecodeBlockMode(int mode, out int width, out int height, out bool dualPlane, out (int Trits, int Quints, int Bits) range)
+    internal static bool TryDecodeBlockMode(int mode, out int width, out int height, out bool dualPlane, out (int Trits, int Quints, int Bits) range)
     {
         width = 0;
         height = 0;
@@ -404,7 +415,7 @@ internal static class AstcBlockDecoder
     // Integer sequence encoding (section 23.12) and unquantization (sections 23.13, 23.16)
     // -----------------------------------------------------------------------------------------------------------------
 
-    private static int GetSequenceBits(int count, int trits, int quints, int bits)
+    internal static int GetSequenceBits(int count, int trits, int quints, int bits)
         => (((count * 8 * trits) + 4) / 5) + (((count * 7 * quints) + 2) / 3) + (count * bits);
 
     private static (int Trits, int Quints, int Bits) SelectColorRange(int count, int remainingBits)
@@ -418,7 +429,7 @@ internal static class AstcBlockDecoder
         throw Illegal("too few bits remain for its color endpoints");
     }
 
-    private static void DecodeSequence(UInt128 bits, int start, int count, int trits, int quints, int bitCount, Span<int> values)
+    internal static void DecodeSequence(UInt128 bits, int start, int count, int trits, int quints, int bitCount, Span<int> values)
     {
         var position = start;
         var end = start + GetSequenceBits(count, trits, quints, bitCount);
@@ -487,7 +498,7 @@ internal static class AstcBlockDecoder
         return value;
     }
 
-    private static void DecodeTrits(int packed, Span<int> t)
+    internal static void DecodeTrits(int packed, Span<int> t)
     {
         int c;
         if (((packed >> 2) & 7) == 7)
@@ -531,7 +542,7 @@ internal static class AstcBlockDecoder
         }
     }
 
-    private static void DecodeQuints(int packed, Span<int> q)
+    internal static void DecodeQuints(int packed, Span<int> q)
     {
         if (((packed >> 1) & 3) == 3 && ((packed >> 5) & 3) == 0)
         {
@@ -595,7 +606,7 @@ internal static class AstcBlockDecoder
         return (a & 0x80) | (unquantized >> 2);
     }
 
-    private static int UnquantizeWeight(int value, int trits, int quints, int bitCount)
+    internal static int UnquantizeWeight(int value, int trits, int quints, int bitCount)
     {
         int unquantized;
         if (trits == 0 && quints == 0)
@@ -649,7 +660,7 @@ internal static class AstcBlockDecoder
     // Endpoint interpretation (section 23.14)
     // -----------------------------------------------------------------------------------------------------------------
 
-    private static void DecodeEndpoints(int mode, Span<int> v, Span<int> e, out bool hdrColor, out bool hdrAlpha)
+    internal static void DecodeEndpoints(int mode, Span<int> v, Span<int> e, out bool hdrColor, out bool hdrAlpha)
     {
         hdrColor = false;
         hdrAlpha = false;
@@ -1008,7 +1019,7 @@ internal static class AstcBlockDecoder
     // Partitions (section 23.20) and void extents (section 23.22)
     // -----------------------------------------------------------------------------------------------------------------
 
-    private static int SelectPartition(int seed, int x, int y, int z, int partitionCount, bool smallBlock)
+    internal static int SelectPartition(int seed, int x, int y, int z, int partitionCount, bool smallBlock)
     {
         if (smallBlock)
         {
@@ -1146,7 +1157,7 @@ internal static class AstcBlockDecoder
 
     private static ulong Bits(UInt128 bits, int start, int count) => (ulong)((bits >> start) & ((UInt128.One << count) - 1));
 
-    private static UInt128 ReverseBits(UInt128 value)
+    internal static UInt128 ReverseBits(UInt128 value)
     {
         var low = (ulong)value;
         var high = (ulong)(value >> 64);

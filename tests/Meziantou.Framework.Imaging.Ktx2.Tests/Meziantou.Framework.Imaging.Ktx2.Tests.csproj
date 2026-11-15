@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
+    <ImagingTestEncoders>ktx2</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

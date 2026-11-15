@@ -1633,6 +1633,54 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveDdsTexturesWritesBc7AndACubeMap()
+    {
+        var albedo = GetPath("albedo.png");
+        using (var image = new Image<Rgba32>(8, 4))
+        {
+            image.Frames[0][1, 1] = new Rgba32(200, 100, 50, 255);
+            image.Save(albedo);
+        }
+
+        var faces = new List<string>();
+        for (var i = 0; i < 6; i++)
+        {
+            var path = GetPath($"face-{i}.png");
+            using var face = new Image<Rgba32>(4, 4);
+            face.Frames[0][0, 0] = new Rgba32((byte)(i * 40), 0, 0, 255);
+            face.Save(path);
+            faces.Add(path);
+        }
+
+        Examples.SaveDdsTextures(albedo, faces, _directory);
+        using (var texture = ImageCollection.Load(Path.Combine(_directory, "albedo.dds")))
+        {
+            Assert.Equal([new Size(8, 4), new Size(4, 2), new Size(2, 1), new Size(1, 1)], texture.Entries.Select(entry => entry.Size));
+        }
+
+        using var sky = ImageCollection.Load(Path.Combine(_directory, "sky.dds"));
+        Assert.Equal(6 * 3, sky.Count);
+        Assert.Equal(CubeMapFace.NegativeZ, sky[17].TextureSurface!.Face);
+    }
+
+    [Fact]
+    public void SaveKtx2TextureWritesAstcWithMipLevels()
+    {
+        var input = GetPath("astc-input.png");
+        using (var image = new Image<Rgba32>(12, 12))
+        {
+            image.Save(input);
+        }
+
+        var output = GetPath("texture-astc.ktx2");
+        Examples.SaveKtx2Texture(input, output);
+        using var texture = Image.Load(output);
+        Assert.Equal("ASTC_6x6_SRGB_BLOCK", texture.Metadata.Ktx2Header!.FormatName);
+        Assert.Equal(4, texture.Metadata.Ktx2Header.LevelCount);
+        Assert.Equal(3, texture.Metadata.Ktx2Header.SupercompressionScheme);
+    }
+
+    [Fact]
     public void ExportKtx2LevelsWritesTheBaseImageAndEveryLevel()
     {
         // An sRGB texture of 4x2 and 2x1 texels, assembled from the KTX 2.0 specification

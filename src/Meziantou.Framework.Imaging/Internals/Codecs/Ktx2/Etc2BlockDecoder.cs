@@ -21,7 +21,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal static class Etc2BlockDecoder
 {
     // Table 142 (and 148): the intensity modifiers of the individual and differential modes, by table codeword
-    private static ReadOnlySpan<short> IntensityModifiers =>
+    public static ReadOnlySpan<short> IntensityModifiers =>
     [
         -8, -2, 2, 8,
         -17, -5, 5, 17,
@@ -34,10 +34,10 @@ internal static class Etc2BlockDecoder
     ];
 
     // Table 144: the distances of the T and H modes
-    private static ReadOnlySpan<byte> Distances => [3, 6, 11, 16, 23, 32, 41, 64];
+    public static ReadOnlySpan<byte> Distances => [3, 6, 11, 16, 23, 32, 41, 64];
 
     // Table 146: the modifiers of the alpha blocks and of EAC
-    private static ReadOnlySpan<sbyte> AlphaModifiers =>
+    public static ReadOnlySpan<sbyte> AlphaModifiers =>
     [
         -3, -6, -9, -15, 2, 5, 8, 14,
         -3, -7, -10, -13, 2, 6, 9, 12,

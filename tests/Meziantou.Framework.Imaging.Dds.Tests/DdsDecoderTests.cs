@@ -265,14 +265,8 @@ public sealed class DdsDecoderTests
     }
 
     [Fact]
-    public void DdsIsReadOnly()
+    public void DdsHasOneFileExtension()
     {
-        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Dds));
-        Assert.Throws<ArgumentException>("extension", () => ImageEncoder.FromFileExtension(".dds"));
-        Assert.Throws<ArgumentOutOfRangeException>("kind", () => ImageCollection.Create(ImageCollectionKind.TextureSurfaces));
         Assert.Equal(new[] { ".dds" }, ImageFormatInfo.Get(ImageFormat.Dds).FileExtensions.ToArray());
-
-        using var image = new Image<Rgba32>(1, 1);
-        Assert.Throws<ArgumentException>("path", () => image.Save(Path.Combine(Path.GetTempPath(), "never-written.dds")));
     }
 }

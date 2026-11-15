@@ -789,9 +789,10 @@ public static partial class ImageProcessingExtensions
     /// profile is applied: the colors of the matrix are those of the color space of the image.
     /// </para>
     /// <para>
-    /// The working storage (one row) is charged to the image and rented before a pixel changes. On cancellation, some
-    /// rows may already be converted, the same ones in every frame. To change the colors of a part of an image, or of
-    /// a drawing, see <see cref="DrawingCanvas.FilterBackdrop(ColorMatrix)"/> and
+    /// The working storage (one row per worker: up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers
+    /// split the rows of a frame of at least 65,536 pixels, with the same result) is charged to the image and rented
+    /// before a pixel changes. On cancellation, some rows may already be converted. To change the colors of a part of an
+    /// image, or of a drawing, see <see cref="DrawingCanvas.FilterBackdrop(ColorMatrix)"/> and
     /// <see cref="DrawingCanvas.Filter(ColorMatrix, DrawingAction)"/>.
     /// </para>
     /// </remarks>

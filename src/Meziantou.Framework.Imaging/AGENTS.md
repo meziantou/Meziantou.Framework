@@ -994,7 +994,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   under the license rule of "Hard constraints" (Little CMS is MIT; Argyll CMS is AGPL and stays an oracle).
 - A profile is untrusted input. Validate every size against the tag before reading (64-bit arithmetic for table
   sizes), read color lookup tables in place (`ReadOnlyMemory<byte>`, no copy) so that a transform only copies
-  one-dimensional curves, and allocate nothing per conversion (`PerformanceContractTests`). A malformed profile is `InvalidImageContentException`; a valid profile that is not
+  one-dimensional curves, and allocate nothing per conversion (`PerformanceContractTests`). The one copy of a table is its decoded entries
+  (`IccClutStage.Reserve`), made only for a pipeline bound to the scope of its owner (`IccPipeline.BindLookupTables`, a
+  decoder or an image operation: a copy with lookup tables of its own, since a pipeline may be shared), charged before it is allocated and released with the owner
+  (`ReleaseLookupTables`); when the scope refuses it, the entries stay read in place. A malformed profile is `InvalidImageContentException`; a valid profile that is not
   supported or cannot be a destination is `UnsupportedImageFeatureException`. Nothing else may escape
   (`ColorProfileFuzzTests`).
 - A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
@@ -1591,7 +1594,8 @@ thin public types over its `FontFace`.
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`, and `PercentileFilter`, which shares the median's
   plan), `Sharpen`, `DetectEdges`, `BilateralFilter` and `RadialBlur` (every pixel computed alone from a
   `WorkingFrameCopy`), the `Pixelate`, `OilPaint` and
-  `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every
+  `Flatten` effects (`EffectScratch`), the color matrices of a drawing session outside a clip (`ApplyColorMatrix`, a row of
+  colors per worker), `CloneAs` from or to a floating-point format (the integer conversions cost about a copy), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every
   `SimilarityPrecision`) and the
   codec work listed below are parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
   `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split

@@ -3827,6 +3827,71 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FloatWorkingSampleStoreMatchesTheScalarReference()
+    {
+        var random = new Random(20261115);
+        foreach (var alpha in new[] { WorkingAlpha.Opaque, WorkingAlpha.None })
+        {
+            for (var pixels = 0; pixels <= 21; pixels++)
+            {
+                // Values that round to floats in every way: ties, values beyond the range of floats, subnormals, infinities
+                // and values that are not numbers
+                var count = pixels * 4;
+                var values = new double[WorkingSamples.GetWorkingLength(count, alpha)];
+                for (var i = 0; i < values.Length; i++)
+                {
+                    values[i] = random.Next(9) switch
+                    {
+                        0 => 0,
+                        1 => (double)BitConverter.Int32BitsToSingle(random.Next()) + (Math.BitIncrement(1.0) - 1.0),
+                        2 => 1e39 * (random.Next(2) * 2 - 1),
+                        3 => 1e-42,
+                        4 => double.PositiveInfinity,
+                        5 => BitConverter.Int64BitsToDouble(0x7FF8_0000_1234_5678),
+                        6 => -1.5e-45,
+                        _ => (random.NextDouble() * 4) - 2,
+                    };
+                }
+
+                var expected = new float[count];
+                var actual = new float[count];
+                WorkingSamples.StoreScalar<float>(values, expected, alpha, transfer: 0, max: 1);
+                WorkingSamples.Store<float>(values, actual, alpha, transfer: 0, max: 1);
+                Assert.Equal(expected.Select(BitConverter.SingleToInt32Bits), actual.Select(BitConverter.SingleToInt32Bits));
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FloatOpacityScanMatchesTheScalarReference()
+    {
+        // Opaque rows with at most one other alpha, at every position: values next to 1, zeros, values that are not numbers
+        var random = new Random(1115);
+        float[] others = [MathF.BitDecrement(1f), MathF.BitIncrement(1f), 0f, -0f, -1f, float.NaN, float.PositiveInfinity, 2f];
+        for (var length = 0; length <= 40; length++)
+        {
+            for (var position = -1; position < length; position++)
+            {
+                var row = new RgbaFloat[length];
+                for (var i = 0; i < length; i++)
+                {
+                    row[i] = new RgbaFloat((float)random.NextDouble(), float.NaN, 1f, 1f);
+                }
+
+                if (position >= 0)
+                {
+                    row[position].A = others[random.Next(others.Length)];
+                }
+
+                Assert.Equal(PixelConverter.IndexOfNonOpaqueScalar<RgbaFloat>(row), PixelConverter.IndexOfNonOpaque<RgbaFloat>(row));
+                Assert.Equal(position, PixelConverter.IndexOfNonOpaque<RgbaFloat>(row));
+            }
+        }
+    }
+
     [Theory]
     [InlineData((int)WorkingAlpha.None)]
     [InlineData((int)WorkingAlpha.Premultiplied)]
@@ -10702,6 +10767,120 @@ public sealed class VectorizedKernelTests
 
         // Identical profiles have no stage and no table: the samples are copied
         Assert.Null(IccPipeline.Create(displayP3, displayP3, Metadata.IccRenderingIntent.Perceptual, blackPointCompensation: true).ByteInputTables);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DecodedLookupTablesMatchTheScalarReference()
+    {
+        // Once enough colors are converted, the entries of a lookup table are divided once, and a CMYK table interpolates
+        // all its vertices (vertices of weight zero included): the samples of the stage-by-stage reference, at every precision
+        (Metadata.IccProfile Source, Metadata.IccProfile Destination)[] pairs =
+        [
+            (IccTestProfiles.CmykLabLut16(), Metadata.IccProfile.Srgb),
+            (IccTestProfiles.CmykLabLutAToB(), IccTestProfiles.CmykLabLut16()),
+            (IccTestProfiles.RgbLabLut8(), Metadata.IccProfile.Srgb),
+            (Metadata.IccProfile.Cgats001CompatibleCmyk, Metadata.IccProfile.Srgb),
+        ];
+
+        var random = new Random(1115);
+        foreach (var (source, destination) in pairs)
+        {
+            var pipeline = IccPipeline.Create(source, destination, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: true);
+            var scope = new AllocationScope(new ImageResourceLimits());
+            pipeline = pipeline.BindLookupTables(scope);
+            pipeline.ReserveLookupTables(int.MaxValue);
+            Assert.True(scope.LiveBytes > 0);
+            var sourceChannels = pipeline.SourceChannelCount;
+            var destinationChannels = pipeline.DestinationChannelCount;
+            const int Colors = 4000;
+
+            // Samples on the faces of the cells (0, the maximum, and a quarter of the range) and anywhere else
+            var bytes = new byte[Colors * sourceChannels];
+            var words = new ushort[bytes.Length];
+            var floats = new float[bytes.Length];
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                var kind = random.Next(4);
+                bytes[i] = kind switch { 0 => 0, 1 => 255, 2 => 64, _ => (byte)random.Next(256) };
+                words[i] = kind switch { 0 => 0, 1 => 65535, 2 => 16384, _ => (ushort)random.Next(65536) };
+                floats[i] = kind switch { 0 => 0, 1 => 1, 2 => 0.25f, _ => random.NextSingle() };
+            }
+
+            AssertConversion<byte, IccByteSample>(pipeline, bytes, sourceChannels, destinationChannels);
+            AssertConversion<ushort, IccUInt16Sample>(pipeline, words, sourceChannels, destinationChannels);
+            AssertConversion<float, IccSingleSample>(pipeline, floats, sourceChannels, destinationChannels);
+            pipeline.ReleaseLookupTables();
+            Assert.Equal(0, scope.LiveBytes);
+        }
+
+        static void AssertConversion<T, TSample>(IccPipeline pipeline, T[] samples, int sourceChannels, int destinationChannels)
+            where T : unmanaged
+            where TSample : struct, IIccSample<T>
+        {
+            var count = samples.Length / sourceChannels;
+            var expected = new T[count * destinationChannels];
+            var actual = new T[expected.Length];
+            ColorConversionKernels.ConvertScalar<T, TSample>(pipeline, samples, expected, sourceChannels, destinationChannels);
+            ColorConversionKernels.Convert<T, TSample>(pipeline, samples, actual, sourceChannels, destinationChannels);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    public void DecodedLookupTablesAreChargedToTheBoundScope()
+    {
+        // The decoded entries of a lookup table are charged to the scope of the pipeline bound to it, until it is released;
+        // the pipeline it was bound from (which may be shared) is unchanged, and a pipeline that is not bound, or whose scope
+        // refuses the charge (once: it is not asked again), reads the entries in place with the same results
+        var source = IccTestProfiles.CmykLabLut16();
+        var samples = new byte[4000 * 4];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = (byte)(i * 37);
+        }
+
+        var unbound = IccPipeline.Create(source, Metadata.IccProfile.Srgb, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: true);
+        var expected = new byte[4000 * 3];
+        ColorConversionKernels.ConvertScalar<byte, IccByteSample>(unbound, samples, expected, 4, 3);
+        var actual = new byte[expected.Length];
+        ColorConversionKernels.Convert<byte, IccByteSample>(unbound, samples, actual, 4, 3);
+        Assert.Equal(expected, actual);
+
+        var scope = new AllocationScope(new ImageResourceLimits());
+        var otherScope = new AllocationScope(new ImageResourceLimits());
+        var bound = unbound.BindLookupTables(scope);
+        var otherBound = unbound.BindLookupTables(otherScope);
+        Assert.NotSame(unbound, bound);
+        actual.AsSpan().Clear();
+        ColorConversionKernels.Convert<byte, IccByteSample>(bound, samples, actual, 4, 3);
+        Assert.Equal(expected, actual);
+        Assert.True(scope.LiveBytes > 0);
+        Assert.Equal(scope.LiveBytes, scope.GetLiveBytes(AllocationKind.Temporary));
+        Assert.Equal(0, otherScope.LiveBytes);
+        actual.AsSpan().Clear();
+        ColorConversionKernels.Convert<byte, IccByteSample>(otherBound, samples, actual, 4, 3);
+        Assert.Equal(expected, actual);
+        Assert.Equal(scope.LiveBytes, otherScope.LiveBytes);
+        bound.ReleaseLookupTables();
+        Assert.Equal(0, scope.LiveBytes);
+        Assert.True(otherScope.LiveBytes > 0);
+        otherBound.ReleaseLookupTables();
+        Assert.Equal(0, otherScope.LiveBytes);
+        unbound.ReleaseLookupTables();
+        actual.AsSpan().Clear();
+        ColorConversionKernels.Convert<byte, IccByteSample>(unbound, samples, actual, 4, 3);
+        Assert.Equal(expected, actual);
+
+        var smallScope = new AllocationScope(new ImageResourceLimits { MaxLiveAllocationBytes = 64 });
+        var refused = unbound.BindLookupTables(smallScope);
+        actual.AsSpan().Clear();
+        ColorConversionKernels.Convert<byte, IccByteSample>(refused, samples, actual, 4, 3);
+        ColorConversionKernels.Convert<byte, IccByteSample>(refused, samples, actual, 4, 3);
+        Assert.Equal(expected, actual);
+        Assert.Equal(0, smallScope.LiveBytes);
+        Assert.Equal(1, smallScope.GetDiagnostics().RejectedRequests);
+        refused.ReleaseLookupTables();
     }
 
     [Fact]

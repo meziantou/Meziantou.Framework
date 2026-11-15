@@ -17,6 +17,8 @@ internal static class LinearDecoder
         _ => 4,
     };
 
+    private const int MaximumCompensatedLines = 16;
+
     private delegate LinearMatch? SymbolDecoder(ScanLine line, int start);
 
     // The symbologies with the strongest check characters first: a weaker one can match the bars of another symbol
@@ -50,7 +52,7 @@ internal static class LinearDecoder
             }
         }
 
-        AssembleStackedOmnidirectional(halves, results);
+        AssembleStackedOmnidirectional(halves, results, scanLines.Count);
         AssembleExpanded(expandedRows, results);
         return results;
     }
@@ -79,12 +81,15 @@ internal static class LinearDecoder
             if (growth is not { } value)
                 return null;
 
-            if (!compensatedLines.TryGetValue(value, out var compensated))
-            {
-                compensated = line.Compensate(value);
-                compensatedLines[value] = compensated;
-            }
+            if (compensatedLines.TryGetValue(value, out var compensated))
+                return compensated;
 
+            // A line with fine widths (sub-pixel edges) has many estimates: beyond a few lines, the nearest one is close enough
+            if (compensatedLines.Count >= MaximumCompensatedLines)
+                return compensatedLines.MinBy(item => Math.Abs(item.Key - value)).Value;
+
+            compensated = line.Compensate(value);
+            compensatedLines[value] = compensated;
             return compensated;
         }
 
@@ -227,17 +232,27 @@ internal static class LinearDecoder
     // GS1 DataBar Stacked and Stacked Omnidirectional: a top row above a bottom row, whose checksum matches. The rows of
     // Stacked Omnidirectional are as high as each other, the top row of Stacked is shorter. The bottom row of a top row is
     // the nearest one that matches it: the same label printed twice has two of each.
-    private static void AssembleStackedOmnidirectional(List<(DataBarDecoder.Half Half, int Line, long Start, long End)> halves, List<BarcodeDecodeResult> results)
+    private static void AssembleStackedOmnidirectional(List<(DataBarDecoder.Half Half, int Line, long Start, long End)> halves, List<BarcodeDecodeResult> results, int lineCount)
     {
+        // A row read by a single line is mostly a pattern that looks like a half, when there are lines enough to cross a row
+        // twice
+        var minimumLines = lineCount > 4 ? 2 : 1;
         var rows = GroupNearby(halves, item => (item.Half.IsTop ? "T" : "B") + string.Join(",", item.Half.Values), item => item.Line, item => item.Start, item => item.End)
+            .Where(group => group.Select(item => item.Line).Distinct().Count() >= minimumLines)
             .Select(group => (group[0].Half, FirstLine: group.Min(item => item.Line), LastLine: group.Max(item => item.Line), Start: group.Min(item => item.Start), End: group.Max(item => item.End)))
             .ToList();
         var usedBottoms = new HashSet<int>();
         foreach (var top in rows.Where(row => row.Half.IsTop))
         {
             // The bottom row is after the top row, or before it when the lines cross an upside-down symbol from the bottom
+            // The rows are as wide, aligned, and next to each other: the patterns of a photograph read as halves here and there,
+            // and two of them pass the checksum once in 79 pairs
+            var topHeight = top.LastLine - top.FirstLine + 1;
+            var tolerance = 4 * top.Half.ModuleWidth;
             var bottoms = Enumerable.Range(0, rows.Count)
-                .Where(index => !usedBottoms.Contains(index) && !rows[index].Half.IsTop && (rows[index].FirstLine > top.LastLine || rows[index].LastLine < top.FirstLine) && rows[index].Start < top.End && top.Start < rows[index].End)
+                .Where(index => !usedBottoms.Contains(index) && !rows[index].Half.IsTop && (rows[index].FirstLine > top.LastLine || rows[index].LastLine < top.FirstLine)
+                    && Math.Abs(rows[index].Start - top.Start) <= tolerance && Math.Abs(rows[index].End - top.End) <= tolerance
+                    && GetLineDistance(top.FirstLine, top.LastLine, rows[index].FirstLine, rows[index].LastLine) <= Math.Max(MaximumLineGap, 2 * Math.Max(topHeight, rows[index].LastLine - rows[index].FirstLine + 1)))
                 .OrderBy(index => GetLineDistance(top.FirstLine, top.LastLine, rows[index].FirstLine, rows[index].LastLine));
             foreach (var index in bottoms)
             {
@@ -246,7 +261,6 @@ internal static class LinearDecoder
                 if (text is null)
                     continue;
 
-                var topHeight = top.LastLine - top.FirstLine + 1;
                 var bottomHeight = bottom.LastLine - bottom.FirstLine + 1;
                 var type = topHeight * 6 < bottomHeight * 5 ? BarcodeType.Gs1DataBarStacked : BarcodeType.Gs1DataBarStackedOmnidirectional;
                 AddResult(results, type, text, Math.Min(top.FirstLine, bottom.FirstLine), Math.Max(top.LastLine, bottom.LastLine), Math.Min(top.Start, bottom.Start), Math.Max(top.End, bottom.End));
@@ -266,6 +280,7 @@ internal static class LinearDecoder
             return;
 
         var groups = GroupNearby(rows, item => item.Row.Signature, item => item.Line, item => item.Start, item => item.End);
+        var budget = DataBarExpandedDecoder.MaximumAssemblySteps;
         var groupRows = groups.Select(group => group[0].Row with { FirstLine = group.Min(item => item.Line), LastLine = group.Max(item => item.Line) }).ToList();
         var used = new bool[groups.Count];
         for (var i = 0; i < groups.Count; i++)
@@ -277,7 +292,7 @@ internal static class LinearDecoder
             var candidates = Enumerable.Range(0, groups.Count)
                 .Where(other => !used[other] && groups[other].Any(item => groups[i].Any(first => item.Start < first.End && first.Start < item.End)))
                 .ToList();
-            var assembled = DataBarExpandedDecoder.TryAssemble([.. candidates.Select(index => groupRows[index])]);
+            var assembled = DataBarExpandedDecoder.TryAssemble([.. candidates.Select(index => groupRows[index])], ref budget);
             if (assembled is null)
                 continue;
 

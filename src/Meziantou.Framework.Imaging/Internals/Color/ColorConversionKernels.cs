@@ -1,5 +1,7 @@
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -120,6 +122,11 @@ internal static class ColorConversionKernels
             return;
         }
 
+        if (pipeline.HasLookupTable)
+        {
+            pipeline.ReserveLookupTables(source.Length / sourceStride);
+        }
+
         if (typeof(T) == typeof(byte) && pipeline.HasLookupTable && pipeline.ByteInputTables is { } tables)
         {
             ConvertBytesCached(pipeline, tables, unsafe(MemoryMarshal.Cast<T, byte>(source)), unsafe(MemoryMarshal.Cast<T, byte>(destination)), sourceStride, destinationStride, reverseColorOrder);
@@ -181,9 +188,13 @@ internal static class ColorConversionKernels
                 }
             }
 
+            // A sample at a time: the copies of one or two samples are shorter than a call
             for (var i = 0; i < batch && copied > 0; i++)
             {
-                input.Slice((i * sourceStride) + sourceChannels, copied).CopyTo(kept[(i * copied)..]);
+                for (var c = 0; c < copied; c++)
+                {
+                    kept[(i * copied) + c] = input[(i * sourceStride) + sourceChannels + c];
+                }
             }
 
             pipeline.ApplyBatch(components, batch, firstStage, endStage);
@@ -197,7 +208,20 @@ internal static class ColorConversionKernels
                 {
                     var table = outputTables[channel];
                     var bytes = unsafe(MemoryMarshal.Cast<T, byte>(output));
-                    for (var i = 0; i < values.Length; i++)
+                    var i = 0;
+                    if (Vector128.IsHardwareAccelerated && !table.Intervals.IsEmpty)
+                    {
+                        // Two values at a time, one comparison from their interval: the samples of Quantize(double)
+                        ref var intervals = ref unsafe(MemoryMarshal.GetReference(table.Intervals));
+                        for (; i + 2 <= values.Length; i += 2)
+                        {
+                            var samples = QuantizationThresholds.Quantize(Vector128.Create(values.Slice(i, 2)), ref intervals);
+                            bytes[(i * destinationStride) + offset] = (byte)samples.GetElement(0);
+                            bytes[((i + 1) * destinationStride) + offset] = (byte)samples.GetElement(1);
+                        }
+                    }
+
+                    for (; i < values.Length; i++)
                     {
                         bytes[(i * destinationStride) + offset] = (byte)table.Quantize(values[i]);
                     }
@@ -213,7 +237,10 @@ internal static class ColorConversionKernels
 
             for (var i = 0; i < batch && copied > 0; i++)
             {
-                kept.Slice(i * copied, copied).CopyTo(output[((i * destinationStride) + destinationChannels)..]);
+                for (var c = 0; c < copied; c++)
+                {
+                    output[(i * destinationStride) + destinationChannels + c] = kept[(i * copied) + c];
+                }
             }
         }
     }
@@ -240,78 +267,120 @@ internal static class ColorConversionKernels
     /// table (<see cref="IccPipeline.HasLookupTable"/>, hundreds of operations per color). The conversion of a color depends
     /// only on its samples, and photographs repeat colors within a row (flat or smooth areas): the colors of the call are
     /// remembered in a small direct-mapped cache (<see cref="CacheSize"/> entries, keyed by the packed source samples), and
-    /// a color found there gets the samples computed for it before. Matrix-based conversions are cheaper than the cache when
-    /// colors do not repeat.
+    /// a color found there gets the samples computed for it before. The other colors of each group of
+    /// <see cref="IccPipeline.BatchSize"/> pixels are converted together, stored by component. Matrix-based conversions
+    /// are cheaper than the cache when colors do not repeat.
     /// </summary>
     private static void ConvertBytesCached(IccPipeline pipeline, double[][] tables, ReadOnlySpan<byte> source, Span<byte> destination, int sourceStride, int destinationStride, bool reverseColorOrder)
     {
+        const int BatchSize = IccPipeline.BatchSize;
         var sourceChannels = pipeline.SourceChannelCount;
         var destinationChannels = pipeline.DestinationChannelCount;
         var copied = sourceStride - sourceChannels;
-        Span<double> values = stackalloc double[IccPipeline.MaxChannels];
-        Span<byte> kept = stackalloc byte[IccPipeline.MaxChannels];
-
-        // An entry is (source samples << 1) | 1, so that the zeroed entries of the new cache match no color; the result is
-        // the destination samples packed the same way
-        Span<ulong> cachedColors = stackalloc ulong[CacheSize];
-        Span<uint> cachedResults = stackalloc uint[CacheSize];
-        kept = kept[..copied];
         var count = source.Length / sourceStride;
         var outputTables = pipeline.GetByteOutputTables(count);
-        for (var i = 0; i < count; i++)
+        var endStage = outputTables is not null ? pipeline.StageCount - 1 : pipeline.StageCount;
+
+        // An entry is (source samples << 1) | 1, so that the zeroed entries of the new cache match no color; the result is
+        // the destination samples packed the same way. A color that is not in the cache is added to a batch of the colors
+        // that are converted together, stage by stage (IccPipeline.ApplyBatch, the same arithmetic for each color), and its
+        // slot is pending until then: the next pixels of the same color take the result of its batch entry
+        Span<ulong> cachedColors = stackalloc ulong[CacheSize];
+        Span<uint> cachedResults = stackalloc uint[CacheSize];
+        Span<byte> pendingSlots = stackalloc byte[CacheSize];
+        Span<double> components = stackalloc double[IccPipeline.MaxChannels * BatchSize];
+        Span<byte> batchSlots = stackalloc byte[BatchSize];
+        Span<uint> batchResults = stackalloc uint[BatchSize];
+        Span<uint> results = stackalloc uint[BatchSize];
+        Span<int> fromBatch = stackalloc int[BatchSize];
+        Span<byte> kept = stackalloc byte[IccPipeline.MaxChannels * BatchSize];
+        for (var start = 0; start < count; start += BatchSize)
         {
-            // The whole source color is read before the destination is written: the spans may be the same
-            var input = source.Slice(i * sourceStride, sourceStride);
-            var color = 0u;
-            for (var channel = 0; channel < sourceChannels; channel++)
+            // The whole chunk is read before it is written: the spans may be the same
+            var chunk = Math.Min(BatchSize, count - start);
+            var batch = 0;
+            for (var k = 0; k < chunk; k++)
             {
-                color |= (uint)input[reverseColorOrder ? 2 - channel : channel] << (8 * channel);
-            }
-
-            input[sourceChannels..].CopyTo(kept);
-            var slot = (int)((color * 2654435761u) >> (32 - CacheBits));
-            var entry = ((ulong)color << 1) | 1;
-            uint result;
-            if (cachedColors[slot] == entry)
-            {
-                result = cachedResults[slot];
-            }
-            else
-            {
-                for (var channel = 0; channel < sourceChannels; channel++)
+                var input = source.Slice((start + k) * sourceStride, sourceStride);
+                uint color;
+                if (sourceChannels == 4)
                 {
-                    values[channel] = tables[channel][(byte)(color >> (8 * channel))];
-                }
-
-                result = 0;
-                if (outputTables is null)
-                {
-                    pipeline.ApplyAfterInputCurves(values);
-                    for (var channel = 0; channel < destinationChannels; channel++)
-                    {
-                        result |= (uint)IccByteSample.Store(values[channel]) << (8 * channel);
-                    }
+                    // The packing of the loop below: the first sample in the low byte
+                    color = BinaryPrimitives.ReadUInt32LittleEndian(input);
                 }
                 else
                 {
-                    pipeline.ApplyBetweenCurves(values);
-                    for (var channel = 0; channel < destinationChannels; channel++)
+                    color = 0u;
+                    for (var channel = 0; channel < sourceChannels; channel++)
                     {
-                        result |= (uint)outputTables[channel].Quantize(values[channel]) << (8 * channel);
+                        color |= (uint)input[reverseColorOrder ? 2 - channel : channel] << (8 * channel);
                     }
                 }
 
+                if (copied > 0)
+                {
+                    input[sourceChannels..].CopyTo(kept[(k * copied)..]);
+                }
+                var slot = (int)((color * 2654435761u) >> (32 - CacheBits));
+                var entry = ((ulong)color << 1) | 1;
+                if (cachedColors[slot] == entry)
+                {
+                    var pending = pendingSlots[slot];
+                    fromBatch[k] = pending - 1;
+                    results[k] = cachedResults[slot];
+                    continue;
+                }
+
+                for (var channel = 0; channel < sourceChannels; channel++)
+                {
+                    components[(channel * BatchSize) + batch] = tables[channel][(byte)(color >> (8 * channel))];
+                }
+
                 cachedColors[slot] = entry;
-                cachedResults[slot] = result;
+                pendingSlots[slot] = (byte)(batch + 1);
+                batchSlots[batch] = (byte)slot;
+                fromBatch[k] = batch;
+                batch++;
             }
 
-            var output = destination.Slice(i * destinationStride, destinationStride);
-            for (var channel = 0; channel < destinationChannels; channel++)
+            if (batch > 0)
             {
-                output[reverseColorOrder ? 2 - channel : channel] = (byte)(result >> (8 * channel));
+                pipeline.ApplyBatch(components, batch, first: 1, endStage);
+                for (var b = 0; b < batch; b++)
+                {
+                    var result = 0u;
+                    for (var channel = 0; channel < destinationChannels; channel++)
+                    {
+                        var value = components[(channel * BatchSize) + b];
+                        result |= (uint)(outputTables is null ? IccByteSample.Store(value) : outputTables[channel].Quantize(value)) << (8 * channel);
+                    }
+
+                    batchResults[b] = result;
+
+                    // A later color of the chunk may have taken the slot: it stays pending for that color
+                    var slot = batchSlots[b];
+                    if (pendingSlots[slot] == b + 1)
+                    {
+                        cachedResults[slot] = result;
+                        pendingSlots[slot] = 0;
+                    }
+                }
             }
 
-            kept.CopyTo(output[destinationChannels..]);
+            for (var k = 0; k < chunk; k++)
+            {
+                var result = fromBatch[k] < 0 ? results[k] : batchResults[fromBatch[k]];
+                var output = destination.Slice((start + k) * destinationStride, destinationStride);
+                for (var channel = 0; channel < destinationChannels; channel++)
+                {
+                    output[reverseColorOrder ? 2 - channel : channel] = (byte)(result >> (8 * channel));
+                }
+
+                if (copied > 0)
+                {
+                    kept.Slice(k * copied, copied).CopyTo(output[destinationChannels..]);
+                }
+            }
         }
     }
 

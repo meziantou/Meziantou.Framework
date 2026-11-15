@@ -4650,6 +4650,34 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void LayOutWithType1FontAddsTheKerningOfTheAfmFile()
+    {
+        var pfbPath = GetPath("type1.pfb");
+        var afmPath = GetPath("type1.afm");
+        File.WriteAllBytes(pfbPath, CorpusGenerator.Common.FontType1Writer.Sample().WritePfb());
+        File.WriteAllText(afmPath, "StartFontMetrics 4.1\nStartKernData\nStartKernPairs 1\nKPX A O -50\nEndKernPairs\nEndKernData\nEndFontMetrics\n");
+
+        // A is 600 units wide and O 700, less 50 for the kerning pair, at 24 pixels per 1000 units
+        var layout = Examples.LayOutWithType1Font(pfbPath, afmPath, "AO");
+        Assert.Equal(1250 * 24 / 1000.0, layout.Width, 1e-9);
+    }
+
+    [Fact]
+    public void LayOutEvenlyFillsTheLinesOfAParagraphEvenly()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        const string Text = "The breaks of a paragraph are chosen together, so that its lines are evenly filled: a line can end before the text that would still fit.";
+        var layout = TextExamples.LayOutEvenly(fontPath, Text, 160);
+        var greedy = TextLayout.Create(Text, new TextStyle(Font.Load(fontPath), 16), new TextLayoutOptions { MaxWidth = 160 });
+
+        // Every line fits, and the room left at the end of the lines but the last one is not more than with greedy breaking
+        Assert.All(layout.Lines, line => Assert.True(line.Width <= 160));
+        Assert.True(GetRoom(layout) <= GetRoom(greedy) + 1e-9);
+
+        static double GetRoom(TextLayout layout) => layout.Lines.Take(layout.LineCount - 1).Sum(line => (160 - line.Width) * (160 - line.Width));
+    }
+
+    [Fact]
     public void DrawSyntheticStylesThickensAndSlantsTheRegularFont()
     {
         var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";

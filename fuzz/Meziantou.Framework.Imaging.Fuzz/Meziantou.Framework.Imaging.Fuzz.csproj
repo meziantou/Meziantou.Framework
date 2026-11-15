@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR, PSD, DDS, DPX, Cineon and KTX 2.0 codecs, the DNG decoder, the BC1 to BC7 block decoders, the image data of PNG files, the lossy GIF compression, the processing operations and the strokes. The other codecs
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR, PSD, DDS, DPX, Cineon and KTX 2.0 codecs, the DNG decoder, the BC1 to BC7 block decoders, the image data of PNG files, the lossy GIF compression, the processing operations, the strokes and the optimal line breaking. The other codecs
     are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
   -->
   <PropertyGroup>
@@ -32,6 +32,11 @@
     <!-- The seeds of imaging-ktx2: the conformance files of the KTX 2.0 tests, written by KTX-Software, astcenc and basisu -->
     <SeedKtx2 Include="..\..\tests\Meziantou.Framework.Imaging.Ktx2.Tests\Files\*.ktx2" />
     <EmbeddedResource Include="@(SeedKtx2)" LogicalName="Seeds/ktx2/%(Filename)%(Extension)" Link="Seeds\ktx2\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The PostScript Type 1 font of the font tests: the font of imaging-line-breaking -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontType1Writer.cs" Link="Shared\FontType1Writer.cs" />
   </ItemGroup>
 
   <ItemGroup>

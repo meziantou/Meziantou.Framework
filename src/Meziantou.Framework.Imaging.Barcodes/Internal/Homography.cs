@@ -49,7 +49,113 @@ internal sealed class Homography
             matrix[row + 1, count] = y;
         }
 
-        // Gaussian elimination with partial pivoting
+        if (Solve(matrix, count) is not { } solution)
+            return null;
+
+        var coefficients = new double[8];
+        solution.CopyTo(coefficients, 0);
+        return new Homography(coefficients);
+    }
+
+    /// <summary>
+    /// Gets the transform that best maps the source points to the destination points (least squares), or
+    /// <see langword="null"/> when they are degenerate. Each set of points is normalized (centered, at a mean distance of
+    /// √2 from the origin) so that the equations are well conditioned.
+    /// </summary>
+    public static Homography? Fit(ReadOnlySpan<PointD> source, ReadOnlySpan<PointD> destination)
+    {
+        if (source.Length < 4 || source.Length != destination.Length)
+            return null;
+
+        var (sourceScale, sourceX, sourceY) = GetNormalization(source);
+        var (destinationScale, destinationX, destinationY) = GetNormalization(destination);
+
+        // The normal equations of the 2 linear equations of each pair, h33 being 1
+        var normal = new double[8, 9];
+        Span<double> row = stackalloc double[9];
+        for (var i = 0; i < source.Length; i++)
+        {
+            var u = (source[i].X - sourceX) * sourceScale;
+            var v = (source[i].Y - sourceY) * sourceScale;
+            var x = (destination[i].X - destinationX) * destinationScale;
+            var y = (destination[i].Y - destinationY) * destinationScale;
+            for (var equation = 0; equation < 2; equation++)
+            {
+                row.Clear();
+                var target = equation is 0 ? x : y;
+                var offset = equation * 3;
+                row[offset] = u;
+                row[offset + 1] = v;
+                row[offset + 2] = 1;
+                row[6] = -u * target;
+                row[7] = -v * target;
+                row[8] = target;
+                for (var r = 0; r < 8; r++)
+                {
+                    for (var c = 0; c < 9; c++)
+                    {
+                        normal[r, c] += row[r] * row[c];
+                    }
+                }
+            }
+        }
+
+        if (Solve(normal, 8) is not { } h)
+            return null;
+
+        // H = D^-1 * Hn * S, where S and D are the normalizations: x = (xn / ds) + dx
+        double[] hn = [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1];
+        double[] sMatrix = [sourceScale, 0, -sourceScale * sourceX, 0, sourceScale, -sourceScale * sourceY, 0, 0, 1];
+        double[] dInverse = [1 / destinationScale, 0, destinationX, 0, 1 / destinationScale, destinationY, 0, 0, 1];
+        var result = Multiply(dInverse, Multiply(hn, sMatrix));
+        if (Math.Abs(result[8]) < 1e-12)
+            return null;
+
+        return new Homography([result[0] / result[8], result[1] / result[8], result[2] / result[8], result[3] / result[8], result[4] / result[8], result[5] / result[8], result[6] / result[8], result[7] / result[8]]);
+    }
+
+    private static (double Scale, double X, double Y) GetNormalization(ReadOnlySpan<PointD> points)
+    {
+        var x = 0d;
+        var y = 0d;
+        foreach (var point in points)
+        {
+            x += point.X;
+            y += point.Y;
+        }
+
+        x /= points.Length;
+        y /= points.Length;
+        var distance = 0d;
+        foreach (var point in points)
+        {
+            distance += Math.Sqrt(((point.X - x) * (point.X - x)) + ((point.Y - y) * (point.Y - y)));
+        }
+
+        distance /= points.Length;
+        return (distance < 1e-12 ? 1 : Math.Sqrt(2) / distance, x, y);
+    }
+
+    private static double[] Multiply(double[] a, double[] b)
+    {
+        var result = new double[9];
+        for (var r = 0; r < 3; r++)
+        {
+            for (var c = 0; c < 3; c++)
+            {
+                for (var k = 0; k < 3; k++)
+                {
+                    result[(r * 3) + c] += a[(r * 3) + k] * b[(k * 3) + c];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    // Gaussian elimination with partial pivoting of an augmented matrix of `count` equations
+    private static double[]? Solve(double[,] matrix, int count)
+    {
         for (var column = 0; column < count; column++)
         {
             var pivot = column;
@@ -82,12 +188,12 @@ internal sealed class Homography
             }
         }
 
-        var coefficients = new double[8];
+        var solution = new double[count];
         for (var i = 0; i < count; i++)
         {
-            coefficients[i] = matrix[i, count] / matrix[i, i];
+            solution[i] = matrix[i, count] / matrix[i, i];
         }
 
-        return new Homography(coefficients);
+        return solution;
     }
 }

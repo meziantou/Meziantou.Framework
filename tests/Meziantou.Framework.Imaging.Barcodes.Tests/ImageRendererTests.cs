@@ -1049,6 +1049,50 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
+    public void ReadQRCodes_ShadowAcrossTheSymbol()
+    {
+        // The light modules on the dark side are darker than the dark modules on the light side: no threshold of the whole
+        // image separates them
+        var qrCode = QRCode.Create("A shadow across the symbol", ErrorCorrectionLevel.M);
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 6 });
+        ApplyShadow(image, darkest: 0.15);
+
+        Assert.Equal("A shadow across the symbol", Assert.Single(image.ReadQRCodes()).Text);
+    }
+
+    [Fact]
+    public void ReadQRCodes_StrongPerspectiveOfAVersion1Symbol()
+    {
+        // A version 1 symbol has no alignment pattern: the corners of the finder patterns give the perspective
+        var qrCode = QRCode.Create("PERSPECTIVE", ErrorCorrectionLevel.L);
+        Assert.Equal(1, qrCode.Version);
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 10 });
+        var size = image.Width;
+        var transform = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, size, size), new PointD(30, 50), new PointD(size - 20, 10), new PointD(size - 15, size - 10), new PointD(50, size - 45));
+        image.Transform(transform, new TransformOptions { BackgroundColor = Rgba64.FromRgba32(Colors.White) });
+
+        Assert.Equal("PERSPECTIVE", Assert.Single(image.ReadQRCodes()).Text);
+    }
+
+    private static void ApplyShadow(Image<Rgba32> image, double darkest)
+    {
+        // The luminance falls from the left edge to the right edge, down to `darkest` of it
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    var factor = 1 - ((1 - darkest) * x / row.Length);
+                    var pixel = row[x];
+                    row[x] = new Rgba32((byte)(pixel.R * factor), (byte)(pixel.G * factor), (byte)(pixel.B * factor), pixel.A);
+                }
+            }
+        });
+    }
+
+    [Fact]
     public void ReadQRCodes_ColorsTransparencyAndInversion()
     {
         var qrCode = QRCode.Create("Colors");
@@ -1252,6 +1296,32 @@ public sealed class ImageRendererTests
         Assert.Equal("Mirrored 2D symbol", Assert.Single(decoded.ReadBarcodes2D()).Text);
     }
 
+    [Theory]
+    [InlineData(Barcode2DType.DataMatrix)]
+    [InlineData(Barcode2DType.Aztec)]
+    public void ReadBarcodes2D_Perspective(Barcode2DType type)
+    {
+        // A photograph taken at an angle: the symbol is not a rectangle
+        var text = "Perspective: the symbol is photographed at an angle";
+        using var image = CreateBarcode2D(type, text).ToImage(new Barcode2DRenderOptions { ModuleSize = 8 });
+        var size = image.Width;
+        var transform = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, size, size), new PointD(30, 10), new PointD(size - 10, 50), new PointD(size - 40, size - 20), new PointD(5, size - 5));
+        image.Transform(transform, new TransformOptions { BackgroundColor = Rgba64.FromRgba32(Colors.White) });
+
+        Assert.Equal((type, text), (Assert.Single(image.ReadBarcodes2D()).Result.Type, Assert.Single(image.ReadBarcodes2D()).Text));
+    }
+
+    [Theory]
+    [InlineData(Barcode2DType.DataMatrix)]
+    [InlineData(Barcode2DType.Aztec)]
+    public void ReadBarcodes2D_ShadowAcrossTheSymbol(Barcode2DType type)
+    {
+        using var image = CreateBarcode2D(type, "A shadow across the symbol").ToImage(new Barcode2DRenderOptions { ModuleSize = 6 });
+        ApplyShadow(image, darkest: 0.15);
+
+        Assert.Equal("A shadow across the symbol", Assert.Single(image.ReadBarcodes2D()).Text);
+    }
+
     [Fact]
     public void ReadBarcodes2D_CompactAztecWhoseRingsContinueInTheModeMessage()
     {
@@ -1405,6 +1475,34 @@ public sealed class ImageRendererTests
         Assert.True(ean.Corners[0].X is > 15 and < 50 && ean.Corners[0].Y is > 15 and < 90, $"{ean.Corners[0]}");
         Assert.Equal("SKU-123456", Assert.Single(image.ReadBarcodes(new BarcodeReadingOptions { Types = [BarcodeType.Code128] })).Text);
         Assert.Single(image.ReadBarcodes(new BarcodeReadingOptions { MaximumResults = 1 }));
+    }
+
+    [Theory]
+    [InlineData(BarcodeType.Code128)]
+    [InlineData(BarcodeType.Ean13)]
+    [InlineData(BarcodeType.Codabar)]
+    [InlineData(BarcodeType.Code39)]
+    public void ReadBarcodes_CroppedAtTheFirstAndLastBars(BarcodeType type)
+    {
+        // An image cropped at the bars has no quiet zone: the reader takes the outside of the image as light
+        var barcode = CreateSample(type);
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 3, ModuleHeight = 60, QuietZoneModules = 0 });
+
+        Assert.Equal((type, barcode.Text), (Assert.Single(image.ReadBarcodes()).Result.Type, Assert.Single(image.ReadBarcodes()).Text));
+    }
+
+    [Theory]
+    [InlineData(BarcodeType.Code128)]
+    [InlineData(BarcodeType.Ean13)]
+    public void ReadBarcodes_SmallAndBlurred(BarcodeType type)
+    {
+        // Narrow bars of 2 pixels, blurred and shaded: the edges of the bars are found between the pixels
+        var barcode = type is BarcodeType.Ean13 ? Barcode.CreateEan13("590123412345") : Barcode.CreateCode128("SKU-123456");
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 50 });
+        image.GaussianBlur(1);
+        ApplyShadow(image, darkest: 0.5);
+
+        Assert.Equal((type, barcode.Text), (Assert.Single(image.ReadBarcodes()).Result.Type, Assert.Single(image.ReadBarcodes()).Text));
     }
 
     [Theory]

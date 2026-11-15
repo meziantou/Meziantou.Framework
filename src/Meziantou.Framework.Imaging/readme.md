@@ -81,7 +81,8 @@ conversion, and bounded-memory streaming.
 - Text drawn from font files with the same rasterizer, measured by the layout that is drawn, with the positions of
   its characters (hit testing, carets, selections)
 - Font files read without any system library: TrueType and OpenType (TrueType and CFF outlines), font collections,
-  WOFF and WOFF2, with their names, metrics, character map and glyph outlines
+  WOFF and WOFF2, PostScript Type 1 fonts (PFB and PFA, with the kerning of their AFM file), with their names, metrics,
+  character map and glyph outlines
 - ICC color management on request: convert an image to another color profile, or convert sample buffers between two
   profiles or through a sequence of profiles: matrix- and table-based grayscale, RGB and CMYK profiles of versions 2
   and 4, device link and abstract profiles, the four rendering intents, black point compensation and opt-in gamut
@@ -564,8 +565,9 @@ by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`). With more workers,
 images of at least 65,536 pixels:
 
 - split into row bands: resizes, transformations, convolutions, blurs, medians and percentile filters, unsharp masks, the
-  bilateral filter and the radial blurs, the `Pixelate`, `OilPaint` and `Flatten` effects, and the `ImageSimilarity`
-  comparisons (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every precision);
+  bilateral filter and the radial blurs, the `Pixelate`, `OilPaint` and `Flatten` effects, the color matrices
+  (`ApplyColorMatrix`, and `FilterBackdrop` outside a clip), the conversions of floating-point pixels (`CloneAs`), and
+  the `ImageSimilarity` comparisons (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every precision);
 - decoded and encoded: the MCU rows of JPEG frames (the inverse and forward DCT, the conversions; the entropy coding
   stays sequential), the LZW, Deflate and CCITT strips and tiles of TIFF pages (LZW and Deflate only when encoding), the
   chunks of OpenEXR images, the code-blocks and wavelet transforms of JPEG 2000 tiles, the groups of JPEG XL frames, the
@@ -3329,8 +3331,8 @@ public static string? DescribeInstalledFont(string familyName)
 
 | | Supported |
 | --- | --- |
-| Containers | TrueType and OpenType files (`.ttf`, `.otf`), font collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0 (with the transformed glyph, location and horizontal metrics tables, and collections); detected from the content, never from the extension |
-| Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points), CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) and CFF version 2 (`CFF2`); fonts without outlines whose glyphs are bitmaps (`EBDT`, `bdat`, `CBDT`, `sbix`; `bhed` instead of `head`) |
+| Containers | TrueType and OpenType files (`.ttf`, `.otf`), font collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0 (with the transformed glyph, location and horizontal metrics tables, and collections), PostScript Type 1 fonts (PFB and PFA files, converted to OpenType fonts with CFF outlines when they are loaded; `Font.LoadType1` adds the kerning and the metrics of their AFM file); detected from the content, never from the extension |
+| Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points), CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) and CFF version 2 (`CFF2`); Type 1 charstrings of PostScript Type 1 fonts (eexec and charstring decryption, subroutines, flex, hint replacement, `seac` accented characters); fonts without outlines whose glyphs are bitmaps (`EBDT`, `bdat`, `CBDT`, `sbix`; `bhed` instead of `head`) |
 | Variable fonts | The axes and the named instances (`fvar`), the mapping of the axes (`avar` versions 1 and 2), and what an instance varies: TrueType outlines (`gvar`), CFF2 outlines (the `blend` operator), advances (`HVAR`, or the phantom points of the glyphs), metrics (`MVAR`), the positions and anchors of `GPOS` (the variation store of `GDEF`) and the features a font replaces in a part of its variation space (feature variations, `rvrn`) |
 | Color glyphs | The layers of version 0 of the `COLR` table and the paints of its version 1 (solid colors, linear, radial and sweep gradients, transformations, clips, clip boxes, the 28 composition modes, and their variations in a variable font), with the palettes of the `CPAL` table; the glyphs of the `SVG ` table (a subset of SVG, see below); glyphs that are images, in the `sbix` table (PNG, JPEG and TIFF) and in the `CBLC` and `CBDT` tables (index subtables of formats 1 to 5; PNG images of formats 17, 18 and 19, pixels of 32 bits of formats 1, 2, 5, 6 and 7, glyphs made of other glyphs of formats 8 and 9) |
 | Bitmaps without colors | On request (`FontLoadOptions.UseEmbeddedBitmaps`), or in a font without outlines: the strikes of 1, 2, 4 and 8 bits per pixel of the `EBLC` and `EBDT` tables (`bloc` and `bdat` in Apple fonts; index subtables of formats 1 to 5, images of formats 1, 2, 5, 6 and 7, and glyphs made of other glyphs of formats 8 and 9) |
@@ -3453,8 +3455,10 @@ public static void DrawWeights(string variableFontPath, string outputPath)
   bitmap), after the outlines of the text. A font without outlines, whose
   glyphs are only bitmaps, is drawn with them at every size, without the option: from the smallest strike that is at
   least as large as the text, or from the largest one, scaled.
-- **Not supported**: PostScript Type 1 fonts, Type 1 charstrings and the deprecated `seac` form of `endchar` in a CFF
-  table, and the font matrix of a CFF table (the units of the `head` table are used). The hints of the fonts are used
+- **Not supported**: Type 1 charstrings and the deprecated `seac` form of `endchar` in the CFF table of an OpenType
+  font, and the font matrix of a CFF table (the units of the `head` table are used); multiple master, CID-keyed and
+  stroked PostScript Type 1 fonts, Type 3 fonts, and the hints of Type 1 fonts; bitmap fonts outside OpenType (BDF,
+  PCF, Windows `.fon`). The hints of the fonts are used
   with `TextLayoutOptions.Hinting = Full` (see [Text](#text)). A WOFF or WOFF2 file is expanded in memory; its
   metadata and private blocks are not read. Table checksums are not verified.
 
@@ -3702,7 +3706,8 @@ of their characters and were not compared with a font.
   of the room left at the end of the lines but the last one (per justification opportunity for justified text), with a
   cost for each hyphenated line. The break opportunities, hyphenation and the handling of a word wider than the line
   are those of greedy breaking; `MaxLines` and `MaxHeight` cut the lines afterwards, and a long paragraph takes about
-  twice as long to lay out. A line is as tall as its fonts ask (the largest ascent and descent, each with half of the line gap), or as
+  twice as long to lay out. The work is bounded (256 measured characters per character of the paragraph, plus a
+  million): a paragraph whose lines hold more break opportunities than that allows is broken greedily from there. A line is as tall as its fonts ask (the largest ascent and descent, each with half of the line gap), or as
   `LineHeight` says.
 - **Scripts without spaces.** Thai, Lao, Khmer and Burmese are written without spaces between words, and the Unicode
   algorithm leaves their lines to a dictionary. By default, a line of such text can also end before each word the
@@ -6720,5 +6725,5 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | DDS | Read only (no encoder). Rejected with `UnsupportedImageFeatureException`: premultiplied alpha (`DXT2`, `DXT4`, `DDS_ALPHA_MODE_PREMULTIPLIED`; the library never divides colors by their alpha), video and palette formats (YUY2, NV12, P8...), depth and stencil formats, integer (`_UINT`, `_SINT`) and most signed normalized formats, the typeless formats without a single reading (`BC6H_TYPELESS`, `R32G32B32A32_TYPELESS`...), channels wider than 16 bits; the masks of a legacy header are read as written (DirectXTex swaps red and blue in the 10:10:10:2 layouts) |
 | KTX 2.0 | Read only (no encoder). Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): PVRTC; the YCbCr formats (subsampled and multi-planar); 3D ASTC blocks; depth and stencil formats; the uncompressed SNORM, integer, `SCALED` and 64-bit formats; vendor supercompression schemes; premultiplied alpha (`KHR_DF_FLAG_ALPHA_PREMULTIPLIED`: dividing by alpha would lose precision); `VK_FORMAT_UNDEFINED` with a color model other than ETC1S and UASTC; primaries or transfer functions H.273 does not enumerate (ACES, Adobe RGB, PAL 525, BT.1886, S-Log, ...), and floating-point samples with a non-linear transfer function. The UASTC HDR files of basisu 2 (`ASTC_4x4_SFLOAT` with the color model 167, which the specification does not define) are rejected too. `KTXastcDecodeMode` `rgb9e5` is reported only (halves are kept). The ASTC error color and the UASTC reserved mode are `InvalidImageContentException`. The depth axis of `KTXorientation` (`i`, `o`) is reported, not applied |
 | Text | In vertical lines, no compression of punctuation; ruby annotations only over their base, without overhang; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; greedy line breaking by default, optimal (total-fit) breaking without fitness classes; justification without kashida and without priorities; no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), without the variations of the control values (`cvar`) and without the hints of CFF outlines; subpixel (LCD) rendering is opt-in (`TextLayoutOptions.SubpixelRendering`), for layouts filled at a point with a solid color on 8- and 16-bit RGB images; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
-| Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hints of CFF outlines; see [Fonts](#fonts) |
+| Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no bitmap font outside OpenType (BDF, PCF, `.fon`), no bitmap glyph of several bits per pixel without colors, no multiple master, CID-keyed or stroked Type 1 font and no Type 3 font, no hints of CFF outlines and Type 1 fonts; see [Fonts](#fonts) |
 | API | Custom pixel types (`ICustomPixel<TSelf>`) convert from and to a built-in storage format, which the image stores: `Image<TPixel>`, the codecs, the readers and writers and the processing operations take the built-in pixel types only; the extension points are custom codecs and encoders, custom pixel operations, custom pixel types and a buffer allocator ([Extension points](#extension-points)); implementation types are internal |

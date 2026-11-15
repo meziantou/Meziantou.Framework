@@ -6,7 +6,7 @@ progressive), JPEG 2000, OpenEXR, Radiance HDR, DPX and Kodak Cineon decoding an
 composite image) and encoding (flat documents), DNG decoding and encoding (linear raw data), DDS decoding (BC1 to BC7),
 KTX 2.0 decoding, lossless JPEG recompression
 (`JpegXlTranscoder`), animation-aware processing,
-vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
+vector drawing, font files (TrueType, OpenType, WOFF, WOFF2, PostScript Type 1), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
@@ -1130,7 +1130,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   under the license rule of "Hard constraints" (Little CMS is MIT; Argyll CMS is AGPL and stays an oracle).
 - A profile is untrusted input. Validate every size against the tag before reading (64-bit arithmetic for table
   sizes), read color lookup tables in place (`ReadOnlyMemory<byte>`, no copy) so that a transform only copies
-  one-dimensional curves, and allocate nothing per conversion (`PerformanceContractTests`). A malformed profile is `InvalidImageContentException`; a valid profile that is not
+  one-dimensional curves, and allocate nothing per conversion (`PerformanceContractTests`). The one copy of a table is its decoded entries
+  (`IccClutStage.Reserve`), made only for a pipeline bound to the scope of its owner (`IccPipeline.BindLookupTables`, a
+  decoder or an image operation: a copy with lookup tables of its own, since a pipeline may be shared), charged before it is allocated and released with the owner
+  (`ReleaseLookupTables`); when the scope refuses it, the entries stay read in place. A malformed profile is `InvalidImageContentException`; a valid profile that is not
   supported or cannot be a destination is `UnsupportedImageFeatureException`. Nothing else may escape
   (`ColorProfileFuzzTests`).
 - A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
@@ -1493,6 +1496,11 @@ thin public types over its `FontFace`.
   `TextLayout`, the text members of `DrawingCanvas`), `FontExceptionTranslation` turns the exceptions of the font code
   into the four content exceptions with `ImageFormat.Unknown`, as for ICC profiles. An unsupported feature is named
   `"Font: <feature>"`. A new public member that reads a font translates them too.
+- **PostScript Type 1 fonts** are converted to OpenType fonts with CFF outlines by `Meziantou.Framework.Fonts` when
+  they are loaded (`FontLoader.Load` detects them, `FontLoader.LoadType1` takes the metrics of an AFM file): the rest
+  of the library only sees a CFF font. `Font.LoadType1` is the public entry for the AFM file. The oracle of their
+  outlines is FreeType, through MuPDF: `Type1FontInteropTests` embeds the sample font (`FontType1Writer.Sample`) in a
+  PDF file and compares the paths of `mutool draw -F svg -O text=path` with `TextLayout.ToPath`.
 
 ## Text
 
@@ -1545,7 +1553,12 @@ thin public types over its `FontFace`.
 - **Optimal line breaking** (`TextLineBreakStrategy.Optimal`, `FindOptimalBreaks`) is a dynamic program over the
   break opportunities of the rest of a paragraph, from the advances it has before its lines are shaped again; each
   line it plans is checked with the current advances before it is built, and a line that no longer fits plans the
-  rest again (a bounded number of times, then greedy). Greedy breaking stays the default and is not changed by it.
+  rest again (a bounded number of times, then greedy). Its work is bounded too: it counts the characters it measures
+  (`MaxOptimalWorkPerCharacter` per character of the rest of the paragraph, plus `MinOptimalWork`) and returns no plan
+  beyond them, and the rest of the paragraph is broken greedily: without it, a paragraph whose lines hold many break
+  opportunities (a wide layout) was quadratic. Greedy breaking stays the default and is not changed by it. The cost
+  model is documented on `TextLineBreakStrategy.Optimal` and in `docs/Imaging/08-Text/04-TextLayout.md`: change
+  both with it. `imaging-line-breaking` (SharpFuzz) checks it against greedy breaking.
 - **Justification between characters** (`TextLayoutOptions.Justification`) classifies each glyph in `BuildLine`
   (`JustificationClass`, only when it is used) and marks the opportunities in `Finish`
   (`MarkJustificationOpportunities`), in display order: the room goes after the last glyph of a cluster and its marks,
@@ -1717,7 +1730,8 @@ thin public types over its `FontFace`.
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`, and `PercentileFilter`, which shares the median's
   plan), `Sharpen`, `DetectEdges`, `BilateralFilter` and `RadialBlur` (every pixel computed alone from a
   `WorkingFrameCopy`), the `Pixelate`, `OilPaint` and
-  `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every
+  `Flatten` effects (`EffectScratch`), the color matrices of a drawing session outside a clip (`ApplyColorMatrix`, a row of
+  colors per worker), `CloneAs` from or to a floating-point format (the integer conversions cost about a copy), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every
   `SimilarityPrecision`) and the
   codec work listed below are parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
   `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split

@@ -63,7 +63,8 @@ internal sealed class Jpeg2000Decoder : Jpeg2000DecodeObserver
             // the one that labels the image
             var conversion = _request.CmykConversion ?? throw Jpeg2000Format.Unsupported("CMYK JPEG 2000 images are only loaded with a color conversion: set the CmykConversion property of the decode or reader options.", "JPEG 2000 CMYK");
             var transform = conversion.CreateTransform(profile) ?? throw Jpeg2000Format.Unsupported("The CMYK JPEG 2000 image has no CMYK color profile and CmykConversionOptions.AssumedSourceProfile is null.", "JPEG 2000 CMYK without color profile");
-            _inkConversion = transform.Pipeline;
+            _inkConversion?.ReleaseLookupTables();
+            _inkConversion = transform.Pipeline.BindLookupTables(_context.Scope);
             profile = conversion.DestinationProfile;
         }
 
@@ -152,6 +153,7 @@ internal sealed class Jpeg2000Decoder : Jpeg2000DecodeObserver
         if (disposing)
         {
             _tileDecoder?.Dispose();
+            _inkConversion?.ReleaseLookupTables();
             _tileDecoder = null;
             _rowWriter?.Dispose();
             _rowWriter = null;

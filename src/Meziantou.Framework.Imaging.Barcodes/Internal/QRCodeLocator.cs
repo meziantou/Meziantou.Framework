@@ -71,6 +71,24 @@ internal static class QRCodeLocator
             }
         }
 
+        // The outer corners of each finder pattern, found once
+        var rawCorners = new Dictionary<PatternCenter, PointD[]?>(ReferenceEqualityComparer.Instance);
+        PointD[]? GetRawCorners(PatternCenter finder)
+        {
+            if (!rawCorners.TryGetValue(finder, out var corners))
+            {
+                // The outer edge of the finder pattern: dark center, light ring, dark ring, then the light separator
+                corners = PatternCorners.Find(image, finder.Point, finder.ModuleSize, transitions: 3);
+                rawCorners[finder] = corners;
+            }
+
+            return corners;
+        }
+
+        // The best triangles first; the textures of a photograph can give many finder-like patterns, and their triangles
+        // are not all tried
+        var attempts = 0;
+        var maximumAttempts = 64 + (4 * finders.Count);
         foreach (var (_, a, b, c) in triples.OrderBy(triple => triple.Score))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -80,8 +98,11 @@ internal static class QRCodeLocator
             if (used[a] || used[b] || used[c])
                 continue;
 
+            if (++attempts > maximumAttempts)
+                return;
+
             var (topLeft, topRight, bottomLeft) = Orient(finders[a], finders[b], finders[c]);
-            if (TryDecodeStandard(image, topLeft, topRight, bottomLeft) is { } result && Add(results, result))
+            if (TryDecodeStandard(image, topLeft, topRight, bottomLeft, GetRawCorners) is { } result && Add(results, result))
             {
                 used[a] = used[b] = used[c] = true;
             }
@@ -133,12 +154,13 @@ internal static class QRCodeLocator
         return cross > 0 ? (corner, first, second) : (corner, second, first);
     }
 
-    private static QRCodeImageResult? TryDecodeStandard(BinaryImage image, PatternCenter topLeft, PatternCenter topRight, PatternCenter bottomLeft)
+    private static QRCodeImageResult? TryDecodeStandard(BinaryImage image, PatternCenter topLeft, PatternCenter topRight, PatternCenter bottomLeft, Func<PatternCenter, PointD[]?> getRawCorners)
     {
         // The finder patterns are 3.5 modules from the edges: their distance gives the number of modules, then the version
         var moduleSize = (topLeft.ModuleSize + topRight.ModuleSize + bottomLeft.ModuleSize) / 3;
         var estimate = ((topLeft.Point.DistanceTo(topRight.Point) + topLeft.Point.DistanceTo(bottomLeft.Point)) / 2 / moduleSize) + 7;
         var version = (int)Math.Round((estimate - 17) / 4, MidpointRounding.AwayFromZero);
+        PointD[]?[]? finderCorners = null;
         foreach (var delta in (ReadOnlySpan<int>)[0, -1, 1, -2, 2])
         {
             var candidate = version + delta;
@@ -150,19 +172,158 @@ internal static class QRCodeLocator
             if (affine is null)
                 continue;
 
-            // The bottom-right alignment pattern gives the perspective
-            var transform = affine;
-            if (candidate >= 2 && FindSquarePattern(image, affine, size - 6.5, size - 6.5, searchModules: 4) is { } alignment)
+            // The timing patterns between the finder patterns alternate: a cheap check of the version, and of the triangle
+            if (GetTimingPatternScore(image, affine, size) >= 0.65)
             {
-                transform = Homography.Create([new(3.5, 3.5), new(size - 3.5, 3.5), new(3.5, size - 3.5), new(size - 6.5, size - 6.5)], [topLeft.Point, topRight.Point, bottomLeft.Point, alignment]) ?? affine;
+                // The bottom-right alignment pattern gives the perspective
+                var transform = affine;
+                if (candidate >= 2 && FindSquarePattern(image, affine, size - 6.5, size - 6.5, searchModules: 4) is { } alignment)
+                {
+                    transform = Homography.Create([new(3.5, 3.5), new(size - 3.5, 3.5), new(3.5, size - 3.5), new(size - 6.5, size - 6.5)], [topLeft.Point, topRight.Point, bottomLeft.Point, alignment]) ?? affine;
+                }
+
+                if (TryDecode(image, transform, size, candidate) is { } result)
+                    return result;
             }
 
-            var modules = Sample(image, transform, size, size);
-            if (QRCodeDecoder.TryDecode(modules, out var result) && result.Type is QRCodeType.Standard && result.Version == candidate)
-                return new QRCodeImageResult(result, GetCorners(transform, size, size));
+            // In a photograph taken at an angle, the centers of the finder patterns do not give the perspective: their
+            // corners do, and the alignment patterns
+            finderCorners ??= GetFinderCorners(topLeft, topRight, bottomLeft, getRawCorners);
+            if (FitToFinderCorners(finderCorners, size) is { } fitted && GetTimingPatternScore(image, fitted, size) >= 0.65)
+            {
+                fitted = RefineWithAlignmentPatterns(image, fitted, finderCorners, size, candidate);
+                if (TryDecode(image, fitted, size, candidate) is { } fittedResult)
+                    return fittedResult;
+            }
         }
 
         return null;
+    }
+
+    private static QRCodeImageResult? TryDecode(BinaryImage image, Homography transform, int size, int version)
+    {
+        var modules = Sample(image, transform, size, size);
+        if (QRCodeDecoder.TryDecode(modules, out var result) && result.Type is QRCodeType.Standard && result.Version == version)
+            return new QRCodeImageResult(result, GetCorners(transform, size, size));
+
+        return null;
+    }
+
+    // The outer corners of the finder patterns, in the order (-, -), (+, -), (+, +), (-, +) along the axes of the symbol
+    private static PointD[]?[] GetFinderCorners(PatternCenter topLeft, PatternCenter topRight, PatternCenter bottomLeft, Func<PatternCenter, PointD[]?> getRawCorners)
+    {
+        var u = Normalize(new PointD(topRight.X - topLeft.X, topRight.Y - topLeft.Y));
+        var v = Normalize(new PointD(bottomLeft.X - topLeft.X, bottomLeft.Y - topLeft.Y));
+        var result = new PointD[]?[3];
+        PatternCenter[] finders = [topLeft, topRight, bottomLeft];
+        for (var i = 0; i < 3; i++)
+        {
+            if (getRawCorners(finders[i]) is { } corners)
+            {
+                result[i] = PatternCorners.MatchToAxes(corners, finders[i].Point, u, v);
+            }
+        }
+
+        return result;
+    }
+
+    private static PointD Normalize(PointD vector)
+    {
+        var length = Math.Sqrt((vector.X * vector.X) + (vector.Y * vector.Y));
+        return length < 1e-9 ? vector : new PointD(vector.X / length, vector.Y / length);
+    }
+
+    // The transform that fits the corners of the finder patterns; two of them are needed: 8 points for 8 unknowns
+    private static Homography? FitToFinderCorners(PointD[]?[] finderCorners, int size)
+    {
+        var (source, destination) = GetFinderCornerPairs(finderCorners, size);
+        return source.Count < 8 ? null : Homography.Fit([.. source], [.. destination]);
+    }
+
+    private static (List<PointD> Source, List<PointD> Destination) GetFinderCornerPairs(PointD[]?[] finderCorners, int size)
+    {
+        var source = new List<PointD>();
+        var destination = new List<PointD>();
+        ReadOnlySpan<(double Column, double Row)> origins = [(0, 0), (size - 7, 0), (0, size - 7)];
+        for (var i = 0; i < 3; i++)
+        {
+            if (finderCorners[i] is not { } corners)
+                continue;
+
+            var (column, row) = origins[i];
+            source.AddRange([new(column, row), new(column + 7, row), new(column + 7, row + 7), new(column, row + 7)]);
+            destination.AddRange(corners);
+        }
+
+        return (source, destination);
+    }
+
+    // The alignment patterns, where the transform puts them; each one found corrects the transform around it
+    private static Homography RefineWithAlignmentPatterns(BinaryImage image, Homography transform, PointD[]?[] finderCorners, int size, int version)
+    {
+        if (version < 2)
+            return transform;
+
+        var (source, destination) = GetFinderCornerPairs(finderCorners, size);
+        var positions = GetAlignmentPatternPositions(version);
+        var found = 0;
+        foreach (var row in positions)
+        {
+            foreach (var column in positions)
+            {
+                // There are none where the finder patterns are
+                if ((row == 6 && column == 6) || (row == 6 && column == size - 7) || (row == size - 7 && column == 6))
+                    continue;
+
+                if (FindSquarePattern(image, transform, column + 0.5, row + 0.5, searchModules: 2) is { } alignment)
+                {
+                    source.Add(new PointD(column + 0.5, row + 0.5));
+                    destination.Add(alignment);
+                    found++;
+                }
+            }
+        }
+
+        return found > 0 ? Homography.Fit([.. source], [.. destination]) ?? transform : transform;
+    }
+
+    // ISO/IEC 18004, Annex E: the rows and columns of the centers of the alignment patterns, evenly spaced from 6 to size - 7
+    private static List<int> GetAlignmentPatternPositions(int version)
+    {
+        var count = (version / 7) + 2;
+        var size = 17 + (4 * version);
+        var step = version is 32 ? 26 : (((version * 4) + (count * 2) + 1) / ((count * 2) - 2)) * 2;
+        var positions = new List<int> { 6 };
+        for (var position = size - 7; positions.Count < count; position -= step)
+        {
+            positions.Insert(1, position);
+        }
+
+        return positions;
+    }
+
+    // The share of the modules of the timing patterns (row and column 6, between the finder patterns) that alternate
+    private static double GetTimingPatternScore(BinaryImage image, Homography transform, int size)
+    {
+        var matches = 0;
+        var count = 0;
+        for (var i = 8; i < size - 8; i++)
+        {
+            var expected = i % 2 is 0;
+            if (image.IsDark(transform.Transform(i + 0.5, 6.5)) == expected)
+            {
+                matches++;
+            }
+
+            if (image.IsDark(transform.Transform(6.5, i + 0.5)) == expected)
+            {
+                matches++;
+            }
+
+            count += 2;
+        }
+
+        return count is 0 ? 1 : matches / (double)count;
     }
 
     // Micro QR and rMQR codes: one finder pattern, the orientation from its corners
@@ -197,9 +358,15 @@ internal static class QRCodeLocator
         // The finder pattern is at the top left: the symbol extends along u and v from 3.5 modules before its center.
         // A mirrored symbol is the transpose, which the decoder reads.
         var v = new PointD(-u.Y, u.X);
+        var transform = CreateTransform(finder, u, v, moduleSize);
+
+        // The timing patterns of row 0 and column 0 continue the finder pattern: dark at the even modules from 8. Most of
+        // the finder-like patterns of a photograph are not followed by them.
+        if (CountTimingMatches(image, transform, 8, 11, row: true) + CountTimingMatches(image, transform, 8, 11, row: false) < 5)
+            return null;
+
         for (var size = 11; size <= 17; size += 2)
         {
-            var transform = CreateTransform(finder, u, v, moduleSize);
             var modules = Sample(image, transform, size, size);
             if (QRCodeDecoder.TryDecode(modules, out var result) && result.Type is QRCodeType.MicroQR && result.Version == (size - 9) / 2)
                 return new QRCodeImageResult(result, GetCorners(transform, size, size));
@@ -214,6 +381,12 @@ internal static class QRCodeLocator
         {
             var v = new PointD(-u.Y * mirror, u.X * mirror);
             var estimate = CreateTransform(finder, u, v, moduleSize);
+
+            // The timing pattern of the top edge continues the finder pattern: dark at the even modules from 8 (the
+            // narrowest symbols are 27 modules wide, their alignment pattern is further)
+            if (CountTimingMatches(image, estimate, 8, 16, row: true) < 6)
+                continue;
+
             foreach (var (height, width) in RMQRSizes)
             {
                 // The finder sub-pattern is at the bottom-right corner, its center 2.5 modules from the edges
@@ -245,6 +418,22 @@ internal static class QRCodeLocator
         }
 
         return null;
+    }
+
+    // The modules of row 0 (or column 0) from `start` to `end` (excluded) that match a timing pattern dark at the even modules
+    private static int CountTimingMatches(BinaryImage image, Homography transform, int start, int end, bool row)
+    {
+        var matches = 0;
+        for (var i = start; i < end; i++)
+        {
+            var point = row ? transform.Transform(i + 0.5, 0.5) : transform.Transform(0.5, i + 0.5);
+            if (image.IsDark(point) == (i % 2 is 0))
+            {
+                matches++;
+            }
+        }
+
+        return matches;
     }
 
     private static readonly (int Height, int Width)[] RMQRSizes =

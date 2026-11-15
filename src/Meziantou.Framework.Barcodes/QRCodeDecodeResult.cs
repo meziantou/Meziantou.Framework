@@ -42,7 +42,9 @@ public sealed class QRCodeDecodeResult
 
     /// <summary>
     /// Gets the text of the data. The byte segments are decoded with the character set of the ECI designator that
-    /// precedes them. Without one, they are decoded as UTF-8 when they are valid UTF-8, and as ISO/IEC 8859-1 otherwise.
+    /// precedes them. Without one, they are decoded as UTF-8 when they are valid UTF-8, as Shift JIS when they look like
+    /// Japanese text in Shift JIS (a word of 3 katakana or kanji, or bytes that are control characters in ISO/IEC 8859-1),
+    /// and as ISO/IEC 8859-1 otherwise.
     /// </summary>
     public string Text { get; }
 

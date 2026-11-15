@@ -4477,6 +4477,8 @@ namespace Meziantou.Framework.Imaging.Typography
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.Font> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.Font> LoadAsync(string path, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font? LoadInstalled(string familyName, int weight = 400, bool isItalic = false, Meziantou.Framework.Fonts.SystemFontCollection? fonts = null, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.Font LoadType1(System.ReadOnlySpan<byte> data, Meziantou.Framework.Fonts.AfmFontMetrics? metrics, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.Font LoadType1(string path, Meziantou.Framework.Fonts.AfmFontMetrics? metrics, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public Meziantou.Framework.Imaging.Typography.Font WithVariations(Meziantou.Framework.Imaging.Typography.FontNamedInstance instance) => throw null;
         public Meziantou.Framework.Imaging.Typography.Font WithVariations(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.FontVariationSetting> settings) => throw null;
     }

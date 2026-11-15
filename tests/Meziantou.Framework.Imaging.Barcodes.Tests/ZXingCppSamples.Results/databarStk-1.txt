@@ -1,0 +1,14 @@
+2.png	0	symbol 0	read
+2.png	180	symbol 0	read
+20.webp	0	symbol 0	read
+20.webp	180	symbol 0	read
+21!f.webp	0	symbol 0	missing
+21!f.webp	180	symbol 0	missing
+22!.webp	0	symbol 0	missing
+22!.webp	180	symbol 0	missing
+23.webp	0	symbol 0	read
+23.webp	180	symbol 0	read
+24.webp	0	symbol 0	read
+24.webp	180	symbol 0	read
+5.webp	0	symbol 0	read
+5.webp	180	symbol 0	read

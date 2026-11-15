@@ -17,8 +17,8 @@ internal static class DnsInteropFuzzTargets
 {
     /// <summary>
     /// The input is a message, decoded by the server (<c>DecodeQuery</c>) and by the client (<c>DecodeResponse</c>). The
-    /// decoders differ in what they reject (the client checks the NSEC type bit map windows, the server reads CDS and CDNSKEY
-    /// as unknown records, they bound the names behind a compression pointer differently), but when both decode a message,
+    /// decoders differ in what they reject (the client checks the NSEC type bit map windows, the server reads CDS, CDNSKEY
+    /// and TSIG as unknown records, they bound the names behind a compression pointer differently), but when both decode a message,
     /// they agree on every field. The client writes names in presentation format, which is converted to the text the server
     /// uses; the response codes are only compared with at most one OPT record, as each decoder reads a different one.
     /// </summary>

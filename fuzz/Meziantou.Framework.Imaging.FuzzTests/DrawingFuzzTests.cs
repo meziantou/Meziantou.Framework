@@ -32,6 +32,11 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// follows, whose stroke is thousands of wedges that all cross near the center of the bends. The generator keeps the
 /// widest pens for lines and rectangles, dashed ones included, so that a case stays a matter of milliseconds.
 /// </para>
+/// <para>
+/// In perspective, a curve is cut finer wherever its stroke comes near the horizon of the plane, which a filtered layer
+/// can bring into view: a pen 84 pixels wide on a circle of 14 pixels was 120,000 crossing wedges, for minutes (fuzz
+/// regression). There, the pens of curves are at most about 20 pixels wide, like the lengths are at most 60.
+/// </para>
 /// </remarks>
 public sealed class DrawingFuzzTests
 {
@@ -1236,11 +1241,13 @@ public sealed class DrawingFuzzTests
 
     private static Pen CreatePen(FuzzRandom random, DrawingCanvas canvas, FuzzContext context, bool widest)
     {
+        // In perspective, the pens of curves stay narrower than most of their bends (see the remarks)
+        var wide = s_isInPerspective ? 20 : 100;
         var width = random.Next(10) switch
         {
-            0 => widest ? MaxCoordinate : 1 + (NextDouble(random) * 100),
+            0 => widest ? MaxCoordinate : 1 + (NextDouble(random) * wide),
             1 => random.Chance(3) ? 0 : 1e-9 + (NextDouble(random) * 1e-3),
-            2 => 1 + (NextDouble(random) * (widest ? 100000 : 100)),
+            2 => 1 + (NextDouble(random) * (widest ? 100000 : wide)),
             _ => 0.05 + (NextDouble(random) * 6),
         };
         return new Pen(CreateBrush(random, canvas, context), width)

@@ -16,15 +16,18 @@ public static class BarcodeImageReader
     /// <returns>The barcodes found, each once; empty when there is none.</returns>
     /// <remarks>
     /// <para>
-    /// The reader is made for clean images: generated, printed or scanned barcodes, photographed straight on. Parallel scan
-    /// lines cross the image horizontally, vertically and at 30°, 60°, 120° and 150°, and
+    /// The reader reads generated, printed and scanned images, and photographs: blurred, unevenly lit, slightly tilted.
+    /// Parallel scan lines cross the image horizontally, vertically and at 30°, 60°, 120° and 150°, and
     /// <see cref="BarcodeDecoder.DecodeScanLines"/> reads the barcodes they cross: a barcode turned by another angle is read
-    /// when one of the lines crosses all its bars. Code 39, Codabar and ITF, which have no check character, must be crossed
-    /// by two lines that agree. A transparent background reads as white.
+    /// when one of the lines crosses all its bars. The edges of the bars are first found in the grayscale image, between
+    /// the pixels, with a threshold that follows the lighting; then the image classified as dark or light (a local
+    /// threshold, then the Otsu threshold of the image) is read along the same lines. A transparent background and the
+    /// outside of the image read as white: a barcode cropped at its first and last bars has its quiet zones.
     /// </para>
     /// <para>
-    /// A barcode needs its quiet zones and narrow bars of at least 2 pixels. The pixels are classified as dark or light
-    /// with the Otsu threshold of the image, then with a local threshold (Sauvola) when no barcode is found.
+    /// A barcode needs narrow bars of about 2 pixels or more, and two scan lines that agree. Code 39, Codabar and ITF, whose
+    /// check is weak or missing, must be read over a height of at least 4% of their length; a Codabar symbol needs 4
+    /// characters or more (start and stop characters included), an ITF symbol 6 digits or more.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
@@ -47,19 +50,24 @@ public static class BarcodeImageReader
         bool IsIncluded(BarcodeType type) => types is null || types.Contains(type);
 
         var results = new List<BarcodeImageResult>();
-        using var luminance = BinaryImage.GetLuminance(image);
-        foreach (var method in (ReadOnlySpan<ThresholdMethod>)[ThresholdMethod.Otsu, ThresholdMethod.Sauvola])
+        bool Locate(GrayScaleScanLineSource source)
         {
-            var binary = BinaryImage.Create(luminance, QRCodeImageReader.GetThresholdOptions(method, luminance), cancellationToken);
-            LinearLocator.Locate(binary, IsIncluded, results, options.MaximumResults, cancellationToken);
-            if (options.TryInverted && results.Count is 0)
-            {
-                LinearLocator.Locate(binary.Invert(), IsIncluded, results, options.MaximumResults, cancellationToken);
-            }
-
-            if (results.Count > 0)
-                break;
+            LinearLocator.Locate(source, LinearLocator.Angles, IsIncluded, results, options.MaximumResults, cancellationToken);
+            return results.Count > 0;
         }
+
+        // The edges of the bars in the grayscale image first, at every angle: they keep the widths of the narrow bars of a
+        // blurred photograph. Then the binary images of the local and global thresholds (and their inverse for the barcodes
+        // printed light on dark), at every angle too, for the bars that the grayscale lines cannot separate.
+        using var luminance = BinaryImage.GetLuminance(image);
+        if (Locate(GrayScaleScanLineSource.Create(luminance)))
+            return results;
+
+        BinarizationPasses.Run(luminance, options.TryInverted, binary =>
+        {
+            LinearLocator.Locate(new BinaryScanLineSource(binary), LinearLocator.Angles, IsIncluded, results, options.MaximumResults, cancellationToken);
+            return results.Count > 0;
+        }, cancellationToken, includeSauvola: false);
 
         return results;
     }

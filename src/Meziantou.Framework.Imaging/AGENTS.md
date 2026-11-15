@@ -1096,6 +1096,14 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     every row is the same run of full coverage (`TryGetWholePixelRectangle`), which `IsFullyCovered` hands to the
     kernels so that they do not search it (`DrawingSource.IsFullyCovered`).
     `DrawingFuzzTests.WholePixelRectanglesPaintLikeTheirPolygons` compares it with the sweep of the same rectangle.
+  - The glyphs of a line of text share their baseline and their x-height: the events of one height are spread over the
+    whole sweep line, and the walk that follows them spans it. The walk passes quickly over the edges whose winding
+    number did not change, and computes again only the crossings of the pairs of neighbors that are new or that
+    already cross (`NeighborChanged`): a pair that did not cross still does not, whatever the height. That halved the
+    instructions of a paragraph and the coverages are the same bit for bit: `WalksEveryEdge` brings back the
+    exhaustive walk, which `DrawingFuzzTests.TheSweepSkipsOnlyWhatCannotChange` and
+    `DrawingReferenceTests.TheSweepOfAParagraphIsTheSweepThatWalksEveryEdge` compare with. The spans of the sweep
+    are taken once per row (`SweepSpans`), not at each access.
   - Compositing is exact integer source-over (`ulong`), the generalization of `AnimationCompositor.BlendOver8/16` to a
     fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules). A floating-point frame is
     composited by `FloatDrawingKernels` instead (the same formulas in double precision, not rounded to a grid).

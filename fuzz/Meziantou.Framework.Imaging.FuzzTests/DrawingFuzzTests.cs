@@ -239,6 +239,113 @@ public sealed class DrawingFuzzTests
         }
     }
 
+    [Fact]
+    public void TheSweepSkipsOnlyWhatCannotChange()
+    {
+        // After the events of a height, the sweep passes quickly over the edges whose winding number did not change and
+        // computes again only the crossings of the pairs of neighbors that are new or that cross
+        // (CoverageRasterizer.WalksEveryEdge): the coverages must be those of the walk that updates every edge and every
+        // pair it passes, bit for bit. The contours are on grids of few heights, as the glyphs of a line of text share
+        // their baseline and their x-height, or anywhere, crossing each other or not
+        var random = new FuzzRandom(FuzzSettings.Seed ^ 0x5377656570577BCAUL);
+        var stopwatch = Stopwatch.StartNew();
+        var iterations = Math.Max(FuzzSettings.Iterations / 10, 1);
+        var failures = new List<string>();
+        var executed = 0;
+        for (var iteration = 0; iteration < iterations && failures.Count < 4; iteration++)
+        {
+            if (FuzzSettings.Duration is { } budget && stopwatch.Elapsed > budget)
+                break;
+
+            var caseSeed = random.NextUInt64();
+            executed++;
+            var failure = CheckSweepWalk(caseSeed);
+            if (failure is not null)
+            {
+                failures.Add($"case seed {caseSeed}: {failure}");
+            }
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(FormattableString.Invariant($"sweep walks: {executed} cases (base seed {FuzzSettings.Seed}) in {stopwatch.Elapsed.TotalSeconds:F1} s"));
+        if (failures.Count > 0)
+            Assert.Fail($"{failures.Count} fuzz failure(s):{Environment.NewLine}{string.Join(Environment.NewLine + Environment.NewLine, failures)}");
+    }
+
+    private static string? CheckSweepWalk(ulong seed)
+    {
+        var random = new FuzzRandom(seed);
+        var width = random.Next(1, 200);
+        var height = random.Next(1, 60);
+        var fillRule = random.Chance(50) ? FillRule.NonZero : FillRule.EvenOdd;
+        var isAliased = random.Chance(10);
+
+        // 0: a row of small contours on a few heights in eighths of a pixel, as glyphs; 1: anywhere in the frame;
+        // 2: anywhere, beyond the frame too
+        var kind = random.Next(3);
+        var levels = new double[random.Next(2, 6)];
+        for (var i = 0; i < levels.Length; i++)
+        {
+            levels[i] = random.Next(-8, (height * 8) + 8) / 8.0;
+        }
+
+        var contours = new List<(double X, double Y)[]>();
+        for (var count = random.Next(1, 40); count > 0; count--)
+        {
+            var points = new (double X, double Y)[random.Next(3, 9)];
+            var left = random.Next(-4, width + 4);
+            for (var i = 0; i < points.Length; i++)
+            {
+                points[i] = kind switch
+                {
+                    0 => (left + (random.Next(0, 80) / 8.0), levels[random.Next(levels.Length)]),
+                    1 => (random.Next(0, width * 64) / 64.0, random.Next(0, height * 64) / 64.0),
+                    _ => ((random.NextUInt64() % 1_000_000 / 1_000_000.0 * (width + 40)) - 20, (random.NextUInt64() % 1_000_000 / 1_000_000.0 * (height + 40)) - 20),
+                };
+            }
+
+            contours.Add(points);
+        }
+
+        var exhaustive = Rasterize(contours, width, height, fillRule, isAliased, walksEveryEdge: true);
+        var skipping = Rasterize(contours, width, height, fillRule, isAliased, walksEveryEdge: false);
+        if (exhaustive.Count != skipping.Count)
+            return $"{skipping.Count} runs instead of {exhaustive.Count} ({width}x{height}, {fillRule})";
+
+        for (var i = 0; i < exhaustive.Count; i++)
+        {
+            if (exhaustive[i] != skipping[i])
+                return $"run {i} differs: {skipping[i]} instead of {exhaustive[i]} ({width}x{height}, {fillRule})";
+        }
+
+        return null;
+
+        static List<string> Rasterize(List<(double X, double Y)[]> contours, int width, int height, FillRule fillRule, bool isAliased, bool walksEveryEdge)
+        {
+            var scope = AllocationScope.Create(configuration: null);
+            using var edges = new EdgeBuilder(scope, width, height);
+            foreach (var points in contours)
+            {
+                for (var i = 0; i < points.Length; i++)
+                {
+                    var next = points[(i + 1) % points.Length];
+                    edges.Add(points[i].X, points[i].Y, next.X, next.Y);
+                }
+            }
+
+            using var rasterizer = new CoverageRasterizer(scope, width, height) { WalksEveryEdge = walksEveryEdge };
+            var runs = new List<string>();
+            if (!rasterizer.Begin(edges, fillRule, isAliased, CancellationToken.None))
+                return runs;
+
+            while (rasterizer.MoveNext())
+            {
+                runs.Add(FormattableString.Invariant($"{rasterizer.Y}:{rasterizer.X}:{string.Join(',', rasterizer.Coverage.ToArray())}"));
+            }
+
+            return runs;
+        }
+    }
+
     private static string? CheckWholePixelRectangle(ulong seed)
     {
         var random = new FuzzRandom(seed);

@@ -1,7 +1,9 @@
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Drawing;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Resampling;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests.Conformance;
 
@@ -342,6 +344,47 @@ public sealed class DrawingReferenceTests
         PathFlattener.Quadratic(straight, 30, 15, 40, 15, 50, 15);
         straight.End();
         Assert.Equal([(0, 0), (30, 15), (50, 15)], straight.Contours[0].Points);
+    }
+
+    [Theory]
+    [InlineData(9.3, 0.37, 0.61, FillRule.NonZero)]
+    [InlineData(16, 0, 0, FillRule.NonZero)]
+    [InlineData(23.7, 0.5, 0.25, FillRule.EvenOdd)]
+    public void TheSweepOfAParagraphIsTheSweepThatWalksEveryEdge(double size, double originX, double originY, FillRule fillRule)
+    {
+        // The glyphs of a line share their baseline and their x-height: the events of a height are far apart on the sweep
+        // line, and the walk passes quickly over the edges between them (CoverageRasterizer.WalksEveryEdge), which must
+        // not change a single coverage
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var text = string.Concat(Enumerable.Repeat("Hamburgefonstiv AV. Ty fi \u20AC42! The quick brown fox jumps over the lazy dog. ", 4));
+        var layout = TextLayout.Create(text, new TextStyle(font, size), new TextLayoutOptions { MaxWidth = 300 });
+        var path = layout.ToPath(new PointD(originX, originY));
+        const int Width = 320;
+        var height = (int)Math.Ceiling(layout.Height) + 2;
+        var exhaustive = Rasterize(walksEveryEdge: true);
+        var skipping = Rasterize(walksEveryEdge: false);
+        Assert.NotEmpty(exhaustive);
+        Assert.Equal(exhaustive, skipping);
+
+        List<string> Rasterize(bool walksEveryEdge)
+        {
+            var scope = AllocationScope.Create(configuration: null);
+            using var edges = new EdgeBuilder(scope, Width, height);
+            var sink = new FillSink(edges);
+            PathFlattener.Flatten(path, sink);
+            sink.End();
+            using var rasterizer = new CoverageRasterizer(scope, Width, height) { WalksEveryEdge = walksEveryEdge };
+            var runs = new List<string>();
+            if (rasterizer.Begin(edges, fillRule, CancellationToken.None))
+            {
+                while (rasterizer.MoveNext())
+                {
+                    runs.Add(FormattableString.Invariant($"{rasterizer.Y}:{rasterizer.X}:{string.Join(',', rasterizer.Coverage.ToArray())}"));
+                }
+            }
+
+            return runs;
+        }
     }
 
     [Fact]

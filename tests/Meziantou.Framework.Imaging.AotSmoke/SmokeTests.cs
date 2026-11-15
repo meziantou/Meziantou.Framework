@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Globalization;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
@@ -1309,6 +1310,43 @@ internal static class SmokeTests
         {
             CheckEqual(still, decoded, "OpenEXR 8-bit samples");
         }
+    }
+
+    public static void Dds()
+    {
+        // A BC1 cube map of 4x4 faces, one block each: face i is a solid color of red i × 6 (a 5-bit endpoint)
+        var data = new byte[148 + (6 * 8)];
+        var header = data.AsSpan();
+        "DDS "u8.CopyTo(header);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[4..], 124);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[8..], 0x1007);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[12..], 4);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[16..], 4);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[76..], 32);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[80..], 4);
+        "DX10"u8.CopyTo(header[84..]);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[108..], 0x1000);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[128..], 71);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[132..], 3);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[136..], 4);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[140..], 1);
+        for (var face = 0; face < 6; face++)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(header[(148 + (face * 8))..], (ushort)((face * 6) << 11));
+        }
+
+        Check(Image.DetectFormat(data) == ImageFormat.Dds, "DDS detection");
+        var info = Image.Identify(data);
+        Check(info.PixelFormat == PixelFormat.Rgba32 && info.CollectionEntryCount == 6, "DDS identification");
+        using (var image = Image.Load<Rgba32>(data))
+        {
+            Check(image.Frames[0][3, 3] == new Rgba32(0, 0, 0, 255), "DDS top surface");
+        }
+
+        using var collection = ImageCollection.Load(data);
+        Check(collection.Count == 6 && collection[5].TextureSurface?.Face == CubeMapFace.NegativeZ, "DDS surfaces");
+        using var last = collection[5].Decode<Rgba32>();
+        Check(last.Frames[0][0, 0] == new Rgba32(247, 0, 0, 255), "DDS block decoding");
     }
 
     public static void Radiance()

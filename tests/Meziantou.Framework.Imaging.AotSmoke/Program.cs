@@ -29,6 +29,7 @@ Run("jxl", SmokeTests.JpegXl);
 Run("jp2", SmokeTests.Jpeg2000);
 Run("exr", SmokeTests.OpenExr);
 Run("hdr", SmokeTests.Radiance);
+Run("dds", SmokeTests.Dds);
 Run("processing", SmokeTests.Processing);
 Run("drawing", SmokeTests.Drawing);
 Run("text", SmokeTests.Text);

@@ -355,7 +355,6 @@ public sealed class ApiSurfaceTests
     {
         // A new format is appended: the values of the existing members never change
         Assert.Equal(18, (int)ImageFormat.Radiance);
-        Assert.Equal(18, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
 
         var type = typeof(RadianceEncoder);
         Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
@@ -368,6 +367,33 @@ public sealed class ApiSurfaceTests
         Assert.Equal(typeof(Rgba64?), GetDeclaredProperty(type, nameof(RadianceEncoder.BackgroundColor)).PropertyType);
         Assert.Equal([nameof(RadianceCompression.None), nameof(RadianceCompression.RunLength)], Enum.GetNames<RadianceCompression>());
         Assert.Equal([0, 1], Enum.GetValues<RadianceCompression>().Select(value => (int)value));
+    }
+
+    [Fact]
+    public void DdsAdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(19, (int)ImageFormat.Dds);
+        Assert.Equal(19, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
+        Assert.Equal(3, (int)ImageCollectionKind.TextureSurfaces);
+
+        // DDS is read only: no encoder type
+        Assert.DoesNotContain(typeof(ImageEncoder).Assembly.GetExportedTypes(), type => type.Name.StartsWith("Dds", StringComparison.Ordinal));
+
+        var type = typeof(TextureSurface);
+        Assert.Equal("Meziantou.Framework.Imaging", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed);
+        Assert.Empty(type.GetConstructors());
+        Assert.Equal(
+            [nameof(TextureSurface.ArrayIndex), nameof(TextureSurface.DepthSlice), nameof(TextureSurface.Face), nameof(TextureSurface.MipLevel)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.All(type.GetProperties(), property => property.SetMethod is null);
+        Assert.Equal(typeof(CubeMapFace?), GetDeclaredProperty(type, nameof(TextureSurface.Face)).PropertyType);
+        Assert.Equal(typeof(TextureSurface), GetDeclaredProperty(typeof(ImageCollectionEntry), nameof(ImageCollectionEntry.TextureSurface)).PropertyType);
+        Assert.Equal(
+            [nameof(CubeMapFace.PositiveX), nameof(CubeMapFace.NegativeX), nameof(CubeMapFace.PositiveY), nameof(CubeMapFace.NegativeY), nameof(CubeMapFace.PositiveZ), nameof(CubeMapFace.NegativeZ)],
+            Enum.GetNames<CubeMapFace>());
+        Assert.Equal([0, 1, 2, 3, 4, 5], Enum.GetValues<CubeMapFace>().Select(value => (int)value));
     }
 
     [Theory]

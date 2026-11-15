@@ -251,7 +251,7 @@ public sealed class DefaultsTests
     [Fact]
     public void PublicEncoderSelectionMatchesTheSelectionOfSave()
     {
-        string[] readOnly = [".jpx", ".jpf"];
+        string[] readOnly = [".jpx", ".jpf", ".dds"];
         foreach (var info in ImageFormatInfo.All)
         {
             foreach (var extension in info.FileExtensions)
@@ -289,7 +289,8 @@ public sealed class DefaultsTests
     [Fact]
     public void EveryFormatHasADefaultEncoder()
     {
-        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom)))
+        // DDS is read only
+        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Dds)))
         {
             var encoder = ImageEncoder.Create(format);
             Assert.Equal(format, encoder.Format);
@@ -305,6 +306,7 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Unknown));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Custom));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create((ImageFormat)999));
+        Assert.Contains("can be read but not written", Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Dds)).Message, StringComparison.Ordinal);
     }
 
     [Fact]

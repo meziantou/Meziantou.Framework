@@ -2,7 +2,7 @@
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
-progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
+progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, DDS decoding (BC1 to BC7), lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
 vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
@@ -963,6 +963,17 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   SharpFuzz target checks it). Header variables are metadata: one that cannot be read is skipped, never an error.
   XYZE is identified and rejected by a load, since converting XYZ to RGB would be an implicit color conversion.
   `MetadataWritePlan` treats it as linear light only, like OpenEXR.
+- **DDS** (`Internals/Codecs/Dds`, read only). `DdsHeader` validates the headers and computes the size and the offset of
+  every surface (never from `dwPitchOrLinearSize`, which strict mode only checks against them); `DdsPixelLayout` resolves
+  the pixel format to the lossless representation it decodes to; `DdsRowDecoder` turns a stored row (of pixels or of
+  4x4 blocks) into rows of `DdsPixelLayout.SourcePixelFormat`. A load and a full identification read the headers and the
+  first surface only; `DdsCollectionReader` lists every surface (`ImageCollectionKind.TextureSurfaces`) and decodes one
+  by giving the parser the headers followed by that surface. The block decoders (`Internals/Codecs/BlockCompression`:
+  `BlockDecoder`, `BptcTables`) are independent of the container, for a KTX2 codec to reuse. They follow the Khronos Data
+  Format Specification 1.3.1; the BPTC tables were extracted from its text by a script and checked against each other
+  (the bit layouts of the BC6H modes against Tables 123 and 124). BC7 and BC6H are exact; BC1 to BC5 are rounded once
+  from the real numbers of the specification (8 bits, halves up; multiples of 1/127 for the signed formats, as
+  DirectXTex rounds them). Writing DDS (and BCn encoding) is not implemented: `texconv` could verify an encoder.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -1732,7 +1743,7 @@ thin public types over its `FontFace`.
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
 | `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
 | `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`, `Dds` with the block decoders): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
 | `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |
@@ -1903,6 +1914,17 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   file order) and rejects the invalid ones except those `RadianceCorpus.ToleratedByRadiance` lists. `RadianceInteropTests`
   also writes files with `pvalue -r` in the eight orientations, and rewrites them with `pflip` and `protate` (without
   `-c`, the picture stays the same): `TestHarness/ExternalTools/RadianceTool` wraps the tools.
+
+- **DDS fixtures** (`dds` generator, `DdsCorpus.cs`). The generator runs on Windows only (`texconv` and `texassemble` of
+  DirectXTex are Windows-only): sync the repository to a Windows machine, run it there with `--write`, and copy back
+  `manifest.json`, `dds/`, `invalid/dds/` and `limit/dds/`. The uncompressed references are hand-computed by
+  `TestHarness/Dds/ReferenceDds`, BC1 to BC5 by `ReferenceS3tc` (exact rationals), BC6H and BC7 are what `texconv`
+  decodes, cross-checked with `oiiotool --dumpdata` (the raw samples: OpenImageIO's image outputs treat DDS alpha as
+  premultiplied). Compare with `texconv` through 32-bit floats (its 8-bit conversion replicates the bits of 5-bit and
+  6-bit channels), pass `-tu` for typeless formats, and expect the DirectXTex deviations the generator records (BC1
+  midpoints, signed BC5 within 1 ulp, swapped 10:10:10:2 legacy masks, 3:3:2 and luminance-alpha layouts). A fixture of
+  several surfaces lists them in `ddsSurfaces` and has the feature `dds.trailingSurfaces`
+  (`FixtureTraits.HasUnreadTrailingBytes`: a load reads the first surface only).
 
 - **JPEG 2000 fixtures** (`jp2` generator, `Jp2Corpus.cs` and its partial files). A fixture of the reversible
   transformations expects the pattern given to `opj_compress` or `ojph_compress`; a fixture of the irreversible ones

@@ -4,8 +4,8 @@ A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG
 (still and animated, lossless and lossy), QOI, BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and animated
 cursor (ANI), AVIF and HEIC (still and animated, lossless and lossy), JPEG XL (still and animated, lossless and
 lossy, progressive), JPEG 2000 (lossless and lossy), OpenEXR and Radiance HDR (high dynamic range, floating-point
-samples) decoding and encoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC
-color conversion, and bounded-memory streaming.
+samples) decoding and encoding, DDS texture decoding (BC1 to BC7), lossless JPEG recompression, animation-aware
+processing, vector drawing, ICC color conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive/lossless JPEG, WebP (still and animated, lossless and lossy), QOI,
   BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline and progressive
@@ -27,13 +27,17 @@ color conversion, and bounded-memory streaming.
 - Radiance HDR (RGBE) decoding and encoding: flat and run-length encoded scanlines, the eight orientations, the header
   variables reported (exposure, color correction, primaries, view), loaded as `RgbaFloat` pixels; run-length encoded or
   flat output
+- DDS (DirectDraw Surface) decoding: the block-compressed formats BC1 to BC7 (BC6H to half floats), the common
+  uncompressed DXGI formats and the legacy bit-mask layouts, and every surface of mipmaps, cube maps, texture arrays and
+  volume textures through `ImageCollection`
 - AVIF decoding and encoding with a fully managed AV1 decoder and a fully managed AV1 encoder: still images and
   animations, lossless and lossy, 8, 10 and 12 bits, alpha; grids and film grain are decoded
 - HEIC decoding and encoding with a fully managed HEVC (H.265) decoder and a fully managed HEVC encoder: the photos of
   phones and cameras (grids, rotation, alpha, 10 bits), image sequences with reordered pictures, lossless and lossy
   output, 8 to 12 bits
-- `ImageCollection` for the images that are not animation frames: TIFF document pages, icon/cursor representations and
-  the images of a Netpbm concatenation, read one entry at a time (TIFF and ICO/CUR are also written that way)
+- `ImageCollection` for the images that are not animation frames: TIFF document pages, icon/cursor representations,
+  the images of a Netpbm concatenation and the surfaces of a DDS texture, read one entry at a time (TIFF and ICO/CUR are
+  also written that way)
 - Animation-aware model: every frame is a full-canvas displayed image with exact rational timing and, for cursors, a
   hotspot that follows its pixel through geometry operations
 - Fourteen integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`, the gray-with-alpha
@@ -110,6 +114,7 @@ copied from code that compiles, and most of them also run in the test suite.
   - [JPEG 2000](#jpeg-2000)
   - [OpenEXR](#openexr)
   - [Radiance HDR](#radiance-hdr)
+  - [DDS](#dds)
 - [Limitations](#limitations)
 
 ## Quick start
@@ -196,6 +201,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | JPEG 2000 | JP2 files (also JPX and JPH files of one codestream) and bare codestreams; reversible and irreversible wavelet transformations; tiles, layers, every progression order and code-block style, regions of interest; the high-throughput block coder (HTJ2K); 1 to 16 bits; opacity, palettes, sYCC, CMYK with a color conversion; ICC/EXIF/XMP and resolution | Lossless and lossy, every pixel format at its own depth, lossless opacity, a JP2 file or a codestream, the high-throughput block coder (a JPH file), ICC/EXIF/XMP and resolution | `.jp2` (lossless), `.j2k`, `.j2c`, `.jpc` (a codestream), `.jph`, `.jhc` (HTJ2K) |
 | OpenEXR | Scan-line and tiled files (the full-resolution level of mipmaps and ripmaps), one part of a multi-part file (`OpenExrDecodingOptions.Part`), deep data flattened (`OpenExrDecodingOptions.DeepData`); HALF, FLOAT and UINT samples; R, G, B, A and Y (luminance) channels, or one layer of a file with other channels (`OpenExrDecodingOptions.Layer`); NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB and ZSTD; data and display windows, an overscan cropped or decoded whole (`OpenExrDecodingOptions.WindowMode`); chromaticities | Single-part scan-line files of half or float samples, lossless: NONE, RLE, ZIPS, ZIP (default) or PIZ (seekable destination when compressed); chromaticities | `.exr` |
 | Radiance HDR | RGBE pictures (`#?RADIANCE` or `#?RGBE`); flat, "old" and "new" run-length encoded scanlines, mixed; the eight orientations of the resolution string; the header variables reported in `Metadata.RadianceHeader` (never applied); the primaries as a color label. XYZE pictures are identified and rejected by a load | RGBE pictures in the standard orientation, new run-length encoding (default) or flat; the primaries | `.hdr`, `.pic` |
+| DDS | Textures with the legacy header or the DX10 header: BC1 (DXT1, 1-bit alpha), BC2 (DXT3), BC3 (DXT5), BC4 and BC5 unsigned and signed, BC6H unsigned and signed (to `RgbaHalf`), BC7; R8G8B8A8 and B8G8R8A8 (UNORM and SRGB), B8G8R8X8, B5G6R5, B5G5R5A1, B4G4R4A4, R10G10B10A2, R16G16B16A16 (UNORM and FLOAT), R32G32B32A32_FLOAT and their formats of fewer channels, R8, R8G8, R16, R16G16, A8, R11G11B10_FLOAT, R9G9B9E5_SHAREDEXP; legacy bit masks and FourCC codes; mipmaps, cube maps (partial ones too), arrays and volume textures through `ImageCollection` | Not written (`ArgumentException` for `.dds`) | — |
 | ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
 
 ## Usage guide
@@ -358,6 +364,12 @@ or icon sizes by accident.
   after them skipped as Netpbm does and any other byte rejected (`InvalidImageContentException`). `Image.Load`,
   `Image.Identify` and `Image.OpenReader` read the first image only and report no entry count; `ImageCollection.Save`
   does not write Netpbm.
+- A DDS file gives the surfaces of its texture (`ImageCollectionKind.TextureSurfaces`): every mipmap level of every face
+  of a cube map and of every element of an array, and every depth slice of a level of a volume texture, in file order,
+  each with its `ImageCollectionEntry.TextureSurface` (array index, face, mip level, depth slice). The headers give
+  them all when the collection loads; a surface is read when it is decoded. `Image.Load`, `Image.Identify` and
+  `Image.OpenReader` read the top level of the first face or element, and report the number of surfaces in
+  `ImageInfo.CollectionEntryCount`. Such a collection is never created or saved (see [DDS](#dds)).
 - `ImageCollection.Save` and `SaveAsync` write pages with `TiffEncoder` and representations with `IcoEncoder`; entries
   are materialized one at a time, and path destinations are published atomically (a failure or a cancellation leaves no
   partial file). `SaveAsync` writes with asynchronous I/O and decodes the entries synchronously between the writes.
@@ -4938,6 +4950,7 @@ public static Image LoadLeniently(string path)
 | TIFF | More `BitsPerSample` or `SampleFormat` values than samples | The values past the number of samples are ignored, even when they differ |
 | TIFF | More `StripByteCounts` or `TileByteCounts` values than blocks | The values past the number of blocks are ignored |
 | TIFF | A page of one uncompressed strip or tile (not YCbCr) without byte counts, or one strip whose byte count is smaller than its rows | The block is read for the length of its rows (a full tile); a block that runs past the end of the file is still rejected |
+| DDS | A `dwPitchOrLinearSize` that contradicts the surface (with `DDSD_PITCH`: the length of a row; with `DDSD_LINEARSIZE`: the length of the top surface) | The field is ignored and the surface has the size its format and dimensions give, as DirectXTex (`texconv`) reads it; strict decoding rejects the file. Writers fill the field unreliably, as the DDS programming guide says |
 | OpenEXR | An offset table with entries before its own end (zeros, typically: a writer that stopped before patching the table) | The table is rebuilt from the chunks, which must follow it without a gap: scan lines in their line order (increasing for random order), tiles in any order; the valid entries must give the offsets of their chunks, and a missing, repeated or truncated chunk is still rejected |
 
 ### Extension points
@@ -6201,6 +6214,57 @@ declares another length, a run or a repetition past its end, a repetition withou
 pixels). A typed load into an integer pixel format converts the whole image like `CloneAs`: highlights are rejected
 unless the conversion clips or tone maps them.
 
+### DDS
+
+DDS (DirectDraw Surface) files hold the textures of Direct3D and of most game engines. The decoder is written from the
+DDS reference of Microsoft Learn (`DDS_HEADER`, `DDS_PIXELFORMAT`, `DDS_HEADER_DXT10`), and its block decoders from the
+Khronos Data Format Specification 1.3.1 (sections 18 to 20: S3TC, RGTC and BPTC) and the Direct3D 11 functional
+specification. DDS is read only. `Image.Load` gives the top level of the first face or element (the first depth slice of
+a volume texture); `ImageCollection.Load` gives every surface:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DdsTexture;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static IReadOnlyList<string> ExportCubeFaces(string ddsPath, string outputDirectory)
+{
+    // Image.Load gives the top level of the first face; a collection reaches every surface, decoded on demand
+    using var texture = ImageCollection.Load(ddsPath);
+    var written = new List<string>();
+    foreach (var entry in texture.Entries)
+    {
+        // Each entry says where it is in the texture: keep the full-size level of every face
+        if (entry.TextureSurface is not { MipLevel: 0, Face: { } face } surface)
+            continue;
+
+        var path = Path.Combine(outputDirectory, $"{surface.ArrayIndex}-{face}.png");
+        using var image = entry.Decode();
+        image.Save(path);
+        written.Add(path);
+    }
+
+    return written;
+}
+```
+<!-- endref -->
+
+| Feature | Decoding |
+| --- | --- |
+| Header | The magic `DDS `, `DDS_HEADER` (`dwSize` 124) and `DDS_PIXELFORMAT` (`dwSize` 32), and `DDS_HEADER_DXT10` when the FourCC is `DX10`. The flags the programming guide says readers should not rely on (`DDSD_CAPS`, `DDSD_PIXELFORMAT`, `DDSD_MIPMAPCOUNT`, `DDSCAPS_TEXTURE`, `DDSCAPS_COMPLEX`) are not checked: `dwMipMapCount` gives the number of levels whatever its flag (0 is one level), and more levels than the size has are rejected |
+| Block-compressed formats | BC1 (`DXT1`, DXGI 70 to 72; the three-color mode gives transparent black), BC2 (`DXT3`, 73 to 75), BC3 (`DXT5`, 76 to 78), BC4 (`ATI1`, `BC4U`, `BC4S`, 79 to 81), BC5 (`ATI2`, `BC5U`, `BC5S`, 82 to 84), BC6H (95, 96) and BC7 (97 to 99; the eight modes, and the reserved low byte 0, which decodes to 0). The texels of a block outside a surface whose size is not a multiple of 4 are not part of the image |
+| Uncompressed formats | The DXGI formats R32G32B32A32_FLOAT, R32G32B32_FLOAT, R16G16B16A16_FLOAT and UNORM, R32G32_FLOAT, R10G10B10A2_UNORM, R11G11B10_FLOAT, R8G8B8A8_UNORM, SRGB and TYPELESS, R16G16_FLOAT and UNORM, R32_FLOAT, R8G8_UNORM, R16_FLOAT, R16_UNORM, R8_UNORM, A8_UNORM, R9G9B9E5_SHAREDEXP, B5G6R5_UNORM, B5G5R5A1_UNORM, B8G8R8A8 and B8G8R8X8 (UNORM, SRGB, TYPELESS) and B4G4R4A4_UNORM; the legacy bit masks of 8, 16, 24 and 32-bit pixels (`DDPF_RGB` with or without `DDPF_ALPHAPIXELS`, `DDPF_LUMINANCE`, `DDPF_ALPHA`), each mask a contiguous run of bits inside the pixel, read as written; the FourCC codes 36 (A16B16G16R16) and 111 to 116 (the floating-point formats of Direct3D 9) |
+| Pixels | The lossless form of what the format stores: 8-bit samples (masks of up to 8 bits expanded to `round(v × 255 / max)`), 16-bit samples when a channel is wider (`round(v × 65535 / max)`), `RgbaHalf` for the half floats, BC6H, R11G11B10_FLOAT and R9G9B9E5_SHAREDEXP (every value of these formats is a half), `RgbaFloat` for the single-precision floats and the signed BC4 and BC5 formats (values in [-1, 1]). One channel (red, luminance) is gray, two channels are red and green with a blue of 0, A8 is an alpha mask, and a format without alpha is opaque |
+| Precision of the blocks | BC7 (integer interpolation) and BC6H (half-float bit patterns) are exact. The specification defines BC1 to BC5 as real numbers: they are rounded once to the precision of the format, 8 bits for the unsigned ones (halves up) and multiples of 1/127 for the signed ones. DirectXTex gives the same values except for the midpoints of the three-color mode of BC1 that are exactly halfway between two 8-bit values, which its single-precision arithmetic rounds either way |
+| Structure | Mipmaps; cube maps (`DDSCAPS2_CUBEMAP` with the faces it stores, or `DDS_RESOURCE_MISC_TEXTURECUBE` and an array of cube maps); texture arrays; volume textures (`DDSCAPS2_VOLUME` or `DDS_DIMENSION_TEXTURE3D`, `dwDepth` slices, halved with each level); 1D textures. The entries of the collection are the surfaces in file order (`ImageCollectionKind.TextureSurfaces`, `ImageCollectionEntry.TextureSurface`) |
+| Sizes | The size of a surface is computed, never read: rows of `max(1, (width + 3) / 4)` blocks, or of `(width × bits + 7) / 8` bytes. `dwPitchOrLinearSize` must agree with it when its flag is set, and is ignored by [lenient decoding](#lenient-decoding) |
+| Alpha | The alpha mode of the DX10 header: unknown, straight, opaque and custom keep the stored alpha; premultiplied (and `DXT2`, `DXT4`) is `UnsupportedImageFeatureException` |
+| Colors | The `_SRGB` formats are labeled with the CICP description of sRGB (primaries 1, transfer characteristics 13), the floating-point formats `ColorTransferFunction.Linear`; the other formats are untagged. Nothing is converted |
+| Limits | Each surface is a frame of the limits of its decode (`MaxWidth`, `MaxHeight`, `MaxFramePixels`); the surfaces of a collection count against `MaxFrames`, and a header whose data could not fit in a file is rejected before anything is allocated |
+
+A load reads the headers and the first surface: the surfaces after it are not read, so a file whose later surfaces are
+cut still loads, and its collection is `InvalidImageContentException` (it checks that the file holds every surface). A
+full identification reads the first surface too. Unknown FourCC codes and DXGI formats, the video, palette, depth,
+stencil, integer and signed normalized formats, and the typeless formats without a single reading are
+`UnsupportedImageFeatureException`, from `Identify` too.
+
 ## Limitations
 
 Everything below is rejected explicitly (never decoded or encoded approximately) or documented as lossy.
@@ -6235,6 +6299,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | JPEG 2000 | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the headers tell): samples of more than 16 bits, signed palette indexes, components of different depths, a sub-sampled first component and sub-sampled components that are not the chrominances of an image of three components, more than four components without color specification, a premultiplied opacity, several opacity channels, an opacity of one color, channels that are not defined, the extensions of ISO/IEC 15444-2 (other wavelet filters, other component transformations, other regions of interest), files of the `jpm ` and `mjp2` brands, files of several codestreams or of a fragmented codestream, more than 30 bit-planes in a sub-band; for the high-throughput block coder: tile-components that mix both block coders, a code-block with several HT sets, and placeholder passes in another packet than the HT cleanup pass. CMYK is loaded only with `CmykConversion`. Not read: the intellectual property and XML boxes, the comments of the codestream. Signed samples are read offset by half their range; `Jpeg2000DecodingOptions.QualityLayerLimit` decodes the first quality layers only. Not available: a region decode reads the whole compressed data of each tile it meets. Encoding: no precincts and one tile-part per tile, no HTJ2K, no palette, no sub-sampling, no CMYK, no animation; a codestream stores no metadata |
 | OpenEXR | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): multi-part files unless `OpenExrDecodingOptions.Part` selects a part, deep data unless `OpenExrDecodingOptions.DeepData` flattens them (and deep data without `Z` or `A`), the HTJ2K256, HTJ2K32 and LJ2K compressions, channels other than R, G, B, A and Y (layers, depth, `RY`/`BY` chroma, extra channels: they would be lost) unless `OpenExrDecodingOptions.Layer` selects a layer, the chroma channels `RY` and `BY` also in a layer, sub-sampled color channels (a sub-sampled channel that a layer ignores is fine), a data window that leaves the display window (its pixels would be lost) unless `OpenExrDecodingOptions.WindowMode` crops it or decodes the data window, UINT samples that a float cannot hold exactly, and versions other than 2. Not decoded: the lower levels of mipmaps and ripmaps, the preview image and the attributes other than the windows and the chromaticities. Encoding: one still image, scan lines only (no tiles), half or float samples (no UINT), no lossy compression (PXR24, B44, DWA), no attributes other than the required ones and the chromaticities, linear light only
 | Radiance HDR | Decoding: XYZE pictures (identified, rejected by a load: no conversion of their CIE XYZ samples to RGB), `FORMAT` values other than RGBE and XYZE (hyperspectral pictures, other data); the exposure and the color correction are reported, never applied. Encoding: RGBE only, one still image in the standard orientation, no alpha (a background composites it), no negative or non-finite colors, no exposure, color correction, view or other header variable but the primaries, linear light only; the precision is that of RGBE, 8 bits of mantissa shared by the three colors |
+| DDS | Read only (no encoder). Rejected with `UnsupportedImageFeatureException`: premultiplied alpha (`DXT2`, `DXT4`, `DDS_ALPHA_MODE_PREMULTIPLIED`; the library never divides colors by their alpha), video and palette formats (YUY2, NV12, P8...), depth and stencil formats, integer (`_UINT`, `_SINT`) and most signed normalized formats, the typeless formats without a single reading (`BC6H_TYPELESS`, `R32G32B32A32_TYPELESS`...), channels wider than 16 bits; the masks of a legacy header are read as written (DirectXTex swaps red and blue in the 10:10:10:2 layouts) |
 | Text | In vertical lines, no compression of punctuation; ruby annotations only over their base, without overhang; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; greedy line breaking by default, optimal (total-fit) breaking without fitness classes; justification without kashida and without priorities; no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), without the variations of the control values (`cvar`) and without the hints of CFF outlines; subpixel (LCD) rendering is opt-in (`TextLayoutOptions.SubpixelRendering`), for layouts filled at a point with a solid color on 8- and 16-bit RGB images; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hints of CFF outlines; see [Fonts](#fonts) |
 | API | No custom pixel type and no replaceable allocator (the buffer pool has settings, `ImageBufferPool`); the extension points are custom codecs and encoders and custom pixel operations ([Extension points](#extension-points)); implementation types are internal |

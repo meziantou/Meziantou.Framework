@@ -95,8 +95,9 @@ public sealed class MarkdownGenericAttributesSyntax : MarkdownInlineSyntax
             return inline;
         }
 
-        // Markdig reads the line endings of a heading as text
-        var block = FirstAncestorOrSelf<MarkdownSyntaxNode>(node => node is MarkdownBlockSyntax or MarkdownTableCellSyntax);
+        // Markdig reads the line endings of a heading as text. The block of a cell of a pipe table is the table, which has the
+        // attributes of its paragraph.
+        var block = FirstAncestorOrSelf<MarkdownSyntaxNode>(node => node is MarkdownBlockSyntax or MarkdownTableCellSyntax { Parent.Parent: MarkdownTableSyntax { IsPipeTable: false } });
         if (previous.IsToken && previous.AsToken().RawKind is (int)SyntaxKind.LineEndingToken or (int)SyntaxKind.HardLineBreakToken && block is not MarkdownHeadingSyntax)
         {
             return null;

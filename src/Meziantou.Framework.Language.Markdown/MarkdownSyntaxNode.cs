@@ -67,12 +67,12 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
 
     internal override SyntaxNode? GetCachedSlot(int index) => index == 0 ? _children : null;
 
-    /// <summary>Gets the text of a token of this node: in a cell of a table, GFM reads <c>\|</c> as a pipe.</summary>
+    /// <summary>Gets the text of a token of this node: in a cell of a table of GFM, not of a pipe table, <c>\|</c> is a pipe.</summary>
     internal string GetTokenText(SyntaxToken token)
     {
         if (_inTableCell == 0)
         {
-            _inTableCell = FirstAncestorOrSelf<MarkdownTableCellSyntax>() is null ? 1 : 2;
+            _inTableCell = FirstAncestorOrSelf<MarkdownTableCellSyntax>() is { Parent.Parent: MarkdownTableSyntax { IsPipeTable: false } } ? 2 : 1;
         }
 
         return _inTableCell == 2 ? token.Text.Replace("\\|", "|", StringComparison.Ordinal) : token.Text;

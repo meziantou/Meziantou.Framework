@@ -91,6 +91,7 @@ public enum SyntaxKind
     Paragraph,
     LinkReferenceDefinition,
     Table,
+    PipeTable,
     TableHeaderRow,
     TableDelimiterRow,
     TableRow,

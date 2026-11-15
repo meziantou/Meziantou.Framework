@@ -27,12 +27,13 @@ internal static class MarkdownFuzzTargets
 
     private static readonly string[] ExtensionTokens =
     [
-        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020", "$", "$$", "$$\n", "\\$", "---\n", "...\n", "```mermaid\n", "```nomnoml\n", "> [!NOTE]\n", "[!TIP]", "[!x]  \n", "*[A]: ", "*[A B]: x\n", "A ", "[^1]", "[^1]: ", "\n    ", "[^a]:\n", "{", "}", "{#a}", "{.b}", "{c=d}", "{e=\"f\"}", "{g}\n", "# a\n", "[a]", "a\n===\n", "\u00E9", "\u00DF", "\u00C6", ":::", "::::", ":::x\n", ":::\n", "::", ":   ", "~   ", "\n:   ", "a. ", "B) ", "iv. ", "XI) ", "'", "\"", "''", "<<", ">>", "...", "--", "---", ":smile:", ":)", ":*", "<3", "]:)", "->", "o:)", "^^^", "^^^ c\n", "^^ ", "\"\"",
+        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020", "$", "$$", "$$\n", "\\$", "---\n", "...\n", "```mermaid\n", "```nomnoml\n", "> [!NOTE]\n", "[!TIP]", "[!x]  \n", "*[A]: ", "*[A B]: x\n", "A ", "[^1]", "[^1]: ", "\n    ", "[^a]:\n", "{", "}", "{#a}", "{.b}", "{c=d}", "{e=\"f\"}", "{g}\n", "# a\n", "[a]", "a\n===\n", "\u00E9", "\u00DF", "\u00C6", ":::", "::::", ":::x\n", ":::\n", "::", ":   ", "~   ", "\n:   ", "a. ", "B) ", "iv. ", "XI) ", "'", "\"", "''", "<<", ">>", "...", "--", "---", ":smile:", ":)", ":*", "<3", "]:)", "->", "o:)", "^^^", "^^^ c\n", "^^ ", "\"\"", "||", "|-|", "| :--: |", "\\-", "\\:", "|{.c}", "-|-\n", " | ",
     ];
 
-    // Every extension: a text of odd length has HTML disabled, and identifiers made as GitHub makes them
+    // Every extension, with the pipe tables of Markdig. A text of odd length has the tables of GFM instead, HTML disabled, and
+    // identifiers made as GitHub makes them.
     private static readonly MarkdownParseOptions AllExtensions = new() { Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension) };
-    private static readonly MarkdownParseOptions AllExtensionsWithoutHtml = AllExtensions with { DisableHtml = true, AutoIdentifierOptions = MarkdownAutoIdentifierOptions.GitHub | MarkdownAutoIdentifierOptions.AutoLink };
+    private static readonly MarkdownParseOptions AllExtensionsWithoutHtml = AllExtensions with { Extensions = AllExtensions.Extensions & ~MarkdownExtensions.PipeTables, DisableHtml = true, AutoIdentifierOptions = MarkdownAutoIdentifierOptions.GitHub | MarkdownAutoIdentifierOptions.AutoLink };
 
     public static IReadOnlyList<FuzzTarget> Targets { get; } =
     [
@@ -94,6 +95,12 @@ internal static class MarkdownFuzzTargets
                     break;
                 case MarkdownLinkReferenceDefinitionSyntax definition:
                     _ = (definition.Label, definition.Destination, definition.Title);
+                    break;
+                case MarkdownTableSyntax { IsPipeTable: true } pipeTable:
+                    // A pipe table has a header cell and a delimiter row, whose columns are read from its text
+                    FuzzAssert.True(pipeTable.Alignments.Count > 0 && pipeTable.Alignments.Count >= pipeTable.DelimiterRow.DelimiterTokens.Count, $"The pipe table at {pipeTable.Span} has {pipeTable.Alignments.Count} columns for {pipeTable.DelimiterRow.DelimiterTokens.Count} delimiters: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(pipeTable.HeaderRow.Cells.Count > 0, $"The pipe table at {pipeTable.Span} has no header cell: {FuzzAssert.Format(text)}");
+                    _ = pipeTable.Rows;
                     break;
                 case MarkdownTableSyntax table:
                     FuzzAssert.True(table.Alignments.Count == table.HeaderRow.Cells.Count, $"The table at {table.Span} has {table.Alignments.Count} columns and {table.HeaderRow.Cells.Count} header cells: {FuzzAssert.Format(text)}");

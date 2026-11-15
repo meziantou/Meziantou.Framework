@@ -72,6 +72,10 @@ public static class MarkdownHtmlRenderer
         // In a cell of a table, a pipe escaped by a backslash is a pipe, even in a code span or a link destination
         private bool _inTableCell;
 
+        // The text tokens whose whitespace is trimmed at the start and at the end of a cell of a pipe table
+        private (SyntaxToken Start, SyntaxToken End) _trimmedCellTokens;
+        private static readonly char[] PipeTableWhitespace = [' ', '\t', '\n', '\f', '\r', '\u00A0', '\u1680', '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200A', '\u202F', '\u205F', '\u3000'];
+
         // The checkbox of a task list item, which its first paragraph starts with
         private string? _pendingCheckbox;
 
@@ -569,6 +573,12 @@ public static class MarkdownHtmlRenderer
         // A table: the cells of the header row, then the cells of the other rows, as many as the header row has
         private void WriteTable(MarkdownTableSyntax table)
         {
+            if (table.Kind() == SyntaxKind.PipeTable)
+            {
+                WritePipeTable(table);
+                return;
+            }
+
             var alignments = table.Alignments.Select(alignment => alignment switch
             {
                 MarkdownTableAlignment.Center => " align=\"center\"",
@@ -596,6 +606,81 @@ public static class MarkdownHtmlRenderer
             _output.Append("</table>\n");
         }
 
+        // A pipe table of Markdig: as many columns as its longest row has cells, with the alignments of GFM. A column after the last
+        // column of the delimiter row has its alignment.
+        private void WritePipeTable(MarkdownTableSyntax table)
+        {
+            var alignments = table.Alignments;
+            var rows = table.Rows;
+            var columnCount = table.HeaderRow.Cells.Count;
+            foreach (var row in rows)
+            {
+                columnCount = Math.Max(columnCount, row.Cells.Count);
+            }
+
+            Cr();
+            _output.Append("<table");
+            AppendAttributes(table);
+            _output.Append(">\n<thead>\n");
+            WritePipeTableRow(table.HeaderRow, "th", columnCount, alignments);
+            _output.Append("</thead>\n");
+            if (rows.Count > 0)
+            {
+                _output.Append("<tbody>\n");
+                foreach (var row in rows)
+                {
+                    WritePipeTableRow(row, "td", columnCount, alignments);
+                }
+
+                _output.Append("</tbody>\n");
+            }
+
+            _output.Append("</table>\n");
+        }
+
+        private void WritePipeTableRow(MarkdownTableRowSyntax row, string tag, int columnCount, IReadOnlyList<MarkdownTableAlignment> alignments)
+        {
+            _output.Append("<tr>\n");
+            var cells = row.Cells;
+            for (var i = 0; i < columnCount; i++)
+            {
+                _output.Append('<').Append(tag);
+                if (alignments.Count > 0)
+                {
+                    _output.Append(alignments[Math.Min(i, alignments.Count - 1)] switch
+                    {
+                        MarkdownTableAlignment.Center => " align=\"center\"",
+                        MarkdownTableAlignment.Left => " align=\"left\"",
+                        MarkdownTableAlignment.Right => " align=\"right\"",
+                        _ => "",
+                    });
+                }
+
+                _output.Append('>');
+                if (i < cells.Count)
+                {
+                    // As in Markdig, a cell starts after its last hard line break: the inlines before it are not written
+                    var inlines = cells[i].Inlines;
+                    var first = 0;
+                    for (var j = 0; j < inlines.Count; j++)
+                    {
+                        if (inlines[j].RawKind == (int)SyntaxKind.HardLineBreakToken)
+                        {
+                            first = j + 1;
+                        }
+                    }
+
+                    _trimmedCellTokens = GetTrimmedCellTokens(inlines);
+                    WriteInlines(first == 0 ? inlines : inlines.Skip(first));
+                    _trimmedCellTokens = default;
+                }
+
+                _output.Append("</").Append(tag).Append(">\n");
+            }
+
+            _output.Append("</tr>\n");
+        }
+
         private void WriteTableRow(MarkdownTableRowSyntax row, string tag, List<string> alignments)
         {
             _output.Append("<tr>\n");
@@ -618,8 +703,9 @@ public static class MarkdownHtmlRenderer
 
         private void WriteInlines(IEnumerable<SyntaxNodeOrToken> inlines, bool keepTrailingLineBreak = false)
         {
-            // As in Markdig, a line break that only attributes follow ends the text, and is not written. In a heading, Markdig reads
-            // the line endings as text, and the back links of a footnote come after the line break.
+            // As in Markdig, a line break that only attributes follow ends the text, and is not written, as a hard line break that
+            // ends the text, such as the one before a pipe table. In a heading, Markdig reads the line endings as text, and the back
+            // links of a footnote come after the line break.
             SyntaxToken pendingLineBreak = default;
             foreach (var child in inlines)
             {
@@ -638,7 +724,7 @@ public static class MarkdownHtmlRenderer
                 {
                     WriteInline(inline);
                 }
-                else if (_attributes is not null && !keepTrailingLineBreak && child.AsToken().RawKind is (int)SyntaxKind.LineEndingToken or (int)SyntaxKind.HardLineBreakToken)
+                else if (!keepTrailingLineBreak && child.AsToken().RawKind is (int)SyntaxKind.HardLineBreakToken || (_attributes is not null && !keepTrailingLineBreak && child.AsToken().RawKind == (int)SyntaxKind.LineEndingToken))
                 {
                     pendingLineBreak = child.AsToken();
                 }
@@ -649,7 +735,63 @@ public static class MarkdownHtmlRenderer
             }
         }
 
-        private string GetText(SyntaxToken token) => _inTableCell ? token.Text.Replace("\\|", "|", StringComparison.Ordinal) : token.Text;
+        private string GetText(SyntaxToken token)
+        {
+            var text = _inTableCell ? token.Text.Replace("\\|", "|", StringComparison.Ordinal) : token.Text;
+            if (_trimmedCellTokens.Start == token)
+            {
+                text = text.TrimStart(PipeTableWhitespace);
+            }
+
+            if (_trimmedCellTokens.End == token)
+            {
+                text = text.TrimEnd(PipeTableWhitespace);
+            }
+
+            return text;
+        }
+
+        // As in Markdig, the text of a link at the start or at the end of a cell of a pipe table is trimmed, and the text after
+        // the generic attributes that start the cell
+        private static (SyntaxToken Start, SyntaxToken End) GetTrimmedCellTokens(ChildSyntaxList inlines)
+        {
+            SyntaxToken start = default;
+            SyntaxToken end = default;
+            var firstIndex = 0;
+            while (firstIndex < inlines.Count && inlines[firstIndex].AsNode() is MarkdownGenericAttributesSyntax)
+            {
+                firstIndex++;
+            }
+
+            // The text after the generic attributes that start the cell is trimmed: Markdig does not add them to the inlines
+            if (firstIndex > 0 && firstIndex < inlines.Count && inlines[firstIndex].AsToken() is { RawKind: (int)SyntaxKind.TextToken } textAfterAttributes)
+            {
+                start = textAfterAttributes;
+            }
+            else if (firstIndex < inlines.Count && inlines[firstIndex].AsNode() is MarkdownLinkSyntax { RawKind: (int)SyntaxKind.Link } first && first.ChildNodesAndTokens() is { Count: > 1 } firstChildren && firstChildren[1].AsToken() is { RawKind: (int)SyntaxKind.TextToken } firstText)
+            {
+                start = firstText;
+            }
+
+            if (inlines.LastOrDefault().AsNode() is MarkdownLinkSyntax { RawKind: (int)SyntaxKind.Link } last)
+            {
+                var children = last.ChildNodesAndTokens();
+                for (var i = 1; i < children.Count; i++)
+                {
+                    if (children[i].RawKind == (int)SyntaxKind.CloseBracketToken)
+                    {
+                        if (children[i - 1].AsToken() is { RawKind: (int)SyntaxKind.TextToken } lastText)
+                        {
+                            end = lastText;
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            return (start, end);
+        }
 
         private void WriteToken(SyntaxToken token)
         {
@@ -672,7 +814,12 @@ public static class MarkdownHtmlRenderer
                     _output.Append(rendererOptions.SmartyPants.GetValueOrDefault(pant) ?? MarkdownHtmlRendererOptions.DefaultSmartyPants[pant]);
                     break;
                 case SyntaxKind.LineEndingToken when !_hardLineBreaks:
-                    _output.Append('\n');
+                    // As in Markdig, a line ending after a line ending, which only generic attributes separate, is not written
+                    if (_output.Length == 0 || _output[^1] != '\n')
+                    {
+                        _output.Append('\n');
+                    }
+
                     break;
                 case SyntaxKind.HardLineBreakToken or SyntaxKind.LineEndingToken:
                     _output.Append("<br />\n");

@@ -10,7 +10,7 @@ public sealed class MarkdownTableCellSyntax : MarkdownSyntaxNode
     {
     }
 
-    /// <summary>Gets the inlines of the cell. In a cell, <c>\|</c> is a pipe, even in a code span.</summary>
+    /// <summary>Gets the inlines of the cell. In a cell of a table of GFM, <c>\|</c> is a pipe, even in a code span.</summary>
     public ChildSyntaxList Inlines => ChildNodesAndTokens();
 
     public override string GetPlainText() => GetPlainText(ChildNodesAndTokens());

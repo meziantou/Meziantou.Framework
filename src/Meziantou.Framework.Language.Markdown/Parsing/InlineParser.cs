@@ -50,6 +50,29 @@ internal sealed class InlineParser
     private Delimiter? _delimiters;
     private Bracket? _brackets;
 
+    // Markdig pipe tables: while the inlines of a paragraph are scanned for a table, its pipes are column delimiters. The cells are
+    // parsed in the paragraph, so the delimiters of emphasis read the characters around a cell.
+    private PipeTableState? _table;
+    private bool _scanningPipeTable;
+    private int _lookaheadEnd;
+
+    // While a cell of a pipe table is parsed, where it starts: its pipes are text, which Markdig keeps apart from the text around
+    private bool _pipeTableCell;
+    private int _cellStart;
+
+    /// <summary>
+    /// Gets or sets the quotes of SmartyPants of the pipe table whose cells are parsed, by their position, and whether they are
+    /// paired in its paragraph. Markdig pairs them before it splits the paragraph in cells.
+    /// </summary>
+    public IReadOnlyDictionary<int, bool>? PipeTableQuotes { get; set; }
+
+    // The first line break that Markdig adds to an open container, while a paragraph is scanned for a table
+    private int _firstNestedLineBreak;
+
+    // The line of the last colon before a pipe, and whether it is a delimiter row under a row
+    private int _colonLineStart;
+    private bool _colonLineResult;
+
     public InlineParser(Dictionary<string, bool> references, MarkdownParseOptions options)
     {
         var extensions = options.Extensions;
@@ -70,35 +93,71 @@ internal sealed class InlineParser
     }
 
     /// <summary>Parses the inlines of the subject from <paramref name="start"/>, without the whitespace around them, or only before them.</summary>
-    public void Parse(Subject subject, int start, List<BuildElement> output, bool trimEnd = true)
+    public void Parse(Subject subject, int start, List<BuildElement> output, bool trimEnd = true) => Parse(subject, start, subject.Length, output, trimEnd, inContext: false);
+
+    /// <summary>
+    /// Parses the inlines of a range of the subject, a cell of a pipe table, which has no whitespace around it. The delimiters of
+    /// emphasis read the characters around the range, as they do in the paragraph of the table.
+    /// </summary>
+    public void ParseCell(Subject subject, int start, int end, List<BuildElement> output) => Parse(subject, start, end, output, trimEnd: false, inContext: true);
+
+    /// <summary>
+    /// Parses the inlines of a range of the subject, the lines of a paragraph before a pipe table, without the whitespace around
+    /// them. The delimiters of emphasis after <paramref name="splitLineBreak"/> are text, as in Markdig, which moves the inlines
+    /// after a line break that is in a delimiter out of it when the table has delimiters in them.
+    /// </summary>
+    public void ParseBeforePipeTable(Subject subject, int start, int end, int splitLineBreak, List<BuildElement> output)
     {
-        _subject = subject;
-        _text = subject.Text;
-        _end = _text.Length;
-        while (trimEnd && _end > start && _text[_end - 1] is ' ' or '\t' or '\n')
-        {
-            _end--;
-        }
-
-        _pos = start;
-        while (_pos < _end && _text[_pos] is ' ' or '\t' or '\n')
-        {
-            _pos++;
-        }
-
-        _usedNodes = 0;
-        _inlineStart = _pos;
-        _smartQuotes.Clear();
-        _pendingEmojis.Clear();
-        _attributesOutcomes = null;
-        _root = NewNode(SyntaxKind.Paragraph, _pos, _pos);
-        _delimiters = null;
-        _brackets = null;
+        // The lines can end with a hard line break that is a backslash, which Markdig does not write
+        Begin(subject, start, end, trimEnd: end == start || subject.Text[end - 1] != '\n');
         while (_pos < _end)
         {
             ParseInline();
         }
 
+        if (splitLineBreak >= 0)
+        {
+            for (var delimiter = _delimiters; delimiter is not null; delimiter = delimiter.Previous)
+            {
+                if (delimiter.Node.Start > splitLineBreak)
+                {
+                    RemoveDelimiter(delimiter);
+                }
+            }
+        }
+
+        Complete(output);
+    }
+
+    private void Parse(Subject subject, int start, int end, List<BuildElement> output, bool trimEnd, bool inContext)
+    {
+        Begin(subject, start, end, trimEnd);
+        if (inContext)
+        {
+            _inlineStart = 0;
+            _lookaheadEnd = _text.Length;
+            _pipeTableCell = true;
+            _cellStart = _pos;
+        }
+
+        try
+        {
+            while (_pos < _end)
+            {
+                ParseInline();
+            }
+        }
+        finally
+        {
+            _pipeTableCell = false;
+        }
+
+        Complete(output);
+    }
+
+    // The inlines that the delimiters make once all of them are read, and the tokens of the inlines
+    private void Complete(List<BuildElement> output)
+    {
         ProcessEmphasis(stackBottom: null);
 
         // As in Markdig: the dashes after the emphasis, then the emoji that end with a delimiter, then the quotes are paired
@@ -110,7 +169,21 @@ internal sealed class InlineParser
         ResolvePendingEmojis();
         if (_smartyPants)
         {
-            PairSmartQuotes();
+            if (PipeTableQuotes is null)
+            {
+                PairSmartQuotes();
+            }
+            else
+            {
+                // The quotes of a pipe table and of the lines before it are paired in the paragraph, as Markdig does
+                foreach (var quote in _smartQuotes)
+                {
+                    if (PipeTableQuotes.TryGetValue(quote.Start, out var paired) && !paired)
+                    {
+                        ToSmartyPantText(quote);
+                    }
+                }
+            }
         }
 
         if (_genericAttributes)
@@ -133,6 +206,627 @@ internal sealed class InlineParser
         {
             AddBuildElements(child, output);
         }
+    }
+
+    /// <summary>
+    /// Reads the inlines of the subject from <paramref name="start"/> as the pipe table parser of Markdig does, to find a table:
+    /// the lines that have a pipe, from the first one, whose second line is a delimiter row. Returns <see langword="null"/> when
+    /// there is none, and adds the inlines of the paragraph to <paramref name="paragraph"/>. Else the inlines are not kept: the
+    /// cells, and the lines around the table, are parsed afterwards.
+    /// </summary>
+    public PipeTableScan? ScanPipeTable(Subject subject, int start, List<BuildElement> paragraph)
+    {
+        Begin(subject, start, subject.Length, trimEnd: true);
+        _scanningPipeTable = true;
+        _table = null;
+        _colonLineStart = -1;
+        _firstNestedLineBreak = -1;
+        PipeTableScan? scan;
+        try
+        {
+            while (_pos < _end)
+            {
+                ParseInline();
+            }
+
+            scan = CompletePipeTable();
+        }
+        finally
+        {
+            _scanningPipeTable = false;
+        }
+
+        _table = null;
+        if (scan is not null && _smartQuotes.Count > 0)
+        {
+            PairSmartQuotes();
+            var quotes = new Dictionary<int, bool>(_smartQuotes.Count);
+            foreach (var quote in _smartQuotes)
+            {
+                quotes[quote.Start] = quote.Kind == SyntaxKind.SmartyPantToken;
+            }
+
+            scan.Quotes = quotes;
+        }
+
+        if (scan is null)
+        {
+            // The paragraph is not a table: its pipes are text, and its inlines are the ones Markdig reads with the pipes
+            for (var child = _root.FirstChild; child is not null; child = child.Next)
+            {
+                if (child.Kind == SyntaxKind.PipeToken)
+                {
+                    // A text apart from the text around it, as Markdig keeps it
+                    child.ChangeKind(SyntaxKind.TextToken);
+                    child.Value = 0;
+                }
+            }
+
+            Complete(paragraph);
+        }
+
+        return scan;
+    }
+
+    // Whether Markdig has a container that is open: a delimiter of emphasis or a bracket, in which the next inlines are added
+    private bool HasOpenContainer => _delimiters is not null || _brackets is not null;
+
+    // A pipe is a column delimiter, unless it is in a link
+    private void ParsePipe()
+    {
+        _table ??= new PipeTableState();
+        _table.LineHasPipe = true;
+        var pipe = NewNode(SyntaxKind.PipeToken, _pos, _pos + 1);
+        pipe.IsDelimiterRun = true;
+        if (HasOpenContainer)
+        {
+            _table.HasNestedDelimiters = true;
+        }
+        else
+        {
+            _table.HasRootPipe = true;
+        }
+
+        _root.Append(pipe);
+        _pos++;
+        _table.AddDelimiter(pipe);
+    }
+
+    // A line ends the table when it has no pipe. When the next line cannot have one, the table ends before it, and the parse stops
+    // there when the lines before it are a table: the lines after it are another paragraph.
+    private void ParsePipeTableNewline()
+    {
+        var isFirstLineEmpty = false;
+        if (_table is null)
+        {
+            if (HasInlines())
+            {
+                ParseNewline();
+                return;
+            }
+
+            isFirstLineEmpty = true;
+            _table = new PipeTableState();
+        }
+
+        var table = _table;
+        if (!isFirstLineEmpty && !table.LineHasPipe)
+        {
+            if (table.EndOfLines.Count == 0)
+            {
+                table.IsInvalid = true;
+            }
+            else if (table.EndOfTable is null && !table.IsInvalid)
+            {
+                table.EndOfTable = table.EndOfLines[^1];
+                table.EndOfTableLineStart = table.LineStart;
+                if (EndPipeTable())
+                {
+                    _pos = _end;
+                    return;
+                }
+            }
+        }
+
+        table.LineHasPipe = false;
+        ParseNewline();
+        if (isFirstLineEmpty)
+        {
+            return;
+        }
+
+        var lineBreak = _root.LastChild!;
+        table.HasNestedDelimiters |= HasOpenContainer;
+        table.AddDelimiter(lineBreak);
+        table.EndOfLines.Add(lineBreak);
+        table.LineStart = _pos;
+        if (table.EndOfTable is null && !table.IsInvalid && !CanHaveColumnDelimiter(_pos))
+        {
+            table.EndOfTable = lineBreak;
+            table.EndOfTableLineStart = _pos;
+            if (EndPipeTable())
+            {
+                _pos = _end;
+            }
+        }
+    }
+
+    // Whether inlines were read, other than generic attributes, which Markdig does not add
+    private bool HasInlines()
+    {
+        for (var child = _root.FirstChild; child is not null; child = child.Next)
+        {
+            if (child.Kind != SyntaxKind.GenericAttributes)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Whether the line has a pipe that a backslash does not escape: the pipe of a code span is found when its line is parsed
+    private bool CanHaveColumnDelimiter(int position)
+    {
+        for (var i = position; i < _end; i++)
+        {
+            switch (_text[i])
+            {
+                case '\n':
+                    return false;
+                case '\\' when i + 1 < _end && Scanners.IsEscapable(_text[i + 1]):
+                    i++;
+                    break;
+                case '|':
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    // The lines before the end of the table are a table when they have a delimiter row, a header row that is not a single pipe,
+    // and when the line break that ends them is not in a link
+    private bool EndPipeTable()
+    {
+        var table = _table!;
+        var delimiters = table.Delimiters;
+        if (FindPipeTableColumns(delimiters, delimiters.LastIndexOf(table.EndOfTable!) + 1) is null || IsHeaderWithoutCell(delimiters) || table.EndOfTable!.Parent != _root)
+        {
+            table.IsInvalid = true;
+            return false;
+        }
+
+        table.IsParsingStopped = true;
+        return true;
+    }
+
+    // Whether Markdig finds a column delimiter from the last inline: it is one, or a pipe is a child of the paragraph
+    private bool HasPipeForMarkdig() => _table is not null && (_table.HasRootPipe || _root.LastChild is { Kind: SyntaxKind.PipeToken });
+
+    // Markdig replaces a bracket that does not open a link with text, which makes the pipes after it children of the paragraph
+    // when no other container is open
+    private void PromotePipesOfBracket(Bracket opener)
+    {
+        if (_table is null || _table.HasRootPipe || HasOpenContainer)
+        {
+            return;
+        }
+
+        for (var node = opener.Node.Next; node is not null; node = node.Next)
+        {
+            if (node.Kind == SyntaxKind.PipeToken)
+            {
+                _table.HasRootPipe = true;
+                return;
+            }
+        }
+    }
+
+    // The pipes of a link are text
+    private void RemovePipesOfLink(InlineNode link)
+    {
+        List<InlineNode>? pipes = null;
+        for (var child = link.LastChild; child is not null; child = child.Previous)
+        {
+            if (child.Kind == SyntaxKind.PipeToken)
+            {
+                (pipes ??= []).Add(child);
+            }
+        }
+
+        if (pipes is null)
+        {
+            return;
+        }
+
+        if (!_table!.RemovePipesOfClosedInline(pipes))
+        {
+            _table.LineHasPipe = false;
+        }
+
+        // A text apart from the text around it, as Markdig keeps it
+        foreach (var pipe in pipes)
+        {
+            pipe.ChangeKind(SyntaxKind.TextToken);
+            pipe.Value = 0;
+        }
+    }
+
+    // A colon before a pipe of a delimiter row under a line that has a pipe is text, so that no other inline reads it
+    private bool IsDelimiterRowColonBeforePipe()
+    {
+        if (_table is null || CharAt(_pos + 1) != '|')
+        {
+            return false;
+        }
+
+        var lineStart = _text.AsSpan(0, _pos).LastIndexOf('\n') + 1;
+        if (lineStart == _colonLineStart)
+        {
+            return _colonLineResult;
+        }
+
+        var lineEnd = _text.AsSpan(_pos).IndexOf('\n') is >= 0 and var length ? _pos + length : _text.Length;
+
+        var result = lineStart > 0;
+        var hasPipe = false;
+        var hasDash = false;
+        for (var i = lineStart; i < lineEnd && result; i++)
+        {
+            switch (_text[i])
+            {
+                case '|':
+                    hasPipe = true;
+                    break;
+                case '-':
+                    hasDash = true;
+                    break;
+                case not (':' or ' ' or '\t'):
+                    result = false;
+                    break;
+            }
+        }
+
+        if (result && hasPipe && hasDash)
+        {
+            var previousLineStart = _text.AsSpan(0, lineStart - 1).LastIndexOf('\n') + 1;
+            result = _text.AsSpan(previousLineStart, lineStart - 1 - previousLineStart).Contains('|');
+        }
+        else
+        {
+            result = false;
+        }
+
+        _colonLineStart = lineStart;
+        _colonLineResult = result;
+        return result;
+    }
+
+    private PipeTableScan? CompletePipeTable()
+    {
+        var table = _table;
+        if (table is null || table.IsInvalid)
+        {
+            return null;
+        }
+
+        // The table ends before the first line without a pipe, which starts a paragraph after the table
+        var last = table.EndOfTable;
+        var trailingStart = table.EndOfTableLineStart;
+        if (last is null && !table.LineHasPipe)
+        {
+            if (table.EndOfLines.Count == 0)
+            {
+                return null;
+            }
+
+            last = table.EndOfLines[^1];
+            trailingStart = table.LineStart;
+        }
+
+        var delimiters = table.Delimiters;
+        var count = last is null ? delimiters.Count : delimiters.IndexOf(last) + 1;
+        if (!table.IsParsingStopped && (FindPipeTableColumns(delimiters, count) is null || (last is not null && last.Parent != _root) || IsHeaderWithoutCell(delimiters)))
+        {
+            return null;
+        }
+
+        var scan = new PipeTableScan { TrailingStart = last is null ? -1 : trailingStart, SplitLineBreak = table.HasNestedDelimiters ? _firstNestedLineBreak : -1 };
+        var rowStart = GetRowStart(delimiters[0], out var leadingEnd);
+        scan.LeadingEnd = leadingEnd;
+        var pipes = new List<int>();
+        for (var i = 0; i < count; i++)
+        {
+            var delimiter = delimiters[i];
+            if (delimiter.IsDelimiterRun)
+            {
+                pipes.Add(delimiter.Start);
+                continue;
+            }
+
+            scan.Rows.Add(CreatePipeTableRow(rowStart, delimiter.Start, pipes, delimiter, isDelimiterRow: scan.Rows.Count == 1));
+            pipes.Clear();
+            rowStart = delimiter.End;
+        }
+
+        if (count > 0 && delimiters[count - 1].IsDelimiterRun)
+        {
+            scan.Rows.Add(CreatePipeTableRow(rowStart, _end, pipes, _root, isDelimiterRow: scan.Rows.Count == 1));
+        }
+        else if (last is null && !PipeTableScanner.IsWhitespace(_text, rowStart, _end))
+        {
+            // The pipes of the last line were in a link: Markdig counts the line as a row without cell, and writes its text in a
+            // paragraph before the table. It is a paragraph after the table, where the text is.
+            scan.TrailingStart = rowStart;
+        }
+
+        return scan;
+    }
+
+    // A pipe that only whitespace precedes starts the row, and the text after the last pipe is a cell when it is not whitespace.
+    // Markdig does not add the generic attributes to the inlines: they are whitespace there, and the ones that are not in a cell
+    // are the attributes of the row. rowEnd: the line break after the row, or the root when it is the last line. The cells of
+    // the delimiter row are the ones that are not empty, without its attributes.
+    private PipeTableScanRow CreatePipeTableRow(int start, int end, List<int> pipes, InlineNode rowEnd, bool isDelimiterRow)
+    {
+        var row = new PipeTableScanRow { Start = start, End = end };
+        row.Pipes.AddRange(pipes);
+        List<(int Start, int End)>? attributes = null;
+        for (var node = rowEnd == _root ? _root.LastChild : rowEnd.Previous; node is not null && node.Kind is not (SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken); node = node.Previous)
+        {
+            if (node.Kind == SyntaxKind.GenericAttributes)
+            {
+                (attributes ??= []).Insert(0, (node.Start, node.End));
+            }
+        }
+
+        // The text of the row, where the attributes are whitespace, is copied with the text before it
+        var text = _text;
+        if (attributes is not null)
+        {
+            var characters = _text.ToCharArray(0, end);
+            foreach (var (attributesStart, attributesEnd) in attributes)
+            {
+                characters.AsSpan(attributesStart, attributesEnd - attributesStart).Fill(' ');
+            }
+
+            text = new string(characters);
+            if (isDelimiterRow)
+            {
+                row.Attributes.AddRange(attributes);
+            }
+        }
+
+        var cellStart = start;
+        for (var i = 0; i < pipes.Count; i++)
+        {
+            if (i == 0 && PipeTableScanner.IsWhitespace(text, start, pipes[i]))
+            {
+                AddRowAttributes(start, pipes[i]);
+                cellStart = pipes[i] + 1;
+                continue;
+            }
+
+            AddCell(cellStart, pipes[i]);
+            cellStart = pipes[i] + 1;
+        }
+
+        if (!PipeTableScanner.IsWhitespace(text, cellStart, end))
+        {
+            AddCell(cellStart, end);
+        }
+        else
+        {
+            AddRowAttributes(cellStart, end);
+        }
+
+        return row;
+
+        void AddRowAttributes(int segmentStart, int segmentEnd)
+        {
+            if (attributes is null || isDelimiterRow)
+            {
+                return;
+            }
+
+            foreach (var range in attributes)
+            {
+                if (range.Start >= segmentStart && range.End <= segmentEnd)
+                {
+                    row.Attributes.Add(range);
+                }
+            }
+        }
+
+        void AddCell(int cellStart, int cellEnd)
+        {
+            // A hard line break at the end of the cell is in the cell: the cell starts after it, as in Markdig
+            var cell = PipeTableScanner.Trim(isDelimiterRow ? text : _text, cellStart, cellEnd);
+            if (cell.End < cellEnd && _text[cell.End] == '\n' && cell.End > cell.Start && _text[cell.End - 1] == '\\')
+            {
+                cell.End++;
+            }
+
+            if (!isDelimiterRow)
+            {
+                row.Cells.Add(cell);
+                return;
+            }
+
+            // The cells of the delimiter row are tokens, which the attributes split
+            var position = cell.Start;
+            foreach (var (attributesStart, attributesEnd) in row.Attributes)
+            {
+                if (attributesEnd <= position || attributesStart >= cell.End)
+                {
+                    continue;
+                }
+
+                AddDelimiterToken(position, attributesStart);
+                position = attributesEnd;
+            }
+
+            AddDelimiterToken(position, cell.End);
+        }
+
+        void AddDelimiterToken(int tokenStart, int tokenEnd)
+        {
+            var token = PipeTableScanner.Trim(text, tokenStart, tokenEnd);
+            if (token.End > token.Start)
+            {
+                row.Cells.Add(token);
+            }
+        }
+    }
+
+    // Where the row of a delimiter starts: after the line break before it, or where the inlines start. lineBreakStart: where the
+    // line break starts, which ends the lines before the row.
+    private int GetRowStart(InlineNode delimiter, out int lineBreakStart)
+    {
+        for (var node = delimiter.Previous; node is not null; node = node.Previous)
+        {
+            if (node.Kind is SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken)
+            {
+                // The lines before the row end with a hard line break that is a backslash, which is not whitespace
+                lineBreakStart = _text[node.Start] == '\\' ? node.End : node.Start;
+                return node.End;
+            }
+        }
+
+        lineBreakStart = _inlineStart;
+        return _inlineStart;
+    }
+
+    private static bool IsLineBreak(InlineNode node) => !node.IsDelimiterRun;
+
+    private bool IsOpenBracket(InlineNode node)
+    {
+        for (var bracket = _brackets; bracket is not null; bracket = bracket.Previous)
+        {
+            if (bracket.Node == node)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // A header row that is a single pipe has no cell. Markdig only looks at the inlines before the pipe in its container: the
+    // inlines after a delimiter of emphasis or a bracket that is not closed are in it.
+    private bool IsHeaderWithoutCell(List<InlineNode> delimiters)
+    {
+        if (delimiters is not [{ IsDelimiterRun: true } pipe, { IsDelimiterRun: false } lineBreak, ..])
+        {
+            return false;
+        }
+
+        // The generic attributes are not inlines
+        for (var node = pipe.Next; node is not null && node != lineBreak; node = node.Next)
+        {
+            if (node.Kind != SyntaxKind.GenericAttributes && (!node.IsToken || !PipeTableScanner.IsWhitespace(_text, node.Start, node.End)))
+            {
+                return false;
+            }
+        }
+
+        for (var node = pipe.Previous; node is not null; node = node.Previous)
+        {
+            if (node.Kind == SyntaxKind.GenericAttributes)
+            {
+                continue;
+            }
+
+            if (node.Kind is SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken || (node.Kind == SyntaxKind.TextToken && node.IsDelimiterRun) || IsOpenBracket(node))
+            {
+                return true;
+            }
+
+            if (!PipeTableScanner.IsWhitespace(_text, node.Start, node.End) || !node.IsToken)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // The columns of the delimiter row, the line after the first line break of the table, which must only have pipes, dashes,
+    // colons and whitespace. Count: the number of delimiters of the table, the ones after them are in the lines after the table.
+    private List<(MarkdownTableAlignment Alignment, int DashCount)>? FindPipeTableColumns(List<InlineNode> delimiters, int count)
+    {
+        var lineBreakIndex = 0;
+        while (lineBreakIndex < count && !IsLineBreak(delimiters[lineBreakIndex]))
+        {
+            lineBreakIndex++;
+        }
+
+        if (lineBreakIndex >= count)
+        {
+            return null;
+        }
+
+        // The generic attributes of the row are for the table: Markdig does not add them to the inlines
+        var lineStart = delimiters[lineBreakIndex].End;
+        char[]? withoutAttributes = null;
+        for (var node = delimiters[lineBreakIndex].Next; node is not null && node.Kind is not (SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken); node = node.Next)
+        {
+            if (node.Kind == SyntaxKind.GenericAttributes)
+            {
+                withoutAttributes ??= _text.ToCharArray();
+                withoutAttributes.AsSpan(node.Start, node.End - node.Start).Fill(' ');
+            }
+            else if (node.Kind is not (SyntaxKind.PipeToken or SyntaxKind.TextToken or SyntaxKind.EscapedCharacterToken) || (node.Kind == SyntaxKind.TextToken && node.IsDelimiterRun))
+            {
+                return null;
+            }
+        }
+
+        var lineEnd = _text.AsSpan(lineStart, _end - lineStart).IndexOf('\n') is >= 0 and var length ? lineStart + length : _end;
+        var text = withoutAttributes is null ? _text : new string(withoutAttributes);
+        if (!PipeTableScanner.IsDelimiterRowText(text, lineStart, lineEnd))
+        {
+            return null;
+        }
+
+        var pipes = new List<int>();
+        var index = lineBreakIndex + 1;
+        while (index < count && delimiters[index].IsDelimiterRun)
+        {
+            pipes.Add(delimiters[index].Start);
+            index++;
+        }
+
+        var hasLineEnd = index < count;
+        return PipeTableScanner.ReadColumns(text, lineStart, hasLineEnd ? delimiters[index].Start : lineEnd, pipes, hasLineEnd);
+    }
+
+    private void Begin(Subject subject, int start, int end, bool trimEnd)
+    {
+        _subject = subject;
+        _text = subject.Text;
+        _end = end;
+        while (trimEnd && _end > start && _text[_end - 1] is ' ' or '\t' or '\n')
+        {
+            _end--;
+        }
+
+        _lookaheadEnd = _end;
+        _pos = start;
+        while (_pos < _end && _text[_pos] is ' ' or '\t' or '\n')
+        {
+            _pos++;
+        }
+
+        _usedNodes = 0;
+        _inlineStart = _pos;
+        _smartQuotes.Clear();
+        _pendingEmojis.Clear();
+        _attributesOutcomes = null;
+        _root = NewNode(SyntaxKind.Paragraph, _pos, _pos);
+        _delimiters = null;
+        _brackets = null;
     }
 
     // Parses a link reference definition at the start of the subject. Returns where it ends, or -1 when there is none.
@@ -251,6 +945,29 @@ internal sealed class InlineParser
     {
         var c = _text[_pos];
 
+        // Markdig reads the pipes of a table, and the colons before them in a delimiter row, before the other inlines
+        if (_scanningPipeTable)
+        {
+            if (c == '|')
+            {
+                ParsePipe();
+                return;
+            }
+
+            if (c == ':' && IsDelimiterRowColonBeforePipe())
+            {
+                AppendText(_pos, _pos + 1);
+                _pos++;
+                return;
+            }
+        }
+        else if (_pipeTableCell && c == '|')
+        {
+            AppendText(_pos, _pos + 1).IsDelimiterRun = true;
+            _pos++;
+            return;
+        }
+
         // Markdig reads the emoji before the other inlines, except the escapes and the links
         if (_emoji is not null && c != ']' && _emoji.IsFirstCharacter(c) && ParseEmoji())
         {
@@ -260,7 +977,15 @@ internal sealed class InlineParser
         switch (c)
         {
             case '\n':
-                ParseNewline();
+                if (_scanningPipeTable)
+                {
+                    ParsePipeTableNewline();
+                }
+                else
+                {
+                    ParseNewline();
+                }
+
                 break;
             case '\\':
                 ParseBackslash();
@@ -380,7 +1105,7 @@ internal sealed class InlineParser
     {
         var start = _pos;
         _pos++;
-        while (_pos < _end && _text[_pos] is not ('\n' or '\\' or '`' or '*' or '_' or '[' or ']' or '!' or '<' or '&') && !IsExtensionCharacter(_text[_pos]))
+        while (_pos < _end && _text[_pos] is not ('\n' or '\\' or '`' or '*' or '_' or '[' or ']' or '!' or '<' or '&') && !IsExtensionCharacter(_text[_pos]) && !((_scanningPipeTable || _pipeTableCell) && _text[_pos] == '|'))
         {
             _pos++;
         }
@@ -409,6 +1134,10 @@ internal sealed class InlineParser
     {
         var newline = _pos;
         _pos++;
+        if (_scanningPipeTable && _firstNestedLineBreak < 0 && HasOpenContainer)
+        {
+            _firstNestedLineBreak = newline;
+        }
 
         // The spaces at the end of the line are not text: two or more of them make a hard line break
         var last = _root.LastChild;
@@ -478,6 +1207,13 @@ internal sealed class InlineParser
         {
             if (_text[position] != '`')
             {
+                // As in Markdig, a code span does not continue on a line that starts with a pipe after a column delimiter of the
+                // paragraph, not in a delimiter of emphasis or a bracket: it is probably the start of a code span in a cell
+                if (_text[position] == '\n' && HasPipeForMarkdig() && CharAt(position + 1) == '|')
+                {
+                    break;
+                }
+
                 position++;
                 continue;
             }
@@ -578,7 +1314,7 @@ internal sealed class InlineParser
 
         // The extra emphasis read an entity as the character it stands for, and some punctuation as text: 10^-18^
         var before = start == 0 ? new Rune('\n') : extra && _root.LastChild is { Kind: SyntaxKind.EntityToken } entity && entity.End == start ? GetLastRune(HtmlEntities.Decode(_text[entity.Start..entity.End])) : GetRuneBefore(start);
-        var after = _pos >= _end ? new Rune('\n') : extra && Match(Scanners.EntityRegex()) is > 0 and var entityLength ? GetFirstRune(HtmlEntities.Decode(_text.Substring(_pos, entityLength))) : GetRuneAt(_pos);
+        var after = _pos >= _end ? (_pos < _lookaheadEnd ? GetRuneAt(_pos) : new Rune('\n')) : extra && Match(Scanners.EntityRegex()) is > 0 and var entityLength ? GetFirstRune(HtmlEntities.Decode(_text.Substring(_pos, entityLength))) : GetRuneAt(_pos);
         var afterIsWhitespace = Scanners.IsUnicodeWhitespace(after);
         var afterIsPunctuation = Scanners.IsUnicodePunctuation(after) && !(extra && IsPunctuationException(after));
         var beforeIsWhitespace = Scanners.IsUnicodeWhitespace(before);
@@ -951,6 +1687,13 @@ internal sealed class InlineParser
             return false;
         }
 
+        // Markdig skips the line ending after them, so that attributes on their own line are for the text after them, unless the
+        // paragraph has a column delimiter that is not in a delimiter of emphasis or a bracket: it ends a row
+        if (HasPipeForMarkdig() && _text[end - 1] == '\n')
+        {
+            end--;
+        }
+
         // The text before attributes that end the text, and before the attributes before them, ends with no whitespace
         var afterText = false;
         if (_text.AsSpan(end, _end - end).IndexOfAnyExcept(" \t\n\v\f\r") < 0)
@@ -987,6 +1730,13 @@ internal sealed class InlineParser
         {
             // The whitespace before them was text: they are for the block
             first.Value = 2;
+        }
+
+        // Markdig gives the attributes after a column delimiter of a table to the delimiter, which is then text, and the ones at the
+        // start of a row to its line break: they are for no element
+        if (attributes.FirstChild is { } attributesToken && (_scanningPipeTable ? _root.LastChild is { Kind: SyntaxKind.PipeToken } pipe && pipe.End == _pos : _pipeTableCell && _pos == _cellStart && _pos > 0 && _text[_pos - 1] is '|' or '\n'))
+        {
+            attributesToken.Value = 1;
         }
 
         _root.Append(attributes);
@@ -1139,7 +1889,7 @@ internal sealed class InlineParser
         var afterIsWhitespace = true;
         var afterIsPunctuation = true;
         var afterIsException = false;
-        if (end < _end)
+        if (end < _lookaheadEnd)
         {
             var after = GetRuneAt(end);
             afterIsWhitespace = Scanners.IsUnicodeWhitespace(after);
@@ -1392,6 +2142,7 @@ internal sealed class InlineParser
         if (!opener.Active)
         {
             RemoveBracket();
+            PromotePipesOfBracket(opener);
             AppendCloseBracketOrEmoji(closeStart);
             return;
         }
@@ -1491,6 +2242,7 @@ internal sealed class InlineParser
         if (!matched)
         {
             RemoveBracket();
+            PromotePipesOfBracket(opener);
             AppendCloseBracketOrEmoji(closeStart);
             return;
         }
@@ -1506,6 +2258,11 @@ internal sealed class InlineParser
         }
 
         _root.Append(link);
+        if (_table is not null)
+        {
+            RemovePipesOfLink(link);
+        }
+
         ProcessEmphasis(opener.PreviousDelimiter);
         RemoveBracket();
 

@@ -420,11 +420,33 @@ Assert.Equal("<figure>\n<p><img src=\"logo.png\" alt=\"Logo\" /></p>\n<figcaptio
 ```
 <!-- endref -->
 
+- [PipeTables](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.PipeTables): the pipe tables of Markdig,
+  which replace the [tables of GFM](#github-flavored-markdown). The lines of a paragraph that have a pipe are a table when
+  the second one is a delimiter row: a pipe or a line break ends a cell, so the rows can have no pipe around them, and
+  the cells of the delimiter row can be empty. The pipes of a code span, of a link or of HTML are text, and a line without
+  a pipe ends the table: the lines before and after the table are paragraphs. The table has as many columns as its longest
+  row has cells, and a column after the last cell of the delimiter row has its alignment.
+  [MarkdownTableSyntax.IsPipeTable](cref:Meziantou.Framework.Language.Markdown.MarkdownTableSyntax.IsPipeTable) tells
+  them from the tables of GFM, and the generic attributes of their rows are for the table.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_PipeTables;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables };
+var tree = MarkdownSyntaxTree.ParseText("Fruits:\n| Name | Price |\n|:-----|------:|\n| Apple | 1 | each\n", options);
+var table = tree.GetRoot().Blocks.OfType<MarkdownTableSyntax>().Single();
+
+Assert.True(table.IsPipeTable);
+Assert.Equal([MarkdownTableAlignment.Left, MarkdownTableAlignment.Right], table.Alignments);
+Assert.Equal(["Apple", "1", "each"], table.Rows[0].Cells.Select(cell => cell.GetPlainText()));
+Assert.Equal("<p>Fruits:</p>\n<table>\n<thead>\n<tr>\n<th align=\"left\">Name</th>\n<th align=\"right\">Price</th>\n<th align=\"right\"></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"left\">Apple</td>\n<td align=\"right\">1</td>\n<td align=\"right\">each</td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+```
+<!-- endref -->
+
 [DisableHtml](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.DisableHtml) reads HTML as text: the
 renderer escapes it, and autolinks such as `<https://example.com>` are still links.
 
 ## Limitations of the prototype
 
-- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no grid tables, Markdig pipe tables, media links...
+- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no grid tables, media links...
 - Inserting and removing blocks parses the whole text again.
 - Parsing allocates more and is slower than [Meziantou.Framework.Markdown](../Markdown/01-Introduction.md).

@@ -270,13 +270,16 @@ internal sealed class BlockParser
     // list item marker after the marker of a list item
     private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || (c == ':' && HasExtension(MarkdownExtensions.CustomContainers)) || (c is ':' or '~' && HasExtension(MarkdownExtensions.DefinitionLists)) || (char.IsAsciiLetter(c) && HasExtension(MarkdownExtensions.ListExtras)) || (c == '^' && (HasExtension(MarkdownExtensions.Figures) || HasExtension(MarkdownExtensions.Footers))) || (c == '[' && IsFootnoteContainer(container)) || container.Kind switch
     {
-        SyntaxKind.Paragraph => HasExtension(MarkdownExtensions.Tables) && c is '|' or ':',
+        SyntaxKind.Paragraph => HasGfmTables && c is '|' or ':',
         SyntaxKind.Table => true,
         SyntaxKind.ListItem => HasExtension(MarkdownExtensions.TaskLists) && c == '[' && container == _itemOpenedOnLine,
         _ => false,
     };
 
     private bool HasExtension(MarkdownExtensions extension) => _extensions.HasFlag(extension);
+
+    // The pipe tables of Markdig replace the tables of GFM
+    private bool HasGfmTables => HasExtension(MarkdownExtensions.Tables) && !HasExtension(MarkdownExtensions.PipeTables);
 
     // 0: the line continues the block, 1: it does not, 2: the block takes the whole line
     private int Continue(Block block)
@@ -574,6 +577,14 @@ internal sealed class BlockParser
     {
         var c = Peek(_nextNonspace);
 
+        // A line of dashes, pipes, colons and spaces that has a pipe continues a paragraph, as Markdig reads a delimiter row of a pipe
+        // table, which is then not a list item, the underline of a setext heading or a thematic break. It is a lazy line, unless
+        // it starts an item of a list that it does not continue.
+        if (!_indented && c == '-' && HasExtension(MarkdownExtensions.PipeTables) && (container.Kind == SyntaxKind.Paragraph || (!_allClosed && _tip.Kind == SyntaxKind.Paragraph && !(Scanners.IsSpaceOrTab(Peek(_nextNonspace + 1)) && HasUnmatchedListItem()))) && IsPipeTableDelimiterLine())
+        {
+            return 0;
+        }
+
         // Definition, which Markdig tries first: a marker after a paragraph, whose lines are the terms, or after a definition. In
         // a list item, a blank line after the paragraph is a block of the item for Markdig.
         if (!_indented && c is ':' or '~' && HasExtension(MarkdownExtensions.DefinitionLists) && TryStartDefinition(container))
@@ -754,7 +765,7 @@ internal sealed class BlockParser
         }
 
         // Table: a delimiter row under the last line of a paragraph, which is the header row
-        if (HasExtension(MarkdownExtensions.Tables) && container.Kind == SyntaxKind.Paragraph && !container.TableVisited && TryStartTable(container))
+        if (HasGfmTables && container.Kind == SyntaxKind.Paragraph && !container.TableVisited && TryStartTable(container))
         {
             return 2;
         }
@@ -884,6 +895,37 @@ internal sealed class BlockParser
         }
 
         return position < _lineEnd;
+    }
+
+    private bool HasUnmatchedListItem()
+    {
+        for (var block = _oldTip; block != _lastMatchedContainer && block is not null; block = block.Parent)
+        {
+            if (block.Kind == SyntaxKind.ListItem)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsPipeTableDelimiterLine()
+    {
+        var hasPipe = false;
+        for (var i = _nextNonspace; i < _lineEnd; i++)
+        {
+            switch (_text[i])
+            {
+                case '|':
+                    hasPipe = true;
+                    break;
+                case not (' ' or '-' or ':'):
+                    return false;
+            }
+        }
+
+        return hasPipe;
     }
 
     private bool TryStartTable(Block paragraph)
@@ -1652,6 +1694,10 @@ internal sealed class BlockParser
                     output.Add(node);
                     _alertParagraph = null;
                 }
+                else if (block.Kind == SyntaxKind.Paragraph && !block.IsEmpty && HasExtension(MarkdownExtensions.PipeTables) && block.Subject!.Text.AsSpan(block.ContentStart).Contains('|'))
+                {
+                    ConvertPipeTables(block.Subject, block.ContentStart, output);
+                }
                 else if (block.Kind == SyntaxKind.SetextHeading || !block.IsEmpty)
                 {
                     var node = new BuildNode(block.Kind);
@@ -1825,6 +1871,130 @@ internal sealed class BlockParser
         if (tokens is not null)
         {
             node.Children.AddRange(tokens);
+        }
+    }
+
+    // A paragraph whose lines have pipe tables: the lines before a table are a paragraph, and the lines after it are a paragraph,
+    // which can have a table, as in Markdig
+    private void ConvertPipeTables(Subject subject, int start, List<BuildElement> output)
+    {
+        var node = new BuildNode(SyntaxKind.Paragraph);
+        while (_inlineParser.ScanPipeTable(subject, start, node.Children) is { } scan)
+        {
+            _inlineParser.PipeTableQuotes = scan.Quotes;
+            try
+            {
+                if (!PipeTableScanner.IsWhitespace(subject.Text, start, scan.LeadingEnd))
+                {
+                    var paragraph = new BuildNode(SyntaxKind.Paragraph);
+                    _inlineParser.ParseBeforePipeTable(subject, start, scan.LeadingEnd, scan.SplitLineBreak, paragraph.Children);
+                    output.Add(paragraph);
+                }
+
+                output.Add(ConvertPipeTable(subject, scan));
+            }
+            finally
+            {
+                _inlineParser.PipeTableQuotes = null;
+            }
+
+            if (scan.TrailingStart < 0 || PipeTableScanner.IsWhitespace(subject.Text, scan.TrailingStart, subject.Length))
+            {
+                return;
+            }
+
+            start = scan.TrailingStart;
+        }
+
+        output.Add(node);
+    }
+
+    private BuildNode ConvertPipeTable(Subject subject, PipeTableScan scan)
+    {
+        var node = new BuildNode(SyntaxKind.PipeTable, scan.Rows.Count);
+        var elements = new List<(int Start, int End, int Kind)>();
+        for (var i = 0; i < scan.Rows.Count; i++)
+        {
+            var row = scan.Rows[i];
+            var rowNode = new BuildNode(i switch
+            {
+                0 => SyntaxKind.TableHeaderRow,
+                1 => SyntaxKind.TableDelimiterRow,
+                _ => SyntaxKind.TableRow,
+            }, row.Pipes.Count + row.Cells.Count);
+
+            // The pipes (0), the cells (1) and the generic attributes (2), in the order of the text
+            elements.Clear();
+            elements.AddRange(row.Pipes.Select(pipe => (pipe, pipe + 1, 0)));
+            elements.AddRange(row.Cells.Select(cell => (cell.Start, cell.End, 1)));
+            elements.AddRange(row.Attributes.Select(attributes => (attributes.Start, attributes.End, 2)));
+            elements.Sort();
+            var position = row.Start;
+            foreach (var (start, end, kind) in elements)
+            {
+                AddText(subject, rowNode, position, start);
+                position = Math.Max(position, end);
+                switch (kind)
+                {
+                    case 0:
+                        rowNode.AddToken(SyntaxKind.PipeToken, subject.ToSourceStart(start), subject.ToSourceEnd(end));
+                        break;
+                    case 1 when i == 1:
+                        rowNode.AddToken(SyntaxKind.TableDelimiterToken, subject.ToSourceStart(start), subject.ToSourceEnd(end));
+                        break;
+                    case 1:
+                        var cell = new BuildNode(SyntaxKind.TableCell);
+                        if (end > start)
+                        {
+                            _inlineParser.ParseCell(subject, start, end, cell.Children);
+                        }
+
+                        rowNode.Children.Add(cell);
+                        break;
+                    default:
+                        _inlineParser.ParseCell(subject, start, end, rowNode.Children);
+                        break;
+                }
+            }
+
+            AddText(subject, rowNode, position, row.End);
+            node.Children.Add(rowNode);
+        }
+
+        return node;
+
+        // The text of the row that is in no cell, such as the Unicode whitespace that Markdig trims around a cell, is a text
+        // token of the row, which the renderer does not write
+        static void AddText(Subject subject, BuildNode row, int start, int end)
+        {
+            var text = subject.Text;
+            var lineStart = start;
+            for (var i = start; i <= end; i++)
+            {
+                if (i < end && text[i] != '\n')
+                {
+                    continue;
+                }
+
+                var tokenStart = lineStart;
+                var tokenEnd = i;
+                while (tokenStart < tokenEnd && text[tokenStart] is ' ' or '\t' or '\v' or '\f' or '\r')
+                {
+                    tokenStart++;
+                }
+
+                while (tokenEnd > tokenStart && text[tokenEnd - 1] is ' ' or '\t' or '\v' or '\f' or '\r')
+                {
+                    tokenEnd--;
+                }
+
+                if (tokenEnd > tokenStart)
+                {
+                    row.AddToken(SyntaxKind.TextToken, subject.ToSourceStart(tokenStart), subject.ToSourceEnd(tokenEnd));
+                }
+
+                lineStart = i + 1;
+            }
         }
     }
 

@@ -85,6 +85,9 @@ public enum MarkdownExtensions
     /// <summary>Citations: text between <c>""</c>, rendered as <c>&lt;cite&gt;</c>.</summary>
     Citations = 1 << 25,
 
+    /// <summary>The pipe tables of Markdig: the lines of a paragraph that have a pipe, whose second line is a delimiter row, are a table, which has as many columns as its longest row. It replaces <see cref="Tables"/>, whose rules are the ones of GitHub Flavored Markdown.</summary>
+    PipeTables = 1 << 26,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

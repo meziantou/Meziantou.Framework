@@ -837,6 +837,73 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void ParsesPipeTables()
+    {
+        #region MarkdownSyntaxTree_PipeTables
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables };
+        var tree = MarkdownSyntaxTree.ParseText("Fruits:\n| Name | Price |\n|:-----|------:|\n| Apple | 1 | each\n", options);
+        var table = tree.GetRoot().Blocks.OfType<MarkdownTableSyntax>().Single();
+
+        Assert.True(table.IsPipeTable);
+        Assert.Equal([MarkdownTableAlignment.Left, MarkdownTableAlignment.Right], table.Alignments);
+        Assert.Equal(["Apple", "1", "each"], table.Rows[0].Cells.Select(cell => cell.GetPlainText()));
+        Assert.Equal("<p>Fruits:</p>\n<table>\n<thead>\n<tr>\n<th align=\"left\">Name</th>\n<th align=\"right\">Price</th>\n<th align=\"right\"></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"left\">Apple</td>\n<td align=\"right\">1</td>\n<td align=\"right\">each</td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("a | b\n-- | -:\n0 | 1 | 2\n", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th align=\"right\">b</th>\n<th align=\"right\"></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>0</td>\n<td align=\"right\">1</td>\n<td align=\"right\">2</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("Text\n| A |\n|---|\n| B |\nafter\n", "<p>Text</p>\n<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>B</td>\n</tr>\n</tbody>\n</table>\n<p>after</p>\n")]
+    [InlineData("a | b\n- | -\n`c|d` | [e|f](/u)\n", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>c|d</code></td>\n<td><a href=\"/u\">e|f</a></td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("| A | B | C |\n||:---|---:|\n| 1 | 2 | 3 |\n", "<table>\n<thead>\n<tr>\n<th>A</th>\n<th align=\"left\">B</th>\n<th align=\"right\">C</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>1</td>\n<td align=\"left\">2</td>\n<td align=\"right\">3</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("a | b\n-|-\n0 | `|`\n", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>0</td>\n<td><code>|</code></td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("a |  `\n | ` \n", "<p>a |  `\n| `</p>\n")]
+    [InlineData("| a\n| --\n", "<p>| a\n| --</p>\n")]
+    [InlineData("a|b\n|\\-|-\n", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n")]
+    [InlineData("|||\n|||\n", "<p>|||\n|||</p>\n")]
+    [InlineData("> a | b\n-|-\n", "<blockquote>\n<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n</blockquote>\n")]
+    [InlineData("- a | b\n- | -\n", "<ul>\n<li>a | b</li>\n<li>| -</li>\n</ul>\n")]
+    [InlineData("a | b\n\\- | -\n", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n")]
+    public void RendersPipeTables(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Theory]
+    [InlineData("a | b{.x}\n-|-\n", "<table class=\"x\">\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n")]
+    [InlineData("a | b\n-|-{.x}\nc|d\n", "<table class=\"x\">\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("| a |{.c}\n|---|\n| b |\n", "<table>\n<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>b</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("|{.center}\nA paragraph\n", "<p>|\nA paragraph</p>\n")]
+    public void RendersTheGenericAttributesOfPipeTables(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables | MarkdownExtensions.GenericAttributes });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
+    public void PipeTableHasItsRowsAndAlignments()
+    {
+        // The pipe tables replace the tables of GFM, and a cell of the delimiter row can be empty
+        var table = Assert.IsType<MarkdownTableSyntax>(MarkdownSyntaxTree.ParseText("| a | b | c |\n| :-: | | -- |\n| `x\\|y` |\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Tables | MarkdownExtensions.PipeTables }).GetRoot().Blocks.Single());
+
+        Assert.True(table.IsPipeTable);
+        Assert.Equal(SyntaxKind.PipeTable, table.Kind());
+        Assert.Equal([MarkdownTableAlignment.Center, MarkdownTableAlignment.None, MarkdownTableAlignment.None], table.Alignments);
+        Assert.Equal(2, table.DelimiterRow.DelimiterTokens.Count);
+        Assert.Equal(4, table.DelimiterRow.PipeTokens.Count);
+        Assert.Equal(["a", "b", "c"], table.HeaderRow.Cells.Select(cell => cell.GetPlainText()));
+
+        // A backslash escapes a pipe as anywhere else
+        Assert.Equal("x\\|y", table.Rows.Single().DescendantNodes().OfType<MarkdownCodeSpanSyntax>().Single().Code);
+        Assert.False(Assert.IsType<MarkdownTableSyntax>(MarkdownSyntaxTree.ParseText("| a |\n|---|\n", MarkdownParseOptions.GitHubFlavored).GetRoot().Blocks.Single()).IsPipeTable);
+    }
+
+    [Fact]
     public void AlertHasItsKind()
     {
         var alert = Assert.IsType<MarkdownAlertSyntax>(MarkdownSyntaxTree.ParseText("> [!Warning]  \n> Be *careful*\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts }).GetRoot().Blocks.Single());

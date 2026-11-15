@@ -43,6 +43,7 @@ public sealed class ExtensionSpecTests
     private static readonly Dictionary<string, Func<MarkdownParseOptions, MarkdownParseOptions>> SupportedExtensions = new(StringComparer.Ordinal)
     {
         ["gfm-pipetables"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.Tables },
+        ["pipetables"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.PipeTables },
         ["tasklists"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.TaskLists },
         ["hardlinebreak"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.HardLineBreaks },
         ["nohtml"] = options => options with { DisableHtml = true },

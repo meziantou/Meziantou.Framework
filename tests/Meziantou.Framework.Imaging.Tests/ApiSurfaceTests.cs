@@ -351,11 +351,24 @@ public sealed class ApiSurfaceTests
     }
 
     [Fact]
+    public void DngAdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(19, (int)ImageFormat.Dng);
+        Assert.Equal(19, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
+
+        var type = typeof(DngRawImage);
+        Assert.Equal("Meziantou.Framework.Imaging", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && typeof(IDisposable).IsAssignableFrom(type));
+        Assert.True(typeof(DngProperties).IsPublic && typeof(DngProperties).IsSealed);
+        Assert.Equal(typeof(DngProperties), typeof(ImageMetadata).GetProperty(nameof(ImageMetadata.DngProperties))!.PropertyType);
+    }
+
+    [Fact]
     public void RadianceAdditionsHaveTheirPublicShape()
     {
         // A new format is appended: the values of the existing members never change
         Assert.Equal(18, (int)ImageFormat.Radiance);
-        Assert.Equal(18, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
 
         var type = typeof(RadianceEncoder);
         Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);

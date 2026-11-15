@@ -208,6 +208,52 @@ public sealed class DngDecoderTests
     }
 
     [Fact]
+    public void LossyJpegLinearRawDataIsTheSamplesOfItsDatastream()
+    {
+        // DNG 1.4 compresses 8-bit linear raw data with baseline JPEG (compression 34892): the samples are the decoded
+        // colors of the datastream, which codes three samples as JFIF does
+        using var source = new Image<Rgb24>(32, 16);
+        for (var y = 0; y < 16; y++)
+        {
+            for (var x = 0; x < 32; x++)
+            {
+                source.Frames[0][x, y] = new Rgb24((byte)(40 + (x * 5)), (byte)(120 - (y * 2)), (byte)(200 - (x * 4) - (y * 3)));
+            }
+        }
+
+        using var jpeg = new MemoryStream();
+        source.Save(jpeg, new JpegEncoder { Quality = 95 });
+        var builder = new DngFileBuilder
+        {
+            Width = 32,
+            Height = 16,
+            Photometric = 34892,
+            SamplesPerPixel = 3,
+            BitsPerSample = 8,
+            Samples = new double[32 * 16 * 3],
+            Compression = 34892,
+            EncodedBlocks = [jpeg.ToArray()],
+            WhiteLevel = [255, 255, 255],
+            ColorMatrix1 = DngScenes.CameraMatrixD65,
+        };
+
+        using var decoded = Image.Load<Rgb24>(jpeg.ToArray());
+        var expected = new Rgb24[32 * 16];
+        decoded.Frames[0].CopyPixelDataTo(expected);
+        using var raw = DngRawImage.Load(builder.Build());
+        var row = new float[32 * 3];
+        for (var y = 0; y < 16; y++)
+        {
+            raw.CopyStoredRow(y, row);
+            for (var x = 0; x < 32; x++)
+            {
+                var pixel = expected[(y * 32) + x];
+                Assert.Equal((pixel.R, pixel.G, pixel.B), ((byte)row[x * 3], (byte)row[(x * 3) + 1], (byte)row[(x * 3) + 2]));
+            }
+        }
+    }
+
+    [Fact]
     public void ADngFileIsNotACollection()
     {
         var error = Assert.Throws<UnsupportedImageFeatureException>(() => ImageCollection.Load(DngScenes.Get("bayer-rggb").Build()));

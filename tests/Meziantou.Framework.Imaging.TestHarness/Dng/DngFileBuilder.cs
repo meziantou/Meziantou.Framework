@@ -57,6 +57,12 @@ public sealed class DngFileBuilder
 
     public int Predictor { get; init; } = 1;
 
+    /// <summary>
+    /// Gets the blocks of the raw image as the file stores them (compressed by the caller, with <see cref="Compression"/>),
+    /// or <see langword="null"/> to encode <see cref="Samples"/>.
+    /// </summary>
+    public IReadOnlyList<byte[]>? EncodedBlocks { get; init; }
+
     /// <summary>Gets the size of the tiles, or <see langword="null"/> for strips.</summary>
     public (int Width, int Height)? Tile { get; init; }
 
@@ -162,7 +168,7 @@ public sealed class DngFileBuilder
             throw new InvalidOperationException("The number of samples does not match the size of the image.");
 
         using var writer = new TiffWriter(IsBigEndian);
-        var blocks = EncodeBlocks();
+        var blocks = EncodedBlocks is { } encoded ? [.. encoded] : EncodeBlocks();
         var raw = new List<DngTag>
         {
             DngTag.Scalar(254, 0),

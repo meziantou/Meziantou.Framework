@@ -4,13 +4,13 @@ namespace Meziantou.Framework.Imaging.TestHarness.Dng;
 
 /// <summary>
 /// The EXIF profile the library documents for a DNG file, assembled independently from the directories of the file
-/// (<see cref="TiffFile"/>): a little-endian TIFF structure whose IFD 0 holds the description, make, model, software, date,
+/// (<see cref="TiffFile"/>): a little-endian TIFF structure whose IFD 0 holds the description, make, model, orientation, software, date,
 /// artist and copyright of IFD 0 of the file and a pointer to a copy of its EXIF IFD (without the GPS, interoperability
 /// and EXIF pointers, nor the values of 64-bit and IFD types), each directory sorted by tag and followed by its values.
 /// </summary>
 public static class DngExifReference
 {
-    private static readonly ushort[] Ifd0Tags = [270, 271, 272, 305, 306, 315, 33432];
+    private static readonly ushort[] Ifd0Tags = [270, 271, 272, 274, 305, 306, 315, 33432];
 
     /// <summary>Builds the EXIF profile, or returns <see langword="null"/> when IFD 0 has no EXIF IFD.</summary>
     public static byte[]? Build(byte[] data)

@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Builds the EXIF profile of a DNG file: the EXIF IFD that IFD 0 points to (DNG prefers that location to the TIFF-EP
-/// tags of IFD 0, chapter 2) and the tags of IFD 0 that EXIF keeps there (make, model, software, date, artist,
+/// tags of IFD 0, chapter 2) and the tags of IFD 0 that EXIF keeps there (make, model, orientation, software, date, artist,
 /// copyright, description), copied into a little-endian TIFF structure of their own, as the EXIF data of other formats is.
 /// </summary>
 /// <remarks>
@@ -17,7 +17,7 @@ internal static class DngExifExtractor
     private const ushort InteroperabilityIfdTag = 40965;
     private const ushort GpsIfdTag = 34853;
 
-    private static readonly ushort[] Ifd0Tags = [TiffFormat.ImageDescriptionTag, DngFormat.MakeTag, DngFormat.ModelTag, TiffFormat.SoftwareTag, 306, 315, 33432];
+    private static readonly ushort[] Ifd0Tags = [TiffFormat.ImageDescriptionTag, DngFormat.MakeTag, DngFormat.ModelTag, TiffFormat.OrientationTag, TiffFormat.SoftwareTag, 306, 315, 33432];
 
     /// <summary>Extracts the EXIF profile, or returns <see langword="null"/>.</summary>
     /// <param name="document">The DNG file.</param>

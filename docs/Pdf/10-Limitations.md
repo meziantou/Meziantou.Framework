@@ -73,5 +73,6 @@ description: What the library does not do, so that you can plan around it.
 - The halftones are ignored unless the options ask for them. They are then applied to the red, green and blue
   components of the image, to fully opaque objects only; the screens of the other colorants, `AccurateScreens` and the
   named device halftones are not used (see [Halftones](06-Rendering/05-Halftones.md)).
-- The appearances generated for the annotations that have none are simple: the line endings, the rich text and the
-  comb fields are not drawn.
+- The appearances generated for the annotations that have none are simple: their text is not wrapped, a rich text value
+  is drawn with the standard 14 fonts, and the alignment of a text is estimated without the metrics of its font (see
+  [Layers and annotations](06-Rendering/04-LayersAndAnnotations.md)).

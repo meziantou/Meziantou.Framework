@@ -5,6 +5,7 @@ using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Rendering;
+using Meziantou.Framework.Pdf.Rendering.Graphics;
 using Meziantou.Framework.Pdf.TestHarness;
 
 namespace Meziantou.Framework.Pdf.Tests;
@@ -1132,6 +1133,129 @@ public sealed class PdfRendererTests
             ]);
 
         Assert.True(CountPixels(image, pixel => pixel.R > 200 && pixel.G < 64) > 100);
+    }
+
+    [Theory]
+    [InlineData("ClosedArrow", true)]
+    [InlineData("Square", true)]
+    [InlineData("Circle", true)]
+    [InlineData("Diamond", true)]
+    [InlineData("RClosedArrow", true)]
+    [InlineData("OpenArrow", false)]
+    [InlineData("ROpenArrow", false)]
+    [InlineData("Butt", false)]
+    [InlineData("Slash", false)]
+    [InlineData("None", false)]
+    public void LineEndingsAreDrawn(string ending, bool isFilled)
+    {
+        // A horizontal line from (10, 50) to (90, 50), 2 wide: its endings are 10 points; the closed ones are filled in red
+        using var image = RenderHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            objects: "<< /Type /Annot /Subtype /Line /Rect [0 0 100 100] /L [10 50 90 50] /LE [/None /" + ending + "] /C [0 0 1] /IC [1 0 0] /BS << /W 2 >> >>");
+
+        // The line itself, and its other end, which has no ending
+        AssertColor(Pixel(image, 50, 50), 0, 0, 255, tolerance: 60);
+        AssertColor(Pixel(image, 10, 54), 255, 255, 255);
+
+        var drawn = 0;
+        var red = 0;
+        for (var x = 78; x <= 100; x++)
+        {
+            for (var y = 42; y <= 58; y++)
+            {
+                // The line is blue: red comes from the fill of the ending; outside of the line, anything comes from the ending
+                var pixel = Pixel(image, Math.Min(x, 99), y);
+                red += pixel.R > 200 && pixel.G < 80 && pixel.B < 80 ? 1 : 0;
+                if (y is < 48 or > 52)
+                {
+                    drawn += pixel.R < 200 || pixel.G < 200 ? 1 : 0;
+                }
+            }
+        }
+
+        Assert.Equal(ending != "None", drawn > 0);
+        Assert.Equal(isFilled, red > 0);
+    }
+
+    [Fact]
+    public void PolylineEndingsAreDrawnAtTheFirstAndLastVertices()
+    {
+        using var image = RenderHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            objects: "<< /Type /Annot /Subtype /PolyLine /Rect [0 0 100 100] /Vertices [10 20 50 80 90 20] /LE [/Square /Square] /C [0 0 1] /IC [1 0 0] >>");
+
+        AssertColor(Pixel(image, 10, 20), 255, 0, 0, tolerance: 60);
+        AssertColor(Pixel(image, 90, 20), 255, 0, 0, tolerance: 60);
+    }
+
+    [Fact]
+    public void CombFieldsHaveOneCharacterPerCell()
+    {
+        // Four cells of 25 points: each character is centered in its cell
+        var document = OpenHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            catalogEntries: "/AcroForm << /Fields [5 0 R] /DR << /Font << /Helv 6 0 R >> >> >>",
+            objects:
+            [
+                "<< /Type /Annot /Subtype /Widget /FT /Tx /Ff 16777216 /MaxLen 4 /T (Code) /V (ABCDEF) /DA (/Helv 20 Tf 0 g) /Rect [0 0 100 100] >>",
+                "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+            ]);
+
+        var appearance = AppearanceGenerator.Generate(document.Pages[0], document.Pages[0].Annotations[0].Dictionary, new PdfRectangle(0, 0, 100, 100))!;
+        var content = Encoding.Latin1.GetString(appearance.GetDecodedData());
+
+        Assert.Contains("1 0 0 1 7.5 44.4 Tm (A) Tj 1 0 0 1 32.5 44.4 Tm (B) Tj 1 0 0 1 57.5 44.4 Tm (C) Tj 1 0 0 1 82.5 44.4 Tm (D) Tj", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("(E)", content, StringComparison.Ordinal);
+        using var image = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+        for (var cell = 0; cell < 4; cell++)
+        {
+            Assert.True(CountPixels(image, cell * 25, 0, (cell + 1) * 25, 100, pixel => pixel.R < 128) > 10, $"cell {cell}");
+        }
+    }
+
+    [Fact]
+    public void RichTextValuesAreDrawnWithTheirStyles()
+    {
+        var document = OpenHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            catalogEntries: "/AcroForm << /Fields [5 0 R] /DR << /Font << /Helv 6 0 R >> >> >>",
+            objects:
+            [
+                "<< /Type /Annot /Subtype /Widget /FT /Tx /Ff 33558528 /T (Notes) /V (plain) /DA (/Helv 10 Tf 0 g) /DS (font-size:10pt) /Rect [0 0 200 100] /RV ("
+                    + "<?xml version=\"1.0\"?><body xmlns=\"http://www.w3.org/1999/xhtml\"><p>Hello <b>bold</b> <span style=\"color:#FF0000;font-style:italic\">red</span></p>"
+                    + "<p style=\"font:bold 14pt Times\">Title</p></body>) >>",
+                "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+            ]);
+
+        var appearance = AppearanceGenerator.Generate(document.Pages[0], document.Pages[0].Annotations[0].Dictionary, new PdfRectangle(0, 0, 200, 100))!;
+        var content = Encoding.Latin1.GetString(appearance.GetDecodedData());
+        var fonts = appearance.Dictionary.Get<PdfDictionary>(PdfNames.Resources)!.Get<PdfDictionary>(PdfNames.Font)!;
+
+        Assert.Equal(["Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Times-Bold"], fonts.Select(entry => ((PdfDictionary)entry.Value).GetName(PdfNames.BaseFont)!.Value));
+        Assert.Contains("0 0 0 rg /R0 10 Tf (Hello ) Tj 0 0 0 rg /R1 10 Tf (bold) Tj", content, StringComparison.Ordinal);
+        Assert.Contains("1 0 0 rg /R2 10 Tf (red) Tj", content, StringComparison.Ordinal);
+        Assert.Contains("/R3 14 Tf (Title) Tj", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("(plain)", content, StringComparison.Ordinal);
+
+        using var image = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+        Assert.True(CountPixels(image, pixel => pixel.R > 200 && pixel.G < 64) > 5);
+    }
+
+    [Fact]
+    public void InvalidRichTextValuesAreDrawnAsText()
+    {
+        var document = OpenHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            objects: "<< /Type /Annot /Subtype /Widget /FT /Tx /Ff 33554432 /T (Notes) /V (plain) /DA (/Helv 10 Tf 0 g) /Rect [0 0 200 100] /RV (<body><p>unclosed</body>) >>");
+
+        var appearance = AppearanceGenerator.Generate(document.Pages[0], document.Pages[0].Annotations[0].Dictionary, new PdfRectangle(0, 0, 200, 100))!;
+
+        Assert.Contains("(plain) Tj", Encoding.Latin1.GetString(appearance.GetDecodedData()), StringComparison.Ordinal);
     }
 
     [Fact]

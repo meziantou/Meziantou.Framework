@@ -57,5 +57,12 @@ An annotation without appearance gets one, generated from its entries: squares, 
 ink, highlights (multiplied with the page), underlines, strikeouts and squiggly underlines, and the widgets of text,
 choice and check box fields (their background and border, and their value with the font and color of their default
 appearance). When the interactive form asks for new appearances (`/NeedAppearances`), the text and choice fields get a
-generated appearance even if they have one. The generated appearances are simple: the line endings, the rich text and the
-comb fields are not drawn.
+generated appearance even if they have one.
+
+- The lines and polylines get their line endings (`/LE`): squares, circles, diamonds, open and closed arrows, reversed
+  arrows, butts and slashes, the closed ones filled with the interior color.
+- The comb text fields show one character centered in each of their cells.
+- The text fields with a rich text value (`/RV`) show its paragraphs, with the bold, italic, size, color and family of
+  their styles (`b`, `i`, `span` and `p` elements, and their `style` attributes), in the standard 14 fonts.
+- The generated appearances remain simple: the text is not wrapped to the width of the field, and its alignment is
+  estimated without the metrics of the font.

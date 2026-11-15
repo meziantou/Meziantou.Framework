@@ -478,7 +478,8 @@ image.Save(png, new Imaging.Formats.PngEncoder());
 
 The image is the crop box of the page, rotated as the page is shown, on a white background (`PdfRenderOptions.Background`,
 `null` for a transparent one). `PdfRenderOptions.RenderAnnotations` draws the appearances of the annotations, and
-generates one for the annotations and the form fields that have none. `PdfRenderOptions.Region` renders part of the
+generates one for the annotations and the form fields that have none (with the line endings of lines and
+polylines, the cells of comb fields and the styles of rich text values). `PdfRenderOptions.Region` renders part of the
 page, `Width` and `Height` fit it to a size in pixels instead of `Dpi`, and `PathAntialiasing` and `TextAntialiasing`
 turn the antialiasing off. `PdfRenderOptions.Intent` renders for viewing, printing or exporting (the annotations with
 the Print flag, the layers whose usage is for printing), `OptionalContentConfiguration` selects a configuration of the

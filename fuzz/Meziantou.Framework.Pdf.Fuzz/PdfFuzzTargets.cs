@@ -37,12 +37,25 @@ public static class PdfFuzzTargets
         "/OCProperties", "/OC", "/OCGs", "/D", "/OFF", "/BDC", "/EMC", "/Length", "/Filter", "/FlateDecode",
     ];
 
+    private static readonly string[] AppearanceTokens =
+    [
+        "<body>", "</body>", "<p>", "</p>", "<b>", "</b>", "<i>", "</i>", "<span style=\"", "</span>", "<br/>", "<div>", "</div>",
+        "font-size:", "font-weight:bold", "font-style:italic", "font-family:", "font:", "color:#", "color:rgb(", "text-align:center", "text-align:right",
+        "pt", "px", ";", "Times", "Courier", "serif", "monospace", "&amp;", "<![CDATA[", "<?xml version=\"1.0\"?>",
+        "None", "Square", "Circle", "Diamond", "OpenArrow", "ClosedArrow", "Butt", "ROpenArrow", "RClosedArrow", "Slash",
+    ];
+
+    private static readonly string[] LineEndings = ["None", "Square", "Circle", "Diamond", "OpenArrow", "ClosedArrow", "Butt", "ROpenArrow", "RClosedArrow", "Slash"];
+
+    private static readonly Rendering.PdfRenderOptions RenderOptions = new() { Dpi = 18, MaxOperations = 200_000, UseSystemFonts = false };
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("pdf-fdf", Fdf) { Seeds = () => GetSeeds(".fdf"), Dictionary = FdfTokens },
         new("pdf-xfdf", Xfdf) { Seeds = () => GetSeeds(".xfdf"), Dictionary = XfdfTokens },
         new("pdf-round-trip", RoundTrip) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-optimizer", Optimizer) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-annotation-appearances", AnnotationAppearances) { Seeds = GetAppearanceSeeds, Dictionary = AppearanceTokens },
     ];
 
     /// <summary>
@@ -207,6 +220,72 @@ public static class PdfFuzzTargets
 
         FuzzAssert.True(sanitized.Output.Span.StartsWith(bytes), "The sanitizer did not keep the bytes of the file");
         FuzzAssert.False(PdfSaveSanitizer.Sanitize(sanitized.Output, ReadOptions).HasChanges, "The output of the sanitizer still needs repairs");
+    }
+
+    /// <summary>
+    /// The input is two option bytes (the flags of a text field, the line endings), then a rich text value. The page has a
+    /// text field whose value is drawn from it (rich text, comb or plain), and lines and polylines with endings, without
+    /// appearances: the renderer generates them without throwing.
+    /// </summary>
+    private static void AnnotationAppearances(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 2)
+            return;
+
+        var options = data[0];
+        var endings = data[1];
+        var text = FuzzText.Decode(data[2..]);
+        var flags = ((options & 1) != 0 ? 1 << 25 : 0) | ((options & 2) != 0 ? 1 << 24 : 0) | ((options & 4) != 0 ? 1 << 12 : 0);
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        var annotations = new Objects.PdfArray();
+        page.Dictionary[Objects.PdfName.Create("Annots")] = annotations;
+        var widget = new Objects.PdfDictionary
+        {
+            [Objects.PdfName.Create("Type")] = Objects.PdfName.Create("Annot"),
+            [Objects.PdfName.Create("Subtype")] = Objects.PdfName.Create("Widget"),
+            [Objects.PdfName.Create("FT")] = Objects.PdfName.Create("Tx"),
+            [Objects.PdfName.Create("T")] = Objects.PdfString.FromText("field"),
+            [Objects.PdfName.Create("Ff")] = Objects.PdfInteger.Get(flags),
+            [Objects.PdfName.Create("MaxLen")] = Objects.PdfInteger.Get((options >> 3) + 1),
+            [Objects.PdfName.Create("V")] = Objects.PdfString.FromText(text),
+            [Objects.PdfName.Create("RV")] = Objects.PdfString.FromText(text),
+            [Objects.PdfName.Create("DS")] = Objects.PdfString.FromText("font-size:9pt"),
+            [Objects.PdfName.Create("DA")] = Objects.PdfString.FromText("/Helv 0 Tf 0 g"),
+            [Objects.PdfName.Create("Rect")] = Objects.PdfArray.FromNumbers(10, 100, 190, 190),
+        };
+        annotations.Add(document.Objects.Add(widget));
+        var lineEndings = new Objects.PdfArray(Objects.PdfName.Create(LineEndings[endings % 10]), Objects.PdfName.Create(LineEndings[endings / 10 % 10]));
+        foreach (var (subtype, key, points) in new[] { ("Line", "L", new double[] { 20, 20, 180, 80 }), ("PolyLine", "Vertices", new double[] { 20, 90, 100, 20, 100, 20, 180, 90 }) })
+        {
+            annotations.Add(document.Objects.Add(new Objects.PdfDictionary
+            {
+                [Objects.PdfName.Create("Type")] = Objects.PdfName.Create("Annot"),
+                [Objects.PdfName.Create("Subtype")] = Objects.PdfName.Create(subtype),
+                [Objects.PdfName.Create(key)] = Objects.PdfArray.FromNumbers(points),
+                [Objects.PdfName.Create("LE")] = lineEndings,
+                [Objects.PdfName.Create("C")] = Objects.PdfArray.FromNumbers(0, 0, 1),
+                [Objects.PdfName.Create("IC")] = Objects.PdfArray.FromNumbers(1, 0, 0),
+                [Objects.PdfName.Create("Rect")] = Objects.PdfArray.FromNumbers(0, 0, 200, 100),
+            }));
+        }
+
+        try
+        {
+            using var image = Rendering.PdfRenderer.RenderPage(PdfDocument.Open(document.ToByteArray()).Pages[0], RenderOptions);
+            FuzzAssert.Equal(50, image.Width, "The page was not rendered at the resolution of the options");
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetAppearanceSeeds()
+    {
+        yield return FuzzSeed.FromText("rich-text", [1, 12], "<?xml version=\"1.0\"?><body xmlns=\"http://www.w3.org/1999/xhtml\"><p>Hello <b>bold</b> <span style=\"color:#FF0000;font-style:italic\">red</span></p><p style=\"font:bold 14pt Times\">Title</p></body>");
+        yield return FuzzSeed.FromText("rich-text-multiline", [5, 34], "<body><p style=\"text-align:center;font-size:20px\">A<br/>B</p><div style=\"color:rgb(0,128,255);font-family:Courier\">C</div></body>");
+        yield return FuzzSeed.FromText("comb", [2 | (5 << 3), 56], "ABCDEF");
+        yield return FuzzSeed.FromText("plain", [0, 99], "Plain text");
     }
 
     private static IEnumerable<FuzzSeed> GetSeeds(string extension)

@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
@@ -2021,6 +2022,18 @@ internal static class Examples
         return string.Create(
             CultureInfo.InvariantCulture,
             $"{font.FamilyName} {font.SubfamilyName}: {font.GlyphCount} glyphs, ascent {metrics.Ascent:0.##}, descent {metrics.Descent:0.##}, euro sign: {hasEuro}");
+    }
+    #endregion
+
+    /// <summary>A PostScript Type 1 font, with the kerning of its AFM file.</summary>
+    #region Imaging_LoadType1Font
+    public static TextLayout LayOutWithType1Font(string pfbPath, string afmPath, string text)
+    {
+        // Font.Load reads a PFB or a PFA file like any other font file. The widths and the kerning of the font are in a
+        // separate AFM file: LoadType1 adds its kerning pairs to the font
+        var metrics = AfmFontMetrics.Load(File.ReadAllBytes(afmPath));
+        var font = Font.LoadType1(pfbPath, metrics);
+        return TextLayout.Create(text, new TextStyle(font, 24));
     }
     #endregion
 

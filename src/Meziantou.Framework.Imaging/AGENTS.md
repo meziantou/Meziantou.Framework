@@ -3,7 +3,7 @@
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
 progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
-vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
+vector drawing, font files (TrueType, OpenType, WOFF, WOFF2, PostScript Type 1), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
@@ -1376,6 +1376,11 @@ thin public types over its `FontFace`.
   `TextLayout`, the text members of `DrawingCanvas`), `FontExceptionTranslation` turns the exceptions of the font code
   into the four content exceptions with `ImageFormat.Unknown`, as for ICC profiles. An unsupported feature is named
   `"Font: <feature>"`. A new public member that reads a font translates them too.
+- **PostScript Type 1 fonts** are converted to OpenType fonts with CFF outlines by `Meziantou.Framework.Fonts` when
+  they are loaded (`FontLoader.Load` detects them, `FontLoader.LoadType1` takes the metrics of an AFM file): the rest
+  of the library only sees a CFF font. `Font.LoadType1` is the public entry for the AFM file. The oracle of their
+  outlines is FreeType, through MuPDF: `Type1FontInteropTests` embeds the sample font (`FontType1Writer.Sample`) in a
+  PDF file and compares the paths of `mutool draw -F svg -O text=path` with `TextLayout.ToPath`.
 
 ## Text
 
@@ -1428,7 +1433,12 @@ thin public types over its `FontFace`.
 - **Optimal line breaking** (`TextLineBreakStrategy.Optimal`, `FindOptimalBreaks`) is a dynamic program over the
   break opportunities of the rest of a paragraph, from the advances it has before its lines are shaped again; each
   line it plans is checked with the current advances before it is built, and a line that no longer fits plans the
-  rest again (a bounded number of times, then greedy). Greedy breaking stays the default and is not changed by it.
+  rest again (a bounded number of times, then greedy). Its work is bounded too: it counts the characters it measures
+  (`MaxOptimalWorkPerCharacter` per character of the rest of the paragraph, plus `MinOptimalWork`) and returns no plan
+  beyond them, and the rest of the paragraph is broken greedily: without it, a paragraph whose lines hold many break
+  opportunities (a wide layout) was quadratic. Greedy breaking stays the default and is not changed by it. The cost
+  model is documented on `TextLineBreakStrategy.Optimal` and in `docs/Imaging/08-Text/04-TextLayout.md`: change
+  both with it. `imaging-line-breaking` (SharpFuzz) checks it against greedy breaking.
 - **Justification between characters** (`TextLayoutOptions.Justification`) classifies each glyph in `BuildLine`
   (`JustificationClass`, only when it is used) and marks the opportunities in `Finish`
   (`MarkJustificationOpportunities`), in display order: the room goes after the last glyph of a cluster and its marks,

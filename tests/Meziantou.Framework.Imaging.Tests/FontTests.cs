@@ -3949,6 +3949,68 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void ImagingDrawsAType1FontWithTheKerningOfItsAfmFile()
+    {
+        var pfbFile = FontType1Writer.Sample().WritePfb();
+        var afmFile = "StartFontMetrics 4.1\nStartKernData\nStartKernPairs 1\nKPX A O -50\nEndKernPairs\nEndKernData\nEndFontMetrics\n";
+
+        // Font.Load reads a PFB or a PFA file like any other font file. LoadType1 adds the kerning of its AFM file.
+        var metrics = AfmFontMetrics.Parse(afmFile);
+        var font = Font.LoadType1(pfbFile, metrics);
+        var layout = TextLayout.Create("AO", new TextStyle(font, 100));
+
+        // A is 600 units wide and O 700, less 50 for the kerning pair, at 100 pixels per 1000 units
+        Assert.Equal(125, layout.Width);
+
+        Assert.Equal(130, TextLayout.Create("AO", new TextStyle(Font.Load(pfbFile), 100)).Width);
+        Assert.Equal(130, TextLayout.Create("AO", new TextStyle(Font.LoadType1(pfbFile, metrics: null), 100)).Width);
+
+        // The PFA and the PFB files of a font draw the same pixels; the accented character (seac) draws its base and its
+        // accent, the flex its two curves
+        var pfa = Font.Load(FontType1Writer.Sample().WritePfa());
+        Assert.Equal(("Meziantou Type1", FontOutlineKind.Cff), (pfa.FamilyName, pfa.Face.Outlines));
+        Assert.Equal(Render(Font.Load(pfbFile)), Render(pfa));
+        var accented = Render(pfa, "\u00C1");
+        var plain = Render(pfa, "A");
+        Assert.NotEqual(plain, accented);
+        Assert.True(accented.Sum() > plain.Sum());
+
+        // The file of a font, and its errors
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            var path = directory / "font.pfb";
+            File.WriteAllBytes(path, pfbFile);
+            Assert.Equal(125, TextLayout.Create("AO", new TextStyle(Font.LoadType1(path, metrics), 100)).Width);
+            Assert.Throws<ArgumentException>(() => Font.LoadType1("", metrics));
+            var limited = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = pfbFile.Length - 1 } } };
+            Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Font.LoadType1(path, metrics, limited)).Kind);
+            Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Font.LoadType1(pfbFile, metrics, limited)).Kind);
+
+            // The bytes of the file are charged to the live allocations while the font is converted
+            var small = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = pfbFile.Length - 1 } } };
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, Assert.Throws<ImageResourceLimitException>(() => Font.LoadType1(path, metrics, small)).Kind);
+            Assert.Throws<FileNotFoundException>(() => Font.LoadType1(directory / "missing.pfb", metrics));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+
+        Assert.Throws<UnknownImageFormatException>(() => Font.LoadType1(FontSamples.Boxes().Build(), metrics));
+        Assert.Throws<InvalidImageContentException>(() => Font.LoadType1(pfbFile.AsSpan(0, pfbFile.Length - 700), metrics));
+        Assert.Throws<InvalidImageContentException>(() => Font.Load(pfbFile.AsSpan(0, 100)));
+
+        static int[] Render(Font font, string text = "A\u00C1O\u00C5xE.\uFB01")
+        {
+            var layout = TextLayout.Create(text, new TextStyle(font, 24));
+            using var image = new Image<Gray8>((int)Math.Ceiling(layout.Width) + 4, (int)Math.Ceiling(layout.Height) + 4, new Gray8(0));
+            image.Draw(canvas => canvas.FillText(new Drawing.SolidBrush(new Rgba32(255, 255, 255)), layout, new PointD(2, 2)), TestContext.Current.CancellationToken);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
     public void Documentation_LoadFontFace()
     {
         #region Fonts_LoadFontFace

@@ -64,10 +64,14 @@ public static partial class ImagingFuzzTargets
 
         float[] Resize(float[] source)
         {
-            using var image = Image.ImportPixelBytes<RgbaFloat>(System.Runtime.InteropServices.MemoryMarshal.AsBytes(source.AsSpan()), width, height);
+            var sourceBytes = new byte[source.Length * sizeof(float)];
+            Buffer.BlockCopy(source, 0, sourceBytes, 0, sourceBytes.Length);
+            using var image = Image.ImportPixelBytes<RgbaFloat>(sourceBytes, width, height);
             image.Resize(options);
+            var outputBytes = new byte[outputWidth * outputHeight * 4 * sizeof(float)];
+            image.Frames[0].CopyPixelBytesTo(outputBytes);
             var output = new float[outputWidth * outputHeight * 4];
-            image.Frames[0].CopyPixelBytesTo(System.Runtime.InteropServices.MemoryMarshal.AsBytes(output.AsSpan()));
+            Buffer.BlockCopy(outputBytes, 0, output, 0, outputBytes.Length);
             return output;
         }
     }

@@ -140,9 +140,24 @@ internal sealed partial class DrawingSession
         {
             var buffers = new PooledBuffer[workers - 1];
             _filterWorkerColors?.CopyTo(buffers, 0);
-            for (var i = _filterWorkerColors?.Length ?? 0; i < buffers.Length; i++)
+            var firstRented = _filterWorkerColors?.Length ?? 0;
+            var rented = firstRented;
+            try
             {
-                buffers[i] = ResampleWeights.Rent<ushort>(_image.Owner.Scope, 4L * Width);
+                for (; rented < buffers.Length; rented++)
+                {
+                    buffers[rented] = ResampleWeights.Rent<ushort>(_image.Owner.Scope, 4L * Width);
+                }
+            }
+            catch
+            {
+                // A rental that fails releases the buffers rented before it: the buffers of the session stay as they were
+                for (var i = firstRented; i < rented; i++)
+                {
+                    buffers[i].Dispose();
+                }
+
+                throw;
             }
 
             _filterWorkerColors = buffers;

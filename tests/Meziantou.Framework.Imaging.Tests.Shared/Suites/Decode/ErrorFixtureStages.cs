@@ -12,6 +12,18 @@ internal static class ErrorFixtureStages
 {
     private static readonly HashSet<string> HeaderDefects = new(StringComparer.Ordinal)
     {
+        // Radiance HDR: the information header and the resolution string
+        "invalid/hdr/format-other",
+        "invalid/hdr/resolution-lowercase",
+        "invalid/hdr/resolution-one-axis",
+        "invalid/hdr/resolution-same-axis",
+        "invalid/hdr/resolution-zero",
+        "invalid/hdr/truncated-header",
+        "invalid/hdr/truncated-resolution",
+        "invalid/hdr/two-formats",
+        "limit/hdr/frame-pixels-over-limit",
+        "limit/hdr/metadata-bytes-over-limit",
+
         "invalid/jxl/codestream-signature",
         "invalid/jxl/container-box-size",
         "invalid/jxl/container-parts-out-of-order",
@@ -261,6 +273,16 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> StructureDefects = new(StringComparer.Ordinal)
     {
+        // Radiance HDR: the scanlines, read by a full scan
+        "invalid/hdr/old-rle-repetition-first",
+        "invalid/hdr/old-rle-repetition-past-end",
+        "invalid/hdr/rle-code-zero",
+        "invalid/hdr/rle-length",
+        "invalid/hdr/rle-literal-past-end",
+        "invalid/hdr/rle-run-past-end",
+        "invalid/hdr/truncated-scanline",
+        "invalid/hdr/truncated-scanlines",
+
         // JPEG 2000: the chain of the tile-parts, the end of the codestream and the boxes that follow it
         "invalid/jp2/codestream-cut",
         "invalid/jp2/codestream-no-end",
@@ -398,6 +420,10 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> PixelDefects = new(StringComparer.Ordinal)
     {
+        // Radiance HDR: XYZE samples are identified, and rejected by a load
+        "invalid/hdr/xyze",
+        "invalid/hdr/xyze-columns",
+
         // JPEG 2000: the packets of a tile and the coding passes of a code-block
         "invalid/jp2/ht-placeholders-alone",
         "invalid/jp2/ht-suffix-length",

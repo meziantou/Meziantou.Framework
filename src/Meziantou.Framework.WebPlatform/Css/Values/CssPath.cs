@@ -29,8 +29,8 @@ internal static class CssPath
                 break;
 
             case [CssPreservedToken { Type: CssTokenType.Ident } rule, CssPreservedToken { Type: CssTokenType.Comma }, CssPreservedToken { Type: CssTokenType.String } data]
-                when InfraAscii.ToAsciiLowercase(rule.Token.Value) is "nonzero" or "evenodd":
-                fillRule = InfraAscii.ToAsciiLowercase(rule.Token.Value);
+                when InfraAscii.ToAsciiLowercase(rule.Value) is "nonzero" or "evenodd":
+                fillRule = InfraAscii.ToAsciiLowercase(rule.Value);
                 pathData = data.Token;
                 break;
 
@@ -47,7 +47,7 @@ internal static class CssPath
         significant is [CssFunction function]
         && InfraAscii.EqualsIgnoreAsciiCase(function.Name, "path")
         && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } data]
-        && SvgPathData.Parse(data.Token.Value, out var complete).Count == 0
+        && SvgPathData.Parse(data.Value, out var complete).Count == 0
         && complete;
 
     /// <summary>Returns whether the path() function is valid.</summary>

@@ -26,19 +26,19 @@ internal readonly record struct FontFamilyName(string Name, bool IsGeneric)
             var significant = ValueMatcher.RemoveWhitespace(entry);
             if (significant is [CssPreservedToken { Type: CssTokenType.String } stringToken])
             {
-                families.Add(new FontFamilyName(stringToken.Token.Value, IsGeneric: false));
+                families.Add(new FontFamilyName(stringToken.Value, IsGeneric: false));
             }
             else if (significant is [CssFunction { } function] && InfraAscii.EqualsIgnoreAsciiCase(function.Name, "generic"))
             {
                 families.Add(new FontFamilyName(CssSerializer.SerializeValue(function.Value, property: null).Trim(), IsGeneric: true));
             }
-            else if (significant is [CssPreservedToken { Type: CssTokenType.Ident } ident] && Om.FontFace.IsGenericFamily(InfraAscii.ToAsciiLowercase(ident.Token.Value)))
+            else if (significant is [CssPreservedToken { Type: CssTokenType.Ident } ident] && Om.FontFace.IsGenericFamily(InfraAscii.ToAsciiLowercase(ident.Value)))
             {
-                families.Add(new FontFamilyName(InfraAscii.ToAsciiLowercase(ident.Token.Value), IsGeneric: true));
+                families.Add(new FontFamilyName(InfraAscii.ToAsciiLowercase(ident.Value), IsGeneric: true));
             }
             else if (significant.Count > 0 && significant.TrueForAll(component => component is CssPreservedToken { Type: CssTokenType.Ident }))
             {
-                families.Add(new FontFamilyName(string.Join(' ', significant.Select(component => ((CssPreservedToken)component).Token.Value)), IsGeneric: false));
+                families.Add(new FontFamilyName(string.Join(' ', significant.Select(component => ((CssPreservedToken)component).Value)), IsGeneric: false));
             }
         }
 
@@ -100,8 +100,8 @@ internal readonly record struct FontSlope(FontSlopeKind Kind, double Angle)
         if (ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)) is not [CssPreservedToken { Type: CssTokenType.Dimension } dimension])
             return false;
 
-        var number = dimension.Token.NumericValue;
-        double? result = InfraAscii.ToAsciiLowercase(dimension.Token.Value) switch
+        var number = dimension.NumericValue;
+        double? result = InfraAscii.ToAsciiLowercase(dimension.Value) switch
         {
             "deg" => number,
             "grad" => number * 0.9,
@@ -252,10 +252,10 @@ internal readonly record struct FontDescription(
         var settings = new List<FontVariationSetting>();
         foreach (var entry in CssValueComputer.SplitArguments(CssParser.ParseListOfComponentValues(value)))
         {
-            if (ValueMatcher.RemoveWhitespace(entry) is [CssPreservedToken { Type: CssTokenType.String } tag, CssPreservedToken { Type: CssTokenType.Number } number] && tag.Token.Value.Length == 4)
+            if (ValueMatcher.RemoveWhitespace(entry) is [CssPreservedToken { Type: CssTokenType.String } tag, CssPreservedToken { Type: CssTokenType.Number } number] && tag.Value.Length == 4)
             {
-                var name = tag.Token.Value;
-                settings.Add(new FontVariationSetting(((uint)name[0] << 24) | ((uint)name[1] << 16) | ((uint)name[2] << 8) | name[3], number.Token.NumericValue));
+                var name = tag.Value;
+                settings.Add(new FontVariationSetting(((uint)name[0] << 24) | ((uint)name[1] << 16) | ((uint)name[2] << 8) | name[3], number.NumericValue));
             }
         }
 

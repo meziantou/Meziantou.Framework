@@ -1204,6 +1204,7 @@ namespace Meziantou.Framework.Imaging
         Heic = 15,
         Jpeg2000 = 16,
         OpenExr = 17,
+        Radiance = 18,
         Custom = 1000,
     }
 
@@ -3675,6 +3676,19 @@ namespace Meziantou.Framework.Imaging.Formats
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
     }
 
+    public enum RadianceCompression
+    {
+        None = 0,
+        RunLength = 1,
+    }
+
+    public sealed class RadianceEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.RadianceCompression Compression { get => throw null; init { } }
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+    }
+
     public enum TgaCompression
     {
         None = 0,
@@ -3897,6 +3911,7 @@ namespace Meziantou.Framework.Imaging.Metadata
         public Meziantou.Framework.Imaging.Metadata.ExifOrientation Orientation { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.PixelAspectRatio? PixelAspectRatio { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.Imaging.Metadata.PngChunk> PngChunks { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.RadianceHeader? RadianceHeader { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ImageResolution? Resolution { get => throw null; set { } }
         public Meziantou.Framework.Imaging.ImageFormat SourceFormat { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.Imaging.Metadata.ImageTextEntry> TextEntries { get => throw null; }
@@ -4008,6 +4023,24 @@ namespace Meziantou.Framework.Imaging.Metadata
         BeforePalette = 0,
         BeforeImageData = 1,
         AfterImageData = 2,
+    }
+
+    public sealed class RadianceHeader : System.IEquatable<Meziantou.Framework.Imaging.Metadata.RadianceHeader>
+    {
+        public System.Collections.Generic.IReadOnlyList<double> ColorCorrection { get => throw null; }
+        public double Exposure { get => throw null; }
+        public double? Gamma { get => throw null; }
+        public bool IsXyz { get => throw null; }
+        public double PixelAspectRatio { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<double>? Primaries { get => throw null; }
+        public string ScanOrder { get => throw null; }
+        public string? Software { get => throw null; }
+        public string? View { get => throw null; }
+        public RadianceHeader(bool isXyz, double exposure, System.Collections.Generic.IReadOnlyList<double> colorCorrection, System.Collections.Generic.IReadOnlyList<double>? primaries, double pixelAspectRatio, double? gamma, string? view, string? software, string scanOrder) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.RadianceHeader? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
     }
 
     public sealed class XmpProfile

@@ -42,6 +42,9 @@ internal sealed class EdgeBuilder : IDisposable
     /// <summary>Gets the edges.</summary>
     public Span<DrawingEdge> Edges => _buffer is null ? default : unsafe(MemoryMarshal.Cast<byte, DrawingEdge>(_buffer.Span))[..Count];
 
+    /// <summary>Gets the array that holds the edges (as bytes), read without going through <see cref="PooledBuffer.Span"/>; empty when no edge was added yet.</summary>
+    public byte[] RawBytes => _buffer?.RawBuffer ?? [];
+
     /// <summary>Removes every edge and keeps the storage.</summary>
     public void Reset() => Count = 0;
 

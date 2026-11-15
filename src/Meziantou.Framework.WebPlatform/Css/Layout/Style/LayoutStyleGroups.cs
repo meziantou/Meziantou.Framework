@@ -417,7 +417,7 @@ internal sealed record TextLayoutStyle
         return spacing.Resolve(fontSize);
     }
 
-    internal static string? ParseString(string value) => CssParser.ParseListOfComponentValues(value) is [CssPreservedToken { Type: CssTokenType.String } token] ? token.Token.Value : null;
+    internal static string? ParseString(string value) => CssParser.ParseListOfComponentValues(value) is [CssPreservedToken { Type: CssTokenType.String } token] ? token.Value : null;
 }
 
 /// <summary>The properties of the font matching (https://drafts.csswg.org/css-fonts-4/#font-matching-algorithm), without the font size (<see cref="LayoutStyle.FontSize"/>).</summary>
@@ -481,10 +481,10 @@ internal sealed class FontLayoutStyle
             switch (significant)
             {
                 case [CssPreservedToken { Type: CssTokenType.String } name]:
-                    families.Add(new FontFamily(name.Token.Value, IsGeneric: false));
+                    families.Add(new FontFamily(name.Value, IsGeneric: false));
                     break;
-                case [CssPreservedToken { Type: CssTokenType.Ident } ident] when GenericFamilies.Contains(Infra.InfraAscii.ToAsciiLowercase(ident.Token.Value)):
-                    families.Add(new FontFamily(Infra.InfraAscii.ToAsciiLowercase(ident.Token.Value), IsGeneric: true));
+                case [CssPreservedToken { Type: CssTokenType.Ident } ident] when GenericFamilies.Contains(Infra.InfraAscii.ToAsciiLowercase(ident.Value)):
+                    families.Add(new FontFamily(Infra.InfraAscii.ToAsciiLowercase(ident.Value), IsGeneric: true));
                     break;
                 case [CssFunction { Name: var functionName } function] when Infra.InfraAscii.EqualsIgnoreAsciiCase(functionName, "generic"):
                     // generic(<custom-ident>) (https://drafts.csswg.org/css-fonts-5/#generic-font-families)
@@ -492,7 +492,7 @@ internal sealed class FontLayoutStyle
                     break;
                 case { Count: > 0 }:
                     // A sequence of identifiers is a family name, joined with single spaces
-                    families.Add(new FontFamily(string.Join(' ', significant.OfType<CssPreservedToken>().Select(token => token.Token.Value)), IsGeneric: false));
+                    families.Add(new FontFamily(string.Join(' ', significant.OfType<CssPreservedToken>().Select(token => token.Value)), IsGeneric: false));
                     break;
             }
         }

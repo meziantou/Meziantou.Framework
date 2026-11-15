@@ -20,7 +20,7 @@ internal static partial class CssPropertyRules
         if (significant is not [CssPreservedToken { Type: CssTokenType.Ident } ident])
             return null;
 
-        var value = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+        var value = InfraAscii.ToAsciiLowercase(ident.Value);
         return new Dictionary<string, string>(StringComparer.Ordinal) { [shorthand.Longhands[0]] = value == "always" ? "page" : value };
     }
 

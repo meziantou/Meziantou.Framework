@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 
@@ -10,6 +11,12 @@ internal sealed class CssTokenizer
 
     /// <summary>The strings of the ASCII characters, for the delim tokens.</summary>
     private static readonly string[] AsciiStrings = CreateAsciiStrings();
+
+    /// <summary>The powers of 10 that are exact doubles, for the fast path of <see cref="ConsumeNumber"/>.</summary>
+    private static readonly double[] PowersOf10 = [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15];
+
+    /// <summary>The ASCII ident code points (https://drafts.csswg.org/css-syntax-3/#ident-code-point).</summary>
+    private static readonly SearchValues<char> AsciiIdentCodePoints = SearchValues.Create("-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
     private readonly string _input;
     /// <summary>The value of the string token being consumed, when it contains escapes (created on first use).</summary>
@@ -146,14 +153,16 @@ internal sealed class CssTokenizer
     /// <summary>Returns the code point at the given UTF-16 offset from the current position (surrogate pairs are combined).</summary>
     private int PeekAt(int position)
     {
-        if (position >= _input.Length)
+        var input = _input;
+        if ((uint)position >= (uint)input.Length)
             return Eof;
 
-        var c = _input[position];
-        if (char.IsHighSurrogate(c) && position + 1 < _input.Length)
-            return char.ConvertToUtf32(c, _input[position + 1]);
+        int c = input[position];
+        if (!char.IsHighSurrogate((char)c))
+            return c;
 
-        return c;
+        // The preprocessed input has no lone surrogate: a high surrogate is followed by a low surrogate
+        return ((c - 0xD800) << 10) + (input[position + 1] - 0xDC00) + 0x10000;
     }
 
     private static int Length(int codePoint) => codePoint >= 0x10000 ? 2 : 1;
@@ -190,6 +199,19 @@ internal sealed class CssTokenizer
         }
     }
 
+    /// <summary>Consumes the whitespace code points that follow the current position.</summary>
+    private void SkipWhitespace()
+    {
+        var input = _input;
+        var position = _position;
+        while (position < input.Length && IsWhitespace(input[position]))
+        {
+            position++;
+        }
+
+        _position = position;
+    }
+
     private static bool IsValidEscape(int first, int second) => first == '\\' && !IsNewline(second);
 
     /// <summary>https://drafts.csswg.org/css-syntax-3/#would-start-an-identifier</summary>
@@ -202,6 +224,19 @@ internal sealed class CssTokenizer
             return true;
 
         return first == '\\' && IsValidEscape(first, second);
+    }
+
+    /// <summary><see cref="WouldStartIdentSequence"/> for the next code points, which are read only when they are needed.</summary>
+    private bool NextWouldStartIdentSequence()
+    {
+        var first = Next;
+        if (first == '-')
+            return WouldStartIdentSequence(first, Next2, Next3);
+
+        if (IsIdentStart(first))
+            return true;
+
+        return first == '\\' && !IsNewline(Next2);
     }
 
     /// <summary>https://drafts.csswg.org/css-syntax-3/#starts-with-a-number</summary>
@@ -238,11 +273,7 @@ internal sealed class CssTokenizer
                 return Simple(CssTokenType.EndOfFile);
 
             case '\n' or '\t' or ' ':
-                while (IsWhitespace(Next))
-                {
-                    Consume();
-                }
-
+                SkipWhitespace();
                 return Simple(CssTokenType.Whitespace);
 
             case '"' or '\'':
@@ -315,7 +346,7 @@ internal sealed class CssTokenizer
                 return Delim(c);
 
             case '@':
-                if (WouldStartIdentSequence(Next, Next2, Next3))
+                if (NextWouldStartIdentSequence())
                     return new CssToken { Type = CssTokenType.AtKeyword, Value = ConsumeIdentSequence() };
 
                 return Delim(c);
@@ -401,7 +432,7 @@ internal sealed class CssTokenizer
     private CssToken ConsumeNumericToken()
     {
         var (value, isInteger, sign) = ConsumeNumber();
-        if (WouldStartIdentSequence(Next, Next2, Next3))
+        if (NextWouldStartIdentSequence())
         {
             var unit = ConsumeIdentSequence();
             return new CssToken { Type = CssTokenType.Dimension, NumericValue = value, IsInteger = isInteger, Sign = sign, Value = unit };
@@ -419,49 +450,78 @@ internal sealed class CssTokenizer
     /// <summary>https://drafts.csswg.org/css-syntax-3/#consume-a-number</summary>
     private (double Value, bool IsInteger, char Sign) ConsumeNumber()
     {
-        var isInteger = true;
-        var sign = '\0';
+        // The code points of a number are ASCII, so the UTF-16 code units are read directly
+        var input = _input;
         var start = _position;
-        if (Next is '+' or '-')
+        var position = start;
+        var sign = '\0';
+        if (position < input.Length && input[position] is '+' or '-')
         {
-            sign = (char)Consume();
+            sign = input[position];
+            position++;
         }
 
-        while (IsDigit(Next))
+        ulong significand = 0;
+        var digitCount = 0;
+        while (position < input.Length && IsDigit(input[position]))
         {
-            Consume();
+            significand = unchecked((significand * 10) + (uint)(input[position] - '0'));
+            digitCount++;
+            position++;
         }
 
-        if (Next == '.' && IsDigit(Next2))
+        var isInteger = true;
+        var fractionDigitCount = 0;
+        if (position + 1 < input.Length && input[position] == '.' && IsDigit(input[position + 1]))
         {
-            Consume();
-            while (IsDigit(Next))
+            position++;
+            while (position < input.Length && IsDigit(input[position]))
             {
-                Consume();
+                significand = unchecked((significand * 10) + (uint)(input[position] - '0'));
+                fractionDigitCount++;
+                position++;
             }
 
             isInteger = false;
         }
 
-        if (Next is 'E' or 'e' && (IsDigit(Next2) || (Next2 is '+' or '-' && IsDigit(Next3))))
+        var hasExponent = false;
+        if (position + 1 < input.Length && input[position] is 'E' or 'e')
         {
-            Consume();
-            if (Next is '+' or '-')
+            var next = input[position + 1];
+            if (IsDigit(next) || (next is '+' or '-' && position + 2 < input.Length && IsDigit(input[position + 2])))
             {
-                Consume();
-            }
+                position += next is '+' or '-' ? 2 : 1;
+                while (position < input.Length && IsDigit(input[position]))
+                {
+                    position++;
+                }
 
-            while (IsDigit(Next))
-            {
-                Consume();
+                hasExponent = true;
+                isInteger = false;
             }
-
-            isInteger = false;
         }
 
-        // The number is parsed with its exponent, so that the value is the double nearest to the number: scaling the
-        // significand by a power of 10 rounds twice (e.g. 4.008e45 is not the value of 4008 followed by 42 zeros)
-        var value = double.Parse(_input.AsSpan(start, _position - start), NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, CultureInfo.InvariantCulture);
+        _position = position;
+
+        // Fast path: a significand of at most 15 digits and the powers of 10 up to 10^15 are exact doubles, so the
+        // division is correctly rounded: the value is the one double.Parse returns (including -0)
+        double value;
+        if (!hasExponent && digitCount + fractionDigitCount <= 15)
+        {
+            value = fractionDigitCount == 0 ? significand : significand / PowersOf10[fractionDigitCount];
+            if (sign == '-')
+            {
+                value = -value;
+            }
+        }
+        else
+        {
+            // The number is parsed with its exponent, so that the value is the double nearest to the number: scaling the
+            // significand by a power of 10 rounds twice (e.g. 4.008e45 is not the value of 4008 followed by 42 zeros)
+            value = double.Parse(input.AsSpan(start, position - start), NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, CultureInfo.InvariantCulture);
+        }
+
         return (value, isInteger, sign);
     }
 
@@ -653,12 +713,8 @@ internal sealed class CssTokenizer
     {
         // Fast path: the ASCII code points without escape are a substring of the input
         var start = _position;
-        var end = start;
-        while (end < _input.Length && _input[end] is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '-' or '_')
-        {
-            end++;
-        }
-
+        var length = _input.AsSpan(start).IndexOfAnyExcept(AsciiIdentCodePoints);
+        var end = length < 0 ? _input.Length : start + length;
         _position = end;
         if (end == _input.Length || !IsIdentCodePoint(Next) && !IsValidEscape(Next, Next2))
             return _input.Substring(start, end - start);

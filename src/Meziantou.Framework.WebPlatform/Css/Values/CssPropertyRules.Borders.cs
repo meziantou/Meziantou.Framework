@@ -12,7 +12,7 @@ internal static partial class CssPropertyRules
     /// </summary>
     private static string? CanonicalizeBoxShadow(List<CssComponentValue> significant)
     {
-        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } none] && none.Token.IsIdent("none"))
+        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } none] && none.IsIdent("none"))
             return "none";
 
         return string.Join(", ", SplitAtCommas(significant).Select(shadow => string.Join(' ', OrderShadow(shadow.ConvertAll(value => value is CssPreservedToken { Type: CssTokenType.Number, Token.NumericValue: 0 } ? "0px" : CssSerializer.SerializeValue([value], property: null))))));
@@ -133,7 +133,7 @@ internal static partial class CssPropertyRules
     /// </summary>
     private static string[]? ExpandRadii(List<CssComponentValue> values, int count)
     {
-        var slash = values.FindIndex(value => value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.Token.IsDelim('/'));
+        var slash = values.FindIndex(value => value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.IsDelim('/'));
         var horizontalValues = values[..(slash < 0 ? values.Count : slash)].ConvertAll(SerializeRadius);
         var verticalValues = slash < 0 ? null : values[(slash + 1)..].ConvertAll(SerializeRadius);
         if (count == 1)
@@ -211,7 +211,7 @@ internal static partial class CssPropertyRules
             switch (value)
             {
                 case CssPreservedToken { Type: CssTokenType.Ident } ident:
-                    shapes.Add(InfraAscii.ToAsciiLowercase(ident.Token.Value));
+                    shapes.Add(InfraAscii.ToAsciiLowercase(ident.Value));
                     break;
 
                 case CssFunction function when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "superellipse"):
@@ -382,7 +382,7 @@ internal static partial class CssPropertyRules
     {
         foreach (var value in significant)
         {
-            if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Token.Value) is var name
+            if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Value) is var name
                 && (name is "will-change" or "none" or "all" || (name == "auto" && significant.Count > 1)))
                 return false;
         }
@@ -532,7 +532,7 @@ internal static partial class CssPropertyRules
                 }
 
                 // / width, / / outset, / width / outset
-                for (var slash = 0; slash < 2 && i < significant.Count && significant[i] is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.Token.IsDelim('/'); slash++)
+                for (var slash = 0; slash < 2 && i < significant.Count && significant[i] is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.IsDelim('/'); slash++)
                 {
                     i++;
                     var values = new List<CssComponentValue>();
@@ -577,7 +577,7 @@ internal static partial class CssPropertyRules
 
         return result;
 
-        static bool IsRepeatKeyword(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Token.Value) is "stretch" or "repeat" or "round" or "space";
+        static bool IsRepeatKeyword(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Value) is "stretch" or "repeat" or "round" or "space";
 
         static bool IsImage(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Url } || IsIdent(value, "none") || (value is CssFunction function && !CssCalc.IsMathFunction(function.Name));
     }

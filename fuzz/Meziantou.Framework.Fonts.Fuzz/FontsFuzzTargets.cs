@@ -160,6 +160,7 @@ public static class FontsFuzzTargets
         new("fonts-svg-table", ReadSvgTable) { Seeds = GetSvgTableSeeds, Dictionary = SvgTokens },
         new("fonts-svg-document", ExpandSvgDocument) { Seeds = GetSvgDocumentSeeds, Dictionary = SvgTokens },
         new("fonts-woff-blocks", WoffBlocks) { Seeds = GetWoffBlocksSeeds, Dictionary = WoffBlocksTokens },
+        .. Type1FuzzTargets.All,
     ];
 
     /// <summary>

@@ -314,8 +314,8 @@ internal static class CssAnimationUpdater
         {
             result.Add(item switch
             {
-                [CssPreservedToken { Type: CssTokenType.Ident } ident] when !InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "none") => ident.Token.Value,
-                [CssPreservedToken { Type: CssTokenType.String } text] => text.Token.Value,
+                [CssPreservedToken { Type: CssTokenType.Ident } ident] when !InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "none") => ident.Value,
+                [CssPreservedToken { Type: CssTokenType.String } text] => text.Value,
                 _ => null,
             });
         }

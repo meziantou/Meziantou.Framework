@@ -4,10 +4,10 @@ using Meziantou.Framework.Fuzzing;
 namespace Meziantou.Framework.Imaging.Fuzz;
 
 /// <summary>
-/// The processing operations of <c>Meziantou.Framework.Imaging</c> that read pixels or points they do not control: custom
-/// processors, seam carving, inpainting, line and corner detection, skew estimation and homography estimation. The inputs
-/// are small images whose pixel format, size, frames and bytes come from the fuzzer, followed by the options of the
-/// operation.
+/// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, and its processing operations that read pixels or points
+/// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation and
+/// homography estimation. The inputs of the processing targets are small images whose pixel format, size, frames and bytes
+/// come from the fuzzer, followed by the options of the operation.
 /// </summary>
 public static partial class ImagingFuzzTargets
 {
@@ -27,6 +27,7 @@ public static partial class ImagingFuzzTargets
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
+        new("imaging-radiance", RadianceTarget) { Seeds = GetRadianceSeeds, Dictionary = RadianceTokens },
         new("imaging-processor", ProcessorTarget) { Seeds = GetProcessorSeeds, Dictionary = Tokens },
         new("imaging-seam-carving", SeamCarvingTarget) { Seeds = GetSeamCarvingSeeds, Dictionary = Tokens },
         new("imaging-inpainting", InpaintingTarget) { Seeds = GetInpaintingSeeds, Dictionary = Tokens },

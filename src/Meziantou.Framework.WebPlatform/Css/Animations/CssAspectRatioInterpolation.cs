@@ -27,10 +27,10 @@ internal static class CssAspectRatioInterpolation
         {
             switch (component)
             {
-                case CssPreservedToken { Type: CssTokenType.Ident } ident when ident.Token.IsIdent("auto"):
+                case CssPreservedToken { Type: CssTokenType.Ident } ident when ident.IsIdent("auto"):
                     auto = true;
                     break;
-                case CssPreservedToken { Type: CssTokenType.Delim } delim when delim.Token.Value == "/":
+                case CssPreservedToken { Type: CssTokenType.Delim } delim when delim.Value == "/":
                     hasSlash = true;
                     break;
                 case var number when CssGenericInterpolation.TryGetNumber(number, out var n, out var unit) && unit.Length == 0:

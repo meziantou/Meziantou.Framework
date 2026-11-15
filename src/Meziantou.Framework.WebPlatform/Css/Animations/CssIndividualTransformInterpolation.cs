@@ -155,7 +155,7 @@ internal static class CssIndividualTransformInterpolation
                 axis = [0, 0, 1];
                 break;
             case 2 when components[0] is CssPreservedToken { Type: CssTokenType.Ident } ident:
-                axis = InfraAscii.ToAsciiLowercase(ident.Token.Value) switch
+                axis = InfraAscii.ToAsciiLowercase(ident.Value) switch
                 {
                     "x" => [1, 0, 0],
                     "y" => [0, 1, 0],

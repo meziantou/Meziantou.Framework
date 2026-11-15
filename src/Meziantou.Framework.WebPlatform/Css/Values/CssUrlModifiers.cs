@@ -57,16 +57,16 @@ internal static class CssUrlModifiers
             var argument = ValueMatcher.RemoveWhitespace(function.Value);
             switch (InfraAscii.ToAsciiLowercase(function.Name))
             {
-                case "cross-origin" when crossOrigin is null && argument is [CssPreservedToken { Type: CssTokenType.Ident } mode] && InfraAscii.ToAsciiLowercase(mode.Token.Value) is "anonymous" or "use-credentials":
-                    crossOrigin = InfraAscii.ToAsciiLowercase(mode.Token.Value);
+                case "cross-origin" when crossOrigin is null && argument is [CssPreservedToken { Type: CssTokenType.Ident } mode] && InfraAscii.ToAsciiLowercase(mode.Value) is "anonymous" or "use-credentials":
+                    crossOrigin = InfraAscii.ToAsciiLowercase(mode.Value);
                     break;
 
                 case "integrity" when integrity is null && argument is [CssPreservedToken { Type: CssTokenType.String } metadata]:
-                    integrity = metadata.Token.Value;
+                    integrity = metadata.Value;
                     break;
 
-                case "referrer-policy" when referrerPolicy is null && argument is [CssPreservedToken { Type: CssTokenType.Ident } policy] && IsReferrerPolicy(InfraAscii.ToAsciiLowercase(policy.Token.Value)):
-                    referrerPolicy = InfraAscii.ToAsciiLowercase(policy.Token.Value);
+                case "referrer-policy" when referrerPolicy is null && argument is [CssPreservedToken { Type: CssTokenType.Ident } policy] && IsReferrerPolicy(InfraAscii.ToAsciiLowercase(policy.Value)):
+                    referrerPolicy = InfraAscii.ToAsciiLowercase(policy.Value);
                     break;
 
                 default:
@@ -90,14 +90,14 @@ internal static class CssUrlModifiers
         switch (value)
         {
             case CssPreservedToken { Type: CssTokenType.Url } urlToken:
-                url = urlToken.Token.Value;
+                url = urlToken.Value;
                 modifiers = CssRequestModifiers.None;
                 return true;
 
             case CssFunction function when InfraAscii.ToAsciiLowercase(function.Name) is "url" or "src"
                 && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } stringToken, .. var rest]
                 && Parse(rest) is { } parsed:
-                url = stringToken.Token.Value;
+                url = stringToken.Value;
                 modifiers = parsed;
                 return true;
 

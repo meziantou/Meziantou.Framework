@@ -56,7 +56,7 @@ internal static partial class CssPropertyRules
         "linear", "ease", "ease-in", "ease-out", "ease-in-out", "step-start", "step-end", "normal", "allow-discrete",
     };
 
-    private static bool IsTimelineRangeName(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && IsTimelineRangeName(InfraAscii.ToAsciiLowercase(ident.Token.Value));
+    private static bool IsTimelineRangeName(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && IsTimelineRangeName(InfraAscii.ToAsciiLowercase(ident.Value));
 
     private static bool IsTimelineRangeName(string value) => value is "cover" or "contain" or "entry" or "exit" or "entry-crossing" or "exit-crossing" or "scroll";
 
@@ -80,14 +80,14 @@ internal static partial class CssPropertyRules
                 case CssFunction function when function.Name.Equals("steps", StringComparison.OrdinalIgnoreCase):
                     var arguments = ValueMatcher.SplitAtCommas(ValueMatcher.RemoveWhitespace(function.Value));
                     if (arguments is [[CssPreservedToken { Type: CssTokenType.Number } count], [var position]]
-                        && IsIdent(position, "jump-none") && count.Token.NumericValue < 2)
+                        && IsIdent(position, "jump-none") && count.NumericValue < 2)
                         return false;
 
                     if (arguments is [[CssFunction math], ..] && CssCalc.Evaluate(math, CssCalcContext.Default) is { IsResolved: true } result && double.IsNaN(result.Value))
                         return false;
 
                     break;
-                case CssPreservedToken { Type: CssTokenType.String } name when name.Token.Value.Length == 0 && property.Name is "animation" or "animation-name":
+                case CssPreservedToken { Type: CssTokenType.String } name when name.Value.Length == 0 && property.Name is "animation" or "animation-name":
                     return false;
             }
         }
@@ -144,7 +144,7 @@ internal static partial class CssPropertyRules
             else if (value is CssFunction function && function.Name.Equals("steps", StringComparison.OrdinalIgnoreCase))
             {
                 var arguments = ValueMatcher.SplitAtCommas(ValueMatcher.RemoveWhitespace(function.Value));
-                var position = arguments.Count > 1 && arguments[1] is [CssPreservedToken { Type: CssTokenType.Ident } ident] ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : null;
+                var position = arguments.Count > 1 && arguments[1] is [CssPreservedToken { Type: CssTokenType.Ident } ident] ? InfraAscii.ToAsciiLowercase(ident.Value) : null;
                 var count = string.Join(' ', arguments[0].Select(component => SerializeComponent(component, property: null)));
                 if (computed && Cascade.CssValueComputer.TryParseNumber(count, out var number))
                 {
@@ -167,7 +167,7 @@ internal static partial class CssPropertyRules
             }
             else
             {
-                items.Add(value is CssPreservedToken { Type: CssTokenType.Ident } keyword ? InfraAscii.ToAsciiLowercase(keyword.Token.Value) : SerializeComponent(value, property: null));
+                items.Add(value is CssPreservedToken { Type: CssTokenType.Ident } keyword ? InfraAscii.ToAsciiLowercase(keyword.Value) : SerializeComponent(value, property: null));
             }
         }
 
@@ -191,7 +191,7 @@ internal static partial class CssPropertyRules
             if (arguments[i] is not [CssPreservedToken { Type: CssTokenType.Number } number])
                 return null;
 
-            values[i] = CssSerializer.SerializeNumber(i % 2 == 0 ? Math.Clamp(number.Token.NumericValue, 0, 1) : number.Token.NumericValue);
+            values[i] = CssSerializer.SerializeNumber(i % 2 == 0 ? Math.Clamp(number.NumericValue, 0, 1) : number.NumericValue);
         }
 
         return "cubic-bezier(" + string.Join(", ", values) + ")";
@@ -240,10 +240,10 @@ internal static partial class CssPropertyRules
                 switch (component)
                 {
                     case CssPreservedToken { Type: CssTokenType.Number } number when output is null:
-                        output = number.Token.NumericValue;
+                        output = number.NumericValue;
                         break;
                     case CssPreservedToken { Type: CssTokenType.Percentage } percentage when percentages.Count < 2:
-                        percentages.Add(percentage.Token.NumericValue);
+                        percentages.Add(percentage.NumericValue);
                         break;
                     default:
                         return null;
@@ -324,11 +324,11 @@ internal static partial class CssPropertyRules
                 case CssPreservedToken { Type: CssTokenType.Comma }:
                     continue;
                 case CssPreservedToken { Type: CssTokenType.String } name:
-                    var lower = InfraAscii.ToAsciiLowercase(name.Token.Value);
-                    names.Add(lower is "none" or "default" || ValueMatcher.CssWideKeywords.Contains(lower) ? CssSerializer.SerializeString(name.Token.Value) : CssSerializer.SerializeIdentifier(name.Token.Value));
+                    var lower = InfraAscii.ToAsciiLowercase(name.Value);
+                    names.Add(lower is "none" or "default" || ValueMatcher.CssWideKeywords.Contains(lower) ? CssSerializer.SerializeString(name.Value) : CssSerializer.SerializeIdentifier(name.Value));
                     break;
                 case CssPreservedToken { Type: CssTokenType.Ident } ident:
-                    names.Add(ident.Token.IsIdent("none") ? "none" : CssSerializer.SerializeIdentifier(ident.Token.Value));
+                    names.Add(ident.IsIdent("none") ? "none" : CssSerializer.SerializeIdentifier(ident.Value));
                     break;
                 default:
                     return null;
@@ -354,9 +354,9 @@ internal static partial class CssPropertyRules
             {
                 if (value is CssPreservedToken { Type: CssTokenType.Ident } ident)
                 {
-                    parts.Add(InfraAscii.ToAsciiLowercase(ident.Token.Value));
+                    parts.Add(InfraAscii.ToAsciiLowercase(ident.Value));
                 }
-                else if (!(parts.Count == 1 && value is CssPreservedToken { Type: CssTokenType.Percentage } percentage && percentage.Token.NumericValue == defaultOffset))
+                else if (!(parts.Count == 1 && value is CssPreservedToken { Type: CssTokenType.Percentage } percentage && percentage.NumericValue == defaultOffset))
                 {
                     parts.Add(SerializeComponent(value, property));
                 }
@@ -650,7 +650,7 @@ internal static partial class CssPropertyRules
         {
             ends.Add(IsTimelineRangeName(start[0]) ? SerializeComponent(start[0], property: null) : defaultEnd);
         }
-        else if (end is [CssPreservedToken { Type: CssTokenType.Percentage } percentage] && percentage.Token.NumericValue == 100)
+        else if (end is [CssPreservedToken { Type: CssTokenType.Percentage } percentage] && percentage.NumericValue == 100)
         {
             ends.Add("normal");
         }
@@ -686,7 +686,7 @@ internal static partial class CssPropertyRules
         var activeEnds = new List<string>();
         foreach (var item in ValueMatcher.SplitAtCommas(significant))
         {
-            var slash = item.FindIndex(value => value is CssPreservedToken token && token.Token.IsDelim('/'));
+            var slash = item.FindIndex(value => value is CssPreservedToken token && token.IsDelim('/'));
             if (!TryExpandRangeItem(slash < 0 ? item : item[..slash], "normal", activationStarts, activationEnds))
                 return null;
 

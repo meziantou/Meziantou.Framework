@@ -35,6 +35,8 @@ internal static class RequiredTools
 
     public static Task<OpenExrTool> OpenExrAsync() => OpenExrTool.LocateAsync(XunitCancellationToken);
 
+    public static Task<RadianceTool> RadianceAsync() => RadianceTool.LocateAsync(XunitCancellationToken);
+
     /// <summary>Gets the <c>jpeg</c> tool of the ISO JPEG reference codec, which shares no code with libjpeg-turbo.</summary>
     public static Task<IsoJpegTool> IsoJpegAsync() => IsoJpegTool.LocateAsync(XunitCancellationToken);
 
@@ -57,6 +59,33 @@ internal static class RequiredTools
         var swift = ExecutableFinder.GetFullExecutablePath("swift") ?? throw new ExternalToolUnavailableException("swift (Xcode command line tools) is required to run the Apple ImageIO helper.");
         // The Apple ImageIO frame dumper is shared with the corpus generator
         return (swift, RepositoryPaths.Root / "tools" / "Meziantou.Framework.Imaging.CorpusGenerator" / "imageio_frames.swift");
+    }
+
+    /// <summary>
+    /// Decodes a high dynamic range image with Apple ImageIO (<see cref="AppleImageIO"/>), which gives 16-bit
+    /// floating-point RGB samples.
+    /// </summary>
+    /// <param name="path">The file.</param>
+    /// <param name="width">The width.</param>
+    /// <param name="height">The height.</param>
+    /// <returns>The samples, as half RGBA (an alpha of 1), the rows from the top.</returns>
+    public static async Task<Half[]> DecodeHalvesWithAppleImageIOAsync(FullPath path, int width, int height)
+    {
+        var (swift, script) = AppleImageIO();
+        var result = await ProcessRunner.RunAsync(swift, [script, "--half", path], XunitCancellationToken);
+        if (result.ExitCode != 0)
+            Assert.Fail($"ImageIO failed (exit code {result.ExitCode}): {result.StandardError}");
+
+        var header = result.StandardError.Trim().Split(' ');
+        Assert.Equal(["frames", "1", width.ToString(CultureInfo.InvariantCulture), height.ToString(CultureInfo.InvariantCulture), "16"], header);
+        Assert.Equal(width * height * 8, result.StandardOutput.Length);
+        var samples = new Half[width * height * 4];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = System.Buffers.Binary.BinaryPrimitives.ReadHalfLittleEndian(result.StandardOutput.Span[(i * 2)..]);
+        }
+
+        return samples;
     }
 
     /// <summary>Decodes the displayed frames of an 8-bit animation with Apple ImageIO (<see cref="AppleImageIO"/>).</summary>

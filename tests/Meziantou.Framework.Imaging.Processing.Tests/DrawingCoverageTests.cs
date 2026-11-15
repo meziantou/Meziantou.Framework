@@ -22,6 +22,32 @@ public sealed class DrawingCoverageTests
         AssertGray8(image, [[0, 0, 0, 0, 0], [0, 255, 255, 255, 0], [0, 255, 255, 255, 0], [0, 0, 0, 0, 0]]);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ARectangleOnPixelBoundariesAcrossTheEdgesOfTheCanvasIsFilledExactly(bool antialiasing)
+    {
+        // [-2, 2] x [1, 6] on a canvas of 3x4: columns 0 and 1, rows 1 to 3, covered entirely, with or without antialiasing
+        using var image = NewBlack(3, 4);
+        image.Frames[0].Draw(canvas => canvas.Antialiasing(antialiasing, canvas => canvas.FillRectangle(White, RectangleD.FromLTRB(-2, 1, 2, 6))), Ct);
+        AssertGray8(image, [[0, 0, 0], [255, 255, 0], [255, 255, 0], [255, 255, 0]]);
+    }
+
+    [Fact]
+    public void ARectangleOnPixelBoundariesOutsideTheCanvasPaintsNothing()
+    {
+        // [3, 5] x [0, 2] is on the right of a canvas of 3x2; [-4, 0] x [0, 2] on its left
+        using var image = NewBlack(3, 2);
+        image.Frames[0].Draw(
+            canvas =>
+            {
+                canvas.FillRectangle(White, RectangleD.FromLTRB(3, 0, 5, 2));
+                canvas.FillRectangle(White, RectangleD.FromLTRB(-4, 0, 0, 2));
+            },
+            Ct);
+        AssertGray8(image, [[0, 0, 0], [0, 0, 0]]);
+    }
+
     [Fact]
     public void AFractionalRectangleCoversEachPixelInProportionToTheirIntersection()
     {

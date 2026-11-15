@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Drawing;
@@ -91,10 +92,13 @@ internal sealed class CoverageRasterizer : IDisposable
     private byte[] _rowsBytes;
     private byte[] _orderBytes = [];
     private byte[] _sweepBytes = [];
+    private byte[] _edgeBytes = [];
 
-    private EdgeBuilder? _edges;
     private bool _evenOdd;
     private bool _isAliased;
+
+    // The edges are a rectangle of whole pixels: every row of the sweep is the same run of full coverage
+    private bool _isRectangle;
     private int _edgeCount;
     private int _firstRow;
     private int _lastRow;
@@ -159,10 +163,20 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>Gets the coverage of the pixels of the current run, from 0 to <see cref="FullCoverage"/>.</summary>
     public ReadOnlySpan<uint> Coverage => CoverageRow.Slice(X, Count);
 
+    /// <summary>Gets a value indicating whether every coverage of <see cref="Coverage"/> is <see cref="FullCoverage"/>, as in each row of a rectangle of whole pixels.</summary>
+    public bool IsFullyCovered => _isRectangle;
+
     private Span<double> Accumulation
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => unsafe(MemoryMarshal.Cast<byte, double>(_accumulationBytes.AsSpan(0, _accumulation.Length)));
+    }
+
+    // The edges of the sweep, read without going through PooledBuffer.Span: the sweep reaches them for every event
+    private Span<DrawingEdge> EdgeList
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => unsafe(MemoryMarshal.Cast<byte, DrawingEdge>(_edgeBytes.AsSpan(0, _edgeCount * Unsafe.SizeOf<DrawingEdge>())));
     }
 
     private Span<uint> CoverageRow
@@ -276,7 +290,7 @@ internal sealed class CoverageRasterizer : IDisposable
             ClipHeights(edges);
         }
 
-        _edges = edges;
+        _edgeBytes = edges.RawBytes;
         _evenOdd = fillRule == FillRule.EvenOdd;
         _cancellationToken = cancellationToken;
         _edgeCount = edges.Count;
@@ -305,8 +319,19 @@ internal sealed class CoverageRasterizer : IDisposable
         EstimatedPixels = _edgeCount == 0 ? 0 : (long)(_lastRow - _firstRow) * (_width - (int)Math.Clamp(Math.Floor(left), 0, _width));
 
         _row = _firstRow;
+        _isRectangle = false;
         if (_edgeCount == 0)
             return false;
+
+        if (TryGetWholePixelRectangle(list, out var rectangleLeft, out var rectangleRight))
+        {
+            // Its coverages are written once: no sweep writes the row of coverages while the rows are read
+            _isRectangle = true;
+            X = rectangleLeft;
+            Count = rectangleRight - rectangleLeft;
+            CoverageRow[rectangleLeft..rectangleRight].Fill(FullCoverage);
+            return true;
+        }
 
         var active = 0;
         var maxActive = 0;
@@ -353,6 +378,15 @@ internal sealed class CoverageRasterizer : IDisposable
                 _cancellationToken.ThrowIfCancellationRequested();
             }
 
+            if (_isRectangle)
+            {
+                if (Count == 0)
+                    continue;
+
+                Y = row;
+                return true;
+            }
+
             if (_isAliased ? ProcessAliasedRow(row) : ProcessRow(row))
                 return true;
         }
@@ -367,6 +401,7 @@ internal sealed class CoverageRasterizer : IDisposable
         _rowsBytes = [];
         _orderBytes = [];
         _sweepBytes = [];
+        _edgeBytes = [];
         _accumulation.Dispose();
         _coverage.Dispose();
         _rows.Dispose();
@@ -388,6 +423,48 @@ internal sealed class CoverageRasterizer : IDisposable
         buffer = ResampleWeights.Rent<byte>(_scope, (long)grown * elementSize);
         bytes = buffer.RawBuffer;
         capacity = grown;
+    }
+
+    /// <summary>
+    /// Gets the columns of a rectangle of whole pixels: two vertical edges of opposite directions on whole columns, from
+    /// the same whole row to the same whole row, or one such edge when the other one was on the right of the frame
+    /// (<see cref="EdgeBuilder"/> drops it: what is on the right of the edge is inside up to the right side of the frame).
+    /// Each pixel between them is covered entirely and the others not at all, with or without antialiasing and with either
+    /// fill rule (the winding number is 1 or -1 between the edges, 0 elsewhere), which is what the sweep computes: the area
+    /// of a pixel inside is exactly 1, and no pixel center is on an edge.
+    /// </summary>
+    /// <returns><see langword="false"/> when the edges are not such a rectangle.</returns>
+    private bool TryGetWholePixelRectangle(ReadOnlySpan<DrawingEdge> edges, out int left, out int right)
+    {
+        left = 0;
+        right = 0;
+        if (edges.Length == 1)
+        {
+            ref readonly var edge = ref edges[0];
+            if (edge.X0 != edge.X1 || !IsWhole(edge.X0) || !IsWhole(edge.Y0) || !IsWhole(edge.Y1))
+                return false;
+
+            left = (int)Math.Clamp(edge.X0, 0, _width);
+            right = _width;
+            return true;
+        }
+
+        if (edges.Length != 2)
+            return false;
+
+        ref readonly var first = ref edges[0];
+        ref readonly var second = ref edges[1];
+        if (first.X0 != first.X1 || second.X0 != second.X1 || first.Y0 != second.Y0 || first.Y1 != second.Y1 || first.Direction != -second.Direction || first.X0 == second.X0)
+            return false;
+
+        if (!IsWhole(first.X0) || !IsWhole(second.X0) || !IsWhole(first.Y0) || !IsWhole(first.Y1))
+            return false;
+
+        left = (int)Math.Clamp(Math.Min(first.X0, second.X0), 0, _width);
+        right = (int)Math.Clamp(Math.Max(first.X0, second.X0), 0, _width);
+        return true;
+
+        static bool IsWhole(double value) => Math.Floor(value) == value;
     }
 
     /// <summary>Gets the first row of the frame an edge is on.</summary>
@@ -444,7 +521,7 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>Covers the pixels of a row whose centers are inside: the edges are crossed at the height of the centers.</summary>
     private bool ProcessAliasedRow(int row)
     {
-        var edges = _edges!.Edges;
+        var edges = EdgeList;
         var center = row + 0.5;
 
         // The edges that ended leave the active ones (in the slots of the sweep line), then those that start in the row
@@ -567,7 +644,7 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>Sweeps a row and turns what it accumulated into coverages.</summary>
     private bool ProcessRow(int row)
     {
-        var edges = _edges!.Edges;
+        var edges = EdgeList;
         double top = row;
         var bottom = top + 1;
 
@@ -682,10 +759,113 @@ internal sealed class CoverageRasterizer : IDisposable
     }
 
     /// <summary>
-    /// Sorts the events of a row by height, then by slot: a total order, so that the result does not depend on the sorting
-    /// algorithm. A heap sort: in place, without allocation, and never quadratic.
+    /// Sorts the events of a row by height, then by slot: a total order (the slots of a row are distinct), so that the
+    /// result does not depend on the sorting algorithm. An introspective sort: partitions around a median of three, sorts
+    /// short ranges by insertion, and falls back to a heap sort when the partitions go too deep. In place, without
+    /// allocation, and never quadratic.
     /// </summary>
-    private static void SortEvents(Span<double> keys, Span<int> slots)
+    internal static void SortEvents(Span<double> keys, Span<int> slots)
+    {
+        IntroSortEvents(keys, slots, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+    }
+
+    /// <summary>Sorts events, with a heap sort once <paramref name="depthLimit"/> partitions are nested.</summary>
+    internal static void IntroSortEvents(Span<double> keys, Span<int> slots, int depthLimit)
+    {
+        const int InsertionSortThreshold = 16;
+        while (keys.Length > InsertionSortThreshold)
+        {
+            if (depthLimit-- == 0)
+            {
+                HeapSortEvents(keys, slots);
+                return;
+            }
+
+            var pivot = PartitionEvents(keys, slots);
+
+            // The shorter side is sorted by recursion, the longer one by the loop: the stack stays logarithmic
+            if (pivot < keys.Length - pivot - 1)
+            {
+                IntroSortEvents(keys[..pivot], slots[..pivot], depthLimit);
+                keys = keys[(pivot + 1)..];
+                slots = slots[(pivot + 1)..];
+            }
+            else
+            {
+                IntroSortEvents(keys[(pivot + 1)..], slots[(pivot + 1)..], depthLimit);
+                keys = keys[..pivot];
+                slots = slots[..pivot];
+            }
+        }
+
+        for (var i = 1; i < keys.Length; i++)
+        {
+            var key = keys[i];
+            var slot = slots[i];
+            var position = i;
+            while (position > 0 && IsEventBefore(key, slot, keys[position - 1], slots[position - 1]))
+            {
+                keys[position] = keys[position - 1];
+                slots[position] = slots[position - 1];
+                position--;
+            }
+
+            keys[position] = key;
+            slots[position] = slot;
+        }
+    }
+
+    /// <summary>Partitions events around the median of the first, middle and last ones.</summary>
+    /// <returns>The final position of the pivot: the events before it come before it, those after it after it.</returns>
+    private static int PartitionEvents(Span<double> keys, Span<int> slots)
+    {
+        var last = keys.Length - 1;
+        var middle = last >> 1;
+        SortPair(keys, slots, 0, middle);
+        SortPair(keys, slots, 0, last);
+        SortPair(keys, slots, middle, last);
+
+        // The median goes next to the end; the first and last events are already on their sides
+        SwapEvents(keys, slots, middle, last - 1);
+        var pivotKey = keys[last - 1];
+        var pivotSlot = slots[last - 1];
+        var left = 0;
+        var right = last - 1;
+        while (true)
+        {
+            while (IsEventBefore(keys[++left], slots[left], pivotKey, pivotSlot))
+            {
+            }
+
+            while (IsEventBefore(pivotKey, pivotSlot, keys[--right], slots[right]))
+            {
+            }
+
+            if (left >= right)
+                break;
+
+            SwapEvents(keys, slots, left, right);
+        }
+
+        SwapEvents(keys, slots, left, last - 1);
+        return left;
+
+        static void SortPair(Span<double> keys, Span<int> slots, int i, int j)
+        {
+            if (IsEventBefore(keys[j], slots[j], keys[i], slots[i]))
+            {
+                SwapEvents(keys, slots, i, j);
+            }
+        }
+    }
+
+    private static void SwapEvents(Span<double> keys, Span<int> slots, int i, int j)
+    {
+        (keys[i], keys[j]) = (keys[j], keys[i]);
+        (slots[i], slots[j]) = (slots[j], slots[i]);
+    }
+
+    private static void HeapSortEvents(Span<double> keys, Span<int> slots)
     {
         var count = keys.Length;
         for (var root = (count / 2) - 1; root >= 0; root--)
@@ -728,13 +908,14 @@ internal sealed class CoverageRasterizer : IDisposable
         slots[root] = slot;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsEventBefore(double key, int slot, double otherKey, int otherSlot)
         => key != otherKey ? key < otherKey : slot < otherSlot;
 
     /// <summary>Puts an edge that starts at the current height in the sweep line.</summary>
     private void Insert(int slot, double y)
     {
-        var edges = _edges!.Edges;
+        var edges = EdgeList;
         var line = Line;
         var slotEdge = SlotEdge;
         var index = slotEdge[slot];
@@ -774,7 +955,7 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>Takes an edge that ends at the current height out of the sweep line.</summary>
     private void Remove(int slot)
     {
-        var end = _edges!.Edges[SlotEdge[slot]].Y1;
+        var end = EdgeList[SlotEdge[slot]].Y1;
         RecordBoundary(slot, end);
         var position = FindPosition(slot, end);
         var line = Line;
@@ -831,7 +1012,7 @@ internal sealed class CoverageRasterizer : IDisposable
         if (first > 0)
         {
             var before = line[first - 1];
-            winding = WindingBefore[before] + _edges!.Edges[SlotEdge[before]].Direction;
+            winding = WindingBefore[before] + EdgeList[SlotEdge[before]].Direction;
         }
 
         // The contours are closed: right of the last change, the winding numbers are what they were, and the walk stops
@@ -856,7 +1037,7 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <returns>The winding number right of the edge.</returns>
     private int Update(int slot, int winding, double y)
     {
-        var after = winding + _edges!.Edges[SlotEdge[slot]].Direction;
+        var after = winding + EdgeList[SlotEdge[slot]].Direction;
         var sign = (IsInside(after) ? 1 : 0) - (IsInside(winding) ? 1 : 0);
         if (sign != SlotSign[slot])
         {
@@ -876,7 +1057,7 @@ internal sealed class CoverageRasterizer : IDisposable
         var sign = SlotSign[slot];
         if (sign != 0 && y > since)
         {
-            ref readonly var edge = ref _edges!.Edges[SlotEdge[slot]];
+            ref readonly var edge = ref EdgeList[SlotEdge[slot]];
             var height = y - since;
             AddBoundary(GetX(edge, since), GetX(edge, y), sign > 0 ? height : -height);
         }
@@ -892,7 +1073,7 @@ internal sealed class CoverageRasterizer : IDisposable
         var crossing = double.PositiveInfinity;
         if (position + 1 < _lineCount)
         {
-            var edges = _edges!.Edges;
+            var edges = EdgeList;
             ref readonly var left = ref edges[SlotEdge[slot]];
             ref readonly var right = ref edges[SlotEdge[line[position + 1]]];
             var end = Math.Min(left.Y1, right.Y1);
@@ -1004,7 +1185,7 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>Finds a slot in the sweep line, which is in left-to-right order at a height (up to rounding).</summary>
     private int FindPosition(int slot, double y)
     {
-        var edges = _edges!.Edges;
+        var edges = EdgeList;
         var line = Line;
         var slotEdge = SlotEdge;
         var x = GetX(edges[slotEdge[slot]], y);
@@ -1255,6 +1436,7 @@ internal sealed class CoverageRasterizer : IDisposable
     }
 
     /// <summary>Gets the position of an edge at a height of its range; the ends are returned exactly.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static double GetX(in DrawingEdge edge, double y)
     {
         if (y == edge.Y0)
@@ -1267,6 +1449,7 @@ internal sealed class CoverageRasterizer : IDisposable
     }
 
     /// <summary>The total order of the edges at a height: position, then direction of travel (the one going more to the left first), then index.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsBefore(double x, double slope, int index, double otherX, double otherSlope, int otherIndex)
     {
         if (x != otherX)

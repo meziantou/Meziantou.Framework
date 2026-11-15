@@ -1965,13 +1965,17 @@ public sealed class TiffCodecTests
     }
 
     [Theory]
-    [InlineData(2, 2, 3, false, 0)]
-    [InlineData(1, 1, 3, false, 0)]
-    [InlineData(2, 1, 3, true, 0)]
-    [InlineData(1, 1, 1, false, 0)]
-    [InlineData(1, 1, 1, true, 0)]
-    [InlineData(2, 2, 3, false, 2)]
-    public void OldJpegPagesWithTablesInTagsDecodeLikeTheirBlocks(int horizontal, int vertical, int componentCount, bool tiled, int restartInterval)
+    [InlineData(2, 2, 3, false, 0, 8)]
+    [InlineData(1, 1, 3, false, 0, 8)]
+    [InlineData(2, 1, 3, true, 0, 8)]
+    [InlineData(1, 1, 1, false, 0, 8)]
+    [InlineData(1, 1, 1, true, 0, 8)]
+    [InlineData(2, 2, 3, false, 2, 8)]
+    [InlineData(2, 2, 3, false, 0, 12)]
+    [InlineData(2, 1, 3, true, 2, 12)]
+    [InlineData(1, 1, 1, false, 0, 12)]
+    [InlineData(1, 1, 1, true, 0, 12)]
+    public void OldJpegPagesWithTablesInTagsDecodeLikeTheirBlocks(int horizontal, int vertical, int componentCount, bool tiled, int restartInterval, int precision)
     {
         // TIFF 6.0 section 22: the tables are in JPEGQTables, JPEGDCTables and JPEGACTables, and each strip or tile holds
         // the entropy-coded data of a frame of its size, without markers. The blocks are written by the test-side encoder,
@@ -1979,7 +1983,7 @@ public sealed class TiffCodecTests
         const int Width = 21;
         const int Height = 37;
         (int H, int V)[] sampling = componentCount == 1 ? [(1, 1)] : [(horizontal, vertical), (1, 1), (1, 1)];
-        var blocks = CreateOldJpegBlocks(Width, Height, sampling, tiled);
+        var blocks = CreateOldJpegBlocks(Width, Height, sampling, tiled, precision);
         var options = new JpegTestEncodeOptions { RestartInterval = restartInterval };
         var encoded = blocks.Select(block => ParseJpeg(block.Image.Encode(options))).ToArray();
         var tables = encoded[0];
@@ -1988,6 +1992,7 @@ public sealed class TiffCodecTests
             Width = Width,
             Height = Height,
             SamplesPerPixel = componentCount,
+            BitsPerSample = precision,
             Photometric = componentCount == 1 ? 1 : 6,
             Compression = 6,
             RowsPerStrip = 16,
@@ -2028,14 +2033,16 @@ public sealed class TiffCodecTests
         });
 
         using var image = Image.Load(data);
-        Assert.Equal(componentCount == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24, image.PixelFormat);
-        Assert.Equal(ComposeOldJpegPixels(Width, Height, blocks, componentCount), GetBytes(image));
+        Assert.Equal(blocks[0].Image.PixelFormat, image.PixelFormat);
+        Assert.Equal(ComposeOldJpegPixels(Width, Height, blocks), GetExpectedLayoutBytes(image));
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void OldJpegPagesWithAJpegInterchangeFormatDecodeLikeLibTiff(bool frameOfThePage)
+    [InlineData(false, 8)]
+    [InlineData(true, 8)]
+    [InlineData(false, 12)]
+    [InlineData(true, 12)]
+    public void OldJpegPagesWithAJpegInterchangeFormatDecodeLikeLibTiff(bool frameOfThePage, int precision)
     {
         // JPEGInterchangeFormat points at the markers of the image up to its start of scan, and each strip holds the
         // entropy-coded data of its rows, coded on its own: libtiff requires the frame of the header to be as tall as the
@@ -2043,13 +2050,14 @@ public sealed class TiffCodecTests
         const int Width = 19;
         const int Height = 41;
         (int H, int V)[] sampling = [(2, 2), (1, 1), (1, 1)];
-        var blocks = CreateOldJpegBlocks(Width, Height, sampling, tiled: false);
+        var blocks = CreateOldJpegBlocks(Width, Height, sampling, tiled: false, precision);
         var datastreams = blocks.Select(static block => block.Image.Encode()).ToArray();
         var headerLength = ParseJpeg(datastreams[0]).HeaderLength;
         var header = datastreams[0][..headerLength];
+        var frameMarker = precision == 8 ? (byte)0xC0 : (byte)0xC1;
         if (frameOfThePage)
         {
-            var frame = FindSegment(header, 0xC0);
+            var frame = FindSegment(header, frameMarker);
             header[frame + 5] = 0;
             header[frame + 6] = Height;
         }
@@ -2059,6 +2067,7 @@ public sealed class TiffCodecTests
             Width = Width,
             Height = Height,
             SamplesPerPixel = 3,
+            BitsPerSample = precision,
             Photometric = 6,
             Compression = 6,
             RowsPerStrip = 16,
@@ -2067,13 +2076,20 @@ public sealed class TiffCodecTests
         };
         page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [2, 2]));
         var data = BuildWithAppendedData(page, [.. header], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [(ulong)header.Length])]);
-        using var image = Image.Load(data);
-        Assert.Equal(ComposeOldJpegPixels(Width, Height, blocks, 3), GetBytes(image));
+        using (var image = Image.Load(data))
+        {
+            Assert.Equal(ComposeOldJpegPixels(Width, Height, blocks), GetExpectedLayoutBytes(image));
+        }
 
         // A frame of another height describes neither the page nor its strips
         var frameHeader = header.ToArray();
-        frameHeader[FindSegment(frameHeader, 0xC0) + 6] = 7;
+        frameHeader[FindSegment(frameHeader, frameMarker) + 6] = 7;
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(BuildWithAppendedData(page, [.. frameHeader], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [(ulong)frameHeader.Length])])));
+
+        // The frame codes the samples of the page: its precision must be the one of BitsPerSample
+        var otherPrecision = header.ToArray();
+        otherPrecision[FindSegment(otherPrecision, frameMarker) + 4] = (byte)(20 - precision);
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(BuildWithAppendedData(page, [.. otherPrecision], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [(ulong)otherPrecision.Length])])));
     }
 
     [Fact]
@@ -2107,12 +2123,13 @@ public sealed class TiffCodecTests
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(BuildWithAppendedData(page, [0xFF, 0xD8, 0xFF, 0xD9], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [4])])));
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(BuildWithAppendedData(page, [], offset => [new TiffFieldSpec(513, 4, [offset + 100])])));
 
-        var deep = new TiffPageSpec { Width = 8, Height = 8, SamplesPerPixel = 1, BitsPerSample = 12, Compression = 6, EncodedBlocks = [[0]], Samples = [] };
-        Assert.Equal("BitsPerSample: 12", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(new TiffFileBuilder().AddPage(deep).Build())).Feature);
+        // The DCT-based processes code 8- and 12-bit samples only
+        var deep = new TiffPageSpec { Width = 8, Height = 8, SamplesPerPixel = 1, BitsPerSample = 10, Compression = 6, EncodedBlocks = [[0]], Samples = [] };
+        Assert.Equal("Compression: old-style JPEG with 10-bit samples", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(new TiffFileBuilder().AddPage(deep).Build())).Feature);
     }
 
     /// <summary>The blocks of an old-style JPEG page: one test image per strip or 16x16 tile, all with the quantization tables of the first one.</summary>
-    private static (int X, int Y, JpegTestImage Image)[] CreateOldJpegBlocks(int width, int height, (int H, int V)[] sampling, bool tiled)
+    private static (int X, int Y, JpegTestImage Image)[] CreateOldJpegBlocks(int width, int height, (int H, int V)[] sampling, bool tiled, int precision = 8)
     {
         var result = new List<(int, int, JpegTestImage)>();
         ushort[][]? quantization = null;
@@ -2124,9 +2141,9 @@ public sealed class TiffCodecTests
                 // A tile is coded in full; a strip has the rows of the page it covers
                 var blockWidth = tiled ? 16 : width;
                 var blockHeight = tiled ? 16 : Math.Min(16, height - y);
-                var random = JpegTestImage.CreateRandom(blockWidth, blockHeight, sampling, seed++);
+                var random = JpegTestImage.CreateRandom(blockWidth, blockHeight, sampling, seed++, precision: precision);
                 quantization ??= random.QuantizationTables;
-                var image = JpegTestImage.FromCoefficients(blockWidth, blockHeight, sampling, quantization, (component, blockX, blockY) => random.Components[component].Blocks[(blockY * random.Components[component].BlocksX) + blockX]);
+                var image = JpegTestImage.FromCoefficients(blockWidth, blockHeight, sampling, quantization, (component, blockX, blockY) => random.Components[component].Blocks[(blockY * random.Components[component].BlocksX) + blockX], precision: precision);
                 result.Add((x, y, image));
             }
         }
@@ -2134,9 +2151,11 @@ public sealed class TiffCodecTests
         return [.. result];
     }
 
-    /// <summary>The pixels of a page made of the blocks of <see cref="CreateOldJpegBlocks"/>.</summary>
-    private static byte[] ComposeOldJpegPixels(int width, int height, (int X, int Y, JpegTestImage Image)[] blocks, int bytesPerPixel)
+    /// <summary>The pixels of a page made of the blocks of <see cref="CreateOldJpegBlocks"/>, in the layout of <see cref="JpegTestImage.GetExpectedPixels()"/>.</summary>
+    private static byte[] ComposeOldJpegPixels(int width, int height, (int X, int Y, JpegTestImage Image)[] blocks)
     {
+        var first = blocks[0].Image;
+        var bytesPerPixel = first.Precision == 8 ? first.Components.Length : first.Components.Length == 1 ? 2 : 8;
         var result = new byte[width * height * bytesPerPixel];
         foreach (var (x, y, image) in blocks)
         {
@@ -2222,7 +2241,7 @@ public sealed class TiffCodecTests
 
                     break;
 
-                case 0xC0:
+                case 0xC0 or 0xC1:
                     for (var i = 0; i < payload[5]; i++)
                     {
                         componentQuantization.Add(payload[6 + (i * 3) + 2]);
@@ -4139,6 +4158,9 @@ public sealed class TiffCodecTests
     }
 
     /// <summary>Gets the pixels as <see cref="Rgba64"/> bytes (an opaque alpha for <see cref="Rgb48"/>).</summary>
+    /// <summary>Gets the pixels of an image in the layout of <see cref="JpegTestImage.GetExpectedPixels()"/>: <see cref="PixelFormat.Rgb48"/> pixels as opaque <see cref="PixelFormat.Rgba64"/> ones.</summary>
+    private static byte[] GetExpectedLayoutBytes(Image image) => image.PixelFormat == PixelFormat.Rgb48 ? GetRgba64Bytes(image) : GetBytes(image);
+
     private static byte[] GetRgba64Bytes(Image image)
     {
         using var wide = image.CloneAs<Rgba64>();

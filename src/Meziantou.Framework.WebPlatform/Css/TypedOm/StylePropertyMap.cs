@@ -232,7 +232,7 @@ public sealed class StylePropertyMap : StylePropertyMapReadOnly
 
     private protected override IEnumerable<string> GetNames() => _declarations.Declarations.Select(d => d.Name).Where(name => _declarations.GetPropertyValue(name).Length > 0);
 
-    private static bool IsCssWideKeyword(List<CssComponentValue> values) => values is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(keyword.Token.Value));
+    private static bool IsCssWideKeyword(List<CssComponentValue> values) => values is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(keyword.Value));
 
     private static void CheckAssociatedProperties(string property, ReadOnlySpan<CssStyleValueOrString> values)
     {

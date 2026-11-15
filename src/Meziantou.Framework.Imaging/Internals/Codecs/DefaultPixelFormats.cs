@@ -85,6 +85,9 @@ internal static class DefaultPixelFormats
     /// <returns><see cref="PixelFormat.RgbaHalf"/> for HALF samples, otherwise <see cref="PixelFormat.RgbaFloat"/> (FLOAT and UINT samples, which a half cannot hold).</returns>
     public static PixelFormat ForOpenExr(bool halfOnly) => halfOnly ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat;
 
+    /// <summary>Gets the default pixel format of a Radiance HDR image: every RGBE pixel is an exact single-precision color.</summary>
+    public static PixelFormat Radiance => PixelFormat.RgbaFloat;
+
     /// <summary>Selects the default pixel format of a BMP image.</summary>
     /// <param name="hasAlphaMask">Whether the DIB layout defines a real (non-padding) alpha channel.</param>
     /// <returns><see cref="PixelFormat.Rgba32"/> for layouts with an alpha mask, otherwise <see cref="PixelFormat.Rgb24"/>.</returns>

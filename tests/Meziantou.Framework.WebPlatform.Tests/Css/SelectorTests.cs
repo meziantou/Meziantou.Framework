@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.WebPlatform.Css.Selectors;
 using Meziantou.Framework.WebPlatform.Css.Syntax;
 using Meziantou.Framework.WebPlatform.Dom;
@@ -260,6 +261,18 @@ public sealed class SelectorTests
         Assert.True(p.Matches(":host > p"));
         Assert.False(p.Matches("body p"));
         Assert.Same(p, shadow.QuerySelector(":host p"));
+    }
+
+    [Fact]
+    public void QuerySelector_LargeSelectorThenSmallSelector()
+    {
+        // The buffers of a large selector are not kept by the thread, and the next selectors still parse
+        var document = Parse("<!DOCTYPE html><p class='a b'>x</p><span class='a'>y</span>");
+        var large = string.Join(", ", Enumerable.Range(0, 2000).Select(i => "p" + string.Concat(Enumerable.Repeat(".a", 3)) + " > span.c" + i.ToString(CultureInfo.InvariantCulture)));
+        Assert.Null(document.QuerySelector(large));
+        Assert.Equal("x", document.QuerySelector(string.Concat(Enumerable.Repeat(".a", 2000)) + ".b")!.TextContent);
+        Assert.Equal("y", document.QuerySelector("span.a")!.TextContent);
+        Assert.Equal("x", document.QuerySelector("p.a.b")!.TextContent);
     }
 
     [Fact]

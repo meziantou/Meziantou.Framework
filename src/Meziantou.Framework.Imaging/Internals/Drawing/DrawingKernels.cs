@@ -987,7 +987,9 @@ internal static class DrawingKernels
         if (!isConstant && !erases)
             return false;
 
-        var first = coverage.IndexOf(Full);
+        // A run whose pixels are all covered entirely is not searched
+        Debug.Assert(!source.IsFullyCovered || !coverage.ContainsAnyExcept(Full));
+        var first = source.IsFullyCovered ? 0 : coverage.IndexOf(Full);
         if (first < 0)
             return false;
 
@@ -1011,7 +1013,7 @@ internal static class DrawingKernels
             if (first == coverage.Length)
                 return true;
 
-            var length = coverage[first..].IndexOfAnyExcept(Full);
+            var length = source.IsFullyCovered ? -1 : coverage[first..].IndexOfAnyExcept(Full);
             if (length < 0)
             {
                 length = coverage.Length - first;

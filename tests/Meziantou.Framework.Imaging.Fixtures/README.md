@@ -8,7 +8,7 @@ Independent reference data for the conformance and interop tests, extended with 
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
   color conversion vectors: `icc`, `IccCorpus.cs`; the AV1 conformance vectors of the `av1Vectors` section: `avif`,
   `AvifCorpus.cs`; AVIF entries: `avif-container`, `AvifCorpus.Container.cs`; HEIC entries: `heic-container`,
-  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; the HEVC
+  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; Radiance HDR entries: `hdr`, `RadianceCorpus.cs`; the HEVC
   conformance vectors of the `hevcVectors` section: `hevc`, `HevcCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
   its SHA-256 hash, provenance and license.
 - The tests read this folder from the Git repository root (`FixtureRoot.GetDirectory()`). They never download anything
@@ -23,7 +23,7 @@ Independent reference data for the conformance and interop tests, extended with 
 
 ```
 tests/Meziantou.Framework.Imaging.Fixtures/
-  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/
+  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/   hdr/
                                       encoded inputs and their raw references
   invalid/<format>/                   malformed, unsupported or over-limit inputs (expected errors, no expected pixels)
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
@@ -40,8 +40,9 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   (`png` for PNG and APNG, `gif`, `jpeg`, `webp`, `qoi`, `bmp`, `tga`, `pnm` for every Netpbm variant, `avif` for AVIF
   still images and image sequences, `heic` for HEIC still images and image sequences, `jxl` for JPEG XL codestreams and
   containers, `jp2` for JPEG 2000 codestreams and files of the JP2 family, whatever their block coder, `exr` for OpenEXR
-  files). The expected frames of an OpenEXR fixture are `rgbaf32le` buffers: the 32-bit floats of its `RgbaHalf` or
-  `RgbaFloat` pixels (a half converts to a float exactly), compared bit for bit; they are no source of the encoder suites.
+  files, `hdr` for Radiance HDR files). The expected frames of an OpenEXR or a Radiance HDR fixture are `rgbaf32le`
+  buffers: the 32-bit floats of its `RgbaHalf` or `RgbaFloat` pixels (a half converts to a float exactly), compared bit
+  for bit; they are no source of the encoder suites.
 - Kinds: `valid` (expected pixels and metadata), `invalid` (malformed: expected exception), `unsupported` (recognized but
   unsupported feature: `UnsupportedImageFeatureException`), `limit` (decoded with `decodeOptions.limits`:
   `ImageResourceLimitException` with `limitKind`). Error fixtures never carry fabricated expected pixels and are kept
@@ -779,6 +780,8 @@ header (65,536 bytes) rejects.
 | JPEG 2000 errors | invalid (rejected by opj_decompress, and by FFmpeg unless stated): a codestream without EOC marker and one cut in its tile-part, a tile of width 0, no component, an empty image area, no COD and no QCD marker segment, a tile index, a tile-part length and a tile-part index out of range, a file without codestream box, without JP2 header box (FFmpeg reads it), with an image header that contradicts the codestream (FFmpeg reads it), with a codestream box that is cut (FFmpeg reads it), without color specification box and with a box length of 4 (the reference decoders read both: the Recommendation is the reference), an HT cleanup segment with a suffix longer than itself; unsupported: five components without color specification, a sub-sampled first component, a premultiplied opacity, several opacity channels, the extensions of ISO/IEC 15444-2, the brand of Motion JPEG 2000, two codestreams, mixed block coders, a second HT set, placeholder passes in another packet than the HT cleanup pass; limits: width, height, frame pixels, metadata bytes before and after the codestream |
 | OpenEXR | every compression the library reads (NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB, ZSTD) with HALF RGBA and FLOAT RGB samples; DWAA tiles (zlib AC coefficients), a DWAB colour set of HALF and FLOAT channels, a DWAA luminance with alpha, ZSTD tiles and ZSTD segments of 2-byte and 4-byte samples; luminance (Y) with and without alpha, a red channel alone, HALF, FLOAT and UINT channels in one file, UINT luminance, infinities, not-a-number and the extreme floats, one pixel; flat B44A blocks, a pLinear B44 channel, PXR24 rounding ties, a PIZ chunk of more than 16384 values (16-bit wavelet); tiles of one level, mipmaps rounded up, ripmaps, tiles in random order, B44 tiles of odd sizes; a decreasing line order, a data window inside the display window from negative coordinates, other attributes and a long name; the chromaticities of BT.709, BT.2020 and Display P3; four sample images of the OpenEXR project (stripes, every half value, mipmapped PXR24 tiles, t01 of DisplayWindow) |
 | OpenEXR errors | invalid (rejected by OpenEXR too): a file cut in its last chunk, an offset after the end of the file, a chunk with the coordinates of another one, corrupt zlib data, a PIZ chunk whose Huffman data declare more bits than they have, an RLE run longer than its chunk, no channel list; unsupported: the HTJ2K256 and HTJ2K32 compressions, multi-part files (a stereo pair; render passes in scan lines and tiles), deep data (scan lines in NONE, RLE, ZIPS and ZSTD, clipped tiles in RLE and ZSTD, a ZBack and another layer, no alpha), a Z channel, the channels of a layer, luminance and chroma (RY, BY), a data window larger than the display window (and three sample images of the OpenEXR project whose windows differ), deep data; renderer outputs rejected by default: RGBA with a depth and a normals layer in an overscan in every compression the library reads, tiles of several layers in an overscan, mipmapped tiles of layers without a default layer, a sub-sampled extra channel; each of these (but the compressions) declares its decodings with `OpenExrDecodingOptions` (`exrDecodings`: a part, deep data flattened, a layer, the crop to the display window, the data window, and the errors left: a missing part, a missing layer, a vector layer, chroma channels, deep data without alpha), referenced by OpenEXR and cross-checked with FFmpeg (its `layer` option) or the samples given to `exr-from-raw`; limits: frame pixels and the bytes of the attributes |
+| Radiance HDR | RGBE patterns of high dynamic range in flat, "old" run-length encoded (repetitions whose count takes several pixels) and "new" run-length encoded scanlines (runs and literals longer than one code), the three mixed in one file; the seven other orientations of the resolution string (rows stored from the bottom or right to left, columns in the four directions), flat and run-length encoded; the identifier `#?RGBE` without FORMAT; commands, a comment and the variables EXPOSURE (twice), COLORCORR, PIXASPECT, GAMMA, VIEW, SOFTWARE and another one; variables whose values cannot be read (`PIXASPECT=inf`, as FFmpeg writes it); the standard primaries of Radiance, those of BT.709, BT.2020 and Display P3; exponents of 1 and 255, the exponent 0 with mantissas, a mantissa 0; one pixel; two files of the Radiance encoder of FFmpeg (run-length encoded and narrow, flat) |
+| Radiance HDR errors | invalid: a file cut in its header, its resolution string, after the marker of its first scanline and in its last scanline, two FORMAT lines, resolution strings of one axis, of the same axis twice, of a size 0 and of lowercase axes, a run-length encoded scanline whose marker declares another length, a run and a literal past the end of a scanline, a code 0, an old repetition without a previous pixel and one past the end of a scanline; unsupported: XYZE samples (rows and columns), another FORMAT; limits: frame pixels and the bytes of the header |
 | Errors | PNG header defects (bad IHDR CRC, IHDR not first, illegal bit depth, chunk length above 2^31 - 1, unknown critical chunk `CgBI` — unsupported), structure defects (truncated IDAT, bad IDAT CRC, non-consecutive IDAT, PLTE after IDAT, missing IEND) and pixel-data defects with valid containers (truncated zlib, missing or wrong Adler-32, bytes after the zlib datastream, one extra scanline, one missing scanline, filter type 5, out-of-range palette index); truncated GIF image data, GIF plain-text extension (unsupported), arithmetic-coded JPEG (unsupported); GIF LZW and color-table defects inside valid containers (code above the next table code, table code after a clear, end code too early, data ending without end code, an index outside the table, no color table) and block defects (unknown block, 3-byte Graphic Control Extension, minimum code size 12, missing trailer, no image, empty logical screen); resource limits: frame count, GIF displayed pixels (`MaxTotalPixels`, decode-only), width, frame pixels, encoded bytes (reached at IEND), and a `zTXt` whose 171-byte zlib stream inflates to 25,801 bytes with `MaxMetadataBytes` = 4096 (deterministic fixed-Huffman stream written by the generator) |
 
 ## Fixture coverage matrix
@@ -816,6 +819,7 @@ follows it, so keep both headings unique in this file.
 | bmp | 24 | 21 | 2 | 2 |
 | exr | 54 | 7 | 33 | 2 |
 | gif | 24 | 13 | 1 | 2 |
+| hdr | 27 | 15 | 3 | 2 |
 | heic | 117 | 31 | 20 | 11 |
 | jpeg | 72 | 19 | 5 | 1 |
 | jp2 | 95 | 17 | 10 | 5 |
@@ -1540,6 +1544,26 @@ follows it, so keep both headings unique in this file.
 | OpenEXR other attributes | `exr.otherAttributes` | 5 | 0 | 0 | 0 |
 | OpenEXR long names | `exr.longNames` | 1 | 0 | 0 | 0 |
 | OpenEXR sample images of the OpenEXR project | `exr.external` | 4 | 0 | 0 | 0 |
+| Radiance HDR flat scanlines | `hdr.encoding=flat` | 9 | 0 | 0 | 0 |
+| Radiance HDR old run-length encoded scanlines | `hdr.encoding=old-rle` | 3 | 0 | 0 | 0 |
+| Radiance HDR new run-length encoded scanlines | `hdr.encoding=new-rle` | 18 | 0 | 0 | 0 |
+| Radiance HDR rows from the top, left to right (standard) | `hdr.scanOrder=-Y+X` | 17 | 0 | 0 | 0 |
+| Radiance HDR rows from the top, right to left | `hdr.scanOrder=-Y-X` | 2 | 0 | 0 | 0 |
+| Radiance HDR rows from the bottom, right to left | `hdr.scanOrder=+Y-X` | 2 | 0 | 0 | 0 |
+| Radiance HDR rows from the bottom, left to right | `hdr.scanOrder=+Y+X` | 2 | 0 | 0 | 0 |
+| Radiance HDR columns from the left, bottom to top | `hdr.scanOrder=+X+Y` | 1 | 0 | 0 | 0 |
+| Radiance HDR columns from the right, bottom to top | `hdr.scanOrder=-X+Y` | 1 | 0 | 0 | 0 |
+| Radiance HDR columns from the right, top to bottom | `hdr.scanOrder=-X-Y` | 1 | 0 | 0 | 0 |
+| Radiance HDR columns from the left, top to bottom | `hdr.scanOrder=+X-Y` | 1 | 0 | 0 | 0 |
+| Radiance HDR commands in the header | `hdr.commands` | 1 | 0 | 0 | 0 |
+| Radiance HDR EXPOSURE | `hdr.exposure` | 1 | 0 | 0 | 0 |
+| Radiance HDR COLORCORR | `hdr.colorCorrection` | 1 | 0 | 0 | 0 |
+| Radiance HDR PIXASPECT | `hdr.pixelAspect` | 1 | 0 | 0 | 0 |
+| Radiance HDR GAMMA | `hdr.gamma` | 1 | 0 | 0 | 0 |
+| Radiance HDR VIEW | `hdr.view` | 1 | 0 | 0 | 0 |
+| Radiance HDR SOFTWARE | `hdr.software` | 1 | 0 | 0 | 0 |
+| Radiance HDR PRIMARIES | `hdr.primaries` | 4 | 0 | 0 | 0 |
+| Radiance HDR variables whose values cannot be read | `hdr.unreadableVariables` | 1 | 0 | 0 | 0 |
 
 Not covered by fixtures, and verified elsewhere: encoder outputs (independent readers, FFmpeg and Apple ImageIO), malformed-input robustness beyond the error
 fixtures (`FuzzTests/MutationFuzzTests`, `Tests.Shared/Suites/Decode/TruncationTests`), and limits at every boundary (`Tests.Shared/Suites/Decode/ResourceLimitBoundaryTests`).
@@ -2655,6 +2679,29 @@ tool version to see what changes; the interop CI job runs it on every build to d
   ```shell
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- exr --openexr-images <checkout>          # check
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- exr --openexr-images <checkout> --write  # replace the OpenEXR fixtures, then review the diff
+  ```
+
+- `hdr` (`RadianceCorpus.cs`) generates the Radiance HDR fixtures; it replaces only the entries of format `hdr` and their
+  files (`hdr/`, `invalid/hdr/`, `limit/hdr/`). Most files are assembled by the test harness (`RadianceFileBuilder`,
+  written from the Radiance file format documentation and "Real Pixels" of Graphics Gems II) from RGBE patterns, in the
+  three scanline encodings and the eight orientations; their reference is the pattern, read as the reference routines
+  of Radiance read a pixel, `(m + 0.5) × 2^(e - 136)` (0 for the exponent 0), and `ReferenceRadiance`, an independent
+  reader of the harness, must give the pattern back from the file. Two files are written by the Radiance encoder of
+  FFmpeg (pinned in `PinnedFfmpeg`, currently 9.0.2), whose reference is the RGBE pixels `ReferenceRadiance` reads. Every
+  valid file is cross-checked with the Radiance decoder of FFmpeg, which reads a mantissa as the bottom of its interval,
+  `m × 2^(e - 136)`: the generator requires that it gives exactly the reference minus half a unit of each exponent,
+  for the scanlines in file order (FFmpeg ignores the orientation of the resolution string), and records it as a
+  documented difference excluded from the tolerance; FFmpeg misreads the files whose scanlines are columns, which is
+  recorded. An invalid fixture is rejected by `ReferenceRadiance` too, except two FORMAT lines and a size of 0, which it
+  does not check. `pvalue` of the Radiance distribution (the reference implementation, pinned in `PinnedRadiance`,
+  currently 6.1a+5b2a2154, by the meziantou/prebuilt release of the `Meziantou.Prebuilt` package) must give exactly the
+  reference of every valid fixture, in file order, and must reject every invalid fixture except the three Radiance
+  tolerates (`ToleratedByRadiance`: a repetition past the end of a scanline, a code 0, two FORMAT lines), which the
+  notes of these fixtures say; the generator fails when pvalue starts to reject one of them:
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- hdr          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- hdr --write  # replace the Radiance HDR fixtures, then review the diff
   ```
 
 - `heic-container` (`HeicCorpus.Container.cs`: tools, references, cross-check and manifest entries;

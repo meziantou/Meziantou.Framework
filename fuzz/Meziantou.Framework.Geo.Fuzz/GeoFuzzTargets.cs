@@ -385,7 +385,7 @@ public static partial class GeoFuzzTargets
 
     private static bool IsFinite(GeoFeatureCollection features) => features.All(feature => feature.Geometry is null || IsFinite(feature.Geometry));
 
-    private static bool IsFinite(GeoGeometry geometry) => geometry.GetPositions().All(position => double.IsFinite(position.Longitude) && double.IsFinite(position.Latitude) && (position.Altitude is not { } altitude || double.IsFinite(altitude)));
+    private static bool IsFinite(GeoGeometry geometry) => geometry.GetPositions().All(position => double.IsFinite(position.Longitude) && double.IsFinite(position.Latitude) && (position.Altitude is not { } altitude || double.IsFinite(altitude)) && (position.Measure is not { } measure || double.IsFinite(measure)));
 
     /// <summary>
     /// The geometry the WKT and WKB writers give: a geometry has a single number of dimensions, so when a position has an

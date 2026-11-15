@@ -275,6 +275,17 @@
       "defect": "A deep scan line whose stored sample count table is empty: the empty size matched the size of the raw table of an unclipped tile, which is 0 for scan lines, so the table was copied from a too-short span (ArgumentOutOfRangeException). Fixed in ExrChunkDecompressor.DecompressDeepTable: only a tile stores its table raw in a larger buffer.",
       "expectedIdentify": "UnsupportedImageFeatureException",
       "expectedLoad": "UnsupportedImageFeatureException"
+    },
+    {
+      "id": "avif/header-probe-replaced-sequence-header",
+      "file": "avif-header-probe-replaced-sequence-header.avif",
+      "sha256": "91a534ee98299b191e7e12b453e59bf858cb42f7a16cda760d4a6b1e6a01fbe1",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group av1-intra, weekly campaign (run 43574265932), base seed 43574265932, 420 s, mutation 78 of av1/lr-units-64-420-512x256 (reader variant 42); not reduced by FuzzMinimizer (36785 bytes)",
+      "defect": "The item data have two sequence headers before the frame, without colr box: the first one declares the reserved matrix coefficients 181, the second one BT.470BG. The header identification read the color description of the first one and rejected the file with UnsupportedImageFeatureException, while the full identification and Load use the last one before the first frame header (AvifBinding.ReadSequenceHeader) and succeed. Fixed in AvifBinding.TryLocateBitstreamHeader: the header probe delimits the sequence headers up to the first frame header, and reads the last one.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
     }
   ]
 }

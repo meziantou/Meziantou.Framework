@@ -87,17 +87,30 @@ internal sealed class AvifBinding : HeifCodecBinding
         }
     }
 
-    // Looks for the first sequence header in the first bytes of a bitstream: the configuration record of AV1 may repeat it,
-    // but the bitstream always has it
+    // Looks for the sequence header that ReadSequenceHeader reads in the first bytes of a bitstream: the last one before the
+    // first frame header, which the first frame is decoded with. The configuration record of AV1 may repeat it, but the
+    // bitstream always has it. The header is whole when the first frame header that follows a sequence header starts: a
+    // sequence header that a later one replaces does not describe the image (fuzz regression)
     public override bool? TryLocateBitstreamHeader(ReadOnlySpan<byte> configuration, ReadOnlySpan<byte> data, out int end)
     {
         end = 0;
         var offset = 0;
+        var hasSequenceHeader = false;
         while (offset < data.Length)
         {
             // AV1 specification, section 5.3.2 "OBU header syntax": only the last unit of the data may have no size field
             var header = data[offset];
-            if ((header & 0x82) is not 0x02)
+            if ((header & 0x80) is not 0)
+                return false;
+
+            var type = (header >> 3) & 15;
+            if (hasSequenceHeader && type is Av1Constants.ObuFrameHeader or Av1Constants.ObuFrame)
+            {
+                end = offset;
+                return true;
+            }
+
+            if ((header & 0x02) is 0)
                 return false;
 
             var position = offset + 1 + ((header >> 2) & 1);
@@ -119,18 +132,10 @@ internal sealed class AvifBinding : HeifCodecBinding
             }
 
             var next = position + size;
-            if (((header >> 3) & 15) is Av1Constants.ObuSequenceHeader)
-            {
-                if (next > data.Length)
-                    return null;
-
-                end = (int)next;
-                return true;
-            }
-
             if (next > int.MaxValue)
                 return false;
 
+            hasSequenceHeader |= type is Av1Constants.ObuSequenceHeader;
             offset = (int)next;
         }
 

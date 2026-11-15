@@ -3827,6 +3827,71 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FloatWorkingSampleStoreMatchesTheScalarReference()
+    {
+        var random = new Random(20261115);
+        foreach (var alpha in new[] { WorkingAlpha.Opaque, WorkingAlpha.None })
+        {
+            for (var pixels = 0; pixels <= 21; pixels++)
+            {
+                // Values that round to floats in every way: ties, values beyond the range of floats, subnormals, infinities
+                // and values that are not numbers
+                var count = pixels * 4;
+                var values = new double[WorkingSamples.GetWorkingLength(count, alpha)];
+                for (var i = 0; i < values.Length; i++)
+                {
+                    values[i] = random.Next(9) switch
+                    {
+                        0 => 0,
+                        1 => (double)BitConverter.Int32BitsToSingle(random.Next()) + (Math.BitIncrement(1.0) - 1.0),
+                        2 => 1e39 * (random.Next(2) * 2 - 1),
+                        3 => 1e-42,
+                        4 => double.PositiveInfinity,
+                        5 => BitConverter.Int64BitsToDouble(0x7FF8_0000_1234_5678),
+                        6 => -1.5e-45,
+                        _ => (random.NextDouble() * 4) - 2,
+                    };
+                }
+
+                var expected = new float[count];
+                var actual = new float[count];
+                WorkingSamples.StoreScalar<float>(values, expected, alpha, transfer: 0, max: 1);
+                WorkingSamples.Store<float>(values, actual, alpha, transfer: 0, max: 1);
+                Assert.Equal(expected.Select(BitConverter.SingleToInt32Bits), actual.Select(BitConverter.SingleToInt32Bits));
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FloatOpacityScanMatchesTheScalarReference()
+    {
+        // Opaque rows with at most one other alpha, at every position: values next to 1, zeros, values that are not numbers
+        var random = new Random(1115);
+        float[] others = [MathF.BitDecrement(1f), MathF.BitIncrement(1f), 0f, -0f, -1f, float.NaN, float.PositiveInfinity, 2f];
+        for (var length = 0; length <= 40; length++)
+        {
+            for (var position = -1; position < length; position++)
+            {
+                var row = new RgbaFloat[length];
+                for (var i = 0; i < length; i++)
+                {
+                    row[i] = new RgbaFloat((float)random.NextDouble(), float.NaN, 1f, 1f);
+                }
+
+                if (position >= 0)
+                {
+                    row[position].A = others[random.Next(others.Length)];
+                }
+
+                Assert.Equal(PixelConverter.IndexOfNonOpaqueScalar<RgbaFloat>(row), PixelConverter.IndexOfNonOpaque<RgbaFloat>(row));
+                Assert.Equal(position, PixelConverter.IndexOfNonOpaque<RgbaFloat>(row));
+            }
+        }
+    }
+
     [Theory]
     [InlineData((int)WorkingAlpha.None)]
     [InlineData((int)WorkingAlpha.Premultiplied)]

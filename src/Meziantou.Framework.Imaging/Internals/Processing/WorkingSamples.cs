@@ -212,6 +212,10 @@ internal static class WorkingSamples
                 done = StoreVector(values, samples, alpha == WorkingAlpha.Premultiplied, max);
             }
         }
+        else if (typeof(TSample) == typeof(float) && transfer is 0 && alpha is WorkingAlpha.Opaque or WorkingAlpha.None && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar)
+        {
+            done = StoreSingleVector(values, unsafe(MemoryMarshal.Cast<TSample, float>(samples)), alpha);
+        }
 
         var thresholds = typeof(TSample) == typeof(byte) && max == byte.MaxValue && transfer is not 0 and not CicpTransfer.Linear && transfer < Thresholds8.Length && !Resampler.TestForceScalar ? GetThresholds8(transfer) : null;
         if (thresholds is not null && !thresholds.Intervals.IsEmpty && Vector128.IsHardwareAccelerated)
@@ -768,6 +772,41 @@ internal static class WorkingSamples
     private static double Lookup<TSample>(ref double table, ref TSample input, int index)
         where TSample : unmanaged
         => unsafe(Unsafe.Add(ref table, ToInt(Unsafe.Add(ref input, index))));
+
+    /// <summary>
+    /// Stores the leading <see cref="float"/> samples of <see cref="WorkingAlpha.Opaque"/> or <see cref="WorkingAlpha.None"/>
+    /// values in linear units, 4 samples at a time: the vector conversion rounds each double to the nearest float, ties to
+    /// even, as <see cref="FromDouble"/> does, and opaque pixels get an alpha of 1.
+    /// </summary>
+    /// <returns>The number of samples stored, a multiple of 4.</returns>
+    private static int StoreSingleVector(ReadOnlySpan<double> values, Span<float> samples, WorkingAlpha alpha)
+    {
+        var done = 0;
+        if (alpha == WorkingAlpha.Opaque)
+        {
+            // The 3 colors of a pixel are read with the first color of the next one, whose place gets the alpha: the
+            // last pixel is left to the scalar loop
+            var isAlpha = Vector128.Create(0, 0, 0, -1).AsSingle();
+            var one = Vector128.Create(1f);
+            for (var o = 0; o + 4 <= values.Length; o += 3, done += 4)
+            {
+                Vector128.ConditionalSelect(isAlpha, one, ToSingle(values.Slice(o, 4))).CopyTo(samples.Slice(done, 4));
+            }
+
+            return done;
+        }
+
+        for (; done + 4 <= samples.Length; done += 4)
+        {
+            ToSingle(values.Slice(done, 4)).CopyTo(samples.Slice(done, 4));
+        }
+
+        return done;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<float> ToSingle(ReadOnlySpan<double> values)
+            => Avx.IsSupported ? Avx.ConvertToVector128Single(Vector256.Create(values)) : Vector128.Narrow(Vector128.Create(values), Vector128.Create(values[2..]));
+    }
 
     /// <summary>
     /// Converts the leading <see cref="float"/> samples a pixel at a time: the widening to doubles is exact, and with

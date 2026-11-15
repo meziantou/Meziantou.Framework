@@ -90,5 +90,24 @@ public sealed class CommonMarkSpecTests
         Assert.Equal(example.Html, html, $"Example {number} ({example.Section})");
     }
 
+    [Theory]
+    [MemberData(nameof(CommonMarkSpec.ExampleNumbers), MemberType = typeof(CommonMarkSpec))]
+    public void FormattingKeepsTheHtmlOfTheSpecification(int number)
+    {
+        var example = CommonMarkSpec.Get(number);
+
+        CommonMarkSpec.AssertFormattingKeepsTheHtml(example.Markdown, MarkdownParseOptions.Default, $"Example {number} ({example.Section})");
+        CommonMarkSpec.AssertFormattingKeepsTheHtml(example.Markdown, MarkdownParseOptions.GitHubFlavored, $"Example {number} ({example.Section}), with GFM");
+    }
+
+    [Theory]
+    [MemberData(nameof(CommonMarkSpec.GfmExampleNumbers), MemberType = typeof(CommonMarkSpec))]
+    public void FormattingKeepsTheHtmlOfTheGfmExtensions(int number)
+    {
+        var example = CommonMarkSpec.GetGfm(number);
+
+        CommonMarkSpec.AssertFormattingKeepsTheHtml(example.Markdown, MarkdownParseOptions.GitHubFlavored, $"Example {number} ({example.Section})");
+    }
+
     private static readonly HashSet<int> ExamplesChangedByTheExtensions = [170, 171, 172, 173, 176, 178, 602, 606, 608, 611, 612];
 }

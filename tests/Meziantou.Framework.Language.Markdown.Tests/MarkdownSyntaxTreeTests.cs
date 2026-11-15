@@ -1241,6 +1241,135 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void FormatsADocument()
+    {
+        #region MarkdownFormatter_Usage
+        var tree = MarkdownSyntaxTree.ParseText("""
+            Title
+            =====
+            * one
+            *   two
+
+            3) a
+            7) b
+
+            Code:
+
+                var x = 1;
+
+            > quote
+            continued
+
+            | a | b |
+            |-|:-:|
+            | long cell | x |
+            """, MarkdownParseOptions.GitHubFlavored);
+
+        var formatted = MarkdownFormatter.Format(tree);
+
+        Assert.Equal("""
+            # Title
+
+            - one
+            - two
+
+            3) a
+            4) b
+
+            Code:
+
+            ```
+            var x = 1;
+            ```
+
+            > quote
+            > continued
+
+            | a         | b   |
+            | --------- | :-: |
+            | long cell | x   |
+
+            """, formatted.GetRoot().ToFullString());
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
+        #endregion
+    }
+
+    [Fact]
+    public void FormatsADocumentWithTheOptions()
+    {
+        #region MarkdownFormattingOptions_Usage
+        var tree = MarkdownSyntaxTree.ParseText("Title\n=====\n\n- a\n- b\n\n```cs\nvar x = 1;\n```\n\n***\n");
+        var options = new MarkdownFormattingOptions
+        {
+            NewLine = "\r\n",
+            BulletListMarker = '*',
+            UseAtxHeadings = false,
+            UseFencedCodeBlocks = false,
+            CodeFenceCharacter = '~',
+            ThematicBreakCharacter = '_',
+        };
+
+        var text = MarkdownFormatter.FormatText(tree, options);
+
+        Assert.Equal("Title\r\n===\r\n\r\n* a\r\n* b\r\n\r\n~~~cs\r\nvar x = 1;\r\n~~~\r\n\r\n___\r\n", text);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("a\n    # b\n", "a\n    # b\n")]
+    [InlineData("> a\n    # b\n", "> a\n>     # b\n")]
+    [InlineData("> a\n===\n", "> a\n>     ===\n")]
+    [InlineData("- a\n* b\n", "- a\n\n* b\n")]
+    [InlineData("* --\n", "* --\n")]
+    [InlineData("* a\n  ***\n", "- a\n  ***\n")]
+    [InlineData("a\n***\n", "a\n\n---\n")]
+    [InlineData("# a #\n", "# a\n")]
+    [InlineData("# a \\# #\n", "# a \\# #\n")]
+    [InlineData("a\nb\n---\n", "a\nb\n---\n")]
+    [InlineData("````\n```\n````\n", "````\n```\n````\n")]
+    [InlineData("~~~ a`b\nx\n~~~\n", "~~~a`b\nx\n~~~\n")]
+    [InlineData("~~~ ~a\nx\n~~~\n", "```~a\nx\n```\n")]
+    [InlineData("~~~ `a\nx\n~~~\n", "~~~`a\nx\n~~~\n")]
+    [InlineData(" -    one\n\n     two\n", "- one\n\n```\n two\n```\n")]
+    [InlineData("a  \nb\\\nc\n", "a  \nb\\\nc\n")]
+    [InlineData("[a]: /a\n[b]: /b\n", "[a]: /a\n[b]: /b\n")]
+    [InlineData("", "")]
+    [InlineData("a\r\nb\r\n", "a\r\nb\r\n")]
+    public void FormatsTheBlocks(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text);
+
+        var formatted = MarkdownFormatter.FormatText(tree, options: null);
+
+        Assert.Equal(expected, formatted);
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(formatted)));
+    }
+
+    [Fact]
+    public void FormatterKeepsTheTextWhenTheHtmlWouldChange()
+    {
+        // The lazy line |-|-| of the paragraph of the list item would not be lazy with the indentation of the item, and the
+        // table after it would be text
+        var text = "* a\n|-|-|\n  b\n  |H|I|\n  |-|-|\n";
+        var tree = MarkdownSyntaxTree.ParseText(text, MarkdownParseOptions.GitHubFlavored);
+
+        Assert.Equal(text, MarkdownFormatter.FormatText(tree, options: null));
+        Assert.Same(tree, MarkdownFormatter.Format(tree));
+    }
+
+    [Theory]
+    [InlineData('x', '`', '-', "\n")]
+    [InlineData('-', 'x', '-', "\n")]
+    [InlineData('-', '`', '=', "\n")]
+    [InlineData('-', '`', '-', "\n\n")]
+    public void FormatterRejectsInvalidOptions(char bulletListMarker, char codeFenceCharacter, char thematicBreakCharacter, string newLine)
+    {
+        var options = new MarkdownFormattingOptions { BulletListMarker = bulletListMarker, CodeFenceCharacter = codeFenceCharacter, ThematicBreakCharacter = thematicBreakCharacter, NewLine = newLine };
+
+        Assert.Throws<ArgumentException>(() => MarkdownFormatter.Format(MarkdownSyntaxTree.ParseText("a"), options));
+    }
+
+    [Fact]
     public void RendersPlainText()
     {
         #region MarkdownPlainTextRenderer_Usage

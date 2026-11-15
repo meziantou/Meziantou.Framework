@@ -108,6 +108,15 @@ public sealed class ExtensionSpecTests
         Assert.Equal(Compact(example.Html), Compact(MarkdownHtmlRenderer.ToHtml(tree)), $"{file}, example {number} ({example.Section}), with {extensions}");
     }
 
+    [Theory]
+    [MemberData(nameof(SupportedExamples))]
+    public void FormattingKeepsTheHtmlOfTheExtensionSpecifications(string file, int number, string extensions)
+    {
+        var example = LoadExamples(file)[number - 1];
+
+        CommonMarkSpec.AssertFormattingKeepsTheHtml(example.Markdown, GetOptions(extensions)!, $"{file}, example {number} ({example.Section}), with {extensions}");
+    }
+
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, List<CommonMarkSpec.Example>> LoadedExamples = new(StringComparer.Ordinal);
 
     private static List<CommonMarkSpec.Example> LoadExamples(string file) => LoadedExamples.GetOrAdd(file, static file => CommonMarkSpec.Load(Path.Combine("Extensions", file)));

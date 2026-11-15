@@ -54,7 +54,35 @@ internal static class MarkdownFuzzTargets
         new("language-markdown-gfm", data => Parse(data, MarkdownParseOptions.GitHubFlavored)) { Seeds = GetGfmSeeds, Dictionary = GfmTokens },
         new("language-markdown-extensions", data => Parse(data, (data.Length % 4) switch { 0 => AllExtensions, 2 => AllExtensionsWithPipeTableOptions, _ => AllExtensionsWithoutHtml })) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
         new("language-markdown-escaper", Escape) { Seeds = GetEscaperSeeds, Dictionary = EscaperTokens },
+        new("language-markdown-formatter", Format) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
     ];
+
+    private static readonly MarkdownParseOptions[] FormatterParseOptions = [MarkdownParseOptions.Default, MarkdownParseOptions.GitHubFlavored, AllExtensions, AllExtensionsWithPipeTableOptions, AllExtensionsWithoutHtml];
+
+    // The default style, and the other choices of each option
+    private static readonly MarkdownFormattingOptions[] FormattingOptions =
+    [
+        MarkdownFormattingOptions.Default,
+        new() { NewLine = "\r\n", BulletListMarker = '*', RenumberOrderedLists = false, UseAtxHeadings = false, UseFencedCodeBlocks = false, CodeFenceCharacter = '~', ThematicBreakCharacter = '_', AlignTables = false },
+        new() { BulletListMarker = null, ThematicBreakCharacter = '*' },
+        new() { BulletListMarker = '+' },
+    ];
+
+    // The formatted text renders as the same HTML as the text, and formatting it again does not change it. The formatter
+    // keeps the text when what it writes does not render as the same HTML.
+    private static void Format(ReadOnlySpan<byte> data)
+    {
+        var text = FuzzText.Decode(data);
+        var parseOptions = FormatterParseOptions[data.Length % FormatterParseOptions.Length];
+        var formattingOptions = FormattingOptions[data.Length / FormatterParseOptions.Length % FormattingOptions.Length];
+
+        var tree = MarkdownSyntaxTree.ParseText(text, parseOptions);
+        var formatted = MarkdownFormatter.Format(tree, formattingOptions);
+        var formattedText = formatted.GetRoot().ToFullString();
+        var html = MarkdownHtmlRenderer.ToHtml(tree).ReplaceLineEndings("\n");
+        FuzzAssert.True(MarkdownHtmlRenderer.ToHtml(formatted).ReplaceLineEndings("\n") == html, $"The formatted text {FuzzAssert.Format(formattedText)} does not render as the text {FuzzAssert.Format(text)}");
+        FuzzAssert.True(MarkdownFormatter.FormatText(formatted, formattingOptions) == formattedText, $"Formatting the formatted text {FuzzAssert.Format(formattedText)} changes it: {FuzzAssert.Format(text)}");
+    }
 
     // The text that MarkdownEscaper writes is parsed back to the same text, code, destination, title and label
     private static void Escape(ReadOnlySpan<byte> data)

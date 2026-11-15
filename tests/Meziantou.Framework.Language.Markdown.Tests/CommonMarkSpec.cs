@@ -80,4 +80,28 @@ internal static class CommonMarkSpec
     private static string ToText(List<string> lines) => lines.Count == 0 ? "" : (string.Join('\n', lines) + "\n").Replace('→', '\t');
 
     public sealed record Example(int Number, string Section, string Markdown, string Html);
+
+    // The default style, and the other choices of each option
+    private static readonly MarkdownFormattingOptions[] FormattingOptions =
+    [
+        MarkdownFormattingOptions.Default,
+        new() { NewLine = "\r\n", BulletListMarker = '*', RenumberOrderedLists = false, UseAtxHeadings = false, UseFencedCodeBlocks = false, CodeFenceCharacter = '~', ThematicBreakCharacter = '_', AlignTables = false },
+        new() { BulletListMarker = null, ThematicBreakCharacter = '*' },
+        new() { BulletListMarker = '+' },
+    ];
+
+    /// <summary>Asserts that the formatted text renders as the same HTML, and that formatting it again does not change it.</summary>
+    public static void AssertFormattingKeepsTheHtml(string markdown, MarkdownParseOptions options, string message)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(markdown, options);
+        var html = MarkdownHtmlRenderer.ToHtml(tree).ReplaceLineEndings("\n");
+        foreach (var formattingOptions in FormattingOptions)
+        {
+            var formatted = MarkdownFormatter.Format(tree, formattingOptions);
+            var text = formatted.GetRoot().ToFullString();
+
+            Assert.Equal(html, MarkdownHtmlRenderer.ToHtml(formatted).ReplaceLineEndings("\n"), $"{message}, formatted as:\n{text}");
+            Assert.Equal(text, MarkdownFormatter.FormatText(formatted, formattingOptions), $"{message}, formatted twice");
+        }
+    }
 }

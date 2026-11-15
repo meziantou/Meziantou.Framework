@@ -947,8 +947,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   bit-exact with the scalar build of OpenEXR (the reference tools are built that way); their perceptual table is pinned by
   a hash. ZSTD (`ExrZstd`, section 13) wraps a fully managed Zstandard decoder written from RFC 8878
   (`Internals/Compression/ZstdDecoder`, with the XXH64 checksum). Meziantou.Framework.Geo.GeoParquet compiles these two
-  files too, before .NET 11 (`MEZIANTOU_FRAMEWORK_IMAGING` picks the namespace): keep them free of Imaging types. HTJ2K and LJ2K (section 14) are not decoded: the JPEG
-  2000 decoder has no signed components, no 32-bit components and no NLT marker.
+  files too, before .NET 11 (`MEZIANTOU_FRAMEWORK_IMAGING` picks the namespace): keep them free of Imaging types. HTJ2K256 and HTJ2K32 (section 14) are decoded by `ExrHtj2k`, a
+  `Jpeg2000DecodeObserver` of embedded codestreams (`allowNonLinearity`: the Part 2 capability bit is accepted when NLT is
+  its only extension) that applies the type 3 NLT (binary complement) to 16-bit signed components and writes the chunk
+  layout; FLOAT and UINT channels are rejected with the header (32-bit components need a 64-bit block decoder path), and
+  LJ2K too (irreversible colors and OpenJPH's type 4 NLT table, not bit-exact).
   `MetadataWritePlan` treats OpenEXR as linear light only (`FormatCapabilities.LinearOnly`): an sRGB label is metadata
   the format cannot store.
 - **Radiance HDR** (`Internals/Codecs/Radiance`). Written from the Radiance file format documentation ("Picture File

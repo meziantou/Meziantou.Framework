@@ -694,6 +694,25 @@ public sealed class ExrDecoderTests
             => ExrFileBuilder.ScanLines(1, 1, None, HalfChannel("R")).Set("chromaticities", "chromaticities", ExrFileBuilder.Floats(values)).AddScanLineChunk(0, ExrFileBuilder.Halves(1f)).Build();
     }
 
+    [Theory]
+    [InlineData("4854000000040001")]
+    [InlineData("485400000004000100")]
+    [InlineData("4854000000040001000000")]
+    [InlineData("48550000000400010000FF4F")]
+    [InlineData("48540000000400020000FF4F")]
+    [InlineData("48540000000400010001FF4F")]
+    [InlineData("48540000000500010000FF4F")]
+    [InlineData("48540000000400010000FF4FFF51")]
+    public void MalformedHighThroughputChunksAreInvalid(string chunk)
+    {
+        // The header of the chunk (magic, payload length, channel map), then a codestream: an empty one, the wrong magic, a
+        // map of another size, an index out of the map, a payload longer than the chunk, a truncated SIZ marker segment
+        var data = ExrFileBuilder.ScanLines(1, 1, 11, HalfChannel("R")).AddScanLineChunk(0, Convert.FromHexString(chunk)).Build();
+        Assert.Equal(new Size(1, 1), Image.Identify(data).Size);
+        var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+        Assert.Equal(ImageFormat.OpenExr, exception.Format);
+    }
+
     [Fact]
     public void HeaderErrorsAreReportedByIdentification()
     {
@@ -720,8 +739,8 @@ public sealed class ExrDecoderTests
         AssertInvalid(builder => builder.VersionField = 2 | 0x800);
         AssertInvalid(builder => builder.VersionField = 2 | 0x200 | 0x1000);
 
-        AssertUnsupported(builder => builder.Set("compression", "compression", [10]));
-        AssertUnsupported(builder => builder.Set("compression", "compression", [11]));
+        AssertUnsupported(builder => builder.Set("compression", "compression", [10]).Set("channels", "chlist", ExrFileBuilder.ChannelList(ExrChannelDescription.FloatingPoint("R"))));
+        AssertUnsupported(builder => builder.Set("compression", "compression", [11]).Set("channels", "chlist", ExrFileBuilder.ChannelList(HalfChannel("G"), ExrChannelDescription.UnsignedInt("R"))));
         AssertUnsupported(builder => builder.Set("compression", "compression", [12]));
         AssertUnsupported(builder => builder.Set("channels", "chlist", ExrFileBuilder.ChannelList(HalfChannel("R"), HalfChannel("Z"))));
         AssertUnsupported(builder => builder.Set("channels", "chlist", ExrFileBuilder.ChannelList(HalfChannel("diffuse.R"))));
@@ -731,6 +750,10 @@ public sealed class ExrDecoderTests
         AssertUnsupported(builder => builder.Set("name", "string", ExrFileBuilder.Text("left")), new OpenExrDecodingOptions { Part = "right" });
         AssertUnsupported(builder => builder.VersionField = 1);
         AssertUnsupported(builder => builder.VersionField = 2 | 0x2000);
+
+        // HTJ2K256 and HTJ2K32 of HALF channels are read
+        Assert.Equal(new Size(1, 1), Image.Identify(Build(builder => builder.Set("compression", "compression", [10]))).Size);
+        Assert.Equal(new Size(1, 1), Image.Identify(Build(builder => builder.Set("compression", "compression", [11]))).Size);
 
         // Long names need the flag; other attributes are skipped
         Assert.Equal(new Size(1, 1), Image.Identify(Build(builder => { builder.VersionField = 2 | 0x400; builder.Set(new string('n', 200), "int", [0, 0, 0, 0]); })).Size);

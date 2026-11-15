@@ -233,8 +233,7 @@ internal static class ErrorFixtureStages
         "limit/heic/width-over-limit",
 
         // OpenEXR: the header, validated whole before the offset table
-        "invalid/exr/compression-htj2k256",
-        "invalid/exr/compression-htj2k32",
+        "invalid/exr/compression-lj2k",
         "invalid/exr/data-window-outside",
         "invalid/exr/deep-layers-zips",
         "invalid/exr/deep-scanline-none",
@@ -245,6 +244,9 @@ internal static class ErrorFixtureStages
         "invalid/exr/deep-tiles-zstd",
         "invalid/exr/deep-without-alpha",
         "invalid/exr/extra-channel",
+        "invalid/exr/htj2k256-float",
+        "invalid/exr/htj2k256-subsampled-layer",
+        "invalid/exr/htj2k32-uint",
         "invalid/exr/layer-channels",
         "invalid/exr/luminance-chroma",
         "invalid/exr/missing-channels",

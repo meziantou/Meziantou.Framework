@@ -31344,7 +31344,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -31444,7 +31444,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -31537,7 +31537,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 13,
@@ -31630,7 +31630,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 16,
@@ -31724,7 +31724,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -31824,7 +31824,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -31917,7 +31917,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 7,
@@ -32025,7 +32025,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 7,
@@ -32128,7 +32128,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 7,
@@ -32236,7 +32236,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -32328,7 +32328,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -32427,7 +32427,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -32520,7 +32520,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 29,
@@ -32621,7 +32621,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -32713,7 +32713,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -32812,7 +32812,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 27,
@@ -32890,6 +32890,492 @@
       "notes": "R, G and B of different types are one colour set, coded through the luma-chroma transform; A is run-length coded."
     },
     {
+      "id": "exr/htj2k256-half-rgba",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/htj2k256-half-rgba.exr",
+        "sha256": "29061a8f295317d1808b056493f9f43a3ebe8e4f232b51419148900c6622de47",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 23,
+          "height": 37
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=htj2k256",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF R, G, B and A, HTJ2K256: one chunk. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "result": "differs",
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, B, G, R, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 37,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/htj2k256-half-rgba.frame-0.rgbaf32le.raw",
+                "sha256": "620a1e654fdf7add1f6e1214c1dcfc978b7f70ec2a1b522df43fb755bd10a019",
+                "layout": "rgbaf32le",
+                "width": 23,
+                "height": 37,
+                "rowBytes": 368,
+                "byteLength": 13616,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "R, G and B are the first three components, coded through the reversible color transform; the negative samples of R go through the binary complement of the NLT marker segments."
+    },
+    {
+      "id": "exr/htj2k256-luminance-alpha",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/htj2k256-luminance-alpha.exr",
+        "sha256": "31291514b0d91c56505e972ac7acfa3ee96430b481d944bed0115913433987f2",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 19,
+          "height": 35
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=ay",
+        "exr.compression=htj2k256",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF Y and A, HTJ2K256. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, Y, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 19,
+        "height": 35,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "GrayscaleAlpha",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/htj2k256-luminance-alpha.frame-0.rgbaf32le.raw",
+                "sha256": "58d434cc81b85da01958ac6199589fb1f1452f5606e31e3ad08810a0c0764a2a",
+                "layout": "rgbaf32le",
+                "width": 19,
+                "height": 35,
+                "rowBytes": 304,
+                "byteLength": 10640,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "No RGB set: the components are the channels in their order, without color transform."
+    },
+    {
+      "id": "exr/htj2k32-half-rgba",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/htj2k32-half-rgba.exr",
+        "sha256": "226f4ac7b769b8462c3a954ec156482f1f81be243b4d7fad07faedbcbf1b54c5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 23,
+          "height": 37
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=htj2k32",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF R, G, B and A, HTJ2K32: two chunks. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "result": "differs",
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, B, G, R, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 37,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/htj2k32-half-rgba.frame-0.rgbaf32le.raw",
+                "sha256": "620a1e654fdf7add1f6e1214c1dcfc978b7f70ec2a1b522df43fb755bd10a019",
+                "layout": "rgbaf32le",
+                "width": 23,
+                "height": 37,
+                "rowBytes": 368,
+                "byteLength": 13616,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The first chunk is a codestream; OpenEXR stores the second one, of 5 lines, raw."
+    },
+    {
+      "id": "exr/htj2k32-half-specials",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/htj2k32-half-specials.exr",
+        "sha256": "314de9370436fdbbaae246f0c97c63d4c293ca161fa765a7934b22cb01d3766f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 32,
+          "height": 16
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=y",
+        "exr.compression=htj2k32",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF infinities, not-a-number, negative zero, the largest and smallest halves, then smooth steps. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "result": "differs",
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt grayf16le -"
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of Y, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 32,
+        "height": 16,
+        "pixelFormat": "RgbaHalf",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/htj2k32-half-specials.frame-0.rgbaf32le.raw",
+                "sha256": "2f52f956935309f06a5004e07a3417eb48e2bd2b5b67f509c2298b176478ffbe",
+                "layout": "rgbaf32le",
+                "width": 32,
+                "height": 16,
+                "rowBytes": 512,
+                "byteLength": 8192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The binary complement keeps negative zero apart from zero: it is -1 in the codestream."
+    },
+    {
+      "id": "exr/htj2k32-tiles",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/htj2k32-tiles.exr",
+        "sha256": "6973bc4ab58b64fe83ff36c8c88cbc7f3cd4092767eb045752a51d2e7279a6a6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 11.0"
+        ],
+        "parameters": {
+          "width": 45,
+          "height": 37
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=htj2k32",
+        "exr.levels=one-level",
+        "exr.storage=tiled",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Tiles of 32x32 pixels of HALF R, G, B and A, HTJ2K32. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "result": "differs",
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, B, G, R, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 45,
+        "height": 37,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/htj2k32-tiles.frame-0.rgbaf32le.raw",
+                "sha256": "e5ff3456d5a8635bb78d4cc3fa13f23b8093662c86c6b4670a74d35b4894d3b5",
+                "layout": "rgbaf32le",
+                "width": 45,
+                "height": 37,
+                "rowBytes": 720,
+                "byteLength": 26640,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Each tile is a codestream of its size, clipped at the edges; OpenEXR stores two of the clipped tiles raw."
+    },
+    {
       "id": "exr/none-float-rgb",
       "kind": "valid",
       "format": "exr",
@@ -32906,7 +33392,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -33006,7 +33492,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -33106,7 +33592,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 1,
@@ -33206,7 +33692,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/TestImages/AllHalfValues.exr"
       },
@@ -33295,7 +33781,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/MultiResolution/ColorCodedLevels.exr"
       },
@@ -33386,7 +33872,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/TestImages/stripes.exr"
       },
@@ -33475,7 +33961,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/DisplayWindow/t01.exr"
       },
@@ -33564,7 +34050,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 70,
@@ -33665,7 +34151,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 9,
@@ -33760,7 +34246,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -33860,7 +34346,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 6,
@@ -33960,7 +34446,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -34060,7 +34546,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 17,
@@ -34154,7 +34640,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 40,
@@ -34255,7 +34741,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -34348,7 +34834,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 9,
@@ -34442,7 +34928,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -34542,7 +35028,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -34642,7 +35128,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 12,
@@ -34734,7 +35220,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -34834,7 +35320,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 11,
@@ -34928,7 +35414,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 20,
@@ -35031,7 +35517,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 29,
@@ -35133,7 +35619,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 13,
@@ -35235,7 +35721,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 37,
@@ -35336,7 +35822,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 14,
@@ -35437,7 +35923,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -35537,7 +36023,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 31,
@@ -35637,7 +36123,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 15,
@@ -35729,7 +36215,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -35829,7 +36315,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 10,
@@ -35921,7 +36407,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -36021,7 +36507,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -36121,7 +36607,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 8,
@@ -36224,7 +36710,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 19,
@@ -36250,7 +36736,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-dc8d00b95a7cc993/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-OMI3Nr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -36321,7 +36807,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 23,
@@ -36347,7 +36833,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-dc8d00b95a7cc993/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-OMI3Nr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -36418,7 +36904,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 15,
@@ -36512,7 +36998,7 @@
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
           "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "parameters": {
           "width": 21,
@@ -36539,7 +37025,7 @@
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
             "result": "differs",
-            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-dc8d00b95a7cc993/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-OMI3Nr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-a862cc87f52caca5/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-W2HTpr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
           },
           {
             "decoder": "the pattern given to exr-from-raw",
@@ -61524,7 +62010,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61537,12 +62023,12 @@
       "notes": "The second chunk says it starts at the line 0."
     },
     {
-      "id": "invalid/exr/compression-htj2k256",
+      "id": "invalid/exr/compression-lj2k",
       "kind": "unsupported",
       "format": "exr",
       "input": {
-        "path": "invalid/exr/compression-htj2k256.exr",
-        "sha256": "16ca28cdeb66531e15053c1ca215f71c5978e6ad18c2d93a3ff8fb206d8e6bdc",
+        "path": "invalid/exr/compression-lj2k.exr",
+        "sha256": "47fc51de2481e344bf6c466ea3968b8c88ef6cabb29d49d752c8b1db2598ad83",
         "role": "encoded"
       },
       "provenance": {
@@ -61552,7 +62038,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61561,38 +62047,9 @@
       "expectedError": {
         "exception": "UnsupportedImageFeatureException",
         "format": "OpenExr",
-        "feature": "Compression: HTJ2K256"
+        "feature": "Compression: LJ2K"
       },
-      "notes": "The HTJ2K256 compression."
-    },
-    {
-      "id": "invalid/exr/compression-htj2k32",
-      "kind": "unsupported",
-      "format": "exr",
-      "input": {
-        "path": "invalid/exr/compression-htj2k32.exr",
-        "sha256": "dddc22064920bc4772300da4405a8b56393fb617b5242938ecb76d33f7277a86",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "generated",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
-        "tools": [
-          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
-        ],
-        "commands": [
-          "exr-from-raw {description}.json {output}.exr"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "OpenExr",
-        "feature": "Compression: HTJ2K32"
-      },
-      "notes": "The HTJ2K32 compression."
+      "notes": "The LJ2K compression: the irreversible wavelet transformation of the colors, and a non-linearity of OpenJPH that no standard defines."
     },
     {
       "id": "invalid/exr/data-window-outside",
@@ -61610,7 +62067,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61737,7 +62194,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61819,7 +62276,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61891,7 +62348,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -61963,7 +62420,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62035,7 +62492,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62107,7 +62564,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62179,7 +62636,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62251,7 +62708,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62292,7 +62749,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62356,6 +62813,135 @@
       "notes": "A Z channel next to the colors: it would be lost. The default layer is decoded without it."
     },
     {
+      "id": "invalid/exr/htj2k256-float",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/htj2k256-float.exr",
+        "sha256": "52521427db287fbcd971888378f6129f07680036f980b36b6961927faaed6e92",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Compression: HTJ2K256 with 32-bit channels"
+      },
+      "notes": "HALF R, G and B and a FLOAT A, HTJ2K256: the 32-bit components of a FLOAT channel need more bit-planes than the block decoder has."
+    },
+    {
+      "id": "invalid/exr/htj2k256-subsampled-layer",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/htj2k256-subsampled-layer.exr",
+        "sha256": "d40fb30986e113d5c05ee971bb77969ce04176ed247a73efda169d5b26c610b8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "width": 32,
+          "height": 32,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/htj2k256-subsampled-layer.decoding-0.rgbaf32le.raw",
+            "sha256": "dc78dc1ae90bbe2d4caf2e66e1b885fcd37e890983881ab8619962d428221610",
+            "layout": "rgbaf32le",
+            "width": 32,
+            "height": 32,
+            "rowBytes": 512,
+            "byteLength": 16384,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "HALF R, G and B and a sub-sampled HALF channel of another layer, HTJ2K256: the sub-sampled channel turns off the color transform, and the components are coded one after the other. The default layer is decoded without it."
+    },
+    {
+      "id": "invalid/exr/htj2k32-uint",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/htj2k32-uint.exr",
+        "sha256": "87edacf3cfa7501a0791ebe6d65875204c3a56477b998a17fa28463b48d903c8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 11.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Compression: HTJ2K32 with 32-bit channels"
+      },
+      "notes": "HALF R, G and B and a UINT A, HTJ2K32: the 32-bit components of a UINT channel need more bit-planes than the block decoder has."
+    },
+    {
       "id": "invalid/exr/layer-channels",
       "kind": "unsupported",
       "format": "exr",
@@ -62371,7 +62957,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62468,7 +63054,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62508,7 +63094,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62536,7 +63122,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62669,7 +63255,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62792,7 +63378,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -62820,7 +63406,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/DisplayWindow/t02.exr"
       },
@@ -62931,7 +63517,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/DisplayWindow/t09.exr"
       },
@@ -63042,7 +63628,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "source": "https://github.com/AcademySoftwareFoundation/openexr-images/blob/e38ffb0790f62f05a6f083a6fa4cac150b3b7452/DisplayWindow/t13.exr"
       },
@@ -63153,7 +63739,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -63299,7 +63885,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -63445,7 +64031,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -63589,7 +64175,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -63733,7 +64319,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -63879,7 +64465,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64025,7 +64611,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64171,7 +64757,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64317,7 +64903,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64463,7 +65049,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64609,7 +65195,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64753,7 +65339,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64781,7 +65367,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64809,7 +65395,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -64880,7 +65466,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -65079,7 +65665,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -65176,7 +65762,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -65204,7 +65790,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildInvalid)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -98178,7 +98764,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildLimits)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"
@@ -98211,7 +98797,7 @@
         "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildLimits)",
         "tools": [
           "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
+          ".NET 11.0"
         ],
         "commands": [
           "exr-from-raw {description}.json {output}.exr"

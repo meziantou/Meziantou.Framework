@@ -279,6 +279,16 @@ internal sealed class ExrHeader
         if (!ExrFormat.IsDecodable(Compression))
             throw ExrFormat.Unsupported($"The OpenEXR image is compressed with {ExrFormat.GetName(Compression)}, which is not supported.", "Compression: " + ExrFormat.GetName(Compression));
 
+        if (Compression is ExrCompressionMethod.Htj2k256 or ExrCompressionMethod.Htj2k32)
+        {
+            // Every channel is a component of the codestream; the 32-bit ones need more bit-planes than the block decoder has
+            foreach (var channel in Channels)
+            {
+                if (channel.PixelType != ExrPixelType.Half)
+                    throw ExrFormat.Unsupported($"The OpenEXR image is compressed with {ExrFormat.GetName(Compression)} and has the {(channel.PixelType == ExrPixelType.Float ? "FLOAT" : "UINT")} channel '{channel.Name}'; only HALF channels are supported with this compression.", "Compression: " + ExrFormat.GetName(Compression) + " with 32-bit channels");
+            }
+        }
+
         ResolveRoles(options.Layer);
         if (IsDeep && (!HasAlpha || !Roles.Contains(ExrChannelRole.Depth)))
             throw ExrFormat.Unsupported("The OpenEXR deep image has no Z channel or no alpha channel: its samples cannot be flattened.", "Deep data without depth or alpha");

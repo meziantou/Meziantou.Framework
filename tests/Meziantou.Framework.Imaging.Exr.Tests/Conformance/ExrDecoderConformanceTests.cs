@@ -48,8 +48,20 @@ public sealed class ExrDecoderConformanceTests
     }
 
     [Theory]
-    [InlineData("invalid/exr/compression-htj2k256")]
-    [InlineData("invalid/exr/compression-htj2k32")]
+    [InlineData("htj2k256")]
+    [InlineData("htj2k32")]
+    public void EveryHighThroughputCompressionHasValidFixtures(string compression)
+    {
+        // The 32-bit channels are rejected with these compressions: their fixtures are HALF only
+        var fixtures = GetValidFixtures().Where(fixture => fixture.Entry.HasFeature("exr.compression=" + compression)).ToList();
+        Assert.NotEmpty(fixtures);
+        Assert.All(fixtures, fixture => Assert.True(fixture.Entry.HasFeature("exr.type=half")));
+    }
+
+    [Theory]
+    [InlineData("invalid/exr/compression-lj2k")]
+    [InlineData("invalid/exr/htj2k256-float")]
+    [InlineData("invalid/exr/htj2k32-uint")]
     public void RejectedCompressionsHaveFixtures(string id)
     {
         var fixture = GoldenCorpus.Default.Get(id);

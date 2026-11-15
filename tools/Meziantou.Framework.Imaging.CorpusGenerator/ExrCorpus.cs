@@ -880,6 +880,10 @@ internal static partial class ExrCorpus
 
     private static Func<int, int, int, double> Flat(double value) => (level, x, y) => value;
 
+    // Smooth samples of one sign on a grid of 1/16: few bit patterns, which the reversible wavelet compresses
+    private static Func<int, int, int, double> Steps(int seed, double offset) => (level, x, y) =>
+        Math.Round(((Math.Sin((x + seed) / 3.0) * Math.Cos((y - seed) / 5.0) * 3) + offset) * 16, MidpointRounding.ToEven) / 16;
+
     private static Channel[] Rgba(string type, int seed) => [new("A", type, Alpha), new("B", type, Wave(seed)), new("G", type, Smooth(seed)), new("R", type, Wave(seed + 1, 8))];
 
     private static Channel[] Rgb(string type, int seed) => [new("B", type, Wave(seed)), new("G", type, Smooth(seed)), new("R", type, Wave(seed + 1, 8))];
@@ -898,6 +902,33 @@ internal static partial class ExrCorpus
                 "HALF R, G, B and A: waves and alphas of 0, 1/4, 1/2, 4/5 and 1.");
             AddGenerated(c, name + "-float-rgb", Function, new Description { Width = 19, Height = 21, Compression = compression, Channels = Rgb("FLOAT", 2) },
                 "FLOAT R, G and B: waves.");
+        }
+
+        // HTJ2K: a JPEG 2000 codestream per chunk, of HALF channels (the decoder has no 32-bit components). OpenEXR stores a
+        // chunk raw when its codestream is not smaller: the patterns are smooth steps of one sign, which compress
+        Channel[] steps = [new("A", "HALF", Alpha), new("B", "HALF", Steps(1, 4)), new("G", "HALF", Steps(2, 4)), new("R", "HALF", Steps(3, -4))];
+        AddHtj2k("htj2k256-half-rgba", new Description { Width = 23, Height = 37, Compression = "HTJ2K256", Channels = steps },
+            "HALF R, G, B and A, HTJ2K256: one chunk.", "R, G and B are the first three components, coded through the reversible color transform; the negative samples of R go through the binary complement of the NLT marker segments.");
+        AddHtj2k("htj2k32-half-rgba", new Description { Width = 23, Height = 37, Compression = "HTJ2K32", Channels = steps },
+            "HALF R, G, B and A, HTJ2K32: two chunks.", "The first chunk is a codestream; OpenEXR stores the second one, of 5 lines, raw.");
+        AddHtj2k("htj2k32-tiles", new Description { Width = 45, Height = 37, Compression = "HTJ2K32", Tiles = (32, 32, "ONE_LEVEL", "ROUND_DOWN"), Channels = steps },
+            "Tiles of 32x32 pixels of HALF R, G, B and A, HTJ2K32.", "Each tile is a codestream of its size, clipped at the edges; OpenEXR stores two of the clipped tiles raw.");
+        AddHtj2k("htj2k256-luminance-alpha", new Description { Width = 19, Height = 35, Compression = "HTJ2K256", Channels = [new("A", "HALF", Alpha), new("Y", "HALF", Steps(4, 4))] },
+            "HALF Y and A, HTJ2K256.", "No RGB set: the components are the channels in their order, without color transform.");
+        double[] specials = [double.PositiveInfinity, double.NegativeInfinity, -0.0, 65504, -65504, Math.Pow(2, -24), -Math.Pow(2, -24), double.NaN];
+        AddHtj2k("htj2k32-half-specials", new Description
+        {
+            Width = 32,
+            Height = 16,
+            Compression = "HTJ2K32",
+            Channels = [new("Y", "HALF", (level, x, y) => y == 0 && x < specials.Length ? specials[x] : Steps(5, 4)(level, x, y))],
+        }, "HALF infinities, not-a-number, negative zero, the largest and smallest halves, then smooth steps.", "The binary complement keeps negative zero apart from zero: it is -1 in the codestream.");
+
+        void AddHtj2k(string name, Description d, string description, string notes)
+        {
+            var (data, command) = Write(c, d);
+            Py.Assert(data.AsSpan().IndexOf((byte[])[0xFF, 0x4F, 0xFF, 0x51]) >= 0, "exr/" + name + ": OpenEXR stored every chunk raw.");
+            AddValid(c, name, Function, data, [command], description, notes, parameters: new Obj { ["width"] = d.Width, ["height"] = d.Height }, pattern: d);
         }
 
         // Flat blocks: the 3-byte form of B44A; a constant image: runs of RLE and PIZ
@@ -1376,11 +1407,25 @@ internal static partial class ExrCorpus
     private static void BuildUnsupported(Corpus<ExrTools> c, FullPath images)
     {
         const string Function = nameof(BuildUnsupported);
-        foreach (var compression in new[] { "HTJ2K256", "HTJ2K32" })
         {
-            var (data, command) = Write(c, new Description { Width = 16, Height = 16, Compression = compression, Channels = Rgb("HALF", 30) });
-            AddError(c, "unsupported", "compression-" + compression.ToLowerInvariant(), Function, data, Unsupported("Compression: " + compression), $"The {compression} compression.", [command], requireOpenExrRejection: false);
+            var (data, command) = Write(c, new Description { Width = 16, Height = 16, Compression = "LJ2K", Channels = Rgb("HALF", 30) });
+            AddError(c, "unsupported", "compression-lj2k", Function, data, Unsupported("Compression: LJ2K"), "The LJ2K compression: the irreversible wavelet transformation of the colors, and a non-linearity of OpenJPH that no standard defines.", [command], requireOpenExrRejection: false);
         }
+
+        foreach (var (compression, type) in new[] { ("HTJ2K256", "FLOAT"), ("HTJ2K32", "UINT") })
+        {
+            var (data, command) = Write(c, new Description { Width = 16, Height = 16, Compression = compression, Channels = [.. Rgb("HALF", 30), new("A", type, Alpha)] });
+            AddError(c, "unsupported", compression.ToLowerInvariant() + "-" + type.ToLowerInvariant(), Function, data, Unsupported("Compression: " + compression + " with 32-bit channels"),
+                $"HALF R, G and B and a {type} A, {compression}: the 32-bit components of a {type} channel need more bit-planes than the block decoder has.", [command], requireOpenExrRejection: false);
+        }
+
+        AddUnsupported("htj2k256-subsampled-layer", new Description
+        {
+            Width = 32,
+            Height = 32,
+            Compression = "HTJ2K256",
+            Channels = [new("B", "HALF", Steps(1, 4)), new("G", "HALF", Steps(2, 4)), new("R", "HALF", Steps(3, -4)), new("aux.Y", "HALF", Steps(4, 2), XSampling: 2, YSampling: 2)],
+        }, "Extra channels", "HALF R, G and B and a sub-sampled HALF channel of another layer, HTJ2K256: the sub-sampled channel turns off the color transform, and the components are coded one after the other. The default layer is decoded without it.", Layer(""));
 
         void AddUnsupported(string name, Description d, string feature, string notes, params ExrDecoding[] decodings)
         {

@@ -525,7 +525,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
 
     private void RentFirstWorker(ExrHeader header)
     {
-        _decompressor ??= new ExrChunkDecompressor(_context.Scope, header.Compression, (int)header.MaxChunkDataLength);
+        _decompressor ??= new ExrChunkDecompressor(_context, header.Compression, (int)header.MaxChunkDataLength);
         _data ??= _context.Scope.Rent((int)Math.Max(header.MaxChunkDataLength, 1), AllocationKind.DecoderState, clear: false);
     }
 
@@ -596,7 +596,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         {
             for (var worker = 1; worker < _workers; worker++)
             {
-                batch.Decompressors[worker] = new ExrChunkDecompressor(_context.Scope, header.Compression, (int)header.MaxChunkDataLength);
+                batch.Decompressors[worker] = new ExrChunkDecompressor(_context, header.Compression, (int)header.MaxChunkDataLength);
                 batch.Buffers[worker] = _context.Scope.Rent((int)Math.Max(header.MaxChunkDataLength, 1), AllocationKind.DecoderState, clear: false);
             }
 

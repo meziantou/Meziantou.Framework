@@ -1559,6 +1559,51 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveCineonCopiesTheHeaderAndTheCodeValues()
+    {
+        var source = GetPath("scan-header.cin");
+        File.WriteAllBytes(source, GoldenCorpus.Default.Get("cin/rgb-10-be").ReadInput());
+        var output = GetPath("scan-copy.cin");
+        Examples.SaveCineon(source, output);
+        using var original = Image.Load<Rgb48>(source);
+        using var copy = Image.Load<Rgb48>(output);
+        Assert.Equal(original.Frames[0][2, 1], copy.Frames[0][2, 1]);
+        Assert.Equal(10, copy.Metadata.CineonHeader!.BitsPerSample);
+        Assert.Equal(original.Metadata.CineonHeader!.ChannelDesignators, copy.Metadata.CineonHeader.ChannelDesignators);
+    }
+
+    [Fact]
+    public void SavePsdWritesALayerForTransparencyAndAPsbFile()
+    {
+        using var image = new Image<Rgba32>(6, 4, new Rgba32(10, 20, 30, 255));
+        image.Frames[0][2, 1] = new Rgba32(200, 100, 50, 0);
+        var psd = GetPath("document.psd");
+        var psb = GetPath("document.psb");
+        Examples.SavePsd(image, psd, psb);
+        var data = File.ReadAllBytes(psd);
+        Assert.Equal(1, data[5]);
+        Assert.Equal(2, File.ReadAllBytes(psb)[5]);
+        using var decoded = Image.Load<Rgba32>(psd);
+        Assert.Equal(new Rgba32(10, 20, 30, 255), decoded.Frames[0][0, 0]);
+        Assert.Equal(0, decoded.Frames[0][2, 1].A);
+    }
+
+    [Fact]
+    public void SaveDngWritesLinearRawData()
+    {
+        using var image = new Image<Rgb24>(300, 2, new Rgb24(255, 128, 0));
+        var dng = GetPath("photo.dng");
+        Examples.SaveDng(image, dng);
+        using var raw = DngRawImage.Load(dng);
+        Assert.False(raw.IsColorFilterArray);
+        var row = new float[300 * 3];
+        raw.CopyStoredRow(0, row);
+        Assert.Equal([255f, 128f, 0f], row.AsSpan(897, 3).ToArray());
+        using var rendering = Image.Load<RgbaFloat>(dng);
+        Assert.True(Math.Abs(rendering.Frames[0][299, 1].R - 1f) < 1e-4);
+    }
+
+    [Fact]
     public void ConvertRadianceKeepsTheHighlightsAndReportsTheExposure()
     {
         var hdr = GetPath("environment.hdr");

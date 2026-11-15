@@ -5,8 +5,8 @@ A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG
 cursor (ANI), AVIF and HEIC (still and animated, lossless and lossy), JPEG XL (still and animated, lossless and
 lossy, progressive), JPEG 2000 (lossless and lossy), OpenEXR and Radiance HDR (high dynamic range, floating-point
 samples) and DPX (film scans and video frames) decoding and encoding, PSD/PSB (the composite image of Adobe Photoshop
-documents) decoding, DNG (raw camera images) decoding, DDS texture decoding (BC1 to BC7), Kodak Cineon decoding, KTX
-2.0 (GPU textures) decoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC color
+documents, and flat documents) decoding and encoding, DNG (raw camera images, and linear raw files) decoding and
+encoding, DDS texture decoding (BC1 to BC7), Kodak Cineon decoding and encoding, KTX 2.0 (GPU textures) decoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC color
 conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive/lossless JPEG, WebP (still and animated, lossless and lossy), QOI,
@@ -31,18 +31,22 @@ conversion, and bounded-memory streaming.
   flat output
 - PSD and PSB (Adobe Photoshop) decoding of the composite image Photoshop stores next to the layers: bitmap,
   grayscale, duotone, indexed, RGB, CMYK and Lab documents of 1 to 32 bits, raw and RLE image data, merged alpha
-  (un-matted), resolution, ICC/EXIF/XMP; the layers are not rendered, and no encoder writes the format
+  (un-matted), resolution, ICC/EXIF/XMP; the layers are not rendered. Encoding of flat documents: gray, RGB and CMYK,
+  8, 16 and 32 bits, raw or PackBits, PSD or PSB, one layer holding an image with transparency
 - DNG (Adobe Digital Negative) decoding: color filter arrays of any pattern and linear raw data, 8 to 16-bit and
   floating-point samples, uncompressed, Deflate, lossless JPEG, lossy JPEG and JPEG XL; the processing of the
   specification (linearization, black and white levels, opcode lists, camera profiles), a documented bilinear
-  demosaicing, rendered to scene-referred linear light; the raw mosaic through `DngRawImage`; previews as auxiliary images
+  demosaicing, rendered to scene-referred linear light; the raw mosaic through `DngRawImage`; previews as auxiliary images.
+  Encoding of linear raw data (the rendered image, with the camera profile of linear BT.709): 8 and 16-bit integers or
+  32-bit floats, uncompressed, lossless JPEG or Deflate, strips or tiles
 - DDS (DirectDraw Surface) decoding: the block-compressed formats BC1 to BC7 (BC6H to half floats), the common
   uncompressed DXGI formats and the legacy bit-mask layouts, and every surface of mipmaps, cube maps, texture arrays and
   volume textures through `ImageCollection`
 - DPX (SMPTE ST 268) decoding and encoding: 1 to 16-bit and floating-point components, RGB, RGBA, ABGR, luma, alpha and
   Cb, Y, Cr (4:4:4 and 4:2:2), every packing in both byte orders, the film and television headers reported (time code,
   edge code, frame rate), the transfer characteristic reported and never applied; 8, 10, 12, 16-bit and floating-point
-  output. Kodak Cineon decoding: 10-bit (and 1 to 16-bit) gray and RGB film scans
+  output. Kodak Cineon decoding and encoding: 10-bit (and 1 to 16-bit) gray and RGB film scans; 8, 10 and 16-bit output,
+  packing 5, the header of the source copied
 - KTX 2.0 (GPU texture) decoding: mip levels, array layers, cube faces and depth slices as `ImageCollection` entries;
   uncompressed formats, BC1 to BC7, ETC2/EAC, ASTC (LDR and HDR) and Basis Universal (ETC1S with BasisLZ, UASTC)
   decoded to RGBA;
@@ -225,11 +229,11 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | JPEG 2000 | JP2 files (also JPX and JPH files of one codestream) and bare codestreams; reversible and irreversible wavelet transformations; tiles, layers, every progression order and code-block style, regions of interest; the high-throughput block coder (HTJ2K); 1 to 16 bits; opacity, palettes, sYCC, CMYK with a color conversion; ICC/EXIF/XMP and resolution | Lossless and lossy, every pixel format at its own depth, lossless opacity, a JP2 file or a codestream, the high-throughput block coder (a JPH file), ICC/EXIF/XMP and resolution | `.jp2` (lossless), `.j2k`, `.j2c`, `.jpc` (a codestream), `.jph`, `.jhc` (HTJ2K) |
 | OpenEXR | Scan-line and tiled files (any level of mipmaps and ripmaps, `OpenExrDecodingOptions.LevelX` and `LevelY`; the levels and the preview image listed by `AuxiliaryImageCollection`), one part of a multi-part file (`OpenExrDecodingOptions.Part`), deep data flattened (`OpenExrDecodingOptions.DeepData`); HALF, FLOAT and UINT samples; R, G, B, A and Y (luminance) channels, or one layer of a file with other channels (`OpenExrDecodingOptions.Layer`); NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB and ZSTD, HTJ2K256 and HTJ2K32 of HALF channels; data and display windows, an overscan cropped or decoded whole (`OpenExrDecodingOptions.WindowMode`); chromaticities | Single-part scan-line files of half or float samples, lossless: NONE, RLE, ZIPS, ZIP (default) or PIZ (seekable destination when compressed); chromaticities | `.exr` |
 | Radiance HDR | RGBE pictures (`#?RADIANCE` or `#?RGBE`); flat, "old" and "new" run-length encoded scanlines, mixed; the eight orientations of the resolution string; the header variables reported in `Metadata.RadianceHeader` (never applied); the primaries as a color label. XYZE pictures are identified and rejected by a load | RGBE pictures in the standard orientation, new run-length encoding (default) or flat; the primaries | `.hdr`, `.pic` |
-| PSD | The composite image of PSD (version 1) and PSB (version 2) files, not the layers; bitmap, grayscale, duotone (as gray), indexed, RGB, CMYK (as CMYK pixels or with a color conversion) and Lab (with a color conversion) documents, 1, 8, 16 and 32-bit samples; raw and RLE (PackBits) image data; the merged alpha channel, un-matted; resolution, ICC/EXIF/XMP | Not written | None (read only) |
-| DNG | Raw images of DNG 1.0 to 1.7.1 (a TIFF profile, both byte orders, BigTIFF): color filter arrays of rectangular patterns up to 16x16 (Bayer, CMYG, X-Trans kind) and linear raw data of 1 to 4 samples; integer samples of 8 to 16 bits and floating-point ones of 16, 24 and 32 bits; strips and tiles; uncompressed, Deflate (with the predictors of DNG), lossless JPEG, lossy JPEG and JPEG XL; the linearization, black and white levels, active area, default crop, camera profiles of one or two illuminants, baseline exposure and the common opcodes; rendered to `RgbaFloat` linear light (BT.709 primaries), demosaiced bilinearly; the raw mosaic through `DngRawImage`; previews as auxiliary images; EXIF, XMP, orientation (reported) | Not supported (`ImageEncoder.Create` and `Save(path)` reject DNG) | None |
+| PSD | The composite image of PSD (version 1) and PSB (version 2) files, not the layers; bitmap, grayscale, duotone (as gray), indexed, RGB, CMYK (as CMYK pixels or with a color conversion) and Lab (with a color conversion) documents, 1, 8, 16 and 32-bit samples; raw and RLE (PackBits) image data; the merged alpha channel, un-matted; resolution, ICC/EXIF/XMP | Flat documents (version 1, or PSB above 30,000 pixels per side or on request): grayscale, RGB and CMYK (`Cmyk32`/`Cmyk64`), 8, 16 and 32-bit samples, raw or RLE (PackBits) image data; transparency as the merged alpha of one layer holding the image (in an `Lr16`/`Lr32` block for 16 and 32 bits), the composite matted over white; resolution, ICC/EXIF/XMP | `.psd` (PackBits), `.psb` (large document format) |
+| DNG | Raw images of DNG 1.0 to 1.7.1 (a TIFF profile, both byte orders, BigTIFF): color filter arrays of rectangular patterns up to 16x16 (Bayer, CMYG, X-Trans kind) and linear raw data of 1 to 4 samples; integer samples of 8 to 16 bits and floating-point ones of 16, 24 and 32 bits; strips and tiles; uncompressed, Deflate (with the predictors of DNG), lossless JPEG, lossy JPEG and JPEG XL; the linearization, black and white levels, active area, default crop, camera profiles of one or two illuminants, baseline exposure and the common opcodes; rendered to `RgbaFloat` linear light (BT.709 primaries), demosaiced bilinearly; the raw mosaic through `DngRawImage`; previews as auxiliary images; EXIF, XMP, orientation (reported) | Linear raw data (`LinearRaw`, DNG 1.4) of the rendered image with the camera profile of linear BT.709 (D65): monochrome or three samples, 8 and 16-bit integers (sRGB samples with a linearization table) or 32-bit floats; uncompressed, lossless JPEG (integers) or Deflate (floats); strips or tiles; orientation and XMP; no transparency, no color filter array; seekable destination | `.dng` (lossless JPEG tiles, Deflate for floats) |
 | DDS | Textures with the legacy header or the DX10 header: BC1 (DXT1, 1-bit alpha), BC2 (DXT3), BC3 (DXT5), BC4 and BC5 unsigned and signed, BC6H unsigned and signed (to `RgbaHalf`), BC7; R8G8B8A8 and B8G8R8A8 (UNORM and SRGB), B8G8R8X8, B5G6R5, B5G5R5A1, B4G4R4A4, R10G10B10A2, R16G16B16A16 (UNORM and FLOAT), R32G32B32A32_FLOAT and their formats of fewer channels, R8, R8G8, R16, R16G16, A8, R11G11B10_FLOAT, R9G9B9E5_SHAREDEXP; legacy bit masks and FourCC codes; mipmaps, cube maps (partial ones too), arrays and volume textures through `ImageCollection` | Not written (`ArgumentException` for `.dds`) | — |
 | DPX | The first image element: R, G, B, A or Y alone, RGB, RGBA, ABGR, Cb, Y, Cr 4:4:4 and 4:2:2 with or without alpha (converted to RGB); 1, 8, 10, 12 and 16-bit integers, 32 and 64-bit floats; filled (methods A and B) and packed components; both byte orders, versions 1.0 and 2.0; the orientation and the pixel aspect ratio; the headers in `Metadata.DpxHeader` (time code, edge code, frame rate, creator); linear and television transfers as labels. Run-length encoded and encrypted elements are rejected | One RGB, RGBA or luma element of 8, 10 or 12 (filled with method A), 16-bit or 32-bit floating-point components, big-endian (default) or little-endian; the orientation, the pixel aspect ratio, the transfer and colorimetric codes | `.dpx` |
-| Cineon | Gray and RGB images of 1 to 16-bit samples, pixel interleaved, in every cell packing; both byte orders; the orientation; the header in `Metadata.CineonHeader` | Not written: save as DPX | `.cin` (read only) |
+| Cineon | Gray and RGB images of 1 to 16-bit samples, pixel interleaved, in every cell packing; both byte orders; the orientation; the header in `Metadata.CineonHeader` | Gray and RGB images, big-endian, pixel interleaved, packing 5: 10 bits (one RGB pixel or three gray samples per 32-bit word, from the top), or 8 and 16-bit streams whose lines end on a 32-bit word; the orientation; the fields of `Metadata.CineonHeader` copied; no transparency | `.cin` (10 bits for 8-bit pixels, 16 bits for 16-bit pixels) |
 | KTX 2.0 | Textures of one to three dimensions, arrays, cube maps and mip levels (every subresource an `ImageCollection` entry, `Image.Load` the base level of the first face of the first layer, or the frames of a `KTXanimData` animation); uncompressed 8/16-bit UNORM and sRGB, 16/32-bit float and packed formats (`R5G6B5`, `R4G4B4A4`, `A2B10G10R10`, `B10G11R11`, `E5B9G9R9`); BC1 to BC7 (BC4 and BC5 unsigned and signed, BC6H unsigned and signed); ETC2, EAC (unsigned and signed); ASTC 2D LDR (sRGB, UNORM as halves) and HDR; Basis Universal ETC1S (BasisLZ) and UASTC; Zstandard and ZLIB supercompression; `KTXswizzle` applied, `KTXorientation` reported as the orientation; color labels from the data format descriptor | Not written | None (read only: `.ktx2`) |
 | ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
 
@@ -4124,7 +4128,7 @@ the Unicode Consortium.
 ### Metadata, color profiles and orientation
 
 `Image.Metadata` holds the source format, the windows of an OpenEXR file, the headers of a Radiance HDR, DPX or
-Cineon file and the properties of a DNG file (informational only), the EXIF orientation, the
+Cineon file (informational only; the Cineon encoder copies its header) and the properties of a DNG file (informational only), the EXIF orientation, the
 resolution, the pixel aspect ratio, ICC/EXIF/XMP profiles (byte-for-byte payloads), the CICP color description, the
 content light level, the mastering display color volume and text entries.
 
@@ -4880,10 +4884,10 @@ public static void StreamingWithReusedBuffer(string inputPath, string outputPath
 pixels only), `.tif`/`.tiff`, `.ico`, `.cur`, `.ani`, `.avif`/`.avifs` (lossless by default), `.heic`/`.heif`/`.heics`/`.heifs` (lossless by default), `.jxl` (lossless by default), `.jp2` (a JP2 file,
 lossless by default), `.j2k`/`.j2c`/`.jpc` (a JPEG 2000 codestream, lossless by default), `.jph`/`.jhc` (a JPH file or
 a codestream of the high-throughput block coder, lossless by default), `.exr` (OpenEXR, ZIP), `.hdr`/`.pic` (Radiance
-HDR, run-length encoded) and `.dpx` (big-endian DPX at the depth of the pixels); anything else throws
-`ArgumentException`, the `.jpx`, `.jpf`, `.psd`, `.psb`, `.dng`, `.dds`, `.cin` and `.ktx2` extensions included (these
-files are read, not written; and `ImageEncoder.Create` throws `ArgumentOutOfRangeException` for `ImageFormat.Psd`,
-`ImageFormat.Dng`, `ImageFormat.Dds`, `ImageFormat.Cineon` and `ImageFormat.Ktx2`). An eager save validates the whole image against the output (animation, poster,
+HDR, run-length encoded), `.dpx` (big-endian DPX at the depth of the pixels), `.psd` (PackBits PSD), `.psb` (PackBits PSB),
+`.dng` (linear raw DNG) and `.cin` (Cineon, 10 bits for 8-bit pixels); anything else throws `ArgumentException`, the
+`.jpx`, `.jpf`, `.dds` and `.ktx2` extensions included (these files are read, not written; and `ImageEncoder.Create`
+throws `ArgumentOutOfRangeException` for `ImageFormat.Dds` and `ImageFormat.Ktx2`). An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
 `ImageEncoder.FromFileExtension` returns the encoder `Save(path)` selects for an extension (`.png` or `png`), and
@@ -6266,10 +6270,9 @@ unless the conversion clips or tone maps them.
 
 ### PSD
 
-Adobe Photoshop documents (`.psd`) and large documents (PSB, `.psb`) are read, not written: no encoder writes them, so
-`Save(path)` and `ImageEncoder.FromFileExtension` reject their extensions with an `ArgumentException`, and
-`ImageEncoder.Create(ImageFormat.Psd)` throws `ArgumentOutOfRangeException`. The codec is written from the Adobe
-Photoshop File Formats Specification, and detects files by their signature `8BPS`. It reads the composite image: the
+Adobe Photoshop documents (`.psd`) and large documents (PSB, `.psb`) are read, and written as flat documents by
+`PsdEncoder` (see the encoding table below). The codec is written from the Adobe Photoshop File Formats
+Specification, and detects files by their signature `8BPS`. It reads the composite image: the
 flattened image Photoshop stores next to the layers when "Maximize Compatibility" is on. The layers, their masks,
 adjustment layers, effects and blend modes are never rendered. A file saved without a composite (its version
 information resource, 1057, says it has no real merged data) is identified, and a load throws
@@ -6292,6 +6295,34 @@ and no lenient repair: a truncated file, an image resource or a tagged block pas
 of another length and an unknown compression are `InvalidImageContentException`. A typed load converts the decoded
 image like `CloneAs`.
 
+`PsdEncoder` writes a flat document whose composite image is the image:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_PsdSave;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SavePsd(Image image, string psdPath, string psbPath)
+{
+    // A flat document whose composite is the image; an image with transparency also gets one layer that holds it.
+    // PackBits rows by default; the ICC profile, EXIF, XMP and the resolution are written as image resources
+    image.Save(psdPath, new PsdEncoder { Compression = PsdCompression.RunLength });
+
+    // The large document format: selected by the extension or by LargeDocument, and always above 30,000 pixels per side
+    image.Save(psbPath);
+}
+```
+<!-- endref -->
+
+| | Encoding |
+| --- | --- |
+| Files | Version 1 (PSD), or version 2 (PSB) when a side is longer than 30,000 pixels or `LargeDocument` is set (`.psb`); at most 300,000 pixels per side |
+| Color modes | Grayscale for the gray pixel formats, CMYK for `Cmyk32` and `Cmyk64` (stored inverted), RGB for the others; 8-bit formats → 8 bits, 16-bit formats → 16 bits, `RgbaFloat` and `RgbaHalf` → 32 bits (linear light: labeled `ColorTransferFunction.Linear` or with an ICC profile, `UnsupportedImageFeatureException` otherwise, following `MetadataHandling`) |
+| Image data | Raw, or RLE (PackBits, the default) after a table of the length of every row; a PSD row compressed to more than 65,535 bytes is `UnsupportedImageFeatureException` (use `PsdCompression.None` or a PSB file) |
+| Transparency | An image with a pixel that is not fully opaque gets the merged alpha channel and one layer (`Layer 0`, the canvas, normal blending), whose negative layer count flags the channel: in the layer info for 8 bits, in an `Lr16` or `Lr32` block after an empty layer info and global layer mask for 16 and 32 bits, as Photoshop writes them. The composite colors are matted over white, `round((c × α + max × (max − α)) / max)`, as Photoshop stores them (so a partly transparent pixel of 8 or 16 bits comes back rounded); the layer holds them as they are. An opaque image has no layer and no alpha channel |
+| Metadata | Resolution (1005), ICC profile (1039), EXIF (1058, which carries an orientation), XMP (1060), and the version information (1057, a real composite); text entries and the other metadata follow `MetadataHandling` |
+| Memory | The table of the compressed lengths (4 bytes per row of each channel) is computed before anything is written: every row is compressed twice. The pixels are not copied |
+
+ImageMagick and `psd-tools` read the files (composite and layer); ImageMagick does not un-matte the gray composites with
+alpha, whose stored samples it gives.
+
 ### DNG
 
 DNG (Adobe Digital Negative, `.dng`) stores the raw samples of a camera sensor in a TIFF profile, with what a reader
@@ -6302,8 +6333,8 @@ decoder). A DNG file is recognized by the `DNGVersion` tag of its first director
 `ImageFormat.Dng` when the prefix holds that directory (`ImageFormat.Tiff` otherwise), and `Identify` and `Load` always
 tell. `Load` renders the raw image to `RgbaFloat` pixels of scene-referred linear light, the primaries of BT.709 and the
 D65 white point (`ColorTransferFunction.Linear`), the size of the default crop; `ImageMetadata.DngProperties` holds the
-version, the camera and the baseline exposure. DNG is not written, and `ImageCollection` rejects it (a single raw image);
-a sequential `ImageReader` rejects it like a TIFF file.
+version, the camera and the baseline exposure. `DngEncoder` writes linear raw data (see the encoding table below).
+`ImageCollection` rejects DNG (a single raw image); a sequential `ImageReader` rejects it like a TIFF file.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Dng;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -6365,6 +6396,33 @@ interpolation of its own (the specification leaves it to the reader), it leaves 
 and DeltaPerColumn in opcode list 2 (the specification adds the deltas, as the library does), and its BlackLevelDeltaH
 and BlackLevelDeltaV give linear values within 2 units of 1/65535. Region decoding renders the whole image and crops it;
 a scaled decode is at full resolution (an exact scale is rejected).
+
+`DngEncoder` writes the image as linear raw data, the rendered image a raw converter opens:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DngSave;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveDng(Image image, string dngPath)
+{
+    // Linear raw data whose camera color space is linear BT.709: the samples are stored as they are, with a table that
+    // maps sRGB samples to linear values. Lossless JPEG tiles (Deflate for floating-point samples)
+    image.Save(dngPath, new DngEncoder { Compression = DngCompression.LosslessJpeg, TileSize = 256 });
+}
+```
+<!-- endref -->
+
+| | Encoding |
+| --- | --- |
+| Structure | A little-endian TIFF file whose first directory is the raw image (`NewSubFileType` 0, `LinearRaw`, no preview), `DNGVersion` 1.4.0.0 (`DNGBackwardVersion` 1.1.0.0, 1.4.0.0 for floats), `UniqueCameraModel`, `Make`, `Model` and `Software` `Meziantou.Framework.Imaging`; the directory follows the image data, so the destination must be seekable |
+| Samples | Monochrome (one sample) for the gray pixel formats, three samples otherwise; 8 and 16-bit integers as they are, `RgbaFloat` and `RgbaHalf` as 32-bit floats. An image labeled linear stores its linear values (white level the largest sample); an sRGB image stores its samples with a `LinearizationTable` of the sRGB transfer function (16-bit linear values, the precision of DNG), so `DngRawImage.CopyStoredRow` gives them back exactly. Floats must be finite and not negative; above 1, the white level is the smallest integer at least as large as the largest sample and `BaselineExposure` its base-2 logarithm |
+| Compression | Lossless JPEG (the lossless process of the JPEG encoder, one component per sample) for integers, Deflate for floats (the defaults), or none; strips of about 64 KiB, or tiles (256 pixels for lossless JPEG, never larger than the image: LibRaw misreads the lossless JPEG tiles that are wider than the image) |
+| Camera profile | The camera color space is linear BT.709 RGB: `ColorMatrix1` (XYZ to linear BT.709) and `ForwardMatrix1` (the inverse of the transform of the decoder) for `CalibrationIlluminant1` D65, `AsShotNeutral` 1, 1, 1, an identity `ProfileToneCurve` and `DefaultBlackRender` 1, so that a reader renders the colors of the image; the matrices are rationals of 6 decimals. `Image.Load` renders it back within 1E-5 |
+| Metadata | The orientation (`Orientation` tag) and XMP; an ICC profile, EXIF, a resolution, text entries and a CICP description other than sRGB follow `MetadataHandling`; `DngProperties` is ignored |
+| Not written | Transparency (an image with a pixel that is not fully opaque is `UnsupportedImageFeatureException`), CMYK, color filter arrays: `DngRawImage` gives no camera profile, so its mosaic cannot be written back faithfully |
+
+`dng_validate` (DNG SDK 1.7.1) validates every combination of the tests without warning, its stages 1 and 2 are the stored
+samples and linear values the library gives, and its rendering differs from the image by at most 0.0024 of sRGB. LibRaw
+renders the integer files to the same linear values; it reads no floating-point DNG, and renders monochrome linear raw
+data with a gain of its own.
 
 ### DDS
 
@@ -6471,13 +6529,13 @@ writes 1-bit components from the most significant bit; no reference decoder read
 ### Cineon
 
 Kodak Cineon files (`.cin`, "Image File Format Proposal for Digital Pictures", draft 4.5) hold film scans, almost
-always three channels of 10-bit printing densities. They are read, not written: DPX succeeded the format.
+always three channels of 10-bit printing densities. They are read, and written by `CineonEncoder`.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Cineon;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static int ConvertCineonToDpx(string cinPath, string dpxPath)
 {
-    // Cineon files are read only: their 10-bit printing densities load as Rgb48, as stored
+    // The 10-bit printing densities of a Cineon file load as Rgb48, as stored
     using var scan = Image.Load(cinPath);
     var bits = scan.Metadata.CineonHeader!.BitsPerSample;
     scan.Save(dpxPath, new DpxEncoder { BitDepth = bits == 10 ? 10 : null, AllowBitDepthReduction = true });
@@ -6497,6 +6555,30 @@ The image data start at the offset of field 1.2, after the generic section. Imag
 channel interleaving, channels of different sizes or depths, signed samples, samples of more than 16 bits and bit fields
 (packing 0) of samples other than 8 and 16 bits are `UnsupportedImageFeatureException`. Printing densities are never
 converted to linear light, and a negative image is not inverted (`CineonHeader.IsNegative`).
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_CineonSave;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveCineon(string cinPath, string outputPath)
+{
+    // The header of a loaded Cineon file (the film, the scanner, the designators and ranges of the channels) is copied
+    using var scan = Image.Load(cinPath);
+
+    // 10-bit code values by default for 8-bit pixels, packed one RGB pixel per 32-bit word (packing 5): 16-bit pixels are
+    // written with 16 bits unless the reduction is allowed
+    scan.Save(outputPath, new CineonEncoder { BitDepth = 10, AllowBitDepthReduction = true });
+}
+```
+<!-- endref -->
+
+| | Encoding |
+| --- | --- |
+| Layout | Big-endian, the generic and motion-picture sections (2,048 bytes), then the image data: pixel interleaved, unsigned, packing 5 (32-bit cells, left justified). 10 bits: one RGB pixel per word (red in the 10 most significant bits), three gray samples per word; 8 and 16 bits: a stream of bytes or of 16-bit words, each line ending on a 32-bit word, as ImageMagick writes it |
+| Samples | One channel for the gray pixel formats, three otherwise; 10 bits for 8-bit pixels (their values come back exactly), 16 bits for 16-bit ones; `BitDepth` 8, 10 or 16 (`round(v × (2^n − 1) / max)`), fewer bits than 16-bit pixels with `AllowBitDepthReduction`. No transparency (an image with a pixel that is not fully opaque is `UnsupportedImageFeatureException`), no CMYK; floating-point pixels follow `FloatingPointConversion` |
+| Header | The fields of `Metadata.CineonHeader` (label, file and source names and dates, offsets, device, pitch, gamma, chromaticities, image sense, edge code, film format, frame position, rate and attribute, slate); the designators and the minimum and maximum code values and quantities of the channels when their number and the depth match, the printing densities of the universal metric (black and white for one channel), 0 to 2^n − 1 and 0 to 2.048 otherwise. A text longer than its field or not Latin-1 is `UnsupportedImageFeatureException`. The orientation is written as its code; the other metadata follows `MetadataHandling` |
+
+OpenImageIO and ImageMagick read the code values of every depth (ImageMagick once the colorspace is set to sRGB, or Gray
+for one channel, since it converts from log otherwise); ImageMagick reads the three 10-bit gray samples of a word from
+its least significant bits. FFmpeg has no Kodak Cineon decoder.
 
 ### KTX 2.0
 

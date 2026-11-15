@@ -33,9 +33,11 @@ anything is written, and how to tell the library what to do with what the format
 | `.cur` | Cursor |
 | `.ani` | Animated cursor |
 | `.exr` | OpenEXR, ZIP compression |
+| `.psd`, `.psb` | Adobe Photoshop flat document, PackBits; `.psb` is the large document format |
+| `.dng` | DNG linear raw data, lossless JPEG |
+| `.cin` | Kodak Cineon, 10 bits for 8-bit pixels |
 
-Any other extension throws an `ArgumentException`. The JPEG 2000 extensions `.jpx` and `.jpf`, and the Photoshop
-extensions `.psd` and `.psb`, are read, not written.
+Any other extension throws an `ArgumentException`. The JPEG 2000 extensions `.jpx` and `.jpf` are read, not written.
 
 To choose the format from a name or a request rather than from the path of the file:
 

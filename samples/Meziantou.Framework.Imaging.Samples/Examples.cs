@@ -1719,11 +1719,44 @@ internal static class Examples
     #region Imaging_Cineon
     public static int ConvertCineonToDpx(string cinPath, string dpxPath)
     {
-        // Cineon files are read only: their 10-bit printing densities load as Rgb48, as stored
+        // The 10-bit printing densities of a Cineon file load as Rgb48, as stored
         using var scan = Image.Load(cinPath);
         var bits = scan.Metadata.CineonHeader!.BitsPerSample;
         scan.Save(dpxPath, new DpxEncoder { BitDepth = bits == 10 ? 10 : null, AllowBitDepthReduction = true });
         return bits;
+    }
+    #endregion
+
+    #region Imaging_CineonSave
+    public static void SaveCineon(string cinPath, string outputPath)
+    {
+        // The header of a loaded Cineon file (the film, the scanner, the designators and ranges of the channels) is copied
+        using var scan = Image.Load(cinPath);
+
+        // 10-bit code values by default for 8-bit pixels, packed one RGB pixel per 32-bit word (packing 5): 16-bit pixels are
+        // written with 16 bits unless the reduction is allowed
+        scan.Save(outputPath, new CineonEncoder { BitDepth = 10, AllowBitDepthReduction = true });
+    }
+    #endregion
+
+    #region Imaging_PsdSave
+    public static void SavePsd(Image image, string psdPath, string psbPath)
+    {
+        // A flat document whose composite is the image; an image with transparency also gets one layer that holds it.
+        // PackBits rows by default; the ICC profile, EXIF, XMP and the resolution are written as image resources
+        image.Save(psdPath, new PsdEncoder { Compression = PsdCompression.RunLength });
+
+        // The large document format: selected by the extension or by LargeDocument, and always above 30,000 pixels per side
+        image.Save(psbPath);
+    }
+    #endregion
+
+    #region Imaging_DngSave
+    public static void SaveDng(Image image, string dngPath)
+    {
+        // Linear raw data whose camera color space is linear BT.709: the samples are stored as they are, with a table that
+        // maps sRGB samples to linear values. Lossless JPEG tiles (Deflate for floating-point samples)
+        image.Save(dngPath, new DngEncoder { Compression = DngCompression.LosslessJpeg, TileSize = 256 });
     }
     #endregion
 

@@ -328,6 +328,11 @@ internal static class FuzzOracle
         if (format == ImageFormat.Jpeg && CheckJpegRegion(input, image, variant) is { Length: > 0 } region)
             return region;
 
+        // A color JPEG file loaded as Rgba32 has the samples of its Rgb24 decode with an opaque alpha: the color conversion
+        // writes RGBA pixels with a kernel of its own (the same arithmetic as the RGB one)
+        if (format == ImageFormat.Jpeg && CheckJpegRgba(input, image) is { Length: > 0 } rgba)
+            return rgba;
+
         // An area of an AVIF or HEIC image has the pixels of the full decode: whatever the decoders skip (the tiles of a grid,
         // the rows below the area, the AV1 tiles far from it) or decode again whole (an item that is not a single intra
         // picture), it succeeds when the full decode does
@@ -611,6 +616,30 @@ internal static class FuzzOracle
                 if (!expected.SequenceEqual(regionBytes.AsSpan(row * area.Width * bytesPerPixel, area.Width * bytesPerPixel)))
                     return $"jpeg-region-pixels: row {row} of the region {region} at 1/{scale} differs from the full decode";
             }
+        }
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckJpegRgba(byte[] input, Image image)
+    {
+        if (image.PixelFormat != PixelFormat.Rgb24 || image.Frames.Count != 1)
+            return string.Empty;
+
+        using var rgba = Image.Load<Rgba32>(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+        if (rgba.Size != image.Size || rgba.Frames.Count != 1)
+            return $"jpeg-rgba-geometry: the Rgba32 decode is {rgba.Size} with {rgba.Frames.Count} frame(s), the Rgb24 decode is {image.Size}";
+
+        var pixelCount = image.Width * image.Height;
+        var rgb = new byte[pixelCount * 3];
+        image.Frames[0].CopyPixelBytesTo(rgb);
+        var pixels = new byte[pixelCount * 4];
+        rgba.Frames[0].CopyPixelBytesTo(pixels);
+        for (var i = 0; i < pixelCount; i++)
+        {
+            if (pixels[4 * i] != rgb[3 * i] || pixels[(4 * i) + 1] != rgb[(3 * i) + 1] || pixels[(4 * i) + 2] != rgb[(3 * i) + 2] || pixels[(4 * i) + 3] != 255)
+                return $"jpeg-rgba-pixels: pixel {i % image.Width}, {i / image.Width} of the Rgba32 decode is not the Rgb24 pixel with an opaque alpha";
         }
 
         return string.Empty;

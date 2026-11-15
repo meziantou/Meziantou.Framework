@@ -4,13 +4,14 @@ using System.Text;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Barcodes;
 using Meziantou.Framework.Imaging.Drawing;
-using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.VectorGraphics;
+using Meziantou.Framework.VectorGraphics;
 
 namespace Meziantou.Framework.Barcodes.InteropTests;
 
 /// <summary>
 /// Decodes the images of the library with two independent readers: ZXingReader reads every type, zbarimg every type
-/// except Micro QR and rMQR. The images come from <c>ToPng</c>, from <c>ToImage</c>, and from the canvas drawing, with
+/// except Micro QR and rMQR. The images come from <c>ToImage</c>, at scale 1 and 2, and from the canvas drawing, with
 /// fractional sizes, transforms and gradient brushes.
 /// </summary>
 [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
@@ -18,7 +19,7 @@ public sealed class DecodeInteropTests
 {
     private const int RandomPayloadsPerType = 40;
 
-    public static TheoryData<string> DrawingVariants() => ["ToPng", "ToImage", "Canvas", "CanvasFractional", "CanvasGradient", "CanvasRotated"];
+    public static TheoryData<string> DrawingVariants() => ["ToImage", "ToImageScaled", "Canvas", "CanvasFractional", "CanvasGradient", "CanvasRotated"];
 
     [Theory]
     [MemberData(nameof(DrawingVariants))]
@@ -45,6 +46,46 @@ public sealed class DecodeInteropTests
             {
                 Assert.Equal(["QR-Code:" + data], await tools.ReadWithZBarAsync(path));
             }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingVariants))]
+    public async Task QRCodesWithLogo_AreDecoded(string variant)
+    {
+        // At each level, a large logo the level accepts on the modules it clears in every variant (fractional sizes clear
+        // the modules the logo partly covers), then one with a backdrop
+        using var logoImage = new Image<Rgba32>(32, 32, Colors.White);
+        logoImage.Draw(canvas => canvas.FillCircle(new SolidBrush(new Rgba32(0x25, 0x63, 0xeb)), new PointD(16, 16), 14));
+        var logo = PngRendering.Encode(logoImage);
+        var data = new string('a', 120);
+        (ErrorCorrectionLevel Level, int SizePercent, int Margin, bool Backdrop)[] logos =
+        [
+            (ErrorCorrectionLevel.L, 10, 0, false),
+            (ErrorCorrectionLevel.M, 20, 1, false),
+            (ErrorCorrectionLevel.Q, 25, 1, false),
+            (ErrorCorrectionLevel.H, 30, 1, false),
+            (ErrorCorrectionLevel.H, 20, 1, true),
+        ];
+
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, ErrorCorrectionLevel Level)>();
+        foreach (var (level, sizePercent, margin, backdrop) in logos)
+        {
+            var path = directory.FullPath / $"qr-logo-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            var barcodeLogo = new BarcodeLogo(logo) { SizePercent = sizePercent, MarginModules = margin, BackdropPaint = backdrop ? (ScenePaint)new SceneColor(0xf0, 0xf0, 0xf0) : null, BackdropCornerRadius = backdrop ? 1.5 : 0 };
+            await File.WriteAllBytesAsync(path, RenderQRCode(QRCode.Create(data, level), variant, barcodeLogo), XunitCancellationToken);
+            cases.Add((path, level));
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, level) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: $"{level} {path}");
+            Assert.Equal(data, result.Text);
+            Assert.Equal(level.ToString(), result.ErrorCorrectionLevel);
+            Assert.Equal(["QR-Code:" + data], await tools.ReadWithZBarAsync(path));
         }
     }
 
@@ -111,7 +152,7 @@ public sealed class DecodeInteropTests
             }
 
             var path = directory.FullPath / $"random-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
-            await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            await File.WriteAllBytesAsync(path, qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 3 }), XunitCancellationToken);
             cases.Add((path, data, qr.ErrorCorrectionLevel));
         }
 
@@ -146,7 +187,7 @@ public sealed class DecodeInteropTests
             };
 
             var path = directory.FullPath / $"sjis-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
-            await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+            await File.WriteAllBytesAsync(path, qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 4 }), XunitCancellationToken);
             cases.Add((path, data));
         }
 
@@ -178,7 +219,7 @@ public sealed class DecodeInteropTests
         foreach (var (data, level) in values)
         {
             var path = directory.FullPath / $"mixed-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
-            await File.WriteAllBytesAsync(path, QRCode.Create(data, level).ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            await File.WriteAllBytesAsync(path, QRCode.Create(data, level).ToPngBytes(new QRCodeRenderOptions { ModuleSize = 3 }), XunitCancellationToken);
             cases.Add((path, data));
         }
 
@@ -215,7 +256,7 @@ public sealed class DecodeInteropTests
         foreach (var data in values)
         {
             var path = directory.FullPath / $"eci-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
-            await File.WriteAllBytesAsync(path, QRCode.Create(data, ErrorCorrectionLevel.M, options).ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            await File.WriteAllBytesAsync(path, QRCode.Create(data, ErrorCorrectionLevel.M, options).ToPngBytes(new QRCodeRenderOptions { ModuleSize = 3 }), XunitCancellationToken);
             cases.Add((path, data));
         }
 
@@ -236,7 +277,7 @@ public sealed class DecodeInteropTests
         var tools = await BarcodeTools.GetAsync();
         await using var directory = TemporaryDirectory.Create();
         var path = directory.FullPath / "latin1.png";
-        await File.WriteAllBytesAsync(path, QRCode.Create([0x63, 0x61, 0x66, 0xE9], ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 }).ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+        await File.WriteAllBytesAsync(path, QRCode.Create([0x63, 0x61, 0x66, 0xE9], ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 }).ToPngBytes(new QRCodeRenderOptions { ModuleSize = 3 }), XunitCancellationToken);
 
         var result = Assert.Single(await tools.ReadWithZXingAsync([path]));
         Assert.Equal("café", result.Text);
@@ -265,7 +306,7 @@ public sealed class DecodeInteropTests
         {
             var qr = type is QRCodeType.MicroQR ? QRCode.CreateMicroQR(data, level) : QRCode.CreateRMQR(data, level);
             var path = directory.FullPath / $"small-mixed-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
-            await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+            await File.WriteAllBytesAsync(path, qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 4 }), XunitCancellationToken);
             cases.Add((path, data));
         }
 
@@ -298,7 +339,7 @@ public sealed class DecodeInteropTests
         foreach (var (qr, data, zbar) in values)
         {
             var path = directory.FullPath / $"segments-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
-            await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+            await File.WriteAllBytesAsync(path, qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 4 }), XunitCancellationToken);
             cases.Add((path, data, zbar));
         }
 
@@ -348,7 +389,7 @@ public sealed class DecodeInteropTests
             foreach (var symbol in symbols)
             {
                 var path = directory.FullPath / $"sequence-{paths.Count.ToString(CultureInfo.InvariantCulture)}.png";
-                await File.WriteAllBytesAsync(path, symbol.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+                await File.WriteAllBytesAsync(path, symbol.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 4 }), XunitCancellationToken);
                 paths.Add(path);
             }
 
@@ -392,7 +433,7 @@ public sealed class DecodeInteropTests
 
         foreach (var (path, qr, _, _) in cases)
         {
-            await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            await File.WriteAllBytesAsync(path, qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 3 }), XunitCancellationToken);
         }
 
         var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
@@ -440,7 +481,7 @@ public sealed class DecodeInteropTests
         {
             var data = text.Substring(i, Math.Min(1500, text.Length - i));
             var path = directory.FullPath / $"kanji-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
-            await File.WriteAllBytesAsync(path, QRCode.Create(data, ErrorCorrectionLevel.L).ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            await File.WriteAllBytesAsync(path, QRCode.Create(data, ErrorCorrectionLevel.L).ToPngBytes(new QRCodeRenderOptions { ModuleSize = 3 }), XunitCancellationToken);
             cases.Add((path, data));
         }
 
@@ -466,7 +507,7 @@ public sealed class DecodeInteropTests
             {
                 var barcode = CreateRandomBarcode(random, type);
                 var path = directory.FullPath / $"random-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
-                await File.WriteAllBytesAsync(path, barcode.ToPng(new BarcodePngOptions { ModuleWidth = 2, ModuleHeight = 40 }), XunitCancellationToken);
+                await File.WriteAllBytesAsync(path, barcode.ToPngBytes(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 40 }), XunitCancellationToken);
                 cases.Add((path, barcode));
             }
         }
@@ -551,7 +592,7 @@ public sealed class DecodeInteropTests
         var tools = await BarcodeTools.GetAsync();
         await using var directory = TemporaryDirectory.Create();
         var path = directory.FullPath / "code128.png";
-        await File.WriteAllBytesAsync(path, Barcode.CreateCode128("0109521234543213").ToPng(new BarcodePngOptions { ModuleWidth = 2, ModuleHeight = 60 }), XunitCancellationToken);
+        await File.WriteAllBytesAsync(path, Barcode.CreateCode128("0109521234543213").ToPngBytes(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 60 }), XunitCancellationToken);
 
         var result = Assert.Single(await tools.ReadWithZXingAsync([path]));
         Assert.Equal("]C0", result.SymbologyIdentifier);
@@ -563,7 +604,7 @@ public sealed class DecodeInteropTests
         var data = new TheoryData<Barcode2DType, string>();
         foreach (var type in Enum.GetValues<Barcode2DType>())
         {
-            foreach (var variant in new[] { "ToPng", "ToImage", "Canvas", "CanvasFractional", "CanvasGradient", "CanvasRotated" })
+            foreach (var variant in new[] { "ToImage", "ToImageScaled", "Canvas", "CanvasFractional", "CanvasGradient", "CanvasRotated" })
             {
                 data.Add(type, variant);
             }
@@ -627,7 +668,7 @@ public sealed class DecodeInteropTests
             }
 
             var path = directory.FullPath / $"random-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
-            await File.WriteAllBytesAsync(path, barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            await File.WriteAllBytesAsync(path, barcode.ToPngBytes(new Barcode2DRenderOptions { ModuleSize = 3 }), XunitCancellationToken);
             cases.Add((path, data));
         }
 
@@ -656,7 +697,7 @@ public sealed class DecodeInteropTests
         foreach (var (barcode, data, humanReadableText) in samples)
         {
             var path = directory.FullPath / "gs1-datamatrix.png";
-            await File.WriteAllBytesAsync(path, barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 4 }), XunitCancellationToken);
+            await File.WriteAllBytesAsync(path, barcode.ToPngBytes(new Barcode2DRenderOptions { ModuleSize = 4 }), XunitCancellationToken);
 
             var result = Assert.Single(await tools.ReadWithZXingAsync([path]), result => result.Format == "Data Matrix");
             Assert.Equal("]d2", result.SymbologyIdentifier);
@@ -672,7 +713,7 @@ public sealed class DecodeInteropTests
         var tools = await BarcodeTools.GetAsync();
         await using var directory = TemporaryDirectory.Create();
         var path = directory.FullPath / "datamatrix.png";
-        await File.WriteAllBytesAsync(path, Barcode2D.CreateDataMatrix("0109521234543213").ToPng(), XunitCancellationToken);
+        await File.WriteAllBytesAsync(path, Barcode2D.CreateDataMatrix("0109521234543213").ToPngBytes(), XunitCancellationToken);
 
         var result = Assert.Single(await tools.ReadWithZXingAsync([path]), result => result.Format == "Data Matrix");
         Assert.Equal("]d1", result.SymbologyIdentifier);
@@ -756,20 +797,17 @@ public sealed class DecodeInteropTests
 
     private static byte[] RenderBarcode2D(Barcode2D barcode, string variant)
     {
-        if (variant is "ToPng")
-            return barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 4 });
+        if (variant is "ToImageScaled")
+            return barcode.ToPngBytes(new Barcode2DRenderOptions { ModuleSize = 2 }, new SceneImageOptions { Scale = 2 });
 
         if (variant is "ToImage")
-        {
-            using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 4 });
-            return Encode(image);
-        }
+            return barcode.ToPngBytes(new Barcode2DRenderOptions { ModuleSize = 4 });
 
         var options = variant switch
         {
-            "CanvasFractional" => new Barcode2DDrawingOptions { ModuleSize = 3.5, SnapToPixels = false },
-            "CanvasGradient" => new Barcode2DDrawingOptions { ModuleSize = 4, DarkBrush = new LinearGradientBrush(new PointD(0, 0), new PointD(400, 400), [new GradientStop(0, Colors.Black), new GradientStop(1, new Rgba32(0x00, 0x33, 0x66))]) },
-            _ => new Barcode2DDrawingOptions { ModuleSize = 4 },
+            "CanvasFractional" => new Barcode2DRenderOptions { ModuleSize = 3.5, SnapToPixels = false },
+            "CanvasGradient" => new Barcode2DRenderOptions { ModuleSize = 4, DarkPaint = new LinearGradientPaint(0, 0, 400, 400, [new SceneGradientStop(0, SceneColor.Black), new SceneGradientStop(1, new SceneColor(0x00, 0x33, 0x66))]) },
+            _ => new Barcode2DRenderOptions { ModuleSize = 4 },
         };
 
         var size = Barcode2DImageRenderer.MeasureBarcode2D(barcode, options);
@@ -783,12 +821,12 @@ public sealed class DecodeInteropTests
                 var angle = state.barcode.Type is Barcode2DType.Pdf417 ? 3 : 10;
                 canvas.Transform(AffineTransform.CreateRotation(angle, center), state, static (canvas, state) => canvas.DrawBarcode2D(state.barcode, new PointD((state.side - state.size.Width) / 2, (state.side - state.size.Height) / 2), state.options));
             });
-            return Encode(rotated);
+            return PngRendering.Encode(rotated);
         }
 
         using var canvas = new Image<Rgba32>((int)Math.Ceiling(size.Width) + 60, (int)Math.Ceiling(size.Height) + 60, Colors.White);
         canvas.Draw((barcode, options), static (canvas, state) => canvas.DrawBarcode2D(state.barcode, new PointD(30.3, 30.6), state.options));
-        return Encode(canvas);
+        return PngRendering.Encode(canvas);
     }
 
     private static IEnumerable<(QRCode QRCode, string Data)> GetSampleQRCodes()
@@ -822,24 +860,22 @@ public sealed class DecodeInteropTests
         yield return Barcode.CreateUpcE("0123456", extension: "12");
     }
 
-    private static byte[] RenderQRCode(QRCode qr, string variant)
+    private static byte[] RenderQRCode(QRCode qr, string variant, BarcodeLogo? logo = null)
     {
-        if (variant is "ToPng")
-            return qr.ToPng(new QRCodePngOptions { ModuleSize = 4 });
+        if (variant is "ToImageScaled")
+            return qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 2, Logo = logo }, new SceneImageOptions { Scale = 2 });
 
         if (variant is "ToImage")
-        {
-            using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 4 });
-            return Encode(image);
-        }
+            return qr.ToPngBytes(new QRCodeRenderOptions { ModuleSize = 4, Logo = logo });
 
         var options = variant switch
         {
             // The rMQR detector of ZXingReader misses some fractional sizes, of zint's symbols as well as ours (3.4, 4.6, 5.3)
-            "CanvasFractional" => new QRCodeDrawingOptions { ModuleSize = 3.5, SnapToPixels = false },
-            "CanvasGradient" => new QRCodeDrawingOptions { ModuleSize = 4, DarkBrush = new LinearGradientBrush(new PointD(0, 0), new PointD(400, 400), [new GradientStop(0, Colors.Black), new GradientStop(1, new Rgba32(0x00, 0x33, 0x66))]) },
-            _ => new QRCodeDrawingOptions { ModuleSize = 4 },
+            "CanvasFractional" => new QRCodeRenderOptions { ModuleSize = 3.5, SnapToPixels = false },
+            "CanvasGradient" => new QRCodeRenderOptions { ModuleSize = 4, DarkPaint = new LinearGradientPaint(0, 0, 400, 400, [new SceneGradientStop(0, SceneColor.Black), new SceneGradientStop(1, new SceneColor(0x00, 0x33, 0x66))]) },
+            _ => new QRCodeRenderOptions { ModuleSize = 4 },
         };
+        options.Logo = logo;
 
         var size = QRCodeImageRenderer.MeasureQRCode(qr, options);
         if (variant is "CanvasRotated")
@@ -853,18 +889,18 @@ public sealed class DecodeInteropTests
                 var angle = state.qr.Type is QRCodeType.RMQR ? 90 : 10;
                 canvas.Transform(AffineTransform.CreateRotation(angle, center), state, static (canvas, state) => canvas.DrawQRCode(state.qr, new PointD((state.side - state.size.Width) / 2, (state.side - state.size.Height) / 2), state.options));
             });
-            return Encode(rotated);
+            return PngRendering.Encode(rotated);
         }
 
         using var canvas = new Image<Rgba32>((int)Math.Ceiling(size.Width) + 60, (int)Math.Ceiling(size.Height) + 60, Colors.White);
         canvas.Draw((qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, new PointD(30.3, 30.6), state.options));
-        return Encode(canvas);
+        return PngRendering.Encode(canvas);
     }
 
     // The symbols side by side, each with its quiet zone
     private static byte[] RenderQRCodes(IReadOnlyList<QRCode> symbols)
     {
-        var options = new QRCodeDrawingOptions { ModuleSize = 4 };
+        var options = new QRCodeRenderOptions { ModuleSize = 4 };
         var sizes = symbols.Select(symbol => QRCodeImageRenderer.MeasureQRCode(symbol, options)).ToArray();
         using var canvas = new Image<Rgba32>((int)Math.Ceiling(sizes.Sum(size => size.Width)) + 20, (int)Math.Ceiling(sizes.Max(size => size.Height)) + 20, Colors.White);
         canvas.Draw((symbols, sizes, options), static (canvas, state) =>
@@ -876,25 +912,23 @@ public sealed class DecodeInteropTests
                 x += state.sizes[i].Width;
             }
         });
-        return Encode(canvas);
+        return PngRendering.Encode(canvas);
     }
 
     private static byte[] RenderBarcode(Barcode barcode, string variant)
     {
-        if (variant is "ToPng")
-            return barcode.ToPng(new BarcodePngOptions { ModuleWidth = 2, ModuleHeight = 60 });
+        if (variant is "ToImageScaled")
+            return barcode.ToPngBytes(new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 30 }, new SceneImageOptions { Scale = 2 });
 
+        // With the text: the digits of EAN and UPC are between longer guards, and the bars of an add-on are shorter
         if (variant is "ToImage")
-        {
-            using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 2, ModuleHeight = 60 });
-            return Encode(image);
-        }
+            return barcode.ToPngBytes(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 60, Text = new BarcodeTextOptions() });
 
         var options = variant switch
         {
-            "CanvasFractional" => new BarcodeDrawingOptions { ModuleWidth = 2.4, ModuleHeight = 60.5, SnapToPixels = false },
-            "CanvasGradient" => new BarcodeDrawingOptions { ModuleWidth = 2, ModuleHeight = 60, DarkBrush = new LinearGradientBrush(new PointD(0, 0), new PointD(600, 0), [new GradientStop(0, Colors.Black), new GradientStop(1, new Rgba32(0x00, 0x33, 0x66))]) },
-            _ => new BarcodeDrawingOptions { ModuleWidth = 2, ModuleHeight = 60 },
+            "CanvasFractional" => new BarcodeRenderOptions { ModuleWidth = 2.4, ModuleHeight = 60.5, SnapToPixels = false },
+            "CanvasGradient" => new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 60, DarkPaint = new LinearGradientPaint(0, 0, 600, 0, [new SceneGradientStop(0, SceneColor.Black), new SceneGradientStop(1, new SceneColor(0x00, 0x33, 0x66))]) },
+            _ => new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 60 },
         };
 
         var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
@@ -911,14 +945,7 @@ public sealed class DecodeInteropTests
                 canvas.DrawBarcode(state.barcode, new PointD(30.3, 30.6), state.options);
             }
         });
-        return Encode(canvas);
-    }
-
-    private static byte[] Encode(Image<Rgba32> image)
-    {
-        using var stream = new MemoryStream();
-        image.Save(stream, new PngEncoder());
-        return stream.ToArray();
+        return PngRendering.Encode(canvas);
     }
 
     // The text of an EAN or UPC symbol with an add-on is the main digits, a space, and the add-on digits

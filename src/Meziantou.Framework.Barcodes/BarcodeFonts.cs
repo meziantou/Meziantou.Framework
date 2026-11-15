@@ -1,9 +1,9 @@
-using Meziantou.Framework.Imaging.Typography;
+using Meziantou.Framework.VectorGraphics;
 
-namespace Meziantou.Framework.Imaging.Barcodes;
+namespace Meziantou.Framework.Barcodes;
 
 /// <summary>
-/// The OCR-A and OCR-B fonts, for the human-readable text of barcodes (<see cref="BarcodeDrawingOptions.Font"/>).
+/// The OCR-A and OCR-B fonts, for the human-readable text of barcodes (<see cref="BarcodeTextOptions.Fonts"/>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -17,22 +17,25 @@ namespace Meziantou.Framework.Imaging.Barcodes;
 /// stand for the Tilde, the Grave Accent and the Underline, as the standard prescribes. OCR-B also maps the letters,
 /// accents and symbols of its extended repertoire (Ä, Å, Æ, Ö, Ø, Ü, Ñ, IJ, å, æ, ø, ij, ß, §, ¤, £, ¥, ¨, ´).
 /// </para>
+/// <para>
+/// The TrueType file of a font is <c>Faces[0].Data</c>, to load it with another library.
+/// </para>
 /// </remarks>
 public static class BarcodeFonts
 {
-    private static readonly Lazy<Font> OcrAFont = new(() => Load("OcrA.ttf"));
-    private static readonly Lazy<Font> OcrBFont = new(() => Load("OcrB.ttf"));
+    private static readonly Lazy<SceneFontCollection> OcrAFont = new(() => Load("OcrA.ttf"));
+    private static readonly Lazy<SceneFontCollection> OcrBFont = new(() => Load("OcrB.ttf"));
 
     /// <summary>Gets the OCR-A font.</summary>
-    public static Font OcrA => OcrAFont.Value;
+    public static SceneFontCollection OcrA => OcrAFont.Value;
 
     /// <summary>Gets the OCR-B font, the font usually printed under EAN and UPC barcodes.</summary>
-    public static Font OcrB => OcrBFont.Value;
+    public static SceneFontCollection OcrB => OcrBFont.Value;
 
-    private static Font Load(string fileName)
+    private static SceneFontCollection Load(string fileName)
     {
-        using var stream = typeof(BarcodeFonts).Assembly.GetManifestResourceStream("Meziantou.Framework.Imaging.Barcodes.Fonts." + fileName)
+        using var stream = typeof(BarcodeFonts).Assembly.GetManifestResourceStream("Meziantou.Framework.Barcodes.Fonts." + fileName)
             ?? throw new InvalidOperationException($"The font '{fileName}' is not embedded in the assembly.");
-        return Font.Load(stream);
+        return new SceneFontCollection(SceneFontFace.Load(stream));
     }
 }

@@ -149,7 +149,7 @@ public class RMQRCodeTests
         // The lowercase letters in byte mode, the digits in numeric mode; large modules and a quiet zone, so that the snapshot can be scanned
         var qr = QRCode.CreateRMQR("Order 12345678901234567890");
 
-        Snapshot.Validate(qr.ToPng(new QRCodePngOptions { ModuleSize = 8, QuietZoneModules = 2 }), SnapshotType.Png);
+        Snapshot.Validate(qr.ToPng(new QRCodeRenderOptions { ModuleSize = 8, QuietZoneModules = 2 }), SnapshotType.Png);
     }
 
     [Fact]
@@ -225,18 +225,18 @@ public class RMQRCodeTests
     public void CreateRMQR_ToSvg_ProducesValidRectangularSvg()
     {
         var qr = QRCode.CreateRMQR("AB", ErrorCorrectionLevel.M);
-        var svg = qr.ToSvg(new QRCodeSvgOptions { ModuleSize = 1, QuietZoneModules = 0 });
+        var svg = qr.ToSvg(new QRCodeRenderOptions { ModuleSize = 1, QuietZoneModules = 0 });
 
         Assert.StartsWith("<svg ", svg);
         Assert.Contains($"viewBox=\"0 0 {qr.Width} {qr.Height}\"", svg);
-        Assert.EndsWith("</svg>", svg);
+        Assert.EndsWith("</svg>\n", svg);
     }
 
     [Fact]
     public void CreateRMQR_ToConsoleString_ProducesOutput()
     {
         var qr = QRCode.CreateRMQR("AB", ErrorCorrectionLevel.M);
-        var text = qr.ToConsoleString(new QRCodeConsoleOptions { QuietZoneModules = 0 });
+        var text = qr.ToConsoleString(new ConsoleRenderOptions { QuietZoneModules = 0 });
 
         Assert.NotEmpty(text);
     }

@@ -7,14 +7,14 @@ using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Typography;
 
 // Usage:
-//   generate [<directory>]   writes OcrA.ttf and OcrB.ttf (default: src/Meziantou.Framework.Imaging.Barcodes/Fonts)
+//   generate [<directory>]   writes OcrA.ttf and OcrB.ttf (default: src/Meziantou.Framework.Barcodes/Fonts)
 //   check [<directory>]      fails when the files of the directory differ from a fresh generation
 //   specimen <directory>     writes a PNG specimen of each font, for review
 //   digitize <fig141.png> <fig142.png> <output.cs>
 //                            traces the OCR-B centerlines from the 4:1 illustrations of ANSI X3.49-1975 (pages 54
 //                            and 55 of FIPS PUB 32-1 (1975), rendered at 600 dpi) into OcrB.Centerlines.cs
 var command = args.Length > 0 ? args[0] : "generate";
-var directory = args.Length > 1 ? FullPath.FromPath(args[1]) : FindRepositoryRoot() / "src" / "Meziantou.Framework.Imaging.Barcodes" / "Fonts";
+var directory = args.Length > 1 ? FullPath.FromPath(args[1]) : FindRepositoryRoot() / "src" / "Meziantou.Framework.Barcodes" / "Fonts";
 OcrFont[] fonts = [OcrA.Font, OcrB.Font];
 
 switch (command)

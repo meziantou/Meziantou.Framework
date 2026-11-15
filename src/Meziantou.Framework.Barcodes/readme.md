@@ -1,6 +1,6 @@
 # Meziantou.Framework.Barcodes
 
-QR and barcode generation library with SVG and PNG renderers, plus a console renderer for QR codes, and decoders that read all these symbols back from their modules or from scan lines. Implements QR code specifications from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes, Data Matrix (including GS1 Data Matrix), PDF417 and Aztec codes, and linear barcodes from Code 39 to ITF.
+QR and barcode generation library that renders every symbol as a vector scene, drawn as SVG (and as PNG or other images with `Meziantou.Framework.Imaging.Barcodes`, as PDF with `Meziantou.Framework.Pdf.VectorGraphics`) with the same logo and human-readable text in every format, plus a console renderer for every symbol, and decoders that read all these symbols back from their modules or from scan lines. Implements QR code specifications from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes, Data Matrix (including GS1 Data Matrix), PDF417 and Aztec codes, and linear barcodes from Code 39 to ITF.
 
 ## Supported QR Code Types
 
@@ -160,23 +160,26 @@ var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
 var barcode = Barcode.CreateCode128("SKU-123456");
 
 var svg = qrCode.ToSvg();
-Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 330 330\">", svg);
+Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"330\" height=\"330\" viewBox=\"0 0 330 330\"", svg);
 
-var microSvg = microQr.ToSvg(new QRCodeSvgOptions { ModuleSize = 2, QuietZoneModules = 2 });
+var microSvg = microQr.ToSvg(new QRCodeRenderOptions { ModuleSize = 2, QuietZoneModules = 2 });
 Assert.Contains("viewBox=\"0 0 30 30\"", microSvg);
 
-var customSvg = qrCode.ToSvg(new QRCodeSvgOptions
+var customSvg = qrCode.ToSvg(new QRCodeRenderOptions
 {
     ModuleSize = 10,
     QuietZoneModules = 4,
-    DarkColor = Color.FromRgb(0x00, 0x00, 0x00),
-    LightColor = Color.FromRgb(0xff, 0xff, 0xff),
-    LogoImageHref = "https://example.com/logo.svg", // Also supports data URIs
-    LogoSizePercent = 20,
+    DarkPaint = new SceneColor(0x00, 0x00, 0x00),
+    LightPaint = new SceneColor(0xff, 0xff, 0xff),
+    // A PNG, JPEG, GIF or WebP file, such as File.ReadAllBytes("logo.png"): the SVG embeds it
+    Logo = new BarcodeLogo(Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mNg+M8AAAICAQBF9FLUAAAAAElFTkSuQmCC"))
+    {
+        SizePercent = 20,
+    },
 });
-Assert.Contains("<image href=\"https://example.com/logo.svg\"", customSvg);
+Assert.Contains("href=\"data:image/png;base64,", customSvg);
 
-var barcodeSvg = barcode.ToSvg(new BarcodeSvgOptions
+var barcodeSvg = barcode.ToSvg(new BarcodeRenderOptions
 {
     ModuleWidth = 2,
     ModuleHeight = 80,
@@ -186,72 +189,41 @@ Assert.Contains("viewBox=\"0 0 286 80\"", barcodeSvg);
 ```
 <!-- endref -->
 
-Logo images are currently supported in the SVG renderer only.
+### Logos and human-readable text
 
-### Render as PNG
+The same options draw a logo in the middle of a QR code, and the text of a barcode under its bars in OCR-B, in SVG, images and PDF.
 
-<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodePngRendererTests.cs;region=QRCode_ToPng;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeSvgRendererTests.cs;region=Barcode_TextInSvg;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var qrCode = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
-var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
-var barcode = Barcode.CreateCode39("ABC-123", includeChecksum: true);
-
-// The content of a PNG file, to save with File.WriteAllBytes("qrcode.png", png)
-var png = qrCode.ToPng();
-Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], png[..8]); // the PNG signature
-
-// Any writable stream, such as File.Create("micro-qrcode.png")
-using var stream = new MemoryStream();
-microQr.WriteToPng(stream, new QRCodePngOptions
+var barcode = Barcode.CreateEan13("590123412345");
+var options = new BarcodeRenderOptions
 {
-    ModuleSize = 4,
-    QuietZoneModules = 2,
-    DarkColor = Color.FromRgb(0x1f, 0x29, 0x37),
-    LightColor = Color.FromRgb(0xf9, 0xfa, 0xfb),
-});
+    ModuleHeight = 60,
+    Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 20 },
+};
 
-var barcodePng = barcode.ToPng(new BarcodePngOptions
-{
-    ModuleWidth = 2,
-    ModuleHeight = 80,
-    DarkColor = Color.FromRgb(0x0f, 0x76, 0x6e),
-    LightColor = Color.FromRgb(0xec, 0xfe, 0xff),
-});
+// Viewers do not have the OCR-B font: embed it in the document
+var svg = barcode.ToSvg(options, new SvgRenderOptions { EmbedFonts = true });
+
+// The image (Meziantou.Framework.Imaging.Barcodes) draws the text at the same place
+using var image = barcode.ToImage(options);
 ```
 <!-- endref -->
 
 ### Render to console
 
-<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeConsoleRendererTests.cs;region=QRCode_ToConsoleString;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeConsoleRendererTests.cs;region=Barcode_ToConsoleString;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var qrCode = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
-var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
-
-qrCode.WriteToConsole();
-var text = qrCode.ToConsoleString();
-
-var microText = microQr.ToConsoleString(new QRCodeConsoleOptions
+var barcode = Barcode.CreateEan8("9638507");
+var text = barcode.ToConsoleString(new ConsoleRenderOptions
 {
-    QuietZoneModules = 1,
-    ModuleWidth = 2,
-    ModuleHeight = 2, // 2x bigger output that can look more square on many terminals
+    QuietZoneModules = 2,
+    BarHeight = 2, // lines of text
+    ShowText = true, // the human-readable text, centered under the bars
 });
 
-Assert.Equal("""
-
-      ██████████████  ██  ██
-      ██          ██  ████
-      ██  ██████  ██  ██
-      ██  ██████  ██
-      ██  ██████  ██  ██████
-      ██          ██    ████
-      ██████████████  ██
-                        ████
-      ████    ██████    ████
-        ██  ██      ████
-      ████████          ████
-
-    """, microText, ignoreLineEndingDifferences: true);
+var dataMatrix = Barcode2D.CreateDataMatrix("123456");
+var dataMatrixText = dataMatrix.ToConsoleString();
 ```
 <!-- endref -->
 

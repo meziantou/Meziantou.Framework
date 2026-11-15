@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-using Meziantou.Framework.Imaging.Barcodes;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 using Meziantou.Prebuilt;
 
@@ -56,10 +55,10 @@ public sealed class FontInteropTests
 
     private static async Task<string> WriteFontAsync(TemporaryDirectory directory, string fileName)
     {
-        await using var resource = typeof(BarcodeFonts).Assembly.GetManifestResourceStream("Meziantou.Framework.Imaging.Barcodes.Fonts." + fileName)!;
+        // The TrueType file the library loads, as BarcodeFonts exposes it to other libraries
+        var font = fileName is "OcrA.ttf" ? BarcodeFonts.OcrA : BarcodeFonts.OcrB;
         var path = directory.FullPath / fileName;
-        await using var file = File.Create(path);
-        await resource.CopyToAsync(file, XunitCancellationToken);
+        await File.WriteAllBytesAsync(path, font.Faces[0].Data, XunitCancellationToken);
         return path;
     }
 

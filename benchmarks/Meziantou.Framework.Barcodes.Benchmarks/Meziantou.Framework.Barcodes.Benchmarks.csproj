@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Imaging.Barcodes/Meziantou.Framework.Imaging.Barcodes.csproj" />
   </ItemGroup>
 
 </Project>

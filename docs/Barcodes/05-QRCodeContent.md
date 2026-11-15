@@ -12,7 +12,7 @@ var payload = QRCodePayload.Wifi("Guests", "correct horse battery staple", WifiA
 var qrCode = QRCode.Create(payload, ErrorCorrectionLevel.Q);
 
 // A phone that scans it offers to join the network
-var png = qrCode.ToPng(new QRCodePngOptions { ModuleSize = 4 });
+using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 4 });
 ```
 <!-- endref -->
 

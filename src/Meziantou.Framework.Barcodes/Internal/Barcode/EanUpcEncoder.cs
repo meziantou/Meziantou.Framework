@@ -67,9 +67,15 @@ internal static class EanUpcEncoder
         }
 
         AppendPattern(modules, "101");
-        AppendExtension(modules, extension);
+        var addOnStart = AppendExtension(modules, extension);
 
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Ean8, modules, GetText(normalized, extension));
+        var layout = CreateLayout(
+            symbolEnd: 67,
+            [new(0, 3), new(31, 36), new(64, 67)],
+            [new(normalized[..4], new(3, 31), EanUpcTextPosition.Below), new(normalized[4..], new(36, 64), EanUpcTextPosition.Below)],
+            addOnStart,
+            extension);
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Ean8, modules, GetText(normalized, extension), layout);
     }
 
     public static Barcode EncodeEan13(string data, string? extension)
@@ -96,9 +102,20 @@ internal static class EanUpcEncoder
         }
 
         AppendPattern(modules, "101");
-        AppendExtension(modules, extension);
+        var addOnStart = AppendExtension(modules, extension);
 
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Ean13, modules, GetText(normalized, extension));
+        // The first digit has no bars of its own (it gives the parities of the left half): it is printed left of the bars
+        var layout = CreateLayout(
+            symbolEnd: 95,
+            [new(0, 3), new(45, 50), new(92, 95)],
+            [
+                new(normalized[..1], default, EanUpcTextPosition.Left),
+                new(normalized[1..7], new(3, 45), EanUpcTextPosition.Below),
+                new(normalized[7..], new(50, 92), EanUpcTextPosition.Below),
+            ],
+            addOnStart,
+            extension);
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Ean13, modules, GetText(normalized, extension), layout);
     }
 
     public static Barcode EncodeUpcA(string data, string? extension)
@@ -120,9 +137,21 @@ internal static class EanUpcEncoder
 
         AppendPattern(modules, "101");
         // The add-on of a UPC-A symbol is 9 to 12 modules away from it, 7 to 12 for EAN-13 and EAN-8 (GS1 General Specifications, 5.2.3.4)
-        AppendExtension(modules, extension, gapModules: 9);
+        var addOnStart = AppendExtension(modules, extension, gapModules: 9);
 
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.UpcA, modules, GetText(normalized, extension));
+        // The number system and check digits are printed smaller, outside the bars, and their bars extend like the guards
+        var layout = CreateLayout(
+            symbolEnd: 95,
+            [new(0, 10), new(45, 50), new(85, 95)],
+            [
+                new(normalized[..1], default, EanUpcTextPosition.Left, IsSmall: true),
+                new(normalized[1..6], new(10, 45), EanUpcTextPosition.Below),
+                new(normalized[6..11], new(50, 85), EanUpcTextPosition.Below),
+                new(normalized[11..], default, EanUpcTextPosition.Right, IsSmall: true),
+            ],
+            addOnStart,
+            extension);
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.UpcA, modules, GetText(normalized, extension), layout);
     }
 
     // GS1 General Specifications, section 5.2.2.4.2: a UPC-E symbol holds a UPC-A number (number system 0 or 1) without
@@ -163,10 +192,21 @@ internal static class EanUpcEncoder
         }
 
         AppendPattern(modules, "010101");
-        AppendExtension(modules, extension, gapModules: 9);
+        var addOnStart = AppendExtension(modules, extension, gapModules: 9);
 
+        // The number system and check digits have no bars of their own (they give the parities): they are printed outside
+        var layout = CreateLayout(
+            symbolEnd: 51,
+            [new(0, 3), new(45, 51)],
+            [
+                new(normalized[..1], default, EanUpcTextPosition.Left, IsSmall: true),
+                new(compressed, new(3, 45), EanUpcTextPosition.Below),
+                new(normalized[11..], default, EanUpcTextPosition.Right, IsSmall: true),
+            ],
+            addOnStart,
+            extension);
         var text = string.Concat(normalized.AsSpan(0, 1), compressed, normalized.AsSpan(11, 1));
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.UpcE, modules, GetText(text, extension));
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.UpcE, modules, GetText(text, extension), layout);
     }
 
     // Returns the 11 digits of the UPC-A number (without check digit) of the number system and the 6 digits of a UPC-E number
@@ -252,10 +292,25 @@ internal static class EanUpcEncoder
         return string.IsNullOrEmpty(extension) ? normalized : string.Concat(normalized, " ", extension);
     }
 
-    private static void AppendExtension(List<bool> modules, string? extension, int gapModules = 7)
+    // The digits of the add-on are printed above its bars
+    private static EanUpcLayout CreateLayout(int symbolEnd, ModuleRange[] extendedBars, EanUpcTextGroup[] groups, int addOnStart, string? extension)
+    {
+        if (addOnStart >= 0)
+        {
+            groups = [.. groups, new(extension!, new(addOnStart, addOnStart + GetAddOnModuleCount(extension!.Length)), EanUpcTextPosition.AboveAddOn)];
+        }
+
+        return new EanUpcLayout(symbolEnd, extendedBars, groups, addOnStart);
+    }
+
+    // The bars of an add-on: the start pattern (4 modules), and 7 modules per digit with 2 modules between digits
+    private static int GetAddOnModuleCount(int digits) => 4 + (digits * 7) + ((digits - 1) * 2);
+
+    // Returns the first module of the add-on, or -1 when there is none
+    private static int AppendExtension(List<bool> modules, string? extension, int gapModules = 7)
     {
         if (string.IsNullOrEmpty(extension))
-            return;
+            return -1;
 
         ValidateDigits(extension, nameof(extension), "UPC/EAN extension");
         if (extension.Length is not (2 or 5))
@@ -264,6 +319,7 @@ internal static class EanUpcEncoder
         }
 
         BarcodeEncoderHelper.AppendModules(modules, isDark: false, gapModules);
+        var addOnStart = modules.Count;
         AppendPattern(modules, "1011");
 
         if (extension.Length == 2)
@@ -274,6 +330,8 @@ internal static class EanUpcEncoder
         {
             EncodeFiveDigitExtension(modules, extension);
         }
+
+        return addOnStart;
     }
 
     private static void EncodeTwoDigitExtension(List<bool> modules, string extension)

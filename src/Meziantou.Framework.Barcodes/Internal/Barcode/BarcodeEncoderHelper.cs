@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Barcodes.Internal.Linear;
 
 internal static class BarcodeEncoderHelper
 {
-    public static Barcode CreateBarcode(BarcodeType type, List<bool> modules, string text)
+    public static Barcode CreateBarcode(BarcodeType type, List<bool> modules, string text, EanUpcLayout? eanUpcLayout = null)
     {
         var matrix = new bool[1, modules.Count];
         for (var col = 0; col < modules.Count; col++)
@@ -10,7 +10,7 @@ internal static class BarcodeEncoderHelper
             matrix[0, col] = modules[col];
         }
 
-        return new Barcode(matrix, type, text);
+        return new Barcode(matrix, type, text, eanUpcLayout: eanUpcLayout);
     }
 
     public static void AppendModules(List<bool> modules, bool isDark, int width)

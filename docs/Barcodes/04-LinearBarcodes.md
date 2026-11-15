@@ -193,11 +193,12 @@ Assert.Equal("04252614", fromUpcA.Text);
 // A UPC-A number without these zeros has no UPC-E form
 Assert.Throws<ArgumentException>("data", () => Barcode.CreateUpcE("03600029145"));
 
-var png = barcode.ToPng(new BarcodePngOptions { ModuleHeight = 60 });
+// The number system and check digits are printed outside the bars, the 6 digits under them
+using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
 ```
 <!-- endref -->
 
-![A UPC-E barcode](images/UpcE.png)
+![A UPC-E barcode: its number system and check digits printed outside the bars, its 6 digits under them](images/UpcE.png)
 
 The check digit is the one of the UPC-A number. Each UPC-A number with a UPC-E form has a single one: other digits that
 stand for the same UPC-A number, such as `0182433` for `01820000043` (written `0180432`), throw an `ArgumentException`.
@@ -232,7 +233,7 @@ Assert.True(stacked.IsStacked);
 Assert.Equal((50, 13), (stacked.Width, stacked.Height));
 
 // The renderers draw the rows of a stacked barcode as high as a module is wide
-var png = stacked.ToPng(new BarcodePngOptions { ModuleWidth = 3 });
+using var image = stacked.ToImage(new BarcodeRenderOptions { ModuleWidth = 3 });
 ```
 <!-- endref -->
 
@@ -253,7 +254,7 @@ Assert.Equal("(01)09501101530003(17)250101(10)ABC123", barcode.Text);
 var stacked = Barcode.CreateGs1DataBarExpandedStacked(4, elements);
 Assert.Equal((102, 3 * 34 + 2 * 3), (stacked.Width, stacked.Height));
 
-var png = stacked.ToPng(new BarcodePngOptions { ModuleWidth = 2 });
+using var image = stacked.ToImage(new BarcodeRenderOptions { ModuleWidth = 2 });
 ```
 <!-- endref -->
 
@@ -267,8 +268,9 @@ shorter; it never has a single segment.
 
 The stacked variants are several rows of bars, and the height of each row is part of the symbology:
 [IsStacked](cref:Meziantou.Framework.Barcodes.Barcode.IsStacked) is `true`, and the matrix has one row per module of
-height (GS1 DataBar Stacked is a 5-module row, a 1-module separator and a 7-module row). The SVG, PNG and image
-renderers draw each of these rows as high as a module is wide, and ignore `ModuleHeight`.
+height (GS1 DataBar Stacked is a 5-module row, a 1-module separator and a 7-module row). The SVG, image and PDF
+renderers draw each of these rows as high as a module is wide, and ignore `ModuleHeight`; the terminal renderer draws
+two rows per line.
 
 ## Check digits and add-ons
 
@@ -282,13 +284,17 @@ next to the barcode of a book:
 var barcode = Barcode.CreateEan13("978020137962", extension: "52499");
 Assert.Equal("9780201379624 52499", barcode.Text); // the check digit is added
 
-var png = barcode.ToPng(new BarcodePngOptions { ModuleHeight = 60 });
+// The digits of the add-on are printed above its bars
+using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
 ```
 <!-- endref -->
 
-![An EAN-13 barcode followed by a 5-digit add-on](images/Ean13WithAddOn.png)
+![An EAN-13 barcode followed by a 5-digit add-on, whose digits are printed above its bars](images/Ean13WithAddOn.png)
 
-[Text](cref:Meziantou.Framework.Barcodes.Barcode.Text) is what is printed under the bars: it includes the characters the barcode adds (the check digit, then a space
+[Text](cref:Meziantou.Framework.Barcodes.Barcode.Text) is what is printed under the bars, when you set
+[BarcodeRenderOptions.Text](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.Text) (see
+[Print the text under a barcode](06-SvgImagesAndPdf.md#print-the-text-under-a-barcode); EAN and UPC print their digits
+in groups between longer guard bars, and the add-on above its bars): it includes the characters the barcode adds (the check digit, then a space
 and the add-on; the Mod 43 check character of Code 39 when it is included; the start and stop characters of Codabar),
 and not the start and stop characters of Code 39 and Code 93.
 

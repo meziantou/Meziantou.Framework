@@ -141,11 +141,15 @@ internal static class DefaultPixelFormats
     /// <param name="isGray">Whether the colors are one channel (red or luminance).</param>
     /// <param name="hasAlpha">Whether the format stores alpha.</param>
     /// <param name="is16Bit">Whether a channel is wider than 8 bits.</param>
-    /// <returns>The pixel format: <see cref="PixelFormat.A8"/> for an alpha mask, otherwise 8-bit or 16-bit gray, gray with alpha, RGB or RGBA, or the floating-point format.</returns>
+    /// <returns>
+    /// The pixel format: <see cref="PixelFormat.A8"/> for an alpha mask, otherwise 8-bit or 16-bit gray, gray with alpha,
+    /// RGB or RGBA; for the floating-point formats, <see cref="PixelFormat.GrayHalf"/> or <see cref="PixelFormat.GrayFloat"/>
+    /// for one channel (R16_FLOAT, R32_FLOAT, the signed BC4 formats), otherwise <paramref name="floatingPoint"/>.
+    /// </returns>
     public static PixelFormat ForDds(PixelFormat? floatingPoint, bool hasColor, bool isGray, bool hasAlpha, bool is16Bit)
     {
         if (floatingPoint is { } format)
-            return format;
+            return ForFloatingPoint(isGray, hasAlpha, format == PixelFormat.RgbaHalf);
 
         if (!hasColor)
             return PixelFormat.A8;

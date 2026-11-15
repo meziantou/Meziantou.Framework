@@ -240,6 +240,33 @@ public sealed class DdsDecoderTests
     }
 
     [Fact]
+    public void SingleChannelFloatingPointFormatsDecodeToGray()
+    {
+        var floats = new byte[8];
+        BitConverter.TryWriteBytes(floats.AsSpan(0), 2.5f);
+        BitConverter.TryWriteBytes(floats.AsSpan(4), -0.25f);
+        using (var image = Assert.IsType<Image<GrayFloat>>(Image.Load(DdsFileBuilder.Dx10(2, 1, 41, floats).Build())))
+        {
+            Assert.Equal(new GrayFloat(2.5f), image.Frames[0][0, 0]);
+            Assert.Equal(new GrayFloat(-0.25f), image.Frames[0][1, 0]);
+        }
+
+        var halves = new byte[4];
+        BitConverter.TryWriteBytes(halves.AsSpan(0), (Half)2.5f);
+        BitConverter.TryWriteBytes(halves.AsSpan(2), (Half)(-0.25f));
+        using (var image = Assert.IsType<Image<GrayHalf>>(Image.Load(DdsFileBuilder.Dx10(2, 1, 54, halves).Build())))
+        {
+            Assert.Equal(new GrayHalf((Half)2.5f), image.Frames[0][0, 0]);
+            Assert.Equal(new GrayHalf((Half)(-0.25f)), image.Frames[0][1, 0]);
+        }
+
+        var info = Image.Identify(DdsFileBuilder.Dx10(2, 1, 41, floats).Build());
+        Assert.Equal(PixelFormat.GrayFloat, info.PixelFormat);
+        Assert.Equal(ImageColorModel.Grayscale, info.ColorModel);
+        Assert.Equal(32, info.BitsPerComponent);
+    }
+
+    [Fact]
     public void AlphaModesOtherThanPremultipliedKeepTheStoredAlpha()
     {
         foreach (var mode in new uint[] { 0, 1, 3, 4 })

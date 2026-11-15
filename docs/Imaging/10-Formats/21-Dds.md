@@ -27,8 +27,9 @@ The image of a format is the lossless form of what it stores:
 - One channel (R8, R16, BC4, a luminance layout) is gray; two channels (R8G8, BC5) are red and green with a blue of 0;
   A8 is an alpha mask. A format without alpha is opaque.
 - Floating-point formats, BC6H, R11G11B10_FLOAT and R9G9B9E5_SHAREDEXP decode to [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) or
-  [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) in linear light, values outside [0, 1] included. The signed BC4 and BC5 formats decode to
-  [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) values in [-1, 1] (normal maps).
+  [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) in linear light, values outside [0, 1] included; the formats of one channel
+  (R16_FLOAT, R32_FLOAT) decode to [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf) or [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat). The signed BC4 and BC5 formats decode to
+  [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) and [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) values in [-1, 1] (normal maps).
 - The `_SRGB` formats are labeled with the CICP description of sRGB; the other integer formats are untagged. The colors
   are never converted.
 

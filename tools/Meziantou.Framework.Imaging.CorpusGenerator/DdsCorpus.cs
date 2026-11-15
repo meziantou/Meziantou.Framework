@@ -202,11 +202,11 @@ internal static class DdsCorpus
             new("a8-unorm", 65, 1, "random", "A8", "GrayscaleAlpha", 8, "a", "A8_UNORM: an alpha mask (black)."),
             new("r16g16b16a16-float", 10, 8, "halves", "RgbaHalf", "Rgba", 16, "rgba", "R16G16B16A16_FLOAT: half floats, values outside [0, 1] included."),
             new("r16g16-float", 34, 4, "halves2", "RgbaHalf", "Rgb", 16, "rg", "R16G16_FLOAT: red and green half floats, a blue of 0."),
-            new("r16-float", 54, 2, "halves1", "RgbaHalf", "Grayscale", 16, "r", "R16_FLOAT: one half float, presented as gray."),
+            new("r16-float", 54, 2, "halves1", "GrayHalf", "Grayscale", 16, "r", "R16_FLOAT: one half float, presented as gray."),
             new("r32g32b32a32-float", 2, 16, "floats", "RgbaFloat", "Rgba", 32, "rgba", "R32G32B32A32_FLOAT."),
             new("r32g32b32-float", 6, 12, "floats3", "RgbaFloat", "Rgb", 32, "rgb", "R32G32B32_FLOAT: an alpha of 1."),
             new("r32g32-float", 16, 8, "floats2", "RgbaFloat", "Rgb", 32, "rg", "R32G32_FLOAT: red and green, a blue of 0."),
-            new("r32-float", 41, 4, "floats1", "RgbaFloat", "Grayscale", 32, "r", "R32_FLOAT: one float, presented as gray."),
+            new("r32-float", 41, 4, "floats1", "GrayFloat", "Grayscale", 32, "r", "R32_FLOAT: one float, presented as gray."),
             new("r11g11b10-float", 26, 4, "small", "RgbaHalf", "Rgb", 16, "rgb", "R11G11B10_FLOAT: unsigned floats of 11, 11 and 10 bits (the exponent of a half), exact in halves."),
             new("r9g9b9e5-sharedexp", 67, 4, "random", "RgbaHalf", "Rgb", 16, "rgb", "R9G9B9E5_SHAREDEXP: three 9-bit mantissas and a shared exponent, every value exact in a half."),
         ];
@@ -318,10 +318,10 @@ internal static class DdsCorpus
         foreach (var (code, name, channels, isHalf, pixelFormat, colorModel, bpc, compared) in new[]
         {
             (36u, "fourcc-a16b16g16r16", 4, false, "Rgba64", "Rgba", 16, "rgba"),
-            (111u, "fourcc-r16f", 1, true, "RgbaHalf", "Grayscale", 16, "r"),
+            (111u, "fourcc-r16f", 1, true, "GrayHalf", "Grayscale", 16, "r"),
             (112u, "fourcc-g16r16f", 2, true, "RgbaHalf", "Rgb", 16, "rg"),
             (113u, "fourcc-a16b16g16r16f", 4, true, "RgbaHalf", "Rgba", 16, "rgba"),
-            (114u, "fourcc-r32f", 1, false, "RgbaFloat", "Grayscale", 32, "r"),
+            (114u, "fourcc-r32f", 1, false, "GrayFloat", "Grayscale", 32, "r"),
             (115u, "fourcc-g32r32f", 2, false, "RgbaFloat", "Rgb", 32, "rg"),
             (116u, "fourcc-a32b32g32r32f", 4, false, "RgbaFloat", "Rgba", 32, "rgba"),
         })
@@ -342,7 +342,7 @@ internal static class DdsCorpus
         new("dxt5", "BC3", null, "DXT5", 16, "Rgba32", "Rgba", 8, "rgba"),
         new("ati1", "BC4", null, "ATI1", 8, "Gray8", "Grayscale", 8, "r"),
         new("bc4u", "BC4", null, "BC4U", 8, "Gray8", "Grayscale", 8, "r"),
-        new("bc4s", "BC4S", null, "BC4S", 8, "RgbaFloat", "Grayscale", 32, "r"),
+        new("bc4s", "BC4S", null, "BC4S", 8, "GrayFloat", "Grayscale", 32, "r"),
         new("ati2", "BC5", null, "ATI2", 16, "Rgb24", "Rgb", 8, "rg"),
         new("bc5u", "BC5", null, "BC5U", 16, "Rgb24", "Rgb", 8, "rg"),
         new("bc5s", "BC5S", null, "BC5S", 16, "RgbaFloat", "Rgb", 32, "rg"),
@@ -352,7 +352,7 @@ internal static class DdsCorpus
         new("bc2-unorm", "BC2", 74, null, 16, "Rgba32", "Rgba", 8, "rgba"),
         new("bc3-unorm-srgb", "BC3", 78, null, 16, "Rgba32", "Rgba", 8, "rgba", Srgb: true),
         new("bc4-unorm", "BC4", 80, null, 8, "Gray8", "Grayscale", 8, "r"),
-        new("bc4-snorm", "BC4S", 81, null, 8, "RgbaFloat", "Grayscale", 32, "r"),
+        new("bc4-snorm", "BC4S", 81, null, 8, "GrayFloat", "Grayscale", 32, "r"),
         new("bc5-unorm", "BC5", 83, null, 16, "Rgb24", "Rgb", 8, "rg"),
         new("bc5-snorm", "BC5S", 84, null, 16, "RgbaFloat", "Rgb", 32, "rg"),
         new("bc6h-uf16", "BC6H", 95, null, 16, "RgbaHalf", "Rgb", 16, "rgb"),
@@ -791,7 +791,7 @@ internal static class DdsCorpus
         // The layout of the snapshots of the pixel format (ImageSnapshots.GetLayout)
         var layout = pixelFormat switch
         {
-            "RgbaHalf" or "RgbaFloat" => "rgbaf32le",
+            "RgbaHalf" or "RgbaFloat" or "GrayHalf" or "GrayFloat" => "rgbaf32le",
             "Rgb24" => "rgb8",
             "Gray8" => "gray8",
             "Gray16" => "gray16le",

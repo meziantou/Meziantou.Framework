@@ -191,8 +191,9 @@ reference white, values outside [0, 1] are meaningful (highlights, negative out-
   level of the result; the colors over black for `GrayFloat` and `GrayHalf`, which have no alpha). The encoders that do
   not store floats reduce them to `Gray16` or `La32` (`PixelFormatWidening.GetReducedFloatingPointFormat`).
   `OpenExrEncoder` and `DpxEncoder` store them (`StoresPixelFormat`); TIFF gets the widened format and writes one or two
-  samples when the pixels are gray. DDS still loads its single-channel floating-point textures as RGBA (its corpus is
-  generated with Windows tools); changing it changes `DdsPixelLayout`, `DefaultPixelFormats.ForDds` and the generator.
+  samples when the pixels are gray. DDS loads its single-channel floating-point textures (R16_FLOAT, R32_FLOAT, signed
+  BC4) as `GrayHalf` or `GrayFloat`; its corpus is generated on Windows, so the expected formats of those fixtures were
+  changed in `DdsCorpus` and in the manifest together (the references stay `rgbaf32le`).
 - Drawing (`FloatDrawingKernels`): paints keep 16-bit samples (`DrawingKernels.GetPaintMax`), are composited in double
   precision over the stored values without clipping the colors, and color matrices are applied in place. Layers,
   patterns, groups and filter surfaces stay `Rgba64`, so what goes through them must be in [0, 1].

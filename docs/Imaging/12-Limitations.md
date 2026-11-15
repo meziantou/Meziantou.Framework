@@ -15,8 +15,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
   the built-in types only. See [Pixel formats](04-Concepts/05-PixelFormats.md#custom-pixel-types).
 - **Floating-point pixels are linear light, RGBA or gray.** [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf), [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat), [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf), [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) and [LaHalf](cref:Meziantou.Framework.Imaging.LaHalf) are the
   floating-point formats. OpenEXR, TIFF and DPX read and write them, JPEG XL, PSD, DNG, DDS and KTX 2.0 read them; the
-  other encoders need an explicit reduction to 16 bits. DDS loads its single-channel floating-point textures as
-  [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), and Netpbm has no PFM support.
+  other encoders need an explicit reduction to 16 bits. Netpbm has no PFM support.
 - **Scaled and region decoding are limited to some formats.** JPEG and JPEG 2000 decode at a reduced size, lossy JPEG XL
   at 1/8, interlaced PNG at 1/2, 1/4 or 1/8, TIFF from the reduced-resolution images it stores, and JPEG,
   JPEG 2000, TIFF, AVIF and HEIC decode an area; the other formats are decoded whole: resize or crop the image afterward.

@@ -294,6 +294,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         private ushort _delay;
         private int _transparentIndex;
         private int _colorTableEntries;
+        private bool _lossy;
 
         // The image being written: the frame of the operation, or (OptimizeFrames) the previous frame, from the canvases
         private Rectangle _image;
@@ -340,7 +341,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             try
             {
                 _quantizer = new PaletteQuantizer(scope);
-                _lzw = new GifLzwEncoder(scope);
+                _lzw = new GifLzwEncoder(scope, lossy: _encoder.LossyTolerance > 0);
                 if (_sourceFormat != _workFormat)
                 {
                     _converted = scope.Rent(_width * 4, AllocationKind.Temporary, clear: false);
@@ -869,7 +870,10 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             output.Write(_colorTable.AsSpan(0, _colorTableEntries * 3));
             var codeSize = GifLzwEncoder.GetMinimumCodeSize(_colorTableEntries);
             output.Write([(byte)codeSize]);
-            _lzw!.Reset(codeSize);
+
+            // The lossy compression only applies to the frames whose colors are reduced: an exact palette stays exact
+            _lossy = _encoder.LossyTolerance > 0 && !_quantizer!.IsExact;
+            _lzw!.Reset(codeSize, _colorTable.AsSpan(0, _colorTableEntries * 3), _transparentIndex, _lossy ? _encoder.LossyTolerance : 0);
         }
 
         /// <summary>Maps and compresses rows in datastream order until the output should be flushed or a band is done.</summary>
@@ -890,13 +894,29 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                 var y = _encoder.Interlaced ? GetInterlacedRow(_row, height) : _row;
                 if (_plane is not null && !_quantizer!.IsExact)
                 {
-                    lzw.Write(_plane.Span.Slice(y * width, width), output);
+                    var planeRow = _plane.Span.Slice(y * width, width);
+                    if (_lossy)
+                    {
+                        LoadImageKeys(y, keys);
+                        lzw.Write(planeRow, keys, output);
+                    }
+                    else
+                    {
+                        lzw.Write(planeRow, output);
+                    }
                 }
                 else
                 {
                     LoadImageKeys(y, keys);
                     MapRow(keys, indices, y);
-                    lzw.Write(indices, output);
+                    if (_lossy)
+                    {
+                        lzw.Write(indices, keys, output);
+                    }
+                    else
+                    {
+                        lzw.Write(indices, output);
+                    }
                 }
 
                 _row++;

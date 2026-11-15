@@ -517,8 +517,9 @@ by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`). With more workers,
 images of at least 65,536 pixels:
 
 - split into row bands: resizes, transformations, convolutions, blurs, medians and percentile filters, unsharp masks, the
-  bilateral filter and the radial blurs, the `Pixelate`, `OilPaint` and `Flatten` effects, and the `ImageSimilarity`
-  comparisons (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every precision);
+  bilateral filter and the radial blurs, the `Pixelate`, `OilPaint` and `Flatten` effects, the color matrices
+  (`ApplyColorMatrix`, and `FilterBackdrop` outside a clip), the conversions of floating-point pixels (`CloneAs`), and
+  the `ImageSimilarity` comparisons (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every precision);
 - decoded and encoded: the MCU rows of JPEG frames (the inverse and forward DCT, the conversions; the entropy coding
   stays sequential), the LZW, Deflate and CCITT strips and tiles of TIFF pages (LZW and Deflate only when encoding), the
   chunks of OpenEXR images, the code-blocks and wavelet transforms of JPEG 2000 tiles, the groups of JPEG XL frames, the

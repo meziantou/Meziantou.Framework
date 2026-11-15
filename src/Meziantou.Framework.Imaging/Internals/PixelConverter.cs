@@ -434,6 +434,10 @@ internal static partial class PixelConverter
             {
                 skipped = CountOpaqueVectors(unsafe(MemoryMarshal.AsBytes(row)), Vector128.Create(0x0000FFFFFFFFFFFFul).AsByte()) * (Vector128<byte>.Count / 8);
             }
+            else if (typeof(TPixel) == typeof(RgbaFloat))
+            {
+                skipped = CountOpaqueFloatVectors(unsafe(MemoryMarshal.Cast<TPixel, uint>(row)));
+            }
         }
 
         var index = IndexOfNonOpaqueScalar(row[skipped..]);
@@ -793,6 +797,35 @@ internal static partial class PixelConverter
         {
             var pixels = unsafe(Vector128.LoadUnsafe(ref start, (nuint)(count * Vector128<byte>.Count)));
             if ((pixels | colorMask) != Vector128<byte>.AllBitsSet)
+                break;
+        }
+
+        return count;
+    }
+
+    /// <summary>Counts the leading <see cref="RgbaFloat"/> pixels whose alpha is 1, as <see cref="CountOpaqueVectors"/> does.</summary>
+    /// <remarks>
+    /// Only 1 has the bits of 1 (a value that is not a number has others): flipping every bit but those of 1 makes the alpha
+    /// of an opaque pixel all ones, the colors are forced to all ones, and four pixels are opaque when the AND of their
+    /// vectors has all its bits set.
+    /// </remarks>
+    private static int CountOpaqueFloatVectors(ReadOnlySpan<uint> samples)
+    {
+        var colorMask = Vector128.Create(uint.MaxValue, uint.MaxValue, uint.MaxValue, 0);
+        var flip = Vector128.Create(0, 0, 0, ~BitConverter.SingleToUInt32Bits(1f));
+        var count = 0;
+        var length = samples.Length / 4;
+        for (; count + 4 <= length; count += 4)
+        {
+            var pixels = (Vector128.Create(samples.Slice(count * 4, 4)) ^ flip) & (Vector128.Create(samples.Slice((count * 4) + 4, 4)) ^ flip)
+                & (Vector128.Create(samples.Slice((count * 4) + 8, 4)) ^ flip) & (Vector128.Create(samples.Slice((count * 4) + 12, 4)) ^ flip);
+            if ((pixels | colorMask) != Vector128<uint>.AllBitsSet)
+                break;
+        }
+
+        for (; count < length; count++)
+        {
+            if (((Vector128.Create(samples.Slice(count * 4, 4)) ^ flip) | colorMask) != Vector128<uint>.AllBitsSet)
                 break;
         }
 

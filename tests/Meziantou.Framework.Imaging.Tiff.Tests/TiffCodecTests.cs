@@ -164,6 +164,45 @@ public sealed class TiffCodecTests
         Assert.Equal([new Gray16(0x0102), new Gray16(0xFFFE), new Gray16(0x8000)], Decode<Gray16>(data));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FloatingPointRgbSamplesAreReadInTheByteOrderOfTheFile(bool bigEndian)
+    {
+        // Rows of 1 to 6 pixels: the last pixel of a row and the others are expanded by different loops
+        float[] values = [0.25f, -1.5f, 2e-40f, float.PositiveInfinity, 1, 0, -0f, 3.4e38f, 0.1f, 7, 0.5f, 1e-3f, 42, -2, 0.75f, 0.33f, 9, 1.25f];
+        for (var width = 1; width <= 6; width++)
+        {
+            var bytes = new byte[width * 12];
+            for (var i = 0; i < width * 3; i++)
+            {
+                var bits = BitConverter.SingleToUInt32Bits(values[i]);
+                if (bigEndian)
+                {
+                    BinaryPrimitives.WriteUInt32BigEndian(bytes.AsSpan(i * 4), bits);
+                }
+                else
+                {
+                    BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(i * 4), bits);
+                }
+            }
+
+            var data = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(new TiffPageSpec
+            {
+                Width = width,
+                Height = 1,
+                BitsPerSample = 32,
+                SamplesPerPixel = 3,
+                Photometric = 2,
+                SampleFormat = 3,
+                Samples = bytes,
+            }).Build();
+
+            var expected = Enumerable.Range(0, width).Select(x => new RgbaFloat(values[x * 3], values[(x * 3) + 1], values[(x * 3) + 2], 1)).ToArray();
+            Assert.Equal(expected, Decode<RgbaFloat>(data));
+        }
+    }
+
     [Fact]
     public void SixteenBitRgbIsWidenedToRgba64BecauseThereIsNoSixteenBitRgbFormat()
     {

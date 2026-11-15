@@ -84,7 +84,7 @@ internal sealed partial class PdfFileWriter : IDisposable
                 switch (stack.Pop())
                 {
                     case PdfReference reference:
-                        if (ReferenceEquals(reference.Owner, objects) && objects.GetEntry(reference) is { } entry && !numbers.ContainsKey(entry) && objects.Load(entry) is not PdfNull)
+                        if (ReferenceEquals(reference.Owner, objects) && objects.GetEntry(reference) is { } entry && !numbers.ContainsKey(entry) && !IsNullObject(objects.Load(entry)))
                         {
                             numbers.Add(entry, numbers.Count + 1);
                             ordered.Add(entry);
@@ -695,6 +695,28 @@ internal sealed partial class PdfFileWriter : IDisposable
         return dictionary;
     }
 
+    /// <summary>
+    /// Gets a value indicating whether a value is the null object: <c>null</c>, or a chain of references that ends with
+    /// <c>null</c> or with an object that does not exist (7.3.10). An indirect object whose value is a reference to the
+    /// null object is not written, and the references to it are written as <c>null</c>, as they will be read.
+    /// </summary>
+    internal static bool IsNullObject(PdfObject value)
+    {
+        for (var i = 0; i < 32 && value is PdfReference reference; i++)
+        {
+            try
+            {
+                value = reference.Resolve();
+            }
+            catch (PdfException)
+            {
+                return false;
+            }
+        }
+
+        return value is PdfNull;
+    }
+
     /// <summary>Gets the entries of the trailer the writer does not compute: the private ones, and the standard ones it has no rule for.</summary>
     private static List<KeyValuePair<PdfName, PdfObject>> GetOtherTrailerEntries(PdfDictionary trailer)
     {
@@ -703,6 +725,10 @@ internal sealed partial class PdfFileWriter : IDisposable
         {
             var key = entry.Key;
             if (key == PdfNames.Size || key == PdfNames.Root || key == PdfNames.Info || key == PdfNames.ID || key == PdfNames.Encrypt || IsCrossReferenceKey(key))
+                continue;
+
+            // A null value would be written as null, which a reader leaves out of the dictionary (7.3.7)
+            if (IsNullObject(entry.Value))
                 continue;
 
             result.Add(entry);

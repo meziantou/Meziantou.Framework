@@ -571,7 +571,7 @@ internal sealed partial class PdfFileWriter
                             break;
 
                         var value = GetValue(entry);
-                        if (value is PdfNull || (value is PdfDictionary target && ((target.IsType(PageName) && entry != startPage) || target.IsType(PagesName))))
+                        if (IsNullObject(value) || (value is PdfDictionary target && ((target.IsType(PageName) && entry != startPage) || target.IsType(PagesName))))
                             break;
 
                         cancellationToken.ThrowIfCancellationRequested();

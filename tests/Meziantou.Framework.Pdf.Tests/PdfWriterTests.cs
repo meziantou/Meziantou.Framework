@@ -173,6 +173,39 @@ public sealed class PdfWriterTests
     }
 
     [Fact]
+    public void NullTrailerEntriesAreNotWritten()
+    {
+        // A private entry of the trailer that refers to an object the file does not have is the null object
+        var file = HandWrittenPdf.CreateSimple();
+        file.Trailer = "<< /Size {size} /Root 1 0 R /Private 9 0 R >>";
+
+        var result = PdfRoundTripValidator.Validate(file.ToArray(), saveOptions: Uncompressed);
+
+        Assert.True(result.Succeeded, result.Failure?.ToString());
+        Assert.DoesNotContain("/Private", Encoding.Latin1.GetString(result.FirstOutput.Span), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ObjectsThatReferToTheNullObjectAreNotWritten()
+    {
+        // The object 6 is a reference to the object 7, which is null: the reference to it is the null object
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /Private 6 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Extra [6 0 R] >>")
+            .Add(6, "7 0 R")
+            .Add(7, "null");
+
+        foreach (var options in new[] { Uncompressed, new PdfSaveOptions { Linearize = true } })
+        {
+            var result = PdfRoundTripValidator.Validate(file.ToArray(), saveOptions: options);
+
+            Assert.True(result.Succeeded, result.Failure?.ToString());
+            Assert.Equal(3, result.FirstSummary!.ObjectCount);
+        }
+    }
+
+    [Fact]
     public void DocumentSummaryDoesNotDependOnObjectNumbers()
     {
         var document = CreateRichDocument();

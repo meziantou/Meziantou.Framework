@@ -268,7 +268,7 @@ internal sealed class BlockParser
 
     // Whether the line can start a block of an extension: a delimiter row under a paragraph, a row of a table, or the task
     // list item marker after the marker of a list item
-    private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || (c == ':' && HasExtension(MarkdownExtensions.CustomContainers)) || (c is ':' or '~' && HasExtension(MarkdownExtensions.DefinitionLists)) || (c == '[' && IsFootnoteContainer(container)) || container.Kind switch
+    private bool IsMaybeExtension(Block container, char c) => (c == '$' && HasExtension(MarkdownExtensions.Mathematics)) || (c == ':' && HasExtension(MarkdownExtensions.CustomContainers)) || (c is ':' or '~' && HasExtension(MarkdownExtensions.DefinitionLists)) || (char.IsAsciiLetter(c) && HasExtension(MarkdownExtensions.ListExtras)) || (c == '[' && IsFootnoteContainer(container)) || container.Kind switch
     {
         SyntaxKind.Paragraph => HasExtension(MarkdownExtensions.Tables) && c is '|' or ':',
         SyntaxKind.Table => true,
@@ -636,7 +636,7 @@ internal sealed class BlockParser
 
             var item = AddChild(SyntaxKind.ListItem);
             item.ListData = data;
-            item.Leading.Add(BuildElement.Token(SyntaxKind.ListMarkerToken, data.MarkerStart, data.MarkerEnd));
+            item.Leading.Add(BuildElement.Token(SyntaxKind.ListMarkerToken, data.MarkerStart, data.MarkerEnd, value: (int)data.Style));
             _itemOpenedOnLine = item;
             return 1;
         }
@@ -1018,7 +1018,8 @@ internal sealed class BlockParser
         Block? paragraph = null;
         if (container.Kind == SyntaxKind.Paragraph)
         {
-            // As in Markdig, a paragraph whose link reference definitions were read for a setext underline has no terms
+            // As in Markdig, a paragraph that has link reference definitions has no terms, such as the ones read for a setext
+            // underline
             if (container.DefinitionsOrNull is not null)
             {
                 return false;
@@ -1037,7 +1038,7 @@ internal sealed class BlockParser
             paragraph = _tip;
             _allClosed = true;
         }
-        else if (container.LastChild is { Kind: SyntaxKind.Paragraph, Open: false, IsEmpty: false } closed && container.Kind is not (SyntaxKind.ListItem or SyntaxKind.DefinitionItem or SyntaxKind.FootnoteDefinition))
+        else if (container.LastChild is { Kind: SyntaxKind.Paragraph, Open: false, IsEmpty: false, DefinitionsOrNull: null } closed && container.Kind is not (SyntaxKind.ListItem or SyntaxKind.DefinitionItem or SyntaxKind.FootnoteDefinition))
         {
             paragraph = closed;
         }
@@ -1057,7 +1058,7 @@ internal sealed class BlockParser
             termsTrimmed = !paragraph.Open;
             if (paragraph.Open)
             {
-                // The paragraph is not finalized: its link reference definitions are terms
+                // The paragraph is not finalized: it has no link reference definitions
                 paragraph.Open = false;
                 _tip = parent;
                 _oldTip = parent;
@@ -1068,20 +1069,10 @@ internal sealed class BlockParser
                 CloseUnmatchedBlocks();
             }
 
-            termLineStart += paragraph.DefinitionLineCount;
-            termLineCount -= paragraph.DefinitionLineCount;
-            if (paragraph.DefinitionsOrNull is null)
-            {
-                parent.Children.Remove(paragraph);
-            }
-            else
-            {
-                // The paragraph keeps its link reference definitions
-                paragraph.IsEmpty = true;
-            }
+            parent.Children.Remove(paragraph);
 
             _tip = parent;
-            if (parent.LastChild is { Kind: SyntaxKind.DefinitionList } list && paragraph.DefinitionsOrNull is null)
+            if (parent.LastChild is { Kind: SyntaxKind.DefinitionList } list)
             {
                 // The terms after a definition list add a definition to it
                 list.Open = true;
@@ -1234,11 +1225,26 @@ internal sealed class BlockParser
         bool ordered;
         var start = 0;
         var delimiter = '\0';
+        var style = MarkdownOrderedListStyle.Numbers;
         int markerEnd;
         if (c is '*' or '+' or '-')
         {
             ordered = false;
             markerEnd = markerStart + 1;
+        }
+        else if (char.IsAsciiLetter(c) && HasExtension(MarkdownExtensions.ListExtras))
+        {
+            // As in Markdig: roman numbers, without validation, unless the line continues a list that is not of roman numbers, or a
+            // letter. When this fails, Markdig reads the line again as the start of a list, where roman numbers are allowed.
+            var romanAllowed = container.Kind != SyntaxKind.List || container.ListData!.Style is MarkdownOrderedListStyle.LowerRoman or MarkdownOrderedListStyle.UpperRoman;
+            if (!TryParseLetterMarker(markerStart, romanAllowed, out var end, out style, out start) && (romanAllowed || !TryParseLetterMarker(markerStart, romanAllowed: true, out end, out style, out start)))
+            {
+                return null;
+            }
+
+            ordered = true;
+            delimiter = _text[end];
+            markerEnd = end + 1;
         }
         else
         {
@@ -1319,10 +1325,57 @@ internal sealed class BlockParser
             padding = markerLength + spacesAfterMarker;
         }
 
-        return new ListData(ordered, ordered ? '\0' : c, start, delimiter, padding, markerOffset, markerStart, markerEnd);
+        return new ListData(ordered, ordered ? '\0' : c, start, delimiter, padding, markerOffset, markerStart, markerEnd) { Style = style };
     }
 
-    private static bool ListsMatch(ListData? list, ListData item) => list is not null && list.Ordered == item.Ordered && list.Delimiter == item.Delimiter && list.BulletChar == item.BulletChar;
+    private bool TryParseLetterMarker(int markerStart, bool romanAllowed, out int end, out MarkdownOrderedListStyle style, out int number)
+    {
+        var c = _text[markerStart];
+        end = markerStart;
+        if (IsRomanLetter(c) && romanAllowed)
+        {
+            var lower = char.IsAsciiLetterLower(c);
+            while (end < _lineEnd && IsRomanLetter(_text[end]) && char.IsAsciiLetterLower(_text[end]) == lower)
+            {
+                end++;
+            }
+
+            style = lower ? MarkdownOrderedListStyle.LowerRoman : MarkdownOrderedListStyle.UpperRoman;
+            number = RomanToNumber(_text.AsSpan(markerStart, end - markerStart));
+        }
+        else
+        {
+            end = markerStart + 1;
+            style = char.IsAsciiLetterLower(c) ? MarkdownOrderedListStyle.LowerAlpha : MarkdownOrderedListStyle.UpperAlpha;
+            number = (c | 0x20) - 'a' + 1;
+        }
+
+        return Peek(end) is '.' or ')';
+    }
+
+    // Markdig reads i, v and x only
+    private static bool IsRomanLetter(char c) => c is 'i' or 'v' or 'x' or 'I' or 'V' or 'X';
+
+    internal static int RomanToNumber(ReadOnlySpan<char> text)
+    {
+        var result = 0;
+        for (var i = 0; i < text.Length; i++)
+        {
+            var value = GetValue(text[i]);
+            result += i + 1 < text.Length && value < GetValue(text[i + 1]) ? -value : value;
+        }
+
+        return result;
+
+        static int GetValue(char c) => (c | 0x20) switch
+        {
+            'i' => 1,
+            'v' => 5,
+            _ => 10,
+        };
+    }
+
+    private static bool ListsMatch(ListData? list, ListData item) => list is not null && list.Ordered == item.Ordered && list.Delimiter == item.Delimiter && list.BulletChar == item.BulletChar && list.Style == item.Style;
 
     private void AddLine()
     {
@@ -1853,5 +1906,8 @@ internal sealed class BlockParser
         public bool IsEmpty { get; set; }
     }
 
-    private sealed record ListData(bool Ordered, char BulletChar, int Start, char Delimiter, int Padding, int MarkerOffset, int MarkerStart, int MarkerEnd);
+    private sealed record ListData(bool Ordered, char BulletChar, int Start, char Delimiter, int Padding, int MarkerOffset, int MarkerStart, int MarkerEnd)
+    {
+        public MarkdownOrderedListStyle Style { get; init; }
+    }
 }

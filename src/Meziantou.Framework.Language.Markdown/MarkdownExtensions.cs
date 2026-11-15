@@ -67,6 +67,12 @@ public enum MarkdownExtensions
     /// <summary>Definition lists: the lines of a paragraph are terms when the next line starts with <c>:</c> or <c>~</c> and its content at four columns, which is a definition, rendered as <c>&lt;dl&gt;</c>.</summary>
     DefinitionLists = 1 << 19,
 
+    /// <summary>Ordered lists numbered by letters (<c>a.</c>, <c>A.</c>) or roman numbers (<c>i.</c>, <c>I.</c>), rendered with the <c>type</c> attribute of <c>&lt;ol&gt;</c>.</summary>
+    ListExtras = 1 << 20,
+
+    /// <summary>SmartyPants: quotes, <c>&lt;&lt;</c>, <c>&gt;&gt;</c>, <c>...</c>, <c>--</c> and <c>---</c> are written as typographic characters, such as <c>&amp;ldquo;</c> or <c>&amp;mdash;</c>.</summary>
+    SmartyPants = 1 << 21,
+
     /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
     EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 

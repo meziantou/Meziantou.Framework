@@ -20,6 +20,11 @@ internal sealed class InlineParser
     private readonly bool _mathematics;
     private readonly bool _genericAttributes;
     private readonly bool _customContainers;
+    private readonly bool _smartyPants;
+
+    // The quotes of SmartyPants, which are paired at the end of the inlines, where the inlines start, and whether there are dashes
+    private readonly List<InlineNode> _smartQuotes = [];
+    private int _inlineStart;
 
     // Whether attributes are valid from each position of the subject, computed at the first {
     private byte[]? _attributesOutcomes;
@@ -52,6 +57,7 @@ internal sealed class InlineParser
         _mathematics = extensions.HasFlag(MarkdownExtensions.Mathematics);
         _genericAttributes = extensions.HasFlag(MarkdownExtensions.GenericAttributes);
         _customContainers = extensions.HasFlag(MarkdownExtensions.CustomContainers);
+        _smartyPants = extensions.HasFlag(MarkdownExtensions.SmartyPants);
         _autolinks = extensions.HasFlag(MarkdownExtensions.Autolinks);
     }
 
@@ -73,6 +79,8 @@ internal sealed class InlineParser
         }
 
         _usedNodes = 0;
+        _inlineStart = _pos;
+        _smartQuotes.Clear();
         _attributesOutcomes = null;
         _root = NewNode(SyntaxKind.Paragraph, _pos, _pos);
         _delimiters = null;
@@ -83,6 +91,13 @@ internal sealed class InlineParser
         }
 
         ProcessEmphasis(stackBottom: null);
+        if (_smartyPants)
+        {
+            // As in Markdig: the dashes after the emphasis, then the quotes are paired
+            MarkDashes(_root);
+            PairSmartQuotes();
+        }
+
         if (_genericAttributes)
         {
             DetachAttributes(_root);
@@ -305,8 +320,16 @@ internal sealed class InlineParser
             case ']':
                 ParseCloseBracket();
                 break;
+            case '\'' or '"' or '>' or '.' when _smartyPants:
+                if (!ParseSmartyPant())
+                {
+                    AppendText(_pos, _pos + 1);
+                    _pos++;
+                }
+
+                break;
             case '<':
-                if (!ParseAutolink() && (_disableHtml || !ParseHtmlTag()))
+                if (!(_smartyPants && ParseSmartyPant()) && !ParseAutolink() && (_disableHtml || !ParseHtmlTag()))
                 {
                     AppendText(_pos, _pos + 1);
                     _pos++;
@@ -348,6 +371,7 @@ internal sealed class InlineParser
         '$' => _mathematics,
         '{' => _genericAttributes,
         ':' => _autolinks || _customContainers,
+        '\'' or '"' or '>' or '.' => _smartyPants,
         'w' => _autolinks && _pos + 3 < _end && _text[_pos + 1] == 'w' && _text[_pos + 2] == 'w' && _text[_pos + 3] == '.',
         _ => false,
     };
@@ -925,6 +949,242 @@ internal sealed class InlineParser
         _root.Append(attributes);
         _pos = end;
         return true;
+    }
+
+    private char CharAt(int position) => position < _end ? _text[position] : '\0';
+
+    // SmartyPants, as Markdig reads it: a quote that can open or close as _ can, a pair of angle quotes, an ellipsis that ends a word
+    private bool ParseSmartyPant()
+    {
+        var start = _pos;
+        var c = _text[start];
+        MarkdownSmartyPant pant;
+        int end;
+        switch (c)
+        {
+            case '\'' or '"':
+                var isDouble = c == '"' || CharAt(start + 1) == '\'';
+                end = start + (c == '\'' && isDouble ? 2 : 1);
+                pant = isDouble ? MarkdownSmartyPant.LeftDoubleQuote : MarkdownSmartyPant.LeftQuote;
+                break;
+            case '<' or '>' when CharAt(start + 1) == c:
+                end = start + 2;
+                pant = c == '<' ? MarkdownSmartyPant.LeftAngleQuote : MarkdownSmartyPant.RightAngleQuote;
+                break;
+            case '.' when CharAt(start + 1) == '.' && CharAt(start + 2) == '.':
+                end = start + 3;
+                pant = MarkdownSmartyPant.Ellipsis;
+                break;
+            default:
+                return false;
+        }
+
+        GetSmartyPantFlanking(start, end, out var canOpen, out var canClose);
+        switch (pant)
+        {
+            case MarkdownSmartyPant.LeftQuote or MarkdownSmartyPant.LeftDoubleQuote:
+                if (canOpen == canClose)
+                {
+                    return false;
+                }
+
+                if (canClose)
+                {
+                    pant = pant == MarkdownSmartyPant.LeftQuote ? MarkdownSmartyPant.RightQuote : MarkdownSmartyPant.RightDoubleQuote;
+                }
+
+                break;
+            case MarkdownSmartyPant.LeftAngleQuote when !canOpen || canClose:
+            case MarkdownSmartyPant.RightAngleQuote or MarkdownSmartyPant.Ellipsis when canOpen || !canClose:
+                return false;
+        }
+
+        var node = NewNode(SyntaxKind.SmartyPantToken, start, end);
+        node.Value = (int)pant;
+        _root.Append(node);
+        if (pant != MarkdownSmartyPant.Ellipsis)
+        {
+            _smartQuotes.Add(node);
+        }
+
+        _pos = end;
+        return true;
+    }
+
+    // The start and the end of the text are whitespace and punctuation for Markdig
+    private void GetSmartyPantFlanking(int start, int end, out bool canOpen, out bool canClose)
+    {
+        var beforeIsWhitespace = true;
+        var beforeIsPunctuation = true;
+        var beforeIsException = false;
+        if (start > _inlineStart)
+        {
+            var before = GetRuneBefore(start);
+            beforeIsWhitespace = Scanners.IsUnicodeWhitespace(before);
+            beforeIsPunctuation = !beforeIsWhitespace && Scanners.IsUnicodePunctuation(before);
+            beforeIsException = beforeIsPunctuation && IsPunctuationException(before);
+        }
+
+        var afterIsWhitespace = true;
+        var afterIsPunctuation = true;
+        var afterIsException = false;
+        if (end < _end)
+        {
+            var after = GetRuneAt(end);
+            afterIsWhitespace = Scanners.IsUnicodeWhitespace(after);
+            afterIsPunctuation = !afterIsWhitespace && Scanners.IsUnicodePunctuation(after);
+            afterIsException = afterIsPunctuation && IsPunctuationException(after);
+        }
+
+        var leftFlanking = !afterIsWhitespace && (!afterIsPunctuation || afterIsException || beforeIsWhitespace || beforeIsPunctuation);
+        var rightFlanking = !beforeIsWhitespace && (!beforeIsPunctuation || beforeIsException || afterIsWhitespace || afterIsPunctuation);
+        canOpen = leftFlanking && (!rightFlanking || beforeIsPunctuation);
+        canClose = rightFlanking && (!leftFlanking || afterIsPunctuation);
+    }
+
+    // A closing quote closes the last opening quote of its kind, and the quotes that are opened after it are text
+    private void PairSmartQuotes()
+    {
+        var openers = new Stack<InlineNode>();
+        foreach (var quote in _smartQuotes)
+        {
+            var pant = (MarkdownSmartyPant)quote.Value;
+            if (pant is MarkdownSmartyPant.LeftQuote or MarkdownSmartyPant.LeftDoubleQuote or MarkdownSmartyPant.LeftAngleQuote)
+            {
+                openers.Push(quote);
+                continue;
+            }
+
+            var opening = pant switch
+            {
+                MarkdownSmartyPant.RightQuote => MarkdownSmartyPant.LeftQuote,
+                MarkdownSmartyPant.RightDoubleQuote => MarkdownSmartyPant.LeftDoubleQuote,
+                _ => MarkdownSmartyPant.LeftAngleQuote,
+            };
+            var found = false;
+            while (openers.TryPop(out var opener))
+            {
+                if ((MarkdownSmartyPant)opener.Value == opening)
+                {
+                    found = true;
+                    break;
+                }
+
+                ToSmartyPantText(opener);
+            }
+
+            if (!found)
+            {
+                ToSmartyPantText(quote);
+            }
+        }
+
+        foreach (var opener in openers)
+        {
+            ToSmartyPantText(opener);
+        }
+    }
+
+    // A quote that Markdig writes as text, in a literal of its own
+    private static void ToSmartyPantText(InlineNode quote)
+    {
+        quote.ChangeKind(SyntaxKind.TextToken);
+        quote.Value = 0;
+        quote.IsDelimiterRun = true;
+    }
+
+    // The dashes of the literals of Markdig: -- and ---, except after an escape that starts the literal
+    private void MarkDashes(InlineNode container)
+    {
+        var child = container.FirstChild;
+        while (child is not null)
+        {
+            if (IsLiteral(child))
+            {
+                var first = child;
+                var last = child;
+                while (last.Next is { Kind: SyntaxKind.TextToken, IsDelimiterRun: false } next && next.Start == last.End)
+                {
+                    last = next;
+                }
+
+                child = last.Next;
+                MarkDashesInLiteral(first, last);
+                continue;
+            }
+
+            if (!child.IsToken && child.Kind is not (SyntaxKind.CodeSpan or SyntaxKind.Autolink or SyntaxKind.ExtendedAutolink or SyntaxKind.RawHtml or SyntaxKind.MathInline or SyntaxKind.FootnoteReference))
+            {
+                MarkDashes(child);
+            }
+
+            child = child.Next;
+        }
+    }
+
+    // Replaces the text of the literal by its text and its dashes. An escaped dash is never the start of a dash.
+    private void MarkDashesInLiteral(InlineNode first, InlineNode last)
+    {
+        var escaped = first.Kind == SyntaxKind.EscapedCharacterToken;
+        var start = escaped ? first.End : first.Start;
+        var end = last.End;
+        var position = _text.AsSpan(start, end - start).IndexOf("--", StringComparison.Ordinal);
+        if (position < 0)
+        {
+            return;
+        }
+
+        var parent = first.Parent!;
+        var anchor = escaped ? first : first.Previous;
+        var token = escaped ? first.Next : first;
+        while (token is not null)
+        {
+            var next = token.Next;
+            token.Unlink();
+            if (token == last)
+            {
+                break;
+            }
+
+            token = next;
+        }
+
+        var textStart = start;
+        while (position >= 0)
+        {
+            var dashStart = start + position;
+            var dashEnd = dashStart + (dashStart + 2 < end && _text[dashStart + 2] == '-' ? 3 : 2);
+            if (dashStart > textStart)
+            {
+                anchor = Insert(parent, anchor, NewNode(SyntaxKind.TextToken, textStart, dashStart));
+            }
+
+            var dash = NewNode(SyntaxKind.SmartyPantToken, dashStart, dashEnd);
+            dash.Value = (int)(dashEnd - dashStart == 3 ? MarkdownSmartyPant.EmDash : MarkdownSmartyPant.EnDash);
+            anchor = Insert(parent, anchor, dash);
+            textStart = dashEnd;
+            start = dashEnd;
+            position = _text.AsSpan(start, end - start).IndexOf("--", StringComparison.Ordinal);
+        }
+
+        if (textStart < end)
+        {
+            Insert(parent, anchor, NewNode(SyntaxKind.TextToken, textStart, end));
+        }
+
+        static InlineNode Insert(InlineNode parent, InlineNode? anchor, InlineNode node)
+        {
+            if (anchor is null)
+            {
+                parent.Prepend(node);
+            }
+            else
+            {
+                anchor.InsertAfter(node);
+            }
+
+            return node;
+        }
     }
 
     private static InlineNode? GetLastNonAttributes(InlineNode parent)

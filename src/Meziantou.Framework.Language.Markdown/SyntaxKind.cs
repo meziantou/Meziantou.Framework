@@ -71,6 +71,7 @@ public enum SyntaxKind
     CustomContainerFenceToken,
     CustomContainerArgumentsToken,
     DefinitionMarkerToken,
+    SmartyPantToken,
 
     // Blocks
     Document,

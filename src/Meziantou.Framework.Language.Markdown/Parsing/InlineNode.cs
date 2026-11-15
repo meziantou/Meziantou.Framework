@@ -29,6 +29,9 @@ internal sealed class InlineNode
 
     public InlineNode? LastChild { get; private set; }
 
+    /// <summary>Changes the kind of the node, which keeps its place in the tree.</summary>
+    public void ChangeKind(SyntaxKind kind) => Kind = kind;
+
     public InlineNode Reset(SyntaxKind kind, int start, int end)
     {
         Kind = kind;

@@ -19,10 +19,27 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
     public IReadOnlyList<MarkdownListItemSyntax> Items => GetNodes(ref _items);
 
     /// <summary>Gets a value indicating whether the items are numbered.</summary>
-    public bool IsOrdered => FirstMarker is { Length: > 0 } marker && char.IsAsciiDigit(marker[0]);
+    public bool IsOrdered => FirstMarker is { Length: > 0 } marker && marker[0] is not ('-' or '+' or '*');
+
+    /// <summary>Gets how the items of an ordered list are numbered, or <see langword="null"/> for a bullet list.</summary>
+    public MarkdownOrderedListStyle? OrderedStyle => IsOrdered ? (MarkdownOrderedListStyle)(Items[0].MarkerToken.Value is int style ? style : 0) : null;
 
     /// <summary>Gets the number of the first item of an ordered list, or <see langword="null"/> for a bullet list.</summary>
-    public int? StartNumber => IsOrdered ? int.Parse(FirstMarker.AsSpan(0, FirstMarker.Length - 1), System.Globalization.CultureInfo.InvariantCulture) : null;
+    /// <remarks>The letters and the roman numbers are numbers too: <c>c.</c> is 3, and <c>iv.</c> is 4.</remarks>
+    public int? StartNumber
+    {
+        get
+        {
+            var marker = FirstMarker.AsSpan(0, Math.Max(FirstMarker.Length - 1, 0));
+            return OrderedStyle switch
+            {
+                null => null,
+                MarkdownOrderedListStyle.LowerAlpha or MarkdownOrderedListStyle.UpperAlpha => (marker[0] | 0x20) - 'a' + 1,
+                MarkdownOrderedListStyle.LowerRoman or MarkdownOrderedListStyle.UpperRoman => Parsing.BlockParser.RomanToNumber(marker),
+                _ => int.Parse(marker, System.Globalization.CultureInfo.InvariantCulture),
+            };
+        }
+    }
 
     /// <summary>Gets the character of the markers: <c>-</c>, <c>+</c> or <c>*</c> for a bullet list, <c>.</c> or <c>)</c> for an ordered list.</summary>
     public char MarkerCharacter => FirstMarker is { Length: > 0 } marker ? marker[^1] : '\0';

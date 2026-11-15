@@ -3,6 +3,20 @@ namespace Meziantou.Framework.Language.Markdown;
 /// <summary>Configures how <see cref="MarkdownHtmlRenderer"/> writes HTML.</summary>
 public sealed record MarkdownHtmlRendererOptions
 {
+    // Before Default, which uses it
+    internal static IReadOnlyDictionary<MarkdownSmartyPant, string> DefaultSmartyPants { get; } = new Dictionary<MarkdownSmartyPant, string>
+    {
+        [MarkdownSmartyPant.LeftQuote] = "&lsquo;",
+        [MarkdownSmartyPant.RightQuote] = "&rsquo;",
+        [MarkdownSmartyPant.LeftDoubleQuote] = "&ldquo;",
+        [MarkdownSmartyPant.RightDoubleQuote] = "&rdquo;",
+        [MarkdownSmartyPant.LeftAngleQuote] = "&laquo;",
+        [MarkdownSmartyPant.RightAngleQuote] = "&raquo;",
+        [MarkdownSmartyPant.Ellipsis] = "&hellip;",
+        [MarkdownSmartyPant.EnDash] = "&ndash;",
+        [MarkdownSmartyPant.EmDash] = "&mdash;",
+    };
+
     /// <summary>Gets the options used when none are given.</summary>
     public static MarkdownHtmlRendererOptions Default { get; } = new();
 
@@ -16,6 +30,14 @@ public sealed record MarkdownHtmlRendererOptions
     /// Markdown is not trusted.
     /// </remarks>
     public Func<string, bool> AttributeFilter { get; init; } = IsSafeAttributeName;
+
+    /// <summary>
+    /// Gets the HTML that the renderer writes for each character of <see cref="MarkdownExtensions.SmartyPants"/>, written as
+    /// it is: by default, the entities <c>&amp;lsquo;</c>, <c>&amp;rsquo;</c>, <c>&amp;ldquo;</c>, <c>&amp;rdquo;</c>,
+    /// <c>&amp;laquo;</c>, <c>&amp;raquo;</c>, <c>&amp;hellip;</c>, <c>&amp;ndash;</c> and <c>&amp;mdash;</c>.
+    /// </summary>
+    /// <remarks>A character that the mapping does not have is written as the default entity.</remarks>
+    public IReadOnlyDictionary<MarkdownSmartyPant, string> SmartyPants { get; init; } = DefaultSmartyPants;
 
     /// <summary>Gets whether an attribute only describes the content: whatever its value, it cannot run script or load a resource.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>

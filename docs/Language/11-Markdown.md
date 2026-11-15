@@ -332,11 +332,59 @@ Assert.Equal("<dl>\n<dt>Apple</dt>\n<dt>Pear</dt>\n<dd>A fruit.</dd>\n<dd>A tree
 ```
 <!-- endref -->
 
+- [ListExtras](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.ListExtras): ordered lists numbered by
+  letters (`a.`, `B)`) or roman numbers (`iv.`, `X)`), rendered with the `type` attribute of `<ol>`.
+  [MarkdownListSyntax.OrderedStyle](cref:Meziantou.Framework.Language.Markdown.MarkdownListSyntax.OrderedStyle) gives the
+  numbering, and [StartNumber](cref:Meziantou.Framework.Language.Markdown.MarkdownListSyntax.StartNumber) the number of the
+  first item. As in Markdig, `i`, `v` and `x` are roman numbers unless they continue a list of letters, and a list of
+  letters can interrupt a paragraph whatever its first letter.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_ListExtras;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.ListExtras };
+var tree = MarkdownSyntaxTree.ParseText("iv. Four\nv. Five\n", options);
+
+var list = Assert.IsType<MarkdownListSyntax>(tree.GetRoot().Blocks.Single());
+Assert.Equal(MarkdownOrderedListStyle.LowerRoman, list.OrderedStyle);
+Assert.Equal(4, list.StartNumber);
+Assert.Equal("<ol type=\"i\" start=\"4\">\n<li>Four</li>\n<li>Five</li>\n</ol>\n", MarkdownHtmlRenderer.ToHtml(tree));
+```
+<!-- endref -->
+
+- [SmartyPants](cref:Meziantou.Framework.Language.Markdown.MarkdownExtensions.SmartyPants): quotes, `<<` and `>>`,
+  `...` at the end of a word, `--` and `---` are written as typographic characters: `&ldquo;`, `&laquo;`, `&hellip;`,
+  `&ndash;`, `&mdash;`... A quote is typographic when it opens or closes as `_` would, and only when it is paired, so `l'ami`
+  keeps its apostrophe. Each one is a token of kind
+  [SmartyPantToken](cref:Meziantou.Framework.Language.Markdown.SyntaxKind.SmartyPantToken), whose value is a
+  [MarkdownSmartyPant](cref:Meziantou.Framework.Language.Markdown.MarkdownSmartyPant).
+  [MarkdownHtmlRendererOptions.SmartyPants](cref:Meziantou.Framework.Language.Markdown.MarkdownHtmlRendererOptions.SmartyPants)
+  changes the HTML that the renderer writes for them.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_SmartyPants;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.SmartyPants };
+var tree = MarkdownSyntaxTree.ParseText("\"Wait...\" -- it is 'done'\n", options);
+
+Assert.Equal("<p>&ldquo;Wait&hellip;&rdquo; &ndash; it is &lsquo;done&rsquo;</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+
+// The renderer can write other text, such as the characters themselves
+var french = new MarkdownHtmlRendererOptions
+{
+    SmartyPants = new Dictionary<MarkdownSmartyPant, string>
+    {
+        [MarkdownSmartyPant.LeftDoubleQuote] = "\u00AB\u00A0",
+        [MarkdownSmartyPant.RightDoubleQuote] = "\u00A0\u00BB",
+    },
+};
+Assert.Equal("<p>\u00AB\u00A0Wait&hellip;\u00A0\u00BB &ndash; it is &lsquo;done&rsquo;</p>\n", MarkdownHtmlRenderer.ToHtml(tree, french));
+```
+<!-- endref -->
+
 [DisableHtml](cref:Meziantou.Framework.Language.Markdown.MarkdownParseOptions.DisableHtml) reads HTML as text: the
 renderer escapes it, and autolinks such as `<https://example.com>` are still links.
 
 ## Limitations of the prototype
 
-- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no grid tables, emoji, SmartyPants...
+- Not all the extensions of `Meziantou.Framework.Markdown` are supported yet: no grid tables, emoji, figures...
 - Inserting and removing blocks parses the whole text again.
 - Parsing allocates more and is slower than [Meziantou.Framework.Markdown](../Markdown/01-Introduction.md).

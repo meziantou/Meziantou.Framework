@@ -81,7 +81,8 @@ public sealed class MarkdownHeadingSyntax : MarkdownBlockSyntax
                 case MarkdownCodeSpanSyntax or MarkdownAutolinkSyntax or MarkdownAbbreviationSyntax:
                     ((MarkdownInlineSyntax)child.AsNode()!).AppendPlainText(builder);
                     break;
-                case null:
+                // Markdig does not write the characters of SmartyPants in the text of the identifier
+                case null when child.AsToken().RawKind != (int)SyntaxKind.SmartyPantToken:
                     AppendPlainText([child], builder);
                     break;
             }

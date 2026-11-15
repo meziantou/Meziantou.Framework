@@ -648,6 +648,7 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("- T\n  :   a\n- b\n", "<li>\n<dl>\n<dt>T</dt>\n<dd>a</dd>\n</dl>\n</li>")]
     [InlineData("T {.t}\n:   d\n", "<dt class=\"t\">T</dt>")]
     [InlineData("[foo]: /url\n===\nT\n:   d\n", "<p>===\nT\n:   d</p>")]
+    [InlineData("[a]: /u\nx\n\n:   b\n", "<p>x</p>\n<p>:   b</p>")]
     public void RendersDefinitionLists(string text, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.DefinitionLists | MarkdownExtensions.GenericAttributes });
@@ -664,6 +665,97 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal("~", item.MarkerToken.Text);
         Assert.Equal("T", item.Terms.Single().GetPlainText());
         Assert.Equal(["a", "b"], item.Blocks.Select(block => block.GetPlainText()).ToArray());
+    }
+
+    [Fact]
+    public void ReadmeExample_ListExtras()
+    {
+        #region MarkdownSyntaxTree_ListExtras
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.ListExtras };
+        var tree = MarkdownSyntaxTree.ParseText("iv. Four\nv. Five\n", options);
+
+        var list = Assert.IsType<MarkdownListSyntax>(tree.GetRoot().Blocks.Single());
+        Assert.Equal(MarkdownOrderedListStyle.LowerRoman, list.OrderedStyle);
+        Assert.Equal(4, list.StartNumber);
+        Assert.Equal("<ol type=\"i\" start=\"4\">\n<li>Four</li>\n<li>Five</li>\n</ol>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("text\nb. item\n", "<p>text</p>\n<ol type=\"a\" start=\"2\">")]
+    [InlineData("a. x\ni. y\n", "<ol type=\"a\">\n<li>x</li>\n<li>y</li>\n</ol>")]
+    [InlineData("a. x\ni) y\n", "<ol type=\"a\" start=\"9\">\n<li>y</li>")]
+    [InlineData("- a\n i. b\n", "<ol type=\"a\" start=\"9\">")]
+    [InlineData("a.\nvi. six\n", "<ol type=\"i\" start=\"6\">")]
+    [InlineData("X) ten\n", "<ol type=\"I\" start=\"10\">")]
+    [InlineData("ab. no\n", "<p>ab. no</p>")]
+    [InlineData("text\nc.\n", "<p>text\nc.</p>")]
+    public void RendersListExtras(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.ListExtras });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BulletListHasNoOrderedStyle()
+    {
+        var list = Assert.IsType<MarkdownListSyntax>(MarkdownSyntaxTree.ParseText("- a\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.ListExtras }).GetRoot().Blocks.Single());
+
+        Assert.Null(list.OrderedStyle);
+        Assert.Null(list.StartNumber);
+        Assert.Equal(MarkdownOrderedListStyle.Numbers, Assert.IsType<MarkdownListSyntax>(MarkdownSyntaxTree.ParseText("3. a\n").GetRoot().Blocks.Single()).OrderedStyle);
+    }
+
+    [Fact]
+    public void ReadmeExample_SmartyPants()
+    {
+        #region MarkdownSyntaxTree_SmartyPants
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.SmartyPants };
+        var tree = MarkdownSyntaxTree.ParseText("\"Wait...\" -- it is 'done'\n", options);
+
+        Assert.Equal("<p>&ldquo;Wait&hellip;&rdquo; &ndash; it is &lsquo;done&rsquo;</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+
+        // The renderer can write other text, such as the characters themselves
+        var french = new MarkdownHtmlRendererOptions
+        {
+            SmartyPants = new Dictionary<MarkdownSmartyPant, string>
+            {
+                [MarkdownSmartyPant.LeftDoubleQuote] = "\u00AB\u00A0",
+                [MarkdownSmartyPant.RightDoubleQuote] = "\u00A0\u00BB",
+            },
+        };
+        Assert.Equal("<p>\u00AB\u00A0Wait&hellip;\u00A0\u00BB &ndash; it is &lsquo;done&rsquo;</p>\n", MarkdownHtmlRenderer.ToHtml(tree, french));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("<<a>> x<<b>>\n", "<p>&laquo;a&raquo; x&lt;<b>&gt;</p>\n")]
+    [InlineData("''a'' 'b \"c' d\"\n", "<p>&ldquo;a&rdquo; &lsquo;b &quot;c&rsquo; d&quot;</p>\n")]
+    [InlineData("a...b ...c d...\n", "<p>a...b ...c d&hellip;</p>\n")]
+    [InlineData("a--b---c----d \\--- `--`\n", "<p>a&ndash;b&mdash;c&mdash;-d -&ndash; <code>--</code></p>\n")]
+    [InlineData("*'a'* ![\"i\" <b>](u)\n", "<p><em>&lsquo;a&rsquo;</em> <img src=\"u\" alt=\"&ldquo;i&rdquo; &lt;b&gt;\" /></p>\n")]
+    [InlineData("l'ami 'x\n", "<p>l'ami 'x</p>\n")]
+    public void RendersSmartyPants(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.SmartyPants });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
+    public void SmartyPantTokensHaveTheirCharacter()
+    {
+        var root = MarkdownSyntaxTree.ParseText("# \"a\" -- b\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.SmartyPants | MarkdownExtensions.AutoIdentifiers }).GetRoot();
+        var tokens = root.DescendantTokens().Where(token => token.RawKind == (int)SyntaxKind.SmartyPantToken).ToList();
+
+        Assert.Equal([MarkdownSmartyPant.LeftDoubleQuote, MarkdownSmartyPant.RightDoubleQuote, MarkdownSmartyPant.EnDash], tokens.Select(token => (MarkdownSmartyPant)(int)token.Value!).ToArray());
+        Assert.Equal("\u201Ca\u201D \u2013 b", root.GetPlainText());
+
+        // Markdig leaves the characters of SmartyPants out of the identifier
+        Assert.Equal("a-b", Assert.IsType<MarkdownHeadingSyntax>(root.Blocks.Single()).Identifier);
     }
 
     [Fact]

@@ -380,7 +380,20 @@ public static class MarkdownHtmlRenderer
                     Cr();
                     if (list.StartNumber is { } start)
                     {
-                        _output.Append(start == 1 ? "<ol" : "<ol start=\"" + start.ToString(CultureInfo.InvariantCulture) + "\"");
+                        _output.Append("<ol");
+                        _output.Append(list.OrderedStyle switch
+                        {
+                            MarkdownOrderedListStyle.LowerAlpha => " type=\"a\"",
+                            MarkdownOrderedListStyle.UpperAlpha => " type=\"A\"",
+                            MarkdownOrderedListStyle.LowerRoman => " type=\"i\"",
+                            MarkdownOrderedListStyle.UpperRoman => " type=\"I\"",
+                            _ => "",
+                        });
+                        if (start != 1)
+                        {
+                            _output.Append(" start=\"").Append(start.ToString(CultureInfo.InvariantCulture)).Append('"');
+                        }
+
                         AppendAttributes(list);
                         _output.Append('>');
                     }
@@ -609,6 +622,10 @@ public static class MarkdownHtmlRenderer
                 case SyntaxKind.EntityToken:
                     AppendEscaped(HtmlEntities.Decode(token.Text));
                     break;
+                case SyntaxKind.SmartyPantToken:
+                    var pant = (MarkdownSmartyPant)(int)token.Value!;
+                    _output.Append(rendererOptions.SmartyPants.GetValueOrDefault(pant) ?? MarkdownHtmlRendererOptions.DefaultSmartyPants[pant]);
+                    break;
                 case SyntaxKind.LineEndingToken when !_hardLineBreaks:
                     _output.Append('\n');
                     break;
@@ -724,7 +741,7 @@ public static class MarkdownHtmlRenderer
                     _output.Append('"');
                     AppendAttributes(image);
                     _output.Append(" alt=\"");
-                    AppendEscaped(image.GetPlainText());
+                    WriteAltText(image.Text);
                     _output.Append('"');
                     AppendTitle(image.Title);
                     _output.Append(" />");
@@ -740,6 +757,49 @@ public static class MarkdownHtmlRenderer
                     WriteInlines(link.Text);
                     _output.Append("</a>");
                     break;
+            }
+        }
+
+        // The plain text of the description of an image, where Markdig writes the characters of SmartyPants as they are rendered,
+        // and raw HTML as text, as cmark does
+        private void WriteAltText(IEnumerable<SyntaxNodeOrToken> children)
+        {
+            foreach (var child in children)
+            {
+                if (child.IsToken && child.AsToken().RawKind == (int)SyntaxKind.SmartyPantToken)
+                {
+                    WriteToken(child.AsToken());
+                    continue;
+                }
+
+                if (child.AsNode() is MarkdownRawHtmlSyntax html)
+                {
+                    AppendEscaped(html.Html);
+                    continue;
+                }
+
+                if (child.AsNode() is { } node && node.DescendantNodesAndTokens().Any(descendant => descendant.RawKind is (int)SyntaxKind.SmartyPantToken or (int)SyntaxKind.RawHtml))
+                {
+                    switch (node)
+                    {
+                        case MarkdownEmphasisSyntax emphasis:
+                            WriteAltText(emphasis.Inlines);
+                            continue;
+                        case MarkdownStrikethroughSyntax strikethrough:
+                            WriteAltText(strikethrough.Inlines);
+                            continue;
+                        case MarkdownEmphasisExtraSyntax extra:
+                            WriteAltText(extra.Inlines);
+                            continue;
+                        case MarkdownLinkSyntax link:
+                            WriteAltText(link.Text);
+                            continue;
+                    }
+                }
+
+                var text = new StringBuilder();
+                ((MarkdownSyntaxNode)(child.Parent ?? throw new InvalidOperationException())).AppendPlainText([child], text);
+                AppendEscaped(text.ToString());
             }
         }
 

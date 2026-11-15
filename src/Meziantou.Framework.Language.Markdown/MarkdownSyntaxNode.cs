@@ -154,6 +154,20 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
                 case SyntaxKind.EntityToken:
                     builder.Append(HtmlEntities.Decode(token.Text));
                     break;
+                case SyntaxKind.SmartyPantToken:
+                    builder.Append(((MarkdownSmartyPant)(int)token.Value!) switch
+                    {
+                        MarkdownSmartyPant.LeftQuote => '\u2018',
+                        MarkdownSmartyPant.RightQuote => '\u2019',
+                        MarkdownSmartyPant.LeftDoubleQuote => '\u201C',
+                        MarkdownSmartyPant.RightDoubleQuote => '\u201D',
+                        MarkdownSmartyPant.LeftAngleQuote => '\u00AB',
+                        MarkdownSmartyPant.RightAngleQuote => '\u00BB',
+                        MarkdownSmartyPant.Ellipsis => '\u2026',
+                        MarkdownSmartyPant.EnDash => '\u2013',
+                        _ => '\u2014',
+                    });
+                    break;
                 case SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken:
                     builder.Append('\n');
                     break;

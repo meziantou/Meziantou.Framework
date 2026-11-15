@@ -76,13 +76,21 @@ public sealed class MarkdownGenericAttributesSyntax : MarkdownInlineSyntax
             return parent;
         }
 
+        // Markdig gives the attributes after a character of SmartyPants to it, which writes no attributes, except a dash, which it
+        // finds later in the text
+        if (previous.IsToken && previous.AsToken() is { RawKind: (int)SyntaxKind.SmartyPantToken, Value: not ((int)MarkdownSmartyPant.EnDash or (int)MarkdownSmartyPant.EmDash) } && mark is not 2)
+        {
+            return null;
+        }
+
         // Markdig gives the attributes after an opening delimiter to the delimiter, which the emphasis replaces
         if (previous.IsToken && parent is MarkdownEmphasisSyntax or MarkdownStrikethroughSyntax or MarkdownEmphasisExtraSyntax && parent.ChildNodesAndTokens()[0] == previous)
         {
             return null;
         }
 
-        if (mark is not 2 && previous.AsNode() is MarkdownInlineSyntax inline)
+        // Markdig finds the abbreviations after the attributes, in the text
+        if (mark is not 2 && previous.AsNode() is MarkdownInlineSyntax inline and not MarkdownAbbreviationSyntax)
         {
             return inline;
         }
@@ -118,7 +126,8 @@ public sealed class MarkdownGenericAttributesSyntax : MarkdownInlineSyntax
             MarkdownParagraphSyntax? attributesParagraph = null;
             foreach (var child in container.ChildNodes())
             {
-                if (child is not MarkdownBlockSyntax block)
+                // Markdig removes the definitions of abbreviations and footnotes from their container
+                if (child is not MarkdownBlockSyntax block || child is MarkdownAbbreviationDefinitionSyntax or MarkdownFootnoteDefinitionSyntax)
                 {
                     continue;
                 }

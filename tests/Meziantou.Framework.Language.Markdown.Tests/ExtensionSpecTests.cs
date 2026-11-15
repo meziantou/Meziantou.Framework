@@ -56,6 +56,8 @@ public sealed class ExtensionSpecTests
         ["attributes"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.GenericAttributes },
         ["customcontainers"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.CustomContainers },
         ["definitionlists"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.DefinitionLists },
+        ["listextras"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.ListExtras },
+        ["smartypants"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.SmartyPants },
         ["autoidentifiers"] = options => options with { Extensions = options.Extensions | MarkdownExtensions.AutoIdentifiers },
     };
 

@@ -608,6 +608,34 @@ public sealed class Ktx2DecoderTests
         Assert.HasCount(3, collection.Entries);
     }
 
+    [Fact]
+    public void ConvertedFloatingPointAnimationsAreCheckedAgainstTheLimitsBeforeTheyAreDecoded()
+    {
+        // Three frames of halves, converted with a tone mapping: the frames are staged, so the limits are checked first
+        var halves = new byte[3 * 8];
+        for (var i = 0; i < halves.Length; i += 2)
+        {
+            BinaryPrimitives.WriteHalfLittleEndian(halves.AsSpan(i), (Half)(i / 4f));
+        }
+
+        var builder = Blocks(97, 1, 1, 1, (1, 1), 8, [(0xC0, 0, 16, 0xBF800000, 0x3F800000), (0xC1, 16, 16, 0xBF800000, 0x3F800000), (0xC2, 32, 16, 0xBF800000, 0x3F800000), (0xCF, 48, 16, 0xBF800000, 0x3F800000)], halves);
+        builder.TypeSize = 2;
+        builder.LayerCount = 3;
+        builder.KeyValues.Add(new("KTXanimData", [1, 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0]));
+        var data = builder.Build();
+        var conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions(), OutOfRangeSamples = OutOfRangeSampleHandling.Clip };
+        using (var image = Image.Load<Rgba64>(data, new ImageDecodeOptions { Conversion = conversion }))
+        {
+            Assert.HasCount(3, image.Frames);
+        }
+
+        foreach (var (limits, kind) in new[] { (new ImageResourceLimits { MaxFrames = 2 }, ImageResourceLimitKind.Frames), (new ImageResourceLimits { MaxTotalPixels = 2 }, ImageResourceLimitKind.TotalPixels) })
+        {
+            var options = new ImageDecodeOptions { Conversion = conversion, Configuration = new ImageConfiguration { Limits = limits } };
+            Assert.Equal(kind, Assert.Throws<ImageResourceLimitException>(() => Image.Load<Rgba64>(data, options)).Kind);
+        }
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Errors and limits
     // -----------------------------------------------------------------------------------------------------------------

@@ -125,6 +125,7 @@ internal static class Ktx2Decoder
             // The floating-point frames are converted together, as CloneAs converts them: the peak of the tone mapping is
             // the one of the whole animation (the frames of floating-point formats are never P-frames)
             var count = Math.Min(texture.Layers, request.FrameLimit ?? int.MaxValue);
+            EnsureFramesWithinLimits(context, count, size);
             var stagings = new List<Image>(count);
             try
             {
@@ -222,6 +223,23 @@ internal static class Ktx2Decoder
     /// converted (<see cref="Image.PrepareConversion"/>), as <c>CloneAs</c> does.
     /// </summary>
     private static bool NeedsStaging(DecodedFrameSink sink, Ktx2Output output) => !sink.Plan.IsIdentity && output.Precision is Ktx2OutputPrecision.Half or Ktx2OutputPrecision.Float;
+
+    /// <summary>
+    /// Checks the frames of a staged animation against the frame and pixel limits before any of them is decoded:
+    /// <see cref="DecodedFrameSink.BeginFrame"/> charges them once they are written, after the decoding.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The frames exceed <see cref="ImageResourceLimits.MaxFrames"/> or <see cref="ImageResourceLimits.MaxTotalPixels"/>.</exception>
+    private static void EnsureFramesWithinLimits(ImageCodecContext context, int count, Size size)
+    {
+        var limits = context.Limits;
+        var frames = context.Tracker.Frames + (long)count;
+        if (frames > limits.MaxFrames)
+            throw new ImageResourceLimitException(ImageResourceLimitKind.Frames, limits.MaxFrames, frames);
+
+        var pixels = context.Tracker.TotalPixels + ((long)count * size.Area);
+        if (pixels > limits.MaxTotalPixels)
+            throw new ImageResourceLimitException(ImageResourceLimitKind.TotalPixels, limits.MaxTotalPixels, pixels);
+    }
 
     private static Image CreateStaging(Ktx2Output output, Size size, ImageCodecContext context) => output.Precision == Ktx2OutputPrecision.Half
         ? new Image<RgbaHalf>(context.Configuration, size, context.Scope, layoutOptions: null)

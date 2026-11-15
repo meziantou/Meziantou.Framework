@@ -51,8 +51,9 @@ public static void SavePreview(string animationPath, string previewPath)
 - **Set resource limits.** The limits of [ImageResourceLimits](cref:Meziantou.Framework.Imaging.ImageResourceLimits) bound the size of the canvas, the number of frames and
   the memory an image may allocate. They protect a service from files that would exhaust its memory. See
   [Resource limits](05-LoadingAndSaving/07-ResourceLimits.md).
-- **Bound the buffer pool.** The library keeps up to 32 MiB of returned buffers for the next operations, outside every
-  image's budget. In a memory-constrained container, lower [ImageBufferPool.MaxRetainedBytes](cref:Meziantou.Framework.Imaging.ImageBufferPool.MaxRetainedBytes),
+- **Bound the buffer pool.** The library keeps up to 64 MiB of returned buffers for the next operations, outside every
+  image's budget: enough to reuse the buffers of a 4K RGBA image (32 MiB) and of the operation that processes it. In
+  a memory-constrained container, lower [ImageBufferPool.MaxRetainedBytes](cref:Meziantou.Framework.Imaging.ImageBufferPool.MaxRetainedBytes),
   or set it to 0 to disable retention; [ImageBufferPool.Trim](cref:Meziantou.Framework.Imaging.ImageBufferPool.Trim)
   releases what the pool holds. The settings never change the output of an operation:
 

@@ -54,7 +54,7 @@ internal static class DnsMessageText
     /// <summary>
     /// Formats a client response like <see cref="Format(ServerProtocol.DnsMessage, bool, bool)"/> formats the server's decoding
     /// of the same bytes: the server takes the last OPT record out of the additional section as the EDNS options, and
-    /// reads CDS and CDNSKEY records as unknown records.
+    /// reads CDS, CDNSKEY and TSIG records as unknown records.
     /// </summary>
     /// <param name="response">The response, decoded with the raw record data.</param>
     /// <param name="normalizeNames">Lowercases the names (see <see cref="Format(ServerProtocol.DnsMessage, bool, bool)"/>).</param>
@@ -65,8 +65,8 @@ internal static class DnsMessageText
     /// Keeps the names in presentation format, so that names whose labels differ only in where the dots are (a label
     /// <c>a.b</c> or the labels <c>a</c> and <c>b</c>), or in the bytes the server decodes as <c>?</c>, are different.
     /// </param>
-    /// <param name="parseCdsAsUnknown">Formats the CDS and CDNSKEY records from their raw data, as the server reads them.</param>
-    public static string Format(ClientResponse.DnsResponseMessage response, bool normalizeNames, bool includeResponseCode, bool presentationNames = false, bool parseCdsAsUnknown = true)
+    /// <param name="parseServerUnknownTypesAsUnknown">Formats the CDS, CDNSKEY and TSIG records from their raw data, as the server reads them.</param>
+    public static string Format(ClientResponse.DnsResponseMessage response, bool normalizeNames, bool includeResponseCode, bool presentationNames = false, bool parseServerUnknownTypesAsUnknown = true)
     {
         Func<string, string> formatName = (normalizeNames, presentationNames) switch
         {
@@ -89,11 +89,11 @@ internal static class DnsMessageText
             builder.Append(CultureInfo.InvariantCulture, $"Q {FuzzText.Escape(formatName(question.Name))} {(ushort)question.Type} {(ushort)question.QueryClass}\n");
         }
 
-        AppendClientRecords(builder, "AN", response.Answers, formatName, normalizeNames, parseCdsAsUnknown);
-        AppendClientRecords(builder, "NS", response.Authorities, formatName, normalizeNames, parseCdsAsUnknown);
+        AppendClientRecords(builder, "AN", response.Answers, formatName, normalizeNames, parseServerUnknownTypesAsUnknown);
+        AppendClientRecords(builder, "NS", response.Authorities, formatName, normalizeNames, parseServerUnknownTypesAsUnknown);
 
         var lastOpt = response.AdditionalRecords.LastOrDefault(record => record is ClientRecords.DnsOptRecord) as ClientRecords.DnsOptRecord;
-        AppendClientRecords(builder, "AR", [.. response.AdditionalRecords.Where(record => !ReferenceEquals(record, lastOpt))], formatName, normalizeNames, parseCdsAsUnknown);
+        AppendClientRecords(builder, "AR", [.. response.AdditionalRecords.Where(record => !ReferenceEquals(record, lastOpt))], formatName, normalizeNames, parseServerUnknownTypesAsUnknown);
         if (lastOpt is not null)
         {
             AppendEdns(builder, lastOpt.UdpPayloadSize, lastOpt.EdnsVersion, lastOpt.DnssecOk, lastOpt.ExtendedRCode);
@@ -157,12 +157,12 @@ internal static class DnsMessageText
         }
     }
 
-    private static void AppendClientRecords(StringBuilder builder, string section, IEnumerable<ClientResponse.DnsRecord> records, Func<string, string> formatName, bool sortTypeBitMaps, bool parseCdsAsUnknown)
+    private static void AppendClientRecords(StringBuilder builder, string section, IEnumerable<ClientResponse.DnsRecord> records, Func<string, string> formatName, bool sortTypeBitMaps, bool parseServerUnknownTypesAsUnknown)
     {
         foreach (var record in records)
         {
-            // The server does not parse CDS and CDNSKEY (RFC 7344), which have the wire format of DS and DNSKEY
-            var data = parseCdsAsUnknown && record.RecordType is DnsClient.Query.DnsQueryType.CDS or DnsClient.Query.DnsQueryType.CDNSKEY
+            // The server does not parse CDS and CDNSKEY (RFC 7344), which have the wire format of DS and DNSKEY, nor TSIG (RFC 8945)
+            var data = parseServerUnknownTypesAsUnknown && record.RecordType is DnsClient.Query.DnsQueryType.CDS or DnsClient.Query.DnsQueryType.CDNSKEY or DnsClient.Query.DnsQueryType.TSIG
                 ? DnsRecordFormatter.Format(new ServerRecords.DnsUnknownRecordData { Data = record.RawData }, formatName, sortTypeBitMaps)
                 : DnsRecordFormatter.Format(record, formatName, sortTypeBitMaps);
             builder.Append(CultureInfo.InvariantCulture, $"{section} {FuzzText.Escape(formatName(record.Name))} {(ushort)record.RecordType} {(ushort)record.RecordClass} {record.TimeToLive} {data}\n");

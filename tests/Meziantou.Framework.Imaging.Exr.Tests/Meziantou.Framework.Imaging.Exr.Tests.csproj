@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
     <ImagingTestFixtureFormats>exr</ImagingTestFixtureFormats>
-    <ImagingTestEncoders>exr</ImagingTestEncoders>
+    <ImagingTestEncoders>exr;exr-tiled;exr-dwa</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

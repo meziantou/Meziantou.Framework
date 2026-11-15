@@ -1631,6 +1631,23 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>OpenEXR: a tiled texture with its mipmap levels, and a lossy DWAB file for review copies.</summary>
+    #region Imaging_OpenExrTiledLossy
+    public static void SaveOpenExrTextureAndPreview(Image hdr, string texturePath, string reviewPath)
+    {
+        // Tiles of 64x64 pixels, with the mipmap levels a renderer reads: the encoder generates them by area average
+        hdr.Save(texturePath, new OpenExrEncoder
+        {
+            Compression = OpenExrCompression.Zip,
+            Tiling = new OpenExrTiling { TileWidth = 64, TileHeight = 64, LevelMode = OpenExrLevelMode.MipmapLevels },
+        });
+
+        // A lossy compression is only used when it is chosen: DWAB codes the colors as DCT blocks (alpha stays exact);
+        // a larger level gives a smaller file and larger errors
+        hdr.Save(reviewPath, new OpenExrEncoder { Compression = OpenExrCompression.Dwab, DwaCompressionLevel = 45 });
+    }
+    #endregion
+
     /// <summary>Radiance HDR: an environment map in and out, its header variables, and its integer version.</summary>
     #region Imaging_Radiance
     public static (Image<Rgba32> Preview, double Exposure) ConvertRadiance(string hdrPath, string flatPath)

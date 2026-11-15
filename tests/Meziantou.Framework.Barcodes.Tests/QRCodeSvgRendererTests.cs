@@ -1,5 +1,8 @@
 using System.Xml.Linq;
+using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Barcodes;
+using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.InlineSnapshotTesting;
 using Meziantou.Framework.Pdf.VectorGraphics;
 using Meziantou.Framework.SnapshotTesting;
@@ -248,14 +251,19 @@ public class QRCodeSvgRendererTests
     [Fact]
     public void Documentation_Logo()
     {
-        var logoBytes = GreenPng;
         #region QRCode_Logo
+        // A logo: the bytes of a PNG, JPEG, GIF or WebP file, such as File.ReadAllBytes("logo.png"). Here, a blue disc
+        using var logoImage = new Image<Rgba32>(64, 64, Colors.White);
+        logoImage.Draw(canvas => canvas.FillCircle(new SolidBrush(new Rgba32(0x25, 0x63, 0xeb)), new PointD(32, 32), 28));
+        using var logoStream = new MemoryStream();
+        logoImage.Save(logoStream, new PngEncoder());
+
         // The error correction of level H recovers the modules under the logo
         var qrCode = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.H);
         var options = new QRCodeRenderOptions
         {
-            // The bytes of a PNG, JPEG, GIF or WebP file, such as File.ReadAllBytes("logo.png")
-            Logo = new BarcodeLogo(logoBytes) { SizePercent = 20 },
+            ModuleSize = 4,
+            Logo = new BarcodeLogo(logoStream.ToArray()) { SizePercent = 20 },
         };
 
         // Every output draws the logo
@@ -264,8 +272,10 @@ public class QRCodeSvgRendererTests
         #endregion
 
         Assert.Contains("data:image/png;base64,", svg, StringComparison.Ordinal);
-        var x = image.Width / 2;
-        Assert.Equal(new Imaging.Rgba32(0, 255, 0, 255), ((Imaging.Image<Imaging.Rgba32>)image).Frames[0][x, x]);
+        var center = image.Width / 2;
+        Assert.Equal(new Rgba32(0x25, 0x63, 0xeb), image.Frames[0][center, center]);
+        Assert.Equal("https://www.meziantou.net", Assert.Single(image.ReadQRCodes()).Text);
+        DocumentationImages.AssertPng("QRCodeLogo", PngRendering.Encode(image));
     }
 
     [Fact]
@@ -273,17 +283,23 @@ public class QRCodeSvgRendererTests
     {
         #region Barcode_TextInSvg
         var barcode = Barcode.CreateEan13("590123412345");
-        var svg = barcode.ToSvg(
-            new BarcodeRenderOptions
-            {
-                Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 14 },
-            },
-            new SvgRenderOptions { EmbedFonts = true }); // viewers do not have OCR-B: embed it
+        var options = new BarcodeRenderOptions
+        {
+            ModuleHeight = 60,
+            Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 20 },
+        };
+
+        // Viewers do not have the OCR-B font: embed it in the document
+        var svg = barcode.ToSvg(options, new SvgRenderOptions { EmbedFonts = true });
+
+        // The image (Meziantou.Framework.Imaging.Barcodes) draws the text at the same place
+        using var image = barcode.ToImage(options);
         #endregion
 
         Assert.Contains(">5901234123457</text>", svg, StringComparison.Ordinal);
         Assert.Contains("@font-face", svg, StringComparison.Ordinal);
         XDocument.Parse(svg);
+        DocumentationImages.AssertPng("BarcodeText", PngRendering.Encode(image));
     }
 
     [Fact]

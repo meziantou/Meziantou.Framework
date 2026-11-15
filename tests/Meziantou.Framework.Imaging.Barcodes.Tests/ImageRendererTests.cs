@@ -30,7 +30,7 @@ public sealed class ImageRendererTests
         {
             ModuleSize = 4,
             QuietZoneModules = 2,
-            DarkPaint = Paint(new Rgba32(0x00, 0x33, 0x66)),
+            DarkPaint = new SceneColor(0x00, 0x33, 0x66),
             LightPaint = null,
         });
         Assert.Equal((116, 116), (customImage.Width, customImage.Height));
@@ -109,7 +109,7 @@ public sealed class ImageRendererTests
             ModuleWidth = 2,
             ModuleHeight = 60,
             QuietZoneModules = 9,
-            DarkPaint = Paint(new Rgba32(0x00, 0x33, 0x66)),
+            DarkPaint = new SceneColor(0x00, 0x33, 0x66),
             Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 24 }, // prints barcode.Text, "5901234123457", under the bars
         };
 

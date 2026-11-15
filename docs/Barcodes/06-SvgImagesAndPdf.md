@@ -6,22 +6,22 @@ description: Render QR codes and barcodes as SVG documents, PNG or other images,
 ## One drawing for every format
 
 Every renderer draws the same drawing: a vector scene of
-[Meziantou.Framework.VectorGraphics](../VectorGraphics/01-Introduction.md). `CreateScene` lays out the symbol once,
+[Meziantou.Framework.VectorGraphics](../VectorGraphics/01-Introduction.md). [CreateScene](cref:Meziantou.Framework.Barcodes.QRCodeRenderer.CreateScene) lays out the symbol once,
 with its quiet zone, its modules, its logo and its text, and each format draws that scene:
 
 | Format | Method | Package |
 | --- | --- | --- |
-| SVG | `ToSvg` | `Meziantou.Framework.Barcodes` |
-| PNG, WebP, JPEG and the other image formats | `ToImage`, `DrawQRCode`, `DrawBarcode`, `DrawBarcode2D` | `Meziantou.Framework.Imaging.Barcodes`: see [Images](08-Images.md) |
-| PDF | `CreateScene(...).ToPdf()` | `Meziantou.Framework.Pdf.VectorGraphics` |
-| Anything else | `CreateScene` | `Meziantou.Framework.Barcodes` |
+| SVG | [ToSvg](cref:Meziantou.Framework.Barcodes.QRCodeRenderer.ToSvg) | `Meziantou.Framework.Barcodes` |
+| PNG, WebP, JPEG and the other image formats | [ToImage](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageRenderer.ToImage), [DrawQRCode](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageRenderer.DrawQRCode), [DrawBarcode](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeImageRenderer.DrawBarcode), [DrawBarcode2D](cref:Meziantou.Framework.Imaging.Barcodes.Barcode2DImageRenderer.DrawBarcode2D) | `Meziantou.Framework.Imaging.Barcodes`: see [Images](08-Images.md) |
+| PDF | [ToPdf](cref:Meziantou.Framework.Pdf.VectorGraphics.ScenePdfRenderer.ToPdf) | `Meziantou.Framework.Pdf.VectorGraphics` |
+| Anything else | [CreateScene](cref:Meziantou.Framework.Barcodes.QRCodeRenderer.CreateScene) | `Meziantou.Framework.Barcodes` |
 
 The options are the same for every format: one options class for each kind of symbol. A logo or a line of text is
 drawn in every format, at the same place.
 
 ## Render as SVG
 
-`ToSvg` gives an SVG document as a string. Use it in a web page, or save it as a `.svg` file:
+[ToSvg](cref:Meziantou.Framework.Barcodes.QRCodeRenderer.ToSvg) gives an SVG document as a string. Use it in a web page, or save it as a `.svg` file:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeSvgRendererTests.cs;region=QRCode_ToSvg;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -63,13 +63,13 @@ Assert.Contains("viewBox=\"0 0 286 80\"", barcodeSvg);
   of the coordinates.
 - The dark modules are one path, drawn on a rectangle of the light color.
 - The second parameter takes the options of the SVG writer
-  ([SvgRenderOptions](cref:Meziantou.Framework.VectorGraphics.SvgRenderOptions)): set `IncludeNamespace` to `false` for an SVG inlined in
-  HTML, or `EmbedFonts` to embed the font of the text.
+  ([SvgRenderOptions](cref:Meziantou.Framework.VectorGraphics.SvgRenderOptions)): set [IncludeNamespace](cref:Meziantou.Framework.VectorGraphics.SvgRenderOptions.IncludeNamespace) to `false` for an SVG inlined in
+  HTML, or [EmbedFonts](cref:Meziantou.Framework.VectorGraphics.SvgRenderOptions.EmbedFonts) to embed the font of the text.
 
 ## Render as PNG and other images
 
-`ToImage` of `Meziantou.Framework.Imaging.Barcodes` draws the scene as an image, which you save as PNG, WebP, JPEG or
-any format of `Meziantou.Framework.Imaging`. The sizes are in pixels, times the `Scale` of the image options:
+[ToImage](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageRenderer.ToImage) of `Meziantou.Framework.Imaging.Barcodes` draws the scene as an image, which you save as PNG, WebP, JPEG or
+any format of `Meziantou.Framework.Imaging`. The sizes are in pixels, times the [Scale](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.Scale) of the image options:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodePngRendererTests.cs;region=QRCode_ToPng;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -107,12 +107,12 @@ Assert.Equal(160, barcodeImage.Height); // 80 units high, at 2 pixels per unit
 ```
 <!-- endref -->
 
-With the default `SnapToPixels`, the modules are whole pixels: the image has the two colors of the options, with no
+With the default [SnapToPixels](cref:Meziantou.Framework.Barcodes.QRCodeRenderOptions.SnapToPixels), the modules are whole pixels: the image has the two colors of the options, with no
 antialiasing at the edges. To draw the code on an existing image, see [Images](08-Images.md).
 
 ## Render as PDF
 
-The scene is a vector drawing: `ToPdf` of `Meziantou.Framework.Pdf.VectorGraphics` writes it in a PDF document, where
+The scene is a vector drawing: [ToPdf](cref:Meziantou.Framework.Pdf.VectorGraphics.ScenePdfRenderer.ToPdf) of `Meziantou.Framework.Pdf.VectorGraphics` writes it in a PDF document, where
 the bars stay vectors and print sharply at any size. The fonts of the text are embedded:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeSvgRendererTests.cs;region=Barcode_ToPdf;format=md-fenced-code-block;dedent=true -->
@@ -125,33 +125,33 @@ var pdf = scene.ToPdf().ToByteArray(); // or .Save("barcode.pdf")
 ```
 <!-- endref -->
 
-`DrawScene` of the same package draws the scene on a page of an existing document.
+[DrawScene](cref:Meziantou.Framework.Pdf.VectorGraphics.ScenePdfRenderer.DrawScene) of the same package draws the scene on a page of an existing document.
 
 ## Options
 
 | QR code ([QRCodeRenderOptions](cref:Meziantou.Framework.Barcodes.QRCodeRenderOptions)) | Default | Description |
 | --- | --- | --- |
-| `ModuleSize` | 10 | The size of a module |
-| `QuietZoneModules` | 4 | The width of the margin around the code, in modules |
-| `DarkPaint` | black | The paint of the dark modules: a color, a gradient or a pattern |
-| `LightPaint` | white | The paint of the light modules and of the margin; `null` for a transparent background |
-| `SnapToPixels` | `true` | Rounds the module size to a whole number, at least 1 |
+| [ModuleSize](cref:Meziantou.Framework.Barcodes.QRCodeRenderOptions.ModuleSize) | 10 | The size of a module |
+| [QuietZoneModules](cref:Meziantou.Framework.Barcodes.QRCodeRenderOptions.QuietZoneModules) | 4 | The width of the margin around the code, in modules |
+| [DarkPaint](cref:Meziantou.Framework.Barcodes.QRCodeRenderOptions.DarkPaint) | black | The paint of the dark modules: a color, a gradient or a pattern |
+| [LightPaint](cref:Meziantou.Framework.Barcodes.QRCodeRenderOptions.LightPaint) | white | The paint of the light modules and of the margin; `null` for a transparent background |
+| [SnapToPixels](cref:Meziantou.Framework.Barcodes.QRCodeRenderOptions.SnapToPixels) | `true` | Rounds the module size to a whole number, at least 1 |
 | [Logo](cref:Meziantou.Framework.Barcodes.QRCodeRenderOptions.Logo) | `null` | The image drawn in the middle of the code |
 
 | Two-dimensional barcode ([Barcode2DRenderOptions](cref:Meziantou.Framework.Barcodes.Barcode2DRenderOptions)) | Default | Description |
 | --- | --- | --- |
-| `ModuleSize` | 4 | The size of a module |
-| `QuietZoneModules` | 2 | The width of the margin around the symbol, in modules |
-| `DarkPaint`, `LightPaint`, `SnapToPixels` | | As for QR codes |
+| [ModuleSize](cref:Meziantou.Framework.Barcodes.Barcode2DRenderOptions.ModuleSize) | 4 | The size of a module |
+| [QuietZoneModules](cref:Meziantou.Framework.Barcodes.Barcode2DRenderOptions.QuietZoneModules) | 2 | The width of the margin around the symbol, in modules |
+| [DarkPaint](cref:Meziantou.Framework.Barcodes.Barcode2DRenderOptions.DarkPaint), [LightPaint](cref:Meziantou.Framework.Barcodes.Barcode2DRenderOptions.LightPaint), [SnapToPixels](cref:Meziantou.Framework.Barcodes.Barcode2DRenderOptions.SnapToPixels) | | As for QR codes |
 
 | Barcode ([BarcodeRenderOptions](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions)) | Default | Description |
 | --- | --- | --- |
-| `ModuleWidth` | 2 | The width of a module |
-| `ModuleHeight` | 80 | The height of the bars; the rows of a stacked GS1 DataBar symbol are `ModuleWidth` high instead |
-| `QuietZoneModules` | 10 | The width of the margins on the left and on the right, in modules |
-| `DarkPaint` | black | The paint of the bars |
-| `LightPaint` | white | The paint of the spaces, of the margins and of the background of the text |
-| `SnapToPixels` | `true` | Rounds the module sizes to whole numbers, at least 1 |
+| [ModuleWidth](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.ModuleWidth) | 2 | The width of a module |
+| [ModuleHeight](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.ModuleHeight) | 80 | The height of the bars; the rows of a stacked GS1 DataBar symbol are `ModuleWidth` high instead |
+| [QuietZoneModules](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.QuietZoneModules) | 10 | The width of the margins on the left and on the right, in modules |
+| [DarkPaint](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.DarkPaint) | black | The paint of the bars |
+| [LightPaint](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.LightPaint) | white | The paint of the spaces, of the margins and of the background of the text |
+| [SnapToPixels](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.SnapToPixels) | `true` | Rounds the module sizes to whole numbers, at least 1 |
 | [Text](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.Text) | `null` | The style of the human-readable text under the bars; `null` for no text |
 
 Scanners need a quiet zone: reduce it only when the code is already surrounded by a light area.
@@ -189,17 +189,23 @@ shows the light paint through it.
 
 [Logo](cref:Meziantou.Framework.Barcodes.QRCodeRenderOptions.Logo) draws an image in the middle of a QR code, in every format. The
 [BarcodeLogo](cref:Meziantou.Framework.Barcodes.BarcodeLogo) takes the bytes of a PNG, JPEG, GIF or WebP file: the SVG embeds them as a data URI,
-and the image and PDF renderers decode them. The image keeps its proportions, centered in a square of `SizePercent`
+and the image and PDF renderers decode them. The image keeps its proportions, centered in a square of [SizePercent](cref:Meziantou.Framework.Barcodes.BarcodeLogo.SizePercent)
 of the side of the code (20 by default):
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeSvgRendererTests.cs;region=QRCode_Logo;format=md-fenced-code-block;dedent=true -->
 ```csharp
+// A logo: the bytes of a PNG, JPEG, GIF or WebP file, such as File.ReadAllBytes("logo.png"). Here, a blue disc
+using var logoImage = new Image<Rgba32>(64, 64, Colors.White);
+logoImage.Draw(canvas => canvas.FillCircle(new SolidBrush(new Rgba32(0x25, 0x63, 0xeb)), new PointD(32, 32), 28));
+using var logoStream = new MemoryStream();
+logoImage.Save(logoStream, new PngEncoder());
+
 // The error correction of level H recovers the modules under the logo
 var qrCode = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.H);
 var options = new QRCodeRenderOptions
 {
-    // The bytes of a PNG, JPEG, GIF or WebP file, such as File.ReadAllBytes("logo.png")
-    Logo = new BarcodeLogo(logoBytes) { SizePercent = 20 },
+    ModuleSize = 4,
+    Logo = new BarcodeLogo(logoStream.ToArray()) { SizePercent = 20 },
 };
 
 // Every output draws the logo
@@ -207,6 +213,8 @@ var svg = qrCode.ToSvg(options);
 using var image = qrCode.ToImage(options);
 ```
 <!-- endref -->
+
+![A QR code with a blue disc in its middle](images/QRCodeLogo.png)
 
 The logo hides the modules under it, which the scanner must recover with the error correction: create the code with
 [ErrorCorrectionLevel.H](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.H), keep the logo small, and check that the result scans. Data
@@ -217,20 +225,27 @@ that is not one of these formats throws an `ArgumentException`.
 [Text](cref:Meziantou.Framework.Barcodes.BarcodeRenderOptions.Text) prints the human-readable text ([Barcode.Text](cref:Meziantou.Framework.Barcodes.Barcode.Text)) centered under the
 bars, in every format. The default font is OCR-B ([BarcodeFonts.OcrB](cref:Meziantou.Framework.Barcodes.BarcodeFonts.OcrB)), the font usually
 printed under EAN and UPC barcodes; [BarcodeFonts.OcrA](cref:Meziantou.Framework.Barcodes.BarcodeFonts.OcrA) and any font loaded with
-`SceneFontCollection` work too. The text is measured with the metrics of its font, so a viewer that draws the SVG
+[SceneFontCollection](cref:Meziantou.Framework.VectorGraphics.SceneFontCollection) work too. The text is measured with the metrics of its font, so a viewer that draws the SVG
 with another font draws it at another width: embed the font.
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeSvgRendererTests.cs;region=Barcode_TextInSvg;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var barcode = Barcode.CreateEan13("590123412345");
-var svg = barcode.ToSvg(
-    new BarcodeRenderOptions
-    {
-        Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 14 },
-    },
-    new SvgRenderOptions { EmbedFonts = true }); // viewers do not have OCR-B: embed it
+var options = new BarcodeRenderOptions
+{
+    ModuleHeight = 60,
+    Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 20 },
+};
+
+// Viewers do not have the OCR-B font: embed it in the document
+var svg = barcode.ToSvg(options, new SvgRenderOptions { EmbedFonts = true });
+
+// The image (Meziantou.Framework.Imaging.Barcodes) draws the text at the same place
+using var image = barcode.ToImage(options);
 ```
 <!-- endref -->
+
+![An EAN-13 barcode with its 13 digits printed in OCR-B under the bars](images/BarcodeText.png)
 
 A text wider than the bars widens the drawing, and the bars are centered above it. The
 [BarcodeTextOptions](cref:Meziantou.Framework.Barcodes.BarcodeTextOptions) also set the size of the font (14), the space between the bars and the

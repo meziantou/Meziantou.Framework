@@ -451,4 +451,17 @@ public class QRCodeConsoleRendererTests
             █▄▄███▄█▄▄
             """);
     }
+
+    [Fact]
+    public void Barcode_ToConsoleString_ControlCharactersOfTheTextAreEscaped()
+    {
+        // Code 128 encodes every ASCII character: the text must not add lines or send escape sequences to the terminal
+        var barcode = Barcode.CreateCode128("AB\nCD\u001b[2J");
+        var text = barcode.ToConsoleString(new ConsoleRenderOptions { BarHeight = 1, ShowText = true });
+        var lines = text.Split(Environment.NewLine);
+
+        Assert.HasCount(2, lines);
+        Assert.EndsWith("AB?CD?[2J", lines[1], StringComparison.Ordinal);
+        Assert.DoesNotContain('\u001b', text);
+    }
 }

@@ -25,6 +25,10 @@ public sealed class ConsoleRenderOptions
     public int BarHeight { get; set; } = 4;
 
     /// <summary>Gets or sets whether the human-readable text (<see cref="Barcode.Text"/>) is written under a linear barcode. Default is false.</summary>
-    /// <remarks>The text is centered under the bars, on its own line, in the font of the terminal.</remarks>
+    /// <remarks>
+    /// The text is centered under the bars, on its own line, in the font of the terminal. Its control characters (such as
+    /// the new lines and escape characters a Code 128 barcode can encode) are written as <c>?</c>, so the text cannot
+    /// break the layout or send commands to the terminal.
+    /// </remarks>
     public bool ShowText { get; set; }
 }

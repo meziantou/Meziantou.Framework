@@ -196,12 +196,17 @@ The same options draw a logo in the middle of a QR code, and the text of a barco
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeSvgRendererTests.cs;region=Barcode_TextInSvg;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var barcode = Barcode.CreateEan13("590123412345");
-var svg = barcode.ToSvg(
-    new BarcodeRenderOptions
-    {
-        Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 14 },
-    },
-    new SvgRenderOptions { EmbedFonts = true }); // viewers do not have OCR-B: embed it
+var options = new BarcodeRenderOptions
+{
+    ModuleHeight = 60,
+    Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 20 },
+};
+
+// Viewers do not have the OCR-B font: embed it in the document
+var svg = barcode.ToSvg(options, new SvgRenderOptions { EmbedFonts = true });
+
+// The image (Meziantou.Framework.Imaging.Barcodes) draws the text at the same place
+using var image = barcode.ToImage(options);
 ```
 <!-- endref -->
 

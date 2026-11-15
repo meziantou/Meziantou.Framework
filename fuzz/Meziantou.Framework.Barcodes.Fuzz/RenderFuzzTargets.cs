@@ -42,7 +42,7 @@ internal static class RenderFuzzTargets
     private static readonly string[] Tokens =
     [
         "\u0089PNG\r\n\u001A\n", "IHDR", "IDAT", "IEND", "ÿØÿ", "GIF89a", "GIF87a", "RIFF", "WEBP", "VP8 ", "VP8L",
-        "HELLO WORLD", "12345", "ABC-123", "590123412345", "0950110153001", "<", ">", "&", "\"", "'", "]]>", "\u0001", "￾", "😀",
+        "HELLO WORLD", "12345", "ABC-123", "590123412345", "0950110153001", "<", ">", "&", "\"", "'", "]]>", "\u0001", "\n", "\u001b[", "\u0085", "￾", "😀",
     ];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
@@ -260,6 +260,7 @@ internal static class RenderFuzzTargets
         }
 
         FuzzAssert.False(invalid, "ToConsoleString accepts an option out of range");
+        FuzzAssert.False(console.Replace(Environment.NewLine, "", StringComparison.Ordinal).Any(char.IsControl), "The output has a control character other than its new lines");
 
         // The quiet zone of a linear barcode is horizontal only, and each of its rows is BarHeight characters high
         var (columns, rows, isDark) = GetModules(symbol);
@@ -275,7 +276,9 @@ internal static class RenderFuzzTargets
         var symbolPart = console;
         if (linear is not null && options.ShowText)
         {
-            var textLine = (new string(' ', Math.Max(0, (lineLength - linear.Text.Length) / 2)) + linear.Text).TrimEnd(' ');
+            // Control characters are written as '?': the text cannot break the layout or send escape sequences to the terminal
+            var printable = string.Concat(linear.Text.Select(c => char.IsControl(c) ? '?' : c));
+            var textLine = (new string(' ', Math.Max(0, (lineLength - printable.Length) / 2)) + printable).TrimEnd(' ');
             FuzzAssert.True(console.EndsWith(Environment.NewLine + textLine, StringComparison.Ordinal), "The last line is the centered text of the barcode");
             symbolPart = console[..^(Environment.NewLine.Length + textLine.Length)];
         }
@@ -425,5 +428,8 @@ internal static class RenderFuzzTargets
                 yield return FuzzSeed.FromText($"console-{kind}-{variant.Name}", [(byte)kind, variant.Flags, variant.QuietZone, variant.ModuleWidth, variant.ModuleHeight, variant.BarHeight], SeedTexts[kind]);
             }
         }
+
+        // Code 128 encodes the control characters: a new line and an escape sequence in the text under the bars
+        yield return FuzzSeed.FromText("console-5-text-control-characters", [5, 2, 1, 1, 1, 1], "AB\nCD\u001b[2J");
     }
 }

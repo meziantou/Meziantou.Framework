@@ -41,9 +41,10 @@ its alignment patterns), the edges of a Data Matrix symbol and the bullseye of a
 symbol needs its quiet zone and modules of at least 2 pixels. Symbols printed light on a dark background are read when the
 image has none printed dark on light. A transparent background reads as white.
 
-The readers are checked against the sample images of [zxing-cpp](https://github.com/zxing-cpp/zxing-cpp), many of them
-photographs: they read about three quarters of the symbols of the symbologies they support, and nothing in the
-photographs that have no symbol.
+The readers are checked against the sample images of [zxing-cpp](https://github.com/zxing-cpp/zxing-cpp), including
+photographs and images without symbols. For the photographs they read and their limits, see
+[Limitations](11-Limitations.md).
+
 [QRCodeReadingOptions](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions) limits the
 [Types](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions.Types) to read and the
 [MaximumResults](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions.MaximumResults).

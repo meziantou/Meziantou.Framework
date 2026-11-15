@@ -114,19 +114,21 @@ public sealed class ZXingCppSampleTests
             }
 
             var found = Read(image, kind);
+            var excluded = new List<Dictionary<string, string>>();
             for (var index = 0; index < records.Count; index++)
             {
                 var record = records[index];
                 if (!record.ContainsKey("TextEscaped") && !record.ContainsKey("TextHex"))
                     continue;
 
-                if (record.TryGetValue("Format", out var format) && UnsupportedFormats.Any(unsupported => format.Contains(unsupported, StringComparison.OrdinalIgnoreCase)))
+                if ((record.TryGetValue("Format", out var format) && UnsupportedFormats.Any(unsupported => format.Contains(unsupported, StringComparison.OrdinalIgnoreCase))) ||
+                    (GetRotations(record["find"]) & (1 << rotation)) is 0)
+                {
+                    excluded.Add(record);
                     continue;
+                }
 
-                if ((GetRotations(record["find"]) & (1 << rotation)) is 0)
-                    continue;
-
-                var match = found.FindIndex(symbol => Matches(record, symbol));
+                var match = found.FindIndex(symbol => Matches(kind, record, symbol));
                 if (match >= 0)
                 {
                     found.RemoveAt(match);
@@ -135,7 +137,18 @@ public sealed class ZXingCppSampleTests
                 lines.Add(string.Create(CultureInfo.InvariantCulture, $"{file}\t{rotation * 90}\tsymbol {index}\t{(match >= 0 ? "read" : "missing")}"));
             }
 
-            foreach (var symbol in found.Where(symbol => !records.Any(record => Matches(record, symbol))))
+            // A symbol that the image has but that is not expected at this rotation, or whose format the readers do not
+            // support, may be read once; any other symbol read, a second copy included, is unexpected
+            foreach (var record in excluded)
+            {
+                var match = found.FindIndex(symbol => Matches(kind, record, symbol));
+                if (match >= 0)
+                {
+                    found.RemoveAt(match);
+                }
+            }
+
+            foreach (var symbol in found)
             {
                 lines.Add(string.Create(CultureInfo.InvariantCulture, $"{file}\t{rotation * 90}\tunexpected\t{symbol.Type}\t{Abbreviate(Escape(symbol.Text))}"));
             }
@@ -178,8 +191,11 @@ public sealed class ZXingCppSampleTests
         return symbols;
     }
 
-    private static bool Matches(Dictionary<string, string> record, Symbol symbol)
+    private static bool Matches(string kind, Dictionary<string, string> record, Symbol symbol)
     {
+        if (GetExpectedTypes(kind, record) is { } types && !types.Contains(symbol.Type, StringComparer.Ordinal))
+            return false;
+
         var text = symbol.Text;
         if (record.TryGetValue("TextHex", out var hex))
         {
@@ -204,8 +220,15 @@ public sealed class ZXingCppSampleTests
         }
 
         var actual = Escape(text);
-        if (expected == actual || expected == "0" + actual || "0" + expected == actual)
+        if (expected == actual)
             return true;
+
+        // A UPC-A symbol is an EAN-13 symbol whose first digit is 0: zxing-cpp and the reader may give either form
+        if ((symbol.Type is nameof(BarcodeType.UpcA) or nameof(BarcodeType.UpcE) && expected == "0" + actual) ||
+            (symbol.Type is nameof(BarcodeType.Ean13) && actual == "0" + expected))
+        {
+            return true;
+        }
 
         // zxing-cpp decodes the Full ASCII pairs of Code 39 when they are all valid; the reader gives the characters
         if (symbol.Type is nameof(BarcodeType.Code39) && DecodeCode39FullAscii(text) is { } fullAscii && expected == Escape(fullAscii))
@@ -221,6 +244,49 @@ public sealed class ZXingCppSampleTests
         }
 
         return false;
+    }
+
+    // The types of the readers' results that can be the symbol: from its format, else from the sample directory; null
+    // when any type can be (the images of several symbologies whose symbols give no format)
+    private static string[]? GetExpectedTypes(string kind, Dictionary<string, string> record)
+    {
+        if (record.TryGetValue("Format", out var format))
+        {
+            return format switch
+            {
+                "Aztec" => [nameof(Barcode2DType.Aztec)],
+                "Code 39" or "Code 32" or "Pharmazentralnummer" => [nameof(BarcodeType.Code39)],
+                "Data Matrix" => [nameof(Barcode2DType.DataMatrix)],
+                "EAN-13" => [nameof(BarcodeType.Ean13), nameof(BarcodeType.UpcA)],
+                "EAN-8" => [nameof(BarcodeType.Ean8)],
+                "PDF417" => [nameof(Barcode2DType.Pdf417)],
+                "QR Code" => [nameof(QRCodeType.Standard)],
+                "rMQR Code" => [nameof(QRCodeType.RMQR)],
+                _ => throw new InvalidOperationException($"Unknown format '{format}'"),
+            };
+        }
+
+        return kind switch
+        {
+            "aztec" => [nameof(Barcode2DType.Aztec)],
+            "codabar" => [nameof(BarcodeType.Codabar)],
+            "code128" => [nameof(BarcodeType.Code128), nameof(BarcodeType.Gs1128)],
+            "code39" or "code39ext" => [nameof(BarcodeType.Code39)],
+            "code93" => [nameof(BarcodeType.Code93)],
+            "databarExp" or "databarExpStk" => [nameof(BarcodeType.Gs1DataBarExpanded), nameof(BarcodeType.Gs1DataBarExpandedStacked)],
+            "databarLtd" => [nameof(BarcodeType.Gs1DataBarLimited)],
+            "databarOmni" or "databarStk" => [nameof(BarcodeType.Gs1DataBar), nameof(BarcodeType.Gs1DataBarStacked), nameof(BarcodeType.Gs1DataBarStackedOmnidirectional)],
+            "datamatrix" => [nameof(Barcode2DType.DataMatrix)],
+            "ean13" or "upca" => [nameof(BarcodeType.Ean13), nameof(BarcodeType.UpcA)],
+            "ean8" => [nameof(BarcodeType.Ean8)],
+            "itf" => [nameof(BarcodeType.Itf)],
+            "microqrcode" => [nameof(QRCodeType.MicroQR)],
+            "pdf417" => [nameof(Barcode2DType.Pdf417)],
+            "qrcode" => [nameof(QRCodeType.Standard)],
+            "rmqrcode" => [nameof(QRCodeType.RMQR)],
+            "upce" => [nameof(BarcodeType.UpcE)],
+            _ => null,
+        };
     }
 
     // The Full ASCII interpretation of a Code 39 text (ISO/IEC 16388, Annex F), or null when a pair is not valid

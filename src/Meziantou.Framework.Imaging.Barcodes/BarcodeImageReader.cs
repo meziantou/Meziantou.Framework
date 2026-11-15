@@ -20,8 +20,8 @@ public static class BarcodeImageReader
     /// Parallel scan lines cross the image horizontally, vertically and at 30°, 60°, 120° and 150°, and
     /// <see cref="BarcodeDecoder.DecodeScanLines"/> reads the barcodes they cross: a barcode turned by another angle is read
     /// when one of the lines crosses all its bars. The edges of the bars are first found in the grayscale image, between
-    /// the pixels, with a threshold that follows the lighting; then the rows and the columns of the image classified as
-    /// dark or light (a local threshold, then the Otsu threshold of the image) are read. A transparent background and the
+    /// the pixels, with a threshold that follows the lighting; then the image classified as dark or light (a local
+    /// threshold, then the Otsu threshold of the image) is read along the same lines. A transparent background and the
     /// outside of the image read as white: a barcode cropped at its first and last bars has its quiet zones.
     /// </para>
     /// <para>
@@ -58,14 +58,14 @@ public static class BarcodeImageReader
 
         // The edges of the bars in the grayscale image first, at every angle: they keep the widths of the narrow bars of a
         // blurred photograph. Then the binary images of the local and global thresholds (and their inverse for the barcodes
-        // printed light on dark), along the rows and the columns, for the bars that the grayscale lines cannot separate.
+        // printed light on dark), at every angle too, for the bars that the grayscale lines cannot separate.
         using var luminance = BinaryImage.GetLuminance(image);
         if (Locate(GrayScaleScanLineSource.Create(luminance)))
             return results;
 
         BinarizationPasses.Run(luminance, options.TryInverted, binary =>
         {
-            LinearLocator.Locate(new BinaryScanLineSource(binary), [0, 90], IsIncluded, results, options.MaximumResults, cancellationToken);
+            LinearLocator.Locate(new BinaryScanLineSource(binary), LinearLocator.Angles, IsIncluded, results, options.MaximumResults, cancellationToken);
             return results.Count > 0;
         }, cancellationToken, includeSauvola: false);
 

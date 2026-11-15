@@ -19,7 +19,6 @@ public static class LanguageFuzzTargets
         CssFuzzTargets.Targets,
         IniFuzzTargets.Targets,
         JsonFuzzTargets.Targets,
-        MarkdownFuzzTargets.Targets,
         RegexFuzzTargets.Targets,
         ShellFuzzTargets.Targets,
         SyntaxFactoryFuzzTargets.Targets,

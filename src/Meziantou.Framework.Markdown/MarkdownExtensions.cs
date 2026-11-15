@@ -1,716 +1,120 @@
-// Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license.
-// See the license.txt file in the project root for more information.
-
-using Meziantou.Framework.Markdown.Extensions.Abbreviations;
-using Meziantou.Framework.Markdown.Extensions.Alerts;
-using Meziantou.Framework.Markdown.Extensions.AutoIdentifiers;
-using Meziantou.Framework.Markdown.Extensions.AutoLinks;
-using Meziantou.Framework.Markdown.Extensions.Bootstrap;
-using Meziantou.Framework.Markdown.Extensions.Citations;
-using Meziantou.Framework.Markdown.Extensions.CustomContainers;
-using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
-using Meziantou.Framework.Markdown.Extensions.Diagrams;
-using Meziantou.Framework.Markdown.Extensions.Emoji;
-using Meziantou.Framework.Markdown.Extensions.EmphasisExtras;
-using Meziantou.Framework.Markdown.Extensions.Figures;
-using Meziantou.Framework.Markdown.Extensions.Footers;
-using Meziantou.Framework.Markdown.Extensions.Footnotes;
-using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
-using Meziantou.Framework.Markdown.Extensions.Globalization;
-using Meziantou.Framework.Markdown.Extensions.Hardlines;
-using Meziantou.Framework.Markdown.Extensions.JiraLinks;
-using Meziantou.Framework.Markdown.Extensions.ListExtras;
-using Meziantou.Framework.Markdown.Extensions.Mathematics;
-using Meziantou.Framework.Markdown.Extensions.MediaLinks;
-using Meziantou.Framework.Markdown.Extensions.NonAsciiNoEscape;
-using Meziantou.Framework.Markdown.Extensions.PragmaLines;
-using Meziantou.Framework.Markdown.Extensions.ReferralLinks;
-using Meziantou.Framework.Markdown.Extensions.SmartyPants;
-using Meziantou.Framework.Markdown.Extensions.Tables;
-using Meziantou.Framework.Markdown.Extensions.TaskLists;
-using Meziantou.Framework.Markdown.Extensions.TextRenderer;
-using Meziantou.Framework.Markdown.Extensions.Yaml;
-using Meziantou.Framework.Markdown.Helpers;
-using Meziantou.Framework.Markdown.Parsers;
-using Meziantou.Framework.Markdown.Parsers.Inlines;
-using Meziantou.Framework.Markdown.Renderers;
-
 namespace Meziantou.Framework.Markdown;
 
-/// <summary>
-/// Provides extension methods for <see cref="MarkdownPipelineBuilder"/> to enable several Markdown extensions.
-/// </summary>
-public static class MarkdownExtensions
+/// <summary>The extensions of CommonMark that a <see cref="MarkdownSyntaxTree"/> parses.</summary>
+[Flags]
+public enum MarkdownExtensions : long
 {
-    /// <summary>
-    /// Adds the specified extension to the extensions collection.
-    /// </summary>
-    /// <typeparam name="TExtension">The type of the extension.</typeparam>
-    /// <returns>The instance of <see cref="MarkdownPipelineBuilder" /></returns>
-    public static MarkdownPipelineBuilder Use<TExtension>(this MarkdownPipelineBuilder pipeline) where TExtension : class, IMarkdownExtension, new()
-    {
-        pipeline.Extensions.AddIfNotAlready<TExtension>();
-        return pipeline;
-    }
+    /// <summary>CommonMark only.</summary>
+    None = 0,
 
-    /// <summary>
-    /// Adds the specified extension instance to the extensions collection.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="extension">The instance of the extension to be added.</param>
-    /// <typeparam name="TExtension">The type of the extension.</typeparam>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder Use<TExtension>(this MarkdownPipelineBuilder pipeline, TExtension extension) where TExtension : class, IMarkdownExtension
-    {
-        pipeline.Extensions.AddIfNotAlready(extension);
-        return pipeline;
-    }
+    /// <summary>The tables of GitHub Flavored Markdown: rows of cells separated by pipes, under a delimiter row.</summary>
+    Tables = 1L << 0,
 
-    /// <summary>
-    /// Uses all extensions except the BootStrap, Emoji, SmartyPants and soft line as hard line breaks extensions.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseAdvancedExtensions(this MarkdownPipelineBuilder pipeline)
-    {
-        return pipeline
-            .UseAlertBlocks()
-            .UseAbbreviations()
-            .UseAutoIdentifiers()
-            .UseCitations()
-            .UseCustomContainers()
-            .UseDefinitionLists()
-            .UseEmphasisExtras()
-            .UseFigures()
-            .UseFooters()
-            .UseFootnotes()
-            .UseGridTables()
-            .UseMathematics()
-            .UseMediaLinks()
-            .UsePipeTables()
-            .UseListExtras()
-            .UseTaskLists()
-            .UseDiagrams()
-            .UseAutoLinks()
-            .UseGenericAttributes(); // Must be last as it is one parser that is modifying other parsers
-    }
+    /// <summary>The strikethrough of GitHub Flavored Markdown: text between one or two tildes.</summary>
+    Strikethrough = 1L << 1,
 
-    /// <summary>
-    /// Uses this extension to enable alert blocks.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="renderKind">Replace the default renderer for the kind with a custom renderer.</param>
-    /// <param name="allowNestedAlerts">Allow alerts to be nested inside other blocks (e.g. inside a blockquote or a list item). Alerts inside another alert are never allowed. Default is <c>false</c>.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseAlertBlocks(this MarkdownPipelineBuilder pipeline, Action<HtmlRenderer, StringSlice>? renderKind = null, bool allowNestedAlerts = false)
-    {
-        pipeline.Extensions.ReplaceOrAdd<AlertExtension>(new AlertExtension() { RenderKind = renderKind, AllowNestedAlerts = allowNestedAlerts });
-        return pipeline;
-    }
+    /// <summary>The task list items of GitHub Flavored Markdown: a list item that starts with <c>[ ]</c> or <c>[x]</c>.</summary>
+    TaskLists = 1L << 2,
 
-    /// <summary>
-    /// Uses this extension to enable autolinks from text `http://`, `https://`, `ftp://`, `mailto:`, `www.xxx.yyy`
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="options">The options.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseAutoLinks(this MarkdownPipelineBuilder pipeline, AutoLinkOptions? options = null)
-    {
-        pipeline.Extensions.ReplaceOrAdd<AutoLinkExtension>(new AutoLinkExtension(options));
-        return pipeline;
-    }
+    /// <summary>The extended autolinks of GitHub Flavored Markdown: the URLs, the <c>www.</c> addresses and the email addresses of the text.</summary>
+    Autolinks = 1L << 3,
 
-    /// <summary>
-    /// Uses this extension to disable URI escape with % characters for non-US-ASCII characters in order to workaround a bug under IE/Edge with local file links containing non US-ASCII chars. DO NOT USE OTHERWISE.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseNonAsciiNoEscape(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<NonAsciiNoEscapeExtension>();
-        return pipeline;
-    }
+    /// <summary>The tag filter of GitHub Flavored Markdown: the HTML renderer escapes the tags that change how the rest of the page is read, such as <c>&lt;script&gt;</c>.</summary>
+    TagFilter = 1L << 4,
 
-    /// <summary>
-    /// Uses YAML frontmatter extension that will parse a YAML frontmatter into the MarkdownDocument. Note that they are not rendered by any default HTML renderer.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseYamlFrontMatter(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<YamlFrontMatterExtension>();
-        return pipeline;
-    }
+    /// <summary>The line breaks of a paragraph are rendered as hard line breaks (<c>&lt;br /&gt;</c>).</summary>
+    HardLineBreaks = 1L << 5,
 
-    /// <summary>
-    /// Uses pragma lines to output span with an id containing the line number (pragma-line#line_number_zero_based`)
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UsePragmaLines(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<PragmaLineExtension>();
-        return pipeline;
-    }
+    /// <summary>Subscript: text between single tildes (<c>H~2~O</c>), rendered as <c>&lt;sub&gt;</c>. With it, <c>~~</c> is a strikethrough when <see cref="Strikethrough"/> is set, and two tildes are no longer read as the GFM strikethrough is.</summary>
+    Subscript = 1L << 6,
 
-    /// <summary>
-    /// Uses the diagrams extension
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseDiagrams(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<DiagramExtension>();
-        return pipeline;
-    }
+    /// <summary>Superscript: text between carets (<c>2^10^</c>), rendered as <c>&lt;sup&gt;</c>.</summary>
+    Superscript = 1L << 7,
 
-    /// <summary>
-    /// Uses precise source code location (useful for syntax highlighting).
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UsePreciseSourceLocation(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.PreciseSourceLocation = true;
-        return pipeline;
-    }
+    /// <summary>Inserted text, between <c>++</c>, rendered as <c>&lt;ins&gt;</c>.</summary>
+    Inserted = 1L << 8,
 
-    /// <summary>
-    /// Uses the task list extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseTaskLists(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<TaskListExtension>();
-        return pipeline;
-    }
+    /// <summary>Marked text, between <c>==</c>, rendered as <c>&lt;mark&gt;</c>.</summary>
+    Marked = 1L << 9,
 
-    /// <summary>
-    /// Uses the custom container extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseCustomContainers(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<CustomContainerExtension>();
-        return pipeline;
-    }
+    /// <summary>A YAML front matter at the start of the document, between <c>---</c> and <c>---</c> or <c>...</c>, which the renderer does not write.</summary>
+    YamlFrontMatter = 1L << 10,
 
-    /// <summary>
-    /// Uses the media extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="options">The options.</param>
-    /// <returns>
-    /// The modified pipeline
-    /// </returns>
-    public static MarkdownPipelineBuilder UseMediaLinks(this MarkdownPipelineBuilder pipeline, MediaOptions? options = null)
-    {
-        if (!pipeline.Extensions.Contains<MediaLinkExtension>())
-        {
-            pipeline.Extensions.Add(new MediaLinkExtension(options));
-        }
-        return pipeline;
-    }
+    /// <summary>Diagrams: a fenced code block of <c>mermaid</c> is rendered as <c>&lt;pre class="mermaid"&gt;</c>, and one of <c>nomnoml</c> as <c>&lt;div class="nomnoml"&gt;</c>.</summary>
+    Diagrams = 1L << 11,
 
-    /// <summary>
-    /// Uses the auto-identifier extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="options">The options.</param>
-    /// <returns>
-    /// The modified pipeline
-    /// </returns>
-    public static MarkdownPipelineBuilder UseAutoIdentifiers(this MarkdownPipelineBuilder pipeline, AutoIdentifierOptions options = AutoIdentifierOptions.Default)
-    {
-        if (!pipeline.Extensions.Contains<AutoIdentifierExtension>())
-        {
-            pipeline.Extensions.Add(new AutoIdentifierExtension(options));
-        }
-        return pipeline;
-    }
+    /// <summary>Mathematics: inline math between <c>$</c> or <c>$$</c>, and math blocks between <c>$$</c> lines.</summary>
+    Mathematics = 1L << 12,
 
-    /// <summary>
-    /// Uses the SmartyPants extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="options">The options.</param>
-    /// <returns>
-    /// The modified pipeline
-    /// </returns>
-    public static MarkdownPipelineBuilder UseSmartyPants(this MarkdownPipelineBuilder pipeline, SmartyPantOptions? options = null)
-    {
-        if (!pipeline.Extensions.Contains<SmartyPantsExtension>())
-        {
-            pipeline.Extensions.Add(new SmartyPantsExtension(options));
-        }
-        return pipeline;
-    }
+    /// <summary>The alerts of GitHub: a block quote whose first line is <c>[!NOTE]</c>, <c>[!TIP]</c>, <c>[!IMPORTANT]</c>, <c>[!WARNING]</c> or <c>[!CAUTION]</c>.</summary>
+    Alerts = 1L << 13,
 
-    /// <summary>
-    /// Uses the bootstrap extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseBootstrap(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<BootstrapExtension>();
-        return pipeline;
-    }
+    /// <summary>Abbreviations: <c>*[HTML]: Hypertext Markup Language</c> defines an abbreviation, and the words of the text that are an abbreviation are rendered as <c>&lt;abbr&gt;</c>.</summary>
+    Abbreviations = 1L << 14,
 
-    /// <summary>
-    /// Uses the math extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseMathematics(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<MathExtension>();
-        return pipeline;
-    }
+    /// <summary>Footnotes: <c>[^1]: text</c> defines a footnote, <c>[^1]</c> refers to it, and the renderer writes the footnotes that are referred to at the end of the document.</summary>
+    Footnotes = 1L << 15,
 
-    /// <summary>
-    /// Uses the figure extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseFigures(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<FigureExtension>();
-        return pipeline;
-    }
+    /// <summary>The generic attributes of Markdig: <c>{#id .class name=value}</c> after an inline or in a block sets the HTML attributes of its element.</summary>
+    GenericAttributes = 1L << 16,
 
-    /// <summary>
-    /// Uses the custom abbreviation extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseAbbreviations(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<AbbreviationExtension>();
-        return pipeline;
-    }
+    /// <summary>Auto-identifiers: the renderer gives each heading an <c>id</c> made from its text, and a reference link whose label is the text of a heading links to it, as configured by <see cref="MarkdownParseOptions.AutoIdentifierOptions"/>.</summary>
+    AutoIdentifiers = 1L << 17,
 
-    /// <summary>
-    /// Uses the definition lists extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseDefinitionLists(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<DefinitionListExtension>();
-        return pipeline;
-    }
+    /// <summary>Custom containers: blocks between <c>:::name</c> and <c>:::</c> lines, rendered as <c>&lt;div class="name"&gt;</c>, and text between <c>::</c>, rendered as <c>&lt;span&gt;</c>.</summary>
+    CustomContainers = 1L << 18,
 
-    /// <summary>
-    /// Uses the pipe table extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="options">The options.</param>
-    /// <returns>
-    /// The modified pipeline
-    /// </returns>
-    public static MarkdownPipelineBuilder UsePipeTables(this MarkdownPipelineBuilder pipeline, PipeTableOptions? options = null)
-    {
-        if (!pipeline.Extensions.Contains<PipeTableExtension>())
-        {
-            pipeline.Extensions.Add(new PipeTableExtension(options));
-        }
-        return pipeline;
-    }
+    /// <summary>Definition lists: the lines of a paragraph are terms when the next line starts with <c>:</c> or <c>~</c> and its content at four columns, which is a definition, rendered as <c>&lt;dl&gt;</c>.</summary>
+    DefinitionLists = 1L << 19,
 
-    /// <summary>
-    /// Uses the grid table extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseGridTables(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<GridTableExtension>();
-        return pipeline;
-    }
+    /// <summary>Ordered lists numbered by letters (<c>a.</c>, <c>A.</c>) or roman numbers (<c>i.</c>, <c>I.</c>), rendered with the <c>type</c> attribute of <c>&lt;ol&gt;</c>.</summary>
+    ListExtras = 1L << 20,
 
+    /// <summary>SmartyPants: quotes, <c>&lt;&lt;</c>, <c>&gt;&gt;</c>, <c>...</c>, <c>--</c> and <c>---</c> are written as typographic characters, such as <c>&amp;ldquo;</c> or <c>&amp;mdash;</c>.</summary>
+    SmartyPants = 1L << 21,
 
-    /// <summary>
-    /// Uses the cite extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseCitations(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<CitationExtension>();
-        return pipeline;
-    }
+    /// <summary>Emoji: shortcodes such as <c>:smile:</c> and smileys such as <c>:)</c>, which are not after a letter or a digit, are written as their emoji, as configured by <see cref="MarkdownParseOptions.EmojiMapping"/>.</summary>
+    Emoji = 1L << 22,
 
-    /// <summary>
-    /// Uses the footer extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseFooters(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<FooterExtension>();
-        return pipeline;
-    }
+    /// <summary>Figures: blocks between a fence of three carets or more, <c>^^^</c>, and a fence as long, rendered as <c>&lt;figure&gt;</c>, whose caption is the text after the fences.</summary>
+    Figures = 1L << 23,
 
-    /// <summary>
-    /// Uses the footnotes extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseFootnotes(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<FootnoteExtension>();
-        return pipeline;
-    }
+    /// <summary>Footers: lines that start with <c>^^</c>, as a block quote does with <c>&gt;</c>, rendered as <c>&lt;footer&gt;</c>.</summary>
+    Footers = 1L << 24,
 
-    /// <summary>
-    /// Uses the softline break as hardline break extension
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseSoftlineBreakAsHardlineBreak(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<SoftlineBreakAsHardlineExtension>();
-        return pipeline;
-    }
+    /// <summary>Citations: text between <c>""</c>, rendered as <c>&lt;cite&gt;</c>.</summary>
+    Citations = 1L << 25,
 
-    /// <summary>
-    /// Uses the strikethrough superscript, subscript, inserted and marked text extensions.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="options">The options to enable.</param>
-    /// <returns>
-    /// The modified pipeline
-    /// </returns>
-    public static MarkdownPipelineBuilder UseEmphasisExtras(this MarkdownPipelineBuilder pipeline, EmphasisExtraOptions options = EmphasisExtraOptions.Default)
-    {
-        if (!pipeline.Extensions.Contains<EmphasisExtraExtension>())
-        {
-            pipeline.Extensions.Add(new EmphasisExtraExtension(options));
-        }
-        return pipeline;
-    }
+    /// <summary>The pipe tables of Markdig: the lines of a paragraph that have a pipe, whose second line is a delimiter row, are a table, which has as many columns as its longest row. It replaces <see cref="Tables"/>, whose rules are the ones of GitHub Flavored Markdown.</summary>
+    PipeTables = 1L << 26,
 
-    /// <summary>
-    /// Uses the list extra extension to add support for `a.`, `A.`, `i.` and `I.` ordered list items.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>
-    /// The modified pipeline
-    /// </returns>
-    public static MarkdownPipelineBuilder UseListExtras(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<ListExtraExtension>();
-        return pipeline;
-    }
+    /// <summary>The grid tables of Markdig: the lines between <c>+---+</c> lines, whose cells are separated by <c>|</c>, and can span columns and rows. The content of a cell is a document of its own.</summary>
+    GridTables = 1L << 27,
 
-    /// <summary>
-    /// Uses the generic attributes extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="attributeFilter">
-    /// Decides whether an attribute parsed from the Markdown (other than the id and the classes) is written to the HTML.
-    /// When <see langword="null"/>, the filter is left unchanged: by default,
-    /// <see cref="GenericAttributesExtension.IsSafeAttributeName"/> removes the event handlers and the attributes that
-    /// hold a URL.
-    /// </param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseGenericAttributes(this MarkdownPipelineBuilder pipeline, Func<string, bool>? attributeFilter = null)
-    {
-        var extension = pipeline.Extensions.Find<GenericAttributesExtension>();
-        if (extension is null)
-        {
-            extension = new GenericAttributesExtension();
-            pipeline.Extensions.Add(extension);
-        }
+    /// <summary>Media links: an image of an audio or a video file is rendered as <c>&lt;audio&gt;</c> or <c>&lt;video&gt;</c>, and one of a site such as YouTube as an <c>&lt;iframe&gt;</c>, as configured by <see cref="MarkdownHtmlRendererOptions.MediaLinks"/>.</summary>
+    MediaLinks = 1L << 28,
 
-        if (attributeFilter is not null)
-        {
-            extension.AttributeFilter = attributeFilter;
-        }
+    /// <summary>Jira links: a reference to an issue, such as <c>PROJ-123</c>, after whitespace or <c>(</c> and before whitespace or <c>)</c>, is a link to it, as configured by <see cref="MarkdownParseOptions.JiraLinks"/>.</summary>
+    JiraLinks = 1L << 29,
 
-        return pipeline;
-    }
+    /// <summary>The autolinks of Markdig: the URLs of the text that start with <c>http://</c>, <c>https://</c>, <c>ftp://</c>, <c>mailto:</c>, <c>tel:</c> or <c>www.</c>, after whitespace or one of <see cref="MarkdownAutolinkOptions.ValidPreviousCharacters"/>, as configured by <see cref="MarkdownParseOptions.AutolinkOptions"/>. It replaces <see cref="Autolinks"/>, whose rules are the ones of GitHub Flavored Markdown.</summary>
+    MarkdigAutolinks = 1L << 30,
 
-    /// <summary>
-    /// Uses the emojis and smileys extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="enableSmileys">Enable smileys in addition to emoji shortcodes, <c>true</c> by default.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseEmojiAndSmiley(this MarkdownPipelineBuilder pipeline, bool enableSmileys = true)
-    {
-        if (!pipeline.Extensions.Contains<EmojiExtension>())
-        {
-            var emojiMapping = enableSmileys ? EmojiMapping.DefaultEmojisAndSmileysMapping : EmojiMapping.DefaultEmojisOnlyMapping;
-            pipeline.Extensions.Add(new EmojiExtension(emojiMapping));
-        }
-        return pipeline;
-    }
+    /// <summary>The CJK-friendly emphasis of <see href="https://github.com/tats-u/markdown-cjk-friendly">markdown-cjk-friendly</see>: a delimiter next to a Chinese, Japanese or Korean character opens or closes emphasis even after or before punctuation, such as <c>**強調（Emphasis）**です</c>.</summary>
+    CjkFriendlyEmphasis = 1L << 31,
 
-    /// <summary>
-    /// Uses the emojis and smileys extension.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="customEmojiMapping">Enable customization of the emojis and smileys mapping.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseEmojiAndSmiley(this MarkdownPipelineBuilder pipeline, EmojiMapping customEmojiMapping)
-    {
-        if (!pipeline.Extensions.Contains<EmojiExtension>())
-        {
-            pipeline.Extensions.Add(new EmojiExtension(customEmojiMapping));
-        }
-        return pipeline;
-    }
+    /// <summary>The classes of Bootstrap: the renderer adds <c>table</c> to the tables, <c>img-fluid</c> to the images, <c>blockquote</c> to the block quotes, <c>figure</c> and <c>figure-caption</c> to the figures, and <c>alert</c> to the alerts, with the class of their kind.</summary>
+    Bootstrap = 1L << 32,
 
-    /// <summary>
-    /// Performs the use referral links operation.
-    /// </summary>
-    public static MarkdownPipelineBuilder UseReferralLinks(this MarkdownPipelineBuilder pipeline, params string[] rels)
-    {
-        if (pipeline.Extensions.TryFind(out ReferralLinksExtension? referralLinksExtension))
-        {
-            foreach (string rel in rels)
-            {
-                if (!referralLinksExtension.Rels.Contains(rel))
-                {
-                    referralLinksExtension.Rels.Add(rel);
-                }
-            }
-        }
-        else
-        {
-            pipeline.Extensions.Add(new ReferralLinksExtension(rels));
-        }
-        return pipeline;
-    }
+    /// <summary>The direction of the text: the renderer adds <c>dir="rtl"</c> to the elements whose text starts with a right-to-left character, such as Arabic or Hebrew, and <c>align="right"</c> to their tables.</summary>
+    Globalization = 1L << 33,
 
-    /// <summary>
-    /// Automatically link references to JIRA issues
-    /// </summary>
-    /// <param name="pipeline">The pipeline</param>
-    /// <param name="options">Set of required options</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseJiraLinks(this MarkdownPipelineBuilder pipeline, JiraLinkOptions options)
-    {
-        if (!pipeline.Extensions.Contains<JiraLinkExtension>())
-        {
-            pipeline.Extensions.Add(new JiraLinkExtension(options));
-        }
-        return pipeline;
-    }
+    /// <summary>The extra emphasis: strikethrough, subscript, superscript, inserted and marked text.</summary>
+    EmphasisExtras = Strikethrough | Subscript | Superscript | Inserted | Marked,
 
-    /// <summary>
-    /// Adds support for right-to-left content by adding appropriate html attribtues.
-    /// </summary>
-    /// <param name="pipeline">The pipeline</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseGlobalization(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.Extensions.AddIfNotAlready<GlobalizationExtension>();
-        return pipeline;
-    }
+    /// <summary>The extensions of GitHub Flavored Markdown.</summary>
+    GitHubFlavored = Tables | Strikethrough | TaskLists | Autolinks | TagFilter,
 
-    /// <summary>
-    /// Enables CJK-friendly emphasis. <c>**</c> around punctuation in CJK text will be much more likely to be parsed as emphasis as intended.
-    /// </summary>
-    /// <param name="pipeline">The pipeline</param>
-    /// <returns>The modified pipeline</returns>
-    /// <see href="https://github.com/tats-u/markdown-cjk-friendly/"/>
-    public static MarkdownPipelineBuilder UseCjkFriendlyEmphasis(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.InlineParsers.FindExact<EmphasisInlineParser>()?.CjkFriendlyEmphasis = true;
-        return pipeline;
-    }
-
-    /// <summary>
-    /// This will disable the HTML support in the markdown processor (for constraint/safe parsing).
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder DisableHtml(this MarkdownPipelineBuilder pipeline)
-    {
-        var parser = pipeline.BlockParsers.Find<HtmlBlockParser>();
-        if (parser != null)
-        {
-            pipeline.BlockParsers.Remove(parser);
-        }
-
-        var inlineParser = pipeline.InlineParsers.Find<AutolinkInlineParser>();
-        if (inlineParser != null)
-        {
-            inlineParser.Options.EnableHtmlParsing = false;
-        }
-        return pipeline;
-    }
-
-    /// <summary>
-    /// Configures the pipeline using a string that defines the extensions to activate.
-    /// </summary>
-    /// <param name="pipeline">The pipeline (e.g: advanced for <see cref="UseAdvancedExtensions"/>, pipetables+gridtables for <see cref="UsePipeTables"/> and <see cref="UseGridTables"/></param>
-    /// <param name="extensions">The extensions to activate as a string</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder Configure(this MarkdownPipelineBuilder pipeline, string? extensions)
-    {
-        if (extensions is null)
-        {
-            return pipeline;
-        }
-
-        foreach (var extension in extensions.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries))
-        {
-            switch (extension.ToLowerInvariant())
-            {
-                case "common":
-                    break;
-                case "advanced":
-                    pipeline.UseAdvancedExtensions();
-                    break;
-                case "alerts":
-                    pipeline.UseAlertBlocks();
-                    break;
-                case "pipetables":
-                    pipeline.UsePipeTables();
-                    break;
-                case "gfm-pipetables":
-                    pipeline.UsePipeTables(new PipeTableOptions { UseGfmRules = true });
-                    break;
-                case "emphasisextras":
-                    pipeline.UseEmphasisExtras();
-                    break;
-                case "listextras":
-                    pipeline.UseListExtras();
-                    break;
-                case "hardlinebreak":
-                    pipeline.UseSoftlineBreakAsHardlineBreak();
-                    break;
-                case "footnotes":
-                    pipeline.UseFootnotes();
-                    break;
-                case "footers":
-                    pipeline.UseFooters();
-                    break;
-                case "citations":
-                    pipeline.UseCitations();
-                    break;
-                case "attributes":
-                    pipeline.UseGenericAttributes();
-                    break;
-                case "gridtables":
-                    pipeline.UseGridTables();
-                    break;
-                case "abbreviations":
-                    pipeline.UseAbbreviations();
-                    break;
-                case "emojis":
-                    pipeline.UseEmojiAndSmiley();
-                    break;
-                case "definitionlists":
-                    pipeline.UseDefinitionLists();
-                    break;
-                case "customcontainers":
-                    pipeline.UseCustomContainers();
-                    break;
-                case "figures":
-                    pipeline.UseFigures();
-                    break;
-                case "mathematics":
-                    pipeline.UseMathematics();
-                    break;
-                case "bootstrap":
-                    pipeline.UseBootstrap();
-                    break;
-                case "medialinks":
-                    pipeline.UseMediaLinks();
-                    break;
-                case "smartypants":
-                    pipeline.UseSmartyPants();
-                    break;
-                case "autoidentifiers":
-                    pipeline.UseAutoIdentifiers();
-                    break;
-                case "tasklists":
-                    pipeline.UseTaskLists();
-                    break;
-                case "diagrams":
-                    pipeline.UseDiagrams();
-                    break;
-                case "nofollowlinks":
-                    pipeline.UseReferralLinks("nofollow");
-                    break;
-                case "noopenerlinks":
-                    pipeline.UseReferralLinks("noopener");
-                    break;
-                case "noreferrerlinks":
-                    pipeline.UseReferralLinks("noreferrer");
-                    break;
-                case "nohtml":
-                    pipeline.DisableHtml();
-                    break;
-                case "yaml":
-                    pipeline.UseYamlFrontMatter();
-                    break;
-                case "nonascii-noescape":
-                    pipeline.UseNonAsciiNoEscape();
-                    break;
-                case "autolinks":
-                    pipeline.UseAutoLinks();
-                    break;
-                case "globalization":
-                    pipeline.UseGlobalization();
-                    break;
-                case "cjk-friendly-emphasis":
-                    pipeline.UseCjkFriendlyEmphasis();
-                    break;
-                default:
-                    throw new ArgumentException($"Invalid extension `{extension}` from `{extensions}`", nameof(extensions));
-            }
-        }
-        return pipeline;
-    }
-
-    /// <summary>
-    /// Configures the string to be used for line-endings, when writing.
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="newLine">The string to be used for line-endings.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder ConfigureNewLine(this MarkdownPipelineBuilder pipeline, string newLine)
-    {
-        pipeline.Use(new ConfigureNewLineExtension(newLine));
-        return pipeline;
-    }
-
-    /// <summary>
-    /// Disables parsing of ATX and Setex headings
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder DisableHeadings(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.BlockParsers.TryRemove<HeadingBlockParser>();
-        if (pipeline.BlockParsers.TryFind<ParagraphBlockParser>(out var parser))
-        {
-            parser.ParseSetexHeadings = false;
-        }
-        return pipeline;
-    }
-
-    /// <summary>
-    /// Enables parsing and tracking of trivia characters
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <returns>he modified pipeline</returns>
-    public static MarkdownPipelineBuilder EnableTrackTrivia(this MarkdownPipelineBuilder pipeline)
-    {
-        pipeline.TrackTrivia = true;
-        if (pipeline.BlockParsers.TryFind<FencedCodeBlockParser>(out var parser))
-        {
-            parser.InfoParser = FencedCodeBlockParser.RoundtripInfoParser;
-        }
-        return pipeline;
-    }
+    /// <summary>The extensions that <c>UseAdvancedExtensions</c> enables in Meziantou.Framework.Markdown 1.x: alerts, abbreviations, auto identifiers, citations, custom containers, definition lists, the extra emphasis, figures, footers, footnotes, grid tables, mathematics, media links, pipe tables, list extras, task lists, diagrams, the autolinks of Markdig and generic attributes.</summary>
+    Advanced = Alerts | Abbreviations | AutoIdentifiers | Citations | CustomContainers | DefinitionLists | EmphasisExtras | Figures | Footers | Footnotes | GridTables | Mathematics | MediaLinks | PipeTables | ListExtras | TaskLists | Diagrams | MarkdigAutolinks | GenericAttributes,
 }

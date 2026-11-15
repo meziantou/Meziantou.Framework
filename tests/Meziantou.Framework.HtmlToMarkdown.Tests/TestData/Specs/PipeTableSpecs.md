@@ -14,6 +14,7 @@ A pipe table is detected when:
   - followed by a sequence of at least one `-` character
   - followed by an optional `:` to specify right align (or center align if left align is also defined)
   - ending by optional spaces
+- For backward compatibility, individual header column separators may also be empty or contain only whitespace, with no explicit alignment. At least one column separator in the row must contain a dash. This is more permissive than strict GFM table syntax.
  
 Because a list has a higher precedence than a pipe table, a table header row separator requires at least 2 dashes `--` to start a header row:
 
@@ -160,7 +161,7 @@ a  | b
 ````````````````````````````````
 
 **Rule #2**
-A pipe table ends after a blank line or the end of the file.
+A pipe table ends after a blank line, before a line without a column delimiter, or at the end of the file.
 
 **Rule #3**
 A cell content is trimmed (start and end) from white-spaces.
@@ -363,21 +364,21 @@ The text alignment can be changed by using the character `:` with the header col
 <table>
 <thead>
 <tr>
-<th style="text-align: left;">a</th>
-<th style="text-align: center;">b</th>
-<th style="text-align: right;">c</th>
+<th align="left">a</th>
+<th align="center">b</th>
+<th align="right">c</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;">0</td>
-<td style="text-align: center;">1</td>
-<td style="text-align: right;">2</td>
+<td align="left">0</td>
+<td align="center">1</td>
+<td align="right">2</td>
 </tr>
 <tr>
-<td style="text-align: left;">3</td>
-<td style="text-align: center;">4</td>
-<td style="text-align: right;">5</td>
+<td align="left">3</td>
+<td align="center">4</td>
+<td align="right">5</td>
 </tr>
 </tbody>
 </table>
@@ -393,16 +394,16 @@ Test alignment with starting and ending pipes:
 <table>
 <thead>
 <tr>
-<th style="text-align: center;">abc</th>
+<th align="center">abc</th>
 <th>def</th>
-<th style="text-align: right;">ghi</th>
+<th align="right">ghi</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: center;">1</td>
+<td align="center">1</td>
 <td>2</td>
-<td style="text-align: right;">3</td>
+<td align="right">3</td>
 </tr>
 </tbody>
 </table>
@@ -793,4 +794,322 @@ A sequence of rows containing only pipes is not a table separator row and must r
 <p>|||
 |||
 |||</p>
+````````````````````````````````
+
+A partially empty separator row still defines a table:
+
+```````````````````````````````` example
+| Field | PersonShared | Person |
+| --- | | --- |
+| Name | Master | Inherit |
+.
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>PersonShared</th>
+<th>Person</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Name</td>
+<td>Master</td>
+<td>Inherit</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````
+
+An empty first separator cell does not shift the alignment of the following columns:
+
+```````````````````````````````` example
+| A | B | C |
+||:---|---:|
+| 1 | 2 | 3 |
+.
+<table>
+<thead>
+<tr>
+<th>A</th>
+<th align="left">B</th>
+<th align="right">C</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td align="left">2</td>
+<td align="right">3</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````
+
+Adjacent pipes may also delimit an empty middle separator cell:
+
+```````````````````````````````` example
+| A | B | C |
+|:---:||---:|
+| 1 | 2 | 3 |
+.
+<table>
+<thead>
+<tr>
+<th align="center">A</th>
+<th>B</th>
+<th align="right">C</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">1</td>
+<td>2</td>
+<td align="right">3</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````
+
+An empty last separator cell is distinct from the optional trailing pipe:
+
+```````````````````````````````` example
+| A | B | C |
+|:---|---:||
+| 1 | 2 | 3 |
+.
+<table>
+<thead>
+<tr>
+<th align="left">A</th>
+<th align="right">B</th>
+<th>C</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">1</td>
+<td align="right">2</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````
+
+Empty separator cells also work without outer pipes:
+
+```````````````````````````````` example
+A | B | C
+--- | | ---:
+1 | 2 | 3
+.
+<table>
+<thead>
+<tr>
+<th>A</th>
+<th>B</th>
+<th align="right">C</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>2</td>
+<td align="right">3</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````
+
+A header-only table may have multiple empty separator cells:
+
+```````````````````````````````` example
+| A | B | C |
+| |:---:| |
+.
+<table>
+<thead>
+<tr>
+<th>A</th>
+<th align="center">B</th>
+<th>C</th>
+</tr>
+</thead>
+</table>
+````````````````````````````````
+
+A separator row containing only whitespace and pipes still remains a paragraph:
+
+```````````````````````````````` example
+| A | B | C |
+| | | |
+| 1 | 2 | 3 |
+.
+<p>| A | B | C |
+| | | |
+| 1 | 2 | 3 |</p>
+````````````````````````````````
+
+A line without a column delimiter ends the table (Rule #2): it starts a paragraph after the table, with the lines that follow it:
+
+```````````````````````````````` example
+a | b
+-- | --
+0 | 1
+text
+.
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>text</p>
+````````````````````````````````
+
+A table may have no rows before such a line:
+
+```````````````````````````````` example
+a | b
+-- | --
+text
+more
+.
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+</table>
+<p>text
+more</p>
+````````````````````````````````
+
+A table may be both preceded and followed by a paragraph:
+
+```````````````````````````````` example
+Some text
+| A |
+|---|
+| B |
+more text
+.
+<p>Some text</p>
+<table>
+<thead>
+<tr>
+<th>A</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B</td>
+</tr>
+</tbody>
+</table>
+<p>more text</p>
+````````````````````````````````
+
+A pipe in a code inline or escaped by a backslash is not a column delimiter, and the lines after the table are a paragraph even if they contain a column delimiter:
+
+```````````````````````````````` example
+a | b
+-- | --
+0 | 1
+`c|d` and c \| d
+e | f
+.
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p><code>c|d</code> and c | d
+e | f</p>
+````````````````````````````````
+
+The paragraph after a table may itself start a table:
+
+```````````````````````````````` example
+a | b
+-- | --
+0 | 1
+text
+c | d
+-- | --
+2 | 3
+.
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>text</p>
+<table>
+<thead>
+<tr>
+<th>c</th>
+<th>d</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````
+
+The lines after a table are parsed as if a blank line separated them from the table: an inline, such as a link, cannot start in the table and end after it:
+
+```````````````````````````````` example
+a | b
+-- | --
+[0 | 1
+text](/url)
+.
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>text](/url)</p>
 ````````````````````````````````

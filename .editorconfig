@@ -80,31 +80,6 @@ dotnet_diagnostic.MA0032.severity = none
 # Meziantou.Framework.Language.* parsers through InternalsVisibleTo, which the analyzer cannot see.
 dotnet_diagnostic.MA0182.severity = none
 
-[src/Meziantou.Framework.Markdown/**.cs]
-# The public API keeps the shape of Markdig (https://github.com/xoofx/markdig), the library this project is derived from.
-# The following rules would require breaking changes to that API, so they are disabled for this project only.
-
-# CA1000: Do not declare static members on generic types
-dotnet_diagnostic.CA1000.severity = none
-# CA1002: Do not expose generic lists (List<T> is part of the syntax tree API)
-dotnet_diagnostic.CA1002.severity = none
-# CA1003: Use generic event handler instances (pipeline events use dedicated delegates)
-dotnet_diagnostic.CA1003.severity = none
-# CA1010: Generic interface should also be implemented
-dotnet_diagnostic.CA1010.severity = none
-# CA1051: Do not declare visible instance fields (StringSlice, StringLine and syntax nodes expose fields for performance)
-dotnet_diagnostic.CA1051.severity = none
-# CA1054: URI-like parameters should not be strings (URLs come from Markdown text)
-dotnet_diagnostic.CA1054.severity = none
-# CA1055: URI-like return values should not be strings (URLs come from Markdown text)
-dotnet_diagnostic.CA1055.severity = none
-# CA1056: URI-like properties should not be strings (URLs come from Markdown text)
-dotnet_diagnostic.CA1056.severity = none
-# CA1819: Properties should not return arrays
-dotnet_diagnostic.CA1819.severity = none
-# MA0046: Use EventHandler<T> to declare events
-dotnet_diagnostic.MA0046.severity = none
-
 [src/Meziantou.Framework.NuGetPackageValidation.Tool/**.cs]
 # MA0004: Use Task.ConfigureAwait
 dotnet_diagnostic.MA0004.severity = none

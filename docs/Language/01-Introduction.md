@@ -17,7 +17,7 @@ such as a formatter, a linter, an editor feature, or a script that updates a con
 - **Edit without reformatting**: replace, insert or remove a node, and keep the formatting and the comments of
   everything else. See [Editing trees](03-Concepts/06-EditingTrees.md).
 - **Inspect a tree from the command line**: dump it as JSON without writing any C#. See
-  [Command-line tool](12-CommandLineTool.md).
+  [Command-line tool](11-CommandLineTool.md).
 
 ## Packages
 
@@ -33,7 +33,7 @@ they share, so a span, a text change, or a diagnostic means the same thing which
 | `Meziantou.Framework.Language.Shell` | Scripts: sh, bash, zsh, PowerShell, cmd | [ShellSyntaxTree](cref:Meziantou.Framework.Language.Shell.ShellSyntaxTree). See [Shell scripts](10-Shell/01-Overview.md). |
 | `Meziantou.Framework.Language.Toml` | TOML 1.0 and 1.1 | [TomlSyntaxTree](cref:Meziantou.Framework.Language.Toml.TomlSyntaxTree). See [TOML](07-Toml.md). |
 | `Meziantou.Framework.Language.Xml` | XML, with XPath queries and a formatter | [XmlSyntaxTree](cref:Meziantou.Framework.Language.Xml.XmlSyntaxTree). See [XML](05-Xml.md). |
-| `Meziantou.Framework.Language.Tool` | All of the above, from the command line | `Meziantou.Framework.Language.Tool syntax`. See [Command-line tool](12-CommandLineTool.md). |
+| `Meziantou.Framework.Language.Tool` | All of the above, from the command line | `Meziantou.Framework.Language.Tool syntax`. See [Command-line tool](11-CommandLineTool.md). |
 
 `Meziantou.Framework.Language` is not useful on its own: install the package of the language you parse, and it comes
 with it.

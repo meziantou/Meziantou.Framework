@@ -1,6 +1,7 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
-using Meziantou.Framework.Markdown.Helpers;
-using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
+using Meziantou.Framework.Markdown.Parsing;
 
 namespace Meziantou.Framework.Markdown;
 
@@ -9,7 +10,7 @@ namespace Meziantou.Framework.Markdown;
 /// Markdown syntax.
 /// </summary>
 /// <example>
-/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs" ref:region="MarkdownEscaper_Usage" ref:dedent="true">
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs" ref:region="MarkdownEscaper_Usage" ref:dedent="true">
 /// // Escape the text so that Markdown displays it as is: every ASCII punctuation character is escaped
 /// Assert.Equal(@"\*Note\* \[docs\]\!", MarkdownEscaper.Escape("*Note* [docs]!"));
 ///
@@ -25,7 +26,7 @@ namespace Meziantou.Framework.Markdown;
 /// Assert.Equal("&lt;https://example.com/a b&gt;", destination);
 /// Assert.Equal("\"Say \\\"hi\\\"\"", title);
 ///
-/// var html = MarkdownConverter.ToHtml($"[{text}]({destination} {title})");
+/// var html = MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText($"[{text}]({destination} {title})"));
 /// Assert.Equal("&lt;p&gt;&lt;a href=\"https://example.com/a%20b\" title=\"Say &amp;quot;hi&amp;quot;\"&gt;Docs [v2]&lt;/a&gt;&lt;/p&gt;\n", html);
 ///
 /// // The label of a reference link
@@ -61,7 +62,7 @@ public static class MarkdownEscaper
         for (var i = index; i < text.Length; i++)
         {
             var c = text[i];
-            if (c.IsAsciiPunctuation())
+            if (Scanners.IsEscapable(c))
             {
                 builder.Append('\\');
             }
@@ -162,7 +163,8 @@ public static class MarkdownEscaper
     /// </summary>
     /// <param name="url">The URL.</param>
     /// <returns>The escaped destination. It is enclosed in angle brackets when the URL is empty or contains spaces.</returns>
-    public static string EscapeLinkDestination(string url) => LinkInlineRenderer.EscapeDestination(url);
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "A destination is the text of a link, which can be relative or not a valid URI")]
+    public static string EscapeLinkDestination(string url) => EscapeDestination(url);
 
     /// <summary>
     /// Escapes a link title and encloses it in double quotes, so that it can be used as the title of a link, an image, or a
@@ -170,7 +172,7 @@ public static class MarkdownEscaper
     /// </summary>
     /// <param name="title">The title.</param>
     /// <returns>The escaped title, enclosed in double quotes.</returns>
-    public static string EscapeLinkTitle(string title) => LinkInlineRenderer.EscapeTitle(title);
+    public static string EscapeLinkTitle(string title) => EscapeTitle(title);
 
     /// <summary>
     /// Escapes a link label, so that it can be used in a reference link and its link reference definition:
@@ -184,7 +186,7 @@ public static class MarkdownEscaper
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
 
-        var escaped = LinkInlineRenderer.EscapeLabel(label);
+        var escaped = Escape(label, "[]\\", decodedEntities: false);
         if (escaped.Length > MaximumLinkLabelLength)
         {
             throw new ArgumentException($"A link label cannot be longer than {MaximumLinkLabelLength} characters.", nameof(label));
@@ -211,7 +213,8 @@ public static class MarkdownEscaper
             return escaped;
         }
 
-        return escaped.ReplaceLineEndings(" ");
+        // Only the line endings of Markdown: U+0085, U+2028 and U+2029 are text
+        return escaped.Replace("\r\n", " ", StringComparison.Ordinal).Replace('\r', ' ').Replace('\n', ' ');
     }
 
     private static void AppendInfoString(StringBuilder builder, string infoString)
@@ -229,11 +232,11 @@ public static class MarkdownEscaper
             {
                 builder.Append("&#96;");
             }
-            else if (c == '&' && LinkInlineRenderer.IsEntityStart(infoString.AsSpan(i + 1)))
+            else if (c == '&' && IsEntityStart(infoString.AsSpan(i + 1)))
             {
                 builder.Append("&amp;");
             }
-            else if (c == '\\' && (i + 1 == infoString.Length || infoString[i + 1].IsAsciiPunctuation() || char.IsWhiteSpace(infoString[i + 1])))
+            else if (c == '\\' && (i + 1 == infoString.Length || Scanners.IsEscapable(infoString[i + 1]) || char.IsWhiteSpace(infoString[i + 1])))
             {
                 builder.Append(@"\\");
             }
@@ -248,7 +251,7 @@ public static class MarkdownEscaper
     {
         for (var i = 0; i < text.Length; i++)
         {
-            if (text[i].IsAsciiPunctuation())
+            if (Scanners.IsEscapable(text[i]))
             {
                 return i;
             }
@@ -271,4 +274,133 @@ public static class MarkdownEscaper
     }
 
     private static bool IsSpaceOrLineEnding(char c) => c is ' ' or '\r' or '\n';
+
+    private static string EscapeDestination(string url)
+    {
+        // A destination with spaces or ASCII control characters, or an empty one, needs angle brackets. The unbalanced
+        // parentheses of another one are escaped: in angle brackets, they would be balanced for a link around this one, such as
+        // the text before [](<)>).
+        var depth = 0;
+        var needsBrackets = url.Length == 0;
+        var unbalanced = url.Length > 0 && url[0] == '<';
+        foreach (var c in url)
+        {
+            // The parser takes the other Unicode spaces, such as a no-break space, for the end of a destination
+            if (c <= ' ' || char.IsControl(c) || (c > (char)0x7F && PipeTableScanner.IsWhitespace(c)))
+            {
+                needsBrackets = true;
+                break;
+            }
+
+            if (c == ')' && --depth < 0)
+            {
+                unbalanced = true;
+            }
+            else if (c == '(')
+            {
+                depth++;
+            }
+        }
+
+        unbalanced |= depth != 0;
+        var escaped = needsBrackets ? "<" + Escape(url, "<>", decodedEntities: true) + ">" : Escape(url, unbalanced ? "()<" : "", decodedEntities: true);
+
+        // A destination cannot contain a line ending, or another control character, so they are written as entities, which the
+        // parser decodes
+        if ((url.AsSpan().ContainsAnyInRange('\0', (char)0x1F) || url.AsSpan().ContainsAnyInRange((char)0x7F, (char)0x9F)))
+        {
+            var builder = new StringBuilder(escaped.Length + 8);
+            foreach (var c in escaped)
+            {
+                if (char.IsControl(c) && c is not '\t')
+                {
+                    // A backslash before the line ending is text, which would escape the ampersand of the entity
+                    if (builder.Length > 0 && builder[^1] == '\\')
+                    {
+                        builder.Append('\\');
+                    }
+
+                    builder.Append("&#x").Append(((int)c).ToString("X", CultureInfo.InvariantCulture)).Append(';');
+                }
+                else
+                {
+                    builder.Append(c);
+                }
+            }
+
+            escaped = builder.ToString();
+        }
+
+        return escaped;
+    }
+
+    private static string EscapeTitle(string title)
+    {
+        var inner = Escape(title, "\"", decodedEntities: true);
+
+        // A line of the title could end the paragraph, as a blank line or a line that starts a block such as "# a", so the line
+        // endings are written as entities, which the parser decodes
+        if (inner.AsSpan().ContainsAny('\n', '\r'))
+        {
+            var builder = new StringBuilder(inner.Length + 16);
+            foreach (var c in inner)
+            {
+                if (c is '\n' or '\r')
+                {
+                    // A backslash before the line ending is text, which would escape the ampersand of the entity
+                    if (builder.Length > 0 && builder[^1] == '\\')
+                    {
+                        builder.Append('\\');
+                    }
+
+                    builder.Append(c == '\n' ? "&#10;" : "&#13;");
+                }
+                else
+                {
+                    builder.Append(c);
+                }
+            }
+
+            inner = builder.ToString();
+        }
+
+        return "\"" + inner + "\"";
+    }
+
+    private static string Escape(string text, string characters, bool decodedEntities)
+    {
+        StringBuilder? builder = null;
+        for (var i = 0; i < text.Length; i++)
+        {
+            var c = text[i];
+            if (decodedEntities && c == '&' && IsEntityStart(text.AsSpan(i + 1)))
+            {
+                // The entity is decoded once, even where a backslash escape is not honored
+                builder ??= new StringBuilder(text, 0, i, text.Length + 8);
+                builder.Append("&amp;");
+                continue;
+            }
+
+            if (characters.Contains(c, StringComparison.Ordinal) || (c == '\\' && (i + 1 == text.Length || Scanners.IsEscapable(text[i + 1]))))
+            {
+                builder ??= new StringBuilder(text, 0, i, text.Length + 8);
+                builder.Append('\\');
+            }
+
+            builder?.Append(c);
+        }
+
+        return builder?.ToString() ?? text;
+    }
+
+    private static bool IsEntityStart(ReadOnlySpan<char> text)
+    {
+        var length = text.Length > 0 && text[0] == '#' ? 1 : 0;
+        while (length < text.Length && char.IsAsciiLetterOrDigit(text[length]))
+        {
+            length++;
+        }
+
+        return length > 0 && length < text.Length && text[length] == ';';
+    }
 }

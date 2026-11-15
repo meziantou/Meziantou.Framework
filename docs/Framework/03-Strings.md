@@ -160,4 +160,4 @@ see [Formatting and cultures](04-FormattingAndCultures.md#append-invariant-value
 
 [MarkdownBuilder](cref:Meziantou.Framework.MarkdownBuilder) is obsolete. Use [MarkdownEscaper](cref:Meziantou.Framework.Markdown.MarkdownEscaper) from the `Meziantou.Framework.Markdown` package instead: it
 escapes text, code, links and table cells, and its output is checked against the Markdown parser. See
-[Write Markdown text](../Markdown/08-PlainTextAndOtherFormats.md#write-markdown-text).
+[Write Markdown](../Markdown/03-SyntaxTree.md#write-markdown).

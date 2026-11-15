@@ -4,7 +4,7 @@ This section describes the different extensions supported:
 
 ## Hardline break
 
-When this extension is used, a new line in a paragraph block will result in a hardline break `<br>`: 
+When this extension is used, a new line in a paragraph block will result in a hardline break `<br>`:
 
 ```````````````````````````````` example
 This is a paragraph

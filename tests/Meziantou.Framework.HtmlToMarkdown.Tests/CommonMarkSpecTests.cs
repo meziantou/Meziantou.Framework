@@ -47,8 +47,7 @@ public sealed class CommonMarkSpecTests
         var markdown = HtmlToMarkdown.Convert(testCase.Html);
 
         // 2. Convert the Markdown back to HTML using Meziantou.Framework.Markdown
-        var pipeline = new MarkdownPipelineBuilder().Build();
-        var roundTrippedHtml = MarkdownConverter.ToHtml(markdown, pipeline);
+        var roundTrippedHtml = MarkdownConverter.ToHtml(markdown);
 
         // 3. Compare the HTML outputs
         HtmlNormalizer.AssertEquivalent(testCase.Html, roundTrippedHtml);
@@ -76,7 +75,6 @@ public sealed class CommonMarkSpecTests
         [160] = "HTML block: HTML block with lazy continuation",
         [161] = "HTML block: custom elements",
         [162] = "HTML block: custom elements with content",
-        [163] = "HTML block: custom elements closing",
         [164] = "HTML block: comment",
         [165] = "HTML block: comment",
         [166] = "HTML block: comment not on first line",
@@ -94,7 +92,6 @@ public sealed class CommonMarkSpecTests
         [178] = "HTML block: in other containers",
         [179] = "HTML block: in other containers",
         [180] = "HTML block: self-closing tag",
-        [181] = "HTML block: not starting with recognized tag",
         [182] = "HTML block: type 6 with blank line",
         [183] = "HTML block: type 6 with blank line",
         [184] = "HTML block: not starting with recognized tag",
@@ -108,36 +105,13 @@ public sealed class CommonMarkSpecTests
 
         // Raw HTML inlines (section "Raw HTML") - these test raw HTML within inline context
         // Our converter processes these as structured HTML.
-        [632] = "Raw HTML: inline open tag",
-        [633] = "Raw HTML: inline closing tag",
-        [634] = "Raw HTML: inline comment",
-        [635] = "Raw HTML: inline processing instruction",
-        [636] = "Raw HTML: inline declaration",
-        [637] = "Raw HTML: inline CDATA",
-        [638] = "Raw HTML: entity in tag",
-        [639] = "Raw HTML: not a tag",
-        [640] = "Raw HTML: not a tag",
-        [641] = "Raw HTML: not a tag",
         [642] = "Raw HTML: not a tag",
         [643] = "Raw HTML: not a tag",
-        [644] = "Raw HTML: not a tag",
-        [645] = "Raw HTML: not a tag",
-        [646] = "Raw HTML: not a tag",
-        [647] = "Raw HTML: not a tag",
-        [648] = "Raw HTML: not a tag",
-        [649] = "Raw HTML: not a tag",
-        [650] = "Raw HTML: not a tag",
-        [651] = "Raw HTML: not a tag",
-        [652] = "Raw HTML: not a tag",
 
         // Additional cases where the interpretation of Meziantou.Framework.Markdown differs after HTML -> Markdown conversion.
-        [13] = "Backslash escapes: normalization differs after round-trip",
-        [14] = "Backslash escapes: normalization differs after round-trip",
         [21] = "Backslash escapes: normalization differs after round-trip",
         [25] = "Entity references: normalization differs after round-trip",
         [31] = "Entity references: normalization differs after round-trip",
-        [39] = "Entity references: normalization differs after round-trip",
-        [40] = "Entity references: normalization differs after round-trip",
         [61] = "Thematic breaks: normalization differs after round-trip",
         [76] = "ATX headings: trailing hash handling differs after round-trip",
         [79] = "ATX headings: trailing hash handling differs after round-trip",
@@ -153,7 +127,6 @@ public sealed class CommonMarkSpecTests
         [300] = "List items: list tight/loose semantics differ after round-trip",
         [301] = "Lists: list tight/loose semantics differ after round-trip",
         [302] = "Lists: list tight/loose semantics differ after round-trip",
-        [304] = "Lists: list tight/loose semantics differ after round-trip",
         [308] = "Lists: list tight/loose semantics differ after round-trip",
         [309] = "Lists: list tight/loose semantics differ after round-trip",
         [318] = "Lists: list start or tight/loose semantics differ after round-trip",

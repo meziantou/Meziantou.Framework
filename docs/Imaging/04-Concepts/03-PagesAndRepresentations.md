@@ -1,11 +1,12 @@
 ---
 title: Pages and representations
-description: Read and write multi-page TIFF documents and the sizes of an icon or a cursor, and read the images of a Netpbm file and the surfaces of a DDS texture, with ImageCollection.
+description: Read and write multi-page TIFF documents and the sizes of an icon or a cursor, and read the images of a Netpbm file and the surfaces of a DDS or KTX 2.0 texture, with ImageCollection.
 ---
 
 Some files hold several images that are not an animation: the pages of a TIFF document, in order, the sizes and
 color depths of the same drawing in an icon or a cursor file, the images that a Netpbm file concatenates, and the
-mipmaps, cube map faces, array elements and depth slices of a DDS texture (see [DDS](../10-Formats/21-Dds.md)). The library keeps them apart from frames, in an
+mipmaps, cube map faces, array elements and depth slices of a DDS texture (see [DDS](../10-Formats/21-Dds.md)) or a
+KTX 2.0 texture (see [KTX 2.0](../10-Formats/24-Ktx2.md)). The library keeps them apart from frames, in an
 [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection). Its entries can each have their own size, pixel format and metadata, and never have a duration or a
 play count, so code that plays the frames of an animation never receives pages or icon sizes by accident.
 

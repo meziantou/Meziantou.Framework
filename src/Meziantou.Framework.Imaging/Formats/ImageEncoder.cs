@@ -111,6 +111,7 @@ public abstract class ImageEncoder
     /// <paramref name="format"/> is <see cref="ImageFormat.Unknown"/>, <see cref="ImageFormat.Custom"/> (use
     /// <see cref="CustomImageCodec.CreateEncoder"/>), <see cref="ImageFormat.Psd"/>, <see cref="ImageFormat.Dng"/>, <see cref="ImageFormat.Dds"/>,
     /// <see cref="ImageFormat.Cineon"/> (read only) or not a defined value.
+    /// <see cref="CustomImageCodec.CreateEncoder"/>), <see cref="ImageFormat.Ktx2"/> (read only) or not a defined value.
     /// </exception>
     public static ImageEncoder Create(ImageFormat format) => format switch
     {
@@ -137,6 +138,7 @@ public abstract class ImageEncoder
         ImageFormat.Dds => throw new ArgumentOutOfRangeException(nameof(format), format, "DDS files can be read but not written: the library has no DDS encoder."),
         ImageFormat.Dpx => new DpxEncoder(),
         ImageFormat.Cineon => throw new ArgumentOutOfRangeException(nameof(format), format, "Cineon files are read, not written: save the image as DPX (ImageFormat.Dpx), the format that succeeded Cineon."),
+        ImageFormat.Ktx2 => throw new ArgumentOutOfRangeException(nameof(format), format, "KTX 2.0 files can be read but not written: the library has no KTX 2.0 encoder."),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is unknown or not a defined value."),
     };
 
@@ -163,6 +165,7 @@ public abstract class ImageEncoder
     /// <exception cref="ArgumentException">
     /// The extension is not recognized, or names files the library reads but does not write (<c>.jpx</c>, <c>.jpf</c>,
     /// <c>.psd</c>, <c>.psb</c>, <c>.dng</c>, <c>.dds</c>, <c>.cin</c>).
+    /// <c>.ktx2</c>).
     /// </exception>
     public static ImageEncoder FromFileExtension(string extension)
     {
@@ -234,6 +237,9 @@ public abstract class ImageEncoder
 
         if (extension.Equals(".cin", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Cineon files ('.cin') can be read but not written. Use the extension '.dpx' (DPX succeeded Cineon), or specify an encoder explicitly.", parameterName);
+
+        if (extension.Equals(".ktx2", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException($"KTX 2.0 files ('{extension}') can be read but not written: the library has no KTX 2.0 encoder. Specify an encoder of another format explicitly.", parameterName);
 
         if (extension.Length > 1 && ImageFormatInfo.TryGetByFileExtension(extension, out var info))
             return Create(info.Format);

@@ -58,6 +58,8 @@ const string Usage = """
                       over-limit files (assembled from the specifications, cross-checked with the ffmpeg, oiiotool and
                       magick of the pinned meziantou/prebuilt release; any OS)
         icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
+        ktx2          KTX 2.0 conformance files of tests/Meziantou.Framework.Imaging.Ktx2.Tests/Files and their reference
+                      digests: uncompressed, ETC2/EAC, ASTC, ETC1S and UASTC files of KTX-Software, astcenc and basisu (macOS)
         icc-builtin   the source of the CMYK profile provided by the library, transcribed from the committed corpus
                       (no tool; any OS)
         fonts         font files and the values independent font readers give for them: synthetic fonts built by
@@ -204,6 +206,8 @@ try
             return DdsCorpus.Run(options);
         case "dpx":
             return DpxCorpus.Run(options);
+        case "ktx2":
+            return Ktx2Corpus.Run(options);
         case "icc":
             if (iccProfiles is null)
             {

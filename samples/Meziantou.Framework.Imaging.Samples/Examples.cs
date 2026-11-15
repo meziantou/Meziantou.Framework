@@ -1727,6 +1727,33 @@ internal static class Examples
     }
     #endregion
 
+    #region Imaging_Ktx2
+    public static IReadOnlyList<string> ExportKtx2Levels(string ktx2Path, string outputDirectory)
+    {
+        // Image.Load decodes the base level of the first face of the first layer (or the frames of an animation)
+        using (var texture = Image.Load(ktx2Path))
+        {
+            texture.Save(Path.Combine(outputDirectory, "base.png"));
+        }
+
+        // Every level, layer, face and depth slice is an entry of a collection, decoded on demand
+        var files = new List<string>();
+        using var collection = ImageCollection.Load(ktx2Path);
+        foreach (var entry in collection.Entries)
+        {
+            if (entry.TextureSurface is { ArrayIndex: 0, Face: null or CubeMapFace.PositiveX, DepthSlice: 0, MipLevel: var level })
+            {
+                using var image = entry.Decode();
+                var path = Path.Combine(outputDirectory, $"level-{level}.png");
+                image.Save(path);
+                files.Add(path);
+            }
+        }
+
+        return files;
+    }
+    #endregion
+
     /// <summary>OpenEXR renderer outputs: one layer of a file with other channels, cropped to its display window.</summary>
     #region Imaging_OpenExrLayers
     public static (Image Image, Point Origin) LoadRenderLayer(string exrPath, string layer)

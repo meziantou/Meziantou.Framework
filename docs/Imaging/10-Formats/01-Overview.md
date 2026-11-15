@@ -32,6 +32,7 @@ page per format: what is read, what is written, how to save with its encoder and
 | [DDS](21-Dds.md) | Textures: BC1 to BC7 and the common uncompressed formats, mipmaps, cube maps, arrays, volume textures | Not written | No (surfaces) |
 | [DPX](22-Dpx.md) | 1 to 16-bit and floating-point components, RGB, luma, Cb, Y, Cr, both byte orders | RGB, RGBA or luma, 8, 10, 12, 16 bits or 32-bit floats | No |
 | [Cineon](23-Cineon.md) | 10-bit (and 1 to 16-bit) RGB and gray film scans | No: saved as DPX | No |
+| [KTX 2.0](24-Ktx2.md) | GPU textures: levels, layers, cube faces and slices; uncompressed, ETC2, EAC, ASTC, ETC1S and UASTC; Zstandard and ZLIB | Not written | Read (`KTXanimData`), and every subresource as an entry |
 
 What a format cannot store is never dropped silently: saving an animation as JPEG, transparency to a format without
 it, 16-bit samples to an 8-bit format or metadata the format has no place for throws an
@@ -80,7 +81,7 @@ recognized from its whole header, and checked last. Data that no format recogniz
 | `.dpx` | [DpxEncoder](cref:Meziantou.Framework.Imaging.Formats.DpxEncoder) | Big-endian DPX at the depth of the pixels |
 
 Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf` (JPEG 2000), `.psd` and `.psb`
-(Photoshop), `.dng`, `.dds` and `.cin` (Cineon): those files are read, not written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
+(Photoshop), `.dng`, `.dds`, `.cin` (Cineon) and `.ktx2` (KTX 2.0): those files are read, not written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
 files from photos: pass an encoder with lossy compression for them.
 
 ## Choosing a format
@@ -107,6 +108,8 @@ files from photos: pass an encoder with lossy compression for them.
   or another format.
 - **Tooling, game assets and test fixtures**: QOI, TGA, BMP and Netpbm are simple formats, lossless by default. The
   block-compressed textures of game engines (DDS) are read: decode their surfaces and save them in another format.
+- **Tooling, game assets and test fixtures**: QOI, TGA, BMP and Netpbm are simple formats, lossless by default. GPU
+  textures (KTX 2.0) are read, to inspect or convert them.
 
 To convert files from one format to another, see [Converting between formats](../03-Guides/03-ConvertBetweenFormats.md).
 
@@ -134,3 +137,4 @@ To convert files from one format to another, see [Converting between formats](..
 - [DDS](21-Dds.md): the textures of Direct3D and game engines, and their mipmaps, cube maps and arrays.
 - [DPX](22-Dpx.md): film scans and video frames of post-production, with their time codes.
 - [Cineon](23-Cineon.md): the Kodak film scans that preceded DPX, read only.
+- [KTX 2.0](24-Ktx2.md): GPU textures, their levels, layers and faces, block-compressed or supercompressed.

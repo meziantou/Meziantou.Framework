@@ -56,6 +56,7 @@ public sealed class ImageFormatInfo
         new(ImageFormat.Dds, ["image/vnd-ms.dds", "image/x-dds"], [".dds"]),
         new(ImageFormat.Dpx, ["image/dpx", "image/x-dpx"], [".dpx"]),
         new(ImageFormat.Cineon, ["image/cineon", "image/x-cineon"], [".cin"]),
+        new(ImageFormat.Ktx2, ["image/ktx2"], [".ktx2"]),
     ];
 
     private static readonly ReadOnlyCollection<ImageFormatInfo> AllFormats = Array.AsReadOnly(Formats);
@@ -150,8 +151,9 @@ public sealed class ImageFormatInfo
     /// in lower case with their leading period, the preferred one first.
     /// </summary>
     /// <remarks>
-    /// Every extension selects an encoder in <see cref="ImageEncoder.FromFileExtension(string)"/>, except the JPEG 2000
-    /// extensions of files the library reads but does not write: <c>.jpx</c> and <c>.jpf</c> (the extended file format).
+    /// Every extension selects an encoder in <see cref="ImageEncoder.FromFileExtension(string)"/>, except the extensions of
+    /// files the library reads but does not write: <c>.jpx</c> and <c>.jpf</c> (the extended file format of JPEG 2000) and
+    /// <c>.ktx2</c> (KTX 2.0).
     /// </remarks>
     public IReadOnlyList<string> FileExtensions { get; }
 

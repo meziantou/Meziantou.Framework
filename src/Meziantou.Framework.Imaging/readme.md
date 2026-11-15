@@ -8,6 +8,8 @@ samples) and DPX (film scans and video frames) decoding and encoding, PSD/PSB (t
 documents) decoding, DNG (raw camera images) decoding, DDS texture decoding (BC1 to BC7), Kodak Cineon decoding,
 lossless JPEG recompression, animation-aware processing, vector drawing, ICC color conversion, and bounded-memory
 streaming.
+samples) decoding and encoding, KTX 2.0 (GPU textures) decoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC
+color conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive/lossless JPEG, WebP (still and animated, lossless and lossy), QOI,
   BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline and progressive
@@ -43,6 +45,9 @@ streaming.
   Cb, Y, Cr (4:4:4 and 4:2:2), every packing in both byte orders, the film and television headers reported (time code,
   edge code, frame rate), the transfer characteristic reported and never applied; 8, 10, 12, 16-bit and floating-point
   output. Kodak Cineon decoding: 10-bit (and 1 to 16-bit) gray and RGB film scans
+- KTX 2.0 (GPU texture) decoding: mip levels, array layers, cube faces and depth slices as `ImageCollection` entries;
+  uncompressed formats, ETC2/EAC, ASTC (LDR and HDR) and Basis Universal (ETC1S with BasisLZ, UASTC) decoded to RGBA;
+  Zstandard and ZLIB supercompression; animations of array textures (`KTXanimData`)
 - AVIF decoding and encoding with a fully managed AV1 decoder and a fully managed AV1 encoder: still images and
   animations, lossless and lossy, 8, 10 and 12 bits, alpha; grids and film grain are decoded
 - HEIC decoding and encoding with a fully managed HEVC (H.265) decoder and a fully managed HEVC encoder: the photos of
@@ -51,6 +56,8 @@ streaming.
 - `ImageCollection` for the images that are not animation frames: TIFF document pages, icon/cursor representations,
   the images of a Netpbm concatenation and the surfaces of a DDS texture, read one entry at a time (TIFF and ICO/CUR are
   also written that way)
+- `ImageCollection` for the images that are not animation frames: TIFF document pages, icon/cursor representations, the
+  images of a Netpbm concatenation and the subresources of a KTX 2.0 texture, read one entry at a time (TIFF and ICO/CUR are also written that way)
 - Animation-aware model: every frame is a full-canvas displayed image with exact rational timing and, for cursors, a
   hotspot that follows its pixel through geometry operations
 - Fourteen integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`, the gray-with-alpha
@@ -132,6 +139,7 @@ copied from code that compiles, and most of them also run in the test suite.
   - [DDS](#dds)
   - [DPX](#dpx)
   - [Cineon](#cineon)
+  - [KTX 2.0](#ktx-20)
 - [Limitations](#limitations)
 
 ## Quick start
@@ -223,6 +231,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | DDS | Textures with the legacy header or the DX10 header: BC1 (DXT1, 1-bit alpha), BC2 (DXT3), BC3 (DXT5), BC4 and BC5 unsigned and signed, BC6H unsigned and signed (to `RgbaHalf`), BC7; R8G8B8A8 and B8G8R8A8 (UNORM and SRGB), B8G8R8X8, B5G6R5, B5G5R5A1, B4G4R4A4, R10G10B10A2, R16G16B16A16 (UNORM and FLOAT), R32G32B32A32_FLOAT and their formats of fewer channels, R8, R8G8, R16, R16G16, A8, R11G11B10_FLOAT, R9G9B9E5_SHAREDEXP; legacy bit masks and FourCC codes; mipmaps, cube maps (partial ones too), arrays and volume textures through `ImageCollection` | Not written (`ArgumentException` for `.dds`) | — |
 | DPX | The first image element: R, G, B, A or Y alone, RGB, RGBA, ABGR, Cb, Y, Cr 4:4:4 and 4:2:2 with or without alpha (converted to RGB); 1, 8, 10, 12 and 16-bit integers, 32 and 64-bit floats; filled (methods A and B) and packed components; both byte orders, versions 1.0 and 2.0; the orientation and the pixel aspect ratio; the headers in `Metadata.DpxHeader` (time code, edge code, frame rate, creator); linear and television transfers as labels. Run-length encoded and encrypted elements are rejected | One RGB, RGBA or luma element of 8, 10 or 12 (filled with method A), 16-bit or 32-bit floating-point components, big-endian (default) or little-endian; the orientation, the pixel aspect ratio, the transfer and colorimetric codes | `.dpx` |
 | Cineon | Gray and RGB images of 1 to 16-bit samples, pixel interleaved, in every cell packing; both byte orders; the orientation; the header in `Metadata.CineonHeader` | Not written: save as DPX | `.cin` (read only) |
+| KTX 2.0 | Textures of one to three dimensions, arrays, cube maps and mip levels (every subresource an `ImageCollection` entry, `Image.Load` the base level of the first face of the first layer, or the frames of a `KTXanimData` animation); uncompressed 8/16-bit UNORM and sRGB, 16/32-bit float and packed formats (`R5G6B5`, `R4G4B4A4`, `A2B10G10R10`, `B10G11R11`, `E5B9G9R9`); ETC2, EAC (unsigned and signed); ASTC 2D LDR (sRGB, UNORM as halves) and HDR; Basis Universal ETC1S (BasisLZ) and UASTC; Zstandard and ZLIB supercompression; `KTXswizzle` applied, `KTXorientation` reported as the orientation; color labels from the data format descriptor | Not written | None (read only: `.ktx2`) |
 | ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
 
 ## Usage guide
@@ -355,8 +364,9 @@ public static Point WriteAndReadAnimatedCursor(string animationPath, string curs
 are not an animation: the pages of a document in order, and the alternative sizes and color depths of one drawing. They
 live in a separate, disposable `ImageCollection` whose entries may differ in size, pixel format and metadata, and which
 never carries a duration, a blend or disposal operation or a loop count. A decoded entry is always a one-frame still
-image, and `Image.OpenReader` rejects TIFF, ICO and CUR explicitly, so a consumer that plays frames can never receive pages
-or icon sizes by accident.
+image, and `Image.OpenReader` rejects TIFF, ICO, CUR and KTX 2.0 explicitly, so a consumer that plays frames can never
+receive pages, icon sizes or texture levels by accident. The subresources of a KTX 2.0 texture are a collection of the
+kind `ImageCollectionKind.TextureSurfaces` (see [KTX 2.0](#ktx-20)).
 
 - Loading (`ImageCollection.Load` from a path, a seekable stream or a span) reads only the container structure, so
   describing every entry of a large document costs a few kilobytes of reads. Each entry exposes its `Size`,
@@ -717,6 +727,9 @@ their source (an sRGB `Rgba64` image becomes sRGB-encoded floats). OpenEXR and R
 pages of TIFF and floating-point DPX elements decode to them: OpenEXR files load as `RgbaHalf` or `RgbaFloat` in linear
 light, Radiance HDR and DNG files and DPX elements as `RgbaFloat` (a DPX element is labeled linear light only when its
 transfer characteristic says so), and untyped `Load` of a TIFF page picks
+their source (an sRGB `Rgba64` image becomes sRGB-encoded floats). OpenEXR, Radiance HDR and the floating-point formats of
+KTX 2.0 (see [KTX 2.0](#ktx-20)), and the floating-point pages of TIFF decode to them: OpenEXR files load as `RgbaHalf` or `RgbaFloat` in linear light, Radiance HDR files as
+`RgbaFloat`, and untyped `Load` of a TIFF page picks
 `RgbaHalf` for half-precision samples and `RgbaFloat` for the others, labeled linear light unless an ICC profile
 describes them. JPEG XL files of floating-point samples load the same way (`RgbaHalf` when every sample is a
 half-precision number), and so do its integer samples of 17 to 24 bits as `RgbaFloat`, labeled with the color encoding
@@ -4871,9 +4884,9 @@ pixels only), `.tif`/`.tiff`, `.ico`, `.cur`, `.ani`, `.avif`/`.avifs` (lossless
 lossless by default), `.j2k`/`.j2c`/`.jpc` (a JPEG 2000 codestream, lossless by default), `.jph`/`.jhc` (a JPH file or
 a codestream of the high-throughput block coder, lossless by default), `.exr` (OpenEXR, ZIP), `.hdr`/`.pic` (Radiance
 HDR, run-length encoded) and `.dpx` (big-endian DPX at the depth of the pixels); anything else throws
-`ArgumentException`, the `.jpx`, `.jpf`, `.psd`, `.psb`, `.dng`, `.dds` and `.cin` extensions included (these files
-are read, not written; and `ImageEncoder.Create` throws `ArgumentOutOfRangeException` for `ImageFormat.Psd`,
-`ImageFormat.Dng`, `ImageFormat.Dds` and `ImageFormat.Cineon`). An eager save validates the whole image against the output (animation, poster,
+`ArgumentException`, the `.jpx`, `.jpf`, `.psd`, `.psb`, `.dng`, `.dds`, `.cin` and `.ktx2` extensions included (these
+files are read, not written; and `ImageEncoder.Create` throws `ArgumentOutOfRangeException` for `ImageFormat.Psd`,
+`ImageFormat.Dng`, `ImageFormat.Dds`, `ImageFormat.Cineon` and `ImageFormat.Ktx2`). An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
 `ImageEncoder.FromFileExtension` returns the encoder `Save(path)` selects for an extension (`.png` or `png`), and
@@ -6488,6 +6501,77 @@ channel interleaving, channels of different sizes or depths, signed samples, sam
 (packing 0) of samples other than 8 and 16 bits are `UnsupportedImageFeatureException`. Printing densities are never
 converted to linear light, and a negative image is not inverted (`CineonHeader.IsNegative`).
 
+### KTX 2.0
+
+KTX 2.0 files (`.ktx2`, Khronos Texture) hold GPU textures: images of one to three dimensions, arrays of them, cube
+maps and their mip levels, in one of the `VkFormat` formats of Vulkan, block-compressed or not, and optionally
+supercompressed. The codec is written from the KTX File Format Specification 2.0 (revision 4), the Khronos Data
+Format Specification 1.4 (the data format descriptor and the ETC2, EAC, ASTC and UASTC block formats) and the BasisLZ
+appendices of the KTX specification. It only decodes.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Ktx2;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static IReadOnlyList<string> ExportKtx2Levels(string ktx2Path, string outputDirectory)
+{
+    // Image.Load decodes the base level of the first face of the first layer (or the frames of an animation)
+    using (var texture = Image.Load(ktx2Path))
+    {
+        texture.Save(Path.Combine(outputDirectory, "base.png"));
+    }
+
+    // Every level, layer, face and depth slice is an entry of a collection, decoded on demand
+    var files = new List<string>();
+    using var collection = ImageCollection.Load(ktx2Path);
+    foreach (var entry in collection.Entries)
+    {
+        if (entry.TextureSurface is { ArrayIndex: 0, Face: null or CubeMapFace.PositiveX, DepthSlice: 0, MipLevel: var level })
+        {
+            using var image = entry.Decode();
+            var path = Path.Combine(outputDirectory, $"level-{level}.png");
+            image.Save(path);
+            files.Add(path);
+        }
+    }
+
+    return files;
+}
+```
+<!-- endref -->
+
+A texture is a random-access container, like TIFF: `ImageCollection.Load` gives every subresource as an entry of the
+kind `ImageCollectionKind.TextureSurfaces`, in the order layer, face, level, depth slice, each with its
+`ImageCollectionEntry.TextureSurface` (mip level, array element, `CubeMapFace` of a cube map or `null`, depth slice).
+`Image.Load` and `Image.Identify` give the first entry, the base level of the first face of the first layer, and
+report the number of entries in `ImageInfo.CollectionEntryCount`; an array texture with `KTXanimData` loads as an
+animation of its layers (base level), with the duration and the loop count of the key. `Image.OpenReader` rejects KTX
+2.0, and the asynchronous entry points buffer the file under `MaxEncodedBytes`.
+
+| | Decoding |
+| --- | --- |
+| Structure | The header, the index and the level index; one-dimensional (height 1), two-dimensional and three-dimensional textures, arrays, cube maps and cube map arrays; the levels from the smallest one, `levelCount` 0 as the base level only; every section checked against the length of the file and the others |
+| Data format descriptor | The basic descriptor block must describe the `vkFormat`: color model, texel block size, bytes of the plane (or 0 in a supercompressed file, as earlier revisions wrote), and the channel, offset, length and qualifiers of each sample (their bounds are not compared); the transfer function of an `_SRGB` format must be sRGB; other descriptor blocks are skipped |
+| Supercompression | None, Zstandard (frames, skippable frames skipped, checksums verified), ZLIB (the Adler-32 checksum verified) and BasisLZ (the global codebooks and the slices of each image, P-frames of animations); a level must inflate to exactly the length its images have |
+| Uncompressed formats | `R8` to `R8G8B8A8` and `B8G8R8(A8)` UNORM and sRGB, `A8B8G8R8_PACK32`, `R16` to `R16G16B16A16` UNORM and SFLOAT, `R32` to `R32G32B32A32` SFLOAT, `A2R10G10B10` and `A2B10G10R10`, the 16-bit packed formats (`R5G6B5`, `B5G6R5`, `R4G4B4A4`, `B4G4R4A4`, `R5G5B5A1`, `B5G5R5A1`, `A1R5G5B5`), `B10G11R11_UFLOAT` and `E5B9G9R9_UFLOAT`. A packed component of 1 to 6 bits becomes the nearest 8-bit value of its fraction, one of 10 bits the nearest 16-bit value; the 11-bit, 10-bit and shared-exponent floats are exact halves |
+| ETC2 and EAC | `ETC2_R8G8B8`, `R8G8B8A1` (punchthrough alpha) and `R8G8B8A8`, UNORM and sRGB, as 8-bit samples; `EAC_R11` and `EAC_R11G11` as 16-bit samples (the 11-bit values extended by bit replication, as the specification does), their signed variants as `RgbaFloat` (the value divided by 1023, from -1 to 1) |
+| ASTC | Two-dimensional blocks of every size from 4x4 to 12x12: sRGB formats as 8-bit samples (the sRGB operation mode); UNORM formats as `RgbaHalf` (decode_float16, the default of KTX section 5.7), or 8-bit samples when `KTXastcDecodeMode` is `unorm8` (decode_unorm8); SFLOAT (HDR) formats as `RgbaHalf`. An illegal block, an HDR endpoint mode or an HDR void extent in an LDR format (the error color of the specification) is `InvalidImageContentException` |
+| Basis Universal | ETC1S slices of BasisLZ (their alpha slice, or the second component of RRR and GGG) and UASTC blocks, decoded directly to 8-bit RGBA (not transcoded to a GPU format); a UASTC texture with the sRGB transfer function expands its endpoints with 0x80, as an ASTC sRGB decoder does (section 25.7.2.8) |
+| Channels | The channels a format lacks are 0, and alpha 1 (section 5.4), as a GPU samples them: an `R8` texture is red, a luminance texture says so with the swizzle `rrr1`. `KTXswizzle` is applied; the image is gray when its three colors are the same channel, and has alpha unless alpha is the constant 1 |
+| Color | The transfer function and the primaries of the descriptor: BT.709 (or unspecified) primaries with the sRGB or the linear transfer function are the `ColorTransferFunction.Srgb` or `Linear` label (an unspecified transfer function is untagged, assumed sRGB); other primaries and transfer functions are a CICP description (`Metadata.Cicp`) when H.273 enumerates them, and `UnsupportedImageFeatureException` otherwise. Floating-point and signed samples are linear light |
+| Metadata | `Metadata.Ktx2Header`: the format, the sizes and counts, the color model, primaries and transfer function of the descriptor, and the key/value data (`KTXwriter`, `KTXwriterScParams`, `KTXastcDecodeMode` and any other key, as stored); `KTXorientation` is reported as `Metadata.Orientation` (`ru` is `BottomLeft`, `ld` `TopRight`, `lu` `BottomRight`), applied only by `AutoOrient`; `KTXcubemapIncomplete` faces are the layers they are stored as |
+
+The key/value data and the data format descriptor are charged to `MaxMetadataBytes`; the size of the base level is
+checked against `MaxWidth`, `MaxHeight` and `MaxFramePixels` before anything else is read, and each subresource when
+it is decoded; `ImageCollection.Load` checks the number of subresources against `MaxFrames`. A supercompressed level
+is inflated into a buffer of its uncompressed length, charged to `MaxLiveAllocationBytes`, and must produce exactly
+that length: the expansion of a supercompressed level is bounded by the size of its images. Malformed structures,
+descriptors that do not describe the format, duplicate keys, malformed `KTXorientation`, `KTXswizzle`,
+`KTXanimData` or `KTXcubemapIncomplete` values and truncation are `InvalidImageContentException`; there is no lenient
+repair.
+
+UNORM textures are labeled linear (`ColorTransferFunction.Linear`), which most formats cannot store: saving one to PNG
+or JPEG follows `ImageEncoder.MetadataHandling`, which rejects it by default. Relabel the image (normal maps and other
+data are not colors) or convert it with `ConvertColorProfile` first.
+
 ## Limitations
 
 Everything below is rejected explicitly (never decoded or encoded approximately) or documented as lossy.
@@ -6527,6 +6611,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | PSD | Decoding: the composite image only (layers, masks, adjustment layers, effects and blend modes are not rendered); a file without composite (`No composite image`), ZIP-compressed image data, multichannel documents, 32-bit CMYK, 16 and 32-bit Lab and 32-bit duotone are `UnsupportedImageFeatureException` (all but the first two also from `Identify`); duotone documents are read as gray; CMYK needs a typed CMYK load or `CmykConversion`, and `CmykConversion` with transparency; Lab needs `CieLabConversion`; the extra channels that are not the merged alpha are skipped; the thumbnail, IPTC and the other image resources are not read; no scaled or region decoding. Encoding: none (read only) |
 | DNG | Decoding only. Vendor raw formats (CR2/CR3, NEF, ARW, RAF, ORF, ...) are not read: they are not documented. Rejected with `UnsupportedImageFeatureException` (also from `Identify`): staggered color filter arrays (`CFALayout` other than 1), non-square pixels (`DefaultScale`), a third calibration and custom illuminants (DNG 1.6), signed and 17- to 32-bit integer samples, planar raw data, `SubTileBlockSize`, a `DNGBackwardVersion` newer than 1.7.1, and the required opcodes WarpFisheye, TrimBounds, WarpRectilinear2 and those of later versions (skipped when optional, and in [lenient decoding](#lenient-decoding)). The rendering is colorimetric: the hue/saturation maps, look table, tone curve and gain table map of the profile, the default user crop and the noise and sharpening hints are not applied. The demosaicing is bilinear (documented, deterministic): it matches no other reader pixel for pixel (the DNG SDK differs by up to 12 levels of 8-bit sRGB at the edges and in the gradients of the test scenes, LibRaw more); the stages before it are exact (`DngRawImage`). The previews are decoded as TIFF pages without their `PreviewColorSpace`. Lossless JPEG frames of DNG 1.0 (the 16-bit deviation of their encoder) are read as the JPEG specification codes them |
 | DDS | Read only (no encoder). Rejected with `UnsupportedImageFeatureException`: premultiplied alpha (`DXT2`, `DXT4`, `DDS_ALPHA_MODE_PREMULTIPLIED`; the library never divides colors by their alpha), video and palette formats (YUY2, NV12, P8...), depth and stencil formats, integer (`_UINT`, `_SINT`) and most signed normalized formats, the typeless formats without a single reading (`BC6H_TYPELESS`, `R32G32B32A32_TYPELESS`...), channels wider than 16 bits; the masks of a legacy header are read as written (DirectXTex swaps red and blue in the 10:10:10:2 layouts) |
+| KTX 2.0 | Read only (no encoder). Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): BCn (S3TC, RGTC, BPTC) blocks, which are not decoded yet; PVRTC; the YCbCr formats (subsampled and multi-planar); 3D ASTC blocks; depth and stencil formats; the SNORM, integer, `SCALED` and 64-bit formats; vendor supercompression schemes; premultiplied alpha (`KHR_DF_FLAG_ALPHA_PREMULTIPLIED`: dividing by alpha would lose precision); `VK_FORMAT_UNDEFINED` with a color model other than ETC1S and UASTC; primaries or transfer functions H.273 does not enumerate (ACES, Adobe RGB, PAL 525, BT.1886, S-Log, ...), and floating-point samples with a non-linear transfer function. The UASTC HDR files of basisu 2 (`ASTC_4x4_SFLOAT` with the color model 167, which the specification does not define) are rejected too. `KTXastcDecodeMode` `rgb9e5` is reported only (halves are kept). The ASTC error color and the UASTC reserved mode are `InvalidImageContentException`. The depth axis of `KTXorientation` (`i`, `o`) is reported, not applied |
 | Text | In vertical lines, no compression of punctuation; ruby annotations only over their base, without overhang; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; greedy line breaking by default, optimal (total-fit) breaking without fitness classes; justification without kashida and without priorities; no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), without the variations of the control values (`cvar`) and without the hints of CFF outlines; subpixel (LCD) rendering is opt-in (`TextLayoutOptions.SubpixelRendering`), for layouts filled at a point with a solid color on 8- and 16-bit RGB images; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hints of CFF outlines; see [Fonts](#fonts) |
 | API | No custom pixel type and no replaceable allocator (the buffer pool has settings, `ImageBufferPool`); the extension points are custom codecs and encoders and custom pixel operations ([Extension points](#extension-points)); implementation types are internal |

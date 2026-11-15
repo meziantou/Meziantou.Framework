@@ -28,6 +28,7 @@ internal static class ImageFormatNames
         ImageFormat.Dds => "DDS",
         ImageFormat.Dpx => "DPX",
         ImageFormat.Cineon => "Cineon",
+        ImageFormat.Ktx2 => "KTX 2.0",
         ImageFormat.Custom => "custom",
         _ => "image",
     };

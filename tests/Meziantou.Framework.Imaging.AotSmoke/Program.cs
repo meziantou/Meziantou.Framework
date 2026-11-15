@@ -32,6 +32,7 @@ Run("hdr", SmokeTests.Radiance);
 Run("psd", SmokeTests.Psd);
 Run("dds", SmokeTests.Dds);
 Run("dpx", SmokeTests.Dpx);
+Run("ktx2", SmokeTests.Ktx2);
 Run("processing", SmokeTests.Processing);
 Run("drawing", SmokeTests.Drawing);
 Run("text", SmokeTests.Text);

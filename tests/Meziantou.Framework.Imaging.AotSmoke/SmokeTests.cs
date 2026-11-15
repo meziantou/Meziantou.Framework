@@ -1401,6 +1401,48 @@ internal static class SmokeTests
         }
     }
 
+    public static void Ktx2()
+    {
+        // A 2x1 R8G8B8A8_UNORM texture of two layers, assembled by hand: the header, the index, one level, the descriptor
+        var file = new byte[80 + 24 + 92 + 16];
+        byte[] identifier = [0xAB, 0x4B, 0x54, 0x58, 0x20, 0x32, 0x30, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A];
+        identifier.CopyTo(file, 0);
+        uint[] header = [37, 1, 2, 1, 0, 2, 1, 1, 0, 104, 92];
+        for (var i = 0; i < header.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(file.AsSpan(12 + (4 * i)), header[i]);
+        }
+
+        BinaryPrimitives.WriteUInt64LittleEndian(file.AsSpan(80), 196);
+        BinaryPrimitives.WriteUInt64LittleEndian(file.AsSpan(88), 16);
+        BinaryPrimitives.WriteUInt64LittleEndian(file.AsSpan(96), 16);
+        var dfd = file.AsSpan(104, 92);
+        BinaryPrimitives.WriteUInt32LittleEndian(dfd, 92);
+        BinaryPrimitives.WriteUInt32LittleEndian(dfd[8..], 2u | (88u << 16));
+        dfd[12] = 1;
+        dfd[13] = 1;
+        dfd[14] = 1;
+        dfd[20] = 4;
+        for (var i = 0; i < 4; i++)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(dfd[(28 + (16 * i))..], (uint)(i * 8) | (7u << 16) | ((uint)(i == 3 ? 15 : i) << 24));
+            BinaryPrimitives.WriteUInt32LittleEndian(dfd[(28 + (16 * i) + 12)..], 255);
+        }
+
+        byte[] texels = [10, 20, 30, 255, 40, 50, 60, 128, 1, 2, 3, 4, 5, 6, 7, 8];
+        texels.CopyTo(file, 196);
+        Check(Image.DetectFormat(file) == ImageFormat.Ktx2, "KTX 2.0 detection");
+        using (var image = Image.Load<Rgba32>(file))
+        {
+            Check(image.Width == 2 && image.Frames[0][1, 0] == new Rgba32(40, 50, 60, 128) && image.Metadata.Ktx2Header?.LayerCount == 2, "KTX 2.0 load");
+        }
+
+        using var collection = ImageCollection.Load(file);
+        Check(collection.Count == 2 && collection[1].TextureSurface is { ArrayIndex: 1, MipLevel: 0, Face: null, DepthSlice: 0 }, "KTX 2.0 collection");
+        using var layer = collection[1].Decode<Rgba32>();
+        Check(layer.Frames[0][0, 0] == new Rgba32(1, 2, 3, 4), "KTX 2.0 layer");
+    }
+
     private static byte[] Encode(Image image, ImageEncoder encoder)
     {
         using var stream = new MemoryStream();

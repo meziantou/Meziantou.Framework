@@ -5,10 +5,10 @@ using Meziantou.Framework.Imaging.Internals;
 namespace Meziantou.Framework.Imaging;
 
 /// <summary>
-/// A disposable collection of images that are not animation frames: the pages of a document (TIFF, BigTIFF), the
-/// alternative representations of a drawing (ICO, CUR), or the surfaces of a texture (DDS: mipmap levels, cube map
-/// faces, array elements and depth slices). Entries may differ in size, pixel format and metadata, and are
-/// never resized or converted implicitly.
+/// A disposable collection of images that are not animation frames: the pages of a document (TIFF, BigTIFF, Netpbm), the
+/// alternative representations of a drawing (ICO, CUR), or the surfaces of a texture (DDS, KTX 2.0: mipmap levels, cube
+/// map faces, array elements and depth slices). Entries may differ in size, pixel format and metadata, and are never
+/// resized or converted implicitly.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -462,6 +462,9 @@ public sealed class ImageCollection : IDisposable
         if (IcoFormat.MatchesSignature(prefix[..available], IcoFormat.IconType) || IcoFormat.MatchesSignature(prefix[..available], IcoFormat.CursorType))
             return IcoCollectionReader.Create(input, configuration);
 
+        if (Ktx2Format.MatchesSignature(prefix[..available]))
+            return Ktx2CollectionReader.Create(input, configuration);
+
         var format = Image.DetectFormat(prefix[..available]);
         if (format == ImageFormat.Pnm)
             return PnmCollectionReader.Create(input, configuration);
@@ -475,7 +478,7 @@ public sealed class ImageCollection : IDisposable
         if (format != ImageFormat.Unknown)
             throw new UnsupportedImageFeatureException($"{ImageFormatNames.Get(format)} stores a single image, not a collection of pages or representations. Use Image.Load instead.", format, "Image collection");
 
-        throw new UnknownImageFormatException("The image format is not recognized: the data does not start with the signature of a supported multi-entry format (TIFF, BigTIFF, ICO, CUR, Netpbm or DDS).");
+        throw new UnknownImageFormatException("The image format is not recognized: the data does not start with the signature of a supported multi-entry format (TIFF, BigTIFF, ICO, CUR, Netpbm, DDS or KTX 2.0).");
     }
 
     private ImageCollectionEntry CreateOwnedEntry(Image image, Point? hotspot)

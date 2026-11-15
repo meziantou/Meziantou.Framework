@@ -151,6 +151,14 @@ public sealed class ImageMetadata
     /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
     public CineonHeader? CineonHeader { get; set; }
 
+    /// <summary>
+    /// Gets or sets the header, the data format descriptor and the key/value data of the KTX 2.0 file the image was
+    /// decoded from, or <see langword="null"/> for the other formats. This is informational only, like
+    /// <see cref="SourceFormat"/>: it describes the file, not the pixels.
+    /// </summary>
+    /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
+    public Ktx2Header? Ktx2Header { get; set; }
+
     /// <summary>Gets or sets the EXIF profile, or <see langword="null"/> if none.</summary>
     public ExifProfile? ExifProfile { get; set; }
 
@@ -191,6 +199,7 @@ public sealed class ImageMetadata
             DngProperties = DngProperties,
             DpxHeader = DpxHeader,
             CineonHeader = CineonHeader,
+            Ktx2Header = Ktx2Header,
             ExifProfile = ExifProfile,
             XmpProfile = XmpProfile,
         };

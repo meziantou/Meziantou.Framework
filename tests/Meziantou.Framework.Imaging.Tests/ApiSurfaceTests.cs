@@ -421,7 +421,6 @@ public sealed class ApiSurfaceTests
         // New formats are appended: the values of the existing members never change
         Assert.Equal(22, (int)ImageFormat.Dpx);
         Assert.Equal(23, (int)ImageFormat.Cineon);
-        Assert.Equal(23, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
 
         var type = typeof(DpxEncoder);
         Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
@@ -452,6 +451,36 @@ public sealed class ApiSurfaceTests
         Assert.Equal(255, (int)DpxTransferCharacteristic.Undefined);
         Assert.Equal(6, (int)DpxColorimetricSpecification.Bt709);
         Assert.Equal([0, 1, 2], Enum.GetValues<DpxPacking>().Select(value => (int)value));
+    }
+
+    [Fact]
+    public void Ktx2AdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(24, (int)ImageFormat.Ktx2);
+        Assert.Equal(24, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
+        Assert.Equal(3, (int)ImageCollectionKind.TextureSurfaces);
+
+        // Where a texture entry is: an immutable description created by the decoders
+        var surface = typeof(TextureSurface);
+        Assert.True(surface.IsPublic && surface.IsSealed && surface.IsClass);
+        Assert.Empty(surface.GetConstructors());
+        Assert.Equal(
+            [nameof(TextureSurface.ArrayIndex), nameof(TextureSurface.DepthSlice), nameof(TextureSurface.Face), nameof(TextureSurface.MipLevel)],
+            surface.GetProperties(BindingFlags.Instance | BindingFlags.Public).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(CubeMapFace?), GetDeclaredProperty(surface, nameof(TextureSurface.Face)).PropertyType);
+        Assert.Equal(typeof(TextureSurface), GetDeclaredProperty(typeof(ImageCollectionEntry), nameof(ImageCollectionEntry.TextureSurface)).PropertyType);
+
+        // The header of the file: immutable, created by the decoder only, attached to the metadata like the other labels
+        var header = typeof(Ktx2Header);
+        Assert.Equal("Meziantou.Framework.Imaging.Metadata", header.Namespace);
+        Assert.True(header.IsPublic && header.IsSealed && header.IsClass);
+        Assert.True(typeof(IEquatable<Ktx2Header>).IsAssignableFrom(header));
+        Assert.Empty(header.GetConstructors());
+        Assert.All(header.GetProperties(BindingFlags.Instance | BindingFlags.Public), property => Assert.Null(property.GetSetMethod(nonPublic: false)));
+        var property = GetDeclaredProperty(typeof(ImageMetadata), nameof(ImageMetadata.Ktx2Header));
+        Assert.Equal(header, property.PropertyType);
+        Assert.NotNull(property.GetSetMethod());
     }
 
     [Theory]

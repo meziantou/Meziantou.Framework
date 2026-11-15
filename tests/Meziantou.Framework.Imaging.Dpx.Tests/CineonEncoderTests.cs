@@ -73,6 +73,22 @@ public sealed class CineonEncoderTests
         }
     }
 
+    [Fact]
+    public void ChannelsInAnotherOrderKeepTheirColorsWhenSavedAgain()
+    {
+        // The file stores blue, green, red (designators 3, 2, 1): the decoder places them by their designators
+        uint[] samples = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 50, 150];
+        var data = new CineonFileBuilder { Width = 2, Height = 2, Designators = [3, 2, 1], Samples = samples }.Build();
+        using var decoded = Image.Load(data);
+        using var saved = Image.Load(Save(decoded, new CineonEncoder()));
+        using var expected = decoded.CloneAs<Rgba64>();
+        using var actual = saved.CloneAs<Rgba64>();
+        Assert.Equal(GetBytes(expected), GetBytes(actual));
+
+        // The samples are written red, green, blue, and so are the designators
+        Assert.Equal([1, 2, 3], saved.Metadata.CineonHeader!.ChannelDesignators.Select(designator => (int)designator));
+    }
+
     [Theory]
     [InlineData(8)]
     [InlineData(10)]

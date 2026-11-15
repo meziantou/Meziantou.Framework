@@ -81,8 +81,9 @@ internal sealed class DngEncoderCodec : ImageEncoderCodec
         private readonly int _blocksAcross;
         private readonly int _blocksDown;
         private readonly bool _hasLinearizationTable;
-        private readonly List<uint> _offsets = [];
-        private readonly List<uint> _byteCounts = [];
+        private readonly uint[] _offsets = [];
+        private readonly uint[] _byteCounts = [];
+        private AllocationCharge? _tablesCharge;
         private PooledBuffer? _block;
         private PooledBuffer? _components;
         private Image? _jpegTile;
@@ -139,6 +140,11 @@ internal sealed class DngEncoderCodec : ImageEncoderCodec
             var scope = options.Scope;
             try
             {
+                // The offsets and byte counts of the blocks, and their copies in the values of the directory
+                var blocks = _blocksAcross * _blocksDown;
+                _tablesCharge = scope.Charge((long)blocks * 4 * sizeof(uint), AllocationKind.Temporary);
+                _offsets = new uint[blocks];
+                _byteCounts = new uint[blocks];
                 _block = scope.Rent((int)blockLength, AllocationKind.Temporary, clear: true);
                 _components = scope.Rent(_width * 4, AllocationKind.Temporary, clear: false);
                 if (_compression == DngCompression.LosslessJpeg)
@@ -271,6 +277,8 @@ internal sealed class DngEncoderCodec : ImageEncoderCodec
                 _components = null;
                 _jpegTile?.Dispose();
                 _jpegTile = null;
+                _tablesCharge?.Dispose();
+                _tablesCharge = null;
                 _frame = null;
             }
 
@@ -332,8 +340,8 @@ internal sealed class DngEncoderCodec : ImageEncoderCodec
             if (output.TotalBytes > uint.MaxValue)
                 throw DngFormat.Unsupported("The DNG file would be larger than the 4 GiB its 32-bit offsets can address.", "File size");
 
-            _offsets.Add((uint)start);
-            _byteCounts.Add((uint)length);
+            _offsets[_blockIndex] = (uint)start;
+            _byteCounts[_blockIndex] = (uint)length;
         }
 
         /// <summary>
@@ -455,14 +463,14 @@ internal sealed class DngEncoderCodec : ImageEncoderCodec
             {
                 fields.Add(Longs(TiffFormat.TileWidthTag, [(uint)_blockWidth]));
                 fields.Add(Longs(TiffFormat.TileLengthTag, [(uint)_blockHeight]));
-                fields.Add(Longs(TiffFormat.TileOffsetsTag, [.. _offsets]));
-                fields.Add(Longs(TiffFormat.TileByteCountsTag, [.. _byteCounts]));
+                fields.Add(Longs(TiffFormat.TileOffsetsTag, _offsets));
+                fields.Add(Longs(TiffFormat.TileByteCountsTag, _byteCounts));
             }
             else
             {
-                fields.Add(Longs(TiffFormat.StripOffsetsTag, [.. _offsets]));
+                fields.Add(Longs(TiffFormat.StripOffsetsTag, _offsets));
                 fields.Add(Longs(TiffFormat.RowsPerStripTag, [(uint)_blockHeight]));
-                fields.Add(Longs(TiffFormat.StripByteCountsTag, [.. _byteCounts]));
+                fields.Add(Longs(TiffFormat.StripByteCountsTag, _byteCounts));
             }
 
             if (_reader.IsFloatingPoint)
@@ -500,7 +508,10 @@ internal sealed class DngEncoderCodec : ImageEncoderCodec
             fields.Add(Floats(DngFormat.ProfileToneCurveTag, [0, 0, 1, 1]));
             fields.Add(Longs(DngFormat.DefaultBlackRenderTag, [1]));
 
-            if (metadata.XmpProfile is { } xmp)
+            // The copy of the XMP packet in the values of the directory
+            var xmp = metadata.XmpProfile;
+            using var xmpCharge = xmp is null ? null : Options.Scope.Charge(xmp.Data.Length, AllocationKind.Temporary);
+            if (xmp is not null)
             {
                 fields.Add(Bytes(TiffFormat.XmpTag, TiffFieldType.Byte, xmp.Data.Span.ToArray()));
             }

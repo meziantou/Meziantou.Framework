@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
     <ImagingTestFixtureFormats>dpx;cin</ImagingTestFixtureFormats>
-    <ImagingTestEncoders>dpx</ImagingTestEncoders>
+    <ImagingTestEncoders>dpx;cin</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

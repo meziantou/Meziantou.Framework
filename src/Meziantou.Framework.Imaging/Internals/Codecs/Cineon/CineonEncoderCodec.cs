@@ -248,16 +248,32 @@ internal sealed class CineonEncoderCodec : ImageEncoderCodec
             span[194] = 0;
             span[195] = 0;
             var sameDepth = source is not null && source.BitsPerSample == _bits;
+
+            // The samples are written red, green, blue: the channel c takes the designator and the ranges of the channel of
+            // the source file that held that color (the order the decoder placed them in)
+            int[]? sourceChannels = null;
+            if (source is not null && source.ChannelDesignators.Count == _channels)
+            {
+                var designators = new ushort[_channels];
+                for (var c = 0; c < _channels; c++)
+                {
+                    designators[c] = source.ChannelDesignators[c];
+                }
+
+                sourceChannels = CineonStructureParser.GetChannelOrder(designators);
+            }
+
             for (var c = 0; c < 8; c++)
             {
                 var offset = CineonFormat.FirstChannelOffset + (c * CineonFormat.ChannelLength);
                 if (c >= _channels)
                     continue;
 
+                var from = sourceChannels is null ? c : sourceChannels[c];
                 ushort designator = _channels == 1 ? (ushort)0 : (ushort)(c + 1);
-                if (source is not null && source.ChannelDesignators.Count == _channels)
+                if (sourceChannels is not null)
                 {
-                    designator = source.ChannelDesignators[c];
+                    designator = source!.ChannelDesignators[from];
                 }
 
                 BinaryPrimitives.WriteUInt16BigEndian(span[offset..], designator);
@@ -265,10 +281,10 @@ internal sealed class CineonEncoderCodec : ImageEncoderCodec
                 span[offset + 3] = 0;
                 WriteUInt32(span, offset + 4, (uint)_width);
                 WriteUInt32(span, offset + 8, (uint)_height);
-                WriteReal(span, offset + 12, Get(source?.MinimumDataValues, c, sameDepth) ?? 0);
-                WriteReal(span, offset + 16, Get(source?.MinimumQuantities, c, sameDepth) ?? 0);
-                WriteReal(span, offset + 20, Get(source?.MaximumDataValues, c, sameDepth) ?? (1 << _bits) - 1);
-                WriteReal(span, offset + 24, Get(source?.MaximumQuantities, c, sameDepth) ?? DefaultMaximumDensity);
+                WriteReal(span, offset + 12, Get(source?.MinimumDataValues, from, sameDepth) ?? 0);
+                WriteReal(span, offset + 16, Get(source?.MinimumQuantities, from, sameDepth) ?? 0);
+                WriteReal(span, offset + 20, Get(source?.MaximumDataValues, from, sameDepth) ?? (1 << _bits) - 1);
+                WriteReal(span, offset + 24, Get(source?.MaximumQuantities, from, sameDepth) ?? DefaultMaximumDensity);
             }
 
             for (var i = 0; i < 8; i++)

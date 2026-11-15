@@ -171,7 +171,7 @@ internal sealed class PsdEncoderCodec : ImageEncoderCodec
                 switch (segment.Kind)
                 {
                     case SegmentKind.Bytes:
-                        output.Write(segment.Data);
+                        output.Write(segment.Data.Span);
                         _segment++;
                         break;
 
@@ -384,7 +384,7 @@ internal sealed class PsdEncoderCodec : ImageEncoderCodec
             var segments = new List<Segment>();
             var prologue = new ArrayBufferWriter<byte>();
             WriteHeader(prologue);
-            WriteResources(prologue);
+            WriteResources(prologue, segments);
             if (_hasAlpha)
             {
                 WriteLayerSection(prologue, segments);
@@ -405,13 +405,13 @@ internal sealed class PsdEncoderCodec : ImageEncoderCodec
             {
                 for (var plane = 0; plane < planes; plane++)
                 {
-                    segments.Add(new Segment(SegmentKind.Counts, [], plane));
+                    segments.Add(new Segment(SegmentKind.Counts, default, plane));
                 }
             }
 
             for (var plane = 0; plane < planes; plane++)
             {
-                segments.Add(new Segment(SegmentKind.Rows, [], plane));
+                segments.Add(new Segment(SegmentKind.Rows, default, plane));
             }
 
             return segments;
@@ -432,41 +432,66 @@ internal sealed class PsdEncoderCodec : ImageEncoderCodec
             WriteUInt32(writer, 0);
         }
 
-        private void WriteResources(ArrayBufferWriter<byte> writer)
+        /// <summary>
+        /// Writes the image resources. The payloads of the ICC profile, the EXIF data and the XMP packet are segments of their
+        /// own, written from the metadata of the image: they are never copied.
+        /// </summary>
+        private void WriteResources(ArrayBufferWriter<byte> writer, List<Segment> segments)
         {
             var metadata = Options.Metadata;
-            var resources = new ArrayBufferWriter<byte>();
+            var resources = new List<(int Id, ReadOnlyMemory<byte> Data)>();
             if (metadata.Resolution is { } resolution)
             {
                 // Fixed-point pixels per inch, displayed in pixels per inch, the width and height displayed in inches
-                Span<byte> data = stackalloc byte[16];
+                var data = new byte[16];
                 BinaryPrimitives.WriteInt32BigEndian(data, ToFixed(resolution.HorizontalDpi));
-                BinaryPrimitives.WriteUInt16BigEndian(data[4..], 1);
-                BinaryPrimitives.WriteUInt16BigEndian(data[6..], 1);
-                BinaryPrimitives.WriteInt32BigEndian(data[8..], ToFixed(resolution.VerticalDpi));
-                BinaryPrimitives.WriteUInt16BigEndian(data[12..], 1);
-                BinaryPrimitives.WriteUInt16BigEndian(data[14..], 1);
-                WriteResource(resources, PsdFormat.ResourceResolutionInfo, data);
+                BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(4), 1);
+                BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(6), 1);
+                BinaryPrimitives.WriteInt32BigEndian(data.AsSpan(8), ToFixed(resolution.VerticalDpi));
+                BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(12), 1);
+                BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(14), 1);
+                resources.Add((PsdFormat.ResourceResolutionInfo, data));
             }
 
             if (metadata.IccProfile is { } icc)
             {
-                WriteResource(resources, PsdFormat.ResourceIccProfile, icc.Data.Span);
+                resources.Add((PsdFormat.ResourceIccProfile, icc.Data.Memory));
             }
 
-            WriteResource(resources, PsdFormat.ResourceVersionInfo, CreateVersionInfo());
+            resources.Add((PsdFormat.ResourceVersionInfo, CreateVersionInfo()));
             if (metadata.Exif is { } exif)
             {
-                WriteResource(resources, PsdFormat.ResourceExif, exif);
+                resources.Add((PsdFormat.ResourceExif, exif));
             }
 
             if (metadata.XmpProfile is { } xmp)
             {
-                WriteResource(resources, PsdFormat.ResourceXmp, xmp.Data.Span);
+                resources.Add((PsdFormat.ResourceXmp, xmp.Data.Memory));
             }
 
-            WriteUInt32(writer, (uint)resources.WrittenCount);
-            writer.Write(resources.WrittenSpan);
+            // Each resource: the signature, the id, an empty name padded to an even length, the length, the data padded to an
+            // even length
+            var length = 0L;
+            foreach (var (_, data) in resources)
+            {
+                length += 4 + 2 + 2 + 4 + data.Length + (data.Length % 2);
+            }
+
+            WriteUInt32(writer, checked((uint)length));
+            foreach (var (id, data) in resources)
+            {
+                writer.Write(PsdFormat.ResourceSignature);
+                WriteUInt16(writer, (ushort)id);
+                writer.Write((ReadOnlySpan<byte>)[0, 0]);
+                WriteUInt32(writer, (uint)data.Length);
+                segments.Add(Segment.Bytes(writer.WrittenSpan.ToArray()));
+                writer.Clear();
+                segments.Add(Segment.Bytes(data));
+                if (data.Length % 2 != 0)
+                {
+                    writer.Write((ReadOnlySpan<byte>)[0]);
+                }
+            }
         }
 
         /// <summary>Converts a resolution to a fixed-point number of 16.16 bits.</summary>
@@ -492,21 +517,6 @@ internal sealed class PsdEncoderCodec : ImageEncoderCodec
         {
             WriteUInt32(writer, (uint)value.Length);
             writer.Write(Encoding.BigEndianUnicode.GetBytes(value));
-        }
-
-        private static void WriteResource(ArrayBufferWriter<byte> writer, int id, ReadOnlySpan<byte> data)
-        {
-            writer.Write(PsdFormat.ResourceSignature);
-            WriteUInt16(writer, (ushort)id);
-
-            // An empty name: a Pascal string padded to an even length
-            writer.Write((ReadOnlySpan<byte>)[0, 0]);
-            WriteUInt32(writer, (uint)data.Length);
-            writer.Write(data);
-            if (data.Length % 2 != 0)
-            {
-                writer.Write((ReadOnlySpan<byte>)[0]);
-            }
         }
 
         /// <summary>
@@ -592,10 +602,10 @@ internal sealed class PsdEncoderCodec : ImageEncoderCodec
                 segments.Add(Segment.Bytes(compression));
                 if (_runLength)
                 {
-                    segments.Add(new Segment(SegmentKind.Counts, [], plane));
+                    segments.Add(new Segment(SegmentKind.Counts, default, plane));
                 }
 
-                segments.Add(new Segment(SegmentKind.Rows, [], plane));
+                segments.Add(new Segment(SegmentKind.Rows, default, plane));
             }
 
             // The padding of the layer information, then (for 8-bit documents) an empty global layer mask
@@ -634,9 +644,9 @@ internal sealed class PsdEncoderCodec : ImageEncoderCodec
 
         /// <summary>A part of the file: bytes, the table of the compressed lengths of a plane, or the rows of a plane.</summary>
         [StructLayout(LayoutKind.Auto)]
-        private readonly record struct Segment(SegmentKind Kind, byte[] Data, int Plane)
+        private readonly record struct Segment(SegmentKind Kind, ReadOnlyMemory<byte> Data, int Plane)
         {
-            public static Segment Bytes(byte[] data) => new(SegmentKind.Bytes, data, -1);
+            public static Segment Bytes(ReadOnlyMemory<byte> data) => new(SegmentKind.Bytes, data, -1);
         }
     }
 }

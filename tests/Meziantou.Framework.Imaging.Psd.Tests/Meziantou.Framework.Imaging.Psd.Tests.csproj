@@ -1,9 +1,10 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
-  <!-- PSD (Adobe Photoshop): decoding only -->
+  <!-- PSD (Adobe Photoshop): decoding and encoding -->
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
     <ImagingTestFixtureFormats>psd</ImagingTestFixtureFormats>
+    <ImagingTestEncoders>psd</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

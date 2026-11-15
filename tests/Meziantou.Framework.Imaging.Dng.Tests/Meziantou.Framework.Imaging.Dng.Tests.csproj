@@ -1,9 +1,10 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
-  <!-- DNG (decoding only: the library has no DNG encoder) -->
+  <!-- DNG: decoding and encoding -->
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
     <ImagingTestFixtureFormats>dng</ImagingTestFixtureFormats>
+    <ImagingTestEncoders>dng</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

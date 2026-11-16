@@ -59,6 +59,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-homography", HomographyTarget) { Seeds = GetHomographySeeds, Dictionary = Tokens },
         new("imaging-skew", SkewTarget) { Seeds = GetSkewSeeds, Dictionary = Tokens },
         new("imaging-stroke", StrokeTarget) { Seeds = GetStrokeSeeds, Dictionary = StrokeTokens },
+        new("imaging-sweep-pieces", SweepPiecesTarget) { Seeds = GetSweepPiecesSeeds, Dictionary = SweepPiecesTokens },
         new("imaging-resize", ResizeTarget) { Seeds = GetResizeSeeds, Dictionary = Tokens },
         new("imaging-icc-named-colors", IccNamedColorsTarget) { Seeds = GetIccSeeds, Dictionary = IccTokens },
         new("imaging-icc-conversion", IccProfileConversionTarget) { Seeds = GetIccSeeds, Dictionary = IccTokens },

@@ -77,6 +77,15 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>The number of columns of a row from which the entries of the difference row that are zero are skipped.</summary>
     private const int MinZeroSkipWidth = 32;
 
+    /// <summary>
+    /// The number of pieces of boundary of a row that <see cref="RecordPieces"/> keeps: a row with more is accumulated by
+    /// the sweep, as without recording (see <see cref="HasPieces"/>).
+    /// </summary>
+    internal const int MaxPiecesPerRow = 1024;
+
+    /// <summary>The number of values of a piece of boundary: the two ends and the signed height.</summary>
+    internal const int ValuesPerPiece = 3;
+
     /// <summary>The number of positions the changes of a height span from which they are recorded, and the walk jumps between them (see <see cref="Walk"/>).</summary>
     private const int MinJumpingWalkSpan = 32;
 
@@ -100,6 +109,7 @@ internal sealed class CoverageRasterizer : IDisposable
     private int _orderCapacity;
     private PooledBuffer? _sweep;
     private int _sweepCapacity;
+    private PooledBuffer? _pieces;
 
     // The arrays of the buffers, read without going through PooledBuffer.Span: the sweep reaches them for every event.
     // They are emptied on disposal, so that nothing reads a buffer that went back to the pool.
@@ -109,9 +119,17 @@ internal sealed class CoverageRasterizer : IDisposable
     private byte[] _orderBytes = [];
     private byte[] _sweepBytes = [];
     private byte[] _edgeBytes = [];
+    private byte[] _pieceBytes = [];
 
     private bool _evenOdd;
     private bool _isAliased;
+
+    // Whether the pieces of boundary of the rows are recorded (RecordPieces), and whether those of the current row still are
+    private bool _recordsPieces;
+    private bool _recordsRow;
+    private int _pieceCount;
+    private double _pieceLeft;
+    private double _pieceRight;
 
     // The edges are a rectangle of whole pixels: every row of the sweep is the same run of full coverage
     private bool _isRectangle;
@@ -182,6 +200,36 @@ internal sealed class CoverageRasterizer : IDisposable
 
     /// <summary>Gets the coverage of the pixels of the current run, from 0 to <see cref="FullCoverage"/>.</summary>
     public ReadOnlySpan<uint> Coverage => CoverageRow.Slice(X, Count);
+
+    /// <summary>
+    /// Gets a value indicating whether the current row is given by its pieces of boundary (<see cref="Pieces"/>) rather than
+    /// by its coverages: only after <see cref="RecordPieces"/>. <see cref="X"/>, <see cref="Count"/> and
+    /// <see cref="Coverage"/> are then not set.
+    /// </summary>
+    public bool HasPieces { get; private set; }
+
+    /// <summary>
+    /// Gets or sets the number of pieces of a row from which the sweep accumulates the row itself, at most
+    /// <see cref="MaxPiecesPerRow"/>: a test hook that makes the rows with few pieces take that path.
+    /// </summary>
+    internal int PieceLimit
+    {
+        get;
+        set => field = Math.Clamp(value, 0, MaxPiecesPerRow);
+    } = MaxPiecesPerRow;
+
+    /// <summary>Gets a value indicating whether <see cref="RecordPieces"/> applies to the shape: antialiased, and not a rectangle of whole pixels.</summary>
+    public bool CanRecordPieces => !_isAliased && !_isRectangle;
+
+    /// <summary>
+    /// Gets the pieces of boundary of the current row when <see cref="HasPieces"/> is <see langword="true"/>: for each, the
+    /// two ends and the signed height, in the order the sweep accumulates them. <see cref="ReplayPieces"/> turns them into
+    /// the coverages the sweep would have computed.
+    /// </summary>
+    public ReadOnlySpan<double> Pieces => unsafe(MemoryMarshal.Cast<byte, double>(_pieceBytes.AsSpan(0, _pieceCount * ValuesPerPiece * sizeof(double))));
+
+    /// <summary>Gets an estimate of the number of columns that the replay of <see cref="Pieces"/> goes through, for the scheduling of the work.</summary>
+    public int PieceColumns => (int)Math.Clamp(Math.Ceiling(_pieceRight) - Math.Floor(_pieceLeft) + 1, 1, _width);
 
     /// <summary>Gets a value indicating whether every coverage of <see cref="Coverage"/> is <see cref="FullCoverage"/>, as in each row of a rectangle of whole pixels.</summary>
     public bool IsFullyCovered => _isRectangle;
@@ -395,6 +443,9 @@ internal sealed class CoverageRasterizer : IDisposable
     public bool Begin(EdgeBuilder edges, FillRule fillRule, bool isAliased, CancellationToken cancellationToken)
     {
         _isAliased = isAliased;
+        _recordsPieces = false;
+        _recordsRow = false;
+        HasPieces = false;
         var rowCounts = Rows[..(_height + 1)];
         var deltas = Rows[(_height + 1)..];
         if (_firstRow < _lastRow)
@@ -516,7 +567,23 @@ internal sealed class CoverageRasterizer : IDisposable
                 return true;
             }
 
-            if (_isAliased ? ProcessAliasedRow(row) : ProcessRow(row))
+            if (_isAliased)
+            {
+                if (ProcessAliasedRow(row))
+                    return true;
+
+                continue;
+            }
+
+            if (_recordsPieces)
+            {
+                _recordsRow = true;
+                _pieceCount = 0;
+                _pieceLeft = double.PositiveInfinity;
+                _pieceRight = double.NegativeInfinity;
+            }
+
+            if (ProcessRow(row))
                 return true;
         }
 
@@ -545,6 +612,9 @@ internal sealed class CoverageRasterizer : IDisposable
         _orderBytes = [];
         _sweepBytes = [];
         _edgeBytes = [];
+        _pieceBytes = [];
+        _pieces?.Dispose();
+        _pieces = null;
         _accumulation.Dispose();
         _coverage.Dispose();
         _rows.Dispose();
@@ -904,6 +974,14 @@ internal sealed class CoverageRasterizer : IDisposable
             RecordBoundary(ref s, line[i], bottom);
         }
 
+        if (_recordsRow)
+        {
+            HasPieces = true;
+            Y = row;
+            return _pieceCount != 0;
+        }
+
+        HasPieces = false;
         return Flush(row);
     }
 
@@ -1691,26 +1769,124 @@ internal sealed class CoverageRasterizer : IDisposable
     }
 
     /// <summary>
+    /// Makes the rows of an antialiased shape that is not a rectangle of whole pixels come as their pieces of boundary
+    /// (<see cref="HasPieces"/>) instead of their coverages, from the next call to <see cref="MoveNext"/> until the next
+    /// call to <see cref="Begin(EdgeBuilder, FillRule, bool, CancellationToken)"/>: the sweep, which carries its state
+    /// from one row to the next, then leaves to others the accumulation and the coverages, which take time in proportion
+    /// to the width of the rows. A row with more than <see cref="MaxPiecesPerRow"/> pieces comes as its coverages.
+    /// </summary>
+    /// <returns><see langword="false"/> when the rows of the shape come as their coverages: aliased, or a rectangle of whole pixels.</returns>
+    /// <exception cref="ImageResourceLimitException">The storage of the pieces exceeds the allocation limit.</exception>
+    public bool RecordPieces()
+    {
+        if (!CanRecordPieces)
+            return false;
+
+        if (_pieces is null)
+        {
+            _pieces = ResampleWeights.Rent<double>(_scope, (long)MaxPiecesPerRow * ValuesPerPiece);
+            _pieceBytes = _pieces.RawBuffer;
+        }
+
+        _recordsPieces = true;
+        return true;
+    }
+
+    /// <summary>
+    /// Records a piece of boundary of the current row, unless the row has too many: then the pieces recorded so far are
+    /// accumulated, in their order, and the sweep accumulates the rest of the row itself.
+    /// </summary>
+    /// <returns><see langword="false"/> when the piece is to be accumulated by the caller.</returns>
+    private bool TryRecordPiece(ref SweepSpans s, double x0, double x1, double signedHeight)
+    {
+        var left = Math.Min(x0, x1);
+
+        // Entirely to the right of the frame: it changes nothing
+        if (left >= _width)
+            return true;
+
+        if (_pieceCount == PieceLimit)
+        {
+            var pieces = Pieces;
+            for (var i = 0; i < pieces.Length; i += ValuesPerPiece)
+            {
+                Accumulate(s.Accumulation, _width, pieces[i], pieces[i + 1], pieces[i + 2], ref _dirtyMin, ref _dirtyMax);
+            }
+
+            _pieceCount = 0;
+            _recordsRow = false;
+            return false;
+        }
+
+        var values = unsafe(MemoryMarshal.Cast<byte, double>(_pieceBytes.AsSpan()));
+        var index = _pieceCount * ValuesPerPiece;
+        values[index] = x0;
+        values[index + 1] = x1;
+        values[index + 2] = signedHeight;
+        _pieceCount++;
+        _pieceLeft = Math.Min(_pieceLeft, left);
+        _pieceRight = Math.Max(_pieceRight, Math.Max(x0, x1));
+        return true;
+    }
+
+    /// <summary>
+    /// Accumulates the pieces of boundary of a row (<see cref="Pieces"/>) in a difference row that is all zeros, and turns
+    /// it into the coverages of the row, as the sweep does: the coverages are the same, bit for bit. The difference row is
+    /// all zeros again when it returns.
+    /// </summary>
+    /// <param name="pieces">The pieces of the row.</param>
+    /// <param name="accumulation">A difference row of <c>width + 2</c> zeros.</param>
+    /// <param name="coverage">The coverages of the row, of <paramref name="width"/> values.</param>
+    /// <param name="width">The width of the frame.</param>
+    /// <param name="x">The first covered column.</param>
+    /// <param name="count">The number of columns up to the last covered one.</param>
+    /// <returns><see langword="false"/> when no pixel of the row is covered.</returns>
+    internal static bool ReplayPieces(ReadOnlySpan<double> pieces, Span<double> accumulation, Span<uint> coverage, int width, out int x, out int count)
+    {
+        var dirtyMin = int.MaxValue;
+        var dirtyMax = -1;
+        for (var i = 0; i + ValuesPerPiece <= pieces.Length; i += ValuesPerPiece)
+        {
+            Accumulate(accumulation, width, pieces[i], pieces[i + 1], pieces[i + 2], ref dirtyMin, ref dirtyMax);
+        }
+
+        return FlushRow(accumulation, coverage, width, dirtyMin, dirtyMax, out x, out count);
+    }
+
+    /// <summary>
     /// Records a piece of boundary going from <paramref name="x0"/> to <paramref name="x1"/> over a height: every point to
     /// its right gains (or loses, for a negative height) that height of area.
     /// </summary>
     private void AddBoundary(ref SweepSpans s, double x0, double x1, double signedHeight)
+    {
+        if (_recordsRow && TryRecordPiece(ref s, x0, x1, signedHeight))
+            return;
+
+        Accumulate(s.Accumulation, _width, x0, x1, signedHeight, ref _dirtyMin, ref _dirtyMax);
+    }
+
+    /// <summary>
+    /// Adds a piece of boundary to a difference row (see <see cref="AddBoundary"/>), and widens the range of its entries
+    /// that may not be zero: the sweep and the replay of the pieces of a row (<see cref="ReplayPieces"/>) add the same
+    /// pieces in the same order with this method, so their sums are the same, bit for bit.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void Accumulate(Span<double> accumulation, int width, double x0, double x1, double signedHeight, ref int dirtyMin, ref int dirtyMax)
     {
         if (x0 > x1)
         {
             (x0, x1) = (x1, x0);
         }
 
-        var accumulation = s.Accumulation;
         if (x1 <= 0)
         {
             // Entirely to the left of the frame: the whole row is on its right
             accumulation[0] += signedHeight;
-            Touch(0, 0);
+            Touch(0, 0, ref dirtyMin, ref dirtyMax);
             return;
         }
 
-        if (x0 >= _width)
+        if (x0 >= width)
             return;
 
         var span = x1 - x0;
@@ -1720,7 +1896,7 @@ internal sealed class CoverageRasterizer : IDisposable
             var offset = x0 - column;
             accumulation[column] += signedHeight * (1 - offset);
             accumulation[column + 1] += signedHeight * offset;
-            Touch(column, column + 1);
+            Touch(column, column + 1, ref dirtyMin, ref dirtyMax);
             return;
         }
 
@@ -1731,15 +1907,15 @@ internal sealed class CoverageRasterizer : IDisposable
         {
             var outside = -x0 * slope;
             accumulation[0] += outside;
-            Touch(0, 0);
+            Touch(0, 0, ref dirtyMin, ref dirtyMax);
             remaining -= outside;
             x0 = 0;
         }
 
-        var clipped = x1 > _width;
+        var clipped = x1 > width;
         if (clipped)
         {
-            x1 = _width;
+            x1 = width;
         }
 
         var firstColumn = (int)x0;
@@ -1758,25 +1934,44 @@ internal sealed class CoverageRasterizer : IDisposable
             left = right;
         }
 
-        Touch(firstColumn, lastColumn + 1);
+        Touch(firstColumn, lastColumn + 1, ref dirtyMin, ref dirtyMax);
     }
 
     /// <summary>Turns the difference row into the coverage of the row, and clears it.</summary>
     private bool Flush(int row)
     {
-        if (_dirtyMin > _dirtyMax)
+        var hasRun = FlushRow(Accumulation, CoverageRow, _width, _dirtyMin, _dirtyMax, out var x, out var count);
+        ResetDirtyRange();
+        if (!hasRun)
             return false;
 
-        var accumulation = Accumulation;
-        var coverage = CoverageRow;
-        var last = Math.Min(_dirtyMax, _width - 1);
+        Y = row;
+        X = x;
+        Count = count;
+        return true;
+    }
+
+    /// <summary>
+    /// Turns the entries of a difference row from <paramref name="dirtyMin"/> to <paramref name="dirtyMax"/> (the others
+    /// are zero) into the coverages of the row, and clears them.
+    /// </summary>
+    /// <returns><see langword="false"/> when no pixel of the row is covered; otherwise, the first covered column and the number of columns up to the last covered one.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool FlushRow(Span<double> accumulation, Span<uint> coverage, int width, int dirtyMin, int dirtyMax, out int x, out int count)
+    {
+        x = 0;
+        count = 0;
+        if (dirtyMin > dirtyMax)
+            return false;
+
+        var last = Math.Min(dirtyMax, width - 1);
         var firstCovered = -1;
         var lastCovered = -1;
         double area = 0;
 
-        if (last - _dirtyMin < MinZeroSkipWidth)
+        if (last - dirtyMin < MinZeroSkipWidth)
         {
-            for (var column = _dirtyMin; column <= last; column++)
+            for (var column = dirtyMin; column <= last; column++)
             {
                 area += accumulation[column];
                 accumulation[column] = 0;
@@ -1795,33 +1990,31 @@ internal sealed class CoverageRasterizer : IDisposable
         }
         else
         {
-            area = FlushWide(accumulation, coverage, _dirtyMin, last, ref firstCovered, ref lastCovered);
+            area = FlushWide(accumulation, coverage, dirtyMin, last, ref firstCovered, ref lastCovered);
         }
 
         // The entry past the last column only receives what leaves the frame
-        accumulation[_width] = 0;
-        ResetDirtyRange();
+        accumulation[width] = 0;
 
         // An edge on the right of the frame was dropped: what is inside after the last boundary stays inside up to the
         // right side of the frame
         var tail = Quantize(area);
-        if (tail != 0 && last < _width - 1)
+        if (tail != 0 && last < width - 1)
         {
-            coverage[(last + 1)..].Fill(tail);
+            coverage[(last + 1)..width].Fill(tail);
             if (firstCovered < 0)
             {
                 firstCovered = last + 1;
             }
 
-            lastCovered = _width - 1;
+            lastCovered = width - 1;
         }
 
         if (firstCovered < 0)
             return false;
 
-        Y = row;
-        X = firstCovered;
-        Count = lastCovered - firstCovered + 1;
+        x = firstCovered;
+        count = lastCovered - firstCovered + 1;
         return true;
     }
 
@@ -1894,16 +2087,16 @@ internal sealed class CoverageRasterizer : IDisposable
         return -1;
     }
 
-    private void Touch(int first, int last)
+    private static void Touch(int first, int last, ref int dirtyMin, ref int dirtyMax)
     {
-        if (first < _dirtyMin)
+        if (first < dirtyMin)
         {
-            _dirtyMin = first;
+            dirtyMin = first;
         }
 
-        if (last > _dirtyMax)
+        if (last > dirtyMax)
         {
-            _dirtyMax = last;
+            dirtyMax = last;
         }
     }
 

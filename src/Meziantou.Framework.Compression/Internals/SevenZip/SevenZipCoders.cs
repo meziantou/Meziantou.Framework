@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
 using Meziantou.Framework.Compression.Internals.Crypto;
+using Meziantou.Framework.Compression.Internals.Deflate64;
 
 namespace Meziantou.Framework.Compression.Internals.SevenZip;
 
@@ -30,6 +31,12 @@ internal static class SevenZipCoders
             case SevenZipMethodId.Deflate:
                 return new DeflateStream(input, CompressionMode.Decompress, leaveOpen: false);
 
+            case SevenZipMethodId.Deflate64:
+                return new Deflate64DecoderStream(input, deflate64: true, leaveOpen: false);
+
+            case SevenZipMethodId.BZip2:
+                return new BZip2Stream(input, CompressionMode.Decompress, leaveOpen: false);
+
             case SevenZipMethodId.Aes:
                 return CreateAesDecoder(input, properties, context);
 
@@ -52,8 +59,13 @@ internal static class SevenZipCoders
 
     public static SevenZipEncoderSpec CreateMethodEncoderSpec(SevenZipCompressionMethod method, int level, int? dictionarySize)
     {
-        _ = level;
-        _ = dictionarySize;
+        if (method is SevenZipCompressionMethod.BZip2)
+        {
+            // As 7-Zip: blocks of 100,000 bytes at level 1, 500,000 at level 3, and 900,000 from level 5
+            var blockSize = dictionarySize is { } size ? Math.Clamp(size / 100_000, 1, 9) : level switch { <= 2 => 1, <= 4 => 5, _ => 9 };
+            return new SevenZipEncoderSpec(SevenZipMethodId.BZip2, output => (new BZip2Stream(output, new BZip2CompressionOptions { BlockSize = blockSize }, leaveOpen: false), static () => []));
+        }
+
         throw new NotSupportedException($"The method {method} is not supported yet.");
     }
 

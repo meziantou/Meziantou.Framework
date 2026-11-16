@@ -268,6 +268,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   can change. Keep these findings:
   - A lower zlib level is sometimes smaller than `SmallestSize` (zlib-ng uses other match strategies): the last stage
     tries `Fastest`, `Optimal` and `SmallestSize`.
+  - zlib-ng computes Adler-32 with scalar code on Arm64 (about 1 cycle per byte, 10x the vectorized `Adler32`). The
+    zlib datastreams of the PNG codec are raw deflate between a header and a trailer written and read by the library
+    (`PngZlibStream`, `PngZlibInflater`); the encoder output stays byte-identical to `ZLibStream`
+    (`ZlibDatastreamIsTheOneOfZLibStream`, fuzz target `imaging-png-zlib`).
   - FFmpeg 9 misplaces the packed samples (1, 2 and 4 bits) of an APNG frame region that does not start at column 0, even
     on a byte boundary; full-canvas frames are fine. Animations therefore use 8-bit samples at least.
   - FFmpeg's conversion of 8-bit PNG output to `rgba64le` is not exact (errors of a few units): the interoperability
@@ -302,8 +306,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     ImageIO in the interop tests (`DeltaFrameAnimations` holds the shared scenarios).
 - **Apple CgBI PNG** (`PngStructureParser.IsAppleCgbi`, `PngSampleFormat.ExpandCgbiBgra`). No specification describes
   it: Xcode's `pngcrush -iphone` writes it and Apple ImageIO (`sips`) is the reference. Its raw deflate datastream goes
-  through the zlib inflater of the other files, behind a synthetic header and followed by the checksum of what it
-  decompressed, so that extra and missing bytes are found the same way. The colors are un-premultiplied to
+  through the inflater of the other files (`PngZlibInflater`) without the zlib header and trailer, so that extra and
+  missing bytes are found the same way. The colors are un-premultiplied to
   `round(c * 255 / a)`, which equals ImageIO for all 32,896 valid pairs (measured on sips-316). The test files are
   literals in `PngDecoderTests` (pngcrush output and the pixels sips decodes), not corpus fixtures. ImageIO is lenient
   where the library is not: it accepts a `CgBI` chunk after `IHDR` and clamps a color above its alpha.

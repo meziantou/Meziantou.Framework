@@ -50,6 +50,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-texture-encoders", TextureEncoderTarget) { Seeds = GetTextureEncoderSeeds, Dictionary = Tokens },
         new("imaging-openexr-encoder", OpenExrEncoderTarget) { Seeds = GetOpenExrEncoderSeeds, Dictionary = Tokens },
         new("imaging-png-image-data", PngImageDataTarget) { Seeds = GetPngImageDataSeeds, Dictionary = PngImageDataTokens },
+        new("imaging-png-zlib", PngZlibTarget) { Seeds = GetPngZlibSeeds, Dictionary = PngImageDataTokens },
         new("imaging-gif-lossy", GifLossyTarget) { Seeds = GetGifLossySeeds, Dictionary = Tokens },
         new("imaging-processor", ProcessorTarget) { Seeds = GetProcessorSeeds, Dictionary = Tokens },
         new("imaging-seam-carving", SeamCarvingTarget) { Seeds = GetSeamCarvingSeeds, Dictionary = Tokens },

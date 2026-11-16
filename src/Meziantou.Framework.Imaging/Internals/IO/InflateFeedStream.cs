@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The source of a streaming <see cref="System.IO.Compression.ZLibStream"/> fed by a push-model decoder:
+/// The source of a streaming <see cref="System.IO.Compression.DeflateStream"/> fed by a push-model decoder:
 /// the decoder copies one bounded piece of compressed data at a time with <see cref="Push(ReadOnlySpan{byte})"/>, then
 /// pulls decompressed bytes until the inflater starves (this stream then reads 0 bytes). The BCL inflater resumes after a
 /// starved read, so the compressed datastream is never buffered as a whole.
@@ -58,6 +58,17 @@ internal sealed class InflateFeedStream : Stream
         data[..count].CopyTo(_buffer.AsSpan(prefix.Length));
         _offset = 0;
         _length = prefix.Length + count;
+        return count;
+    }
+
+    /// <summary>Removes the last pushed bytes that were not read yet, so that the inflater cannot read them.</summary>
+    /// <param name="destination">Receives the bytes removed: at most its length.</param>
+    /// <returns>The number of bytes removed.</returns>
+    public int Withhold(Span<byte> destination)
+    {
+        var count = Math.Min(destination.Length, Available);
+        _buffer.AsSpan(_length - count, count).CopyTo(destination);
+        _length -= count;
         return count;
     }
 

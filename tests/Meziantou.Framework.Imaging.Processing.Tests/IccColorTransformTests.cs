@@ -2117,6 +2117,42 @@ public sealed class IccColorTransformTests
     }
 
     [Fact]
+    public void NestedCalculatorsReferringToOverlappingSubElementsAreBounded()
+    {
+        // Each calculator has 8 sub-elements at the position of the same nested calculator, with 8 different sizes: they
+        // are 8 distinct elements, so that 2 levels parse 8 + 64 calculators
+        var shallow = FanOut(2);
+        IccMpeParser.CreateStage(Stage(shallow, [shallow.Length]), 1, 1, new IccMpeParseContext("source", 0x41324231));
+
+        // 9 levels would parse 8^9 calculators from a few kilobytes
+        var deep = FanOut(9);
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(deep, [deep.Length]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
+
+        static byte[] FanOut(int levels)
+        {
+            const int SubCount = 8;
+            var element = CalculatorElement(1, 1, [], "in out");
+            for (var level = 0; level < levels; level++)
+            {
+                var main = new List<byte>([.. "func"u8, 0, 0, 0, 0, .. U32(2), .. "in  "u8, 0, 0, 0, 0, .. "out "u8, 0, 0, 0, 0]);
+                var childOffset = 24 + (8 * SubCount) + main.Count;
+                var data = new List<byte>([.. "calc"u8, 0, 0, 0, 0, .. U16(1), .. U16(1), 0, 0, .. U16(SubCount), .. U32((uint)(24 + (8 * SubCount))), .. U32((uint)main.Count)]);
+                for (var i = 0; i < SubCount; i++)
+                {
+                    data.AddRange([.. U32((uint)childOffset), .. U32((uint)(element.Length + i))]);
+                }
+
+                data.AddRange(main);
+                data.AddRange(element);
+                data.AddRange(new byte[SubCount - 1]);
+                element = [.. data];
+            }
+
+            return element;
+        }
+    }
+
+    [Fact]
     public void CalculatorCopiesCountTheirValues()
     {
         // tget 10 values, pop, in, out, then the 10 temporary channels and the output cleared before each evaluation

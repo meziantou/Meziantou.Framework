@@ -87,6 +87,11 @@ internal sealed class IccMpeCalculator : IccMpeElement
         if (24 + (8L * subCount) > span.Length)
             throw context.Invalid("the sub-element positions of a calculator element do not fit in it.");
 
+        // The calculator and its sub-elements are charged before they are parsed: sub-elements at overlapping positions of
+        // different sizes are distinct elements, so that nested calculators that refer to them many times would otherwise
+        // parse and store the same data again and again, even when their functions are empty
+        context.Allocate(1 + subCount);
+
         // Sub-elements with the same position are the same element
         var subElements = new IccMpeElement[subCount];
         var cache = new Dictionary<(uint Offset, uint Size), IccMpeElement>();

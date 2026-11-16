@@ -187,7 +187,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | PNG / APNG | Every color type and bit depth, palettes, Adam7, APNG animations and poster frames, Apple CgBI (iOS-optimized) files | Gray, gray+alpha, RGB and RGBA at 8/16 bits, exact palettes at 1/2/4/8 bits, Adam7, APNG with full-canvas frames and posters, or the regions that change with `PngEncoder.OptimizeFrames`; sub-byte grayscale, and the smallest layout and regions with `PngOptimization.MinimumSize` | `.png` (APNG when animated), `.apng` |
 | GIF | GIF87a/89a, animations, interlacing, transparency, comments | GIF89a, deterministic quantization per frame or to a shared palette, optional dithering, optional lossy compression (`GifEncoder.LossyTolerance`), animations with unknown frame counts, full-canvas frames or the regions that change (`GifEncoder.OptimizeFrames`) | `.gif` |
 | JPEG | Baseline, extended sequential and progressive, Huffman or arithmetic coded, 8-bit or 12-bit samples; lossless (Huffman coded), 2-bit to 16-bit samples; gray, YCbCr, RGB, and CMYK/YCCK as CMYK pixels or with a color conversion; any integral sampling | Baseline or progressive, 8-bit or 12-bit, Huffman or arithmetic coded, gray or YCbCr, 4:4:4/4:2:2/4:2:0; lossless, 2-bit to 16-bit, gray or RGB; 8-bit baseline Huffman CMYK (Adobe, 4:4:4) | `.jpg`, `.jpeg` |
-| WebP | Lossless, lossy, alpha, animations, ICC/EXIF/XMP | Lossless and lossy, alpha, animations (seekable destination) of full-canvas frames or of the regions that change (`WebPEncoder.OptimizeFrames`) | `.webp` (lossless by default) |
+| WebP | Lossless, lossy, alpha, animations, ICC/EXIF/XMP | Lossless and lossy (optionally with sharp Y'CbCr conversion), alpha, animations of full-canvas frames or of the regions that change (`WebPEncoder.OptimizeFrames`), held in memory for non-seekable streams; 16-bit sources rounded or dithered to 8 bits | `.webp` (lossless by default) |
 | QOI | Every chunk form, 3 or 4 channels, colorspace label | Lossless 8-bit RGB/RGBA | `.qoi` |
 | BMP | Windows headers up to V5 and OS/2 1.x/2.x headers, 1/4/8/16/24/32-bit, bit fields, RLE4/RLE8/RLE24 | 24-bit or 32-bit with an alpha mask by default; 1/4/8-bit indexed, RLE4/RLE8, 16-bit and top-down on request | `.bmp`, `.dib` |
 | TGA | True-color, grayscale and color-mapped, uncompressed or run-length | True-color and grayscale, uncompressed or run-length | `.tga`, `.icb`, `.vda`, `.vst` |
@@ -4695,8 +4695,8 @@ Readers and writers process long animations frame by frame with memory bounded b
 of decoder or encoder state, plus the images the caller keeps.
 
 **Streams.** Every stream API starts at the stream's current position and consumes what it reads (no rewinding).
-Non-seekable streams are supported for input (bounded prefix replay) and output (no seeking, except for the WebP
-animations, animated cursors and TIFF files described below). Caller streams are left open: eager APIs never close them, and
+Non-seekable streams are supported for input (bounded prefix replay) and output (no seeking, except for the animated
+cursors and TIFF files described below; WebP animations are kept in memory and written at completion). Caller streams are left open: eager APIs never close them, and
 readers/writers close them only with `LeaveOpen = false` (for a reader, ownership then transfers even when opening fails).
 Path overloads own and close their files. Asynchronous methods use asynchronous I/O and accept a `CancellationToken`;
 argument errors are thrown synchronously. The synchronous loads of in-memory data (`Image.Load(data, options,
@@ -4747,7 +4747,7 @@ output.
 | PNG (static) | Required, 1 |
 | APNG | Required (the count precedes the image data and seeking is never used). With `PngPixelLayout.Indexed`, the palette also precedes the image data: it holds the colors of the first image written (the poster, or the first frame), and every later frame must use them. With `PngOptimization.MinimumSize`, the layout comes from the first image written in the same way, and each frame is written when the next one (or the completion) is given |
 | GIF | Optional: unknown counts are supported with fixed memory (local palettes, no global prepass) |
-| WebP | Optional; an animation (any count other than 1) needs a seekable destination |
+| WebP | Optional; an animation (any count other than 1) patches its size at completion: a non-seekable destination receives the whole file, kept in memory, at completion |
 | JPEG XL | Optional; any count, without seeking (a frame is written when the next one, or the completion, tells whether it is the last) |
 | ANI | Optional; any count, with a seekable destination (the counts and sizes are patched at completion) |
 | AVIF, HEIC | Required; an image sequence (any count other than 1) needs a seekable destination (its index is written at completion, in the room that the count reserves) |
@@ -5270,7 +5270,18 @@ default) keeps every 8-bit sample, including the colors of fully transparent pix
 transparent black); `Lossy` is VP8 with 4:2:0 chroma, controlled by `Quality` (0-100), and keeps alpha losslessly unless
 `AlphaQuality` is below 100. `NearLossless` (below 100) lets lossless output round the colors of edges and texture by a
 bounded amount. `Effort` (0-9, default 5) trades encoding time for size and never changes lossless pixels. Gray images
-are stored as RGB; 16-bit images need `AllowBitDepthReduction`.
+are stored as RGB; 16-bit images need `AllowBitDepthReduction`, which rounds them to the nearest 8-bit values, or with
+`DitherBitDepthReduction` diffuses the rounding error (Floyd–Steinberg) so that smooth gradients keep their average level
+instead of showing bands. Both bitstreams store 8-bit samples, and lossy VP8 is Y'CbCr 4:2:0 by definition (RFC 6386;
+RFC 9649 has no other layout): there is no 4:4:4 lossy WebP and no WebP of more than 8 bits, whatever the encoder.
+
+`SharpYuv` makes lossy output choose its Y'CbCr planes for the decoder: the encoder simulates the bilinear chroma
+upsampling and the BT.601 conversion of the decoders (libwebp, browsers, this library) and corrects the chroma and luma
+samples in four passes, so that saturated edges and colored text keep sharper luminance. The stream is an ordinary VP8
+stream. It is off by default: measured on four photographs at qualities 30 to 100, it gives 3 to 16% smaller files at
+equal PSNR, but from 5% smaller to 4% larger ones at equal SSIMULACRA 2 and Butteraugli; on saturated colored stripes,
+its quality 30 beats every quality of the plain conversion on all three metrics, for 15 to 126% more bytes at equal
+quality setting. Encoding takes up to about twice as long (10 bytes of working memory per pixel).
 
 At effort 2 and above, lossy encoding tries 4x4 luma prediction. The modes are stored in the VP8 first partition, at
 most 524,287 bytes. When they do not fit, which only happens for very large detailed images (photographs of about 40
@@ -5310,16 +5321,18 @@ keeps two streams to pick the smaller one. A 16,384 x 16,384 image needs more th
 to encode images of that size.
 
 A still image streams to any destination. An animation (several frames, animation settings, or a writer without
-`ExpectedFrameCount = 1`) declares its size before its frames, so it needs a **seekable** destination: frames are written
-as they come and the RIFF size and alpha flag are patched at the end. Non-seekable streams are rejected with an
-`ArgumentException` before anything is written (there is no spooling); path outputs are always seekable and atomic.
+`ExpectedFrameCount = 1`) declares its size before its frames, and RFC 9649 has no way to leave it unknown: on a
+**seekable** destination, frames are written as they come and the RIFF size and alpha flag are patched at the end; on a
+non-seekable stream, the writer keeps the whole file in memory (counted against `MaxLiveAllocationBytes`, at most 2 GiB),
+patches it there and writes it at completion, so an aborted output writes nothing. Path outputs are always seekable and
+atomic.
 Durations are rounded to the nearest millisecond by default (`DurationRounding`), and the loop count holds 1 to 65,535
 plays or infinite.
 
 `WebPEncoder.OptimizeFrames` writes the frames of an animation after the first one as the region of the pixels that
 differ from the canvas they are drawn on, grown to even coordinates (WebP frame offsets are even), with the disposal of the
-previous frame ("do not dispose" or "dispose to the background color", transparent black; patched into the previous frame
-in the seekable destination) that gives the smallest region. The region is alpha-blended, its unchanged pixels fully
+previous frame ("do not dispose" or "dispose to the background color", transparent black; patched into the previous frame)
+that gives the smallest region. The region is alpha-blended, its unchanged pixels fully
 transparent, when every pixel that changes is opaque and some do not change; otherwise it replaces the canvas ("do not
 blend"), which reproduces translucent pixels and the colors of transparent pixels (the blending of decoders rounds
 translucent pixels). A frame equal to the previous one is a 1x1 frame. Lossless output shows the same frames as full
@@ -5342,10 +5355,40 @@ public static void SaveWebP(string photoPath, string webpPath, string animatedPa
         });
     }
 
-    // Every sample is kept, including the colors of fully transparent pixels. An animation needs a seekable
-    // destination (the file size is patched at the end): a path, a FileStream or a MemoryStream.
+    // Every sample is kept, including the colors of fully transparent pixels. An animation written to a seekable
+    // destination (a path, a FileStream or a MemoryStream) streams its frames and patches the file size at the end.
     using var animation = Image.Load(animatedPath);
     animation.Save(animatedWebPPath, new WebPEncoder { Compression = WebPCompression.Lossless });
+}
+```
+<!-- endref -->
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveWebpOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveWebPWithOptions(string chartPath, string chartWebPPath, string sixteenBitPath, string gradientWebPPath, string animatedPath, Stream responseStream)
+{
+    using (var chart = Image.Load(chartPath))
+    {
+        chart.Save(chartWebPPath, new WebPEncoder
+        {
+            Compression = WebPCompression.Lossy,
+            Quality = 85,
+            SharpYuv = true, // planes chosen for the chroma upsampling of the decoder: sharper colored edges and text
+        });
+    }
+
+    using (var gradient = Image.Load(sixteenBitPath))
+    {
+        gradient.Save(gradientWebPPath, new WebPEncoder
+        {
+            AllowBitDepthReduction = true,  // WebP stores 8-bit samples only
+            DitherBitDepthReduction = true, // error diffusion instead of rounding: no bands in smooth gradients
+        });
+    }
+
+    // A non-seekable stream (an HTTP response) receives the whole animation at the end: it is kept in memory until then
+    using var animation = Image.Load(animatedPath);
+    animation.Save(responseStream, new WebPEncoder());
 }
 ```
 <!-- endref -->
@@ -6220,7 +6263,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException` (skipped without their text in [lenient decoding](#lenient-decoding)); the XMP and ICC application extensions are read as metadata and other unknown extensions are skipped; the background color index is never painted (cleared areas are transparent black) |
 | GIF encoding | Lossy by design: at most 256 colors per frame (deterministic quantization, optional dithering), one transparent index (alpha thresholded or flattened, never partial); a local color table per frame, also with a shared palette (no global color table); full-canvas frames unless `OptimizeFrames` (no merging of equal frames, no reordering of frames); comments, an RGB ICC profile and an XMP packet (no EXIF or resolution); at most 65,535 pixels per side, 655.35 s per frame and 65,536 plays |
 | WebP decoding | VP8 interframes and frames that are not shown (never produced by WebP encoders): `UnsupportedImageFeatureException`; the `ANIM` background color is a hint and is never painted (disposed areas are transparent black); metadata of simple-layout files and text/resolution do not exist in WebP |
-| WebP encoding | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); lossy output is 4:2:0 and not pixel-exact; animations are full-canvas frames unless `OptimizeFrames` (one compression for every frame: no per-frame choice of lossy or lossless) and need a seekable destination (no spooling to non-seekable streams); at most 16,383 (lossy) or 16,384 (lossless) pixels per side, 16,777,215 ms per frame, 65,535 plays and 4 GiB per file |
+| WebP encoding | 8-bit RGB(A) only, a property of the format (gray written as RGB, 16-bit after explicit reduction, rounded or dithered); lossy output is 4:2:0, as VP8 defines it, and not pixel-exact; animations are full-canvas frames unless `OptimizeFrames` (one compression for every frame: no per-frame choice of lossy or lossless); an animation written to a non-seekable stream is kept in memory until completion (at most 2 GiB); at most 16,383 (lossy) or 16,384 (lossless) pixels per side, 16,777,215 ms per frame, 65,535 plays and 4 GiB per file |
 | QOI | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); one still image; no metadata; the colorspace field is a label (no linear-to-sRGB conversion exists) |
 | BMP | Decoding: no embedded JPEG/PNG payloads, no OS/2 Huffman 1D, no linked ICC profile; OS/2 bitmap arrays (`BA`) are not recognized; a 40-byte header is always a Windows header (an OS/2 2.x header of that length with Huffman 1D or RLE24 is read as `BI_BITFIELDS` or `BI_JPEG`); run-length streams are read strictly (nothing is clamped, the end-of-bitmap marker is required). Encoding: one still image; Windows headers only; run-length output for 4-bit and 8-bit indexed layouts only, bottom-up; indexed output needs one byte per pixel of working memory; no alpha below 32 bits (no 1-5-5-5 output); the resolution and an RGB ICC profile are the only metadata; the file must fit the 32-bit `bfSize` field |
 | TGA | Decoding: 16-bit grayscale is always an 8-bit gray sample and an attribute byte, so a file that stores a 16-bit luminance is not read as one; premultiplied alpha (attributes type 4) is rejected and no other attributes type changes the decoded representation (an alpha channel the extension area calls absent or undefined is still decoded when the image descriptor declares it); the other fields of the extension area and the developer area are not interpreted; the input is read to its end and the bytes after the image data are buffered; truncation is only detected before the end of the image data. Encoding: true-color and grayscale only, bottom-up, one still image, at most 65,535 pixels per side; no color map, no 15/16-bit output, no metadata |

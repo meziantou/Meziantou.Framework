@@ -243,8 +243,9 @@ public sealed class ApiSurfaceTests
         Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
         Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
         Assert.Equal(
-            [nameof(JpegXlEncoder.Compression), nameof(JpegXlEncoder.DurationRounding), nameof(JpegXlEncoder.Effort), nameof(JpegXlEncoder.Format), nameof(JpegXlEncoder.Progressive), nameof(JpegXlEncoder.Quality)],
+            [nameof(JpegXlEncoder.Compression), nameof(JpegXlEncoder.DurationRounding), nameof(JpegXlEncoder.Effort), nameof(JpegXlEncoder.Format), nameof(JpegXlEncoder.OptimizeFrames), nameof(JpegXlEncoder.Progressive), nameof(JpegXlEncoder.Quality)],
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(bool), GetDeclaredProperty(type, nameof(JpegXlEncoder.OptimizeFrames)).PropertyType);
         Assert.Equal(typeof(int), GetDeclaredProperty(type, nameof(JpegXlEncoder.Effort)).PropertyType);
         Assert.Equal(typeof(FrameDurationRounding), GetDeclaredProperty(type, nameof(JpegXlEncoder.DurationRounding)).PropertyType);
         Assert.Equal(typeof(JpegXlCompression), GetDeclaredProperty(type, nameof(JpegXlEncoder.Compression)).PropertyType);
@@ -292,6 +293,36 @@ public sealed class ApiSurfaceTests
         Assert.Equal(
             [nameof(JpegXlTranscodeOptions.Configuration), nameof(JpegXlTranscodeOptions.Effort)],
             options.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void JpegXlLayersHaveTheirPublicShape()
+    {
+        // A layered image is neither an image nor a collection: it owns its layers, reads and writes them
+        var type = typeof(JpegXlLayeredImage);
+        Assert.Equal("Meziantou.Framework.Imaging", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && typeof(IDisposable).IsAssignableFrom(type) && !typeof(Image).IsAssignableFrom(type));
+        Assert.Equal(
+            [nameof(JpegXlLayeredImage.Configuration), nameof(JpegXlLayeredImage.Layers), nameof(JpegXlLayeredImage.Metadata), nameof(JpegXlLayeredImage.Size)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.All(type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly), property => Assert.Null(property.GetSetMethod()));
+        Assert.Equal(
+            [nameof(JpegXlLayeredImage.AddLayer), nameof(JpegXlLayeredImage.Dispose), nameof(JpegXlLayeredImage.InsertLayer), nameof(JpegXlLayeredImage.Load), nameof(JpegXlLayeredImage.RemoveLayerAt), nameof(JpegXlLayeredImage.Save)],
+            type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly).Where(method => !method.IsSpecialName).Select(method => method.Name).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(IReadOnlyList<JpegXlLayer>), GetDeclaredProperty(type, nameof(JpegXlLayeredImage.Layers)).PropertyType);
+
+        // A layer is created by its layered image; its image is get-only, its placement can change
+        var layer = typeof(JpegXlLayer);
+        Assert.True(layer.IsPublic && layer.IsSealed);
+        Assert.Empty(layer.GetConstructors());
+        Assert.Equal(
+            [nameof(JpegXlLayer.BlendMode), nameof(JpegXlLayer.Image), nameof(JpegXlLayer.Name), nameof(JpegXlLayer.Offset)],
+            layer.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Null(GetDeclaredProperty(layer, nameof(JpegXlLayer.Image)).GetSetMethod());
+
+        // The blend modes have the values of the format
+        Assert.Equal([nameof(JpegXlBlendMode.Replace), nameof(JpegXlBlendMode.Add), nameof(JpegXlBlendMode.Blend), nameof(JpegXlBlendMode.AlphaWeightedAdd), nameof(JpegXlBlendMode.Multiply)], Enum.GetNames<JpegXlBlendMode>());
+        Assert.Equal([0, 1, 2, 3, 4], Enum.GetValues<JpegXlBlendMode>().Select(value => (int)value));
     }
 
     [Fact]

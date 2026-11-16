@@ -8,9 +8,10 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 /// reconstruction), the lossy compression of its GIF encoder, the separate planes of its TIFF encoder, the structure of the outputs of its JPEG 2000 encoder, and its processing operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
 /// homography estimation and resizing; the merging of the pieces of strokes; the optimal line breaking of text layouts;
-/// and the options of the WebP encoder that change its pixels or its output (bit-depth dithering, sharp YUV,
-/// non-seekable animations). The inputs of the processing targets are
-/// small images whose pixel format, size, frames and bytes come from the fuzzer, followed by the options of the operation.
+/// the options of the WebP encoder that change its pixels or its output (bit-depth dithering, sharp YUV, non-seekable
+/// animations); and the layers of JPEG XL images and the regions of its optimized animations. The inputs of the
+/// processing targets are small images whose pixel format, size, frames and bytes come from the fuzzer, followed by the
+/// options of the operation.
 /// </summary>
 public static partial class ImagingFuzzTargets
 {
@@ -49,6 +50,9 @@ public static partial class ImagingFuzzTargets
         new("imaging-tiff-planes", TiffPlanesTarget) { Seeds = GetTiffPlanesSeeds, Dictionary = Tokens },
         new("imaging-jpeg2000-encoder", Jpeg2000EncoderTarget) { Seeds = GetJpeg2000EncoderSeeds, Dictionary = Tokens },
         new("imaging-webp-encoder", WebPEncoderTarget) { Seeds = GetWebPEncoderSeeds, Dictionary = Tokens },
+        new("imaging-jxl-layers", JpegXlLayersTarget) { Seeds = GetJpegXlLayersSeeds, Dictionary = JpegXlLayerTokens },
+        new("imaging-jxl-layers-load", JpegXlLayersLoadTarget) { Seeds = GetJpegXlLayersLoadSeeds, Dictionary = JpegXlLayerTokens },
+        new("imaging-jxl-optimized-animation", JpegXlOptimizedAnimationTarget) { Seeds = GetJpegXlOptimizedAnimationSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>

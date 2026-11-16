@@ -5013,6 +5013,47 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveJpegXlLayersWritesAndReadsTheLayers()
+    {
+        var photoPath = GetPath("layers-photo.png");
+        var logoPath = GetPath("layers-logo.png");
+        using (var photo = new Image<Rgba32>(64, 48, new Rgba32(10, 20, 30, 255)))
+        using (var logo = new Image<Rgba32>(16, 12, new Rgba32(200, 0, 0, 128)))
+        {
+            photo.Save(photoPath);
+            logo.Save(logoPath);
+        }
+
+        var layeredPath = GetPath("layers.jxl");
+        Assert.Equal("Photo 64x48 at 0,0 (Replace), Logo 16x12 at 40,8 (Blend)", FormatExamples.SaveJpegXlLayers(photoPath, logoPath, layeredPath));
+
+        // The image the layers make: the logo over the photo, half transparent
+        using var image = Image.Load<Rgba32>(layeredPath);
+        Assert.Equal((64, 48, 1), (image.Width, image.Height, image.Frames.Count));
+        Assert.Equal(new Rgba32(10, 20, 30, 255), image.Frames[0][10, 10]);
+        var blended = image.Frames[0][45, 12];
+        Assert.Equal(255, blended.A);
+        Assert.InRange(blended.R, 104, 106);
+    }
+
+    [Fact]
+    public void SaveOptimizedJpegXlAnimationKeepsTheFrames()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var jxlPath = GetPath("optimized.jxl");
+        Assert.True(FormatExamples.SaveOptimizedJpegXlAnimation(apngPath, jxlPath) > 0);
+
+        using var expected = Image.Load<Rgba32>(apngPath);
+        using var animation = Image.Load<Rgba32>(jxlPath);
+        Assert.Equal(expected.Frames.Count, animation.Frames.Count);
+        for (var i = 0; i < expected.Frames.Count; i++)
+        {
+            Assert.Equal(expected.Frames[i][63, 63], animation.Frames[i][63, 63]);
+            Assert.Equal(expected.Frames[i][0, 0], animation.Frames[i][0, 0]);
+        }
+    }
+
+    [Fact]
     public void SaveTgaWritesRunLengthPacketsDetectedFromTheHeader()
     {
         var (apngPath, _) = BuildAnimation();

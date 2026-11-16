@@ -120,12 +120,7 @@ public static class MarkdownFormatter
     }
 
     // The line endings of the code change with the line ending of the document
-    private static bool RendersAsTheSameHtml(MarkdownSyntaxTree tree, MarkdownSyntaxTree formatted)
-    {
-        static string Normalize(string html) => html.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
-
-        return Normalize(MarkdownHtmlRenderer.ToHtml(tree)) == Normalize(MarkdownHtmlRenderer.ToHtml(formatted));
-    }
+    private static bool RendersAsTheSameHtml(MarkdownSyntaxTree tree, MarkdownSyntaxTree formatted) => MarkdownHtmlRenderer.RenderAsTheSameHtml(tree, formatted);
 
     /// <summary>Writes the formatted text, without checking that it renders as the same HTML.</summary>
     /// <param name="tree">The document.</param>
@@ -137,23 +132,31 @@ public static class MarkdownFormatter
         options ??= MarkdownFormattingOptions.Default;
         Validate(options);
 
-        var root = tree.GetRoot();
-        var text = root.ToFullString();
+        // The text of the tree is the text of its root: the tree does not need to write it again
+        var text = tree.GetText().Text;
         original = text;
-        var lines = new Writer(tree.Options, options, text).WriteBlocks(root.Blocks, BlankLines.Always);
+        var lines = new Writer(tree.Options, options, text).WriteBlocks(tree.GetRoot().Blocks, BlankLines.Always);
         if (lines.Count == 0)
         {
             return "";
         }
 
         var newLine = options.NewLine ?? GetFirstLineEnding(text);
-        var builder = new StringBuilder();
+        var length = (long)lines.Count * newLine.Length;
         foreach (var line in lines)
         {
-            builder.Append(line).Append(newLine);
+            length += line.Length;
         }
 
-        return builder.ToString();
+        return string.Create(checked((int)length), (lines, newLine), static (span, state) =>
+        {
+            foreach (var line in state.lines)
+            {
+                line.CopyTo(span);
+                state.newLine.CopyTo(span[line.Length..]);
+                span = span[(line.Length + state.newLine.Length)..];
+            }
+        });
     }
 
     private static void Validate(MarkdownFormattingOptions options)
@@ -524,9 +527,16 @@ public static class MarkdownFormatter
                 paragraph[i] = paragraph[i].TrimStart(' ', '\t');
             }
 
-            // Most paragraphs are a paragraph without the indentation of their lines, after the block whose paragraph they continue
+            // Most paragraphs are a paragraph without the indentation of their lines, after the block whose paragraph they continue.
+            // The lines are joined only to parse them.
+            if (continuedBlock is null && (paragraph.Count < 2 || IsSourceText(sourceParagraph, paragraph)))
+            {
+                lines.AddRange(paragraph);
+                return;
+            }
+
             var text = string.Join('\n', paragraph);
-            if (continuedBlock is null ? paragraph.Count < 2 || IsSourceText(sourceParagraph, text) || IsSingleParagraph(text) : IsContinuation(continuedBlock, text, kind, underline))
+            if (continuedBlock is null ? IsSingleParagraph(text) : IsContinuation(continuedBlock, text, kind, underline))
             {
                 lines.AddRange(paragraph);
                 return;
@@ -559,7 +569,36 @@ public static class MarkdownFormatter
 
         // Whether the lines of a paragraph are its text in the document, without indentation or the markers of a container between
         // them: the parser read them as a single paragraph already
-        private static bool IsSourceText(MarkdownParagraphSyntax? paragraph, string text) => paragraph is not null && paragraph.Span.Length == text.Length && paragraph.ToString() == text;
+        private bool IsSourceText(MarkdownParagraphSyntax? paragraph, List<string> lines)
+        {
+            if (paragraph is null)
+            {
+                return false;
+            }
+
+            var text = source.AsSpan(paragraph.Span.Start, paragraph.Span.Length);
+            for (var i = 0; i < lines.Count; i++)
+            {
+                if (i > 0)
+                {
+                    if (text.IsEmpty || text[0] != '\n')
+                    {
+                        return false;
+                    }
+
+                    text = text[1..];
+                }
+
+                if (!text.StartsWith(lines[i], StringComparison.Ordinal))
+                {
+                    return false;
+                }
+
+                text = text[lines[i].Length..];
+            }
+
+            return text.IsEmpty;
+        }
 
         private bool IsContinuation(ContinuedBlock continuedBlock, string text, SyntaxKind kind, string? underline)
         {
@@ -654,13 +693,18 @@ public static class MarkdownFormatter
 
         private void WriteCodeBlock(List<string> lines, MarkdownCodeBlockSyntax code, bool fenced)
         {
-            var codeLines = code.GetCodeLines();
-            var count = codeLines.Count;
+            // The lines are added where they go, and the opening fence is inserted before them once their content gives its length
+            var start = lines.Count;
+            code.AddCodeLines(lines);
+            var count = lines.Count - start;
             if (!fenced)
             {
-                for (var i = 0; i < count; i++)
+                for (var i = start; i < lines.Count; i++)
                 {
-                    lines.Add(codeLines[i].Length == 0 ? "" : "    " + codeLines[i]);
+                    if (lines[i].Length != 0)
+                    {
+                        lines[i] = "    " + lines[i];
+                    }
                 }
 
                 return;
@@ -671,20 +715,15 @@ public static class MarkdownFormatter
 
             // A line of the code that starts with as many fence characters as the fence would close it
             var length = 3;
-            for (var i = 0; i < count; i++)
+            for (var i = start; i < start + count; i++)
             {
-                var line = codeLines[i].AsSpan().TrimStart(" \t");
+                var line = lines[i].AsSpan().TrimStart(" \t");
                 var run = line.Length - line.TrimStart(character).Length;
                 length = Math.Max(length, run + 1);
             }
 
             var fence = new string(character, length);
-            lines.Add(info.Length == 0 ? fence : info[0] == character ? fence + " " + info : fence + info);
-            for (var i = 0; i < count; i++)
-            {
-                lines.Add(codeLines[i]);
-            }
-
+            lines.Insert(start, info.Length == 0 ? fence : info[0] == character ? fence + " " + info : fence + info);
             lines.Add(fence);
         }
 

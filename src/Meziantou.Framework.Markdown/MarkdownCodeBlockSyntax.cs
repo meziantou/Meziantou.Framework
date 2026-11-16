@@ -76,13 +76,12 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
         return default;
     }
 
-    /// <summary>Gets the lines of the code, as <see cref="Code"/> has them, read from the green tokens.</summary>
-    internal List<string> GetCodeLines()
+    /// <summary>Adds the lines of the code, as <see cref="Code"/> has them, to <paramref name="lines"/>.</summary>
+    internal void AddCodeLines(List<string> lines)
     {
-        var lines = new List<string>();
         if (Green.GetSlot(0) is not { } children)
         {
-            return lines;
+            return;
         }
 
         var count = children.IsList ? children.SlotCount : 1;
@@ -97,8 +96,6 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
             var line = MarkdownText.TrimLineEnding(token.Text);
             lines.Add(token.GetValue() is int virtualSpaces ? new string(' ', virtualSpaces) + line.ToString() : line.Length == token.Text.Length ? token.Text : line.ToString());
         }
-
-        return lines;
     }
 
     /// <summary>Gets the tokens of the lines of the code, with their line endings.</summary>

@@ -44,7 +44,76 @@ public static class MarkdownHtmlRenderer
     {
         ArgumentNullException.ThrowIfNull(tree);
 
-        using var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default) { PlainText = plainText };
+        using var writer = Write(tree, options, plainText);
+        return writer.ToString();
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether two documents render as the same HTML, with the default options. A line ending of the HTML
+    /// is the same as another one: the line endings of the code change with the line ending of the document.
+    /// </summary>
+    /// <remarks>The HTML is compared in the buffers that it is written to, without creating the strings.</remarks>
+    internal static bool RenderAsTheSameHtml(MarkdownSyntaxTree tree, MarkdownSyntaxTree other)
+    {
+        using var writer = Write(tree, options: null, plainText: false);
+        using var otherWriter = Write(other, options: null, plainText: false);
+        return EqualsIgnoringLineEndings(writer.Written, otherWriter.Written);
+    }
+
+    // Whether two texts are the same, \r\n and \r being \n
+    internal static bool EqualsIgnoringLineEndings(ReadOnlySpan<char> text, ReadOnlySpan<char> other)
+    {
+        while (true)
+        {
+            var common = text.CommonPrefixLength(other);
+            var afterCarriageReturn = common > 0 && text[common - 1] == '\r';
+            text = text[common..];
+            other = other[common..];
+
+            // The \r that ends the common text and the \n after it on one side are a single line ending
+            if (afterCarriageReturn)
+            {
+                var textLineFeed = text is ['\n', ..];
+                var otherLineFeed = other is ['\n', ..];
+                text = textLineFeed ? text[1..] : text;
+                other = otherLineFeed ? other[1..] : other;
+                if (textLineFeed || otherLineFeed)
+                {
+                    continue;
+                }
+            }
+
+            if (text.IsEmpty || other.IsEmpty)
+            {
+                return text.IsEmpty && other.IsEmpty;
+            }
+
+            if (!TrySkipLineEnding(ref text) || !TrySkipLineEnding(ref other))
+            {
+                return false;
+            }
+        }
+
+        static bool TrySkipLineEnding(ref ReadOnlySpan<char> text)
+        {
+            switch (text)
+            {
+                case ['\r', '\n', ..]:
+                    text = text[2..];
+                    return true;
+                case ['\r' or '\n', ..]:
+                    text = text[1..];
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
+
+    // Writes the HTML, or the plain text, into a writer that the caller disposes
+    private static Writer Write(MarkdownSyntaxTree tree, MarkdownHtmlRendererOptions? options, bool plainText)
+    {
+        var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default) { PlainText = plainText };
         // Finding the targets of the attributes walks every node and token: skip it for the documents that have none
         if (tree.GetRoot().HasGenericAttributes)
         {
@@ -72,7 +141,7 @@ public static class MarkdownHtmlRenderer
             writer.EndLine();
         }
 
-        return writer.ToString();
+        return writer;
     }
 
     // Whether a node of the kind is under the node, read from the green tree, which does not create the nodes it visits
@@ -142,6 +211,8 @@ public static class MarkdownHtmlRenderer
         private string? _backLinks;
 
         public override string ToString() => _output.ToString();
+
+        public ReadOnlySpan<char> Written => _output.AsSpan();
 
         public void Dispose()
         {

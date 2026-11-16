@@ -1379,6 +1379,25 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(formatted)));
     }
 
+    [Theory]
+    [InlineData("", "", true)]
+    [InlineData("a\nb", "a\nb", true)]
+    [InlineData("a\r\nb", "a\nb", true)]
+    [InlineData("a\rb", "a\r\nb", true)]
+    [InlineData("a\r\r\nb", "a\n\nb", true)]
+    [InlineData("a\r\n", "a\r", true)]
+    [InlineData("\r\n", "\r\r\n", false)]
+    [InlineData("a\r\n", "a\n\n", false)]
+    [InlineData("a\n", "a", false)]
+    [InlineData("a\nb", "a b", false)]
+    [InlineData("ab", "a", false)]
+    public void ComparesTheHtmlIgnoringLineEndings(string text, string other, bool expected)
+    {
+        Assert.Equal(expected, MarkdownHtmlRenderer.EqualsIgnoringLineEndings(text, other));
+        Assert.Equal(expected, MarkdownHtmlRenderer.EqualsIgnoringLineEndings(other, text));
+        Assert.Equal(expected, text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n') == other.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n'));
+    }
+
     [Fact]
     public void FormatterReturnsTheTreeOfAFormattedDocument()
     {

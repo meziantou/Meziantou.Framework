@@ -64,6 +64,8 @@ internal sealed class PooledStringBuilder : IDisposable
         return this;
     }
 
+    public ReadOnlySpan<char> AsSpan() => _buffer.AsSpan(0, _length);
+
     public void Clear() => _length = 0;
 
     public override string ToString() => new(_buffer, 0, _length);

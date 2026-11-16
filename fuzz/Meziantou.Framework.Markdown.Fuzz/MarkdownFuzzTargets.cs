@@ -83,6 +83,18 @@ public static class MarkdownFuzzTargets
         var html = MarkdownHtmlRenderer.ToHtml(tree).ReplaceLineEndings("\n");
         FuzzAssert.True(MarkdownHtmlRenderer.ToHtml(formatted).ReplaceLineEndings("\n") == html, $"The formatted text {FuzzAssert.Format(formattedText)} does not render as the text {FuzzAssert.Format(text)}");
         FuzzAssert.True(MarkdownFormatter.FormatText(formatted, formattingOptions) == formattedText, $"Formatting the formatted text {FuzzAssert.Format(formattedText)} changes it: {FuzzAssert.Format(text)}");
+
+        // The formatter compares the HTML with its line endings as \n, without replacing them
+        CheckEqualsIgnoringLineEndings(text, formattedText);
+        CheckEqualsIgnoringLineEndings(text, text.Replace("\r\n", "\r", StringComparison.Ordinal));
+    }
+
+    private static void CheckEqualsIgnoringLineEndings(string text, string other)
+    {
+        static string Normalize(string value) => value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+
+        var expected = Normalize(text) == Normalize(other);
+        FuzzAssert.True(MarkdownHtmlRenderer.EqualsIgnoringLineEndings(text, other) == expected && MarkdownHtmlRenderer.EqualsIgnoringLineEndings(other, text) == expected, $"{FuzzAssert.Format(text)} and {FuzzAssert.Format(other)} are not compared as the same text with \\n line endings");
     }
 
     // The text that MarkdownEscaper writes is parsed back to the same text, code, destination, title and label

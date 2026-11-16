@@ -303,7 +303,7 @@ internal sealed class BlockParser
         _ => false,
     };
 
-    private bool HasExtension(MarkdownExtensions extension) => _extensions.HasFlag(extension);
+    private bool HasExtension(MarkdownExtensions extension) => (_extensions & extension) == extension;
 
     // The pipe tables of Markdig replace the tables of GFM
     private bool HasGfmTables => HasExtension(MarkdownExtensions.Tables) && !HasExtension(MarkdownExtensions.PipeTables);

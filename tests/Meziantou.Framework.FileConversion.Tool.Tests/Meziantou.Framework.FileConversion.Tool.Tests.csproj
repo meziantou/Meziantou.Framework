@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <!-- The tool converts Markdown with Meziantou.Framework.Markdown, which depends on ICU -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.FileConversionTool.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../common/ConsoleHelper.cs" Link="ConsoleHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.FileConversion.Tool/Meziantou.Framework.FileConversion.Tool.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+  </ItemGroup>
+
+</Project>

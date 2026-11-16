@@ -127,12 +127,12 @@ internal readonly record struct TiffHeader(bool IsBigEndian, bool IsBigTiff, ulo
     /// <summary>Reads an offset in the byte order and the offset size of the file.</summary>
     public ulong ReadOffset(ReadOnlySpan<byte> source) => IsBigTiff ? ReadUInt64(source) : ReadUInt32(source);
 
-    private static ushort ReadUInt16(ReadOnlySpan<byte> source, bool bigEndian)
+    public static ushort ReadUInt16(ReadOnlySpan<byte> source, bool bigEndian)
         => bigEndian ? BinaryPrimitives.ReadUInt16BigEndian(source) : BinaryPrimitives.ReadUInt16LittleEndian(source);
 
-    private static uint ReadUInt32(ReadOnlySpan<byte> source, bool bigEndian)
+    public static uint ReadUInt32(ReadOnlySpan<byte> source, bool bigEndian)
         => bigEndian ? BinaryPrimitives.ReadUInt32BigEndian(source) : BinaryPrimitives.ReadUInt32LittleEndian(source);
 
-    private static ulong ReadUInt64(ReadOnlySpan<byte> source, bool bigEndian)
+    public static ulong ReadUInt64(ReadOnlySpan<byte> source, bool bigEndian)
         => bigEndian ? BinaryPrimitives.ReadUInt64BigEndian(source) : BinaryPrimitives.ReadUInt64LittleEndian(source);
 }

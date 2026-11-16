@@ -97,6 +97,43 @@ public enum ImageFormat
     Radiance = 18,
 
     /// <summary>
+    /// Adobe Photoshop documents (<c>.psd</c>) and large documents (PSB, <c>.psb</c>): the composite image Photoshop stores
+    /// next to the layers is read (the layers are not rendered). Only read: no encoder writes this format.
+    /// </summary>
+    Psd = 19,
+
+    /// <summary>
+    /// Adobe Digital Negative (DNG): the raw samples of a camera sensor (a color filter array or linear raw data) in a TIFF
+    /// profile, rendered to scene-referred linear light. DNG is read, never written.
+    /// </summary>
+    Dng = 20,
+
+    /// <summary>
+    /// DDS (DirectDraw Surface): textures of Direct3D, block-compressed (BC1 to BC7) or uncompressed, with mipmaps, cube
+    /// maps, arrays and volume textures (<c>.dds</c>). Read only; <see cref="ImageCollection"/> reaches every surface.
+    /// </summary>
+    Dds = 21,
+
+    /// <summary>
+    /// DPX (SMPTE ST 268, Digital Moving-Picture Exchange): film scans and video frames of 1 to 16-bit integer or 32 and
+    /// 64-bit floating-point components, RGB, luma or Cb, Y, Cr, in either byte order (<c>.dpx</c>).
+    /// </summary>
+    Dpx = 22,
+
+    /// <summary>
+    /// Kodak Cineon: film scans, usually 10-bit printing densities, the predecessor of DPX (<c>.cin</c>). Only decoding is
+    /// supported.
+    /// </summary>
+    Cineon = 23,
+
+    /// <summary>
+    /// KTX 2.0 (Khronos Texture): GPU textures with mip levels, array layers, cube faces and depth slices, uncompressed or
+    /// block-compressed (BC1 to BC7, ETC2, EAC, ASTC, Basis Universal ETC1S and UASTC), optionally supercompressed
+    /// (<c>.ktx2</c>). Read only.
+    /// </summary>
+    Ktx2 = 24,
+
+    /// <summary>
     /// A format read or written by a <see cref="CustomImageCodec"/> of <see cref="ImageConfiguration.Codecs"/>, not by the
     /// library itself. <see cref="ImageInfo.FormatInfo"/> and <see cref="Formats.CustomImageEncoder.FormatInfo"/> tell which one.
     /// </summary>

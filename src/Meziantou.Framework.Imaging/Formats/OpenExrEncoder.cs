@@ -136,4 +136,7 @@ public sealed class OpenExrEncoder : ImageEncoder
 
     /// <summary>Gets a value indicating whether floating-point samples are stored without reduction to integer pixels: always for OpenEXR.</summary>
     internal override bool StoresFloatingPointSamples => true;
+
+    /// <summary>Gets a value indicating whether the output stores a format that widens: the floating-point gray formats are written as a luminance channel (<c>Y</c>), with alpha when they have one.</summary>
+    internal override bool StoresPixelFormat(PixelFormat format) => format is PixelFormat.GrayFloat or PixelFormat.GrayHalf or PixelFormat.LaFloat or PixelFormat.LaHalf || base.StoresPixelFormat(format);
 }

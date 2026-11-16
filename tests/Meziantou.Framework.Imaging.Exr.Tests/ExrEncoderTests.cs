@@ -332,6 +332,35 @@ public sealed class ExrEncoderTests
         }
     }
 
+    [Theory]
+    [InlineData(PixelFormat.GrayHalf, PixelFormat.GrayHalf, 16)]
+    [InlineData(PixelFormat.GrayFloat, PixelFormat.GrayFloat, 32)]
+    [InlineData(PixelFormat.LaHalf, PixelFormat.LaFloat, 16)]
+    [InlineData(PixelFormat.LaFloat, PixelFormat.LaFloat, 32)]
+    public void FloatingPointGrayPixelsAreStoredAsALuminanceChannel(PixelFormat format, PixelFormat loadedFormat, int bits)
+    {
+        // Highlights and negative levels are kept; alphas that are powers of two premultiply exactly
+        LaFloat[] pixels = [new(0, 1), new(0.25f, 0.5f), new(0.5f, 0.25f), new(1, 1), new(2.5f, 0.5f), new(-0.75f, 1)];
+        using var source = Image.ImportPixelData<LaFloat>(pixels, 3, 2);
+        // The formats without alpha get the levels flattened onto black
+        using var image = source.CloneAs(format, new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) });
+        image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        var data = Encode(image, new OpenExrEncoder());
+
+        var info = Image.Identify(data);
+        var hasAlpha = PixelFormats.HasAlpha(format);
+        Assert.Equal((loadedFormat, hasAlpha ? ImageColorModel.GrayscaleAlpha : ImageColorModel.Grayscale, bits), (info.PixelFormat, info.ColorModel, info.BitsPerComponent));
+
+        using var loaded = Image.Load(data);
+        Assert.Equal(loadedFormat, loaded.PixelFormat);
+        using var expected = image.CloneAs<LaFloat>();
+        using var actual = loaded.CloneAs<LaFloat>();
+        var (expectedPixels, actualPixels) = (new LaFloat[6], new LaFloat[6]);
+        expected.Frames[0].CopyPixelDataTo(expectedPixels);
+        actual.Frames[0].CopyPixelDataTo(actualPixels);
+        Assert.Equal(expectedPixels, actualPixels);
+    }
+
     private static byte[] Encode(Image image, OpenExrEncoder encoder)
     {
         using var stream = new MemoryStream();

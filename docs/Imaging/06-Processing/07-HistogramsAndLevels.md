@@ -94,7 +94,7 @@ adaptive mode): the results are the same on every platform. [Equalize](cref:Mezi
 pixels, but they remap them. The mapping tables are charged to the allocation limit of the image, and are allocated
 before any pixel changes.
 
-Floating-point formats ([RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf)) have no discrete levels: their samples are binned to 65,536
+Floating-point formats ([RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf), [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat), [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf), [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat), [LaHalf](cref:Meziantou.Framework.Imaging.LaHalf)) have no discrete levels: their samples are binned to 65,536
 levels from 0 to 1, the level of a value `v` being `round(65535 v)`. Values below 0 (and values that are not numbers)
 count as the first level, values above 1 as the last one. [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize) and [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels) write a remapped sample as its new
 level divided by 65,535, the precision of a 16-bit image; a sample whose level does not change keeps its exact value,

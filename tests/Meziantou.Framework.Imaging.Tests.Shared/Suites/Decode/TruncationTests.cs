@@ -30,7 +30,9 @@ public sealed class TruncationTests
     [MemberData(nameof(ValidIds))]
     public void EveryProperPrefixFailsExplicitly(string id)
     {
-        var data = GoldenCorpus.Default.Get(id).ReadInput();
+        var fixture = GoldenCorpus.Default.Get(id);
+        var data = fixture.ReadInput();
+        var readsSequentially = !FixtureTraits.IsReadByRandomAccessOnly(fixture);
         var step = Math.Max(1, data.Length / MaxPrefixes);
         for (var length = 0; length < data.Length; length += length < 64 || data.Length - length < 64 ? 1 : step)
         {
@@ -39,6 +41,12 @@ public sealed class TruncationTests
             AssertTruncationError(prefix, length, "load", Catch(() => Image.Load(prefix, new ImageDecodeOptions { Conversion = Conversion }).Dispose()));
             AssertTruncationError(prefix, length, "identify-full", Catch(() => Image.Identify(prefix, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan })));
             var framesRead = -1;
+            if (!readsSequentially)
+            {
+                audit.AssertClean($"{id} truncated to {length} bytes");
+                continue;
+            }
+
             AssertTruncationError(prefix, length, "reader", Catch(() =>
             {
                 using var stream = new TestInputStream(prefix) { Seekable = false, MaxBytesPerRead = 1 + (length % 7) };

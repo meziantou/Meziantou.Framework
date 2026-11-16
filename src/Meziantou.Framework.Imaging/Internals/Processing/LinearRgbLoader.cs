@@ -68,7 +68,7 @@ internal static class LinearRgbLoader
     }
 
     /// <summary>The sRGB to linear conversion of libjxl: a rational polynomial of degree 4 above the linear segment.</summary>
-    private static float ToLinear(float x)
+    internal static float ToLinear(float x)
     {
         if (!(x > 0.04045f))
             return x * (1.0f / 12.92f);

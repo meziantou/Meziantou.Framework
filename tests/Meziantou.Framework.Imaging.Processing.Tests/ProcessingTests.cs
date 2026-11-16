@@ -71,6 +71,10 @@ public sealed class ProcessingTests
             case PixelFormat.Abgr32: CheckRotationsAndFlips<Abgr32>(); break;
             case PixelFormat.Bgr565: CheckRotationsAndFlips<Bgr565>(); break;
             case PixelFormat.Rgba1010102: CheckRotationsAndFlips<Rgba1010102>(); break;
+            case PixelFormat.GrayFloat: CheckRotationsAndFlips<GrayFloat>(); break;
+            case PixelFormat.GrayHalf: CheckRotationsAndFlips<GrayHalf>(); break;
+            case PixelFormat.LaFloat: CheckRotationsAndFlips<LaFloat>(); break;
+            case PixelFormat.LaHalf: CheckRotationsAndFlips<LaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -500,6 +504,10 @@ public sealed class ProcessingTests
             case PixelFormat.Abgr32: CheckQuarterTurns<Abgr32>(); break;
             case PixelFormat.Bgr565: CheckQuarterTurns<Bgr565>(); break;
             case PixelFormat.Rgba1010102: CheckQuarterTurns<Rgba1010102>(); break;
+            case PixelFormat.GrayFloat: CheckQuarterTurns<GrayFloat>(); break;
+            case PixelFormat.GrayHalf: CheckQuarterTurns<GrayHalf>(); break;
+            case PixelFormat.LaFloat: CheckQuarterTurns<LaFloat>(); break;
+            case PixelFormat.LaHalf: CheckQuarterTurns<LaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -1421,6 +1429,30 @@ public sealed class ProcessingTests
         {
             gray16.Grayscale(Ct);
             Assert.Equal(new Gray16(0x1235), gray16.Frames[0][0, 0]);
+        }
+
+        using (var grayHalf = new Image<GrayHalf>(1, 1, new GrayHalf((Half)4.25f)))
+        {
+            grayHalf.Grayscale(Ct);
+            Assert.Equal(new GrayHalf((Half)4.25f), grayHalf.Frames[0][0, 0]);
+        }
+
+        using (var grayFloat = new Image<GrayFloat>(1, 1, new GrayFloat(-0.5f)))
+        {
+            grayFloat.Grayscale(Ct);
+            Assert.Equal(new GrayFloat(-0.5f), grayFloat.Frames[0][0, 0]);
+        }
+
+        using (var laHalf = new Image<LaHalf>(1, 1, new LaHalf((Half)2f, (Half)0.5f)))
+        {
+            laHalf.Grayscale(Ct);
+            Assert.Equal(new LaHalf((Half)2f, (Half)0.5f), laHalf.Frames[0][0, 0]);
+        }
+
+        using (var laFloat = new Image<LaFloat>(1, 1, new LaFloat(3f, 0.25f)))
+        {
+            laFloat.Grayscale(Ct);
+            Assert.Equal(new LaFloat(3f, 0.25f), laFloat.Frames[0][0, 0]);
         }
     }
 
@@ -2549,7 +2581,7 @@ public sealed class ProcessingTests
             var channels = PixelFormats.GetComponentCount(format);
             var (colors, alpha) = GetSampleLayout(format);
             var max = MaxValue(format);
-            var tolerance = PixelFormats.IsFloatingPoint(format) ? (format == PixelFormat.RgbaFloat ? 1e-4 : 2e-3) : max == 255 ? 1 : 2;
+            var tolerance = PixelFormats.IsFloatingPoint(format) ? (PixelFormats.GetBitsPerComponent(format) == 32 ? 1e-4 : 2e-3) : max == 255 ? 1 : 2;
             var paint = format == PixelFormat.Bgra32 ? new[] { color.B, color.G, color.R } : [color.R, color.G, color.B];
             for (var y = 0; y < 11; y++)
             {
@@ -2881,19 +2913,19 @@ public sealed class ProcessingTests
     private static double[] ReadValues(ImageFrame frame)
     {
         var samples = DrawingTestSupport.ReadSamples(frame);
-        return frame.PixelFormat switch
-        {
-            PixelFormat.RgbaFloat => [.. samples.Select(bits => (double)BitConverter.Int32BitsToSingle(bits))],
-            PixelFormat.RgbaHalf => [.. samples.Select(bits => (double)BitConverter.UInt16BitsToHalf((ushort)bits))],
-            _ => [.. samples.Select(sample => (double)sample)],
-        };
+        if (!PixelFormats.IsFloatingPoint(frame.PixelFormat))
+            return [.. samples.Select(sample => (double)sample)];
+
+        return PixelFormats.GetBitsPerComponent(frame.PixelFormat) == 32
+            ? [.. samples.Select(bits => (double)BitConverter.Int32BitsToSingle(bits))]
+            : [.. samples.Select(bits => (double)BitConverter.UInt16BitsToHalf((ushort)bits))];
     }
 
     /// <summary>The number of color samples of a pixel and the index of its alpha sample (-1 without alpha).</summary>
     private static (int Colors, int Alpha) GetSampleLayout(PixelFormat format)
     {
         if (PixelFormats.IsFloatingPoint(format))
-            return (3, 3);
+            return PixelFormats.IsGrayscale(format) ? (1, PixelFormats.HasAlpha(format) ? 1 : -1) : (3, 3);
 
         var layout = ReferencePixelLayout.FromPixelFormat(format);
         return (layout.ColorChannels, layout.HasAlpha ? layout.ColorChannels : -1);
@@ -2913,27 +2945,31 @@ public sealed class ProcessingTests
         if (PixelFormats.IsFloatingPoint(format))
         {
             double alphaSum = 0;
-            var colorSums = new double[3];
+            var colorSums = new double[colors];
             foreach (var pixel in pixels)
             {
-                var a = samples[pixel + 3];
+                var a = alphaIndex >= 0 ? samples[pixel + alphaIndex] : 1;
                 alphaSum += a;
-                for (var c = 0; c < 3; c++)
+                for (var c = 0; c < colors; c++)
                 {
                     colorSums[c] += samples[pixel + c] * a;
                 }
             }
 
             var alpha = Math.Clamp(alphaSum / pixels.Count, 0, 1);
-            if (format == PixelFormat.RgbaHalf ? (Half)alpha == Half.Zero : (float)alpha == 0)
+            if (PixelFormats.GetBitsPerComponent(format) == 16 ? (Half)alpha == Half.Zero : (float)alpha == 0)
                 return result;
 
-            for (var c = 0; c < 3; c++)
+            for (var c = 0; c < colors; c++)
             {
                 result[c] = colorSums[c] / alphaSum;
             }
 
-            result[3] = alpha;
+            if (alphaIndex >= 0)
+            {
+                result[alphaIndex] = alpha;
+            }
+
             return result;
         }
 
@@ -2967,12 +3003,7 @@ public sealed class ProcessingTests
     private static void AssertValues(PixelFormat format, double[] expected, double[] actual, string context)
     {
         Assert.HasCount(expected.Length, actual);
-        var tolerance = format switch
-        {
-            PixelFormat.RgbaFloat => 1e-6,
-            PixelFormat.RgbaHalf => 1e-3,
-            _ => 0,
-        };
+        var tolerance = !PixelFormats.IsFloatingPoint(format) ? 0 : PixelFormats.GetBitsPerComponent(format) == 32 ? 1e-6 : 1e-3;
 
         for (var i = 0; i < expected.Length; i++)
         {
@@ -3189,6 +3220,10 @@ public sealed class ProcessingTests
             // A fraction, a negative (out-of-gamut) color, a high dynamic range one and a translucent alpha, all exact as halves
             var t when t == typeof(RgbaFloat) => new RgbaFloat(id + 0.25f, -id / 8f, 1000f + id, 1f - (id / 64f)),
             var t when t == typeof(RgbaHalf) => new RgbaHalf((Half)(id + 0.25f), (Half)(-id / 8f), (Half)(1000f + id), (Half)(1f - (id / 64f))),
+            var t when t == typeof(GrayFloat) => new GrayFloat(1000f + id - 0.25f),
+            var t when t == typeof(GrayHalf) => new GrayHalf((Half)(-id / 8f)),
+            var t when t == typeof(LaFloat) => new LaFloat(id + 0.25f, 1f - (id / 64f)),
+            var t when t == typeof(LaHalf) => new LaHalf((Half)(1000f + id), (Half)(1f - (id / 64f))),
             _ => throw new NotSupportedException(),
         };
 

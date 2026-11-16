@@ -277,7 +277,7 @@ public abstract partial class Image
 
         // The background of an analysis of floating-point pixels is exact in its own pixel type only: its Rgba64 is clipped
         var fill = analysis.BackgroundColor;
-        var isFloatingPointAnalysis = analysis is AutoCropAnalysis<RgbaFloat> or AutoCropAnalysis<RgbaHalf>;
+        var isFloatingPointAnalysis = analysis is AutoCropAnalysis<RgbaFloat> or AutoCropAnalysis<RgbaHalf> or AutoCropAnalysis<GrayFloat> or AutoCropAnalysis<GrayHalf> or AutoCropAnalysis<LaFloat> or AutoCropAnalysis<LaHalf>;
         if (isFloatingPointAnalysis ? !IsAnalysisOfThisPixelType(analysis) : !PixelConverter.IsExactlyRepresentable(fill, PixelFormat))
             throw new UnsupportedImageFeatureException(
                 $"Enlarging the canvas fills it with the background color of the analysis ({(isFloatingPointAnalysis ? "an analysis of floating-point pixels" : fill)}), which {PixelFormat} pixels cannot represent exactly. Use {nameof(AutoCropPaddingMode)}.{nameof(AutoCropPaddingMode.Contain)}, or analyze an image of the same pixel format.",

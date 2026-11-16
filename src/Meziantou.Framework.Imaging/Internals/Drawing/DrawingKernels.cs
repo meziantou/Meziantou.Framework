@@ -446,7 +446,7 @@ internal static class DrawingKernels
         {
             PixelConverter.ReadFloat(ref pixels[i], out var r, out var g, out var b, out var a);
             if (!IsInUnitRange(r) || !IsInUnitRange(g) || !IsInUnitRange(b) || !IsInUnitRange(a))
-                throw CreateOutOfRangeColorException(typeof(TPixel) == typeof(RgbaFloat) ? PixelFormat.RgbaFloat : PixelFormat.RgbaHalf, r, g, b, a);
+                throw CreateOutOfRangeColorException(PixelFormats.GetPixelFormat<TPixel>(), r, g, b, a);
         }
 
         PixelConverter.ConvertRow<TPixel, Rgba64>(pixels, destination);

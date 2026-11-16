@@ -5,6 +5,7 @@ using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.Samples;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
+using Meziantou.Framework.Imaging.TestHarness.Ktx2;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -1556,6 +1557,108 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ExportCubeFacesWritesTheTopLevelOfEveryFace()
+    {
+        // A cube map of 2x2 faces with two levels, R8G8B8A8_UNORM: the texels of a face are its index
+        var data = new byte[6 * (4 + 1) * 4];
+        for (var face = 0; face < 6; face++)
+        {
+            data.AsSpan(face * 20 * 1, 20).Fill((byte)(face * 40));
+        }
+
+        var builder = TestHarness.Dds.DdsFileBuilder.Dx10(2, 2, 28, data);
+        builder.MiscFlag = 4;
+        builder.MipMapCount = 2;
+        var path = GetPath("cube.dds");
+        File.WriteAllBytes(path, builder.Build());
+
+        var written = Examples.ExportCubeFaces(path, _directory);
+        Assert.HasCount(6, written);
+        Assert.EndsWith("0-NegativeZ.png", written[5], StringComparison.Ordinal);
+        using var negativeZ = Image.Load<Rgba32>(written[5]);
+        Assert.Equal(new Size(2, 2), negativeZ.Size);
+        Assert.Equal(new Rgba32(200, 200, 200, 200), negativeZ.Frames[0][1, 1]);
+    }
+
+    [Fact]
+    public void ConvertDpxKeepsTheCodeValues()
+    {
+        var source = GetPath("scan.dpx");
+        using (var image = new Image<Rgb48>(4, 2))
+        {
+            image.Frames[0][1, 1] = new Rgb48(64, 32768, 65535);
+            image.Save(source, new DpxEncoder { BitDepth = 10, AllowBitDepthReduction = true });
+        }
+
+        var output = GetPath("scan-copy.dpx");
+        var (timeCode, transfer) = Examples.ConvertDpx(source, output);
+        Assert.Null(timeCode);
+        Assert.Equal(DpxTransferCharacteristic.UserDefined, transfer);
+        using var copy = Image.Load<Rgb48>(output);
+        Assert.Equal(10, copy.Metadata.DpxHeader!.BitDepth);
+
+        // The 10-bit code values 1, 512 and 1023, scaled to 16 bits
+        Assert.Equal(new Rgb48(64, 32800, 65535), copy.Frames[0][1, 1]);
+    }
+
+    [Fact]
+    public void ConvertCineonToDpxWritesTheSamples()
+    {
+        var source = GetPath("scan.cin");
+        File.WriteAllBytes(source, GoldenCorpus.Default.Get("cin/rgb-10-be").ReadInput());
+        var output = GetPath("scan-from-cineon.dpx");
+        Assert.Equal(10, Examples.ConvertCineonToDpx(source, output));
+        using var cineon = Image.Load<Rgb48>(source);
+        using var dpx = Image.Load<Rgb48>(output);
+        Assert.Equal(cineon.Frames[0][2, 1], dpx.Frames[0][2, 1]);
+    }
+
+    [Fact]
+    public void SaveCineonCopiesTheHeaderAndTheCodeValues()
+    {
+        var source = GetPath("scan-header.cin");
+        File.WriteAllBytes(source, GoldenCorpus.Default.Get("cin/rgb-10-be").ReadInput());
+        var output = GetPath("scan-copy.cin");
+        Examples.SaveCineon(source, output);
+        using var original = Image.Load<Rgb48>(source);
+        using var copy = Image.Load<Rgb48>(output);
+        Assert.Equal(original.Frames[0][2, 1], copy.Frames[0][2, 1]);
+        Assert.Equal(10, copy.Metadata.CineonHeader!.BitsPerSample);
+        Assert.Equal(original.Metadata.CineonHeader!.ChannelDesignators, copy.Metadata.CineonHeader.ChannelDesignators);
+    }
+
+    [Fact]
+    public void SavePsdWritesALayerForTransparencyAndAPsbFile()
+    {
+        using var image = new Image<Rgba32>(6, 4, new Rgba32(10, 20, 30, 255));
+        image.Frames[0][2, 1] = new Rgba32(200, 100, 50, 0);
+        var psd = GetPath("document.psd");
+        var psb = GetPath("document.psb");
+        Examples.SavePsd(image, psd, psb);
+        var data = File.ReadAllBytes(psd);
+        Assert.Equal(1, data[5]);
+        Assert.Equal(2, File.ReadAllBytes(psb)[5]);
+        using var decoded = Image.Load<Rgba32>(psd);
+        Assert.Equal(new Rgba32(10, 20, 30, 255), decoded.Frames[0][0, 0]);
+        Assert.Equal(0, decoded.Frames[0][2, 1].A);
+    }
+
+    [Fact]
+    public void SaveDngWritesLinearRawData()
+    {
+        using var image = new Image<Rgb24>(300, 2, new Rgb24(255, 128, 0));
+        var dng = GetPath("photo.dng");
+        Examples.SaveDng(image, dng);
+        using var raw = DngRawImage.Load(dng);
+        Assert.False(raw.IsColorFilterArray);
+        var row = new float[300 * 3];
+        raw.CopyStoredRow(0, row);
+        Assert.Equal([255f, 128f, 0f], row.AsSpan(897, 3).ToArray());
+        using var rendering = Image.Load<RgbaFloat>(dng);
+        Assert.True(Math.Abs(rendering.Frames[0][299, 1].R - 1f) < 1e-4);
+    }
+
+    [Fact]
     public void SaveOpenExrTextureAndPreviewWritesATiledMipmapAndALossyFile()
     {
         var texturePath = GetPath("texture.exr");
@@ -1615,6 +1718,75 @@ public sealed class DocumentationExampleTests : IDisposable
             Assert.InRange(pixel.G, 120, 135);
             Assert.True(preview.Frames[0][0, 0].B < 255);
         }
+    }
+
+    [Fact]
+    public void SaveDdsTexturesWritesBc7AndACubeMap()
+    {
+        var albedo = GetPath("albedo.png");
+        using (var image = new Image<Rgba32>(8, 4))
+        {
+            image.Frames[0][1, 1] = new Rgba32(200, 100, 50, 255);
+            image.Save(albedo);
+        }
+
+        var faces = new List<string>();
+        for (var i = 0; i < 6; i++)
+        {
+            var path = GetPath($"face-{i}.png");
+            using var face = new Image<Rgba32>(4, 4);
+            face.Frames[0][0, 0] = new Rgba32((byte)(i * 40), 0, 0, 255);
+            face.Save(path);
+            faces.Add(path);
+        }
+
+        Examples.SaveDdsTextures(albedo, faces, _directory);
+        using (var texture = ImageCollection.Load(Path.Combine(_directory, "albedo.dds")))
+        {
+            Assert.Equal([new Size(8, 4), new Size(4, 2), new Size(2, 1), new Size(1, 1)], texture.Entries.Select(entry => entry.Size));
+        }
+
+        using var sky = ImageCollection.Load(Path.Combine(_directory, "sky.dds"));
+        Assert.Equal(6 * 3, sky.Count);
+        Assert.Equal(CubeMapFace.NegativeZ, sky[17].TextureSurface!.Face);
+    }
+
+    [Fact]
+    public void SaveKtx2TextureWritesAstcWithMipLevels()
+    {
+        var input = GetPath("astc-input.png");
+        using (var image = new Image<Rgba32>(12, 12))
+        {
+            image.Save(input);
+        }
+
+        var output = GetPath("texture-astc.ktx2");
+        Examples.SaveKtx2Texture(input, output);
+        using var texture = Image.Load(output);
+        Assert.Equal("ASTC_6x6_SRGB_BLOCK", texture.Metadata.Ktx2Header!.FormatName);
+        Assert.Equal(4, texture.Metadata.Ktx2Header.LevelCount);
+        Assert.Equal(3, texture.Metadata.Ktx2Header.SupercompressionScheme);
+    }
+
+    [Fact]
+    public void ExportKtx2LevelsWritesTheBaseImageAndEveryLevel()
+    {
+        // An sRGB texture of 4x2 and 2x1 texels, assembled from the KTX 2.0 specification
+        var builder = new Ktx2FileBuilder { VkFormat = 43, PixelWidth = 4, PixelHeight = 2, Dfd = Ktx2FileBuilder.Rgba8Dfd(true, 0, 1, 2, 15) };
+        builder.Levels.Add([.. Enumerable.Range(0, 32).Select(i => (byte)(i * 8))]);
+        builder.Levels.Add([255, 0, 0, 255, 0, 0, 255, 255]);
+        var path = GetPath("texture.ktx2");
+        File.WriteAllBytes(path, builder.Build());
+        var directory = Path.GetDirectoryName(path)!;
+
+        var files = Examples.ExportKtx2Levels(path, directory);
+        Assert.HasCount(2, files);
+        using var baseImage = Image.Load<Rgba32>(Path.Combine(directory, "base.png"));
+        Assert.Equal(new Size(4, 2), baseImage.Size);
+        Assert.Equal(new Rgba32(32, 40, 48, 56), baseImage.Frames[0][1, 0]);
+        using var level = Image.Load<Rgba32>(files[1]);
+        Assert.Equal(new Size(2, 1), level.Size);
+        Assert.Equal(new Rgba32(0, 0, 255, 255), level.Frames[0][1, 0]);
     }
 
     [Fact]
@@ -5217,6 +5389,36 @@ public sealed class DocumentationExampleTests : IDisposable
         using var animation = new Image<Rgba32>(2, 2);
         animation.AppendFrame();
         Assert.Throws<UnsupportedImageFeatureException>(() => animation.Save(GetPath("animation.ff"), new ExtensibilityExamples.FarbfeldEncoder()));
+    }
+
+    [Fact]
+    public void CustomPixelExampleConvertsThroughTheStorageFormat()
+    {
+        var path = GetPath("colors.png");
+        using (var source = new Image<Rgba32>(2, 1, new Rgba32(255, 255, 255)))
+        {
+            source.Frames[0][1, 0] = new Rgba32(255, 0, 0, 0);
+            source.Save(path);
+        }
+
+        // The transparent pixel is flattened onto white: both pixels are white, whose chroma is neutral
+        var pixels = ExtensibilityExamples.ToYuv(path);
+        Assert.Equal([new ExtensibilityExamples.Yuv8(255, 128, 128), new ExtensibilityExamples.Yuv8(255, 128, 128)], pixels);
+    }
+
+    [Fact]
+    public void BufferAllocatorExampleReturnsEveryArray()
+    {
+        var input = GetPath("allocator-input.png");
+        using (var source = new Image<Rgb24>(128, 96, new Rgb24(10, 20, 30)))
+        {
+            source.Save(input);
+        }
+
+        Assert.Equal(0, ExtensibilityExamples.ResizeWithPinnedMemory(input, GetPath("allocator-output.png")));
+        // The resize keeps the aspect ratio of the 128x96 image
+        using var output = Image.Load(GetPath("allocator-output.png"));
+        Assert.Equal(new Size(64, 48), output.Size);
     }
 
     [Fact]

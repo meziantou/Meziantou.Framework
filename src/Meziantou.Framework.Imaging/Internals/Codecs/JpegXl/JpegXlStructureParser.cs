@@ -570,7 +570,7 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
         var hasAlpha = header.AlphaChannelIndex >= 0;
         var isFloatingPoint = JpegXlFeaturePolicy.IsFloatingPoint(header);
         DefaultPixelFormat = isFloatingPoint
-            ? DefaultPixelFormats.ForJpegXlFloatingPoint(JpegXlFeaturePolicy.IsHalfPrecision(header))
+            ? DefaultPixelFormats.ForJpegXlFloatingPoint(isGray, hasAlpha, JpegXlFeaturePolicy.IsHalfPrecision(header))
             : DefaultPixelFormats.ForJpegXl(isGray, hasAlpha, JpegXlFeaturePolicy.IsSixteenBit(header));
         _metadata.Metadata.Orientation = (ExifOrientation)header.Orientation;
         if (header.IsCmyk)

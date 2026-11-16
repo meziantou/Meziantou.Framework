@@ -4,9 +4,10 @@ namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
 /// <summary>
 /// A decoding of an OpenEXR fixture with options of <c>OpenExrDecodingOptions</c> (a part, a deep data mode, a layer, a
-/// window mode): the file is an <see cref="FixtureKinds.Unsupported"/> fixture, rejected with the default options (several
-/// parts, deep data, extra channels, layers, pixels outside the display window), and these decodings are its pixel
-/// references. A decoding gives either the pixels or the error the options still give (a layer the file does not have).
+/// window mode, a level): the file is an <see cref="FixtureKinds.Unsupported"/> fixture, rejected with the default options
+/// (several parts, deep data, extra channels, layers, pixels outside the display window), and these decodings are its pixel
+/// references; or a valid tiled fixture with mipmap or ripmap levels, whose decodings are its other levels. A decoding gives
+/// either the pixels or the error the options still give (a layer or a level the file does not have).
 /// </summary>
 public sealed class ExrDecodingDefinition
 {
@@ -28,6 +29,18 @@ public sealed class ExrDecodingDefinition
     [JsonPropertyName("layer")]
     public string? Layer { get; init; }
 
+    /// <summary>Gets the index along x of the level (<c>OpenExrDecodingOptions.LevelX</c>), or <see langword="null"/> for 0.</summary>
+    [JsonPropertyName("levelX")]
+    public int? LevelX { get; init; }
+
+    /// <summary>Gets the index along y of the level (<c>OpenExrDecodingOptions.LevelY</c>), or <see langword="null"/> for 0.</summary>
+    [JsonPropertyName("levelY")]
+    public int? LevelY { get; init; }
+
+    /// <summary>Gets a value indicating whether the decoding selects a level other than the full resolution.</summary>
+    [JsonIgnore]
+    public bool HasLevel => LevelX is > 0 || LevelY is > 0;
+
     /// <summary>Gets the window mode: one of <see cref="WindowModes"/>.</summary>
     [JsonPropertyName("windowMode")]
     public required string WindowMode { get; init; }
@@ -40,7 +53,7 @@ public sealed class ExrDecodingDefinition
     [JsonPropertyName("height")]
     public int? Height { get; init; }
 
-    /// <summary>Gets the pixel format of an untyped load: <c>RgbaHalf</c> or <c>RgbaFloat</c> (with <see cref="Buffer"/>).</summary>
+    /// <summary>Gets the pixel format of an untyped load: <c>RgbaHalf</c>, <c>RgbaFloat</c>, or <c>GrayHalf</c>, <c>GrayFloat</c> or <c>LaFloat</c> for a luminance image (with <see cref="Buffer"/>).</summary>
     [JsonPropertyName("pixelFormat")]
     public string? PixelFormat { get; init; }
 

@@ -682,7 +682,8 @@ public sealed class HeicDecoderConformanceTests
     public void ErrorFixturesAreWhatTheirNotesSay()
     {
         // The independent reader confirms the structural facts that the error fixtures are built on
-        Assert.Contains(Read("invalid/heic/premultiplied-alpha").ItemReferences, reference => reference.Type == "prem");
+        Assert.True(Read("heic/premultiplied-alpha").IsPremultiplied);
+        Assert.True(Read("heic/premultiplied-alpha-lossy-420").IsPremultiplied);
         Assert.True(Read("invalid/heic/sequence-fragmented").IsFragmented);
         Assert.Null(Read("invalid/heic/missing-pitm").PrimaryItemId);
         Assert.Null(Read("invalid/heic/missing-ispe").PrimaryItem!.Size);
@@ -692,7 +693,9 @@ public sealed class HeicDecoderConformanceTests
         Assert.Equal("lhv1", Read("invalid/heic/item-lhv1").PrimaryItem!.Type);
         Assert.Equal(1, Read("invalid/heic/layer-selector").PrimaryItem!.LayerSelector);
         Assert.Null(Read("invalid/heic/clap-fractional").PrimaryItem!.CleanAperture!.GetRectangle(16, 16));
-        Assert.Equal(14, Read("invalid/heic/matrix-ictcp").PrimaryItem!.Nclx!.MatrixCoefficients);
+        Assert.Equal((13, 14), (Read("invalid/heic/matrix-ictcp-sdr-transfer").PrimaryItem!.Nclx!.TransferCharacteristics, Read("invalid/heic/matrix-ictcp-sdr-transfer").PrimaryItem!.Nclx!.MatrixCoefficients));
+        Assert.Equal((16, 14), (Read("heic/nclx-ictcp-pq").PrimaryItem!.Nclx!.TransferCharacteristics, Read("heic/nclx-ictcp-pq").PrimaryItem!.Nclx!.MatrixCoefficients));
+        Assert.Equal(11, Read("heic/nclx-smpte2085").PrimaryItem!.Nclx!.MatrixCoefficients);
         Assert.Contains(Read("invalid/heic/essential-unknown-property").PrimaryItem!.Associations, association => association is { IsEssential: true, Property.Type: "zzzz" });
         var alpha = Read("invalid/heic/alpha-different-size");
         Assert.NotEqual(alpha.PrimaryItem!.Size, alpha.AlphaItem!.Size);

@@ -33,6 +33,9 @@ anything is written, and how to tell the library what to do with what the format
 | `.cur` | Cursor |
 | `.ani` | Animated cursor |
 | `.exr` | OpenEXR, ZIP compression |
+| `.psd`, `.psb` | Adobe Photoshop flat document, PackBits; `.psb` is the large document format |
+| `.dng` | DNG linear raw data, lossless JPEG |
+| `.cin` | Kodak Cineon, 10 bits for 8-bit pixels |
 
 Any other extension throws an `ArgumentException`. The JPEG 2000 extensions `.jpx` and `.jpf` are read, not written.
 
@@ -125,11 +128,22 @@ yourself is rejected when you save. Which format stores what is described in
 
 ## Floating-point images
 
-[RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) images are stored by the OpenEXR encoder with the
-[sample type and alpha conversion](../10-Formats/17-OpenExr.md) of OpenEXR, and by the TIFF encoder as 32-bit
-floats (with [TiffPixelLayout.Auto](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Auto) and a compression other than JPEG). Every other encoder rejects them before writing,
+[RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) images are stored as floating-point samples by these encoders:
+
+| Encoder | Floating-point samples |
+| --- | --- |
+| [OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) | Always, with the [sample type and alpha conversion](../10-Formats/17-OpenExr.md) of OpenEXR |
+| [RadianceEncoder](cref:Meziantou.Framework.Imaging.Formats.RadianceEncoder) | Always, rounded to RGBE pixels |
+| [PsdEncoder](cref:Meziantou.Framework.Imaging.Formats.PsdEncoder) | Always, as a 32-bit document |
+| [DngEncoder](cref:Meziantou.Framework.Imaging.Formats.DngEncoder) | Always, as 32-bit floating-point linear raw data |
+| [TiffEncoder](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder) | As 32-bit floats, with [TiffPixelLayout.Auto](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Auto) and a compression other than JPEG |
+| [DpxEncoder](cref:Meziantou.Framework.Imaging.Formats.DpxEncoder) | As 32-bit floats, with the default bit depth or a `BitDepth` of 32 |
+| [DdsEncoder](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder), [Ktx2Encoder](cref:Meziantou.Framework.Imaging.Formats.Ktx2Encoder) | With the default texture format (the depth of the pixels) or a floating-point or signed one: 16 and 32-bit floats, BC6H, signed BC4 and BC5 (and signed EAC for KTX 2.0) |
+
+Every other encoder, and these ones with the other settings, rejects them before writing,
 unless [ImageEncoder.FloatingPointConversion](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FloatingPointConversion) gives the options of their reduction to 16-bit integers: a tone mapping
-for the highlights, or clipping. See
+for the highlights, or clipping. The floating-point gray formats are stored the same way, and are reduced to
+[Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [La32](cref:Meziantou.Framework.Imaging.La32) (widened to [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) for an encoder that does not store them). See
 [Pixel formats](../04-Concepts/05-PixelFormats.md#floating-point-and-high-dynamic-range).
 
 ## Files are published atomically

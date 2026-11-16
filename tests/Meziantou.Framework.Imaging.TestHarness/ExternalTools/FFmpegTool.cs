@@ -237,6 +237,9 @@ public sealed partial class FFmpegTool
             "gbrpf32le" => 12,
             "gbrapf16le" => 8,
             "grayf32le" => 4,
+            "rgb48le" => 6,
+            "gbrp10le" or "gbrp12le" => 6,
+            "gray10le" or "gray12le" => 2,
             _ => throw new ArgumentOutOfRangeException(nameof(pixelFormat), pixelFormat, "Unsupported raw pixel format."),
         };
 

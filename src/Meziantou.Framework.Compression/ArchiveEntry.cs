@@ -46,6 +46,12 @@ public abstract class ArchiveEntry
     /// <summary>Gets the target of a symbolic link, or <see langword="null"/> when the entry is not a symbolic link.</summary>
     public virtual string? LinkTarget => null;
 
+    /// <summary>
+    /// Gets the path, in the archive, of the entry whose content this entry shares (a hard link of tar or RAR, a file copy of
+    /// RAR), or <see langword="null"/>. Extracting the entry copies the file extracted for the target.
+    /// </summary>
+    public virtual string? HardLinkTarget => null;
+
     /// <summary>Gets a value indicating whether the content of the entry is encrypted.</summary>
     public virtual bool IsEncrypted => false;
 

@@ -38,6 +38,12 @@ internal sealed class ArchiveExtractor
             return;
         }
 
+        if (entry.HardLinkTarget is { } hardLinkTarget)
+        {
+            CopyHardLink(entry, path, hardLinkTarget);
+            return;
+        }
+
         ExtractFile(entry, path, _overwrite);
     }
 
@@ -57,6 +63,12 @@ internal sealed class ArchiveExtractor
         if (entry.LinkTarget is { } target)
         {
             CreateSymbolicLink(path, target);
+            return;
+        }
+
+        if (entry.HardLinkTarget is { } hardLinkTarget)
+        {
+            CopyHardLink(entry, path, hardLinkTarget);
             return;
         }
 
@@ -158,6 +170,23 @@ internal sealed class ArchiveExtractor
         }
 
         File.CreateSymbolicLink(path, normalizedTarget);
+    }
+
+    private void CopyHardLink(ArchiveEntry entry, string path, string target)
+    {
+        var relative = target.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar).TrimEnd(Path.DirectorySeparatorChar);
+        if (relative.Length is 0 || Path.IsPathRooted(relative))
+            throw new IOException($"The hard link '{entry.FullName}' points to an invalid path, '{target}'.");
+
+        var source = Path.GetFullPath(Path.Join(_root, relative));
+        if (!IsUnderRoot(source))
+            throw new IOException($"The hard link '{entry.FullName}' points outside of the destination directory, to '{target}'.");
+
+        if (!File.Exists(source))
+            throw new IOException($"The hard link '{entry.FullName}' points to '{target}', which is not extracted before it.");
+
+        File.Copy(source, path, _overwrite);
+        SetMetadata(entry, path);
     }
 
     private static void SetMetadata(ArchiveEntry entry, string path)

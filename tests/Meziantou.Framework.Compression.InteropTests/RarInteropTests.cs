@@ -48,10 +48,18 @@ public sealed class RarInteropTests
         }
 
         // Entry by entry, without the links: ExtractToDirectory rejects the links of the test data that point outside of the directory
+        var ansiDecodedNames = new HashSet<string>(StringComparer.Ordinal);
         using (var archive = RarFile.OpenRead(path))
         {
             foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory && entry.LinkTarget is null && entry.HardLinkTarget is null))
             {
+                // A RAR4 name from Unix without the Unicode name field is UTF-8, which the library decodes. unrar for Windows
+                // decodes it with the ANSI code page, so it extracts the file under another name
+                if (OperatingSystem.IsWindows() && archive.FormatVersion is RarFormatVersion.Rar4 && entry.HostOperatingSystem is RarHostOperatingSystem.Unix && !System.Text.Ascii.IsValid(entry.FullName))
+                {
+                    ansiDecodedNames.Add(entry.FullName);
+                }
+
                 var file = Path.Combine(actual, entry.FullName.Replace('/', Path.DirectorySeparatorChar));
                 Directory.CreateDirectory(Path.GetDirectoryName(file)!);
                 entry.ExtractToFile(file, overwrite: true);
@@ -65,6 +73,9 @@ public sealed class RarInteropTests
         Assert.NotEmpty(actualFiles);
         foreach (var (file, hash) in actualFiles)
         {
+            if (!expectedFiles.ContainsKey(file) && ansiDecodedNames.Contains(file))
+                continue;
+
             Assert.True(expectedFiles.TryGetValue(file, out var expectedHash), $"unrar does not extract '{file}' of {name}");
             Assert.Equal(expectedHash, hash);
         }

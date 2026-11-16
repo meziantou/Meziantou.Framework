@@ -22,4 +22,9 @@ internal abstract class ConversionPage
 
     /// <summary>Gets the page as an image. The caller owns the image.</summary>
     public abstract Image RenderImage(CancellationToken cancellationToken);
+
+    /// <summary>Releases the resources of a page that is not written, such as the image of a page that was rendered in advance.</summary>
+    public virtual void Discard()
+    {
+    }
 }

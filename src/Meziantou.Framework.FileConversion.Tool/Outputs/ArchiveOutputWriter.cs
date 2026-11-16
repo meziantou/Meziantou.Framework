@@ -29,7 +29,7 @@ internal static class ArchiveOutputWriter
 
             if (entry.IsDirectory)
             {
-                writer.AddDirectory(name, entry.LastWriteTime);
+                writer.AddDirectory(name, entry.LastWriteTime, entry.UnixFileMode);
             }
             else if (entry.LinkTarget is { } linkTarget)
             {

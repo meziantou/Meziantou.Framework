@@ -196,6 +196,20 @@ internal sealed class ConversionSettings
         };
     }
 
+    /// <summary>Gets a value indicating whether the command line sets an option of the encoder of an image format, so that an image of this format must be encoded again.</summary>
+    public bool HasEncoderOptions(ImageFormat format) => format switch
+    {
+        ImageFormat.Jpeg => JpegQuality is not null,
+        ImageFormat.WebP => WebPQuality is not null || WebPLossless,
+        ImageFormat.Png => PngCompressionLevel is not null,
+        ImageFormat.Avif => AvifQuality is not null || AvifEffort is not null || AvifLossless,
+        ImageFormat.Heic => HeicQuality is not null,
+        ImageFormat.JpegXl => JpegXlQuality is not null || JpegXlLossless,
+        ImageFormat.Tiff => TiffCompression is not null,
+        ImageFormat.Gif => GifMaxColors is not null,
+        _ => false,
+    };
+
     /// <summary>Resizes an image to fit <see cref="MaxWidth"/> x <see cref="MaxHeight"/>, keeping its aspect ratio. The image is never enlarged.</summary>
     public void ResizeImage(Image image, CancellationToken cancellationToken)
     {

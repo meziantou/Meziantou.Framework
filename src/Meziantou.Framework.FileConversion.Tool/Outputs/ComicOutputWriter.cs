@@ -50,10 +50,11 @@ internal static class ComicOutputWriter
 
         if (!settings.ResizesImages && page.GetEncodedImage() is { } encoded)
         {
-            // The formats comic book readers support are copied as they are
+            // The formats comic book readers support are copied as they are, unless the options of the encoder of the format
+            // ask for another encoding (--jpeg-quality, --webp-lossless...)
             var keep = targetFormat is ImageFormat.Unknown
                 ? encoded.Format is ImageFormat.Jpeg or ImageFormat.Png or ImageFormat.Gif or ImageFormat.WebP
-                : encoded.Format == targetFormat;
+                : encoded.Format == targetFormat && !settings.HasEncoderOptions(targetFormat);
 
             if (keep)
                 return (encoded.Data, encoded.Format);
@@ -65,6 +66,7 @@ internal static class ComicOutputWriter
         }
 
         using var image = page.RenderImage(cancellationToken);
+        image.AutoOrient(cancellationToken);
         settings.ResizeImage(image, cancellationToken);
         using var output = new MemoryStream();
         image.Save(output, settings.CreateEncoder(targetFormat, extension: null));

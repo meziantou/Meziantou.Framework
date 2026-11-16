@@ -183,10 +183,17 @@ public static class FileConversionFuzzTargets
         }
     }
 
+    // The paths of the documents of a book: the paths of its archive, which are normalized
+    private static readonly string[] EpubBasePaths = ["", "content.opf", "OEBPS/content.opf", "OEBPS/Text/chapter.xhtml", "a/b/c/d.xhtml"];
+
     private static void EpubPath(ReadOnlySpan<byte> data)
     {
-        var parts = FuzzInput.ReadText(data).Split('\n', 2);
-        var resolved = EpubPackage.ResolvePath(parts[0], parts.Length > 1 ? parts[1] : "");
+        // The first byte selects the path of the document; the rest is the reference, which is arbitrary
+        if (data.IsEmpty)
+            return;
+
+        var basePath = EpubBasePaths[data[0] % EpubBasePaths.Length];
+        var resolved = EpubPackage.ResolvePath(basePath, FuzzInput.ReadText(data[1..]));
         if (resolved is null)
             return;
 
@@ -320,7 +327,7 @@ public static class FileConversionFuzzTargets
             {
                 var copied = copy.GetEntry(name.TrimEnd('/'));
                 FuzzAssert.True(copied is not null, "A file of the archive is not in the copy");
-                FuzzAssert.True(content.AsSpan().SequenceEqual(ArchiveFiles.ReadEntry(copied!)), "The content of a file of the archive differs in the copy");
+                FuzzAssert.True(content.AsSpan().SequenceEqual(ArchiveFiles.ReadEntry(copied)), "The content of a file of the archive differs in the copy");
             }
         }
     }
@@ -441,10 +448,10 @@ public static class FileConversionFuzzTargets
 
     private static IEnumerable<FuzzSeed> GetEpubPathSeeds()
     {
-        yield return FuzzSeed.FromText("relative", "OEBPS/content.opf\ntext/ch1.xhtml");
-        yield return FuzzSeed.FromText("parent", "OEBPS/text/ch1.xhtml\n../images/a%20b.png#frag");
-        yield return FuzzSeed.FromText("escape", "OEBPS/content.opf\n../../escape.xhtml");
-        yield return FuzzSeed.FromText("absolute", "OEBPS/content.opf\nhttps://example.com/a.png");
+        yield return FuzzSeed.FromText("relative", "\u0002text/ch1.xhtml");
+        yield return FuzzSeed.FromText("parent", "\u0003../images/a%20b.png#frag");
+        yield return FuzzSeed.FromText("escape", "\u0002../../escape.xhtml");
+        yield return FuzzSeed.FromText("absolute", "\u0002https://example.com/a.png");
     }
 
     private static IEnumerable<FuzzSeed> GetArchiveSeeds()

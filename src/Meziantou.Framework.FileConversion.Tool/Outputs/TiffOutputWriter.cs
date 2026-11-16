@@ -19,6 +19,7 @@ internal static class TiffOutputWriter
         if (collection.Count is 0)
             throw new InvalidOperationException("The inputs have no page to write");
 
-        collection.Save(outputPath, settings.CreateEncoder(ImageFormat.Tiff, outputPath.Extension));
+        var encoder = settings.CreateEncoder(ImageFormat.Tiff, outputPath.Extension);
+        ArchiveFiles.WriteAtomically(outputPath, stream => collection.Save(stream, encoder));
     }
 }

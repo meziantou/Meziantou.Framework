@@ -32,7 +32,7 @@ internal static class PdfOutputWriter
         document.Information.Title = title;
         document.Information.Author = author;
         ApplyOutputSettings(document, settings);
-        document.Save(outputPath, new PdfSaveOptions { Linearize = settings.PdfLinearize });
+        ArchiveFiles.WriteAtomically(outputPath, stream => document.Save(stream, new PdfSaveOptions { Linearize = settings.PdfLinearize }));
     }
 
     /// <summary>Optimizes the document, converts it to PDF/A, and sets its encryption, as the command line asks.</summary>
@@ -95,8 +95,13 @@ internal static class PdfOutputWriter
         {
             try
             {
-                pdfImage = PdfImage.FromJpeg(encoded.Data.Span);
-                dpi = GetResolution(Image.Identify(encoded.Data.Span).Metadata.Resolution);
+                // A PDF document has no orientation tag: a photo that must be turned is decoded and turned
+                var metadata = Image.Identify(encoded.Data.Span).Metadata;
+                if (metadata.Orientation is ExifOrientation.TopLeft)
+                {
+                    pdfImage = PdfImage.FromJpeg(encoded.Data.Span);
+                    dpi = GetResolution(metadata.Resolution);
+                }
             }
             catch (ArgumentException)
             {
@@ -109,6 +114,13 @@ internal static class PdfOutputWriter
         {
             using var image = page.RenderImage(cancellationToken);
             dpi = GetResolution(image.Metadata.Resolution);
+            if (IsTurned(image.Metadata.Orientation))
+            {
+                dpi = (dpi.Vertical, dpi.Horizontal);
+            }
+
+            // The pixels are stored as the camera took them: the page shows them as the orientation tag says
+            image.AutoOrient(cancellationToken);
             settings.ResizeImage(image, cancellationToken);
             pdfImage = settings.PdfImageEncoding is PdfImageEncoding.Jpeg
                 ? PdfImage.FromImageAsJpeg(image, (JpegEncoder)settings.CreateEncoder(ImageFormat.Jpeg, extension: null))
@@ -120,9 +132,10 @@ internal static class PdfOutputWriter
         var imageHeight = pdfImage.Height * 72 / dpi.Vertical;
         if (settings.ResizesImages && page.GetEncodedImage() is { } original)
         {
-            var originalSize = Image.Identify(original.Data.Span).Size;
-            imageWidth = originalSize.Width * 72 / dpi.Horizontal;
-            imageHeight = originalSize.Height * 72 / dpi.Vertical;
+            var originalInfo = Image.Identify(original.Data.Span);
+            var (originalWidth, originalHeight) = IsTurned(originalInfo.Metadata.Orientation) ? (originalInfo.Size.Height, originalInfo.Size.Width) : (originalInfo.Size.Width, originalInfo.Size.Height);
+            imageWidth = originalWidth * 72 / dpi.Horizontal;
+            imageHeight = originalHeight * 72 / dpi.Vertical;
         }
 
         var margin = PageSize.MillimetersToPoints(settings.PageMargin);
@@ -155,6 +168,9 @@ internal static class PdfOutputWriter
         var pdfPage = document.Pages.Add(pageSize);
         pdfPage.CreateContentBuilder().DrawImage(pdfImage, x, y, width, height);
     }
+
+    /// <summary>Gets a value indicating whether an orientation turns the image by a quarter turn, which swaps its width and its height.</summary>
+    private static bool IsTurned(ExifOrientation orientation) => orientation is ExifOrientation.LeftTop or ExifOrientation.RightTop or ExifOrientation.RightBottom or ExifOrientation.LeftBottom;
 
     private static PdfSize ToPortrait(PdfSize size) => size.Width > size.Height ? new PdfSize(size.Height, size.Width) : size;
 

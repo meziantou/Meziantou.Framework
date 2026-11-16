@@ -20,6 +20,16 @@ internal static class TestFiles
         return stream.ToArray();
     }
 
+    /// <summary>Creates a JPEG file whose stored pixels must be turned to be displayed: <paramref name="width"/> x <paramref name="height"/> stored, displayed with the orientation.</summary>
+    public static byte[] CreateOrientedJpeg(int width, int height, Imaging.Metadata.ExifOrientation orientation)
+    {
+        using var image = new Image<Rgba32>(width, height, new Rgba32(200, 30, 30));
+        image.Metadata.Orientation = orientation;
+        using var stream = new MemoryStream();
+        image.Save(stream, ImageEncoder.Create(ImageFormat.Jpeg));
+        return stream.ToArray();
+    }
+
     public static byte[] CreatePdf(int pageCount)
     {
         var document = new PdfDocument();
@@ -95,7 +105,8 @@ internal static class TestFiles
                 }
                 else if (name.EndsWith('/', StringComparison.Ordinal))
                 {
-                    entry = new PaxTarEntry(TarEntryType.Directory, name);
+                    // A mode that is not the default one, to check that it is kept
+                    entry = new PaxTarEntry(TarEntryType.Directory, name) { Mode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute };
                 }
                 else
                 {
@@ -175,13 +186,20 @@ internal static class TestFiles
         var spine = new StringBuilder();
         for (var i = 0; i < documentList.Count; i++)
         {
-            manifest.Append(CultureInfo.InvariantCulture, $"""<item id="doc{i}" href="{documentList[i].Name}" media-type="application/xhtml+xml"/>""");
+            var documentMediaType = documentList[i].Name.EndsWith(".svg", StringComparison.Ordinal) ? "image/svg+xml" : "application/xhtml+xml";
+            manifest.Append(CultureInfo.InvariantCulture, $"""<item id="doc{i}" href="{documentList[i].Name}" media-type="{documentMediaType}"/>""");
             spine.Append(CultureInfo.InvariantCulture, $"""<itemref idref="doc{i}"/>""");
         }
 
         for (var i = 0; i < resourceList.Count; i++)
         {
-            var mediaType = resourceList[i].Name.EndsWith(".css", StringComparison.Ordinal) ? "text/css" : "image/png";
+            var mediaType = Path.GetExtension(resourceList[i].Name) switch
+            {
+                ".css" => "text/css",
+                ".svg" => "image/svg+xml",
+                ".jpg" => "image/jpeg",
+                _ => "image/png",
+            };
             manifest.Append(CultureInfo.InvariantCulture, $"""<item id="res{i}" href="{resourceList[i].Name}" media-type="{mediaType}"/>""");
         }
 

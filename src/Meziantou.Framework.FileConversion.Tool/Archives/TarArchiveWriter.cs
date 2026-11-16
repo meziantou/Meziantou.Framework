@@ -29,9 +29,15 @@ internal sealed class TarArchiveWriter : ArchiveWriter
         _writer = new TarWriter(_compressionStream ?? stream, TarEntryFormat.Pax, leaveOpen: true);
     }
 
-    public override void AddDirectory(string name, DateTimeOffset? lastWriteTime)
+    public override void AddDirectory(string name, DateTimeOffset? lastWriteTime, UnixFileMode? unixFileMode)
     {
-        _writer.WriteEntry(CreateEntry(TarEntryType.Directory, name + "/", lastWriteTime));
+        var entry = CreateEntry(TarEntryType.Directory, name + "/", lastWriteTime);
+        if (unixFileMode is { } mode)
+        {
+            entry.Mode = mode;
+        }
+
+        _writer.WriteEntry(entry);
     }
 
     public override void AddFile(string name, Stream content, DateTimeOffset? lastWriteTime, UnixFileMode? unixFileMode)

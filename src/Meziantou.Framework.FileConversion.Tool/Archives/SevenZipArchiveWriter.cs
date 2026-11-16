@@ -36,10 +36,11 @@ internal sealed class SevenZipArchiveWriter : ArchiveWriter
         _archive = new SevenZipArchive(stream, SevenZipArchiveMode.Create, leaveOpen: true, readerOptions: null, options);
     }
 
-    public override void AddDirectory(string name, DateTimeOffset? lastWriteTime)
+    public override void AddDirectory(string name, DateTimeOffset? lastWriteTime, UnixFileMode? unixFileMode)
     {
         var entry = _archive.CreateEntry(name + "/");
         entry.SetLastWriteTime(lastWriteTime);
+        entry.SetUnixFileMode(unixFileMode);
     }
 
     public override void AddFile(string name, Stream content, DateTimeOffset? lastWriteTime, UnixFileMode? unixFileMode)

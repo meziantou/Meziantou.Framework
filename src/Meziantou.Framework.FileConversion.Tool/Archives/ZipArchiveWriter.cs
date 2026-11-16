@@ -43,9 +43,9 @@ internal sealed class ZipArchiveWriter : ArchiveWriter
         _archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true, readerOptions: null, options);
     }
 
-    public override void AddDirectory(string name, DateTimeOffset? lastWriteTime)
+    public override void AddDirectory(string name, DateTimeOffset? lastWriteTime, UnixFileMode? unixFileMode)
     {
-        _archive.CreateEntry(name + "/", new ZipEntryOptions { LastWriteTime = lastWriteTime });
+        _archive.CreateEntry(name + "/", new ZipEntryOptions { LastWriteTime = lastWriteTime, UnixFileMode = unixFileMode });
     }
 
     public override void AddFile(string name, Stream content, DateTimeOffset? lastWriteTime, UnixFileMode? unixFileMode)

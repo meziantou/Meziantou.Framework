@@ -17,7 +17,7 @@ internal abstract class ArchiveWriter : IDisposable
     };
 
     /// <summary>Adds a directory. The name does not end with <c>/</c>.</summary>
-    public abstract void AddDirectory(string name, DateTimeOffset? lastWriteTime);
+    public abstract void AddDirectory(string name, DateTimeOffset? lastWriteTime, UnixFileMode? unixFileMode);
 
     /// <summary>Adds a file with its content.</summary>
     public abstract void AddFile(string name, Stream content, DateTimeOffset? lastWriteTime, UnixFileMode? unixFileMode);

@@ -23,6 +23,10 @@ internal static class EpubImagePages
                 continue;
             }
 
+            // An SVG page is a document: the book is laid out
+            if (EpubManifestItem.IsSvg(item.MediaType, item.Path))
+                return null;
+
             var entry = archive.GetEntry(item.Path);
             if (entry is null)
                 return null;
@@ -41,8 +45,9 @@ internal static class EpubImagePages
             if (image is null)
                 return null;
 
+            // An SVG image cannot be copied as an encoded image: the book is laid out
             var path = EpubPackage.ResolvePath(item.Path, image);
-            if (path is null || archive.GetEntry(path) is null)
+            if (path is null || archive.GetEntry(path) is null || EpubManifestItem.IsSvg(package.GetItemByPath(path)?.MediaType, path))
                 return null;
 
             result.Add(path);

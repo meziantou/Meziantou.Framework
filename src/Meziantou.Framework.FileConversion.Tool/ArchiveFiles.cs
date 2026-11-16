@@ -38,22 +38,47 @@ internal static class ArchiveFiles
         return buffer.ToArray();
     }
 
-    /// <summary>Writes a file through a temporary file next to it, so that a failed conversion does not leave a partial file.</summary>
+    /// <summary>
+    /// Writes a file through a new temporary file next to it, so that a failed conversion does not leave a partial file.
+    /// The file replaces the output path: an existing link at this path is replaced, not followed, so the file it points
+    /// to is not changed.
+    /// </summary>
     public static void WriteAtomically(FullPath path, Action<Stream> write)
     {
-        var temporaryPath = FullPath.FromPath(path + ".tmp");
+        // A unique name, created exclusively: an existing file is never truncated, and parallel conversions do not collide
+        FullPath temporaryPath;
+        FileStream stream;
+        while (true)
+        {
+            temporaryPath = path.Parent / ("." + path.Name + "." + Guid.NewGuid().ToString("N") + ".tmp");
+            try
+            {
+                stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+                break;
+            }
+            catch (IOException) when (File.Exists(temporaryPath))
+            {
+            }
+        }
+
+        var moved = false;
         try
         {
-            using (var stream = File.Create(temporaryPath))
+            using (stream)
             {
                 write(stream);
             }
 
             File.Move(temporaryPath, path, overwrite: true);
+            moved = true;
         }
         finally
         {
-            File.Delete(temporaryPath);
+            // Only the file this call created
+            if (!moved)
+            {
+                File.Delete(temporaryPath);
+            }
         }
     }
 }

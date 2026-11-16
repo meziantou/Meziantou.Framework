@@ -95,10 +95,23 @@ internal sealed class EpubInputDocument : InputDocument
             if (_archive.GetEntry(item.Path) is null)
                 continue;
 
-            foreach (var page in RenderDocument(item, pageNumber, cancellationToken))
+            // The pages of a document are rendered together: the images of the pages that are not written are released
+            var pages = RenderDocument(item, pageNumber, cancellationToken);
+            var index = 0;
+            try
             {
-                pageNumber++;
-                yield return page;
+                for (; index < pages.Count; index++)
+                {
+                    pageNumber++;
+                    yield return pages[index];
+                }
+            }
+            finally
+            {
+                for (var i = index; i < pages.Count; i++)
+                {
+                    pages[i].Discard();
+                }
             }
         }
     }
@@ -197,7 +210,20 @@ internal sealed class EpubInputDocument : InputDocument
 
     private sealed class RenderedImagePage(int pageNumber, Image image) : ConversionPage(pageNumber)
     {
+        private Image? _image = image;
+
         // The image is given once: the caller owns it
-        public override Image RenderImage(CancellationToken cancellationToken) => image;
+        public override Image RenderImage(CancellationToken cancellationToken)
+        {
+            var result = _image ?? throw new InvalidOperationException("The image of the page is already used");
+            _image = null;
+            return result;
+        }
+
+        public override void Discard()
+        {
+            _image?.Dispose();
+            _image = null;
+        }
     }
 }

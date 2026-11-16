@@ -18,7 +18,7 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
     public void Convert(CancellationToken cancellationToken)
     {
         var inputs = ResolveInputs(settings.Inputs);
-        _inputPaths = [.. inputs];
+        _inputPaths = [.. inputs.Select(input => ResolveLinks(input))];
         var inputFormats = inputs.Select(DetectInputFormat).ToArray();
 
         var template = settings.Output is null ? null : OutputNameTemplate.Parse(settings.Output);
@@ -257,7 +257,8 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
                 : TextDocumentConverter.HtmlToMarkdown(text, settings);
 
             outputPath.CreateParentDirectory();
-            File.WriteAllText(outputPath, result, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            var bytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(result);
+            ArchiveFiles.WriteAtomically(outputPath, stream => stream.Write(bytes));
             output.WriteLine(outputPath);
         }
     }
@@ -318,7 +319,7 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
             using var image = page.RenderImage(cancellationToken);
             settings.ResizeImage(image, cancellationToken);
             outputPath.CreateParentDirectory();
-            image.Save(outputPath, encoder);
+            ArchiveFiles.WriteAtomically(outputPath, stream => image.Save(stream, encoder));
         }, cancellationToken);
     }
 
@@ -387,7 +388,13 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (settings.Pages.Contains(page.PageNumber))
+                {
                     yield return page;
+                }
+                else
+                {
+                    page.Discard();
+                }
             }
         }
     }
@@ -395,6 +402,47 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
     /// <summary>Gets the extension of the output files: the one of the output template when it is an extension of the output format (<c>.apng</c>, <c>.c7z</c>), or the default extension of the format.</summary>
     private static string GetExtension(OutputNameTemplate? template, FileFormat outputFormat)
         => template is not null && FileFormat.FromExtension(Path.GetExtension(template.Text)) == outputFormat ? Path.GetExtension(template.Text) : outputFormat.DefaultExtension;
+
+    /// <summary>
+    /// Gets the path of a file with the links of its path resolved: the links of the folders, and the link of the file. The
+    /// comparison of the result ignores the case on Windows and macOS, whose file systems usually do.
+    /// </summary>
+    internal static FullPath ResolveLinks(FullPath path) => ResolveLinks(path, depth: 0);
+
+    private static FullPath ResolveLinks(FullPath path, int depth)
+    {
+        // A cycle of links, or a too long chain: the path as it is
+        if (depth > 40)
+            return path;
+
+        var value = path.Value;
+        var root = Path.GetPathRoot(value);
+        if (string.IsNullOrEmpty(root))
+            return path;
+
+        var current = root;
+        foreach (var segment in value[root.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var next = Path.Combine(current, segment);
+            try
+            {
+                FileSystemInfo info = Directory.Exists(next) ? new DirectoryInfo(next) : new FileInfo(next);
+                if (info.LinkTarget is not null && info.ResolveLinkTarget(returnFinalTarget: true) is { } target)
+                {
+                    next = ResolveLinks(FullPath.FromPath(target.FullName), depth + 1).Value;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // A broken or unreadable link: its path as it is
+            }
+
+            current = next;
+        }
+
+        var result = FullPath.FromPath(current);
+        return OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? FullPath.FromPath(result.Value.ToUpperInvariant()) : result;
+    }
 
     private FullPath GetOutputPath(OutputNameTemplate template, OutputNameValues values, FullPath input)
     {
@@ -405,7 +453,8 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
             throw new ConversionException($"Several outputs have the same path '{path}'{hint}");
         }
 
-        if (_inputPaths.Contains(path))
+        // A link (of the file or of a parent folder) can make an output path another name of an input
+        if (_inputPaths.Contains(ResolveLinks(path)))
             throw new ConversionException($"The output '{path}' is the input file '{input}'");
 
         if (!settings.Overwrite && File.Exists(path))

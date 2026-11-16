@@ -853,6 +853,131 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public async Task Archive_KeepsTheModeOfTheFolders()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "data.tar", TestFiles.CreateTar(gzip: false, ("dir/", []), ("dir/a.txt", "A"u8.ToArray())));
+
+        foreach (var extension in new[] { "zip", "7z", "tar.gz" })
+        {
+            Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("out/{name}." + extension))).ExitCode);
+            using var archive = Compression.ArchiveFile.Open(temp.GetFullPath("out/data." + extension));
+            var directory = archive.Entries.Single(entry => entry.IsDirectory);
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, directory.UnixFileMode);
+        }
+    }
+
+    [Fact]
+    public async Task Output_KeepsAnExistingTemporaryFile()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+        await WriteFileAsync(temp, "a.pdf.tmp", "user data"u8.ToArray());
+        await WriteFileAsync(temp, "a.zip.tmp", "user data"u8.ToArray());
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "pdf")).ExitCode);
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("a.pdf"), "-o", temp.GetFullPath("a.cbz"))).ExitCode);
+
+        Assert.Equal("user data", File.ReadAllText(temp.GetFullPath("a.pdf.tmp")));
+        Assert.Equal("user data", File.ReadAllText(temp.GetFullPath("a.zip.tmp")));
+        Assert.Equal(["a.cbz", "a.pdf", "a.pdf.tmp", "a.png", "a.zip.tmp"], Directory.GetFiles(temp.FullPath).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToArray());
+    }
+
+    [Fact]
+    public async Task Output_LinkToTheInputIsRejected()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var content = TestFiles.CreateImage(10, 10, ImageFormat.Png);
+        var input = await WriteFileAsync(temp, "in/a.png", content);
+        File.CreateSymbolicLink(temp.GetFullPath("out.jpg"), input);
+        Directory.CreateSymbolicLink(temp.GetFullPath("linked"), temp.GetFullPath("in"));
+
+        // The link of the output file, and the link of a parent folder of the output file
+        var (exitCode, console) = await RunAsync(input, "-o", temp.GetFullPath("out.jpg"), "--overwrite");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("is the input file", console.Error);
+
+        (exitCode, console) = await RunAsync(input, "-o", temp.GetFullPath("linked/a.png"), "--overwrite");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("is the input file", console.Error);
+
+        Assert.Equal(content, File.ReadAllBytes(input));
+    }
+
+    [Fact]
+    public async Task Output_ReplacesALinkInsteadOfItsTarget()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+        var other = await WriteFileAsync(temp, "other.txt", "other file"u8.ToArray());
+        File.CreateSymbolicLink(temp.GetFullPath("a.jpg"), other);
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "jpg", "--overwrite")).ExitCode);
+
+        Assert.Equal("other file", File.ReadAllText(other));
+        Assert.Null(new FileInfo(temp.GetFullPath("a.jpg")).LinkTarget);
+        Assert.Equal(ImageFormat.Jpeg, Identify(temp.GetFullPath("a.jpg")).Format);
+    }
+
+    [Fact]
+    public async Task ImagesToPdf_AppliesTheOrientation()
+    {
+        await using var temp = TemporaryDirectory.Create();
+
+        // Stored as 40x20, displayed as 20x40
+        var input = await WriteFileAsync(temp, "photo.jpg", TestFiles.CreateOrientedJpeg(40, 20, Imaging.Metadata.ExifOrientation.RightTop));
+        Assert.Equal(Imaging.Metadata.ExifOrientation.RightTop, Identify(input).Metadata.Orientation);
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "pdf")).ExitCode);
+
+        var page = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("photo.pdf"))).Pages[0];
+        Assert.Equal(15, page.MediaBox.Width, 0.01);
+        Assert.Equal(30, page.MediaBox.Height, 0.01);
+        var image = page.GetImages().Single();
+        Assert.Equal(20, image.Width);
+        Assert.Equal(40, image.Height);
+    }
+
+    [Fact]
+    public async Task ComicImageFormat_EncoderOptionsEncodeTheImagesAgain()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var jpeg = TestFiles.CreateImage(64, 64, ImageFormat.Jpeg);
+        var input = await WriteFileAsync(temp, "a.jpg", jpeg);
+
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("copy.cbz"), "--comic-image-format", "jpeg")).ExitCode);
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("low.cbz"), "--comic-image-format", "jpeg", "--jpeg-quality", "5")).ExitCode);
+
+        static byte[] ReadPage(FullPath path)
+        {
+            using var archive = new System.IO.Compression.ZipArchive(File.OpenRead(path));
+            using var stream = archive.Entries.Single().Open();
+            using var memory = new MemoryStream();
+            stream.CopyTo(memory);
+            return memory.ToArray();
+        }
+
+        Assert.Equal(jpeg, ReadPage(temp.GetFullPath("copy.cbz")));
+        Assert.NotEqual(jpeg, ReadPage(temp.GetFullPath("low.cbz")));
+    }
+
+    [Fact]
+    public async Task SvgEpubToPdf_LaysOutTheSvgPages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        const string Svg = """<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="50" fill="red"/></svg>""";
+        var svgPage = await WriteFileAsync(temp, "svg-page.epub", TestFiles.CreateEpub([("page.svg", Svg)]));
+        var svgImage = await WriteFileAsync(temp, "svg-image.epub", TestFiles.CreateEpub([("page.xhtml", TestFiles.CreateXhtml("""<img src="image.svg" alt=""/>"""))], [("image.svg", Encoding.UTF8.GetBytes(Svg))]));
+
+        var (exitCode, console) = await RunAsync(svgPage, svgImage, "--output-format", "pdf", "--per-input");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        Assert.NotEmpty(PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("svg-page.pdf"))).Pages);
+        Assert.NotEmpty(PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("svg-image.pdf"))).Pages);
+    }
+
+    [Fact]
     public async Task RarToZip()
     {
         await using var temp = TemporaryDirectory.Create();

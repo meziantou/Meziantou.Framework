@@ -117,7 +117,7 @@ internal static class YamlTestSuite
         {
             var tag = scalar.Tag switch
             {
-                null => CoreSchema.Instance.ExpandTag(CoreSchema.Instance.GetDefaultTag(scalar)!),
+                null => CoreSchema.Instance.ExpandTag(CoreSchema.Instance.GetDefaultTag(scalar)),
                 "!" => CoreSchema.Instance.ExpandTag("!!str"),
                 _ => scalar.Tag,
             };

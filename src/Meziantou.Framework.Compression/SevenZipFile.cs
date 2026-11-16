@@ -195,7 +195,7 @@ public static class SevenZipFile
     }
 
     /// <summary>Lists the directories and the files under a directory, sorted, with their names in the archive. The links to directories are not followed.</summary>
-    private static List<(FileSystemInfo Info, string EntryName)> EnumerateDirectory(string sourceDirectoryName, bool includeBaseDirectory)
+    internal static List<(FileSystemInfo Info, string EntryName)> EnumerateDirectory(string sourceDirectoryName, bool includeBaseDirectory)
     {
         var root = new DirectoryInfo(Path.GetFullPath(sourceDirectoryName));
         if (!root.Exists)

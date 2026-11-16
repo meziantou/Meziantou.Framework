@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Compression.Internals.Zip;
 
-/// <summary>Decodes the code page 437 (the IBM PC character set), the encoding of the zip entry names that are not marked as UTF-8.</summary>
+/// <summary>Decodes and encodes the code page 437 (the IBM PC character set), the encoding of the zip entry names that are not marked as UTF-8.</summary>
 internal static class Cp437
 {
     // The characters of the bytes 0x80 to 0xFF; the bytes 0x00 to 0x7F are ASCII
@@ -24,5 +24,28 @@ internal static class Cp437
                 span[i] = value < 0x80 ? (char)value : HighCharacters[value - 0x80];
             }
         });
+    }
+
+    /// <summary>Encodes a string in the code page 437, or returns <see langword="null"/> when a character has no byte.</summary>
+    public static byte[]? TryGetBytes(string value)
+    {
+        var bytes = new byte[value.Length];
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            if (c < 0x80)
+            {
+                bytes[i] = (byte)c;
+                continue;
+            }
+
+            var index = HighCharacters.IndexOf(c, StringComparison.Ordinal);
+            if (index < 0)
+                return null;
+
+            bytes[i] = (byte)(0x80 + index);
+        }
+
+        return bytes;
     }
 }

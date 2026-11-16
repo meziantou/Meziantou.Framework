@@ -5,8 +5,8 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Compression.Internals.Ppmd;
 
-/// <summary>The PPMd var.I rev. 1 model (CPpmd8 of 7-Zip), with its sub-allocator over one byte array, and its decoder.</summary>
-internal sealed class Ppmd8Model
+/// <summary>The PPMd var.I rev. 1 model (CPpmd8 of 7-Zip), with its sub-allocator over one byte array, and its decoder (its encoder is in Ppmd8Model.Encoder.cs).</summary>
+internal sealed partial class Ppmd8Model
 {
     public const int MinOrder = 2;
     public const int MaxOrder = 16;

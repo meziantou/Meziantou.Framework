@@ -112,6 +112,86 @@ public sealed class Ppmd8Tests
         }
     }
 
+    [Theory]
+    [InlineData("text-o8.ppmd8", "text")]
+    [InlineData("ab-o16-restart.ppmd8", "two-letters")]
+    [InlineData("ab-o16-cutoff.ppmd8", "two-letters")]
+    public void Encode_SameBytesAs7Zip(string fileName, string kind)
+    {
+        // The model, the range encoder and the end marker behave as 7-Zip's: the packed bytes are identical
+        var (order, memorySize, restoreMethod, packed) = ReadFixture(fileName);
+        Assert.Equal(packed, Encode(CreateData(kind), order, memorySize, restoreMethod));
+    }
+
+    [Theory]
+    [InlineData("text", 2, 1u << 20, 0)]
+    [InlineData("text", 16, 1u << 11, 0)]
+    [InlineData("text", 16, 1u << 11, 1)]
+    [InlineData("two-letters", 6, 1u << 12, 1)]
+    [InlineData("random", 4, 1u << 16, 0)]
+    [InlineData("random", 8, 1u << 14, 1)]
+    [InlineData("empty", 8, 1u << 20, 0)]
+    public void Encode_RoundTrip(string kind, int order, uint memorySize, int restoreMethod)
+    {
+        var data = kind switch
+        {
+            "random" => Ppmd7Tests.CreateRandomData(40_000, seed: 5),
+            "empty" => [],
+            _ => CreateData(kind),
+        };
+
+        var packed = Encode(data, order, memorySize, restoreMethod);
+        Assert.Equal(data, Decode(packed, order, memorySize, restoreMethod, data.Length));
+        Assert.Equal(data, Decode(packed, order, memorySize, restoreMethod, outputLength: -1));
+    }
+
+    [Fact]
+    public void Encode_MemoryFull_RestoresTheModel()
+    {
+        var data = CreateData("two-letters");
+        using var output = new MemoryStream();
+        using (var encoder = new Ppmd8EncoderStream(output, 16, 1 << 16, Ppmd8Model.RestoreMethodCutOff, leaveOpen: true))
+        {
+            encoder.Write(data);
+            Assert.True(encoder.Model.RestoreCount > 0);
+            Assert.True(encoder.Model.CutOffCount > 0);
+        }
+
+        Assert.Equal(data, Decode(output.ToArray(), 16, 1 << 16, Ppmd8Model.RestoreMethodCutOff, outputLength: -1));
+    }
+
+    [Theory]
+    [InlineData(-1, -1, 8, 16u, 0)]
+    [InlineData(1, -1, 4, 1u, 0)]
+    [InlineData(9, -1, 12, 256u, 1)]
+    [InlineData(7, 1000, 10, 1u, 1)]
+    [InlineData(5, 1_000_000, 8, 16u, 0)]
+    [InlineData(5, 200_000, 8, 4u, 0)]
+    public void GetDefaultParameters_As7Zip(int level, long length, int expectedOrder, uint expectedMemory, int expectedRestoreMethod)
+    {
+        Assert.Equal((expectedOrder, expectedMemory, expectedRestoreMethod), Ppmd8EncoderStream.GetDefaultParameters(level, length));
+    }
+
+    private static byte[] Encode(byte[] data, int order, uint memorySize, int restoreMethod)
+    {
+        using var output = new MemoryStream();
+        using (var encoder = new Ppmd8EncoderStream(output, order, memorySize, restoreMethod, leaveOpen: true))
+        {
+            // Writes of several sizes
+            var offset = 0;
+            var size = 1;
+            while (offset < data.Length)
+            {
+                var length = Math.Min(size, data.Length - offset);
+                encoder.Write(data, offset, length);
+                offset += length;
+                size = (size * 3) + 1;
+            }
+        }
+
+        return output.ToArray();
+    }
+
     private static byte[] CreateData(string kind)
     {
         return kind switch

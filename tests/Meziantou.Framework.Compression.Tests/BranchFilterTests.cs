@@ -110,44 +110,9 @@ public sealed class BranchFilterTests
     }
 
     [Fact]
-    public void Delta_EncoderMatchesXz()
-    {
-        var input = LzmaCodecTests.ReadTestData("filter-input.bin");
-        var expected = GetFilteredData(LzmaCodecTests.ReadTestData("xz-filter-delta.xz"));
-        using var output = new MemoryStream();
-        using (var encoder = new DeltaEncoderStream(output, 4, leaveOpen: true))
-        {
-            foreach (var chunk in input.Chunk(13))
-            {
-                encoder.Write(chunk);
-            }
-        }
-
-        Assert.Equal(expected, output.ToArray());
-    }
-
-    [Theory]
-    [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(7)]
-    [InlineData(256)]
-    public void Delta_RoundTrip(int distance)
-    {
-        var data = LzmaCodecTests.CreateText(5000);
-        using var output = new MemoryStream();
-        using (var encoder = new DeltaEncoderStream(output, distance, leaveOpen: true))
-        {
-            encoder.Write(data);
-        }
-
-        using var decoder = new DeltaDecoderStream(new MemoryStream(output.ToArray()), distance, leaveOpen: false);
-        Assert.Equal(data, LzmaCodecTests.ReadAll(decoder, readSize: 3));
-    }
-
-    [Fact]
     public void Delta_InvalidDistance()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new DeltaDecoderStream(new MemoryStream(), 0, leaveOpen: false));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new DeltaEncoderStream(new MemoryStream(), 257, leaveOpen: false));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DeltaDecoderStream(new MemoryStream(), 257, leaveOpen: false));
     }
 }

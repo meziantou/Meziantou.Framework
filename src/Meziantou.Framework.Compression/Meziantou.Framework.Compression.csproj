@@ -9,9 +9,6 @@
 
     <!-- Every public member must be documented -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
-
-    <!-- TODO(compression): remove once every shared helper has a caller -->
-    <NoWarn>$(NoWarn);MA0182</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

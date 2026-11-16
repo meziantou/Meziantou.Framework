@@ -32,12 +32,10 @@ internal sealed class TarRandomAccessArchive : Archive
                 if (entry is null)
                     break;
 
-                // TarReader leaves a seekable stream at the start of the content of the entry it returns
-                var dataOffset = stream.Position;
                 var adapter = TarEntryAdapter.Create(entry, e => TarEntryAdapter.Window(_stream, e));
                 if (adapter is not null)
                 {
-                    adapter.DataOffset = dataOffset;
+                    adapter.DataOffset = GetDataOffset(stream, entry);
                     _entries.Add(adapter);
                 }
             }
@@ -49,6 +47,27 @@ internal sealed class TarRandomAccessArchive : Archive
     }
 
     public override ArchiveFormat Format => ArchiveFormat.Tar;
+
+    /// <summary>
+    /// Gets the offset of the content of an entry. On a seekable stream, the content stream of <see cref="TarReader"/> reads
+    /// the archive stream at its own offset, which it does not expose: reading its first byte moves the archive stream
+    /// right after it.
+    /// </summary>
+    private static long GetDataOffset(Stream stream, TarEntry entry)
+    {
+        if (entry.DataStream is not { Length: > 0 } data)
+            return -1;
+
+        var position = stream.Position;
+        data.Position = 0;
+        if (data.ReadByte() < 0)
+            throw new InvalidDataException("The tar archive is truncated.");
+
+        var offset = stream.Position - 1;
+        data.Position = 0;
+        stream.Position = position;
+        return offset;
+    }
 
     public CompressionFormat CompressionFormat { get; }
 

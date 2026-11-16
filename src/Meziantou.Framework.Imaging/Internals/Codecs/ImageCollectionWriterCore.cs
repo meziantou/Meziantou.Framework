@@ -152,8 +152,9 @@ internal static class ImageCollectionWriterCore
             _ = TextureCollectionLayout.Create(collection, encoder.Format, GenerateMipmaps(encoder));
         }
 
-        if (encoder is TiffEncoder && !seekable)
-            throw new ArgumentException("TIFF output requires a seekable destination: a directory stores the offsets of the strips it describes, so the pointer to it is written only once the pages are encoded.", nameof(encoder));
+        // The directory of an uncompressed page precedes its strips, so only the pointer from a page to the next one is patched
+        if (encoder is TiffEncoder tiff && !seekable && (tiff.Compression != TiffCompression.None || collection.Count > 1))
+            throw new ArgumentException("TIFF output requires a seekable destination, except for one uncompressed page: a directory stores the offsets of the strips it describes, so the pointer to it is written only once the pages are encoded.", nameof(encoder));
 
         for (var i = 0; i < collection.Count; i++)
         {

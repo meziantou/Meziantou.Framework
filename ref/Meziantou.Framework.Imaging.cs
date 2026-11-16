@@ -4146,6 +4146,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.TiffPixelLayout PixelLayout { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.TiffPredictor Predictor { get => throw null; init { } }
         public int RowsPerStrip { get => throw null; init { } }
+        public bool SeparatePlanes { get => throw null; init { } }
         public int TileHeight { get => throw null; init { } }
         public int TileWidth { get => throw null; init { } }
     }

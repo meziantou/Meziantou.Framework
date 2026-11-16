@@ -373,6 +373,9 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.Ani && stream is { CanSeek: false })
             throw new ArgumentException("ANI output requires a seekable stream: the frame and step counts and the sizes are written before the frames and patched once every frame is written. Write to a seekable stream or a path.", nameof(stream));
 
+        if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.Tiff && stream is { CanSeek: false })
+            throw new ArgumentException("Compressed TIFF output requires a seekable stream: a directory stores the offsets of the strips it describes, so the pointer to it is written only once the strips are compressed. Write to a seekable stream or a path, or set TiffEncoder.Compression to None.", nameof(stream));
+
         if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.OpenExr && stream is { CanSeek: false })
             throw new ArgumentException("Compressed OpenEXR output requires a seekable stream: the offsets of the chunks are written before the chunks and patched once they are written. Write to a seekable stream or a path, or set OpenExrEncoder.Compression to None.", nameof(stream));
 

@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR, PSD, DDS, DPX, Cineon and KTX 2.0 codecs, the DNG decoder, the BC1 to BC7 block decoders, the image data of PNG files, the lossy GIF compression, the JPEG 2000 encoder, the processing operations, the strokes, the optimal line breaking, the ICC profiles of color conversion, and the layers and optimized animations of JPEG XL. The other codecs
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR, PSD, DDS, DPX, Cineon and KTX 2.0 codecs, the DNG decoder, the BC1 to BC7 block decoders, the image data of PNG files, the lossy GIF compression, the separate planes of the TIFF encoder, the JPEG 2000 encoder, the processing operations, the strokes, the optimal line breaking, the ICC profiles of color conversion, and the layers and optimized animations of JPEG XL. The other codecs
     are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
   -->
   <PropertyGroup>

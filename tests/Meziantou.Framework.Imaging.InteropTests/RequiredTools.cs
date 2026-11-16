@@ -40,6 +40,12 @@ internal static class RequiredTools
 
     public static Task<RadianceTool> RadianceAsync() => RadianceTool.LocateAsync(XunitCancellationToken);
 
+    /// <summary>Gets the <c>magick</c> command of ImageMagick.</summary>
+    public static Task<ImageMagickTool> ImageMagickAsync() => ImageMagickTool.LocateAsync(XunitCancellationToken);
+
+    /// <summary>Gets the <c>oiiotool</c> command of OpenImageIO, whose TIFF reader is libtiff.</summary>
+    public static Task<OpenImageIOTool> OpenImageIOAsync() => OpenImageIOTool.LocateAsync(XunitCancellationToken);
+
     /// <summary>Gets <c>opencv-oracle</c>, which runs one OpenCV function per call, its files in the artifacts directory of the OpenCV tests.</summary>
     public static Task<OpenCvOracleTool> OpenCvOracleAsync() => OpenCvOracleTool.LocateAsync(InteropSettings.GetArtifactsDirectory("OpenCvProcessingInteropTests"), XunitCancellationToken);
 

@@ -979,7 +979,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   the order of `TiffBlockWorkers`) and interleaves them into chunky rows (`TiffPageDecoder.Interleave`), so the expander
   never sees planes. Planar YCbCr data is rejected (its planes may have their own sizes). The writer serializes blocks
   (`TiffDocumentWriter.FillBlock`): the rows of a strip, or a tile cut from a band of the rows of its row of tiles and
-  padded with zero samples; the predictors (`ApplyPredictor`) then work on each row of the block. Default settings must
+  padded with zero samples; the predictors (`ApplyPredictor`) then work on each row of the block. With
+  `TiffEncoder.SeparatePlanes`, the blocks are those of the first plane, then of the next ones (`PageState.Planes`), each
+  cut from the chunky rows (`ExtractPlane`) and predicted with one sample per pixel; a page of one sample is written as
+  chunky, because ImageMagick 7.1.2 ignores `WhiteIsZero` and the color map of a one-sample page in separate planes. The
+  directory of an uncompressed page precedes its blocks (`WriteDirectoryFirst`: their lengths are known) and the header
+  already points to it, so a one-page uncompressed document needs no patch and goes to non-seekable streams
+  (`ImageOutputCapabilities`, `ImageCollectionWriterCore.Validate`); every other page is patched. Default settings must
   keep writing the same bytes.
 - **OpenEXR** (`Internals/Codecs/Exr`). The structure parser reads the header (validated whole by `ExrHeader.Complete`,
   so that `Identify` reports every rejection), the offset table, then the chunks in the order of their offsets: the input
@@ -2052,7 +2058,11 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   floats, no BigTIFF): every floating-point layout, byte order and offset size of the encoder was checked with GDAL and
   libtiff in the same Docker image when it was written; check them again there after changing the writer. `tiffcp -p
   separate` of libtiff 4.7.2 only separates 8-bit samples (and leaves a broken file otherwise): the 16-bit and
-  floating-point planar fixtures come from GDAL (`gdal_translate -co INTERLEAVE=BAND`). Apple ImageIO fails on some
+  floating-point planar fixtures come from GDAL (`gdal_translate -co INTERLEAVE=BAND`). The separate planes the encoder
+  writes are decoded by `oiiotool --dumpdata` (OpenImageIO 3.2.2, libtiff 4.7.2) and `magick` (ImageMagick 7.1.2-35) of
+  Meziantou.Prebuilt, which has no libtiff command-line tools: OpenImageIO reads CMYK pages a scanline at a time, which
+  libtiff refuses inside a compressed strip of separate planes (one row per strip then), and ImageMagick reads the alpha
+  plane of a gray page with alpha as its gray samples (no oracle for those). Apple ImageIO fails on some
   PackBits tiles, libtiff's own included (a tile as wide as the page): it is no oracle for them.
 - **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
   without conversion) that declares one conversion and its pixels (`inkConversion`). The reference has two independent

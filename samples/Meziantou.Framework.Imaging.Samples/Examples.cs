@@ -1305,6 +1305,18 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>A TIFF page in separate planes: the strips of each sample in turn.</summary>
+    #region Imaging_TiffSeparatePlanes
+    public static void SaveTiffInSeparatePlanes(string inputPath, string tiffPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // One strip set of red samples, then of green, blue and alpha samples (PlanarConfiguration = 2), each plane
+        // predicted and compressed on its own
+        image.Save(tiffPath, new TiffEncoder { SeparatePlanes = true, Predictor = TiffPredictor.HorizontalDifferencing });
+    }
+    #endregion
+
     /// <summary>A multi-size icon and a cursor: representations are alternatives, never animation frames.</summary>
     #region Imaging_IcoRepresentations
     public static Point WriteAndReadIcon(string inputPath, string iconPath, string cursorPath)

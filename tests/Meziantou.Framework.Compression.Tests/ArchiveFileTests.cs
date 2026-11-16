@@ -224,7 +224,7 @@ public sealed class ArchiveFileTests
             ArchiveFile.ExtractToDirectory(GetPath("Archive/sample.tar.xz"), directory.FullName);
             Assert.Equal("Hello, archive!\n", File.ReadAllText(Path.Combine(directory.FullName, "hello.txt")));
             Assert.Equal("nested\n", File.ReadAllText(Path.Combine(directory.FullName, "docs", "sub", "nested.txt")));
-            Assert.Equal(new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Local).ToUniversalTime(), File.GetLastWriteTimeUtc(Path.Combine(directory.FullName, "hello.txt")));
+            Assert.Equal(new DateTime(2024, 1, 2, 8, 4, 5, DateTimeKind.Utc), File.GetLastWriteTimeUtc(Path.Combine(directory.FullName, "hello.txt")));
             var link = new FileInfo(Path.Combine(directory.FullName, "link-to-hello"));
             Assert.Equal("hello.txt", link.LinkTarget);
             Assert.Throws<IOException>(() => ArchiveFile.ExtractToDirectory(GetPath("Archive/sample.tar.xz"), directory.FullName));
@@ -458,7 +458,7 @@ public sealed class ArchiveFileTests
         Assert.True(entries[1].IsDirectory);
         Assert.Equal("hello.txt", entries[5].LinkTarget);
         Assert.Equal(21490, entries[2].Length);
-        Assert.Equal(new DateTimeOffset(new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Local)), entries[0].LastWriteTime);
+        Assert.Equal(new DateTimeOffset(2024, 1, 2, 8, 4, 5, TimeSpan.Zero), entries[0].LastWriteTime);
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead, entries[0].UnixFileMode);
     }
 

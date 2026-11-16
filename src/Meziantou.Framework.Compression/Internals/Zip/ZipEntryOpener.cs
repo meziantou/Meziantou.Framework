@@ -19,6 +19,11 @@ internal static class ZipEntryOpener
             throw new NotSupportedException($"The encryption of the zip entry '{info.FullName}' is not supported (PKWARE strong encryption, or an unknown AES version).");
         }
 
+#if !NET11_0_OR_GREATER
+        if ((ZipCompressionMethod)info.Method is ZipCompressionMethod.Zstandard)
+            throw new NotSupportedException($"The zip entry '{info.FullName}' is compressed with Zstandard (method 93), which needs .NET 11 or later.");
+#endif
+
         if (!IsSupported(info.Method))
             throw new NotSupportedException($"The compression method {info.Method} of the zip entry '{info.FullName}' is not supported.");
     }

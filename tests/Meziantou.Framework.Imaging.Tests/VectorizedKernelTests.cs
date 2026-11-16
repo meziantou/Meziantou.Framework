@@ -537,6 +537,81 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void RowSwapsMatchASwapOfCopies()
+    {
+        var random = new Random(42);
+        foreach (var forceScalar in new[] { false, true })
+        {
+            for (var length = 0; length <= 200; length++)
+            {
+                var first = new byte[length];
+                var second = new byte[length];
+                random.NextBytes(first);
+                random.NextBytes(second);
+                var expectedFirst = second.ToArray();
+                var expectedSecond = first.ToArray();
+                Resampler.TestForceScalar = forceScalar;
+                try
+                {
+                    ProcessingKernels.SwapRows(first, second);
+                }
+                finally
+                {
+                    Resampler.TestForceScalar = false;
+                }
+
+                Assert.Equal(expectedFirst, first);
+                Assert.Equal(expectedSecond, second);
+            }
+        }
+    }
+
+    [Fact]
+    public void DeviceCmykConversionMatchesTheDoubleFormulasForEveryInkAndBlack()
+    {
+        // Every (ink, black) pair, the ink in the cyan, magenta and yellow positions, in rows whose lengths are not multiples of the vector width
+        var inks = new byte[65536 * 4];
+        var expected = new byte[65536 * 3];
+        for (var i = 0; i < 65536; i++)
+        {
+            var ink = (byte)i;
+            var black = (byte)(i >> 8);
+            var other = (byte)(i * 7);
+            var c = (i % 3) is 0 ? ink : other;
+            var m = (i % 3) is 1 ? ink : other;
+            var y = (i % 3) is 2 ? ink : other;
+            inks[4 * i] = c;
+            inks[(4 * i) + 1] = m;
+            inks[(4 * i) + 2] = y;
+            inks[(4 * i) + 3] = black;
+            var color = new Cmyk(c / 255.0, m / 255.0, y / 255.0, black / 255.0).ToRgba32();
+            expected[3 * i] = color.R;
+            expected[(3 * i) + 1] = color.G;
+            expected[(3 * i) + 2] = color.B;
+        }
+
+        foreach (var forceScalar in new[] { false, true })
+        {
+            foreach (var length in new[] { 0, 1, 15, 16, 17, 33, 65536 })
+            {
+                var actual = new byte[length * 3];
+                Resampler.TestForceScalar = forceScalar;
+                try
+                {
+                    CmykColorConversion.DeviceCmyk8ToRgb24(inks.AsSpan(0, length * 4), actual);
+                }
+                finally
+                {
+                    Resampler.TestForceScalar = false;
+                }
+
+                Assert.Equal(expected.AsSpan(0, length * 3).ToArray(), actual);
+            }
+        }
+    }
+
+    [Fact]
     public void GifSortKeysAreSortedByTheRadixPasses()
     {
         // Unique 23-bit keys, below and above the length from which the counting passes are used

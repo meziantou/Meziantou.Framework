@@ -20,7 +20,7 @@ public static partial class CompressionFuzzTargets
     // The decoders stop after 64 KiB of output: LZMA can expand a few bytes to gigabytes
     private const int MaxLzmaDecodedLength = 1 << 16;
 
-    private static readonly string[] LzmaTokens =
+    private static string[] LzmaTokens =>
     [
         "\u00FD7zXZ\u0000", "YZ", "\u0000\u0004", "\u0000\u0001", "\u0000\u0000", "\u0000\u000A", "LZIP", "LZIP\u0001", "]\u0000\u0000\u0080\u0000",
         "!\u0001", "\u0003\u0001", "\u0004\u0000", "\u0005\u0000", "\u0006\u0000", "\u0007\u0000", "\u0008\u0000", "\u0009\u0000", "\u000A\u0000", "\u000B\u0000",

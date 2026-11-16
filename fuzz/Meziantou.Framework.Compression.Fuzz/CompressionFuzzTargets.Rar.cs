@@ -17,7 +17,7 @@ public static partial class CompressionFuzzTargets
     // The key derivation of RAR5 runs 3 * 2^count iterations: the seeds use 2^15
     private const int RarMaxKdfCount = 16;
 
-    private static readonly string[] RarTokens =
+    private static string[] RarTokens =>
     [
         "Rar!\u001A\u0007\u0000", "Rar!\u001A\u0007\u0001\u0000", "RE~^", "MZ",
         "s", "t", "u", "w", "x", "z", "{", "\u0080\u0080", "\u0000\u0080", "ÿÿÿÿ",

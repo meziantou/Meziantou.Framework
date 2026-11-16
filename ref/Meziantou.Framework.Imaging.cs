@@ -3794,12 +3794,14 @@ namespace Meziantou.Framework.Imaging.Formats
         public int AlphaQuality { get => throw null; init { } }
         public bool ClearTransparentColors { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.WebPCompression Compression { get => throw null; init { } }
+        public bool DitherBitDepthReduction { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
         public int Effort { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public int NearLossless { get => throw null; init { } }
         public bool OptimizeFrames { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
+        public bool SharpYuv { get => throw null; init { } }
     }
 }
 namespace Meziantou.Framework.Imaging.Metadata

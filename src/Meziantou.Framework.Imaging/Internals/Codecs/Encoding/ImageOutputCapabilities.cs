@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><term>APNG</term><description>Known frame count (acTL precedes the image data; seeking is never required); optional poster written before frame zero.</description></item>
 /// <item><term>GIF</term><description>Unknown frame count allowed (local palettes, no global prepass); no poster; at most 65,535 pixels per side; play count up to 65,536.</description></item>
 /// <item><term>JPEG</term><description>Exactly one frame; no animation settings; no poster; at most 65,535 pixels per side.</description></item>
-/// <item><term>WebP</term><description>Unknown frame count allowed; no poster; at most 16,384 (lossless) or 16,383 (lossy) pixels per side; play count up to 65,535; animations (several or unknown frames, or animation settings) need a seekable destination (the RIFF size is patched at completion).</description></item>
+/// <item><term>WebP</term><description>Unknown frame count allowed; no poster; at most 16,384 (lossless) or 16,383 (lossy) pixels per side; play count up to 65,535; animations (several or unknown frames, or animation settings) patch the RIFF size at completion: a seekable destination, or the whole output kept in memory for a non-seekable stream (see <see cref="ImageWriterCore"/>).</description></item>
 /// <item><term>QOI</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side (32-bit header fields).</description></item>
 /// <item><term>BMP</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side, and a file size the 32-bit <c>bfSize</c> field can declare.</description></item>
 /// <item><term>TGA</term><description>Exactly one frame; no animation settings; no poster; at most 65,535 pixels per side.</description></item>
@@ -68,8 +68,9 @@ internal sealed class ImageOutputCapabilities
     public int MaxDimension { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the destination must be seekable: sizes written before the data are patched once every
-    /// frame is written (animated WebP). Non-seekable destinations are rejected when the writer is created, before any output.
+    /// Gets a value indicating whether the output patches sizes written before the data once every frame is written (animated
+    /// WebP, ANI, TIFF, image sequences, compressed OpenEXR). Non-seekable destinations are rejected when the writer is
+    /// created, before any output, except for animated WebP, whose whole output is kept in memory and written at completion.
     /// </summary>
     public bool RequiresSeekableOutput { get; }
 

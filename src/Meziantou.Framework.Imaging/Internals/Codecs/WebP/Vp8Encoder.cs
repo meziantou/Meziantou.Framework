@@ -15,7 +15,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// block (weighted by alpha when the block is partly transparent, so hidden colors do not bleed into visible pixels); the
 /// luma of fully transparent pixels is replaced by the mean luma of the visible pixels of their 4x4 block, and each run of
 /// fully transparent 8x8 blocks takes one value (lossy output does not preserve hidden colors: hidden areas then cost almost
-/// no bits, see <see cref="FlattenTransparentRuns"/>). The planes are extended to whole macroblocks by repeating the last column
+/// no bits, see <see cref="FlattenTransparentRuns"/>). With <see cref="Formats.WebPEncoder.SharpYuv"/>, the flattened planes are then
+/// refined for the chroma upsampling of the decoder (<see cref="WebPSharpYuv"/>). The planes are extended to whole macroblocks by repeating the last column
 /// and row.
 /// </description></item>
 /// <item><description>
@@ -36,7 +37,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// <item><description>
 /// First partition (19-bit size, 512 KiB): when the modes chosen freely do not fit, the frame is analyzed once more under a
-/// budget for the mode bits, which always fits (see <see cref="Encode(AllocationScope, ReadOnlySpan{byte}, int, int, int, int, int, CancellationToken)"/>).
+/// budget for the mode bits, which always fits (see <see cref="Encode(AllocationScope, ReadOnlySpan{byte}, int, int, int, int, bool, int, CancellationToken)"/>).
 /// Only very large detailed frames reach it (photographs of about 40 megapixels and more at high quality).
 /// </description></item>
 /// </list>
@@ -175,7 +176,24 @@ internal sealed class Vp8Encoder : IDisposable
     /// <param name="cancellationToken">Checked between macroblock rows.</param>
     /// <returns>The VP8 chunk payload; the caller disposes it.</returns>
     public static PooledPayloadWriter Encode(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, int quality, int effort, CancellationToken cancellationToken)
-        => Encode(scope, rgba, width, height, quality, effort, MaxFirstPartitionSize, cancellationToken);
+        => Encode(scope, rgba, width, height, quality, effort, sharpYuv: false, MaxFirstPartitionSize, cancellationToken);
+
+    /// <summary>Encodes 8-bit RGBA pixels as a VP8 key frame, optionally with the planes refined by <see cref="WebPSharpYuv"/>.</summary>
+    /// <param name="scope">The scope charged for the working memory.</param>
+    /// <param name="rgba">The pixels (<c>width * height * 4</c> bytes).</param>
+    /// <param name="width">The width (1 to 16,383).</param>
+    /// <param name="height">The height (1 to 16,383).</param>
+    /// <param name="quality">The quality, 0 to 100.</param>
+    /// <param name="effort">The effort, 0 to 9.</param>
+    /// <param name="sharpYuv">Whether the Y'CbCr planes are refined for the chroma upsampling of the decoder.</param>
+    /// <param name="cancellationToken">Checked between macroblock rows.</param>
+    /// <returns>The VP8 chunk payload; the caller disposes it.</returns>
+    public static PooledPayloadWriter Encode(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, int quality, int effort, bool sharpYuv, CancellationToken cancellationToken)
+        => Encode(scope, rgba, width, height, quality, effort, sharpYuv, MaxFirstPartitionSize, cancellationToken);
+
+    /// <summary>Encodes 8-bit RGBA pixels as a VP8 key frame whose first partition is at most <paramref name="maxFirstPartitionSize"/> bytes.</summary>
+    internal static PooledPayloadWriter Encode(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, int quality, int effort, int maxFirstPartitionSize, CancellationToken cancellationToken)
+        => Encode(scope, rgba, width, height, quality, effort, sharpYuv: false, maxFirstPartitionSize, cancellationToken);
 
     /// <summary>Encodes 8-bit RGBA pixels as a VP8 key frame whose first partition is at most <paramref name="maxFirstPartitionSize"/> bytes.</summary>
     /// <remarks>
@@ -186,10 +204,10 @@ internal sealed class Vp8Encoder : IDisposable
     /// unable to afford the cheapest modes. 4x4 prediction stays available where it pays most, rather than being disabled
     /// for the whole frame.
     /// </remarks>
-    internal static PooledPayloadWriter Encode(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, int quality, int effort, int maxFirstPartitionSize, CancellationToken cancellationToken)
+    internal static PooledPayloadWriter Encode(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, int quality, int effort, bool sharpYuv, int maxFirstPartitionSize, CancellationToken cancellationToken)
     {
         using var encoder = new Vp8Encoder(scope, width, height, quality, effort, maxFirstPartitionSize, cancellationToken);
-        encoder.LoadSource(rgba);
+        encoder.LoadSource(rgba, sharpYuv);
         encoder.EncodeFrame();
         if (encoder.WriteFrame())
             return encoder.TakeOutput();
@@ -234,7 +252,7 @@ internal sealed class Vp8Encoder : IDisposable
     }
 
     /// <summary>Converts RGBA to the source planes, extended to whole macroblocks by repeating the last column and row.</summary>
-    private void LoadSource(ReadOnlySpan<byte> rgba)
+    private void LoadSource(ReadOnlySpan<byte> rgba, bool sharpYuv)
     {
         var y = _source.Y;
         var u = _source.U;
@@ -287,6 +305,12 @@ internal sealed class Vp8Encoder : IDisposable
         if (hasTransparentPixels)
         {
             FlattenTransparentRuns(rgba);
+        }
+
+        // After the flattening: the visible pixels next to transparent blocks are refined against the chroma that is encoded
+        if (sharpYuv)
+        {
+            WebPSharpYuv.Refine(_scope, rgba[..(_width * _height * 4)], _width, _height, y, yStride, u, v, uvStride, _cancellationToken);
         }
 
         for (var row = 0; row < _height; row++)

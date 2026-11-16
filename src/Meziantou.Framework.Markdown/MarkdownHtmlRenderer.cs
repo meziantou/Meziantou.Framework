@@ -44,7 +44,7 @@ public static class MarkdownHtmlRenderer
     {
         ArgumentNullException.ThrowIfNull(tree);
 
-        var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default) { PlainText = plainText };
+        using var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default) { PlainText = plainText };
         // Finding the targets of the attributes walks every node and token: skip it for the documents that have none
         if (tree.GetRoot().HasGenericAttributes)
         {
@@ -76,7 +76,7 @@ public static class MarkdownHtmlRenderer
     }
 
     // Whether a node of the kind is under the node, read from the green tree, which does not create the nodes it visits
-    private sealed class Writer(int sourceLength, MarkdownParseOptions options, MarkdownHtmlRendererOptions rendererOptions)
+    private sealed class Writer(int sourceLength, MarkdownParseOptions options, MarkdownHtmlRendererOptions rendererOptions) : IDisposable
     {
         // The generic attributes of the nodes, merged as Markdig merges them, and the classes of the attributes of the first line of a
         // block, which come before the classes of the block
@@ -88,16 +88,17 @@ public static class MarkdownHtmlRenderer
         private Dictionary<SyntaxNode, List<string>>? _blockLineClasses;
         private Dictionary<MarkdownParagraphSyntax, MarkdownBlockSyntax>? _nextBlocks;
 
-        // The HTML is about as long as the Markdown
-        private readonly StringBuilder _output = new(sourceLength + 16);
+        // The HTML is longer than the Markdown: the buffer starts at up to twice its length, so that it is rarely copied. The
+        // buffers are rented, so that writing allocates only the string at the end
+        private readonly PooledStringBuilder _output = new(sourceLength + Math.Min(sourceLength, 1 << 20) + 16);
 
         // The text that is not content, which plain text does not write: the tags, the attributes and the HTML
-        private readonly StringBuilder _discardedMarkup = new();
+        private readonly PooledStringBuilder _discardedMarkup = new(256);
 
         /// <summary>Gets or sets a value indicating whether the writer writes plain text: the text of the document without HTML, as the plain text of Markdig.</summary>
         public bool PlainText { get; init; }
 
-        private StringBuilder Markup
+        private PooledStringBuilder Markup
         {
             get
             {
@@ -141,6 +142,12 @@ public static class MarkdownHtmlRenderer
         private string? _backLinks;
 
         public override string ToString() => _output.ToString();
+
+        public void Dispose()
+        {
+            _output.Dispose();
+            _discardedMarkup.Dispose();
+        }
 
         // The classes and the properties that Bootstrap and the direction of the text add after the generic attributes
         private Dictionary<SyntaxNode, (List<string> Classes, List<KeyValuePair<string, string?>> Properties)>? _extraAttributes;
@@ -554,6 +561,23 @@ public static class MarkdownHtmlRenderer
             AppendAttributes(node, attributes, leadingClasses, trailingClasses, id);
         }
 
+        // A class of the class attribute, after a space unless it is the first one
+        private void AppendClass(string? cssClass, ref bool first)
+        {
+            if (cssClass is null)
+            {
+                return;
+            }
+
+            if (!first)
+            {
+                Markup.Append(' ');
+            }
+
+            AppendAttributeEscaped(cssClass);
+            first = false;
+        }
+
         private void AppendAttributes(SyntaxNode node, ParsedAttributes? attributes, string? leadingClasses = null, string? trailingClasses = null, string? id = null)
         {
             id ??= attributes?.Id;
@@ -578,20 +602,30 @@ public static class MarkdownHtmlRenderer
             {
                 Markup.Append(" class=\"");
                 var first = true;
-                foreach (var cssClass in (string?[])[leadingClasses, .. blockLineClasses ?? [], trailingClasses, .. attributes?.Classes ?? [], .. extra.Classes ?? []])
+                AppendClass(leadingClasses, ref first);
+                if (blockLineClasses is not null)
                 {
-                    if (cssClass is null)
+                    foreach (var cssClass in blockLineClasses)
                     {
-                        continue;
+                        AppendClass(cssClass, ref first);
                     }
+                }
 
-                    if (!first)
+                AppendClass(trailingClasses, ref first);
+                if (attributes is not null)
+                {
+                    foreach (var cssClass in attributes.Classes)
                     {
-                        Markup.Append(' ');
+                        AppendClass(cssClass, ref first);
                     }
+                }
 
-                    AppendAttributeEscaped(cssClass);
-                    first = false;
+                if (extra.Classes is not null)
+                {
+                    foreach (var cssClass in extra.Classes)
+                    {
+                        AppendClass(cssClass, ref first);
+                    }
                 }
 
                 Markup.Append('"');
@@ -639,7 +673,7 @@ public static class MarkdownHtmlRenderer
         private void Cr()
         {
             _firstInContainer = false;
-            if (_output.Length > 0 && _output[^1] != '\n')
+            if (_output.Length > 0 && _output.LastChar != '\n')
             {
                 _output.Append('\n');
             }
@@ -957,7 +991,7 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownHtmlBlockSyntax html:
                     CrUnlessFirstInContainer();
-                    AppendHtml(html.Html);
+                    AppendHtmlBlock(html);
                     Cr();
                     break;
 
@@ -1285,7 +1319,7 @@ public static class MarkdownHtmlRenderer
 
         private string RenderCell(MarkdownSyntaxTree content)
         {
-            var writer = new Writer(content.GetText().Length, content.Options, rendererOptions) { PlainText = PlainText };
+            using var writer = new Writer(content.GetText().Length, content.Options, rendererOptions) { PlainText = PlainText };
             if (content.GetRoot().HasGenericAttributes)
             {
                 writer.CollectAttributes(content.GetRoot());
@@ -1511,7 +1545,7 @@ public static class MarkdownHtmlRenderer
                 case SyntaxKind.LineEndingToken when !_hardLineBreaks:
                     // As in Markdig, a line ending after a line ending, which only generic attributes separate, is not written
                     // Plain text does not start with a line ending, as Markdig ensures a line only after text
-                    if (_output.Length == 0 ? !PlainText : _output[^1] != '\n')
+                    if (_output.Length == 0 ? !PlainText : _output.LastChar != '\n')
                     {
                         _output.Append('\n');
                     }
@@ -1520,7 +1554,7 @@ public static class MarkdownHtmlRenderer
                 case SyntaxKind.HardLineBreakToken or SyntaxKind.LineEndingToken:
                     // As Markdig, plain text has a line break: the next text starts on a new line
                     Markup.Append("<br />");
-                    if (!PlainText || _output.Length == 0 || _output[^1] != '\n')
+                    if (!PlainText || _output.Length == 0 || _output.LastChar != '\n')
                     {
                         _output.Append('\n');
                     }
@@ -1941,8 +1975,33 @@ public static class MarkdownHtmlRenderer
             return builder.ToString();
         }
 
+        // The lines of an HTML block, as MarkdownHtmlBlockSyntax.Html joins them, without building the string
+        // Each line is written when the next one shows that a line ending follows it, which ends a tag for the tag filter
+        private void AppendHtmlBlock(MarkdownHtmlBlockSyntax html)
+        {
+            string? previous = null;
+            foreach (var child in html.ChildNodesAndTokens())
+            {
+                if (child.AsToken(out var token) && token.RawKind == (int)SyntaxKind.HtmlLineToken)
+                {
+                    if (previous is not null)
+                    {
+                        AppendHtml(MarkdownText.TrimLineEnding(previous), followedByLineEnding: true);
+                        Markup.Append('\n');
+                    }
+
+                    previous = token.Text;
+                }
+            }
+
+            if (previous is not null)
+            {
+                AppendHtml(MarkdownText.TrimLineEnding(previous));
+            }
+        }
+
         // Raw HTML, where the tag filter of GFM escapes the tags that change how the rest of the page is read
-        private void AppendHtml(ReadOnlySpan<char> html)
+        private void AppendHtml(ReadOnlySpan<char> html, bool followedByLineEnding = false)
         {
             while (!html.IsEmpty)
             {
@@ -1960,14 +2019,14 @@ public static class MarkdownHtmlRenderer
                 }
                 else
                 {
-                    Markup.Append(IsDisallowedTag(html[index..]) ? "&lt;" : "<");
+                    Markup.Append(IsDisallowedTag(html[index..], followedByLineEnding) ? "&lt;" : "<");
                 }
 
                 html = html[(index + 1)..];
             }
         }
 
-        private static bool IsDisallowedTag(ReadOnlySpan<char> tag)
+        private static bool IsDisallowedTag(ReadOnlySpan<char> tag, bool followedByLineEnding)
         {
             var name = tag[1..];
             if (name.StartsWith('/'))
@@ -1977,6 +2036,12 @@ public static class MarkdownHtmlRenderer
 
             foreach (var disallowed in (ReadOnlySpan<string>)["title", "textarea", "style", "xmp", "iframe", "noembed", "noframes", "script", "plaintext"])
             {
+                // A name that ends the text is followed by the line ending after it, when there is one
+                if (followedByLineEnding && name.Length == disallowed.Length && name.Equals(disallowed, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
                 if (name.Length > disallowed.Length && name.StartsWith(disallowed, StringComparison.OrdinalIgnoreCase))
                 {
                     var next = name[disallowed.Length..];

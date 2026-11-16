@@ -16,7 +16,34 @@ public sealed class MarkdownHtmlBlockSyntax : MarkdownBlockSyntax
     public IReadOnlyList<SyntaxToken> LineTokens => GetTokens(SyntaxKind.HtmlLineToken);
 
     /// <summary>Gets the HTML: the lines of the block joined by <c>\n</c>, without the line ending of the last one.</summary>
-    public string Html => string.Join('\n', LineTokens.Select(token => MarkdownText.TrimLineEnding(token.Text).ToString()));
+    public string Html
+    {
+        get
+        {
+            var builder = new StringBuilder();
+            AppendHtml(builder);
+            return builder.ToString();
+        }
+    }
+
+    /// <summary>Appends the HTML, as <see cref="Html"/> has it.</summary>
+    internal void AppendHtml(StringBuilder builder)
+    {
+        var first = true;
+        foreach (var child in ChildNodesAndTokens())
+        {
+            if (child.AsToken(out var token) && token.RawKind == (int)SyntaxKind.HtmlLineToken)
+            {
+                if (!first)
+                {
+                    builder.Append('\n');
+                }
+
+                builder.Append(MarkdownText.TrimLineEnding(token.Text));
+                first = false;
+            }
+        }
+    }
 
     public override string GetPlainText() => "";
 

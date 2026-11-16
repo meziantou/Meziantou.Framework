@@ -11,7 +11,35 @@ public sealed class MarkdownRawHtmlSyntax : MarkdownInlineSyntax
     }
 
     /// <summary>Gets the HTML, with <c>\n</c> for its line breaks.</summary>
-    public string Html => string.Concat(ChildTokens().Select(token => token.RawKind == (int)SyntaxKind.LineEndingToken ? "\n" : GetTokenText(token)));
+    public string Html
+    {
+        get
+        {
+            // The HTML is most often one token: its text is the HTML
+            string? html = null;
+            StringBuilder? builder = null;
+            foreach (var child in ChildNodesAndTokens())
+            {
+                if (!child.AsToken(out var token))
+                {
+                    continue;
+                }
+
+                var text = token.RawKind == (int)SyntaxKind.LineEndingToken ? "\n" : GetTokenText(token);
+                if (html is null)
+                {
+                    html = text;
+                }
+                else
+                {
+                    builder ??= new StringBuilder(html);
+                    builder.Append(text);
+                }
+            }
+
+            return builder?.ToString() ?? html ?? "";
+        }
+    }
 
     internal override void AppendPlainText(StringBuilder builder)
     {

@@ -82,9 +82,9 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
     /// <summary>Gets the first child token of <paramref name="kind"/>, or the default token when there is none.</summary>
     private protected SyntaxToken GetToken(SyntaxKind kind)
     {
-        foreach (var token in ChildTokens())
+        foreach (var child in ChildNodesAndTokens())
         {
-            if (token.RawKind == (int)kind)
+            if (child.AsToken(out var token) && token.RawKind == (int)kind)
             {
                 return token;
             }
@@ -93,7 +93,47 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
         return default;
     }
 
-    private protected IReadOnlyList<SyntaxToken> GetTokens(SyntaxKind kind) => [.. ChildTokens().Where(token => token.RawKind == (int)kind)];
+    /// <summary>Gets the first child token, or the default token when there is none.</summary>
+    internal SyntaxToken GetFirstChildToken()
+    {
+        foreach (var child in ChildNodesAndTokens())
+        {
+            if (child.AsToken(out var token))
+            {
+                return token;
+            }
+        }
+
+        return default;
+    }
+
+    /// <summary>Gets the last child token, or the default token when there is none.</summary>
+    internal SyntaxToken GetLastChildToken()
+    {
+        foreach (var child in ChildNodesAndTokens().Reverse())
+        {
+            if (child.AsToken(out var token))
+            {
+                return token;
+            }
+        }
+
+        return default;
+    }
+
+    private protected IReadOnlyList<SyntaxToken> GetTokens(SyntaxKind kind)
+    {
+        var tokens = new List<SyntaxToken>();
+        foreach (var child in ChildNodesAndTokens())
+        {
+            if (child.AsToken(out var token) && token.RawKind == (int)kind)
+            {
+                tokens.Add(token);
+            }
+        }
+
+        return tokens;
+    }
 
     private protected IReadOnlyList<T> GetNodes<T>(ref IReadOnlyList<T>? field)
         where T : MarkdownSyntaxNode
@@ -104,8 +144,13 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
     {
         var builder = new StringBuilder();
         var previousIsKind = false;
-        foreach (var token in ChildTokens())
+        foreach (var child in ChildNodesAndTokens())
         {
+            if (!child.AsToken(out var token))
+            {
+                continue;
+            }
+
             if (token.RawKind == (int)kind)
             {
                 builder.Append(GetTokenText(token));

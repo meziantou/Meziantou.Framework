@@ -58,14 +58,14 @@ public sealed class MarkdownGenericAttributesSyntax : MarkdownInlineSyntax
 
     /// <summary>Gets a value indicating whether the attributes are on the first line of a heading or a fenced block, which they are for.</summary>
     /// <remarks>Their classes come before the classes of the block, such as the language of a code block.</remarks>
-    internal bool IsBlockLine => ChildTokens().FirstOrDefault().Value is 3;
+    internal bool IsBlockLine => GetFirstChildToken().Value is 3;
 
     /// <summary>Gets the target from the sibling before the attributes, without the attributes before them.</summary>
     internal MarkdownSyntaxNode? GetTarget(SyntaxNodeOrToken previous, bool lastOfAttributesParagraph, Func<MarkdownParagraphSyntax, MarkdownBlockSyntax?> getNextBlock)
     {
         // Attributes after a delimiter that is text are for no element, and the ones after whitespace are for the block
         var parent = Parent;
-        var mark = ChildTokens().FirstOrDefault().Value;
+        var mark = GetFirstChildToken().Value;
         if (parent is null || mark is 1)
         {
             return null;
@@ -236,8 +236,13 @@ public sealed class MarkdownGenericAttributesSyntax : MarkdownInlineSyntax
     private ParsedAttributes Parse()
     {
         var text = new StringBuilder();
-        foreach (var token in ChildTokens())
+        foreach (var child in ChildNodesAndTokens())
         {
+            if (!child.AsToken(out var token))
+            {
+                continue;
+            }
+
             if (token.RawKind == (int)SyntaxKind.AttributesToken)
             {
                 text.Append(token.Text);

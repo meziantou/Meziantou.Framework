@@ -55,8 +55,13 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
     // A token of the opening fence: the fence and the info string are before the lines of the code
     private SyntaxToken GetLeadingToken(SyntaxKind kind)
     {
-        foreach (var token in ChildTokens())
+        foreach (var child in ChildNodesAndTokens())
         {
+            if (!child.AsToken(out var token))
+            {
+                continue;
+            }
+
             if (token.RawKind == (int)kind)
             {
                 return token;
@@ -105,8 +110,13 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
         get
         {
             var builder = new StringBuilder();
-            foreach (var token in ChildTokens())
+            foreach (var child in ChildNodesAndTokens())
             {
+                if (!child.AsToken(out var token))
+                {
+                    continue;
+                }
+
                 if (token.RawKind == (int)SyntaxKind.CodeLineToken)
                 {
                     // The columns of a tab that a container took part of are spaces of the code

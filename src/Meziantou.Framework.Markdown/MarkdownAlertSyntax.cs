@@ -23,7 +23,7 @@ public sealed class MarkdownAlertSyntax : MarkdownBlockSyntax
         {
             foreach (var paragraph in Blocks.OfType<MarkdownParagraphSyntax>())
             {
-                if (paragraph.ChildTokens().FirstOrDefault() is { RawKind: (int)SyntaxKind.AlertKindToken } token)
+                if (paragraph.GetFirstChildToken() is { RawKind: (int)SyntaxKind.AlertKindToken } token)
                 {
                     return token;
                 }

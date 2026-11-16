@@ -14,7 +14,7 @@ public sealed class MarkdownFigureSyntax : MarkdownBlockSyntax
     private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
 
     /// <summary>Gets the carets that open the figure.</summary>
-    public SyntaxToken OpeningFenceToken => ChildTokens().First();
+    public SyntaxToken OpeningFenceToken => GetFirstChildToken();
 
     /// <summary>Gets the carets that close the figure, or the default token when the figure is not closed.</summary>
     public SyntaxToken ClosingFenceToken => ChildTokens().Skip(1).LastOrDefault(token => token.RawKind == (int)SyntaxKind.FigureFenceToken);

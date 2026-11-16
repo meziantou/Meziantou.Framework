@@ -13,10 +13,10 @@ public sealed class MarkdownMathInlineSyntax : MarkdownInlineSyntax
     }
 
     /// <summary>Gets the <c>$</c> or <c>$$</c> that open the math.</summary>
-    public SyntaxToken OpeningDelimiterToken => ChildTokens().First();
+    public SyntaxToken OpeningDelimiterToken => GetFirstChildToken();
 
     /// <summary>Gets the <c>$</c> that close the math.</summary>
-    public SyntaxToken ClosingDelimiterToken => ChildTokens().Last();
+    public SyntaxToken ClosingDelimiterToken => GetLastChildToken();
 
     /// <summary>Gets the math, without the whitespace around it. A backslash is text of the math, as in LaTeX.</summary>
     public string Math => GetToken(SyntaxKind.MathTextToken) is { RawKind: not 0 } token ? token.Text : "";

@@ -24,10 +24,10 @@ public sealed class MarkdownEmphasisExtraSyntax : MarkdownInlineSyntax
     };
 
     /// <summary>Gets the delimiters before the content.</summary>
-    public SyntaxToken OpeningDelimiterToken => ChildTokens().First();
+    public SyntaxToken OpeningDelimiterToken => GetFirstChildToken();
 
     /// <summary>Gets the delimiters after the content.</summary>
-    public SyntaxToken ClosingDelimiterToken => ChildTokens().Last();
+    public SyntaxToken ClosingDelimiterToken => GetLastChildToken();
 
     /// <summary>Gets the inlines between the delimiters.</summary>
     public IEnumerable<SyntaxNodeOrToken> Inlines

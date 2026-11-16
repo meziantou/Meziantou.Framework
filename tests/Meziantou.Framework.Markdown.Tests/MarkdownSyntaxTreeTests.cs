@@ -202,6 +202,8 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a@b.c1 a@b@c.d\n", "<p>a@b.c1 a@<a href=\"mailto:b@c.d\">b@c.d</a></p>\n")]
     [InlineData("<title>a</title>\n", "&lt;title>a&lt;/title>\n")]
     [InlineData("<div>\n<script\nx\n", "<div>\n&lt;script\nx\n")]
+    [InlineData("<div>\n</STYLE\nx\n", "<div>\n&lt;/STYLE\nx\n")]
+    [InlineData("<div>\n<scripts\nx\n", "<div>\n<scripts\nx\n")]
     [InlineData("<div>\n<script\n", "<div>\n<script\n")]
     [InlineData("a <xmp/> <xmpx> <scripT\n/>\n", "<p>a &lt;xmp/> <xmpx> &lt;scripT\n/></p>\n")]
     public void RendersGitHubFlavoredHtml(string text, string expected)

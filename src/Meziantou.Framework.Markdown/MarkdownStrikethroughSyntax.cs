@@ -13,10 +13,10 @@ public sealed class MarkdownStrikethroughSyntax : MarkdownInlineSyntax
     }
 
     /// <summary>Gets the tildes before the content.</summary>
-    public SyntaxToken OpeningDelimiterToken => ChildTokens().First();
+    public SyntaxToken OpeningDelimiterToken => GetFirstChildToken();
 
     /// <summary>Gets the tildes after the content.</summary>
-    public SyntaxToken ClosingDelimiterToken => ChildTokens().Last();
+    public SyntaxToken ClosingDelimiterToken => GetLastChildToken();
 
     /// <summary>Gets the inlines between the tildes.</summary>
     public IEnumerable<SyntaxNodeOrToken> Inlines => ChildNodesAndTokens().Where(child => !child.IsToken || child.AsToken().RawKind != (int)SyntaxKind.StrikethroughDelimiterToken);

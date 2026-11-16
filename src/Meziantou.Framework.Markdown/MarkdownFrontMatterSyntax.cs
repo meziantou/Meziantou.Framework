@@ -13,10 +13,10 @@ public sealed class MarkdownFrontMatterSyntax : MarkdownBlockSyntax
     }
 
     /// <summary>Gets the <c>---</c> that opens the front matter.</summary>
-    public SyntaxToken OpeningFenceToken => ChildTokens().First();
+    public SyntaxToken OpeningFenceToken => GetFirstChildToken();
 
     /// <summary>Gets the <c>---</c> or <c>...</c> that closes the front matter.</summary>
-    public SyntaxToken ClosingFenceToken => ChildTokens().Last();
+    public SyntaxToken ClosingFenceToken => GetLastChildToken();
 
     /// <summary>Gets the tokens of the lines of the front matter, with their line endings.</summary>
     public IReadOnlyList<SyntaxToken> LineTokens => GetTokens(SyntaxKind.FrontMatterLineToken);

@@ -13,7 +13,7 @@ public sealed class MarkdownJiraLinkSyntax : MarkdownInlineSyntax
     }
 
     /// <summary>Gets the reference, such as <c>PROJ-123</c>.</summary>
-    public SyntaxToken ReferenceToken => ChildTokens().First();
+    public SyntaxToken ReferenceToken => GetFirstChildToken();
 
     /// <summary>Gets the key of the project: the letters and the digits before the hyphen.</summary>
     public string ProjectKey => ReferenceToken.Text[..ReferenceToken.Text.IndexOf('-', StringComparison.Ordinal)];

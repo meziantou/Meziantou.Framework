@@ -16,7 +16,7 @@ public sealed class MarkdownCustomContainerSyntax : MarkdownBlockSyntax
     private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
 
     /// <summary>Gets the colons that open the container.</summary>
-    public SyntaxToken OpeningFenceToken => ChildTokens().First();
+    public SyntaxToken OpeningFenceToken => GetFirstChildToken();
 
     /// <summary>Gets the colons that close the container, or the default token when the container is not closed.</summary>
     public SyntaxToken ClosingFenceToken => ChildTokens().Skip(1).LastOrDefault(token => token.RawKind == (int)SyntaxKind.CustomContainerFenceToken);

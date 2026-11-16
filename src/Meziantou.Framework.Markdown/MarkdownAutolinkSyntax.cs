@@ -30,10 +30,10 @@ public sealed class MarkdownAutolinkSyntax : MarkdownInlineSyntax
 
             if (IsMarkdigAutolink)
             {
-                return ChildTokens().First().Text.StartsWith("mailto:", StringComparison.Ordinal);
+                return GetFirstChildToken().Text.StartsWith("mailto:", StringComparison.Ordinal);
             }
 
-            return ChildTokens().First().RawKind != (int)SyntaxKind.ExtendedAutolinkToken;
+            return GetFirstChildToken().RawKind != (int)SyntaxKind.ExtendedAutolinkToken;
         }
     }
 
@@ -44,13 +44,13 @@ public sealed class MarkdownAutolinkSyntax : MarkdownInlineSyntax
         {
             if (!IsExtended)
             {
-                return GetTokenText(ChildTokens().First())[1..^1];
+                return GetTokenText(GetFirstChildToken())[1..^1];
             }
 
             // Markdig writes the email address of mailto: and the number of tel:
             if (IsMarkdigAutolink)
             {
-                var url = GetTokenText(ChildTokens().First());
+                var url = GetTokenText(GetFirstChildToken());
                 return url.StartsWith("mailto:", StringComparison.Ordinal) ? url[7..] : url.StartsWith("tel:", StringComparison.Ordinal) ? url[4..] : url;
             }
 
@@ -67,7 +67,7 @@ public sealed class MarkdownAutolinkSyntax : MarkdownInlineSyntax
         {
             if (IsMarkdigAutolink)
             {
-                var url = GetTokenText(ChildTokens().First());
+                var url = GetTokenText(GetFirstChildToken());
                 var https = ((SyntaxTree as MarkdownSyntaxTree)?.Options ?? MarkdownParseOptions.Default).AutolinkOptions.UseHttpsForWwwLinks;
                 return url.StartsWith("www.", StringComparison.Ordinal) ? (https ? "https://" : "http://") + url : url;
             }

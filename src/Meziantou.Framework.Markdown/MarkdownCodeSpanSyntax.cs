@@ -1,5 +1,6 @@
 using Meziantou.Framework.Language.InternalSyntax;
 using System.Text;
+using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
 
 namespace Meziantou.Framework.Markdown;
 
@@ -16,14 +17,36 @@ public sealed class MarkdownCodeSpanSyntax : MarkdownInlineSyntax
     {
         get
         {
-            var content = new StringBuilder();
-            var tokens = ChildTokens().ToList();
-            for (var i = 1; i < tokens.Count - 1; i++)
+            // The tokens between the backticks: each one is written when the next one shows it is not the closing backticks
+            StringBuilder? content = null;
+            string? text = null;
+            var count = 0;
+            SyntaxToken previous = default;
+            foreach (var child in ChildNodesAndTokens())
             {
-                content.Append(tokens[i].RawKind == (int)SyntaxKind.LineEndingToken ? " " : GetTokenText(tokens[i]));
+                if (!child.AsToken(out var token))
+                {
+                    continue;
+                }
+
+                if (count++ >= 2)
+                {
+                    var previousText = previous.RawKind == (int)SyntaxKind.LineEndingToken ? " " : GetTokenText(previous);
+                    if (text is null)
+                    {
+                        text = previousText;
+                    }
+                    else
+                    {
+                        content ??= new StringBuilder(text);
+                        content.Append(previousText);
+                    }
+                }
+
+                previous = token;
             }
 
-            var text = content.ToString();
+            text = content?.ToString() ?? text ?? "";
             if (text.Length >= 2 && text[0] == ' ' && text[^1] == ' ' && text.AsSpan().ContainsAnyExcept(' '))
             {
                 text = text[1..^1];

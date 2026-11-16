@@ -35,8 +35,13 @@ public sealed class MarkdownMathBlockSyntax : MarkdownBlockSyntax
         get
         {
             var builder = new StringBuilder();
-            foreach (var token in ChildTokens())
+            foreach (var child in ChildNodesAndTokens())
             {
+                if (!child.AsToken(out var token))
+                {
+                    continue;
+                }
+
                 if (token.RawKind == (int)SyntaxKind.MathLineToken)
                 {
                     if (token.Value is int virtualSpaces)

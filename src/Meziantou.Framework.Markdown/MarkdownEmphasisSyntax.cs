@@ -16,10 +16,10 @@ public sealed class MarkdownEmphasisSyntax : MarkdownInlineSyntax
     public bool IsStrong => Kind() == SyntaxKind.StrongEmphasis;
 
     /// <summary>Gets the delimiters before the content.</summary>
-    public SyntaxToken OpeningDelimiterToken => ChildTokens().First();
+    public SyntaxToken OpeningDelimiterToken => GetFirstChildToken();
 
     /// <summary>Gets the delimiters after the content.</summary>
-    public SyntaxToken ClosingDelimiterToken => ChildTokens().Last();
+    public SyntaxToken ClosingDelimiterToken => GetLastChildToken();
 
     /// <summary>Gets the inlines between the delimiters.</summary>
     public IEnumerable<SyntaxNodeOrToken> Inlines => ChildNodesAndTokens().Where(child => !child.IsToken || child.AsToken().RawKind != (int)SyntaxKind.EmphasisDelimiterToken);

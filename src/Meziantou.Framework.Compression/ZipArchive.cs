@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
+using System.Text;
 using Meziantou.Framework.Compression.Internals.IO;
 using Meziantou.Framework.Compression.Internals.Zip;
 
@@ -621,10 +622,28 @@ public sealed class ZipArchive : Archive
         var extra = raw.AsSpan(ZipEntryInfo.CentralHeaderLength + nameLength, extraLength);
         var rawComment = raw.AsSpan(ZipEntryInfo.CentralHeaderLength + nameLength + extraLength, commentLength);
         var commentChanged = !string.Equals(entry.Info.Comment, entry.OriginalComment, StringComparison.Ordinal);
+        var originalFlags = flags;
         var comment = commentChanged ? ZipWriter.EncodeComment(info.Comment, ref flags) : rawComment.ToArray();
+        var name = raw.AsSpan(ZipEntryInfo.CentralHeaderLength, nameLength).ToArray();
+
+        // A comment that needs UTF-8 sets the UTF-8 flag, which applies to the name too, and makes the readers ignore the
+        // Unicode path extra field: a name whose bytes are not its UTF-8 encoding (code page 437, another encoding, or a
+        // name given by the extra field) is written again as UTF-8, in the local header too
+        var rewriteLocalName = false;
+        if ((flags & ZipEntryInfo.FlagUtf8) != 0 && (originalFlags & ZipEntryInfo.FlagUtf8) is 0)
+        {
+            var utf8Name = Encoding.UTF8.GetBytes(info.FullName);
+            if (!utf8Name.AsSpan().SequenceEqual(name))
+            {
+                name = utf8Name;
+                rewriteLocalName = true;
+            }
+        }
+
         return new ZipWriterRecord
         {
-            Name = raw.AsSpan(ZipEntryInfo.CentralHeaderLength, nameLength).ToArray(),
+            RewriteLocalName = rewriteLocalName,
+            Name = name,
             Comment = comment,
             VersionMadeBy = info.VersionMadeBy,
             VersionNeeded = BinaryPrimitives.ReadUInt16LittleEndian(raw.AsSpan(6)),

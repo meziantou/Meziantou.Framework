@@ -43,11 +43,11 @@ internal sealed class LzmaDecoderStream : ReadOnlyStreamBase
     }
 
     /// <summary>Decodes the LZMA data at the position of a buffer that the caller owns (the .lzma and .lz readers).</summary>
-    internal LzmaDecoderStream(LzmaInputBuffer input, int lc, int lp, int pb, uint dictionarySize, long outputLength)
+    internal LzmaDecoderStream(LzmaInputBuffer input, int lc, int lp, int pb, uint dictionarySize, long outputLength, long maxMemoryUsage)
     {
         _input = input;
         _outputLength = outputLength;
-        _decoder = new LzmaDecoder(dictionarySize, outputLength);
+        _decoder = new LzmaDecoder(dictionarySize, outputLength, maxMemoryUsage);
         _decoder.SetProperties(lc, lp, pb);
         _decoder.ResetState();
     }

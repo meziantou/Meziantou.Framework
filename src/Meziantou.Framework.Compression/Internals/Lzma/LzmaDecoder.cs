@@ -63,7 +63,9 @@ internal sealed class LzmaDecoder : IDisposable
 
     /// <param name="dictionarySize">The dictionary size of the stream.</param>
     /// <param name="maxOutputLength">The length of the data when it is known (the window is never larger), or -1.</param>
-    public LzmaDecoder(uint dictionarySize, long maxOutputLength)
+    /// <param name="maxMemoryUsage">The largest window the decoder may allocate (<see cref="ArchiveReaderOptions.MaxMemoryUsage"/>).</param>
+    /// <exception cref="InvalidDataException">The window the data need is larger than <paramref name="maxMemoryUsage"/>.</exception>
+    public LzmaDecoder(uint dictionarySize, long maxOutputLength, long maxMemoryUsage = long.MaxValue)
     {
         var max = (long)Math.Max(dictionarySize, 4096u);
         if (maxOutputLength >= 0)
@@ -73,6 +75,9 @@ internal sealed class LzmaDecoder : IDisposable
 
         // Arrays are limited to about 2 GB: a larger dictionary is useless with a window of the data actually produced
         _maxWindowSize = (int)Math.Min(max, Array.MaxLength);
+        if (_maxWindowSize > maxMemoryUsage)
+            throw new InvalidDataException($"The LZMA dictionary needs {_maxWindowSize} bytes, more than the maximum memory usage ({maxMemoryUsage} bytes).");
+
         _windowCapacity = Math.Min(_maxWindowSize, InitialWindowSize);
         _window = ArrayPool<byte>.Shared.Rent(_windowCapacity);
     }

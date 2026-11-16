@@ -158,7 +158,7 @@ internal static class ZipEntryOpener
         {
             ZipCompressionMethod.Ppmd => CreatePpmdDecoder(info, input, uncompressedSize, options),
             ZipCompressionMethod.Lzma => CreateLzmaDecoder(info, input, uncompressedSize, options),
-            ZipCompressionMethod.Xz => new XzStream(input, CompressionMode.Decompress, leaveOpen: false),
+            ZipCompressionMethod.Xz => new XzStream(input, leaveOpen: false, options.MaxMemoryUsage),
             ZipCompressionMethod.Stored => input,
             ZipCompressionMethod.Deflate => new DeflateStream(input, CompressionMode.Decompress, leaveOpen: false),
             ZipCompressionMethod.Deflate64 => new Deflate64DecoderStream(input, deflate64: true, leaveOpen: false),

@@ -133,9 +133,9 @@ internal static class FormatDetector
         {
             CompressionFormat.GZip => new GZipStream(stream, CompressionMode.Decompress, leaveOpen),
             CompressionFormat.BZip2 => new BZip2Stream(stream, CompressionMode.Decompress, leaveOpen),
-            CompressionFormat.Xz => new XzStream(stream, CompressionMode.Decompress, leaveOpen),
-            CompressionFormat.Lzma => new LzmaStream(stream, CompressionMode.Decompress, leaveOpen),
-            CompressionFormat.LZip => new LZipStream(stream, CompressionMode.Decompress, leaveOpen),
+            CompressionFormat.Xz => new XzStream(stream, leaveOpen, maxMemoryUsage),
+            CompressionFormat.Lzma => new LzmaStream(stream, leaveOpen, maxMemoryUsage),
+            CompressionFormat.LZip => new LZipStream(stream, leaveOpen, maxMemoryUsage),
             CompressionFormat.UnixCompress => new UnixCompressStream(stream, leaveOpen),
             CompressionFormat.Zstandard => ZstandardDecoderFactory.Create(stream, outputLength: -1, maxMemoryUsage, leaveOpen),
             _ => throw new ArgumentOutOfRangeException(nameof(format)),

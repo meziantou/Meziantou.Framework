@@ -123,6 +123,15 @@ internal sealed class ZipWriter
         source.ReadExactlyOrThrow(variable);
         record.LocalZip64 = HasZip64Extra(variable.AsSpan(nameLength));
         record.LocalHeaderOffset = _position;
+        if (record.RewriteLocalName)
+        {
+            // The name of the central directory record, with its UTF-8 flag, in the local header too
+            var flags = (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(fixedHeader.AsSpan(6)) | ZipEntryInfo.FlagUtf8);
+            BinaryPrimitives.WriteUInt16LittleEndian(fixedHeader.AsSpan(6), flags);
+            BinaryPrimitives.WriteUInt16LittleEndian(fixedHeader.AsSpan(26), checked((ushort)record.Name.Length));
+            variable = [.. record.Name, .. variable.AsSpan(nameLength)];
+        }
+
         WriteBytes(fixedHeader);
         WriteBytes(variable);
         CopyBytes(source, info.CompressedSize);

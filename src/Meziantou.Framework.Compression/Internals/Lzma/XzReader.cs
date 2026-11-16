@@ -29,10 +29,12 @@ internal sealed class XzReader : ReadOnlyStreamBase
     private long _declaredUncompressedSize;
     private long _uncompressedSize;
     private bool _disposed;
+    private readonly long _maxMemoryUsage;
 
-    public XzReader(Stream input, bool leaveOpen)
+    public XzReader(Stream input, bool leaveOpen, long maxMemoryUsage = long.MaxValue)
     {
         _input = new LzmaInputBuffer(input, leaveOpen);
+        _maxMemoryUsage = maxMemoryUsage;
     }
 
     private enum State
@@ -228,7 +230,7 @@ internal sealed class XzReader : ReadOnlyStreamBase
 
         _blockStart = _input.TotalConsumed;
         _blockHeaderSize = headerSize;
-        _lzma2 = new Lzma2DecoderStream(_input, lzma2Properties[0], ownsInput: false);
+        _lzma2 = new Lzma2DecoderStream(_input, lzma2Properties[0], ownsInput: false, _maxMemoryUsage);
         Stream stream = _lzma2;
         for (var i = filterCount - 2; i >= 0; i--)
         {

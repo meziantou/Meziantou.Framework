@@ -9,7 +9,7 @@ internal static class LzmaAloneFormat
     public const int HeaderSize = 13;
 
     /// <summary>Reads the header and returns a decoder of the data that follows it in <paramref name="input"/>.</summary>
-    public static LzmaDecoderStream CreateDecoder(LzmaInputBuffer input)
+    public static LzmaDecoderStream CreateDecoder(LzmaInputBuffer input, long maxMemoryUsage)
     {
         Span<byte> header = stackalloc byte[HeaderSize];
         input.ReadExactly(header);
@@ -32,7 +32,7 @@ internal static class LzmaAloneFormat
             outputLength = (long)size;
         }
 
-        return new LzmaDecoderStream(input, lc, lp, pb, dictionarySize, outputLength);
+        return new LzmaDecoderStream(input, lc, lp, pb, dictionarySize, outputLength, maxMemoryUsage);
     }
 
     /// <summary>Writes the header (with an unknown size) and returns an encoder that ends the data with an end marker.</summary>

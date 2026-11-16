@@ -8,10 +8,12 @@ internal sealed class LzmaAloneReader : ReadOnlyStreamBase
     private readonly LzmaInputBuffer _input;
     private LzmaDecoderStream? _decoder;
     private bool _disposed;
+    private readonly long _maxMemoryUsage;
 
-    public LzmaAloneReader(Stream input, bool leaveOpen)
+    public LzmaAloneReader(Stream input, bool leaveOpen, long maxMemoryUsage = long.MaxValue)
     {
         _input = new LzmaInputBuffer(input, leaveOpen);
+        _maxMemoryUsage = maxMemoryUsage;
     }
 
     public override int Read(Span<byte> buffer)
@@ -20,7 +22,7 @@ internal sealed class LzmaAloneReader : ReadOnlyStreamBase
         if (buffer.IsEmpty)
             return 0;
 
-        _decoder ??= LzmaAloneFormat.CreateDecoder(_input);
+        _decoder ??= LzmaAloneFormat.CreateDecoder(_input, _maxMemoryUsage);
         return _decoder.Read(buffer);
     }
 

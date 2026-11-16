@@ -311,6 +311,72 @@ public sealed class ArchiveFileTests
         Assert.Equal(new ArchiveFormatInfo(ArchiveFormat.Unknown, CompressionFormat.None), ArchiveFile.DetectFormat(stream));
     }
 
+    [Theory]
+    [InlineData("./")]
+    [InlineData(".")]
+    public void ExtractToDirectory_RootEntry(string rootName)
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            using var tar = new MemoryStream();
+            using (var writer = new System.Formats.Tar.TarWriter(tar, leaveOpen: true))
+            {
+                writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.Directory, rootName));
+                writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.RegularFile, "./hello.txt") { DataStream = new MemoryStream("Hello"u8.ToArray()) });
+            }
+
+            tar.Position = 0;
+            using (var archive = ArchiveFile.Open(tar, leaveOpen: true))
+            {
+                archive.ExtractToDirectory(directory.FullName, overwriteFiles: true);
+            }
+
+            Assert.Equal("Hello", File.ReadAllText(Path.Combine(directory.FullName, "hello.txt")));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ExtractToDirectory_RejectsASiblingWithTheNameOfTheRootInAnotherCase()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            using var tar = new MemoryStream();
+            using (var writer = new System.Formats.Tar.TarWriter(tar, leaveOpen: true))
+            {
+                writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.RegularFile, "../OUT/evil.txt") { DataStream = new MemoryStream("evil"u8.ToArray()) });
+            }
+
+            tar.Position = 0;
+            using var archive = ArchiveFile.Open(tar, leaveOpen: true);
+            Assert.Throws<IOException>(() => archive.ExtractToDirectory(Path.Combine(directory.FullName, "out")));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void MaxMemoryUsage_AppliesToTheDecompressionOfTheTarArchive()
+    {
+        // xz -6 uses an 8 MiB dictionary
+        var options = new ArchiveReaderOptions { MaxMemoryUsage = 1024 * 1024 };
+        Assert.Throws<InvalidDataException>(() => ArchiveFile.Open(GetPath("Archive/sample.tar.xz"), options));
+        Assert.Throws<InvalidDataException>(() =>
+        {
+            using var reader = ArchiveReader.Create(GetPath("Archive/sample.tar.xz"), options);
+        });
+
+        using var archive = ArchiveFile.Open(GetPath("Archive/sample.tar.xz"), new ArchiveReaderOptions { MaxMemoryUsage = 16 * 1024 * 1024 });
+        Assert.HasCount(6, archive.Entries);
+    }
+
     [Fact]
     public void Documentation_Examples()
     {

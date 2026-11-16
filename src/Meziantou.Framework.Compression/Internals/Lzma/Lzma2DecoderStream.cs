@@ -30,11 +30,11 @@ internal sealed class Lzma2DecoderStream : ReadOnlyStreamBase
     }
 
     /// <summary>Decodes the LZMA2 data at the position of a buffer that the caller owns (the XZ reader).</summary>
-    internal Lzma2DecoderStream(LzmaInputBuffer input, byte dictionaryProperty, bool ownsInput)
+    internal Lzma2DecoderStream(LzmaInputBuffer input, byte dictionaryProperty, bool ownsInput, long maxMemoryUsage = long.MaxValue)
     {
         _input = input;
         _ownsInput = ownsInput;
-        _decoder = new LzmaDecoder(LzmaConstants.GetLzma2DictionarySize(dictionaryProperty), maxOutputLength: -1);
+        _decoder = new LzmaDecoder(LzmaConstants.GetLzma2DictionarySize(dictionaryProperty), maxOutputLength: -1, maxMemoryUsage);
     }
 
     /// <summary>Gets a value indicating whether the end of the LZMA2 stream was read.</summary>

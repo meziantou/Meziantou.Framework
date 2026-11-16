@@ -49,6 +49,12 @@ public sealed class XzStream : Stream
         _core = CodecStreamCore.Create(stream, mode, leaveOpen, input => new XzReader(input, leaveOpen: true), output => CreateWriter(output, new XzCompressionOptions()));
     }
 
+    /// <summary>Initializes a decompression stream whose decoder allocates at most <paramref name="maxMemoryUsage"/> bytes for its window (the archive readers).</summary>
+    internal XzStream(Stream stream, bool leaveOpen, long maxMemoryUsage)
+    {
+        _core = CodecStreamCore.CreateDecompressor(stream, leaveOpen, input => new XzReader(input, leaveOpen: true, maxMemoryUsage));
+    }
+
     /// <summary>Initializes a new instance of the <see cref="XzStream"/> class that compresses at a compression level.</summary>
     /// <param name="stream">The stream to write the compressed data to.</param>
     /// <param name="compressionLevel">The compression level: <see cref="CompressionLevel.Optimal"/> is the preset 6, <see cref="CompressionLevel.Fastest"/> the preset 1, <see cref="CompressionLevel.NoCompression"/> the preset 0, and <see cref="CompressionLevel.SmallestSize"/> the preset 9.</param>

@@ -6,7 +6,10 @@ namespace Meziantou.Framework.Compression.Internals;
 /// </summary>
 internal sealed class ArchiveExtractor
 {
-    private static readonly StringComparison PathComparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+    // The paths are compared ordinally on every platform, even where the file system ignores the case: they all start
+    // with the root as it is written, so an ordinal comparison never rejects a valid path, while an ignore-case comparison
+    // would accept a sibling directory of the root on a case-sensitive volume ("../OUT/evil" from "/tmp/out").
+    private const StringComparison PathComparison = StringComparison.Ordinal;
 
     private readonly string _root;
     private readonly bool _overwrite;
@@ -128,11 +131,13 @@ internal sealed class ArchiveExtractor
             throw new IOException($"The entry '{name}' has a rooted path, which would be extracted outside of the destination directory.");
 
         var path = Path.GetFullPath(Path.Join(_root, relative));
+
+        // The root itself, such as the "./" entry of a tar archive created from a directory
+        if (string.Equals(Path.TrimEndingDirectorySeparator(path), _root, PathComparison))
+            return null;
+
         if (!IsUnderRoot(path))
             throw new IOException($"The entry '{name}' would be extracted outside of the destination directory.");
-
-        if (string.Equals(path, _root, PathComparison))
-            return null;
 
         EnsureNoLinkInPath(path, name);
         return path;

@@ -20,6 +20,12 @@ internal sealed class ZipWriterRecord
 
     public required byte[] Name { get; init; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the copy of an existing entry writes <see cref="Name"/> and the UTF-8 flag in
+    /// its local header too, instead of the bytes of the archive (the name is re-encoded as UTF-8 for a comment that needs it).
+    /// </summary>
+    public bool RewriteLocalName { get; set; }
+
     public byte[] Comment { get; set; } = [];
 
     public required ushort VersionMadeBy { get; set; }

@@ -23,10 +23,12 @@ internal sealed class LZipReader : ReadOnlyStreamBase
     private bool _firstMember = true;
     private bool _end;
     private bool _disposed;
+    private readonly long _maxMemoryUsage;
 
-    public LZipReader(Stream input, bool leaveOpen)
+    public LZipReader(Stream input, bool leaveOpen, long maxMemoryUsage = long.MaxValue)
     {
         _input = new LzmaInputBuffer(input, leaveOpen);
+        _maxMemoryUsage = maxMemoryUsage;
     }
 
     /// <summary>Gets the magic bytes of a member.</summary>
@@ -123,7 +125,7 @@ internal sealed class LZipReader : ReadOnlyStreamBase
         _firstMember = false;
         _crc.Reset();
         _dataSize = 0;
-        _member = new LzmaDecoderStream(_input, lc: 3, lp: 0, pb: 2, dictionarySize, outputLength: -1);
+        _member = new LzmaDecoderStream(_input, lc: 3, lp: 0, pb: 2, dictionarySize, outputLength: -1, _maxMemoryUsage);
     }
 
     private void EndMember()

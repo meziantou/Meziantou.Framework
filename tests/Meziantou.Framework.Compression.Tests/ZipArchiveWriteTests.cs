@@ -736,4 +736,47 @@ public sealed class ZipArchiveWriteTests
             base.SetLength(value);
         }
     }
+
+    [Fact]
+    public void Update_CommentThatNeedsUtf8_KeepsTheCodePage437Names()
+    {
+        using var stream = new MemoryStream();
+        using (var file = ZipTestData.OpenRead("cp437-names.zip"))
+        {
+            file.CopyTo(stream);
+        }
+
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Update, leaveOpen: true))
+        {
+            foreach (var entry in archive.Entries)
+            {
+                entry.SetComment("日本");
+            }
+        }
+
+        stream.Position = 0;
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true))
+        {
+            Assert.Equal(["résumé/café.txt", "日本語.txt"], archive.Entries.Select(entry => entry.FullName));
+            Assert.Equal(["日本", "日本"], archive.Entries.Select(entry => entry.Comment));
+        }
+
+        // The local headers have the same names: the forward-only reader and System.IO.Compression read them
+        stream.Position = 0;
+        using (var reader = ArchiveReader.Create(stream, leaveOpen: true))
+        {
+            var names = new List<string>();
+            while (reader.MoveToNextEntry())
+            {
+                names.Add(reader.Entry!.FullName);
+            }
+
+            Assert.Equal(["résumé/café.txt", "日本語.txt"], names);
+        }
+
+        stream.Position = 0;
+        using var bcl = new System.IO.Compression.ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
+        Assert.Equal(["résumé/café.txt", "日本語.txt"], bcl.Entries.Select(entry => entry.FullName));
+    }
+
 }

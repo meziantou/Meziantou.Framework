@@ -65,9 +65,10 @@ Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, J
 | `--pdf-permissions <All\|Annotate\|Assemble\|CopyContent\|ExtractForAccessibility\|FillForms\|Modify\|None\|Print\|PrintHighQuality>` | The operations allowed without the owner password, separated by commas: None, Print, PrintHighQuality, Modify, CopyContent, Annotate, FillForms, ExtractForAccessibility, Assemble, All. Needs --pdf-owner-password. Default: All |  |
 | `--pdf-flatten-forms` | Draw the form fields of the PDF inputs in the content of their pages, so that their values are kept in the PDF output. Without it, the PDF output leaves the form fields out |  |
 | `--epub-mode <Auto\|Images\|Render>` | How the EPUB pages are made. Auto uses the images of a book whose pages are images (comics), and lays out the text of the other books | `Auto` |
-| `--epub-page-size <epub-page-size>` | The size of the pages the text of an EPUB book is laid out on: A3, A4, A5, Letter, Legal, or a size such as 148x210mm | `A5` |
-| `--epub-margin <epub-margin>` | The margin of the pages the text of an EPUB book is laid out on, in millimeters | `15` |
-| `--epub-font-size <epub-font-size>` | The size of the text of an EPUB book, in points. Default: the size of the style sheets of the book |  |
+| `--layout-page-size <layout-page-size>` | The size of the pages the text of EPUB, Markdown and HTML documents is laid out on: A3, A4, A5, Letter, Legal, or a size such as 148x210mm. Default: A5 for EPUB, A4 for Markdown and HTML |  |
+| `--layout-margin <layout-margin>` | The margin of the pages the text of EPUB, Markdown and HTML documents is laid out on, in millimeters | `15` |
+| `--layout-font-size <layout-font-size>` | The size of the text of EPUB, Markdown and HTML documents laid out on pages, in points. Default: the size of the style sheets of the document |  |
+| `--html-root <html-root>` | The folder whose files (images, style sheets, fonts) Markdown and HTML documents laid out on pages can load, such as the root of a documentation site. Default: the folder of each document. Nothing is loaded from the network |  |
 | `--markdown-extensions <markdown-extensions>` | The Markdown extensions of a Markdown input, separated by '+': 'common' for CommonMark only, 'advanced' (tables, task lists, footnotes, alerts...), or extensions such as 'pipetables+tasklists+emojis' | `advanced` |
 | `--markdown-disable-html` | Write the raw HTML of a Markdown input as text, for a document from an untrusted source |  |
 | `--html-fragment` | Write only the content of the body of the HTML output, without \<html\>, \<head\> and \<body\> |  |

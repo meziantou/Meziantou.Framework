@@ -12,9 +12,9 @@ internal enum FileFormatKind
     /// <summary>An archive (zip, 7z, RAR, tar...): converting it to another archive copies its entries.</summary>
     Archive,
 
-    /// <summary>A Markdown document, converted to HTML.</summary>
+    /// <summary>A Markdown document, converted to HTML, or laid out on pages.</summary>
     Markdown,
 
-    /// <summary>An HTML document, converted to Markdown.</summary>
+    /// <summary>An HTML document, converted to Markdown, or laid out on pages.</summary>
     Html,
 }

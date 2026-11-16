@@ -1,10 +1,10 @@
 ---
 title: Markdown and HTML
-description: Convert Markdown documents to HTML pages, and HTML pages to Markdown documents.
+description: Convert Markdown documents to HTML pages, HTML pages to Markdown documents, and both to PDF documents or images.
 ---
 
-The tool converts a Markdown document to HTML, and an HTML document to Markdown. Each input gives one output, next to
-it by default:
+The tool converts a Markdown document to HTML, and an HTML document to Markdown. It also lays out both on pages, to a
+PDF document or images. Each input gives one output, next to it by default:
 
 ```bash
 Meziantou.Framework.FileConversion.Tool readme.md --output-format html
@@ -18,8 +18,8 @@ Meziantou.Framework.FileConversion.Tool page.html --output-format md
 | HTML | `.html`, `.htm` | Yes | Yes |
 
 A Markdown or HTML file is recognized by its extension; a file without one is read as HTML when it starts with
-`<!DOCTYPE html>` or `<html>`. The files are read as UTF-8, unless they start with a byte order mark, and written as
-UTF-8. These documents are not converted to other formats, such as PDF or images.
+`<!DOCTYPE html>` or `<html>`. A Markdown file is read as UTF-8, unless it starts with a byte order mark; the outputs are
+written as UTF-8.
 
 ## Markdown to HTML
 
@@ -64,6 +64,36 @@ example with [HtmlSanitizer](../HtmlSanitizer/01-Introduction.md).
 | `--html-fragment` | Write only the content, without `<html>`, `<head>` and `<body>` |
 | `--html-title` | The title of the page |
 | `--html-stylesheet` | The URL of a style sheet the page links to. Repeat it for several style sheets |
+
+## Markdown and HTML to PDF
+
+The document is laid out with its style sheets on A4 pages, like a browser prints a page, and the text of the PDF
+document stays text, so it can be searched and selected. A Markdown document is converted to HTML first, with the
+options above: `--html-stylesheet` styles its pages. The other page outputs, such as PNG, JPEG, TIFF or CBZ, get images
+of the pages:
+
+```bash
+Meziantou.Framework.FileConversion.Tool report.md --output-format pdf
+Meziantou.Framework.FileConversion.Tool "docs/*.md" --output manual.pdf --layout-page-size Letter --html-stylesheet print.css
+Meziantou.Framework.FileConversion.Tool page.html --output "page-{page}.png" --dpi 96
+```
+
+The pages of all the inputs go to one PDF document, or to one document per input with `--per-input`, as for the
+other inputs. The title of the PDF document is the title of the page: `<title>` for an HTML document, the title of the
+front matter or the first heading for a Markdown document.
+
+The document loads the images, style sheets and fonts of its folder and of the folders below it, and nothing from the
+network: an image whose URL starts with `https://` is not shown. When the document uses files of a parent folder, such
+as `../images/logo.png` in a documentation site, set that folder with `--html-root`. Scripts do not run. An HTML
+document is decoded as a browser does: from its byte order mark, its `<meta charset>`, or as UTF-8.
+
+| Option | Description |
+| --- | --- |
+| `--layout-page-size` | `A3`, `A4` (the default), `A5`, `Letter`, `Legal`, or a size such as `210x297mm` |
+| `--layout-margin` | The margin of the pages, in millimeters. 15 by default |
+| `--layout-font-size` | The size of the text, in points. By default, the size the style sheets set |
+| `--html-root` | The folder whose files the document can load. By default, the folder of the document |
+| `--dpi` | The resolution of the images of the pages, for an image output. 150 by default |
 
 ## HTML to Markdown
 

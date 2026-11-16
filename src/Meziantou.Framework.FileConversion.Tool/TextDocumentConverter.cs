@@ -25,20 +25,22 @@ internal static class TextDocumentConverter
         return builder.Build();
     }
 
-    /// <summary>Converts a Markdown document to HTML: a complete document, or the content of its body when <see cref="ConversionSettings.HtmlFragment"/> is set.</summary>
+    /// <summary>Converts a Markdown document to HTML: a complete document, or the content of its body.</summary>
     /// <param name="markdown">The Markdown document.</param>
     /// <param name="defaultTitle">The title of the HTML document when the Markdown document has no title in its front matter and no heading.</param>
     /// <param name="settings">The settings.</param>
+    /// <param name="fragment">Whether only the content of the body is written, without <c>&lt;html&gt;</c>, <c>&lt;head&gt;</c> and <c>&lt;body&gt;</c>.</param>
+    /// <returns>The HTML, and the title of the document.</returns>
     /// <exception cref="ArgumentException">The document is nested too deeply.</exception>
-    public static string MarkdownToHtml(string markdown, string defaultTitle, ConversionSettings settings)
+    public static (string Html, string Title) MarkdownToHtml(string markdown, string defaultTitle, ConversionSettings settings, bool fragment)
     {
         var pipeline = CreatePipeline(settings.MarkdownExtensions, settings.MarkdownDisableHtml);
         var document = MarkdownConverter.Parse(markdown, pipeline);
         var body = document.ToHtml(pipeline);
-        if (settings.HtmlFragment)
-            return body;
-
         var title = settings.HtmlTitle ?? GetTitle(markdown, document, pipeline) ?? defaultTitle;
+        if (fragment)
+            return (body, title);
+
         var sb = new StringBuilder();
         sb.Append("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
         sb.Append("<title>").Append(WebUtility.HtmlEncode(title)).Append("</title>\n");
@@ -54,7 +56,7 @@ internal static class TextDocumentConverter
         }
 
         sb.Append("</body>\n</html>\n");
-        return sb.ToString();
+        return (sb.ToString(), title);
     }
 
     /// <summary>Converts an HTML document to Markdown: the content of its body, or the whole text when it has no body.</summary>

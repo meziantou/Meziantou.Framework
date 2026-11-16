@@ -13,7 +13,7 @@ namespace Meziantou.Framework.FileConversionTool.Fuzz;
 
 /// <summary>
 /// The inputs the tool reads besides the image, PDF and archive files (fuzzed in their own projects): the output name
-/// templates, the page ranges, the PDF permissions, the conversions between Markdown and HTML, the EPUB packages, the pages of the comic book archives and the copy of the entries of an
+/// templates, the page ranges, the PDF permissions, the conversions between Markdown and HTML, the URLs of the local files of HTML documents, the EPUB packages, the pages of the comic book archives and the copy of the entries of an
 /// archive to another format.
 /// </summary>
 public static class FileConversionFuzzTargets
@@ -45,6 +45,7 @@ public static class FileConversionFuzzTargets
         new("file-conversion-pdf-permissions", PdfPermissionsTarget) { Seeds = GetPdfPermissionsSeeds, Dictionary = PdfPermissionTokens },
         new("file-conversion-markdown-to-html", MarkdownToHtml) { Seeds = GetMarkdownSeeds, Dictionary = MarkdownTokens },
         new("file-conversion-html-to-markdown", HtmlToMarkdown) { Seeds = GetHtmlSeeds, Dictionary = HtmlTokens },
+        new("file-conversion-local-file-url", LocalFileUrl) { Seeds = GetLocalFileUrlSeeds, Dictionary = ["https://local.invalid/", "/", "..", ".", "%2e", "%2F", "%5C", "\\", ":", "C:", "?", "#", "%00", "%"] },
         new("file-conversion-natural-order", NaturalOrder) { Seeds = GetNaturalOrderSeeds },
         new("file-conversion-epub-path", EpubPath) { Seeds = GetEpubPathSeeds, Dictionary = ["/", "..", ".", "%2F", "%2e", "#", "?", ":", "\\"] },
         new("file-conversion-epub-package", EpubPackageTarget) { Seeds = GetArchiveSeeds, Dictionary = EpubTokens },
@@ -126,7 +127,7 @@ public static class FileConversionFuzzTargets
         string html;
         try
         {
-            html = TextDocumentConverter.MarkdownToHtml(markdown, "default <title>", new ConversionSettings());
+            html = TextDocumentConverter.MarkdownToHtml(markdown, "default <title>", new ConversionSettings(), fragment: false).Html;
         }
         catch (ArgumentException)
         {
@@ -145,8 +146,19 @@ public static class FileConversionFuzzTargets
         FuzzAssert.False(title.Contains('<', StringComparison.Ordinal) || title.Contains('>', StringComparison.Ordinal) || title.Contains('\n', StringComparison.Ordinal), "The title of the HTML document is not escaped");
         FuzzAssert.True(html.IndexOf("</head>\n<body>\n", StringComparison.Ordinal) > titleEnd, "The head of the HTML document has more than its metadata");
 
-        var fragment = TextDocumentConverter.MarkdownToHtml(markdown, "title", new ConversionSettings { HtmlFragment = true });
+        var fragment = TextDocumentConverter.MarkdownToHtml(markdown, "title", new ConversionSettings(), fragment: true).Html;
         FuzzAssert.True(html.Contains("<body>\n" + fragment, StringComparison.Ordinal), "The body of the HTML document is not the HTML fragment");
+    }
+
+    private static void LocalFileUrl(ReadOnlySpan<byte> data)
+    {
+        var url = FuzzInput.ReadText(data);
+        var root = FullPath.FromPath(OperatingSystem.IsWindows() ? @"C:\root\site" : "/root/site");
+        if (!Layout.LocalFileDocumentLoader.TryResolvePath(root, url, out var path))
+            return;
+
+        FuzzAssert.True(path.IsChildOf(root), "The URL resolves to a file outside of the root folder");
+        FuzzAssert.True(Layout.LocalFileDocumentLoader.TryResolvePath(root, url, out var again) && again == path, "The resolution of a URL is not deterministic");
     }
 
     private static void HtmlToMarkdown(ReadOnlySpan<byte> data)
@@ -413,6 +425,21 @@ public static class FileConversionFuzzTargets
         for (var i = 0; i < documents.Length; i++)
         {
             yield return FuzzSeed.FromText($"markdown-{i}", documents[i]);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetLocalFileUrlSeeds()
+    {
+        string[] urls =
+        [
+            "https://local.invalid/a/b.png", "https://local.invalid/a/./b.css?v=1#top", "https://local.invalid/a/../b%20c.png",
+            "https://local.invalid/../secret.txt", "https://local.invalid/a/../../secret.txt", "https://local.invalid/%2e%2e/secret.txt",
+            "https://local.invalid/a%2F..%2F..%2Fsecret.txt", "https://local.invalid/C:%5Csecret.txt", "https://local.invalid/",
+            "https://example.com/a.png", "file:///etc/passwd",
+        ];
+        for (var i = 0; i < urls.Length; i++)
+        {
+            yield return FuzzSeed.FromText($"url-{i}", urls[i]);
         }
     }
 

@@ -18,7 +18,7 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
     public void Convert(CancellationToken cancellationToken)
     {
         var inputs = ResolveInputs(settings.Inputs);
-        _inputPaths = [.. inputs.Select(input => ResolveLinks(input))];
+        _inputPaths = [.. inputs.Select(FileLinks.GetComparisonKey)];
         var inputFormats = inputs.Select(DetectInputFormat).ToArray();
 
         var template = settings.Output is null ? null : OutputNameTemplate.Parse(settings.Output);
@@ -34,14 +34,9 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
             ValidatePdfOutputSettings();
         }
 
-        var textInput = Array.FindIndex(inputFormats, format => format.Kind is FileFormatKind.Markdown or FileFormatKind.Html);
         if (outputFormat.Kind is FileFormatKind.Markdown or FileFormatKind.Html)
         {
             ConvertTextDocuments(inputs, inputFormats, template, outputFormat);
-        }
-        else if (textInput >= 0)
-        {
-            throw new ConversionException($"The input '{inputs[textInput]}' is {WithArticle(inputFormats[textInput].Name)} document, which can be converted only to HTML or Markdown");
         }
         else if (outputFormat.Kind is FileFormatKind.Archive)
         {
@@ -253,7 +248,7 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
 
             var text = File.ReadAllText(input);
             var result = outputFormat.Kind is FileFormatKind.Html
-                ? TextDocumentConverter.MarkdownToHtml(text, name, settings)
+                ? TextDocumentConverter.MarkdownToHtml(text, name, settings, settings.HtmlFragment).Html
                 : TextDocumentConverter.HtmlToMarkdown(text, settings);
 
             outputPath.CreateParentDirectory();
@@ -403,47 +398,6 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
     private static string GetExtension(OutputNameTemplate? template, FileFormat outputFormat)
         => template is not null && FileFormat.FromExtension(Path.GetExtension(template.Text)) == outputFormat ? Path.GetExtension(template.Text) : outputFormat.DefaultExtension;
 
-    /// <summary>
-    /// Gets the path of a file with the links of its path resolved: the links of the folders, and the link of the file. The
-    /// comparison of the result ignores the case on Windows and macOS, whose file systems usually do.
-    /// </summary>
-    internal static FullPath ResolveLinks(FullPath path) => ResolveLinks(path, depth: 0);
-
-    private static FullPath ResolveLinks(FullPath path, int depth)
-    {
-        // A cycle of links, or a too long chain: the path as it is
-        if (depth > 40)
-            return path;
-
-        var value = path.Value;
-        var root = Path.GetPathRoot(value);
-        if (string.IsNullOrEmpty(root))
-            return path;
-
-        var current = root;
-        foreach (var segment in value[root.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
-        {
-            var next = Path.Combine(current, segment);
-            try
-            {
-                FileSystemInfo info = Directory.Exists(next) ? new DirectoryInfo(next) : new FileInfo(next);
-                if (info.LinkTarget is not null && info.ResolveLinkTarget(returnFinalTarget: true) is { } target)
-                {
-                    next = ResolveLinks(FullPath.FromPath(target.FullName), depth + 1).Value;
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                // A broken or unreadable link: its path as it is
-            }
-
-            current = next;
-        }
-
-        var result = FullPath.FromPath(current);
-        return OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? FullPath.FromPath(result.Value.ToUpperInvariant()) : result;
-    }
-
     private FullPath GetOutputPath(OutputNameTemplate template, OutputNameValues values, FullPath input)
     {
         var path = FullPath.FromPath(template.Format(values));
@@ -454,7 +408,7 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
         }
 
         // A link (of the file or of a parent folder) can make an output path another name of an input
-        if (_inputPaths.Contains(ResolveLinks(path)))
+        if (_inputPaths.Contains(FileLinks.GetComparisonKey(path)))
             throw new ConversionException($"The output '{path}' is the input file '{input}'");
 
         if (!settings.Overwrite && File.Exists(path))

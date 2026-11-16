@@ -91,13 +91,18 @@ internal sealed class ConversionSettings
 
     public bool PdfFlattenForms { get; init; }
 
+    // Layout of the text of EPUB, Markdown and HTML documents
+    /// <summary>Gets the size of the pages, or null for the default size of the format: A5 for EPUB, A4 for Markdown and HTML.</summary>
+    public PdfSize? LayoutPageSize { get; init; }
+
+    public double LayoutMargin { get; init; } = 15;
+
+    public double? LayoutFontSize { get; init; }
+
+    /// <summary>Gets the folder whose files Markdown and HTML documents can load, or null for the folder of each document.</summary>
+    public FullPath? HtmlRoot { get; init; }
+
     // EPUB input
-    public PdfSize EpubPageSize { get; init; } = PdfSize.A5;
-
-    public double EpubMargin { get; init; } = 15;
-
-    public double? EpubFontSize { get; init; }
-
     public EpubMode EpubMode { get; init; }
 
     // Markdown input

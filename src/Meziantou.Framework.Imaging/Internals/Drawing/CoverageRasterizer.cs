@@ -70,9 +70,17 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>The number of columns of a row from which the entries of the difference row that are zero are skipped.</summary>
     private const int MinZeroSkipWidth = 32;
 
+    /// <summary>The number of positions the changes of a height span from which they are recorded, and the walk jumps between them (see <see cref="Walk"/>).</summary>
+    private const int MinJumpingWalkSpan = 32;
+
+    // The kinds of the entries of ChangeEvents
+    private const int Removal = 0;
+    private const int Insertion = 1;
+    private const int ChangedRange = 2;
+
     // The scratch of the sweep, for each edge a row can hold at once: a copy of the edge, then the doubles and integers
     private const int SweepDoublesPerEdge = 4;
-    private const int SweepIntegersPerEdge = 10;
+    private const int SweepIntegersPerEdge = 13;
     private static readonly int SweepBytesPerEdge = Unsafe.SizeOf<DrawingEdge>() + (SweepDoublesPerEdge * sizeof(double)) + (SweepIntegersPerEdge * sizeof(int));
 
     private readonly AllocationScope _scope;
@@ -110,6 +118,10 @@ internal sealed class CoverageRasterizer : IDisposable
     private int _freeCount;
     private int _changedFirst;
     private int _changedLast;
+
+    // The number of entries of ChangeEvents for the current height: none until the changes span many positions
+    private int _changeEventCount;
+
     private int _dirtyMin;
     private int _dirtyMax;
     private int _events;
@@ -273,6 +285,21 @@ internal sealed class CoverageRasterizer : IDisposable
     /// </summary>
     private Span<int> NeighborChanged => SweepIntegers.Slice(9 * _sweepCapacity, _sweepCapacity);
 
+    /// <summary>
+    /// A bit per position of the sweep line, set by <see cref="Walk"/> where an edge was inserted or removed at the current
+    /// height and at the left neighbor of that position (which has a new right neighbor), and cleared once it is done. The
+    /// integers of the slice hold more bits than the sweep line has positions, plus one.
+    /// </summary>
+    private Span<ulong> ChangedPositions => unsafe(MemoryMarshal.Cast<int, ulong>(SweepIntegers.Slice(10 * _sweepCapacity, _sweepCapacity)));
+
+    /// <summary>
+    /// What changed in the sweep line at the current height, in order, once the changes span many positions (see
+    /// <see cref="RecordChange"/>): a range of positions marked as a whole (two entries, of kind <see cref="ChangedRange"/>),
+    /// then each insertion (<see cref="Insertion"/>) and removal (<see cref="Removal"/>). An entry is the position times 4,
+    /// plus its kind. An edge does not start and end at the same height: there are at most two entries more than slots.
+    /// </summary>
+    private Span<int> ChangeEvents => SweepIntegers.Slice(11 * _sweepCapacity, 2 * _sweepCapacity);
+
     private Span<double> StartKeys => SweepDoubles.Slice(2 * _sweepCapacity, _sweepCapacity);
 
     private Span<double> EndKeys => SweepDoubles.Slice(3 * _sweepCapacity, _sweepCapacity);
@@ -413,6 +440,9 @@ internal sealed class CoverageRasterizer : IDisposable
         {
             order[rowCounts[GetFirstRow(list[i])]++] = i;
         }
+
+        // A rasterization canceled in the middle of a walk left its changes
+        ChangedPositions[..((maxActive >> 6) + 1)].Clear();
 
         // Every slot a row can need is free; the first ones are taken first. The edges of a row take their slots before
         // those that end in it release theirs: no more slots are taken at once than edges cross a row
@@ -789,6 +819,7 @@ internal sealed class CoverageRasterizer : IDisposable
 
                 _changedFirst = int.MaxValue;
                 _changedLast = -1;
+                _changeEventCount = 0;
                 while (endIndex < endCount && endKeys[endIndex] <= y)
                 {
                     Remove(ref s, endSlots[endIndex++]);
@@ -1028,13 +1059,15 @@ internal sealed class CoverageRasterizer : IDisposable
             neighborChanged[line[low - 1]] = 1;
         }
 
-        if (_changedLast >= low)
+        var changedFirst = _changedFirst;
+        var changedLast = _changedLast;
+        _changedFirst = Math.Min(changedFirst, low);
+        _changedLast = Math.Max(changedLast >= low ? changedLast + 1 : changedLast, low);
+        if (_changeEventCount != 0 || _changedLast - _changedFirst >= MinJumpingWalkSpan)
         {
-            _changedLast++;
+            RecordChange((low << 2) | Insertion, changedFirst, changedLast);
         }
 
-        _changedFirst = Math.Min(_changedFirst, low);
-        _changedLast = Math.Max(_changedLast, low);
         CountEvent();
     }
 
@@ -1058,14 +1091,16 @@ internal sealed class CoverageRasterizer : IDisposable
             s.NeighborChanged[line[position - 1]] = 1;
         }
 
-        if (_changedLast > position)
+        // The edge that takes its place has a new left neighbor
+        var changedFirst = _changedFirst;
+        var changedLast = _changedLast;
+        _changedFirst = Math.Min(changedFirst, position);
+        _changedLast = Math.Max(changedLast > position ? changedLast - 1 : changedLast, position);
+        if (_changeEventCount != 0 || _changedLast - _changedFirst >= MinJumpingWalkSpan)
         {
-            _changedLast--;
+            RecordChange((position << 2) | Removal, changedFirst, changedLast);
         }
 
-        // The edge that takes its place has a new left neighbor
-        _changedFirst = Math.Min(_changedFirst, position);
-        _changedLast = Math.Max(_changedLast, position);
         CountEvent();
     }
 
@@ -1091,11 +1126,136 @@ internal sealed class CoverageRasterizer : IDisposable
     }
 
     /// <summary>
+    /// Records an insertion or a removal in <see cref="ChangeEvents"/>, once the changes of the height span many positions.
+    /// The changes before the first one recorded were in a range of fewer positions (<paramref name="changedFirst"/> to
+    /// <paramref name="changedLast"/>, before this one): the range is recorded as a whole.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void RecordChange(int change, int changedFirst, int changedLast)
+    {
+        var events = ChangeEvents;
+        var count = _changeEventCount;
+        if (count == 0 && changedFirst <= changedLast)
+        {
+            events[count++] = (Math.Max(changedFirst - 1, 0) << 2) | ChangedRange;
+            events[count++] = (changedLast << 2) | ChangedRange;
+        }
+
+        events[count++] = change;
+        _changeEventCount = count;
+    }
+
+    /// <summary>
+    /// Marks in <see cref="ChangedPositions"/> the positions where the edges of the current height were inserted and
+    /// removed, and their left neighbors, which have new right neighbors: the positions marked by an event move with their
+    /// edges as the events that follow it insert and remove edges on their left.
+    /// </summary>
+    private void MarkChanges(Span<ulong> bits)
+    {
+        var events = ChangeEvents[.._changeEventCount];
+
+        // The length of the sweep line before the events
+        var length = _lineCount;
+        foreach (var changeEvent in events)
+        {
+            switch (changeEvent & 3)
+            {
+                case Insertion:
+                    length--;
+                    break;
+                case Removal:
+                    length++;
+                    break;
+            }
+        }
+
+        if ((events[0] & 3) == ChangedRange)
+        {
+            for (var position = events[0] >> 2; position <= events[1] >> 2; position++)
+            {
+                bits[position >> 6] |= 1UL << position;
+            }
+
+            events = events[2..];
+        }
+
+        foreach (var changeEvent in events)
+        {
+            var position = changeEvent >> 2;
+            var first = position >> 6;
+            var kept = (1UL << position) - 1;
+            if ((changeEvent & 3) == Insertion)
+            {
+                // The positions marked go up to the length of the sweep line
+                length++;
+                for (var i = length >> 6; i > first; i--)
+                {
+                    bits[i] = (bits[i] << 1) | (bits[i - 1] >> 63);
+                }
+
+                var word = bits[first];
+                bits[first] = (word & kept) | ((word & ~kept) << 1);
+            }
+            else
+            {
+                // The edge on the right of the removed one takes its position
+                var last = length >> 6;
+                length--;
+                var word = bits[first];
+                var shifted = (word & kept) | ((word >> 1) & ~kept);
+                for (var i = first; i < last; i++)
+                {
+                    var next = bits[i + 1];
+                    bits[i] = shifted | (next << 63);
+                    shifted = next >> 1;
+                }
+
+                bits[last] = shifted;
+            }
+
+            MarkChange(bits, position);
+        }
+    }
+
+    private static void MarkChange(Span<ulong> bits, int position)
+    {
+        bits[position >> 6] |= 1UL << position;
+        if (position > 0)
+        {
+            bits[(position - 1) >> 6] |= 1UL << (position - 1);
+        }
+    }
+
+    /// <summary>Gets the first position noted in <see cref="ChangedPositions"/> from <paramref name="position"/>, or <paramref name="limit"/> when there is none before it.</summary>
+    private static int GetNextChange(ReadOnlySpan<ulong> bits, int position, int limit)
+    {
+        var index = position >> 6;
+        var word = bits[index] & (ulong.MaxValue << position);
+        while (true)
+        {
+            if (word != 0)
+                return Math.Min((index << 6) + BitOperations.TrailingZeroCount(word), limit);
+
+            if (++index > limit >> 6)
+                return limit;
+
+            word = bits[index];
+        }
+    }
+
+    /// <summary>
     /// Walks the edges around what changed in the sweep line at the current height, from left to right: each edge gets
     /// its winding number, becomes or stops being a boundary, and learns when it crosses its new neighbor.
     /// </summary>
     private void Walk(ref SweepSpans s, double y)
     {
+        var walksEveryEdge = WalksEveryEdge;
+        if (_changeEventCount != 0 && !walksEveryEdge)
+        {
+            WalkBetweenChanges(ref s, y);
+            return;
+        }
+
         var line = s.Line;
         var first = _changedFirst;
         var last = Math.Min(_changedLast, _lineCount - 1);
@@ -1109,10 +1269,10 @@ internal sealed class CoverageRasterizer : IDisposable
         // The contours are closed: right of the last change, the winding numbers are what they were, and the walk stops
         // at the first edge that confirms it. The changes of a height can be far apart (the glyphs of a line of text share
         // their baseline and their x-height), and the edges between them are passed quickly: an edge whose winding number
-        // did not change stays the boundary it was
+        // did not change stays the boundary it was. When they span many edges, the walk jumps between them instead
+        // (WalkBetweenChanges)
         var slotEdges = s.SlotEdges;
         var windingBefore = s.WindingBefore;
-        var walksEveryEdge = WalksEveryEdge;
         var position = first;
         for (; position < _lineCount; position++)
         {
@@ -1145,6 +1305,86 @@ internal sealed class CoverageRasterizer : IDisposable
                 ScheduleCrossing(ref s, i, y);
             }
         }
+    }
+
+    /// <summary>
+    /// Does what <see cref="Walk"/> does, for changes that span many edges: their positions are marked
+    /// (<see cref="ChangedPositions"/>), and from an edge whose winding number did not change, the walk jumps to the next
+    /// one. The edges in between did not change either: each stays the boundary it was, and the winding number right of
+    /// the last of them is what it was. Nothing else differs, and the coverages are the same, bit for bit.
+    /// </summary>
+    private void WalkBetweenChanges(ref SweepSpans s, double y)
+    {
+        var changes = ChangedPositions;
+        MarkChanges(changes);
+        var line = s.Line;
+        var first = _changedFirst;
+        var last = Math.Min(_changedLast, _lineCount - 1);
+        var winding = 0;
+        if (first > 0)
+        {
+            var before = line[first - 1];
+            winding = s.WindingBefore[before] + s.SlotEdges[before].Direction;
+        }
+
+        var slotEdges = s.SlotEdges;
+        var windingBefore = s.WindingBefore;
+        var position = first;
+        while (position < _lineCount)
+        {
+            var slot = line[position];
+            if (windingBefore[slot] == winding)
+            {
+                if (position > last)
+                    break;
+
+                var next = GetNextChange(changes, position + 1, last + 1);
+                if (next >= _lineCount)
+                {
+                    position = _lineCount;
+                    break;
+                }
+
+                var previous = line[next - 1];
+                winding = windingBefore[previous] + slotEdges[previous].Direction;
+                position = next;
+                continue;
+            }
+
+            winding = Update(ref s, slot, winding, y);
+            position++;
+        }
+
+        // The new pairs of neighbors are at the positions of the changes, or left of them: when no pair crosses (the heap
+        // is empty), they are the only ones to look at
+        var neighborChanged = s.NeighborChanged;
+        var crossingY = s.CrossingY;
+        var from = Math.Max(first - 1, 0);
+        var to = Math.Min(position, _lineCount);
+        if (_heapCount == 0)
+        {
+            for (var i = GetNextChange(changes, from, to); i < to; i = GetNextChange(changes, i + 1, to))
+            {
+                if (neighborChanged[line[i]] != 0)
+                {
+                    ScheduleCrossing(ref s, i, y);
+                }
+            }
+        }
+        else
+        {
+            for (var i = from; i < to; i++)
+            {
+                var slot = line[i];
+                if (neighborChanged[slot] != 0 || !double.IsPositiveInfinity(crossingY[slot]))
+                {
+                    ScheduleCrossing(ref s, i, y);
+                }
+            }
+        }
+
+        // Every position marked is between the left neighbor of the first change and the last change
+        changes[(from >> 6)..((_changedLast >> 6) + 1)].Clear();
     }
 
     /// <summary>Sets the winding number left of an edge; when the edge becomes another kind of boundary, records the stretch it was until now.</summary>

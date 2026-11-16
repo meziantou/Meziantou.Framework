@@ -106,7 +106,7 @@ internal sealed class ZipForwardReader : ArchiveReader
         }
     }
 
-    private ReadOnlyZipArchiveEntry ReadLocalHeader()
+    private ZipArchiveEntry ReadLocalHeader()
     {
         var header = new byte[ZipEntryInfo.LocalHeaderLength - 4];
         _input.ReadExactlyOrThrow(header);
@@ -137,7 +137,7 @@ internal sealed class ZipForwardReader : ArchiveReader
         }
 
         var state = new EntryState(this, info, mode, _generation, _input.Position);
-        var entry = new ReadOnlyZipArchiveEntry(info, _ => state.Open(), fromCentralDirectory: false, sizesKnown: !info.HasDataDescriptor);
+        var entry = new ZipArchiveEntry(archive: null, info, _ => state.Open(), fromCentralDirectory: false, sizesKnown: !info.HasDataDescriptor);
         state.Entry = entry;
         _current = state;
         return entry;
@@ -191,7 +191,7 @@ internal sealed class ZipForwardReader : ArchiveReader
             _dataStart = dataStart;
         }
 
-        public ReadOnlyZipArchiveEntry? Entry { get; set; }
+        public ZipArchiveEntry? Entry { get; set; }
 
         private bool IsCurrent => !_reader.IsDisposed && _reader._generation == _generation;
 

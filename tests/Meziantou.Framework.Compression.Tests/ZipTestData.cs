@@ -70,7 +70,7 @@ internal static class ZipTestData
         { "empty.zip", null, [] },
     };
 
-    /// <summary>The archives that <see cref="ZipArchive"/> reads too.</summary>
+    /// <summary>The archives that <see cref="System.IO.Compression.ZipArchive"/> reads too.</summary>
     public static TheoryData<string, string?> BclFixtures
     {
         get

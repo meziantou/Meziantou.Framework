@@ -45,7 +45,7 @@ public abstract partial class ArchiveReader
             switch (format, compression)
             {
                 case (ArchiveFormat.Zip, _):
-                    reader = ReadOnlyZipArchive.CreateForwardReader(source, options, readerLeaveOpen);
+                    reader = ZipArchive.CreateForwardReader(source, options, readerLeaveOpen);
                     break;
                 case (ArchiveFormat.Rar, _):
                     reader = RarArchive.CreateForwardReader(source, options, readerLeaveOpen);

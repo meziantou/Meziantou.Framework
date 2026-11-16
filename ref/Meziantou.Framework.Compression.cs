@@ -300,40 +300,6 @@ namespace Meziantou.Framework.Compression
         BeOS = 6,
     }
 
-    public sealed class ReadOnlyZipArchive : Meziantou.Framework.Compression.Archive
-    {
-        public string Comment { get => throw null; }
-        public new System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Compression.ReadOnlyZipArchiveEntry> Entries { get => throw null; }
-        public override Meziantou.Framework.Compression.ArchiveFormat Format { get => throw null; }
-        public ReadOnlyZipArchive(System.IO.Stream stream, Meziantou.Framework.Compression.ArchiveReaderOptions? options = null, bool leaveOpen = false) { }
-        protected override void Dispose(bool disposing) { }
-        public new Meziantou.Framework.Compression.ReadOnlyZipArchiveEntry? GetEntry(string entryName) => throw null;
-        public static Meziantou.Framework.Compression.ReadOnlyZipArchive Open(string path, Meziantou.Framework.Compression.ArchiveReaderOptions? options = null) => throw null;
-    }
-
-    public sealed class ReadOnlyZipArchiveEntry : Meziantou.Framework.Compression.ArchiveEntry
-    {
-        public override System.IO.FileAttributes? Attributes { get => throw null; }
-        public string Comment { get => throw null; }
-        public override long CompressedLength { get => throw null; }
-        public Meziantou.Framework.Compression.ZipCompressionMethod CompressionMethod { get => throw null; }
-        public override uint? Crc32 { get => throw null; }
-        public override System.DateTimeOffset? CreationTime { get => throw null; }
-        public Meziantou.Framework.Compression.ZipEncryption EncryptionMethod { get => throw null; }
-        public int ExternalAttributes { get => throw null; }
-        public override string FullName { get => throw null; }
-        public ushort GeneralPurposeFlags { get => throw null; }
-        public override bool IsDirectory { get => throw null; }
-        public override bool IsEncrypted { get => throw null; }
-        public override System.DateTimeOffset? LastAccessTime { get => throw null; }
-        public override System.DateTimeOffset? LastWriteTime { get => throw null; }
-        public override long Length { get => throw null; }
-        public override string? LinkTarget { get => throw null; }
-        public override System.IO.UnixFileMode? UnixFileMode { get => throw null; }
-        public ushort VersionMadeBy { get => throw null; }
-        public override System.IO.Stream Open() => throw null;
-    }
-
     public sealed class SevenZipArchive : Meziantou.Framework.Compression.Archive
     {
         public new System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Compression.SevenZipArchiveEntry> Entries { get => throw null; }
@@ -495,6 +461,59 @@ namespace Meziantou.Framework.Compression
         public override void WriteByte(byte value) { }
     }
 
+    public enum Zip64Mode
+    {
+        Auto = 0,
+        Always = 1,
+    }
+
+    public sealed class ZipArchive : Meziantou.Framework.Compression.Archive
+    {
+        public string? Comment { get => throw null; set { } }
+        public new System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Compression.ZipArchiveEntry> Entries { get => throw null; }
+        public override Meziantou.Framework.Compression.ArchiveFormat Format { get => throw null; }
+        public System.IO.Compression.ZipArchiveMode Mode { get => throw null; }
+        public ZipArchive(System.IO.Stream stream) { }
+        public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen = false) { }
+        public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, Meziantou.Framework.Compression.ArchiveReaderOptions? readerOptions, Meziantou.Framework.Compression.ZipCompressionOptions? compressionOptions) { }
+        public Meziantou.Framework.Compression.ZipArchiveEntry CreateEntry(string entryName, Meziantou.Framework.Compression.ZipEntryOptions? options = null) => throw null;
+        public Meziantou.Framework.Compression.ZipArchiveEntry CreateEntryFromFile(string sourceFileName, string entryName, Meziantou.Framework.Compression.ZipEntryOptions? options = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.Compression.ZipArchiveEntry> CreateEntryFromFileAsync(string sourceFileName, string entryName, Meziantou.Framework.Compression.ZipEntryOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public Meziantou.Framework.Compression.ZipArchiveEntry CreateSymbolicLinkEntry(string entryName, string target, Meziantou.Framework.Compression.ZipEntryOptions? options = null) => throw null;
+        protected override void Dispose(bool disposing) { }
+        protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() => throw null;
+        public new Meziantou.Framework.Compression.ZipArchiveEntry? GetEntry(string entryName) => throw null;
+    }
+
+    public sealed class ZipArchiveEntry : Meziantou.Framework.Compression.ArchiveEntry
+    {
+        public Meziantou.Framework.Compression.ZipArchive? Archive { get => throw null; }
+        public override System.IO.FileAttributes? Attributes { get => throw null; }
+        public string Comment { get => throw null; }
+        public override long CompressedLength { get => throw null; }
+        public Meziantou.Framework.Compression.ZipCompressionMethod CompressionMethod { get => throw null; }
+        public override uint? Crc32 { get => throw null; }
+        public override System.DateTimeOffset? CreationTime { get => throw null; }
+        public Meziantou.Framework.Compression.ZipEncryption EncryptionMethod { get => throw null; }
+        public int ExternalAttributes { get => throw null; }
+        public override string FullName { get => throw null; }
+        public ushort GeneralPurposeFlags { get => throw null; }
+        public override bool IsDirectory { get => throw null; }
+        public override bool IsEncrypted { get => throw null; }
+        public override System.DateTimeOffset? LastAccessTime { get => throw null; }
+        public override System.DateTimeOffset? LastWriteTime { get => throw null; }
+        public override long Length { get => throw null; }
+        public override string? LinkTarget { get => throw null; }
+        public override System.IO.UnixFileMode? UnixFileMode { get => throw null; }
+        public ushort VersionMadeBy { get => throw null; }
+        public void Delete() { }
+        public override System.IO.Stream Open() => throw null;
+        public void SetAttributes(System.IO.FileAttributes? value) { }
+        public void SetComment(string? value) { }
+        public void SetLastWriteTime(System.DateTimeOffset value) { }
+        public void SetUnixFileMode(System.IO.UnixFileMode? value) { }
+    }
+
     public enum ZipCompressionMethod
     {
         Stored = 0,
@@ -519,6 +538,15 @@ namespace Meziantou.Framework.Compression
         Ppmd = 98,
     }
 
+    public sealed class ZipCompressionOptions
+    {
+        public System.IO.Compression.CompressionLevel CompressionLevel { get => throw null; set { } }
+        public Meziantou.Framework.Compression.ZipCompressionMethod CompressionMethod { get => throw null; set { } }
+        public Meziantou.Framework.Compression.ZipEncryption Encryption { get => throw null; set { } }
+        public string? Password { get => throw null; set { } }
+        public Meziantou.Framework.Compression.Zip64Mode Zip64 { get => throw null; set { } }
+    }
+
     public enum ZipEncryption
     {
         None = 0,
@@ -527,5 +555,27 @@ namespace Meziantou.Framework.Compression
         Aes192 = 3,
         Aes256 = 4,
         Unsupported = 5,
+    }
+
+    public sealed class ZipEntryOptions
+    {
+        public System.IO.FileAttributes? Attributes { get => throw null; set { } }
+        public string? Comment { get => throw null; set { } }
+        public System.IO.Compression.CompressionLevel? CompressionLevel { get => throw null; set { } }
+        public Meziantou.Framework.Compression.ZipCompressionMethod? CompressionMethod { get => throw null; set { } }
+        public Meziantou.Framework.Compression.ZipEncryption? Encryption { get => throw null; set { } }
+        public System.DateTimeOffset? LastWriteTime { get => throw null; set { } }
+        public string? Password { get => throw null; set { } }
+        public System.IO.UnixFileMode? UnixFileMode { get => throw null; set { } }
+    }
+
+    public static class ZipFile
+    {
+        public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, Meziantou.Framework.Compression.ZipCompressionOptions? options = null, bool includeBaseDirectory = false) { }
+        public static System.Threading.Tasks.Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName, Meziantou.Framework.Compression.ZipCompressionOptions? options = null, bool includeBaseDirectory = false, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles = false, Meziantou.Framework.Compression.ArchiveReaderOptions? options = null) { }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles = false, Meziantou.Framework.Compression.ArchiveReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Compression.ZipArchive Open(string archiveFileName, System.IO.Compression.ZipArchiveMode mode, Meziantou.Framework.Compression.ArchiveReaderOptions? readerOptions = null, Meziantou.Framework.Compression.ZipCompressionOptions? compressionOptions = null) => throw null;
+        public static Meziantou.Framework.Compression.ZipArchive OpenRead(string archiveFileName, Meziantou.Framework.Compression.ArchiveReaderOptions? options = null) => throw null;
     }
 }

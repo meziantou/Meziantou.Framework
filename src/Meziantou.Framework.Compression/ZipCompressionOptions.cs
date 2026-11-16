@@ -3,17 +3,19 @@ using System.IO.Compression;
 namespace Meziantou.Framework.Compression;
 
 /// <summary>
-/// Options to write a zip archive with a <see cref="ZipArchiveWriter"/>: the defaults of the entries, which
-/// <see cref="ZipArchiveEntryOptions"/> overrides, and the zip64 policy.
+/// Options to write a zip archive (<see cref="ZipArchive"/> in <see cref="ZipArchiveMode.Create"/> and
+/// <see cref="ZipArchiveMode.Update"/> modes): the defaults of the new entries, which <see cref="ZipEntryOptions"/>
+/// overrides, and the zip64 policy.
 /// </summary>
-public sealed class ZipArchiveWriterOptions
+public sealed class ZipCompressionOptions
 {
     /// <summary>
     /// Gets or sets the compression method of the entries. The default is <see cref="ZipCompressionMethod.Deflate"/>. The
     /// methods that can be written are <see cref="ZipCompressionMethod.Stored"/>, <see cref="ZipCompressionMethod.Deflate"/>,
     /// <see cref="ZipCompressionMethod.BZip2"/>, <see cref="ZipCompressionMethod.Lzma"/>, <see cref="ZipCompressionMethod.Ppmd"/>,
-    /// <see cref="ZipCompressionMethod.Xz"/> and <see cref="ZipCompressionMethod.Zstandard"/>; the other methods throw a
-    /// <see cref="NotSupportedException"/> when an entry is created.
+    /// <see cref="ZipCompressionMethod.Xz"/> and <see cref="ZipCompressionMethod.Zstandard"/> (on .NET 11 only, whose
+    /// System.IO.Compression has a Zstandard encoder); the other methods throw a <see cref="NotSupportedException"/> when an
+    /// entry is created. An empty file is always stored.
     /// </summary>
     public ZipCompressionMethod CompressionMethod { get; set; } = ZipCompressionMethod.Deflate;
 
@@ -43,5 +45,5 @@ public sealed class ZipArchiveWriterOptions
     /// <summary>Gets or sets when the zip64 extensions are written. The default is <see cref="Zip64Mode.Auto"/>.</summary>
     public Zip64Mode Zip64 { get; set; }
 
-    internal ZipArchiveWriterOptions Clone() => (ZipArchiveWriterOptions)MemberwiseClone();
+    internal ZipCompressionOptions Clone() => (ZipCompressionOptions)MemberwiseClone();
 }

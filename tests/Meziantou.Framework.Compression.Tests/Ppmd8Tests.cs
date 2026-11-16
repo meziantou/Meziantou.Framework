@@ -125,11 +125,11 @@ public sealed class Ppmd8Tests
 
     [Theory]
     [InlineData("text", 2, 1u << 20, 0)]
-    [InlineData("text", 16, 1u << 11, 0)]
-    [InlineData("text", 16, 1u << 11, 1)]
-    [InlineData("two-letters", 6, 1u << 12, 1)]
+    [InlineData("text", 16, 1u << 16, 0)]
+    [InlineData("text", 16, 1u << 16, 1)]
+    [InlineData("two-letters", 6, 1u << 16, 1)]
     [InlineData("random", 4, 1u << 16, 0)]
-    [InlineData("random", 8, 1u << 14, 1)]
+    [InlineData("random", 8, 1u << 17, 1)]
     [InlineData("empty", 8, 1u << 20, 0)]
     public void Encode_RoundTrip(string kind, int order, uint memorySize, int restoreMethod)
     {

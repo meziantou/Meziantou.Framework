@@ -2,7 +2,10 @@ using System.Buffers.Binary;
 
 namespace Meziantou.Framework.Compression.Internals.Zip;
 
-/// <summary>An entry written by a <see cref="ZipArchiveWriter"/>: the fields of its local header and of its central directory record.</summary>
+/// <summary>
+/// An entry written by a <see cref="ZipWriter"/>: the fields of its local header and of its central directory record. An
+/// entry copied from an existing archive (Update mode) keeps the extra fields of its central directory record.
+/// </summary>
 internal sealed class ZipWriterRecord
 {
     public const ushort Zip64ExtraId = 0x0001;
@@ -17,19 +20,19 @@ internal sealed class ZipWriterRecord
 
     public required byte[] Name { get; init; }
 
-    public required byte[] Comment { get; init; }
+    public byte[] Comment { get; set; } = [];
 
-    public required ushort VersionMadeBy { get; init; }
+    public required ushort VersionMadeBy { get; set; }
 
     public ushort VersionNeeded { get; set; }
 
     public ushort Flags { get; set; }
 
     /// <summary>Gets the method of the headers: 99 for AES, otherwise the compression method.</summary>
-    public required ushort RawMethod { get; init; }
+    public required ushort RawMethod { get; set; }
 
     /// <summary>Gets the compression method.</summary>
-    public required ushort Method { get; init; }
+    public required ushort Method { get; set; }
 
     public required ushort DosTime { get; init; }
 
@@ -38,7 +41,15 @@ internal sealed class ZipWriterRecord
     /// <summary>Gets the modification time of the extended timestamp extra field, or <see langword="null"/> when it does not fit in 32 bits.</summary>
     public required int? UnixTime { get; init; }
 
-    public required uint ExternalAttributes { get; init; }
+    public required uint ExternalAttributes { get; set; }
+
+    public ushort InternalAttributes { get; init; }
+
+    /// <summary>Gets the extra fields of the central directory record of a copied entry, without its zip64 extra field, or <see langword="null"/> for a new entry.</summary>
+    public byte[]? PreservedCentralExtra { get; init; }
+
+    /// <summary>Gets or sets the number of bytes of the entry in the archive: its local header, its content and its data descriptor.</summary>
+    public long TotalLength { get; set; }
 
     public required ZipEncryption Encryption { get; init; }
 
@@ -46,7 +57,7 @@ internal sealed class ZipWriterRecord
     public ushort AesVendorVersion { get; set; }
 
     /// <summary>Gets a value indicating whether the local header has a zip64 extra field.</summary>
-    public required bool LocalZip64 { get; init; }
+    public required bool LocalZip64 { get; set; }
 
     /// <summary>Gets a value indicating whether every zip64 field is written (<see cref="Zip64Mode.Always"/>).</summary>
     public required bool AlwaysZip64 { get; init; }
@@ -99,7 +110,7 @@ internal sealed class ZipWriterRecord
             extra = extra[Zip64LocalExtraLength..];
         }
 
-        extra = WriteCommonExtraFields(extra);
+        WriteCommonExtraFields(extra);
         return header;
     }
 
@@ -161,7 +172,7 @@ internal sealed class ZipWriterRecord
         var offsetInZip64 = AlwaysZip64 || LocalHeaderOffset >= MaxClassicValue;
         var zip64Length = (usizeInZip64 ? 8 : 0) + (csizeInZip64 ? 8 : 0) + (offsetInZip64 ? 8 : 0);
         var zip64ExtraLength = zip64Length > 0 ? 4 + zip64Length : 0;
-        var extraLength = zip64ExtraLength + (IsAes ? AesExtraLength : 0) + (UnixTime is null ? 0 : TimestampExtraLength);
+        var extraLength = zip64ExtraLength + (PreservedCentralExtra?.Length ?? ((IsAes ? AesExtraLength : 0) + (UnixTime is null ? 0 : TimestampExtraLength)));
 
         var versionNeeded = VersionNeeded;
         if (zip64Length > 0 && versionNeeded < 45)
@@ -185,7 +196,7 @@ internal sealed class ZipWriterRecord
         BinaryPrimitives.WriteUInt16LittleEndian(span[30..], (ushort)extraLength);
         BinaryPrimitives.WriteUInt16LittleEndian(span[32..], (ushort)Comment.Length);
         BinaryPrimitives.WriteUInt16LittleEndian(span[34..], 0); // Disk number
-        BinaryPrimitives.WriteUInt16LittleEndian(span[36..], 0); // Internal attributes
+        BinaryPrimitives.WriteUInt16LittleEndian(span[36..], InternalAttributes);
         BinaryPrimitives.WriteUInt32LittleEndian(span[38..], ExternalAttributes);
         BinaryPrimitives.WriteUInt32LittleEndian(span[42..], offsetInZip64 ? MaxClassicValue : (uint)LocalHeaderOffset);
         Name.CopyTo(span[ZipEntryInfo.CentralHeaderLength..]);
@@ -217,7 +228,16 @@ internal sealed class ZipWriterRecord
             extra = extra[zip64ExtraLength..];
         }
 
-        extra = WriteCommonExtraFields(extra);
+        if (PreservedCentralExtra is not null)
+        {
+            PreservedCentralExtra.CopyTo(extra);
+            extra = extra[PreservedCentralExtra.Length..];
+        }
+        else
+        {
+            extra = WriteCommonExtraFields(extra);
+        }
+
         Comment.CopyTo(extra);
         output.Write(record);
     }

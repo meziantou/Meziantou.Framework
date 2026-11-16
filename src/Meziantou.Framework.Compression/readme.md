@@ -8,8 +8,10 @@ A .NET library, written in C# only, that reads and writes the archive formats an
 - **7z**: read, create and update archives (LZMA, LZMA2, PPMd, BZip2, Deflate, Deflate64, BCJ/BCJ2/Delta filters, AES-256
   encryption, solid blocks, multi-volume archives) with `SevenZipArchive` and `SevenZipFile`
 - **RAR**: read RAR5 and RAR 2.0 to 4.x archives (solid, multi-volume, encrypted, self-extracting) with `RarArchive` and `RarFile`
-- **zip**: read the archives that `ZipArchive` cannot (BZip2, LZMA, PPMd, XZ, Zstandard, Shrink, Reduce, Implode, WinZip AES,
-  ZipCrypto, split archives) with `ReadOnlyZipArchive`
+- **zip**: read the archives that `System.IO.Compression.ZipArchive` cannot (BZip2, LZMA, PPMd, XZ, Zstandard, Shrink, Reduce,
+  Implode, WinZip AES, ZipCrypto, split archives) with `ZipArchive` and `ZipFile`
+- **zip writing**: create and update zip archives compressed with Stored, Deflate, BZip2, LZMA, PPMd, XZ or Zstandard (.NET 11),
+  encrypted with WinZip AES or ZipCrypto, with zip64, to seekable or non-seekable streams
 - **Any archive**: open zip, 7z, RAR and tar archives (compressed with gzip, bzip2, XZ, LZMA, lzip, Zstandard or Unix
   compress) whose format is detected from their content with `ArchiveFile`, or read them forward only from a stream that
   is not seekable with `ArchiveReader`
@@ -84,6 +86,35 @@ SevenZipFile.CreateFromDirectory(sourceDirectory, archivePath, options);
 
 using var archive = SevenZipFile.OpenRead(archivePath);
 Assert.Equal("file.txt", archive.Entries[0].FullName);
+```
+<!-- endref -->
+
+### Create an encrypted zip archive
+
+<!-- ref:../../tests/Meziantou.Framework.Compression.Tests/ZipArchiveWriteTests.cs;region=ZipArchive_Password;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new ZipCompressionOptions
+{
+    CompressionMethod = ZipCompressionMethod.BZip2,
+    Password = "secret",
+    Encryption = ZipEncryption.Aes256,
+};
+
+using var stream = new MemoryStream();
+using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true, readerOptions: null, options))
+{
+    using var writer = new StreamWriter(archive.CreateEntry("secret.txt").Open());
+    writer.Write("Encrypted with WinZip AES");
+}
+
+stream.Position = 0;
+using (var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false, new ArchiveReaderOptions { Password = "secret" }, compressionOptions: null))
+{
+    var entry = archive.GetEntry("secret.txt")!;
+    Assert.Equal(ZipEncryption.Aes256, entry.EncryptionMethod);
+    using var reader = new StreamReader(entry.Open());
+    Assert.Equal("Encrypted with WinZip AES", reader.ReadToEnd());
+}
 ```
 <!-- endref -->
 

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using Meziantou.Framework.Compression.Internals.IO;
 
@@ -11,6 +12,7 @@ internal sealed class ZipCryptoEncryptStream : WriteOnlyStreamBase
 {
     private const int ChunkSize = 16 * 1024;
 
+    [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The entry stream owns the output")]
     private readonly Stream _output;
     private readonly byte[] _buffer = new byte[ChunkSize];
     private ZipCryptoKeys _keys;

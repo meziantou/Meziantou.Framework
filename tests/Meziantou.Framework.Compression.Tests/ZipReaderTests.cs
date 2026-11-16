@@ -9,12 +9,12 @@ public sealed class ZipReaderTests
         foreach (var maxRead in new[] { 1, 7, 100_000 })
         {
             var options = new ArchiveReaderOptions { Password = password };
-            using var reader = ReadOnlyZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), maxRead), options, leaveOpen: false);
+            using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), maxRead), options, leaveOpen: false);
             Assert.Equal(ArchiveFormat.Zip, reader.Format);
             var files = new List<string>();
             while (reader.MoveToNextEntry())
             {
-                var entry = Assert.IsType<ReadOnlyZipArchiveEntry>(reader.Entry);
+                var entry = Assert.IsType<ZipArchiveEntry>(reader.Entry);
                 if (entry.IsDirectory)
                     continue;
 
@@ -36,12 +36,12 @@ public sealed class ZipReaderTests
     {
         _ = expectedFiles;
         var options = new ArchiveReaderOptions { Password = password };
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead(fileName), options);
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), 4096), options, leaveOpen: false);
+        using var archive = new ZipArchive(ZipTestData.OpenRead(fileName), System.IO.Compression.ZipArchiveMode.Read, leaveOpen: false, options, compressionOptions: null);
+        using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), 4096), options, leaveOpen: false);
         var index = 0;
         while (reader.MoveToNextEntry())
         {
-            var entry = (ReadOnlyZipArchiveEntry)reader.Entry!;
+            var entry = (ZipArchiveEntry)reader.Entry!;
             var expected = archive.Entries[index++];
             Assert.Equal(expected.FullName, entry.FullName);
             Assert.Equal(expected.IsDirectory, entry.IsDirectory);
@@ -64,8 +64,8 @@ public sealed class ZipReaderTests
     public void SkipEntries(string fileName, string? password, string[] expectedFiles)
     {
         _ = password;
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead(fileName));
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), 100), options: null, leaveOpen: false);
+        using var archive = new ZipArchive(ZipTestData.OpenRead(fileName));
+        using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), 100), options: null, leaveOpen: false);
         var names = new List<string>();
         while (reader.MoveToNextEntry())
         {
@@ -85,8 +85,8 @@ public sealed class ZipReaderTests
     [InlineData("zipcrypto-bsdtar.zip")]
     public void PartialRead(string fileName)
     {
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead(fileName));
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), 100), new ArchiveReaderOptions { Password = "password" }, leaveOpen: false);
+        using var archive = new ZipArchive(ZipTestData.OpenRead(fileName));
+        using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), 100), new ArchiveReaderOptions { Password = "password" }, leaveOpen: false);
         var count = 0;
         while (reader.MoveToNextEntry())
         {
@@ -105,7 +105,7 @@ public sealed class ZipReaderTests
     [Fact]
     public async Task ReadEntriesAsync()
     {
-        await using var reader = ReadOnlyZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes("descriptor-python.zip"), 100), options: null, leaveOpen: false);
+        await using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes("descriptor-python.zip"), 100), options: null, leaveOpen: false);
         var names = new List<string>();
         while (await reader.MoveToNextEntryAsync(TestContext.Current.CancellationToken))
         {
@@ -122,9 +122,9 @@ public sealed class ZipReaderTests
     [Fact]
     public void StreamedEntry_SizesKnownAfterReading()
     {
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(ZipTestData.OpenRead("descriptor-python.zip"), options: null, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(ZipTestData.OpenRead("descriptor-python.zip"), options: null, leaveOpen: false);
         Assert.True(reader.MoveToNextEntry());
-        var entry = (ReadOnlyZipArchiveEntry)reader.Entry!;
+        var entry = (ZipArchiveEntry)reader.Entry!;
         Assert.Equal(-1L, entry.Length);
         Assert.Equal(-1L, entry.CompressedLength);
         Assert.Null(entry.Crc32);
@@ -137,7 +137,7 @@ public sealed class ZipReaderTests
     [Fact]
     public void ReadAfterMove()
     {
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(ZipTestData.OpenRead("deflate.zip"), options: null, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(ZipTestData.OpenRead("deflate.zip"), options: null, leaveOpen: false);
         Assert.True(reader.MoveToNextEntry());
         Assert.True(reader.MoveToNextEntry());
         var entry = reader.Entry!;
@@ -150,7 +150,7 @@ public sealed class ZipReaderTests
     [Fact]
     public void NoCurrentEntry()
     {
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(ZipTestData.OpenRead("deflate.zip"), options: null, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(ZipTestData.OpenRead("deflate.zip"), options: null, leaveOpen: false);
         Assert.Throws<InvalidOperationException>(() => reader.OpenEntryStream());
     }
 
@@ -161,7 +161,7 @@ public sealed class ZipReaderTests
     {
         var volumes = new[] { first, second, third };
         var options = new ArchiveReaderOptions { VolumeResolver = index => index < volumes.Length && volumes[index] is { } name ? new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(name), 1000) : null };
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(first), 1000), options, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(first), 1000), options, leaveOpen: false);
         var count = 0;
         while (reader.MoveToNextEntry())
         {
@@ -184,7 +184,7 @@ public sealed class ZipReaderTests
         {
             Assert.Throws<InvalidDataException>(() =>
             {
-                using var reader = ReadOnlyZipArchive.CreateForwardReader(new MemoryStream(data, 0, length), new ArchiveReaderOptions { Password = "password" }, leaveOpen: false);
+                using var reader = ZipArchive.CreateForwardReader(new MemoryStream(data, 0, length), new ArchiveReaderOptions { Password = "password" }, leaveOpen: false);
                 while (reader.MoveToNextEntry())
                 {
                     ZipTestData.ReadAll(reader.OpenEntryStream());
@@ -200,7 +200,7 @@ public sealed class ZipReaderTests
         var data = ZipTestData.ReadBytes("descriptor-python.zip");
         var start = 30 + "hello.txt".Length;
         var truncated = data.AsSpan(0, start + 5).ToArray();
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(new MemoryStream(truncated), options: null, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(new MemoryStream(truncated), options: null, leaveOpen: false);
         Assert.True(reader.MoveToNextEntry());
         Assert.Throws<InvalidDataException>(() => ZipTestData.ReadAll(reader.OpenEntryStream()));
     }
@@ -208,7 +208,7 @@ public sealed class ZipReaderTests
     [Fact]
     public void WrongPassword()
     {
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(ZipTestData.OpenRead("aes-bsdtar.zip"), new ArchiveReaderOptions { Password = "wrong" }, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(ZipTestData.OpenRead("aes-bsdtar.zip"), new ArchiveReaderOptions { Password = "wrong" }, leaveOpen: false);
         Assert.True(reader.MoveToNextEntry());
         Assert.Throws<ArchivePasswordException>(() => reader.OpenEntryStream());
 
@@ -220,14 +220,14 @@ public sealed class ZipReaderTests
     [Fact]
     public void Empty()
     {
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(ZipTestData.OpenRead("empty.zip"), options: null, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(ZipTestData.OpenRead("empty.zip"), options: null, leaveOpen: false);
         Assert.False(reader.MoveToNextEntry());
     }
 
     [Fact]
     public void NotAZipArchive()
     {
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(new MemoryStream(new byte[100]), options: null, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(new MemoryStream(new byte[100]), options: null, leaveOpen: false);
         Assert.Throws<InvalidDataException>(() => reader.MoveToNextEntry());
     }
 
@@ -237,7 +237,7 @@ public sealed class ZipReaderTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            using var reader = ReadOnlyZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes("streamed-infozip.zip"), 4096), options: null, leaveOpen: false);
+            using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes("streamed-infozip.zip"), 4096), options: null, leaveOpen: false);
             reader.ExtractToDirectory(directory.FullName);
             Assert.Equal(ZipTestData.GetExpectedHash("dir/nested.txt"), ZipTestData.Hash(File.ReadAllBytes(Path.Combine(directory.FullName, "dir", "nested.txt"))));
             Assert.Equal(ZipTestData.GetExpectedHash("random.bin"), ZipTestData.Hash(File.ReadAllBytes(Path.Combine(directory.FullName, "random.bin"))));

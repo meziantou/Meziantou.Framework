@@ -23,6 +23,13 @@ internal sealed class ZipEntryInfo
 
     public ushort VersionMadeBy { get; set; }
 
+    public ushort VersionNeeded { get; set; }
+
+    public ushort InternalAttributes { get; set; }
+
+    /// <summary>Gets or sets the central directory record the entry was read from, which the Update mode copies.</summary>
+    public byte[]? RawCentralRecord { get; set; }
+
     public ushort Flags { get; set; }
 
     /// <summary>Gets or sets the method of the header (99 for AES).</summary>
@@ -102,6 +109,8 @@ internal sealed class ZipEntryInfo
         var info = new ZipEntryInfo
         {
             VersionMadeBy = BinaryPrimitives.ReadUInt16LittleEndian(data[4..]),
+            VersionNeeded = BinaryPrimitives.ReadUInt16LittleEndian(data[6..]),
+            InternalAttributes = BinaryPrimitives.ReadUInt16LittleEndian(data[36..]),
             Flags = BinaryPrimitives.ReadUInt16LittleEndian(data[8..]),
             RawMethod = BinaryPrimitives.ReadUInt16LittleEndian(data[10..]),
             DosTime = BinaryPrimitives.ReadUInt16LittleEndian(data[12..]),
@@ -118,6 +127,7 @@ internal sealed class ZipEntryInfo
         var extra = data.Slice(CentralHeaderLength + nameLength, extraLength);
         var comment = data.Slice(CentralHeaderLength + nameLength + extraLength, commentLength);
         info.Apply(name, extra, comment, options, central: true);
+        info.RawCentralRecord = data[..length].ToArray();
         return info;
     }
 

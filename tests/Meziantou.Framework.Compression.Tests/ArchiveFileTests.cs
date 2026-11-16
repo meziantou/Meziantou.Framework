@@ -178,7 +178,7 @@ public sealed class ArchiveFileTests
         using var rar = ArchiveFile.Open(GetPath("Rar/libarchive-rar5-compressed.rar"));
         Assert.IsType<RarArchive>(rar);
         using var zip = ArchiveFile.Open(GetPath("Zip/deflate.zip"));
-        Assert.IsType<ReadOnlyZipArchive>(zip);
+        Assert.IsType<ZipArchive>(zip);
     }
 
     [Fact]

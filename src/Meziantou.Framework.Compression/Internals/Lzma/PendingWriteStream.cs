@@ -26,6 +26,16 @@ internal sealed class PendingWriteStream : WriteOnlyStreamBase
         TotalWritten += buffer.Length;
     }
 
+    /// <summary>Gets the number of bytes not copied yet.</summary>
+    public int PendingLength => _length;
+
+    /// <summary>Replaces pending bytes, from an offset in the pending bytes.</summary>
+    public void Overwrite(int offset, ReadOnlySpan<byte> data)
+    {
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, _length - data.Length);
+        data.CopyTo(_buffer.AsSpan(offset));
+    }
+
     /// <summary>Writes the pending bytes to <paramref name="stream"/>.</summary>
     public void CopyPendingTo(Stream stream)
     {

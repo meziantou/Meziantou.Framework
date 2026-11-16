@@ -5,13 +5,13 @@ using System.Security.Cryptography;
 
 namespace Meziantou.Framework.Compression.Tests;
 
-public sealed class ReadOnlyZipArchiveTests
+public sealed class ZipArchiveTests
 {
     [Theory]
     [MemberData(nameof(ZipTestData.Fixtures), MemberType = typeof(ZipTestData))]
     public void ReadEntries(string fileName, string? password, string[] expectedFiles)
     {
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead(fileName), new ArchiveReaderOptions { Password = password });
+        using var archive = new ZipArchive(ZipTestData.OpenRead(fileName), ZipArchiveMode.Read, leaveOpen: false, new ArchiveReaderOptions { Password = password }, compressionOptions: null);
         Assert.Equal(ArchiveFormat.Zip, archive.Format);
         var files = new List<string>();
         foreach (var entry in archive.Entries)
@@ -34,7 +34,7 @@ public sealed class ReadOnlyZipArchiveTests
     [MemberData(nameof(ZipTestData.Fixtures), MemberType = typeof(ZipTestData))]
     public async Task ReadEntriesAsync(string fileName, string? password, string[] expectedFiles)
     {
-        await using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead(fileName), new ArchiveReaderOptions { Password = password });
+        await using var archive = new ZipArchive(ZipTestData.OpenRead(fileName), ZipArchiveMode.Read, leaveOpen: false, new ArchiveReaderOptions { Password = password }, compressionOptions: null);
         var files = new List<string>();
         foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
         {
@@ -52,8 +52,8 @@ public sealed class ReadOnlyZipArchiveTests
     [MemberData(nameof(ZipTestData.BclFixtures), MemberType = typeof(ZipTestData))]
     public void MatchesZipArchive(string fileName, string? password)
     {
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead(fileName), new ArchiveReaderOptions { Password = password });
-        using var expected = new ZipArchive(ZipTestData.OpenRead(fileName), ZipArchiveMode.Read);
+        using var archive = new ZipArchive(ZipTestData.OpenRead(fileName), ZipArchiveMode.Read, leaveOpen: false, new ArchiveReaderOptions { Password = password }, compressionOptions: null);
+        using var expected = new System.IO.Compression.ZipArchive(ZipTestData.OpenRead(fileName), ZipArchiveMode.Read);
         Assert.HasCount(expected.Entries.Count, archive.Entries);
         for (var i = 0; i < expected.Entries.Count; i++)
         {
@@ -95,8 +95,8 @@ public sealed class ReadOnlyZipArchiveTests
     {
         // The streams check the length and the CRC-32 of each entry; the forward-only reader returns the same contents
         var data = File.ReadAllBytes(ZipTestData.GetLegacyPath(fileName));
-        using var archive = new ReadOnlyZipArchive(new MemoryStream(data));
-        using var reader = ReadOnlyZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(data, 7), options: null, leaveOpen: false);
+        using var archive = new ZipArchive(new MemoryStream(data));
+        using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(data, 7), options: null, leaveOpen: false);
         Assert.NotEmpty(archive.Entries);
         foreach (var entry in archive.Entries)
         {
@@ -119,8 +119,8 @@ public sealed class ReadOnlyZipArchiveTests
     [InlineData("deflate64-far.zip")]
     public void Deflate64_MatchesZipArchive(string fileName)
     {
-        using var archive = new ReadOnlyZipArchive(File.OpenRead(ZipTestData.GetLegacyPath(fileName)));
-        using var expected = new ZipArchive(File.OpenRead(ZipTestData.GetLegacyPath(fileName)), ZipArchiveMode.Read);
+        using var archive = new ZipArchive(File.OpenRead(ZipTestData.GetLegacyPath(fileName)));
+        using var expected = new System.IO.Compression.ZipArchive(File.OpenRead(ZipTestData.GetLegacyPath(fileName)), ZipArchiveMode.Read);
         foreach (var expectedEntry in expected.Entries)
         {
             Assert.Equal(ZipTestData.ReadAll(expectedEntry.Open()), ZipTestData.ReadAll(archive.GetEntry(expectedEntry.FullName)!.Open()));
@@ -128,19 +128,19 @@ public sealed class ReadOnlyZipArchiveTests
     }
 
     [Fact]
-    public void ReadOnlyZipArchive_Read()
+    public void ZipArchive_Read()
     {
-        #region ReadOnlyZipArchive_Read
+        #region ZipArchive_Read
         // A zip archive written by System.IO.Compression.ZipArchive
         using var stream = new MemoryStream();
-        using (var writer = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+        using (var writer = new System.IO.Compression.ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
         {
             using var entryStream = writer.CreateEntry("docs/readme.txt").Open();
             entryStream.Write("Hello, world!"u8);
         }
 
         stream.Position = 0;
-        using var archive = new ReadOnlyZipArchive(stream);
+        using var archive = new ZipArchive(stream);
         Assert.HasCount(1, archive.Entries);
 
         var entry = archive.GetEntry("docs/readme.txt")!;
@@ -154,12 +154,12 @@ public sealed class ReadOnlyZipArchiveTests
     }
 
     [Fact]
-    public void ReadOnlyZipArchive_Password()
+    public void ZipArchive_ReadPassword()
     {
-        #region ReadOnlyZipArchive_Password
+        #region ZipArchive_ReadPassword
         // An archive created by 7-Zip: 7zz a -tzip -mem=AES256 -ppassword aes256.zip ...
         var path = Path.Combine(AppContext.BaseDirectory, "TestData", "Zip", "aes256.zip");
-        using var archive = ReadOnlyZipArchive.Open(path, new ArchiveReaderOptions { Password = "password" });
+        using var archive = ZipFile.OpenRead(path, new ArchiveReaderOptions { Password = "password" });
 
         var entry = archive.GetEntry("hello.txt")!;
         Assert.True(entry.IsEncrypted);
@@ -180,13 +180,13 @@ public sealed class ReadOnlyZipArchiveTests
     [InlineData("aes-bsdtar.zip", ZipEncryption.Aes256)]
     public void Password(string fileName, ZipEncryption encryption)
     {
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead(fileName));
+        using var archive = new ZipArchive(ZipTestData.OpenRead(fileName));
         var entry = archive.GetEntry("lorem.txt")!;
         Assert.True(entry.IsEncrypted);
         Assert.Equal(encryption, entry.EncryptionMethod);
         Assert.Throws<ArchivePasswordException>(() => entry.Open());
 
-        using var wrong = new ReadOnlyZipArchive(ZipTestData.OpenRead(fileName), new ArchiveReaderOptions { Password = "wrong" });
+        using var wrong = new ZipArchive(ZipTestData.OpenRead(fileName), ZipArchiveMode.Read, leaveOpen: false, new ArchiveReaderOptions { Password = "wrong" }, compressionOptions: null);
         Assert.Throws<ArchivePasswordException>(() => ZipTestData.ReadAll(wrong.GetEntry("lorem.txt")!.Open()));
         Assert.Throws<ArchivePasswordException>(() => ZipTestData.ReadAll(wrong.GetEntry("random.bin")!.Open()));
         Assert.False(wrong.GetEntry("dir/")?.IsEncrypted ?? false);
@@ -196,7 +196,7 @@ public sealed class ReadOnlyZipArchiveTests
     public void Aes_Versions()
     {
         // bsdtar writes AE-2 (no CRC) for the files of less than 20 bytes, and AE-1 for the others
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead("aes-bsdtar.zip"), new ArchiveReaderOptions { Password = "password" });
+        using var archive = new ZipArchive(ZipTestData.OpenRead("aes-bsdtar.zip"), ZipArchiveMode.Read, leaveOpen: false, new ArchiveReaderOptions { Password = "password" }, compressionOptions: null);
         Assert.Null(archive.GetEntry("hello.txt")!.Crc32);
         Assert.Equal(0x250CC74Eu, archive.GetEntry("lorem.txt")!.Crc32);
         Assert.Equal(ZipCompressionMethod.Deflate, archive.GetEntry("lorem.txt")!.CompressionMethod);
@@ -206,14 +206,14 @@ public sealed class ReadOnlyZipArchiveTests
     public void Aes_CorruptedAuthenticationCode()
     {
         var data = ZipTestData.ReadBytes("aes256-stored.zip");
-        using (var archive = new ReadOnlyZipArchive(new MemoryStream(data)))
+        using (var archive = new ZipArchive(new MemoryStream(data)))
         {
             // The last byte of the content of lorem.txt is the last byte of its authentication code
             var entry = archive.GetEntry("lorem.txt")!;
             data[FindDataStart(data, entry) + (int)entry.CompressedLength - 1] ^= 1;
         }
 
-        using var corrupted = new ReadOnlyZipArchive(new MemoryStream(data), new ArchiveReaderOptions { Password = "password" });
+        using var corrupted = new ZipArchive(new MemoryStream(data), ZipArchiveMode.Read, leaveOpen: false, new ArchiveReaderOptions { Password = "password" }, compressionOptions: null);
         Assert.Throws<InvalidDataException>(() => ZipTestData.ReadAll(corrupted.GetEntry("lorem.txt")!.Open()));
         Assert.Equal(ZipTestData.GetExpectedHash("hello.txt"), ZipTestData.Hash(ZipTestData.ReadAll(corrupted.GetEntry("hello.txt")!.Open())));
     }
@@ -223,13 +223,13 @@ public sealed class ReadOnlyZipArchiveTests
     {
         var data = ZipTestData.ReadBytes("stored.zip");
         int offset;
-        using (var archive = new ReadOnlyZipArchive(new MemoryStream(data)))
+        using (var archive = new ZipArchive(new MemoryStream(data)))
         {
             offset = FindDataStart(data, archive.GetEntry("lorem.txt")!);
         }
 
         data[offset + 100] ^= 0x20;
-        using var corrupted = new ReadOnlyZipArchive(new MemoryStream(data));
+        using var corrupted = new ZipArchive(new MemoryStream(data));
         var exception = Assert.Throws<InvalidDataException>(() => ZipTestData.ReadAll(corrupted.GetEntry("lorem.txt")!.Open()));
         Assert.Contains("CRC-32", exception.Message);
     }
@@ -239,7 +239,7 @@ public sealed class ReadOnlyZipArchiveTests
     {
         var data = ZipTestData.ReadBytes("deflate.zip");
         int offset;
-        using (var archive = new ReadOnlyZipArchive(new MemoryStream(data)))
+        using (var archive = new ZipArchive(new MemoryStream(data)))
         {
             offset = FindDataStart(data, archive.GetEntry("random.bin")!);
         }
@@ -249,7 +249,7 @@ public sealed class ReadOnlyZipArchiveTests
             data[offset + 10 + i] = 0xFF;
         }
 
-        using var corrupted = new ReadOnlyZipArchive(new MemoryStream(data));
+        using var corrupted = new ZipArchive(new MemoryStream(data));
         Assert.Throws<InvalidDataException>(() => ZipTestData.ReadAll(corrupted.GetEntry("random.bin")!.Open()));
     }
 
@@ -261,7 +261,7 @@ public sealed class ReadOnlyZipArchiveTests
     public void Truncated(int length)
     {
         var data = ZipTestData.ReadBytes("deflate.zip").AsSpan(0, length).ToArray();
-        Assert.Throws<InvalidDataException>(() => new ReadOnlyZipArchive(new MemoryStream(data)));
+        Assert.Throws<InvalidDataException>(() => new ZipArchive(new MemoryStream(data)));
     }
 
     [Fact]
@@ -270,7 +270,7 @@ public sealed class ReadOnlyZipArchiveTests
         // The compressed size goes past the end of the archive
         var data = ZipTestData.ReadBytes("stored.zip");
         PatchEntry(data, "random.bin", (header, isCentral) => BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(isCentral ? 20 : 18), 0x7FFFFFFF));
-        using var archive = new ReadOnlyZipArchive(new MemoryStream(data));
+        using var archive = new ZipArchive(new MemoryStream(data));
         Assert.Throws<InvalidDataException>(() => archive.GetEntry("random.bin")!.Open());
     }
 
@@ -279,7 +279,7 @@ public sealed class ReadOnlyZipArchiveTests
     {
         var data = ZipTestData.ReadBytes("deflate.zip");
         PatchEntry(data, "lorem.txt", (header, isCentral) => BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(isCentral ? 24 : 22), 3000));
-        using var archive = new ReadOnlyZipArchive(new MemoryStream(data));
+        using var archive = new ZipArchive(new MemoryStream(data));
         var exception = Assert.Throws<InvalidDataException>(() => ZipTestData.ReadAll(archive.GetEntry("lorem.txt")!.Open()));
         Assert.Contains("3000", exception.Message);
     }
@@ -287,7 +287,7 @@ public sealed class ReadOnlyZipArchiveTests
     [Fact]
     public void NotAZipArchive()
     {
-        Assert.Throws<InvalidDataException>(() => new ReadOnlyZipArchive(new MemoryStream(new byte[1000])));
+        Assert.Throws<InvalidDataException>(() => new ZipArchive(new MemoryStream(new byte[1000])));
     }
 
     [Fact]
@@ -297,7 +297,7 @@ public sealed class ReadOnlyZipArchiveTests
         var eocd = data.AsSpan().LastIndexOf("PK\u0005\u0006"u8);
         BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(eocd + 8), 60000);
         BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(eocd + 10), 60000);
-        Assert.Throws<InvalidDataException>(() => new ReadOnlyZipArchive(new MemoryStream(data)));
+        Assert.Throws<InvalidDataException>(() => new ZipArchive(new MemoryStream(data)));
     }
 
     [Fact]
@@ -305,7 +305,7 @@ public sealed class ReadOnlyZipArchiveTests
     {
         var data = ZipTestData.ReadBytes("stored.zip");
         PatchEntry(data, "hello.txt", (header, isCentral) => BinaryPrimitives.WriteUInt16LittleEndian(header.Slice(isCentral ? 10 : 8), 97));
-        using var archive = new ReadOnlyZipArchive(new MemoryStream(data));
+        using var archive = new ZipArchive(new MemoryStream(data));
         var entry = archive.GetEntry("hello.txt")!;
         Assert.Equal(ZipCompressionMethod.WavPack, entry.CompressionMethod);
         var exception = Assert.Throws<NotSupportedException>(() => entry.Open());
@@ -317,7 +317,7 @@ public sealed class ReadOnlyZipArchiveTests
     {
         var data = ZipTestData.ReadBytes("stored.zip");
         PatchEntry(data, "hello.txt", (header, isCentral) => BinaryPrimitives.WriteUInt16LittleEndian(header.Slice(isCentral ? 8 : 6), 0x41));
-        using var archive = new ReadOnlyZipArchive(new MemoryStream(data), new ArchiveReaderOptions { Password = "password" });
+        using var archive = new ZipArchive(new MemoryStream(data), ZipArchiveMode.Read, leaveOpen: false, new ArchiveReaderOptions { Password = "password" }, compressionOptions: null);
         var entry = archive.GetEntry("hello.txt")!;
         Assert.Equal(ZipEncryption.Unsupported, entry.EncryptionMethod);
         Assert.Throws<NotSupportedException>(() => entry.Open());
@@ -326,7 +326,7 @@ public sealed class ReadOnlyZipArchiveTests
     [Fact]
     public void Comments()
     {
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead("comments.zip"));
+        using var archive = new ZipArchive(ZipTestData.OpenRead("comments.zip"));
         Assert.Equal("The archive comment", archive.Comment);
         Assert.Equal("The entry comment", archive.GetEntry("hello.txt")!.Comment);
     }
@@ -334,22 +334,22 @@ public sealed class ReadOnlyZipArchiveTests
     [Fact]
     public void Names()
     {
-        using var utf8 = new ReadOnlyZipArchive(ZipTestData.OpenRead("utf8-names.zip"));
+        using var utf8 = new ZipArchive(ZipTestData.OpenRead("utf8-names.zip"));
         Assert.Equal(["café/日本.txt", "naïve.txt"], utf8.Entries.Select(entry => entry.FullName));
 
         // An MS-DOS name in the code page 437 with backslashes, and a name in the Unicode path extra field
-        using var cp437 = new ReadOnlyZipArchive(ZipTestData.OpenRead("cp437-names.zip"));
+        using var cp437 = new ZipArchive(ZipTestData.OpenRead("cp437-names.zip"));
         Assert.Equal(["résumé/café.txt", "日本語.txt"], cp437.Entries.Select(entry => entry.FullName));
         Assert.Equal(FileAttributes.Archive, cp437.Entries[0].Attributes);
 
-        using var latin1 = new ReadOnlyZipArchive(ZipTestData.OpenRead("cp437-names.zip"), new ArchiveReaderOptions { EntryNameEncoding = System.Text.Encoding.Latin1 });
+        using var latin1 = new ZipArchive(ZipTestData.OpenRead("cp437-names.zip"), ZipArchiveMode.Read, leaveOpen: false, new ArchiveReaderOptions { EntryNameEncoding = System.Text.Encoding.Latin1 }, compressionOptions: null);
         Assert.Equal("r\u0082sum\u0082/caf\u0082.txt", latin1.Entries[0].FullName);
     }
 
     [Fact]
     public void SymbolicLink()
     {
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead("symlink.zip"));
+        using var archive = new ZipArchive(ZipTestData.OpenRead("symlink.zip"));
         var link = archive.GetEntry("link")!;
         Assert.Equal("hello.txt", link.LinkTarget);
         Assert.Null(archive.GetEntry("hello.txt")!.LinkTarget);
@@ -361,7 +361,7 @@ public sealed class ReadOnlyZipArchiveTests
     [Fact]
     public void Timestamps()
     {
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead("timestamps.zip"));
+        using var archive = new ZipArchive(ZipTestData.OpenRead("timestamps.zip"));
         var ntfs = archive.GetEntry("ntfs.txt")!;
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1700000000), ntfs.LastWriteTime);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1700000100), ntfs.LastAccessTime);
@@ -375,7 +375,7 @@ public sealed class ReadOnlyZipArchiveTests
     [Fact]
     public void Zip64()
     {
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead("zip64-eocd.zip"));
+        using var archive = new ZipArchive(ZipTestData.OpenRead("zip64-eocd.zip"));
         Assert.Equal("zip64", archive.Comment);
         Assert.Equal(2511L, archive.GetEntry("lorem.txt")!.Length);
     }
@@ -383,15 +383,15 @@ public sealed class ReadOnlyZipArchiveTests
     [Fact]
     public void SelfExtractingArchive()
     {
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead("sfx.zip"));
-        using var expected = new ReadOnlyZipArchive(ZipTestData.OpenRead("deflate.zip"));
+        using var archive = new ZipArchive(ZipTestData.OpenRead("sfx.zip"));
+        using var expected = new ZipArchive(ZipTestData.OpenRead("deflate.zip"));
         Assert.Equal(expected.Entries.Select(entry => entry.FullName), archive.Entries.Select(entry => entry.FullName));
     }
 
     [Fact]
     public void Empty()
     {
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead("empty.zip"));
+        using var archive = new ZipArchive(ZipTestData.OpenRead("empty.zip"));
         Assert.Empty(archive.Entries);
     }
 
@@ -401,7 +401,7 @@ public sealed class ReadOnlyZipArchiveTests
     [InlineData("split7z.zip.001")]
     public void SplitArchive_Open(string fileName)
     {
-        using var archive = ReadOnlyZipArchive.Open(ZipTestData.GetPath(fileName));
+        using var archive = ZipFile.OpenRead(ZipTestData.GetPath(fileName));
         foreach (var entry in archive.Entries)
         {
             Assert.Equal(ZipTestData.GetExpectedHash(entry.FullName), ZipTestData.Hash(ZipTestData.ReadAll(entry.Open())));
@@ -414,7 +414,7 @@ public sealed class ReadOnlyZipArchiveTests
     public void SplitArchive_VolumeResolver()
     {
         var options = new ArchiveReaderOptions { VolumeResolver = index => index is 1 ? ZipTestData.OpenRead("split-infozip.zip") : null };
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead("split-infozip.z01"), options);
+        using var archive = new ZipArchive(ZipTestData.OpenRead("split-infozip.z01"), ZipArchiveMode.Read, leaveOpen: false, options, compressionOptions: null);
         var entry = Assert.Single(archive.Entries);
         Assert.Equal(ZipTestData.GetExpectedHash("big.bin"), ZipTestData.Hash(ZipTestData.ReadAll(entry.Open())));
     }
@@ -422,7 +422,7 @@ public sealed class ReadOnlyZipArchiveTests
     [Fact]
     public void SplitArchive_LastVolumeOnly()
     {
-        Assert.Throws<InvalidDataException>(() => new ReadOnlyZipArchive(ZipTestData.OpenRead("split-infozip.zip")));
+        Assert.Throws<InvalidDataException>(() => new ZipArchive(ZipTestData.OpenRead("split-infozip.zip")));
     }
 
     [Fact]
@@ -431,7 +431,7 @@ public sealed class ReadOnlyZipArchiveTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead("deflate.zip"));
+            using var archive = new ZipArchive(ZipTestData.OpenRead("deflate.zip"));
             archive.ExtractToDirectory(directory.FullName);
             Assert.Equal(ZipTestData.GetExpectedHash("dir/nested.txt"), ZipTestData.Hash(File.ReadAllBytes(Path.Combine(directory.FullName, "dir", "nested.txt"))));
             Assert.Equal(ZipTestData.GetExpectedHash("empty.txt"), ZipTestData.Hash(File.ReadAllBytes(Path.Combine(directory.FullName, "empty.txt"))));
@@ -445,13 +445,13 @@ public sealed class ReadOnlyZipArchiveTests
     [Fact]
     public void NonSeekableStream()
     {
-        Assert.Throws<ArgumentException>(() => new ReadOnlyZipArchive(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes("stored.zip"), 100)));
+        Assert.Throws<ArgumentException>(() => new ZipArchive(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes("stored.zip"), 100)));
     }
 
     [Fact]
     public void EntriesCanBeReadAlternately()
     {
-        using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead("deflate.zip"));
+        using var archive = new ZipArchive(ZipTestData.OpenRead("deflate.zip"));
         using var lorem = archive.GetEntry("lorem.txt")!.Open();
         using var random = archive.GetEntry("random.bin")!.Open();
         var loremContent = new MemoryStream();

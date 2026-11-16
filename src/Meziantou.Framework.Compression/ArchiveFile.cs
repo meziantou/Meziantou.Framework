@@ -89,7 +89,7 @@ public static class ArchiveFile
         var info = DetectFormat(path);
         return info.Format switch
         {
-            ArchiveFormat.Zip => ReadOnlyZipArchive.Open(path, options),
+            ArchiveFormat.Zip => ZipFile.OpenRead(path, options),
             ArchiveFormat.SevenZip => SevenZipFile.OpenRead(path, options),
             ArchiveFormat.Rar => RarFile.OpenRead(path, options),
             _ => Open(File.OpenRead(path), options, leaveOpen: false),
@@ -116,7 +116,7 @@ public static class ArchiveFile
             switch (info)
             {
                 case { Format: ArchiveFormat.Zip }:
-                    archive = new ReadOnlyZipArchive(stream, options, leaveOpen);
+                    archive = new ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Read, leaveOpen, options, compressionOptions: null);
                     break;
                 case { Format: ArchiveFormat.SevenZip }:
                     archive = new SevenZipArchive(stream, SevenZipArchiveMode.Read, leaveOpen, options, compressionOptions: null);

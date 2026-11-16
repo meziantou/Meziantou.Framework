@@ -28,7 +28,7 @@ public static partial class CompressionFuzzTargets
     ];
 
     /// <summary>
-    /// <c>data</c>: a zip archive, read by <see cref="ReadOnlyZipArchive"/> with the password <c>password</c>. It rejects
+    /// <c>data</c>: a zip archive, read by <see cref="ZipArchive"/> with the password <c>password</c>. It rejects
     /// invalid data with an <see cref="InvalidDataException"/> (an <see cref="ArchivePasswordException"/> for a wrong
     /// password, a <see cref="NotSupportedException"/> for a method it does not support), and never throws anything else.
     /// The content of an entry that reads to its end has the length of the entry.
@@ -38,7 +38,7 @@ public static partial class CompressionFuzzTargets
         var bytes = data.ToArray();
         try
         {
-            using var archive = new ReadOnlyZipArchive(new MemoryStream(bytes, writable: false), CreateZipOptions());
+            using var archive = new ZipArchive(new MemoryStream(bytes, writable: false), System.IO.Compression.ZipArchiveMode.Read, leaveOpen: false, CreateZipOptions(), compressionOptions: null);
             FuzzAssert.True(archive.Entries.Count <= bytes.Length / 46, "The archive has more entries than its central directory can hold");
             foreach (var entry in archive.Entries)
             {
@@ -75,7 +75,7 @@ public static partial class CompressionFuzzTargets
     /// made of the local headers and the contents of the entries of its central directory, in order and without data
     /// descriptors, and the local headers have the names, the methods, the encryption, the CRC and the sizes of the central
     /// directory (so that both readers decode the contents alike), followed by the central directory, and
-    /// <see cref="ReadOnlyZipArchive"/> reads it, the forward-only reader returns the same entries with the same contents,
+    /// <see cref="ZipArchive"/> reads it, the forward-only reader returns the same entries with the same contents,
     /// or the same exception for each content.
     /// </summary>
     private static void ZipReaderTarget(ReadOnlySpan<byte> data)
@@ -86,7 +86,7 @@ public static partial class CompressionFuzzTargets
         Type? forwardError = null;
         try
         {
-            using var reader = ReadOnlyZipArchive.CreateForwardReader(new ZipForwardOnlyStream(bytes, maxRead), CreateZipOptions(), leaveOpen: false);
+            using var reader = ZipArchive.CreateForwardReader(new ZipForwardOnlyStream(bytes, maxRead), CreateZipOptions(), leaveOpen: false);
             while (reader.MoveToNextEntry())
             {
                 var entry = reader.Entry!;
@@ -122,7 +122,7 @@ public static partial class CompressionFuzzTargets
     }
 
     /// <summary>
-    /// Reads the archive with <see cref="ReadOnlyZipArchive"/>, and returns its entries when the archive starts with the local
+    /// Reads the archive with <see cref="ZipArchive"/>, and returns its entries when the archive starts with the local
     /// header of its first entry, each entry is followed by the next one, the last one by the central directory, no entry has
     /// a data descriptor, and each local header has the fields of the central directory that the content depends on.
     /// </summary>
@@ -131,7 +131,7 @@ public static partial class CompressionFuzzTargets
         entries = [];
         try
         {
-            using var archive = new ReadOnlyZipArchive(new MemoryStream(bytes, writable: false), CreateZipOptions());
+            using var archive = new ZipArchive(new MemoryStream(bytes, writable: false), System.IO.Compression.ZipArchiveMode.Read, leaveOpen: false, CreateZipOptions(), compressionOptions: null);
             var position = 0L;
             foreach (var entry in archive.Entries)
             {
@@ -154,7 +154,7 @@ public static partial class CompressionFuzzTargets
         }
     }
 
-    private static bool HasSameZipLocalHeader(byte[] bytes, ReadOnlyZipArchiveEntry entry)
+    private static bool HasSameZipLocalHeader(byte[] bytes, ZipArchiveEntry entry)
     {
         var info = entry.Info;
         var local = bytes.AsSpan((int)info.LocalHeaderOffset);

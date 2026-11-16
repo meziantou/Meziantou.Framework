@@ -3,25 +3,25 @@ using System.IO.Compression;
 namespace Meziantou.Framework.Compression;
 
 /// <summary>
-/// Options of an entry written by a <see cref="ZipArchiveWriter"/>. The properties that are <see langword="null"/> use the
-/// value of the <see cref="ZipArchiveWriterOptions"/> of the writer.
+/// Options of a new entry of a <see cref="ZipArchive"/>. The properties that are <see langword="null"/> use the value of the
+/// <see cref="ZipCompressionOptions"/> of the archive.
 /// </summary>
-public sealed class ZipArchiveEntryOptions
+public sealed class ZipEntryOptions
 {
-    /// <summary>Gets or sets the compression method of the entry, or <see langword="null"/> for <see cref="ZipArchiveWriterOptions.CompressionMethod"/>.</summary>
+    /// <summary>Gets or sets the compression method of the entry, or <see langword="null"/> for <see cref="ZipCompressionOptions.CompressionMethod"/>.</summary>
     public ZipCompressionMethod? CompressionMethod { get; set; }
 
-    /// <summary>Gets or sets the compression level of the entry, or <see langword="null"/> for <see cref="ZipArchiveWriterOptions.CompressionLevel"/>.</summary>
+    /// <summary>Gets or sets the compression level of the entry, or <see langword="null"/> for <see cref="ZipCompressionOptions.CompressionLevel"/>.</summary>
     public CompressionLevel? CompressionLevel { get; set; }
 
     /// <summary>
-    /// Gets or sets the password of the entry, or <see langword="null"/> for <see cref="ZipArchiveWriterOptions.Password"/>.
-    /// An empty string writes the entry without encryption, even when the writer has a password.
+    /// Gets or sets the password of the entry, or <see langword="null"/> for <see cref="ZipCompressionOptions.Password"/>.
+    /// An empty string writes the entry without encryption, even when the archive has a password.
     /// </summary>
     public string? Password { get; set; }
 
     /// <summary>
-    /// Gets or sets the encryption of the entry, or <see langword="null"/> for <see cref="ZipArchiveWriterOptions.Encryption"/>.
+    /// Gets or sets the encryption of the entry, or <see langword="null"/> for <see cref="ZipCompressionOptions.Encryption"/>.
     /// It applies only when the entry has a password; <see cref="ZipEncryption.None"/> writes the entry without encryption.
     /// </summary>
     public ZipEncryption? Encryption { get; set; }
@@ -48,5 +48,5 @@ public sealed class ZipArchiveEntryOptions
     /// <summary>Gets or sets the comment of the entry, or <see langword="null"/>. It is written as UTF-8 when it is not ASCII.</summary>
     public string? Comment { get; set; }
 
-    internal ZipArchiveEntryOptions Clone() => (ZipArchiveEntryOptions)MemberwiseClone();
+    internal ZipEntryOptions Clone() => (ZipEntryOptions)MemberwiseClone();
 }

@@ -14,7 +14,7 @@ native library and works with Native AOT.
 | --- | --- | --- | --- |
 | 7z | Yes | Yes (create and update) | [SevenZipArchive](cref:Meziantou.Framework.Compression.SevenZipArchive), [SevenZipFile](cref:Meziantou.Framework.Compression.SevenZipFile) |
 | RAR (RAR5, RAR 2.0 to 4.x) | Yes | No | [RarArchive](cref:Meziantou.Framework.Compression.RarArchive), [RarFile](cref:Meziantou.Framework.Compression.RarFile) |
-| zip | Yes | No: use `System.IO.Compression.ZipArchive` | [ReadOnlyZipArchive](cref:Meziantou.Framework.Compression.ReadOnlyZipArchive) |
+| zip | Yes | Yes (create and update) | [ZipArchive](cref:Meziantou.Framework.Compression.ZipArchive), [ZipFile](cref:Meziantou.Framework.Compression.ZipFile) |
 | tar, .tar.gz, .tar.bz2, .tar.xz, .tar.lzma, .tar.lz, .tar.zst, .tar.Z | Yes | No: use `System.Formats.Tar` | [ArchiveFile](cref:Meziantou.Framework.Compression.ArchiveFile), [ArchiveReader](cref:Meziantou.Framework.Compression.ArchiveReader) |
 
 - 7z: LZMA, LZMA2, PPMd, BZip2, Deflate, Deflate64 and Copy, the BCJ, BCJ2 and Delta filters, AES-256 encryption of the
@@ -24,6 +24,8 @@ native library and works with Native AOT.
   symbolic and hard links.
 - zip: Stored, Deflate, Deflate64, BZip2, LZMA, PPMd, XZ, Zstandard, and the old Shrink, Reduce and Implode
   methods; ZipCrypto and WinZip AES encryption; Zip64; split archives (`.z01`, ..., `.zip`, and `.zip.001`, ...).
+  Writing supports Stored, Deflate, BZip2, LZMA, PPMd, XZ and Zstandard (on .NET 11), ZipCrypto and WinZip AES
+  encryption, and Zip64, to streams that do not need to be seekable: see [Zip archives](05-Zip.md).
 
 [ArchiveFile](cref:Meziantou.Framework.Compression.ArchiveFile) opens an archive of any of these formats, detected from
 its content, and [ArchiveReader](cref:Meziantou.Framework.Compression.ArchiveReader) reads one forward only, from a stream

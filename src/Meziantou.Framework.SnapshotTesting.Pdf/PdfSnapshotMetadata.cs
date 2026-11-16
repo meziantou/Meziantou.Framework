@@ -31,9 +31,17 @@ public enum PdfSnapshotMetadata
     /// <summary>The annotations of every page: subtype, rectangle, contents, and the URI of links.</summary>
     Annotations = 1 << 4,
 
+    /// <summary>
+    /// What every page shows, one line per element (<see cref="Meziantou.Framework.Pdf.PdfPageElements"/>): the lines of
+    /// text with their bounding boxes, the images with their size, digest and position, the paths with their paint,
+    /// colors and bounding boxes, and the shadings. A change of the content shows as changed lines in the diff of the
+    /// snapshot. It is verbose, so <see cref="All"/> does not include it.
+    /// </summary>
+    Content = 1 << 5,
+
     /// <summary>The default metadata: <see cref="DocumentInformation"/>.</summary>
     Default = DocumentInformation,
 
-    /// <summary>All the metadata.</summary>
+    /// <summary>All the metadata, except <see cref="Content"/>.</summary>
     All = DocumentInformation | Dates | Text | Outlines | Annotations,
 }

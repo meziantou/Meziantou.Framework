@@ -41,6 +41,15 @@ internal sealed class RenderGraphicsState
 
     public double FillAlpha { get; set; } = 1;
 
+    /// <summary>Gets or sets the overprint parameter of the stroking operations (<c>OP</c>, 8.6.7).</summary>
+    public bool StrokeOverprint { get; set; }
+
+    /// <summary>Gets or sets the overprint parameter of the other painting operations (<c>op</c>, 8.6.7).</summary>
+    public bool FillOverprint { get; set; }
+
+    /// <summary>Gets or sets the overprint mode (<c>OPM</c>, 8.6.7): 1 for the nonzero overprint mode.</summary>
+    public int OverprintMode { get; set; }
+
     public BlendMode BlendMode { get; set; }
 
     /// <summary>Gets or sets whether the constant alphas and the soft mask are shape instead of opacity (11.3.7.2): in a knockout group, they say how much an element knocks out.</summary>

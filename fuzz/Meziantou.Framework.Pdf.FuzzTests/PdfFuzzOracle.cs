@@ -139,6 +139,12 @@ internal static class PdfFuzzOracle
             }
         });
         Tolerate(() => ReadStructureTree(document.StructureTree));
+        Tolerate(() =>
+        {
+            var report = PdfPrintProductionReport.Create(document);
+            if (report.Pages.Count != pageCount)
+                throw new InvalidOperationException("The print production report does not have every page");
+        });
 
         // Reading from a stream reads the same document
         using (var stream = new MemoryStream(data, writable: false))
@@ -153,12 +159,145 @@ internal static class PdfFuzzOracle
 
         CheckReadBack(document.ToByteArray(), options, pageCount, "default options");
         CheckReadBack(document.ToByteArray(new PdfSaveOptions { CompressStreams = false, UseObjectStreams = false }), options, pageCount, "uncompressed streams, no object streams");
+        CheckRoundTrip(PdfDocument.Open(data, options), options);
+        CheckComparison(document, options);
+        CheckOptimizer(PdfDocument.Open(data, options), options, pageCount);
+        CheckSanitizer(data, options, pageCount);
         if (pageCount > 0)
         {
             CheckRedaction(PdfDocument.Open(data, options), options, pageCount);
             CheckWatermark(PdfDocument.Open(data, options), options, pageCount);
             CheckPdfAConversion(PdfDocument.Open(data, options), options, pageCount);
         }
+    }
+
+    /// <summary>
+    /// The writer is deterministic and keeps the document (<see cref="PdfRoundTripValidator"/>): the document is written,
+    /// read back and written again, and the two outputs have the same pages, objects and bytes.
+    /// </summary>
+    private static void CheckRoundTrip(PdfDocument document, PdfReadOptions options)
+    {
+        PdfRoundTripResult result;
+        try
+        {
+            result = PdfRoundTripValidator.Validate(document, readOptions: options);
+        }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+        {
+            return;
+        }
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!result.Succeeded)
+            throw new InvalidOperationException($"The round trip of the document failed: {result.Failure}");
+    }
+
+    /// <summary>The document written and read back shows the same elements as the document (<see cref="PdfDocumentComparer"/>).</summary>
+    private static void CheckComparison(PdfDocument document, PdfReadOptions options)
+    {
+        if (document.Pages.Count > MaxPages)
+            return;
+
+        byte[] written;
+        try
+        {
+            written = document.ToByteArray();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Tolerate(() =>
+        {
+            var comparison = PdfDocumentComparer.Compare(document, PdfDocument.Open(written, options));
+            if (!comparison.AreEquivalent)
+                throw new InvalidOperationException("The document written does not show the same elements: " + comparison);
+        });
+    }
+
+    /// <summary>
+    /// Plans every change of the optimizer: the plan is valid JSON, applying it keeps the pages, and the document is
+    /// written and read back.
+    /// </summary>
+    private static void CheckOptimizer(PdfDocument document, PdfReadOptions options, int pageCount)
+    {
+        try
+        {
+            var plan = PdfOptimizer.CreatePlan(document, new PdfOptimizationOptions
+            {
+                RemoveMetadata = true,
+                RemoveJavaScript = true,
+                RemoveAttachments = true,
+                RemovePageThumbnails = true,
+                RemoveComments = true,
+                RemoveOpenAction = true,
+                RemoveXfa = true,
+                RemoveFormFields = true,
+                RemoveBookmarks = true,
+                FlattenOptionalContent = true,
+                PruneUnusedResources = true,
+                PruneUnreachableObjects = true,
+                CompressStreams = true,
+                MaxImageResolution = 36,
+                AllowSignatureInvalidation = true,
+            });
+            using (System.Text.Json.JsonDocument.Parse(plan.ToJson()))
+            {
+            }
+
+            PdfOptimizer.Apply(plan);
+            if (document.Pages.Count != pageCount)
+                throw new InvalidOperationException($"The optimizer changed the number of pages from {pageCount} to {document.Pages.Count}");
+
+            CheckReadBack(document.ToByteArray(), options, pageCount, "after an optimization");
+        }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+        {
+        }
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal))
+        {
+        }
+    }
+
+    /// <summary>The sanitizer keeps the bytes of the file, keeps the pages, and has nothing left to repair in its output.</summary>
+    private static void CheckSanitizer(byte[] data, PdfReadOptions options, int pageCount)
+    {
+        PdfSanitizationResult result;
+        try
+        {
+            result = PdfSaveSanitizer.Sanitize(data, options);
+        }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+        {
+            return;
+        }
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal) || ex.Message.Contains("rebuilt", StringComparison.Ordinal))
+        {
+            // A damaged file cannot be updated incrementally
+            return;
+        }
+
+        if (!result.HasChanges)
+        {
+            if (!result.Output.Span.SequenceEqual(data))
+                throw new InvalidOperationException("The sanitizer changed a file it did not repair");
+
+            return;
+        }
+
+        if (!result.Output.Span.StartsWith(data))
+            throw new InvalidOperationException("The sanitizer did not keep the bytes of the file");
+
+        var again = PdfSaveSanitizer.Sanitize(result.Output, options);
+        if (again.HasChanges)
+            throw new InvalidOperationException($"The output of the sanitizer still needs repairs: {string.Join(", ", again.Repairs)}");
+
+        if (PdfDocument.Open(result.Output, options).Pages.Count != pageCount)
+            throw new InvalidOperationException("The sanitizer changed the number of pages");
     }
 
     /// <summary>

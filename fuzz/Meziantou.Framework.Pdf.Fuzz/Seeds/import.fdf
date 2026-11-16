@@ -1,0 +1,16 @@
+%FDF-1.2
+1 0 obj
+<< /FDF << /F (form.pdf) /Fields [
+  << /T (name) /V (Jane Doe) >>
+  << /T (address) /Kids [ << /T (city) /V <FEFF0050006100720069007300A0> >> ] >>
+  << /T (agree) /V /Yes >>
+  << /T (size) /V /L >>
+  << /T (colors) /V [(red) (blue)] >>
+  << /T (id) /V (43) >>
+  << /T (missing) /V (x) >>
+  << /T (country) /V (es) >>
+] >> >>
+endobj
+trailer
+<< /Root 1 0 R >>
+%%EOF

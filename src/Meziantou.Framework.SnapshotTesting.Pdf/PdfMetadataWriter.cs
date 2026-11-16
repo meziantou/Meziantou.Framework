@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using Meziantou.Framework.Pdf;
@@ -132,6 +133,11 @@ internal static class PdfMetadataWriter
             writer.WriteEndArray();
         }
 
+        if (metadata.HasFlag(PdfSnapshotMetadata.Content))
+        {
+            WriteContent(writer, PdfPageElements.Create(page));
+        }
+
         if (metadata.HasFlag(PdfSnapshotMetadata.Annotations))
         {
             writer.WriteStartArray("annotations");
@@ -155,6 +161,50 @@ internal static class PdfMetadataWriter
 
         writer.WriteEndObject();
     }
+
+    /// <summary>The elements of a page, one string per element, so that a change shows as a changed line in the diff.</summary>
+    private static void WriteContent(Utf8JsonWriter writer, PdfPageElements elements)
+    {
+        writer.WriteStartObject("content");
+        writer.WriteStartArray("text");
+        foreach (var line in elements.Text)
+        {
+            writer.WriteStringValue(line.Text + " " + Format(line.Bounds));
+        }
+
+        writer.WriteEndArray();
+        writer.WriteStartArray("images");
+        foreach (var image in elements.Images)
+        {
+            writer.WriteStringValue(string.Create(CultureInfo.InvariantCulture, $"{image.Width}x{image.Height} {image.Digest[..16]} {Format(image.Bounds)}"));
+        }
+
+        writer.WriteEndArray();
+        writer.WriteStartArray("paths");
+        foreach (var path in elements.Paths)
+        {
+            var paint = path.Paint switch
+            {
+                PdfPathPaint.Fill => "fill " + (path.FillColor ?? "0 g"),
+                PdfPathPaint.Stroke => "stroke " + (path.StrokeColor ?? "0 G"),
+                _ => "fill " + (path.FillColor ?? "0 g") + " stroke " + (path.StrokeColor ?? "0 G"),
+            };
+            writer.WriteStringValue(paint + " " + Format(path.Bounds));
+        }
+
+        writer.WriteEndArray();
+        writer.WriteStartArray("shadings");
+        foreach (var shading in elements.Shadings)
+        {
+            var m = shading.Matrix;
+            writer.WriteStringValue(string.Create(CultureInfo.InvariantCulture, $"type {shading.ShadingType} {shading.Digest[..16]} [{Round(m.A)} {Round(m.B)} {Round(m.C)} {Round(m.D)} {Round(m.E)} {Round(m.F)}]"));
+        }
+
+        writer.WriteEndArray();
+        writer.WriteEndObject();
+    }
+
+    private static string Format(PdfRectangle rectangle) => string.Create(CultureInfo.InvariantCulture, $"[{Round(rectangle.Left)} {Round(rectangle.Bottom)} {Round(rectangle.Right)} {Round(rectangle.Top)}]");
 
     private static void WriteRectangle(Utf8JsonWriter writer, PdfRectangle rectangle)
     {

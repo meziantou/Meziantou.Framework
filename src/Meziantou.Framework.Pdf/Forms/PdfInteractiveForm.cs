@@ -20,6 +20,7 @@ public sealed partial class PdfInteractiveForm
     private static readonly PdfName AcroFormName = PdfName.Create("AcroForm");
     private static readonly PdfName FieldsName = PdfName.Create("Fields");
     private static readonly PdfName NeedAppearancesName = PdfName.Create("NeedAppearances");
+    private static readonly PdfName CalculationOrderName = PdfName.Create("CO");
 
     internal PdfInteractiveForm(PdfDocument document)
     {
@@ -74,6 +75,44 @@ public sealed partial class PdfInteractiveForm
             {
                 throw new InvalidOperationException("The document has no interactive form");
             }
+        }
+    }
+
+    /// <summary>
+    /// Gets the fields whose values are calculated, in the order of their calculations (<c>/CO</c>, ISO 32000-2, 12.7.3):
+    /// the order in which a viewer runs their calculation scripts when a value changes.
+    /// </summary>
+    public IReadOnlyList<PdfFormField> CalculationOrder
+    {
+        get
+        {
+            if (Dictionary?.GetResolved(CalculationOrderName) is not PdfArray order)
+                return [];
+
+            // The fields of the hierarchy, by their dictionary
+            var fields = new Dictionary<PdfDictionary, PdfFormField>(ReferenceEqualityComparer.Instance);
+            var pending = new Stack<(PdfFormField Field, int Depth)>(Fields.Select(item => (item, 0)));
+            while (pending.TryPop(out var item) && fields.Count < MaxFields)
+            {
+                if (!fields.TryAdd(item.Field.Dictionary, item.Field) || item.Depth >= MaxDepth)
+                    continue;
+
+                foreach (var child in item.Field.Children)
+                {
+                    pending.Push((child, item.Depth + 1));
+                }
+            }
+
+            var result = new List<PdfFormField>();
+            for (var i = 0; i < order.Count; i++)
+            {
+                if (order.TryGetResolved<PdfDictionary>(i, out var dictionary) && fields.TryGetValue(dictionary, out var calculated) && !result.Contains(calculated))
+                {
+                    result.Add(calculated);
+                }
+            }
+
+            return result;
         }
     }
 

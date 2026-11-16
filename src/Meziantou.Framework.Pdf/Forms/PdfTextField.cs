@@ -36,6 +36,28 @@ public sealed class PdfTextField : PdfFormField
         }
     }
 
+    /// <summary>
+    /// Sets the value of the field and the text its widgets show for it, as a format script does (ISO 32000-2, 12.6.3):
+    /// the value (<c>/V</c>) keeps <paramref name="value"/>, such as <c>1234.5</c>, and the appearance shows
+    /// <paramref name="displayText"/>, such as <c>$1,234.50</c>.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="displayText">The text shown, or <see langword="null"/> to show the value.</param>
+    /// <exception cref="InvalidOperationException">The field is read-only.</exception>
+    public void SetValue(string? value, string? displayText)
+    {
+        if (IsReadOnly)
+            throw new InvalidOperationException($"The field '{FullName}' is read-only");
+
+        if (value is not null && MaxLength is { } maxLength && value.Length > maxLength)
+        {
+            value = value[..maxLength];
+        }
+
+        Dictionary[VName] = value is null ? null : PdfString.FromText(value);
+        PdfFieldAppearance.Update(this, displayText);
+    }
+
     /// <summary>Gets a value indicating whether the field can have several lines (bit 13 of <see cref="PdfFormField.Flags"/>).</summary>
     public bool IsMultiline => HasFlag(13);
 

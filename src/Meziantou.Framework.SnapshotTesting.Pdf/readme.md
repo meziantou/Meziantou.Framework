@@ -73,8 +73,9 @@ whether the document is encrypted.
 
 `PdfSnapshotSettings` configures the rendering of the pages and the content of the JSON file. `Metadata` selects the
 optional parts of the JSON file (`PdfSnapshotMetadata` flags): `DocumentInformation`, `Dates` (creation and modification
-dates), `Text` (the text of every page, one entry per line), `Outlines` (the bookmarks) and `Annotations` (subtype,
-rectangle, contents and the URI of links).
+dates), `Text` (the text of every page, one entry per line), `Outlines` (the bookmarks), `Annotations` (subtype,
+rectangle, contents and the URI of links) and `Content` (what every page shows, one line per element: text, images,
+paths and shadings with their positions, so that the diff of the file tells what changed; `All` does not include it).
 
 <!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Pdf.Tests/PdfSnapshotTests.cs;region=SnapshotTestingPdf_Settings;format=md-fenced-code-block;dedent=true -->
 ```csharp

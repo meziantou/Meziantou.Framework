@@ -54,4 +54,5 @@ The library uses `Meziantou.Framework.Imaging` for the images (decoding, color p
 
 - [Getting started](02-GettingStarted.md): install the package, create a document, read it and render it.
 - [Creating documents](03-CreatingDocuments/01-Overview.md): pages, coordinates and the content builder.
-- [Limitations](09-Limitations.md): what the library does not do.
+- [Inspecting and transforming](09-InspectingAndTransforming/01-Overview.md): validate the writer, optimize, compare and inspect documents.
+- [Limitations](10-Limitations.md): what the library does not do.

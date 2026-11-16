@@ -103,6 +103,127 @@ public sealed class PdfWriterTests
     }
 
     [Fact]
+    public void RoundTripValidator()
+    {
+        var file = CreateRichDocument().ToByteArray();
+
+        #region Pdf_ValidateRoundTrip
+        var result = PdfRoundTripValidator.Validate(file);
+        Assert.True(result.Succeeded, result.Failure?.ToString()); // Failure.Kind tells which check failed
+        #endregion
+
+        Assert.True(result.AreOutputsIdentical);
+        Assert.True(result.AreOutputsStructurallyEquivalent);
+        Assert.True(result.ComparesBytes);
+        Assert.HasCount(3, result.OriginalSummary.Pages);
+        Assert.Equal(result.FirstSummary!.Digest, result.SecondSummary!.Digest);
+        Assert.Equal(1, result.FirstSummary.ObjectTypes["Catalog"]);
+        Assert.Equal(3, result.FirstSummary.ObjectTypes["Page"]);
+    }
+
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, true)]
+    public void RoundTripValidatorWithSaveOptions(bool compress, bool objectStreams, bool linearize)
+    {
+        var options = new PdfSaveOptions { CompressStreams = compress, UseObjectStreams = objectStreams, Linearize = linearize };
+
+        var result = PdfRoundTripValidator.Validate(CreateRichDocument(), options);
+
+        Assert.True(result.Succeeded, result.Failure?.ToString());
+    }
+
+    [Fact]
+    public void RoundTripValidatorOfEncryptedDocumentComparesTheStructureOnly()
+    {
+        var document = CreateRichDocument();
+        document.Encryption = new PdfEncryption("user", "owner") { Algorithm = PdfEncryptionAlgorithm.AesWith256BitKey };
+
+        var result = PdfRoundTripValidator.Validate(document, readOptions: new PdfReadOptions { Password = "user" });
+
+        Assert.True(result.Succeeded, result.Failure?.ToString());
+        Assert.False(result.ComparesBytes);
+        Assert.True(result.AreOutputsStructurallyEquivalent);
+    }
+
+    [Fact]
+    public void RoundTripValidatorReportsUnreadableOutputs()
+    {
+        var document = CreateRichDocument();
+        document.Encryption = new PdfEncryption("user", "owner");
+
+        var result = PdfRoundTripValidator.Validate(document);
+
+        Assert.Equal(PdfRoundTripFailureKind.ReadBackFailed, result.Failure!.Kind);
+        Assert.Null(result.SecondOutput);
+    }
+
+    [Fact]
+    public void InformationThatIsNotADictionaryIsNotWritten()
+    {
+        // /Info refers to an object the file does not have: the null object, which a second save would leave out
+        var file = HandWrittenPdf.CreateSimple();
+        file.Trailer = "<< /Size {size} /Root 1 0 R /Info 9 0 R >>";
+
+        var result = PdfRoundTripValidator.Validate(file.ToArray(), saveOptions: Uncompressed);
+
+        Assert.True(result.Succeeded, result.Failure?.ToString());
+        Assert.DoesNotContain("/Info", Encoding.Latin1.GetString(result.FirstOutput.Span), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NullTrailerEntriesAreNotWritten()
+    {
+        // A private entry of the trailer that refers to an object the file does not have is the null object
+        var file = HandWrittenPdf.CreateSimple();
+        file.Trailer = "<< /Size {size} /Root 1 0 R /Private 9 0 R >>";
+
+        var result = PdfRoundTripValidator.Validate(file.ToArray(), saveOptions: Uncompressed);
+
+        Assert.True(result.Succeeded, result.Failure?.ToString());
+        Assert.DoesNotContain("/Private", Encoding.Latin1.GetString(result.FirstOutput.Span), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ObjectsThatReferToTheNullObjectAreNotWritten()
+    {
+        // The object 6 is a reference to the object 7, which is null: the reference to it is the null object
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /Private 6 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Extra [6 0 R] >>")
+            .Add(6, "7 0 R")
+            .Add(7, "null");
+
+        foreach (var options in new[] { Uncompressed, new PdfSaveOptions { Linearize = true } })
+        {
+            var result = PdfRoundTripValidator.Validate(file.ToArray(), saveOptions: options);
+
+            Assert.True(result.Succeeded, result.Failure?.ToString());
+            Assert.Equal(3, result.FirstSummary!.ObjectCount);
+        }
+    }
+
+    [Fact]
+    public void DocumentSummaryDoesNotDependOnObjectNumbers()
+    {
+        var document = CreateRichDocument();
+        var compact = PdfDocument.Open(document.ToByteArray(new PdfSaveOptions { UseObjectStreams = true }));
+        var linearized = PdfDocument.Open(document.ToByteArray(new PdfSaveOptions { Linearize = true }));
+
+        var first = PdfDocumentSummary.Create(compact);
+        var second = PdfDocumentSummary.Create(linearized);
+        Assert.Equal(first.Pages, second.Pages);
+
+        compact.Pages[0].Rotation = 180;
+        var changed = PdfDocumentSummary.Create(compact);
+        Assert.NotEqual(first.Digest, changed.Digest);
+        Assert.Equal(180, changed.Pages[0].Rotation);
+        Assert.NotEqual(first.Pages[0], changed.Pages[0]);
+    }
+
+    [Fact]
     public void UnreachableObjectsAreNotWritten()
     {
         var document = new PdfDocument();

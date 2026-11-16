@@ -106,6 +106,15 @@ public sealed class PdfRenderSession : IDisposable
     {
         CheckPage(page);
         ArgumentNullException.ThrowIfNull(target);
+        if (Options.SimulateOverprint && Options.Plate is null)
+        {
+            var (width, height, _) = PageGeometry.Compute(page, Options);
+            using var composite = new Image<Rgba32>(Math.Min(width, target.Width), Math.Min(height, target.Height), Options.Configuration);
+            Render(page, composite, backgroundBehind: false, cancellationToken);
+            target.Draw(canvas => canvas.DrawImage(composite.Frames[0], new PointD(0, 0)), cancellationToken);
+            return;
+        }
+
         Render(page, target, backgroundBehind: false, cancellationToken);
     }
 
@@ -120,6 +129,20 @@ public sealed class PdfRenderSession : IDisposable
     /// <summary>Renders a page on an image: the background is painted behind the page on a new image, which is transparent, and before it on an image of the application, which may have no alpha.</summary>
     private void Render(PdfPage page, Image target, bool backgroundBehind, CancellationToken cancellationToken)
     {
+        // The simulation renders the plates with this method: each is rendered as a plate, not as a simulation
+        if (Options.SimulateOverprint && _cache.Plate is null && target is Image<Rgba32> composite)
+        {
+            RenderOverprintSimulation(page, composite, cancellationToken);
+            return;
+        }
+
+        var isPlate = _cache.Plate is not null;
+        if (isPlate)
+        {
+            // A plate is a film: white where there is no ink
+            target.Draw(canvas => canvas.Fill(new SolidBrush(new Rgba64(65535, 65535, 65535))), cancellationToken);
+        }
+
         // The fonts a document that is being built embeds are written when it is saved: they are written now, so that
         // their glyphs are drawn with the embedded program
         Document.WriteEmbeddedFonts();
@@ -136,7 +159,7 @@ public sealed class PdfRenderSession : IDisposable
         {
             target.Draw(canvas => canvas.Clip(new Rectangle(0, 0, width, height), clipped => clipped.Antialiasing(options.PathAntialiasing, content =>
             {
-                if (!backgroundBehind && options.Background is { } paper)
+                if (!backgroundBehind && !isPlate && options.Background is { } paper)
                 {
                     content.Fill(new SolidBrush(paper.ToRgba64()));
                 }
@@ -156,6 +179,7 @@ public sealed class PdfRenderSession : IDisposable
                         BaseMatrix = matrix,
                         DeviceSize = (width, height),
                         IsKnockoutContext = isKnockout,
+                        Plate = _cache.Plate,
                     };
                     renderer.Run(surface, GetContent(page), page.Resources);
                 }
@@ -176,7 +200,7 @@ public sealed class PdfRenderSession : IDisposable
 
                 // The page is a group composited on the paper (11.4.7): the content is drawn on a transparent backdrop,
                 // which the blend modes see, then the background is put behind it
-                if (backgroundBehind && options.Background is { } background)
+                if (backgroundBehind && !isPlate && options.Background is { } background)
                 {
                     content.Fill(new SolidBrush(background.ToRgba64()) { CompositeMode = CompositeMode.DestinationOver });
                 }
@@ -185,6 +209,73 @@ public sealed class PdfRenderSession : IDisposable
         finally
         {
             _cache.EndPage();
+        }
+    }
+
+    /// <summary>
+    /// Renders the plate of each colorant of the page, then combines their inks on white paper: each ink absorbs the
+    /// light its color absorbs, in proportion to its tint (a multiplicative model of the inks).
+    /// </summary>
+    private void RenderOverprintSimulation(PdfPage page, Image<Rgba32> target, CancellationToken cancellationToken)
+    {
+        var inks = new List<(string Colorant, double R, double G, double B)>
+        {
+            ("Cyan", 0, 1, 1),
+            ("Magenta", 1, 0, 1),
+            ("Yellow", 1, 1, 0),
+            ("Black", 0, 0, 0),
+        };
+        foreach (var (name, color) in PdfSeparations.GetSpotColors(page))
+        {
+            inks.Add((name, color.R, color.G, color.B));
+        }
+
+        // The inks are multiplied into the target: no buffer other than the plate, which a render of the page needs anyway
+        var width = target.Width;
+        var height = target.Height;
+        var output = target.Frames[0];
+        output.ProcessPixelRows(rows =>
+        {
+            for (var y = 0; y < rows.Height; y++)
+            {
+                rows.GetRowSpan(y).Fill(new Rgba32(255, 255, 255, 255));
+            }
+        });
+
+        using var plate = new Image<Rgba32>(width, height, Options.Configuration);
+        foreach (var (colorant, r, g, b) in inks)
+        {
+            _cache.Plate = colorant;
+            try
+            {
+                Render(page, plate, backgroundBehind: false, cancellationToken);
+            }
+            finally
+            {
+                _cache.Plate = null;
+            }
+
+            var frame = plate.Frames[0];
+            output.ProcessPixelRows(rows =>
+            {
+                for (var y = 0; y < height; y++)
+                {
+                    var outputRow = rows.GetRowSpan(y);
+                    for (var x = 0; x < width; x++)
+                    {
+                        var tint = 1 - (frame[x, y].R / 255.0);
+                        if (tint <= 0)
+                            continue;
+
+                        ref var pixel = ref outputRow[x];
+                        pixel = new Rgba32(
+                            Colors.RenderColorSpace.ToByte(pixel.R / 255.0 * (1 - (tint * (1 - r)))),
+                            Colors.RenderColorSpace.ToByte(pixel.G / 255.0 * (1 - (tint * (1 - g)))),
+                            Colors.RenderColorSpace.ToByte(pixel.B / 255.0 * (1 - (tint * (1 - b)))),
+                            255);
+                    }
+                }
+            });
         }
     }
 

@@ -43,6 +43,56 @@ internal abstract class RenderColorSpace
     /// <summary>Converts a color to sRGB, components from 0 to 1.</summary>
     public abstract RgbColor ToRgb(ReadOnlySpan<double> components);
 
+    /// <summary>The process colorants of a printing device (8.6.6.4): their plates are separated from the colors of every color space.</summary>
+    public static readonly string[] ProcessColorants = ["Cyan", "Magenta", "Yellow", "Black"];
+
+    /// <summary>
+    /// Gets the tint of a colorant (a plate) in a color: 0 for no ink, 1 for full ink. The device colors are separated
+    /// into the process colorants: gray as black, RGB as CMYK with a full gray component replacement, CMYK as it is; the
+    /// separation and DeviceN colors give the tints of their colorants (8.6.6.4, 8.6.6.5).
+    /// </summary>
+    /// <param name="components">The components of the color.</param>
+    /// <param name="colorant">The colorant: a process colorant or a spot colorant.</param>
+    /// <param name="zeroIsUnchanged">The nonzero overprint mode (<c>OPM</c> 1, 8.6.7): a component of 0 of a CMYK color does not paint its colorant.</param>
+    /// <param name="tint">The tint.</param>
+    /// <returns><see langword="false"/> when the color does not paint the colorant: overprinting leaves it unchanged, and knocking out erases it.</returns>
+    public virtual bool TryGetTint(ReadOnlySpan<double> components, string colorant, bool zeroIsUnchanged, out double tint)
+    {
+        var rgb = ToRgb(components);
+        return TryGetProcessTint(rgb, colorant, out tint);
+    }
+
+    /// <summary>
+    /// Separates an RGB color into the process colorants, with a full gray component replacement. The inks multiply: the
+    /// other components are divided by <c>1 - k</c>, so that the inks printed together give the color back.
+    /// </summary>
+    public static bool TryGetProcessTint(RgbColor rgb, string colorant, out double tint)
+    {
+        var c = 1 - Math.Clamp(rgb.R, 0, 1);
+        var m = 1 - Math.Clamp(rgb.G, 0, 1);
+        var y = 1 - Math.Clamp(rgb.B, 0, 1);
+        var k = Math.Min(c, Math.Min(m, y));
+        var white = 1 - k;
+        tint = colorant switch
+        {
+            "Black" => k,
+            _ when white <= 0 => 0, // Black only
+            "Cyan" => (c - k) / white,
+            "Magenta" => (m - k) / white,
+            "Yellow" => (y - k) / white,
+            _ => 0,
+        };
+        return Array.IndexOf(ProcessColorants, colorant) >= 0;
+    }
+
+    /// <summary>Gets the tint of a process colorant in CMYK components.</summary>
+    private static bool TryGetCmykTint(ReadOnlySpan<double> components, string colorant, bool zeroIsUnchanged, out double tint)
+    {
+        var index = Array.IndexOf(ProcessColorants, colorant);
+        tint = index >= 0 && index < components.Length ? Math.Clamp(components[index], 0, 1) : 0;
+        return index >= 0 && !(zeroIsUnchanged && tint == 0);
+    }
+
     /// <summary>Converts colors to 8-bit sRGB: <see cref="ComponentCount"/> components per color, three bytes per color.</summary>
     public virtual void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb)
     {
@@ -193,7 +243,7 @@ internal abstract class RenderColorSpace
 
                     var colorant = array.GetResolved(1) is PdfName colorantName ? colorantName.Value : "";
                     var alternate = Read(array.GetResolved(2), resources, cache, depth + 1);
-                    return new DeviceNSpace(1, alternate, RenderFunction.Read(array.GetResolved(3)), paintsNothing: colorant == "None");
+                    return new DeviceNSpace(1, alternate, RenderFunction.Read(array.GetResolved(3)), paintsNothing: colorant == "None", [colorant]);
                 }
 
             case "DeviceN":
@@ -206,7 +256,8 @@ internal abstract class RenderColorSpace
 
                     var alternate = Read(array.GetResolved(2), resources, cache, depth + 1);
                     var paintsNothing = names.Count > 0 && names.All(item => PdfReference.ResolveIfReference(item) is PdfName { Value: "None" });
-                    return new DeviceNSpace(Math.Max(1, names.Count), alternate, RenderFunction.Read(array.GetResolved(3)), paintsNothing);
+                    string[] colorants = [.. names.Select(item => PdfReference.ResolveIfReference(item) is PdfName name ? name.Value : "")];
+                    return new DeviceNSpace(Math.Max(1, names.Count), alternate, RenderFunction.Read(array.GetResolved(3)), paintsNothing, colorants);
                 }
 
             case "Pattern":
@@ -276,6 +327,13 @@ internal abstract class RenderColorSpace
     {
         public override int ComponentCount => 1;
 
+        public override bool TryGetTint(ReadOnlySpan<double> components, string colorant, bool zeroIsUnchanged, out double tint)
+        {
+            // Gray is black ink (10.4.2.1): the other process colorants are knocked out
+            tint = colorant == "Black" ? 1 - Math.Clamp(components.Length > 0 ? components[0] : 0, 0, 1) : 0;
+            return Array.IndexOf(ProcessColorants, colorant) >= 0;
+        }
+
         public override RgbColor ToRgb(ReadOnlySpan<double> components)
         {
             var gray = components.Length > 0 ? components[0] : 0;
@@ -302,6 +360,8 @@ internal abstract class RenderColorSpace
 
         public override double[] GetInitialColor() => [0, 0, 0, 1];
 
+        public override bool TryGetTint(ReadOnlySpan<double> components, string colorant, bool zeroIsUnchanged, out double tint) => TryGetCmykTint(components, colorant, zeroIsUnchanged, out tint);
+
         public override RgbColor ToRgb(ReadOnlySpan<double> components)
         {
             if (components.Length < 4)
@@ -326,6 +386,15 @@ internal abstract class RenderColorSpace
         public override int ComponentCount => transform.SourceChannelCount;
 
         public override bool ConvertsInBatches => true;
+
+        /// <summary>A CMYK profile paints the process colorants with its components, as DeviceCMYK does (the overprint mode applies to it, 8.6.7).</summary>
+        public override bool TryGetTint(ReadOnlySpan<double> components, string colorant, bool zeroIsUnchanged, out double tint)
+        {
+            if (ComponentCount == 4 && _isDefaultRange)
+                return TryGetCmykTint(components, colorant, zeroIsUnchanged, out tint);
+
+            return base.TryGetTint(components, colorant, zeroIsUnchanged, out tint);
+        }
 
         public override double[] GetInitialColor()
         {
@@ -415,9 +484,25 @@ internal abstract class RenderColorSpace
     }
 
     /// <summary>Separation and DeviceN: the tint transform converts the colorants to the alternate color space (8.6.6.4, 8.6.6.5).</summary>
-    private sealed class DeviceNSpace(int count, RenderColorSpace alternate, RenderFunction tintTransform, bool paintsNothing) : RenderColorSpace
+    private sealed class DeviceNSpace(int count, RenderColorSpace alternate, RenderFunction tintTransform, bool paintsNothing, string[] colorants) : RenderColorSpace
     {
         public override int ComponentCount => count;
+
+        /// <summary>The colorants of the color space paint their plates; the colorant <c>All</c> paints every plate (8.6.6.4).</summary>
+        public override bool TryGetTint(ReadOnlySpan<double> components, string colorant, bool zeroIsUnchanged, out double tint)
+        {
+            for (var i = 0; i < colorants.Length && i < components.Length; i++)
+            {
+                if (colorants[i] == colorant || colorants[i] == "All")
+                {
+                    tint = Math.Clamp(components[i], 0, 1);
+                    return true;
+                }
+            }
+
+            tint = 0;
+            return false;
+        }
 
         public override bool PaintsNothing => paintsNothing;
 

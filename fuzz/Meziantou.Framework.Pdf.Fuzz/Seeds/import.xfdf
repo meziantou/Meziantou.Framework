@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xfdf xmlns="http://ns.adobe.com/xfdf/" xml:space="preserve">
+  <f href="form.pdf"/>
+  <fields>
+    <field name="name"><value>Jane &amp; John</value></field>
+    <field name="address"><field name="city"><value>Lyon</value></field></field>
+    <field name="agree"><value>Off</value></field>
+    <field name="colors"><value>green</value><value>blue</value></field>
+  </fields>
+  <annots/>
+</xfdf>

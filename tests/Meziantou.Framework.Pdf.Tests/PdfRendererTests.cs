@@ -5,6 +5,7 @@ using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Rendering;
+using Meziantou.Framework.Pdf.Rendering.Graphics;
 using Meziantou.Framework.Pdf.TestHarness;
 
 namespace Meziantou.Framework.Pdf.Tests;
@@ -1132,6 +1133,260 @@ public sealed class PdfRendererTests
             ]);
 
         Assert.True(CountPixels(image, pixel => pixel.R > 200 && pixel.G < 64) > 100);
+    }
+
+    [Theory]
+    [InlineData("ClosedArrow", true)]
+    [InlineData("Square", true)]
+    [InlineData("Circle", true)]
+    [InlineData("Diamond", true)]
+    [InlineData("RClosedArrow", true)]
+    [InlineData("OpenArrow", false)]
+    [InlineData("ROpenArrow", false)]
+    [InlineData("Butt", false)]
+    [InlineData("Slash", false)]
+    [InlineData("None", false)]
+    public void LineEndingsAreDrawn(string ending, bool isFilled)
+    {
+        // A horizontal line from (10, 50) to (90, 50), 2 wide: its endings are 10 points; the closed ones are filled in red
+        using var image = RenderHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            objects: "<< /Type /Annot /Subtype /Line /Rect [0 0 100 100] /L [10 50 90 50] /LE [/None /" + ending + "] /C [0 0 1] /IC [1 0 0] /BS << /W 2 >> >>");
+
+        // The line itself, and its other end, which has no ending
+        AssertColor(Pixel(image, 50, 50), 0, 0, 255, tolerance: 60);
+        AssertColor(Pixel(image, 10, 54), 255, 255, 255);
+
+        var drawn = 0;
+        var red = 0;
+        for (var x = 78; x <= 100; x++)
+        {
+            for (var y = 42; y <= 58; y++)
+            {
+                // The line is blue: red comes from the fill of the ending; outside of the line, anything comes from the ending
+                var pixel = Pixel(image, Math.Min(x, 99), y);
+                red += pixel.R > 200 && pixel.G < 80 && pixel.B < 80 ? 1 : 0;
+                if (y is < 48 or > 52)
+                {
+                    drawn += pixel.R < 200 || pixel.G < 200 ? 1 : 0;
+                }
+            }
+        }
+
+        Assert.Equal(ending != "None", drawn > 0);
+        Assert.Equal(isFilled, red > 0);
+    }
+
+    [Fact]
+    public void PolylineEndingsAreDrawnAtTheFirstAndLastVertices()
+    {
+        using var image = RenderHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            objects: "<< /Type /Annot /Subtype /PolyLine /Rect [0 0 100 100] /Vertices [10 20 50 80 90 20] /LE [/Square /Square] /C [0 0 1] /IC [1 0 0] >>");
+
+        AssertColor(Pixel(image, 10, 20), 255, 0, 0, tolerance: 60);
+        AssertColor(Pixel(image, 90, 20), 255, 0, 0, tolerance: 60);
+    }
+
+    [Fact]
+    public void CombFieldsHaveOneCharacterPerCell()
+    {
+        // Four cells of 25 points: each character is centered in its cell
+        var document = OpenHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            catalogEntries: "/AcroForm << /Fields [5 0 R] /DR << /Font << /Helv 6 0 R >> >> >>",
+            objects:
+            [
+                "<< /Type /Annot /Subtype /Widget /FT /Tx /Ff 16777216 /MaxLen 4 /T (Code) /V (ABCDEF) /DA (/Helv 20 Tf 0 g) /Rect [0 0 100 100] >>",
+                "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+            ]);
+
+        var appearance = AppearanceGenerator.Generate(document.Pages[0], document.Pages[0].Annotations[0].Dictionary, new PdfRectangle(0, 0, 100, 100))!;
+        var content = Encoding.Latin1.GetString(appearance.GetDecodedData());
+
+        Assert.Contains("1 0 0 1 7.5 44.4 Tm (A) Tj 1 0 0 1 32.5 44.4 Tm (B) Tj 1 0 0 1 57.5 44.4 Tm (C) Tj 1 0 0 1 82.5 44.4 Tm (D) Tj", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("(E)", content, StringComparison.Ordinal);
+        using var image = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+        for (var cell = 0; cell < 4; cell++)
+        {
+            Assert.True(CountPixels(image, cell * 25, 0, (cell + 1) * 25, 100, pixel => pixel.R < 128) > 10, $"cell {cell}");
+        }
+    }
+
+    [Fact]
+    public void RichTextValuesAreDrawnWithTheirStyles()
+    {
+        var document = OpenHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            catalogEntries: "/AcroForm << /Fields [5 0 R] /DR << /Font << /Helv 6 0 R >> >> >>",
+            objects:
+            [
+                "<< /Type /Annot /Subtype /Widget /FT /Tx /Ff 33558528 /T (Notes) /V (plain) /DA (/Helv 10 Tf 0 g) /DS (font-size:10pt) /Rect [0 0 200 100] /RV ("
+                    + "<?xml version=\"1.0\"?><body xmlns=\"http://www.w3.org/1999/xhtml\"><p>Hello <b>bold</b> <span style=\"color:#FF0000;font-style:italic\">red</span></p>"
+                    + "<p style=\"font:bold 14pt Times\">Title</p></body>) >>",
+                "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+            ]);
+
+        var appearance = AppearanceGenerator.Generate(document.Pages[0], document.Pages[0].Annotations[0].Dictionary, new PdfRectangle(0, 0, 200, 100))!;
+        var content = Encoding.Latin1.GetString(appearance.GetDecodedData());
+        var fonts = appearance.Dictionary.Get<PdfDictionary>(PdfNames.Resources)!.Get<PdfDictionary>(PdfNames.Font)!;
+
+        Assert.Equal(["Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Times-Bold"], fonts.Select(entry => ((PdfDictionary)entry.Value).GetName(PdfNames.BaseFont)!.Value));
+        Assert.Contains("0 0 0 rg /R0 10 Tf (Hello ) Tj 0 0 0 rg /R1 10 Tf (bold) Tj", content, StringComparison.Ordinal);
+        Assert.Contains("1 0 0 rg /R2 10 Tf (red) Tj", content, StringComparison.Ordinal);
+        Assert.Contains("/R3 14 Tf (Title) Tj", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("(plain)", content, StringComparison.Ordinal);
+
+        using var image = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+        Assert.True(CountPixels(image, pixel => pixel.R > 200 && pixel.G < 64) > 5);
+    }
+
+    [Fact]
+    public void InvalidRichTextValuesAreDrawnAsText()
+    {
+        var document = OpenHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            objects: "<< /Type /Annot /Subtype /Widget /FT /Tx /Ff 33554432 /T (Notes) /V (plain) /DA (/Helv 10 Tf 0 g) /Rect [0 0 200 100] /RV (<body><p>unclosed</body>) >>");
+
+        var appearance = AppearanceGenerator.Generate(document.Pages[0], document.Pages[0].Annotations[0].Dictionary, new PdfRectangle(0, 0, 200, 100))!;
+
+        Assert.Contains("(plain) Tj", Encoding.Latin1.GetString(appearance.GetDecodedData()), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Full cyan on the page, then magenta over its right half with the overprint parameters of the graphics state /GS0;
+    /// then a spot color, Gold (CMYK 0 0.2 1 0 at full tint), over the bottom left quarter, which overprints.
+    /// </summary>
+    private static PdfDocument CreateOverprintDocument(string overprint)
+    {
+        return OpenHandWritten(
+            "1 0 0 0 k 0 0 100 100 re f /GS0 gs 0 1 0 0 k 50 0 50 100 re f /GS1 gs /Spot cs 1 scn 0 0 50 50 re f",
+            resources: "<< /ExtGState << /GS0 << " + overprint + " >> /GS1 << /op true >> >> /ColorSpace << /Spot [/Separation /Gold /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [0 0.2 1 0] /N 1 >>] >> >>");
+    }
+
+    [Theory]
+    [InlineData("", "Cyan", 25, 75, 0)]
+    [InlineData("", "Cyan", 75, 75, 255)]
+    [InlineData("", "Magenta", 75, 75, 0)]
+    [InlineData("/op true", "Cyan", 75, 75, 255)]
+    [InlineData("/op true /OPM 1", "Cyan", 75, 75, 0)]
+    [InlineData("/OP true /OPM 1", "Cyan", 75, 75, 0)]
+    [InlineData("/OP true /op false /OPM 1", "Cyan", 75, 75, 255)]
+    [InlineData("", "Gold", 25, 25, 0)]
+    [InlineData("", "Gold", 25, 75, 255)]
+    [InlineData("", "Cyan", 25, 25, 0)]
+    [InlineData("", "Black", 25, 75, 255)]
+    public void PlatesAreRenderedWithTheOverprintParameters(string overprint, string plate, int x, int y, int gray)
+    {
+        // The magenta of the right half does not paint cyan: it erases the cyan plate, unless it overprints with the nonzero
+        // overprint mode; the spot color overprints, so the cyan stays under it
+        using var image = PdfRenderer.RenderPage(CreateOverprintDocument(overprint).Pages[0], new PdfRenderOptions { UseSystemFonts = false, Plate = plate });
+
+        AssertColor(Pixel(image, x, y), gray, gray, gray);
+    }
+
+    [Fact]
+    public void OverprintIsSimulated()
+    {
+        var document = CreateOverprintDocument("/op true /OPM 1");
+
+        #region Pdf_SimulateOverprint
+        using var preview = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { SimulateOverprint = true });
+        using var cyanPlate = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { Plate = "Cyan" });
+        #endregion
+
+        // Cyan alone; cyan and magenta overprinted: blue; magenta knocks out without overprint
+        AssertColor(Pixel(preview, 25, 75), 0, 255, 255);
+        AssertColor(Pixel(preview, 75, 75), 0, 0, 255);
+        AssertColor(Pixel(cyanPlate, 75, 75), 0, 0, 0);
+        using var knockout = PdfRenderer.RenderPage(CreateOverprintDocument("").Pages[0], new PdfRenderOptions { SimulateOverprint = true, UseSystemFonts = false });
+        AssertColor(Pixel(knockout, 75, 75), 255, 0, 255);
+
+        // The gold ink over cyan: both absorb
+        var gold = Pixel(preview, 25, 25);
+        Assert.True(gold.R < 10 && gold.B < 10 && gold.G > 150, gold.ToString());
+
+        // Without the simulation, the page is composited in RGB: the magenta covers the cyan
+        using var screen = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+        Assert.True(Pixel(screen, 75, 75).R > 200);
+    }
+
+    [Fact]
+    public void OverprintSimulationKeepsTheRgbColors()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(100, 100)).CreateContentBuilder().AppendRawContent("0.5 0 0 rg 0 0 50 100 re f 0.2 0.6 0.4 rg 50 0 50 100 re f"u8);
+
+        using var preview = PdfRenderer.RenderPage(PdfDocument.Open(document.ToByteArray()).Pages[0], new PdfRenderOptions { SimulateOverprint = true, UseSystemFonts = false });
+
+        // The inks printed together give the color back: the black is not added to the other inks
+        var red = Pixel(preview, 25, 50);
+        Assert.True(Math.Abs(red.R - 128) <= 2 && red.G <= 2 && red.B <= 2, red.ToString());
+        var other = Pixel(preview, 75, 50);
+        Assert.True(Math.Abs(other.R - 51) <= 2 && Math.Abs(other.G - 153) <= 2 && Math.Abs(other.B - 102) <= 2, other.ToString());
+    }
+
+    [Fact]
+    public void ColorantsAreListed()
+    {
+        var page = CreateOverprintDocument("/op true").Pages[0];
+
+        #region Pdf_ListColorants
+        var colorants = PdfSeparations.GetColorants(page);
+        #endregion
+
+        // The CMYK colors ink cyan and magenta only
+        Assert.Equal(["Cyan", "Magenta"], colorants.ProcessColorants);
+        Assert.Equal(["Gold"], colorants.SpotColorants);
+        Assert.Equal(["DeviceCMYK", "Separation"], colorants.ColorSpaces);
+        Assert.True(colorants.UsesOverprint);
+        Assert.Equal(["Cyan", "Magenta", "Gold"], colorants.Colorants);
+
+        var gray = OpenHandWritten("0.5 g 0 0 10 10 re f /Im Do", resources: "<< /XObject << /Im 5 0 R >> >>", objects: HandWrittenPdf.Stream("\u00FF", " /Type /XObject /Subtype /Image /Width 1 /Height 1 /BitsPerComponent 8 /ColorSpace [/DeviceN [/Cyan /Varnish] /DeviceCMYK << /FunctionType 2 /Domain [0 1 0 1] /C0 [0 0 0 0] /C1 [1 0 0 0] /N 1 >>]")).Pages[0];
+        var grayColorants = PdfSeparations.GetColorants(gray);
+        Assert.Equal(["Cyan", "Black"], grayColorants.ProcessColorants);
+        Assert.Equal(["Varnish"], grayColorants.SpotColorants);
+        Assert.False(grayColorants.UsesOverprint);
+    }
+
+    [Fact]
+    public void PrintProductionReport()
+    {
+        var document = OpenHandWritten(
+            "0 0 0 1 k 0 0 10 10 re f",
+            pageEntries: "/TrimBox [10 10 90 90] /BleedBox [5 5 95 95]",
+            catalogEntries: "/OutputIntents [<< /Type /OutputIntent /S /GTS_PDFX /OutputConditionIdentifier (FOGRA39) /RegistryName (http://www.color.org) /OutputCondition (Coated) >>]");
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        page.Dictionary[PdfName.Create("BleedBox")] = PdfArray.FromNumbers(0, 0, 50, 50);
+        page.Dictionary[PdfName.Create("TrimBox")] = PdfArray.FromNumbers(-5, 0, 60, 50);
+
+        #region Pdf_PrintProductionReport
+        var report = PdfPrintProductionReport.Create(document);
+        #endregion
+
+        var intent = Assert.Single(report.OutputIntents);
+        Assert.Equal("GTS_PDFX", intent.Subtype);
+        Assert.Equal("FOGRA39", intent.OutputConditionIdentifier);
+        Assert.Equal("Coated", intent.OutputCondition);
+        Assert.Null(intent.ProfileComponentCount);
+        Assert.HasCount(2, report.Pages);
+        Assert.Equal(new PdfRectangle(10, 10, 90, 90), report.Pages[0].TrimBox);
+        Assert.Equal(new PdfRectangle(5, 5, 95, 95), report.Pages[0].BleedBox);
+        Assert.Null(report.Pages[0].ArtBox);
+        Assert.Empty(report.Pages[0].Issues);
+        Assert.Equal(["Black"], report.Pages[0].Colorants.ProcessColorants);
+        Assert.Equal(
+            [
+                "The trim box [-5 0 60 50] extends outside the media box [0 0 100 100]",
+                "The trim box [-5 0 60 50] extends outside the bleed box [0 0 50 50]",
+            ],
+            report.Pages[1].Issues);
+        Assert.Empty(report.SpotColorants);
     }
 
     [Fact]

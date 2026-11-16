@@ -257,6 +257,28 @@ public sealed class Ktx2EncoderTests
     }
 
     [Fact]
+    public void SurfacesOfAnotherKindOfPixelsAreRejectedByTheDefaultFormat()
+    {
+        // The first surface, linear floats, chooses a floating-point format: an sRGB surface would be stored as linear light
+        using var floats = new Image<RgbaFloat>(4, 4, new RgbaFloat(0.25f, 0.5f, 0.75f, 1f));
+        using var srgb = CreateRgba32(4, 4, seed: 4);
+        using var collection = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+        collection.Add(floats, new TextureSurface(0));
+        collection.Add(srgb, new TextureSurface(1));
+        var exception = Assert.Throws<ArgumentException>(() => SaveCollection(collection, new Ktx2Encoder()));
+        Assert.Contains("another texture format", exception.Message, StringComparison.Ordinal);
+
+        // An explicit texture format is the same for every surface: a linear-light surface of integers is stored as floats
+        using var linear = CreateRgba32(4, 4, seed: 5);
+        linear.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        using var explicitFormat = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+        explicitFormat.Add(floats, new TextureSurface(0));
+        explicitFormat.Add(linear, new TextureSurface(1));
+        using var loaded = ImageCollection.Load(SaveCollection(explicitFormat, new Ktx2Encoder { TextureFormat = Ktx2TextureFormat.R32G32B32A32Sfloat }));
+        Assert.Equal(2, loaded.Count);
+    }
+
+    [Fact]
     public void ASparseArrayIndexIsRejectedBeforeItsSurfaceTableIsAllocated()
     {
         // One surface at the array index 10^8: a texture of 10^8 elements, of which the collection holds one

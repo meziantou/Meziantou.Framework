@@ -288,6 +288,16 @@ internal static class ImageCollectionWriterCore
 
                             texture = new EncodedTexture(target, layout.Width, layout.Height, levelCount, layout.LayerCount, layout.FaceCount, isArray: layout.LayerCount > 1);
                         }
+                        else if (encoder switch
+                        {
+                            DdsEncoder dds => DdsTextureWriter.ResolveFormat(dds, image.PixelFormat) != ddsFormat,
+                            _ => Ktx2TextureWriter.ResolveFormat((Ktx2Encoder)encoder, image.PixelFormat) != ktx2Format,
+                        })
+                        {
+                            // The first surface chose the texture format of the default TextureFormat; a surface of other pixels
+                            // would change precision without changing its color meaning (sRGB integers stored as linear floats)
+                            throw new ArgumentException($"The surface ({entry.TextureSurface}) has {image.PixelFormat} pixels, which the encoder writes as another texture format than the pixels of the first surface. Give every surface the same pixel format, or set the encoder's TextureFormat.", nameof(collection));
+                        }
                         else if (encoder is Ktx2Encoder && !HasSameKtx2Labels(plan!, entryPlan, Ktx2TextureWriter.IsFloatingPoint(ktx2Format)) && encoder.MetadataHandling == MetadataHandling.Strict)
                         {
                             // A KTX 2.0 texture has one color label and one orientation: those of the first surface. A surface whose

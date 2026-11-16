@@ -11,7 +11,7 @@ WebP stores 8-bit RGB images with alpha, lossless or lossy, still or animated. [
 | | Reading | Writing |
 | --- | --- | --- |
 | Compression | Lossless and lossy (VP8), mixed in one animation | Lossless (default) or lossy, for every frame |
-| Pixels | 8-bit RGB, with alpha | 8-bit RGB, with alpha; gray images are stored as RGB |
+| Pixels | 8-bit RGB, with alpha | 8-bit RGB, with alpha; gray images are stored as RGB; 16-bit images rounded or dithered on request |
 | Animations | Composited into full frames with exact millisecond durations and the play count | Full frames, durations in milliseconds, play count |
 | Metadata | ICC profile, EXIF, XMP | The same (RGB ICC profiles only) |
 
@@ -37,8 +37,8 @@ public static void SaveWebP(string photoPath, string webpPath, string animatedPa
         });
     }
 
-    // Every sample is kept, including the colors of fully transparent pixels. An animation needs a seekable
-    // destination (the file size is patched at the end): a path, a FileStream or a MemoryStream.
+    // Every sample is kept, including the colors of fully transparent pixels. An animation written to a seekable
+    // destination (a path, a FileStream or a MemoryStream) streams its frames and patches the file size at the end.
     using var animation = Image.Load(animatedPath);
     animation.Save(animatedWebPPath, new WebPEncoder { Compression = WebPCompression.Lossless });
 }
@@ -47,6 +47,78 @@ public static void SaveWebP(string photoPath, string webpPath, string animatedPa
 
 Lossy output uses 4:2:0 chroma subsampling, and keeps alpha losslessly unless `AlphaQuality` is below 100. Lossless
 output keeps every 8-bit sample, including the colors of fully transparent pixels, unless `NearLossless` is below 100.
+
+## What the format cannot store
+
+WebP ([RFC 9649](https://www.rfc-editor.org/rfc/rfc9649)) has two bitstreams, and neither stores more than the encoder
+writes:
+
+- **8 bits per sample.** The lossless bitstream (VP8L) codes 8-bit ARGB values, the lossy bitstream (VP8,
+  [RFC 6386](https://www.rfc-editor.org/rfc/rfc6386)) 8-bit samples, and the `ALPH` chunk 8-bit alpha. A 16-bit image is
+  always reduced: [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.AllowBitDepthReduction)
+  asks for it explicitly.
+- **4:2:0 chroma in lossy output.** A VP8 frame has one Cb and one Cr sample for each 2x2 block of luma samples; the
+  format has no 4:4:4 or 4:2:2 mode. Lossless output keeps full color resolution.
+- **No gray or palette color model of its own.** Gray images are stored as RGB (the lossless bitstream makes the
+  repetition cheap), and the decoders return RGB.
+- **The file size before the frames.** The RIFF header gives the size of the file, so an animation, whose size is known
+  only at the end, is either patched on a seekable destination or kept in memory (see below).
+
+Within these limits, two options improve what the reduction keeps.
+
+## Sharper colors in lossy output
+
+The decoder interpolates each chroma sample over the 2x2 block it covers and its neighbors. When the encoder averages the
+colors of a block, saturated edges and colored text lose their luminance: a thin red line on blue turns dark and blurry.
+[SharpYuv](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.SharpYuv) simulates that interpolation and the BT.601
+conversion of the decoders (libwebp, the browsers and this library) and corrects the planes in four passes: the chroma
+samples move toward the average error of the pixels they cover, and each luma sample absorbs the error left at its pixel.
+The stream is an ordinary VP8 stream that every decoder reads.
+
+It is off by default: the files are larger at the same `Quality`, and the gain depends on the content and on how
+quality is judged. Turn it on for charts, screenshots and colored text, where colors change sharply; for photographs,
+compare both settings at equal decoded quality, not at equal `Quality`. It adds a few passes over the image before
+compression and 10 bytes of working memory per pixel.
+
+## Reduce 16-bit images without bands
+
+[AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.AllowBitDepthReduction) rounds 16-bit
+samples to the nearest 8-bit value, which turns a smooth 16-bit gradient into visible bands. With
+[DitherBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.DitherBitDepthReduction), the rounding error
+of each color component is carried to the next pixels (Floyd–Steinberg), so that each area keeps its average level. Each
+component stays within one 8-bit step of its source, gray stays gray, alpha is rounded to the nearest value, and fully
+transparent pixels are not dithered. Lossless output of dithered pixels is larger; lossy output keeps the dithering at
+high qualities.
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveWebpOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveWebPWithOptions(string chartPath, string chartWebPPath, string sixteenBitPath, string gradientWebPPath, string animatedPath, Stream responseStream)
+{
+    using (var chart = Image.Load(chartPath))
+    {
+        chart.Save(chartWebPPath, new WebPEncoder
+        {
+            Compression = WebPCompression.Lossy,
+            Quality = 85,
+            SharpYuv = true, // planes chosen for the chroma upsampling of the decoder: sharper colored edges and text
+        });
+    }
+
+    using (var gradient = Image.Load(sixteenBitPath))
+    {
+        gradient.Save(gradientWebPPath, new WebPEncoder
+        {
+            AllowBitDepthReduction = true,  // WebP stores 8-bit samples only
+            DitherBitDepthReduction = true, // error diffusion instead of rounding: no bands in smooth gradients
+        });
+    }
+
+    // A non-seekable stream (an HTTP response) receives the whole animation at the end: it is kept in memory until then
+    using var animation = Image.Load(animatedPath);
+    animation.Save(responseStream, new WebPEncoder());
+}
+```
+<!-- endref -->
 
 At effort 2 and above, lossy encoding tries 4x4 luma prediction. The modes are stored in the VP8 first partition, at
 most 524,287 bytes. When they do not fit, which only happens for very large detailed images (photographs of about 40
@@ -99,18 +171,22 @@ to encode images of that size.
 | `NearLossless` | Lossless output: 0 (each color component within 16 of the source) to 100 (exact); rounds the colors of edges and texture, keeps smooth areas, alpha and the image border exact | 100 |
 | [ClearTransparentColors](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.ClearTransparentColors) | Replaces the color of fully transparent pixels with transparent black, which usually makes the file smaller | `false` |
 | [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.AllowBitDepthReduction) | Lets 16-bit pixel formats be rounded to 8 bits | `false` |
+| [DitherBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.DitherBitDepthReduction) | With `AllowBitDepthReduction`, diffuses the rounding error of the colors (Floyd–Steinberg) instead of rounding each sample | `false` |
+| [SharpYuv](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.SharpYuv) | Lossy output: chooses the Y'CbCr planes for the chroma upsampling of the decoder (sharper colored edges, larger files) | `false` |
 | [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.DurationRounding) | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds durations to the nearest millisecond; [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) throws | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata WebP cannot store (text, resolution) | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
-## Animations need a seekable destination
+## Animations and non-seekable streams
 
-An animation declares the size of the file before its frames, so it is written to a **seekable** destination: a path, a
-`FileStream` or a `MemoryStream`. A non-seekable stream (a network or HTTP response stream) is rejected with an
-`ArgumentException` before anything is written; save to a `MemoryStream` first, then copy it. A still image streams to
-any destination.
+An animation declares the size of the file before its frames. On a **seekable** destination (a path, a `FileStream` or a
+`MemoryStream`), each frame is written as soon as it is encoded and the size is patched at the end. On a non-seekable
+stream (a network or HTTP response stream), the writer keeps the whole file in memory, patches it there and writes it at
+completion: nothing is written before, and nothing at all when the output is aborted. That memory counts against
+[MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes), and such an
+animation is at most 2 GiB. A still image streams to any destination.
 
 A writer created with [Image.CreateWriter](cref:Meziantou.Framework.Imaging.Image.CreateWriter) writes an animation unless [ImageWriterOptions.ExpectedFrameCount](cref:Meziantou.Framework.Imaging.ImageWriterOptions.ExpectedFrameCount) is 1: set
-it to write a still image to a non-seekable stream.
+it to stream a still image.
 
 ## Store only what changes
 

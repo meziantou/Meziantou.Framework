@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -54,12 +56,17 @@ internal static class TextureMipmaps
         try
         {
             // The accumulated premultiplied colors and alpha of a destination row, and the unweighted colors
-            var accumulator = new double[width * 8];
+            var accumulatorLength = (long)width * 8 * sizeof(double);
+            if (accumulatorLength > CheckedSizes.MaxBufferLength)
+                throw CheckedSizes.CreateOverflowException(scope.Limits);
+
+            using var accumulatorBuffer = scope.Rent((int)accumulatorLength, AllocationKind.Temporary, clear: false);
+            var accumulator = unsafe(MemoryMarshal.Cast<byte, double>(accumulatorBuffer.Span));
             Span<float> pixel = stackalloc float[4];
             for (var y = 0; y < height; y++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                Array.Clear(accumulator);
+                accumulator.Clear();
 
                 // The rows of the source the destination row covers: [y × H, (y + 1) × H) in units of 1 / height
                 var top = (long)y * source.Height;

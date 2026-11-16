@@ -223,6 +223,36 @@ public sealed class Ktx2EncoderTests
         }
     }
 
+    [Fact]
+    public void SurfacesWithAnotherColorLabelAreRejectedUnlessDiscarded()
+    {
+        // A texture has one transfer function: a linear surface after an sRGB one would be labeled sRGB
+        using var srgb = CreateRgba32(4, 4, seed: 1);
+        using var linear = CreateRgba32(4, 4, seed: 2);
+        linear.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        using var collection = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+        collection.Add(srgb, new TextureSurface(0));
+        collection.Add(linear, new TextureSurface(1));
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => SaveCollection(collection, new Ktx2Encoder()));
+        Assert.Equal("Metadata: labels of a surface", exception.Feature);
+
+        // A policy that discards what the format cannot store labels every surface as the first one
+        var data = SaveCollection(collection, new Ktx2Encoder { MetadataHandling = MetadataHandling.DiscardUnsupported });
+        using var loaded = ImageCollection.Load(data);
+        Assert.Equal(2, loaded.Count);
+    }
+
+    [Fact]
+    public void ASparseArrayIndexIsRejectedBeforeItsSurfaceTableIsAllocated()
+    {
+        // One surface at the array index 10^8: a texture of 10^8 elements, of which the collection holds one
+        using var image = CreateRgba32(1, 1, seed: 3);
+        using var collection = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+        collection.Add(image, new TextureSurface(100_000_000));
+        var exception = Assert.Throws<ArgumentException>(() => SaveCollection(collection, new Ktx2Encoder()));
+        Assert.Contains("is missing", exception.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(Ktx2TextureFormat.Bc1Rgb, 30)]
     [InlineData(Ktx2TextureFormat.Bc7, 37)]

@@ -223,6 +223,10 @@ internal static class ImageCollectionWriterCore
         }
     }
 
+    /// <summary>Determines whether two surfaces have the labels a texture stores once: the color description and the orientation.</summary>
+    private static bool HasSameLabels(MetadataWritePlan first, MetadataWritePlan other)
+        => first.TransferFunction == other.TransferFunction && Equals(first.Cicp, other.Cicp) && first.Orientation == other.Orientation;
+
     private static bool GenerateMipmaps(ImageEncoder encoder) => encoder is DdsEncoder { GenerateMipmaps: true } or Ktx2Encoder { GenerateMipmaps: true };
 
     /// <summary>
@@ -275,6 +279,12 @@ internal static class ImageCollectionWriterCore
                             }
 
                             texture = new EncodedTexture(target, layout.Width, layout.Height, levelCount, layout.LayerCount, layout.FaceCount, isArray: layout.LayerCount > 1);
+                        }
+                        else if (!HasSameLabels(plan!, entryPlan) && encoder.MetadataHandling == MetadataHandling.Strict)
+                        {
+                            // A texture has one color label and one orientation: those of the first surface. A surface whose own
+                            // differ would be labeled (and its mipmap levels filtered) as the first one
+                            throw new UnsupportedImageFeatureException($"The surface ({entry.TextureSurface}) has another color label (transfer function, CICP description) or orientation than the first surface, and a {ImageFormatNames.Get(encoder.Format)} texture stores one for all its surfaces. Give every surface the same labels, or set the encoder's MetadataHandling to DiscardUnsupported or Strip to label them all as the first one.", encoder.Format, "Metadata: labels of a surface");
                         }
 
                         var (allowBitDepthReduction, allowChannelReduction, thorough) = encoder switch

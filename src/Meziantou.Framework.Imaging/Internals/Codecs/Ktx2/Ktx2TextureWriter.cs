@@ -190,8 +190,8 @@ internal static class Ktx2TextureWriter
             {
                 for (var level = 0; level < levelCount; level++)
                 {
-                    var compressed = Compress(levels[level]);
-                    result.AddCharge(scope.Charge(compressed.Length, AllocationKind.Temporary));
+                    var (compressed, charge) = Compress(levels[level], scope);
+                    result.AddCharge(charge);
                     levels[level] = [compressed];
                     lengths[level] = compressed.Length;
                 }
@@ -356,18 +356,41 @@ internal static class Ktx2TextureWriter
         return [.. output];
     }
 
-    private static byte[] Compress(ReadOnlyMemory<byte>[] parts)
+    /// <summary>
+    /// Compresses the images of a level with ZLIB into a buffer charged to the scope before it is allocated: the largest
+    /// size deflate can produce (stored blocks add 5 bytes per 65,535, the ZLIB header and checksum 6).
+    /// </summary>
+    private static (ReadOnlyMemory<byte> Data, AllocationCharge Charge) Compress(ReadOnlyMemory<byte>[] parts, AllocationScope scope)
     {
-        using var stream = new MemoryStream();
-        using (var zlib = new ZLibStream(stream, CompressionLevel.SmallestSize, leaveOpen: true))
+        var length = 0L;
+        foreach (var part in parts)
         {
-            foreach (var part in parts)
-            {
-                zlib.Write(part.Span);
-            }
+            length += part.Length;
         }
 
-        return stream.ToArray();
+        var bound = length + (length >> 10) + 64;
+        if (bound > CheckedSizes.MaxBufferLength)
+            throw CheckedSizes.CreateOverflowException(scope.Limits);
+
+        var charge = scope.Charge(bound, AllocationKind.Temporary);
+        try
+        {
+            var stream = new MemoryStream((int)bound);
+            using (var zlib = new ZLibStream(stream, CompressionLevel.SmallestSize, leaveOpen: true))
+            {
+                foreach (var part in parts)
+                {
+                    zlib.Write(part.Span);
+                }
+            }
+
+            return (stream.GetBuffer().AsMemory(0, (int)stream.Length), charge);
+        }
+        catch
+        {
+            charge.Dispose();
+            throw;
+        }
     }
 
     private static int LeastCommonMultiple(int a, int b)

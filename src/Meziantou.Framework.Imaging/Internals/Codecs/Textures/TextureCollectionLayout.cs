@@ -33,6 +33,12 @@ internal sealed class TextureCollectionLayout
 
     public int GetIndex(int layer, int face, int level) => (((layer * FaceCount) + face) * LevelCount) + level;
 
+    private static ArgumentException CreateMissingSurfaceException(int layer, int faceCount, int face, int level, ImageCollection collection)
+    {
+        var missing = new TextureSurface(layer, faceCount == 6 ? (CubeMapFace)face : null, level, 0);
+        return new ArgumentException($"The surface ({missing}) is missing: every element of the array has the same faces and mipmap levels.", nameof(collection));
+    }
+
     /// <summary>Checks the structure of a collection.</summary>
     /// <param name="collection">The collection of texture surfaces.</param>
     /// <param name="format">The output format, for messages.</param>
@@ -64,7 +70,33 @@ internal sealed class TextureCollectionLayout
         if (generateMipmaps && levelCount > 1)
             throw new ArgumentException($"The collection already holds mipmap levels: {name} output cannot generate them. Set GenerateMipmaps to false, or remove the levels.", nameof(collection));
 
-        var entries = new ImageCollectionEntry?[(long)layerCount * faceCount * levelCount];
+        // Every surface of the texture appears once: a texture of more surfaces than the collection has entries misses
+        // some, and is rejected before its table is allocated (an array index of 10^8 is one entry, not 10^8). The first
+        // missing surface is found among at most Count + 1 candidates
+        var surfaceCount = (long)layerCount * faceCount * levelCount;
+        if (surfaceCount > collection.Count)
+        {
+            var present = new HashSet<(int Layer, int Face, int Level)>();
+            for (var i = 0; i < collection.Count; i++)
+            {
+                var surface = collection[i].TextureSurface!;
+                present.Add((surface.ArrayIndex, (int)(surface.Face ?? CubeMapFace.PositiveX), surface.MipLevel));
+            }
+
+            for (var layer = 0; layer < layerCount; layer++)
+            {
+                for (var face = 0; face < faceCount; face++)
+                {
+                    for (var level = 0; level < levelCount; level++)
+                    {
+                        if (!present.Contains((layer, face, level)))
+                            throw CreateMissingSurfaceException(layer, faceCount, face, level, collection);
+                    }
+                }
+            }
+        }
+
+        var entries = new ImageCollectionEntry?[surfaceCount];
         var layout = new TextureCollectionLayout(0, 0, layerCount, faceCount, levelCount, null!);
         for (var i = 0; i < collection.Count; i++)
         {
@@ -86,10 +118,7 @@ internal sealed class TextureCollectionLayout
                 {
                     var entry = entries[layout.GetIndex(layer, face, level)];
                     if (entry is null)
-                    {
-                        var missing = new TextureSurface(layer, faceCount == 6 ? (CubeMapFace)face : null, level, 0);
-                        throw new ArgumentException($"The surface ({missing}) is missing: every element of the array has the same faces and mipmap levels.", nameof(collection));
-                    }
+                        throw CreateMissingSurfaceException(layer, faceCount, face, level, collection);
 
                     if (baseSize.IsEmpty)
                     {

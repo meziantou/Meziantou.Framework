@@ -40,8 +40,9 @@ public abstract class ImageEncoder
     /// <see cref="Rgba64"/> for an encoder that does not store them) before they are encoded, or <see langword="null"/> (the
     /// default) to reject them.
     /// It only applies to the outputs that do not store floating-point samples: every format but OpenEXR, Radiance HDR, PSD,
-    /// DNG, DPX and TIFF, and the DPX and TIFF settings that cannot (<see cref="DpxEncoder"/>, <see cref="TiffEncoder"/>).
-    /// <see cref="OpenExrEncoder"/> always stores them.
+    /// DNG, DPX, TIFF, DDS and KTX 2.0, and the DPX, TIFF, DDS and KTX 2.0 settings that cannot (<see cref="DpxEncoder"/>,
+    /// <see cref="TiffEncoder"/>, <see cref="DdsEncoder"/>, <see cref="Ktx2Encoder"/>). <see cref="OpenExrEncoder"/> always
+    /// stores them.
     /// </summary>
     /// <remarks>
     /// <para>

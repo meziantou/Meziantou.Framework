@@ -132,18 +132,20 @@ its mipmaps from `GenerateMipmaps`. Volume textures are not written.
 Mipmaps average the texels each level covers (a box filter, exact for odd sizes), weighted by their alpha, in linear
 light for sRGB-encoded colors.
 
-### What the block compressors reach
+### Choose a block format
 
-The block compressors are deterministic: the same pixels and settings give the same bytes on every platform. On real
-photographs, their peak signal-to-noise ratio is about:
+The block compressors are deterministic: the same pixels and settings give the same bytes on every platform.
 
-| Format | `Fast` | `Thorough` | Solid colors |
-| --- | --- | --- | --- |
-| BC1, BC2, BC3 colors | 30 dB | 30 dB | Within 1 of the color (the best 5:6:5 endpoints) |
-| BC2 alpha | | | Within 8 (4-bit alpha) |
-| BC3 alpha, BC4, BC5 | 40 dB | 42 dB | Exact |
-| BC7 | 39 dB | 41 dB | Exact |
-| BC6H | 39 dB (in [0, 1]) | 42 dB | Exact for every finite half |
+| Format | Use it for | Solid colors |
+| --- | --- | --- |
+| BC1 | Opaque colors, or a 1-bit cutout, at the smallest size | Within 1 of the color (the best 5:6:5 endpoints) |
+| BC2 | Colors with sharp, banded alpha | Colors as BC1; alpha within 8 (4-bit alpha) |
+| BC3 | Colors with smooth alpha | Colors as BC1; alpha exact |
+| BC4, BC5 | One or two channels: masks, height maps, normal maps | Exact |
+| BC7 | Colors, with or without alpha, when quality matters more than size | Exact |
+| BC6H | High dynamic range colors (halves), such as environment maps | Exact for every finite half |
+
+Use `Thorough` for assets built once and shipped, and `Fast` for previews and textures generated at run time.
 
 BC1 to BC3 and BC4 and BC5 store each block as points on one line of colors: busy textures lose detail there first,
 BC7 keeps it. BC1 transparency is exact: an alpha below 128 is transparent, the other texels opaque. The `Thorough`

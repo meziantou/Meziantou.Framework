@@ -307,7 +307,7 @@ public sealed class Jpeg2000HighThroughputTests
     [InlineData(1024, 4, 10)]
     [InlineData(4, 1024, 10)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    public void EachHtCleanupSegmentOfTheEncoderDecodesToItsBitPlanes(int width, int height, int bitPlanes)
+    public void EachHtSetOfTheEncoderDecodesToItsBitPlanes(int width, int height, int bitPlanes)
     {
         var scope = new AllocationScope(new ImageResourceLimits());
         using var encoder = new Jpeg2000HtBlockEncoder(scope);
@@ -341,36 +341,60 @@ public sealed class Jpeg2000HighThroughputTests
             var data = output.WrittenSpan.ToArray();
             Assert.HasCount(length, data);
 
-            // One segment for each lowest bit-plane, from the highest one; each one decodes to the coefficients down to
-            // its bit-plane, reconstructed in the middle of the others (7.6). The sub-band has one bit-plane more than the
-            // coefficients, as the encoder declares it
+            // One HT set for each lowest bit-plane, from the highest one: its HT cleanup segment, then its HT refinement
+            // segment (none for the bit-plane 0). The cleanup pass, the cleanup and SigProp passes, and the three passes
+            // decode to the coefficients down to their bit-planes, reconstructed in the middle of the others (7.6), and
+            // reduce the error as the candidates say. The sub-band has one bit-plane more than the coefficients, as the
+            // encoder declares it
             var offset = 0;
             var reduction = 0.0;
             for (var i = 0; i < bitPlanes; i++)
             {
                 var plane = bitPlanes - 1 - i;
-                var segment = data.AsSpan(offset, candidates[i].Length).ToArray();
-                offset += segment.Length;
-                AssertNoMarker(segment, $"{width}x{height}, seed {seed}, plane {plane}");
-                decoder.Decode(decoded, width, height, isVerticallyCausal: false, bitPlanes + 1, skippedBitPlanes: bitPlanes - plane, passCount: 1, segment, 0, segment.Length, 0, 0);
-                var error = 0.0;
-                var reference = 0.0;
-                for (var n = 0; n < samples.Length; n++)
+                var cleanupLength = candidates[3 * i].Length;
+                var refinementLength = plane == 0 ? 0 : candidates[(3 * i) + 2].Length - cleanupLength;
+                var set = data.AsSpan(offset, cleanupLength + refinementLength).ToArray();
+                offset += set.Length;
+                AssertNoMarker(set.AsSpan(0, cleanupLength).ToArray(), $"{width}x{height}, seed {seed}, plane {plane}");
+                if (refinementLength != 0)
                 {
-                    var magnitude = samples[n] & int.MaxValue;
-                    var expected = magnitude >> plane == 0 ? 0 : (int)((uint)(((2 * (magnitude >> plane)) + 1) << plane) | ((uint)samples[n] & 0x80000000));
-                    if (decoded[n] != expected)
-                        Assert.Fail($"{width}x{height}, seed {seed}, plane {plane}: the sample {n} is {decoded[n]:X8} instead of {expected:X8}.");
-
-                    var value = magnitude == 0 ? 0 : magnitude + (isIrreversible ? 0.5 : 0);
-                    var twice = decoded[n] & int.MaxValue;
-                    var reconstruction = isIrreversible || plane > 0 ? twice / 2.0 : twice / 2;
-                    error += Math.Pow(value - reconstruction, 2);
-                    reference += value * value;
+                    AssertNoMarker(set.AsSpan(cleanupLength).ToArray(), $"{width}x{height}, seed {seed}, refinement of the plane {plane}");
                 }
 
-                reduction += candidates[i].Distortion;
-                Assert.Equal(reference - error, reduction, Math.Max(1e-6, reference * 1e-12));
+                for (var passes = 1; passes <= (plane == 0 ? 1 : 3); passes++)
+                {
+                    var context = $"{width}x{height}, seed {seed}, plane {plane}, {passes} pass(es)";
+                    var refinement = passes == 1 ? 0 : candidates[(3 * i) + passes - 1].Length - cleanupLength;
+                    decoder.Decode(decoded, width, height, isVerticallyCausal: false, bitPlanes + 1, skippedBitPlanes: bitPlanes - plane, passCount: refinement == 0 ? 1 : passes, set, 0, cleanupLength, cleanupLength, refinement);
+                    var error = 0.0;
+                    var reference = 0.0;
+                    for (var n = 0; n < samples.Length; n++)
+                    {
+                        // A decoded coefficient is the middle of the bit-planes below the cleanup pass or, with a refinement
+                        // pass, below the refined one, with the sign of the coefficient
+                        var magnitude = samples[n] & int.MaxValue;
+                        var lowest = passes == 3 || (passes == 2 && magnitude >> plane == 0) ? plane - 1 : plane;
+                        if (decoded[n] != 0)
+                        {
+                            var expected = (int)((uint)(((2 * (magnitude >> lowest)) + 1) << lowest) | ((uint)samples[n] & 0x80000000));
+                            if (magnitude >> lowest == 0 || decoded[n] != expected)
+                                Assert.Fail($"{context}: the sample {n} is {decoded[n]:X8} instead of {expected:X8}.");
+                        }
+                        else if (magnitude >> plane != 0 || (passes == 1 && magnitude >> lowest != 0))
+                        {
+                            Assert.Fail($"{context}: the sample {n} is not decoded.");
+                        }
+
+                        var value = magnitude == 0 ? 0 : magnitude + (isIrreversible ? 0.5 : 0);
+                        var twice = decoded[n] & int.MaxValue;
+                        var reconstruction = isIrreversible || lowest > 0 ? twice / 2.0 : twice / 2;
+                        error += Math.Pow(value - reconstruction, 2);
+                        reference += value * value;
+                    }
+
+                    reduction += candidates[(3 * i) + passes - 1].Distortion;
+                    Assert.Equal(reference - error, reduction, Math.Max(1e-6, reference * 1e-12));
+                }
             }
 
             Assert.Equal(length, offset);
@@ -378,8 +402,8 @@ public sealed class Jpeg2000HighThroughputTests
             // Without candidates, the segment of the bit-plane 0 alone
             output.Reset();
             Assert.Equal(bitPlanes, encoder.Encode(samples, width, height, output, out var single));
-            Assert.Equal(data.AsSpan(length - candidates[bitPlanes - 1].Length).ToArray(), output.WrittenSpan.ToArray());
-            Assert.Equal(candidates[bitPlanes - 1].Length, single);
+            Assert.Equal(data.AsSpan(length - candidates[(3 * bitPlanes) - 3].Length).ToArray(), output.WrittenSpan.ToArray());
+            Assert.Equal(candidates[(3 * bitPlanes) - 3].Length, single);
         }
 
         static void AssertNoMarker(byte[] segment, string context)

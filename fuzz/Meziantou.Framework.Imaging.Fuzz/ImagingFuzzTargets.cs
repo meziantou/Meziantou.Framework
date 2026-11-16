@@ -7,7 +7,8 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 /// The Radiance HDR, PSD, DNG, DDS, DPX, Cineon and KTX 2.0 codecs of <c>Meziantou.Framework.Imaging</c> (and the
 /// decoders of the BC1 to BC7 blocks, and the encoders of the BCn, ETC2, EAC and ASTC blocks), the OpenEXR encoder (its
 /// tiles, levels and compressions), the image data of PNG files (inflation and
-/// reconstruction), the lossy compression of its GIF encoder, and its processing operations that read pixels or points
+/// reconstruction), the lossy compression of its GIF encoder, the structure of the outputs of its JPEG 2000 encoder, and its processing
+/// operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
 /// homography estimation and resizing; the conversions between the pixel formats; the merging of the pieces of strokes;
 /// the optimal line breaking of text layouts; and the options of the WebP encoder that change its pixels or its output
@@ -61,6 +62,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-line-breaking", LineBreakingTarget) { Seeds = GetLineBreakingSeeds, Dictionary = LineBreakingTokens },
         new("imaging-color-matrix", ColorMatrixTarget) { Seeds = GetColorMatrixSeeds, Dictionary = Tokens },
         new("imaging-resize-float", ResizeFloatTarget) { Seeds = GetResizeFloatSeeds, Dictionary = Tokens },
+        new("imaging-jpeg2000-encoder", Jpeg2000EncoderTarget) { Seeds = GetJpeg2000EncoderSeeds, Dictionary = Tokens },
         new("imaging-webp-encoder", WebPEncoderTarget) { Seeds = GetWebPEncoderSeeds, Dictionary = Tokens },
     ];
 

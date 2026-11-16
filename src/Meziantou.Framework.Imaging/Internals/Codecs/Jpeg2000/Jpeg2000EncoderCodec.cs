@@ -166,6 +166,11 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private const int SourceFirstComponent = 2;
         private const int MaxPasses = Jpeg2000Tier1Encoder.MaxPasses;
         private const int TileHeaderLength = Jpeg2000Format.SotSegmentLength + 2;
+        private const int MaxTileParts = 255;
+        private const int MaxMarkerSegments = 256;
+        private const int PltSegmentOverhead = 5;
+        private const int MaxPltData = ushort.MaxValue - 3;
+        private const int MaxTlmData = ushort.MaxValue - 4;
         private const int CapabilityHighThroughput = 0x4000;
         private const uint CapabilityPart15 = 1u << (32 - 15);
 
@@ -187,6 +192,13 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private readonly long[] _layerTargets;
         private readonly bool _tracksPasses;
         private readonly int _progression;
+        private readonly Jpeg2000TilePartDivision _division;
+        private readonly bool _writesTilePartLengths;
+        private readonly bool _writesPacketLengths;
+        private readonly byte[]? _precinctSizes;
+        private readonly Av1PooledArray<byte>? _tilePartCounts;
+        private readonly int _totalTileParts;
+        private readonly long _packetsPerLayer;
         private readonly Jpeg2000Siz _siz;
         private readonly Jpeg2000TileCoding _coding;
         private readonly Jpeg2000Tier1Encoder _blockEncoder;
@@ -216,6 +228,16 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private readonly Av1PooledArray<Jpeg2000CodingPass>? _blockPasses;
         private Av1PooledArray<Jpeg2000CodingPass>? _passes;
         private int _passCount;
+
+        // With the high-throughput block coder and several layers: the coding passes of the HT set of each code-block,
+        // which the layers share out whole
+        private Av1PooledArray<byte>? _highThroughputSets;
+
+        // The lengths of the tile-parts (TLM marker segment) and of the packets of the current tile-part (PLT marker segments)
+        private Av1PooledArray<long>? _tilePartLengths;
+        private int _tilePartIndex;
+        private Av1PooledArray<long>? _packetLengths;
+        private int _packetLengthCount;
 
         // The code-blocks of every tile, in their order, and the number of coding passes of each one up to each layer
         private Av1PooledArray<EncodedBlock> _blocks;
@@ -248,6 +270,9 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             _isLossy = _encoder.Compression == Jpeg2000Compression.Lossy;
             _isHighThroughput = _encoder.BlockCoder == Jpeg2000BlockCoder.HighThroughput;
             _progression = (int)_encoder.ProgressionOrder;
+            _division = _encoder.TilePartDivision;
+            _writesTilePartLengths = _encoder.WriteTilePartLengths;
+            _writesPacketLengths = _encoder.WritePacketLengths;
 
             // The tiles: the last column and the last row may be smaller
             _tileWidth = _encoder.TileWidth == 0 ? _width : Math.Min(_encoder.TileWidth, _width);
@@ -270,11 +295,6 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             // The layers: a target in bytes for each one (none for the complete layer)
             var layers = _encoder.QualityLayers;
             _layerCount = Math.Max(1, layers.Count);
-
-            // An HT cleanup pass is the only coding pass of its code-block: it cannot be split between layers
-            if (_isHighThroughput && _layerCount > 1)
-                throw new ArgumentException("A JPEG 2000 output of the high-throughput block coder has one quality layer: set at most one QualityLayers item.", nameof(options));
-
             _layerTargets = new long[_layerCount];
             for (var l = 0; l < _layerCount; l++)
             {
@@ -289,6 +309,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
 
             // The partition of the tile does not depend on the quantization: provisional values stand for it
             var bandCount = (3 * _levels) + 1;
+            _precinctSizes = GetPrecinctSizes(_encoder.PrecinctSizes, _levels);
             _bandBitPlanes = new int[_componentCount * bandCount];
             _bandSteps = new float[StepTableCount * bandCount];
             _bandExponents = new int[StepTableCount * bandCount];
@@ -298,6 +319,49 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             _coding = CreateCoding(bandCount);
             ComputeWeights(bandCount);
             _geometry = Jpeg2000TileGeometry.Create(_scope, _siz, _coding, tileIndex: 0);
+            try
+            {
+                // The tile-parts of every tile and the packets of a layer, which the headers and the rate control count
+                if (_division != Jpeg2000TilePartDivision.None)
+                {
+                    _tilePartCounts = Av1PooledArray<byte>.Rent(_scope, _tileCount, clear: true, AllocationKind.Temporary);
+                }
+
+                for (var t = 0; t < _tileCount; t++)
+                {
+                    using var geometry = t == 0 ? null : Jpeg2000TileGeometry.Create(_scope, _siz, _coding, t);
+                    var tileGeometry = geometry ?? _geometry;
+                    _packetsPerLayer += tileGeometry.PrecinctCount;
+                    var parts = _tilePartCounts is null ? 1 : CountTileParts(tileGeometry);
+                    if (parts > MaxTileParts)
+                        throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"A JPEG 2000 tile has at most 255 tile-parts; the TilePartDivision {_division} cuts the tile {t} into {parts}. Set another TilePartDivision or ProgressionOrder, or fewer QualityLayers."), nameof(options));
+
+                    if (_tilePartCounts is not null)
+                    {
+                        _tilePartCounts.Span[t] = (byte)parts;
+                    }
+
+                    _totalTileParts += parts;
+                    if (_tilePartCounts is null && t == 0)
+                    {
+                        // One tile-part per tile: the other tiles need not be visited, and the packets of a layer, which
+                        // only bound the HT sets of several layers, are estimated from the first tile
+                        _totalTileParts = _tileCount;
+                        _packetsPerLayer = (long)tileGeometry.PrecinctCount * _tileCount;
+                        break;
+                    }
+                }
+
+                if (_writesTilePartLengths && _totalTileParts > MaxMarkerSegments * (MaxTlmData / (GetTlmTileIndexLength() + 4)))
+                    throw new ArgumentException("The tile-parts of the JPEG 2000 image are too many for the TLM marker segments: set WriteTilePartLengths to false, or use fewer tiles or tile-parts.", nameof(options));
+            }
+            catch
+            {
+                _geometry.Dispose();
+                _tilePartCounts?.Dispose();
+                throw;
+            }
+
             Jpeg2000Tier1Encoder? blockEncoder = null;
             Jpeg2000HtBlockEncoder? highThroughputEncoder = null;
             PooledPayloadWriter? head = null;
@@ -317,6 +381,11 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 if (_isHighThroughput)
                 {
                     highThroughputEncoder = new Jpeg2000HtBlockEncoder(_scope);
+                    if (_tracksPasses)
+                    {
+                        // The rate control codes the refinement passes: their buffers are rented before any worker starts
+                        highThroughputEncoder.RentRefinementBuffers();
+                    }
                 }
 
                 head = new PooledPayloadWriter(_scope);
@@ -343,7 +412,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                     coders[0] = new BlockCoder(_scope, blockEncoder, highThroughputEncoder, blockSamples, scratch);
                     for (var w = 1; w < workers; w++)
                     {
-                        coders[w] = BlockCoder.Create(_scope, scratch.Length, _isHighThroughput);
+                        coders[w] = BlockCoder.Create(_scope, scratch.Length, _isHighThroughput, _tracksPasses);
                     }
 
                     batch = Av1PooledArray<int>.Rent(_scope, 2L * BlocksPerCall * workers, clear: false, AllocationKind.Temporary);
@@ -352,6 +421,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             catch
             {
                 _geometry.Dispose();
+                _tilePartCounts?.Dispose();
                 blockEncoder?.Dispose();
                 highThroughputEncoder?.Dispose();
                 head?.Dispose();
@@ -498,6 +568,13 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 _layerPasses = null;
                 _slopes?.Dispose();
                 _slopes = null;
+                _highThroughputSets?.Dispose();
+                _highThroughputSets = null;
+                _tilePartLengths?.Dispose();
+                _tilePartLengths = null;
+                _tilePartCounts?.Dispose();
+                _packetLengths?.Dispose();
+                _packetLengths = null;
                 _batch?.Dispose();
                 foreach (var coder in _coders ?? [])
                 {
@@ -543,13 +620,13 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             }
 
             var headers = new Jpeg2000HeaderSet(_componentCount);
-            var colorStyle = new Jpeg2000CodingStyle(_levels, BlockExponent, BlockExponent, BlockStyle, isReversible: !_isLossy, precinctSizes: null);
+            var colorStyle = new Jpeg2000CodingStyle(_levels, BlockExponent, BlockExponent, BlockStyle, isReversible: !_isLossy, _precinctSizes);
             headers.CodingDefaults = new Jpeg2000CodingDefaults(mayUseSop: false, usesEph: false, _progression, _layerCount, usesComponentTransform: _colorCount == 3, colorStyle);
             var none = new Jpeg2000Quantization(Jpeg2000Quantization.StyleNone, LosslessGuardBits, new byte[bandCount], new ushort[bandCount]);
             headers.Quantization = _isLossy ? new Jpeg2000Quantization(Jpeg2000Quantization.StyleExpounded, 1, new byte[bandCount], new ushort[bandCount]) : none;
             if (_isLossy && HasAlpha)
             {
-                headers.TrySetComponentStyle(_colorCount, new Jpeg2000CodingStyle(_levels, BlockExponent, BlockExponent, BlockStyle, isReversible: true, precinctSizes: null));
+                headers.TrySetComponentStyle(_colorCount, new Jpeg2000CodingStyle(_levels, BlockExponent, BlockExponent, BlockStyle, isReversible: true, _precinctSizes));
                 headers.TrySetComponentQuantization(_colorCount, none);
             }
 
@@ -565,6 +642,124 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             level = band == 0 ? _levels : _levels - resolution + 1;
             isHighHorizontally = orientation is 0 or 2;
             isHighVertically = orientation is 1 or 2;
+        }
+
+        /// <summary>
+        /// Gets the precinct sizes of the COD and COC marker segments (Table A.21): for each resolution level from the
+        /// lowest, the exponent of the width in the low half of a byte and that of the height in the high half; the sizes
+        /// are given from the highest level down, and the last one is used for the lower levels. <see langword="null"/>
+        /// without precincts.
+        /// </summary>
+        private static byte[]? GetPrecinctSizes(IReadOnlyList<Size> sizes, int levels)
+        {
+            if (sizes.Count == 0)
+                return null;
+
+            var result = new byte[levels + 1];
+            for (var r = 0; r <= levels; r++)
+            {
+                var size = sizes[Math.Min(levels - r, sizes.Count - 1)];
+                result[r] = (byte)(BitOperations.Log2((uint)size.Width) | (BitOperations.Log2((uint)size.Height) << 4));
+            }
+
+            return result;
+        }
+
+        /// <summary>Gets the number of tile-parts of a tile.</summary>
+        private int GetTileParts(int tile) => _tilePartCounts is null ? 1 : _tilePartCounts.Span[tile];
+
+        /// <summary>Gets the number of bytes of the index of a tile in the TLM marker segments (Ttlm): one for at most 256 tiles, two otherwise.</summary>
+        private int GetTlmTileIndexLength() => _tileCount <= 256 ? 1 : 2;
+
+        /// <summary>Counts the tile-parts of a tile: one, then one more at each packet that starts a tile-part.</summary>
+        private int CountTileParts(Jpeg2000TileGeometry geometry)
+        {
+            using var order = RentPacketOrder(geometry, out var count);
+            var packets = order.Span[..count];
+            var parts = count == 0 ? 0 : 1;
+            for (var i = 1; i < packets.Length; i++)
+            {
+                if (StartsTilePart(in packets[i - 1], in packets[i]))
+                {
+                    parts++;
+                }
+            }
+
+            return parts;
+        }
+
+        /// <summary>Gets whether a packet starts a tile-part: its resolution level, layer or component, as <see cref="Jpeg2000Encoder.TilePartDivision"/> says, is not the one of the previous packet.</summary>
+        private bool StartsTilePart(in PacketOrder previous, in PacketOrder packet) => _division switch
+        {
+            Jpeg2000TilePartDivision.Resolution => previous.Resolution != packet.Resolution,
+            Jpeg2000TilePartDivision.Layer => previous.Layer != packet.Layer,
+            Jpeg2000TilePartDivision.Component => previous.Component != packet.Component,
+            _ => false,
+        };
+
+        /// <summary>Lists the packets of a tile in the progression order (B.12): every layer of every precinct of every resolution level of every component.</summary>
+        /// <param name="geometry">The partition of the tile.</param>
+        /// <param name="count">Receives the number of packets.</param>
+        /// <returns>The packets; the caller disposes it.</returns>
+        private Av1PooledArray<PacketOrder> RentPacketOrder(Jpeg2000TileGeometry geometry, out int count)
+        {
+            var total = checked((long)geometry.PrecinctCount * _layerCount);
+            var order = Av1PooledArray<PacketOrder>.Rent(_scope, Math.Max(1, total), clear: false, AllocationKind.Temporary);
+            try
+            {
+                var packets = order.Span;
+                var components = geometry.Components;
+                var index = 0;
+                switch (_progression)
+                {
+                    case Jpeg2000CodingDefaults.ProgressionLrcp:
+                    case Jpeg2000CodingDefaults.ProgressionRlcp:
+                        var isLayerFirst = _progression == Jpeg2000CodingDefaults.ProgressionLrcp;
+                        for (var outer = 0; outer < (isLayerFirst ? _layerCount : _levels + 1); outer++)
+                        {
+                            for (var inner = 0; inner < (isLayerFirst ? _levels + 1 : _layerCount); inner++)
+                            {
+                                var layer = isLayerFirst ? outer : inner;
+                                var r = isLayerFirst ? inner : outer;
+                                foreach (var component in components)
+                                {
+                                    var precincts = geometry.Resolutions[component.FirstResolution + r].PrecinctCount;
+                                    for (var precinct = 0; precinct < precincts; precinct++)
+                                    {
+                                        packets[index++] = new PacketOrder { Component = component.Index, Resolution = r, Precinct = precinct, Layer = layer };
+                                    }
+                                }
+                            }
+                        }
+
+                        break;
+
+                    default:
+                    {
+                        using var positions = Av1PooledArray<Jpeg2000PacketPosition>.Rent(_scope, Math.Max(1, geometry.PrecinctCount), clear: false, AllocationKind.Temporary);
+                        var sorted = positions.Span[..geometry.PrecinctCount];
+                        Jpeg2000PacketPosition.Fill(_siz, geometry, sorted);
+                        Jpeg2000PacketPosition.Sort(sorted, _progression);
+                        foreach (ref readonly var position in sorted)
+                        {
+                            for (var layer = 0; layer < _layerCount; layer++)
+                            {
+                                packets[index++] = new PacketOrder { Component = position.Component, Resolution = position.Resolution, Precinct = position.Precinct, Layer = layer };
+                            }
+                        }
+
+                        break;
+                    }
+                }
+
+                count = index;
+                return order;
+            }
+            catch
+            {
+                order.Dispose();
+                throw;
+            }
         }
 
         /// <summary>
@@ -957,10 +1152,11 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
 
         /// <summary>
         /// Gets the number of coding passes the rate control chooses from for a code-block: the passes of the standard
-        /// coder, or one HT cleanup segment for each lowest bit-plane of the high-throughput block coder, from the highest one.
+        /// coder, or, for the high-throughput block coder, as many points numbered alike: the HT set whose HT cleanup pass
+        /// ends at each bit-plane, from the highest one, and its HT SigProp and HT MagRef passes.
         /// </summary>
-        private int GetPassTotal(in EncodedBlock record)
-            => record.BitPlanes == 0 ? 0 : _isHighThroughput ? record.BitPlanes : (3 * record.BitPlanes) - 2;
+        private static int GetPassTotal(in EncodedBlock record)
+            => record.BitPlanes == 0 ? 0 : (3 * record.BitPlanes) - 2;
 
         /// <summary>Appends the coding passes of a code-block to those of the image, weighted so that they measure the error of the image.</summary>
         private void AddPasses(ref EncodedBlock record, ReadOnlySpan<Jpeg2000CodingPass> passes, int component, int band)
@@ -1064,42 +1260,44 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         }
 
         /// <summary>
-        /// Gets where the HT cleanup segment of a code-block that the rate control chose is, in the coded bytes of its
-        /// component: without rate control, the only segment, which codes every bit-plane; otherwise the segment of the
-        /// chosen candidate, after those of the previous candidates.
+        /// Gets where the HT segments of a code-block that the rate control chose are, in the coded bytes of its component:
+        /// without rate control, the only HT cleanup segment, which codes every bit-plane; otherwise the segments of the
+        /// chosen HT set, after those of the previous sets. The HT refinement segment follows the HT cleanup segment.
         /// </summary>
         /// <param name="block">The code-block.</param>
-        /// <param name="passes">The number of candidates the rate control kept: the chosen one is the last of them.</param>
-        /// <param name="offset">Receives the offset of the segment from the first segment of the code-block.</param>
-        /// <param name="length">Receives the length of the segment.</param>
-        private void GetHighThroughputSegment(int block, int passes, out int offset, out int length)
+        /// <param name="passes">The chosen point: <c>3 * set + 1</c> for the HT cleanup pass of a set, plus one for each of its refinement passes.</param>
+        /// <param name="offset">Receives the offset of the HT cleanup segment from the first segment of the code-block.</param>
+        /// <param name="cleanupLength">Receives the length of the HT cleanup segment.</param>
+        /// <param name="refinementLength">Receives the length of the HT refinement segment: 0 without refinement pass.</param>
+        private void GetHighThroughputSegments(int block, int passes, out int offset, out int cleanupLength, out int refinementLength)
         {
             ref readonly var record = ref _blocks.Span[block];
             offset = 0;
             if (_passes is null)
             {
-                length = record.Length;
+                cleanupLength = record.Length;
+                refinementLength = 0;
                 return;
             }
 
             var candidates = _passes.Span.Slice(record.FirstPass, passes);
-            for (var i = 0; i < candidates.Length - 1; i++)
+            var set = (passes - 1) / 3;
+            for (var q = 0; q < set; q++)
             {
-                offset += candidates[i].Length;
+                offset += candidates[(3 * q) + 2].Length;
             }
 
-            length = candidates[^1].Length;
+            cleanupLength = candidates[3 * set].Length;
+            refinementLength = candidates[passes - 1].Length - cleanupLength;
         }
 
         /// <summary>
         /// Gets the number of bit-planes a code-block of the high-throughput block coder declares as empty (its P_blk): the
-        /// bit-plane its HT cleanup pass ends at is <c>Mb - 1 - P_blk</c> (T.814, 7.6), the chosen candidate.
+        /// bit-plane its HT cleanup pass ends at is <c>Mb - 1 - P_blk</c> (T.814, 7.6), that of the chosen HT set. No
+        /// placeholder pass is written, which OpenJPEG does not read.
         /// </summary>
         private int GetHighThroughputZeroBitPlanes(int block, int passes, int bandBitPlanes)
-        {
-            var bitPlanes = _blocks.Span[block].BitPlanes;
-            return bandBitPlanes - 1 - (bitPlanes - passes);
-        }
+            => bandBitPlanes - _blocks.Span[block].BitPlanes + ((passes - 1) / 3);
 
         /// <summary>
         /// Gets the Ccap field of Part 15 (T.814, Table A.4): only code-blocks of the high-throughput block coder, one HT set
@@ -1124,36 +1322,17 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         /// output fits the target of the layer.
         /// </summary>
         /// <param name="headLength">The length of the head of the output: the boxes of a JP2 file and the main header.</param>
+        /// <remarks>
+        /// A code-block of the high-throughput block coder has one HT set, which a layer holds whole, so that OpenJPEG
+        /// reads the output: the set of each code-block is first chosen for the last layer, as if it were the only one,
+        /// then the layers share out the code-blocks, each with the coding passes of its set.
+        /// </remarks>
         private void AllocateLayers(long headLength)
         {
             var blockCount = _blockCount;
             _layerPasses = Av1PooledArray<byte>.Rent(_scope, (long)blockCount * _layerCount, clear: true, AllocationKind.Temporary);
             _slopes = Av1PooledArray<double>.Rent(_scope, Math.Max(1, _passCount), clear: true, AllocationKind.Temporary);
-            var hullPoints = ComputeHulls(_slopes.Span);
-
-            // The distinct slopes of the hull points, from the steepest
-            using var thresholds = Av1PooledArray<double>.Rent(_scope, Math.Max(1, hullPoints), clear: false, AllocationKind.Temporary);
-            var count = 0;
-            foreach (var slope in _slopes.Span[.._passCount])
-            {
-                if (slope > 0)
-                {
-                    thresholds.Span[count++] = slope;
-                }
-            }
-
-            var sorted = thresholds.Span[..count];
-            sorted.Sort((a, b) => b.CompareTo(a));
-            count = sorted.Length == 0 ? 0 : 1;
-            for (var i = 1; i < sorted.Length; i++)
-            {
-                if (sorted[i] != sorted[count - 1])
-                {
-                    sorted[count++] = sorted[i];
-                }
-            }
-
-            sorted = sorted[..count];
+            using var thresholds = Av1PooledArray<double>.Rent(_scope, Math.Max(1, _passCount), clear: false, AllocationKind.Temporary);
             var tiles = new TilePackets[_tileCount];
             try
             {
@@ -1164,46 +1343,39 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 }
 
                 using var scratch = new PooledPayloadWriter(_scope);
-                var size = headLength + (TileHeaderLength * (long)_tileCount) + 2;
+                var budget = new LayerBudget(headLength + (TileHeaderLength * (long)_totalTileParts) + 2 + (_writesPacketLengths ? PltSegmentOverhead * (long)_totalTileParts : 0), _writesPacketLengths);
+                var sorted = GetThresholds(thresholds.Span);
+                if (_isHighThroughput && _layerCount > 1)
+                {
+                    // The HT set of each code-block: what one layer would hold with the target of the last one, less a
+                    // byte for each packet of the other layers (and its length in a PLT marker segment)
+                    var target = _layerTargets[_layerCount - 1];
+                    if (target != long.MaxValue)
+                    {
+                        target -= (_layerCount - 1) * _packetsPerLayer * (_writesPacketLengths ? 2 : 1);
+                    }
+
+                    ChooseLayer(tiles, layer: 0, target, budget, sorted, scratch);
+                    _highThroughputSets = Av1PooledArray<byte>.Rent(_scope, Math.Max(1, blockCount), clear: false, AllocationKind.Temporary);
+                    var sets = _highThroughputSets.Span;
+                    var layerPasses = _layerPasses.Span;
+                    for (var b = 0; b < blockCount; b++)
+                    {
+                        sets[b] = layerPasses[b * _layerCount];
+                    }
+
+                    // The slopes of the sets alone; the packets of the trials were measured from the saved state, which the
+                    // layers start from
+                    _slopes.Span.Clear();
+                    sorted = GetThresholds(thresholds.Span);
+                }
+
                 for (var layer = 0; layer < _layerCount; layer++)
                 {
-                    // A layer that every coding pass left fits in holds them all, the passes off the hulls included
-                    var target = _layerTargets[layer];
-                    if (target == long.MaxValue || size + MeasureLayer(tiles, layer, double.NegativeInfinity, scratch) <= target)
-                    {
-                        SelectPasses(layer, double.NegativeInfinity);
-                    }
-                    else
-                    {
-                        // The largest index of a threshold whose output fits, -1 when no threshold does: the layer then only
-                        // holds the passes that add no byte. The size grows with the index
-                        var low = -1;
-                        var high = sorted.Length - 1;
-                        if (high >= 0 && size + MeasureLayer(tiles, layer, sorted[high], scratch) <= target)
-                        {
-                            low = high;
-                        }
-                        else
-                        {
-                            while (high - low > 1)
-                            {
-                                var middle = low + ((high - low) / 2);
-                                if (size + MeasureLayer(tiles, layer, sorted[middle], scratch) <= target)
-                                {
-                                    low = middle;
-                                }
-                                else
-                                {
-                                    high = middle;
-                                }
-                            }
-                        }
-
-                        SelectPasses(layer, low < 0 ? double.PositiveInfinity : sorted[low]);
-                    }
+                    ChooseLayer(tiles, layer, _layerTargets[layer], budget, sorted, scratch);
 
                     // The packets of the layer leave the state the next layer starts from
-                    size += MeasureLayer(tiles, layer, threshold: null, scratch);
+                    budget.Add(MeasureLayer(tiles, layer, threshold: null, scratch, out var entries), entries);
                     foreach (var tile in tiles)
                     {
                         tile.Save();
@@ -1222,6 +1394,71 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             }
         }
 
+        /// <summary>Computes the slopes of the hull points and gets their distinct values, from the steepest.</summary>
+        private Span<double> GetThresholds(Span<double> thresholds)
+        {
+            var slopes = _slopes!.Span;
+            ComputeHulls(slopes);
+            var count = 0;
+            foreach (var slope in slopes[.._passCount])
+            {
+                if (slope > 0)
+                {
+                    thresholds[count++] = slope;
+                }
+            }
+
+            var sorted = thresholds[..count];
+            sorted.Sort((a, b) => b.CompareTo(a));
+            count = sorted.Length == 0 ? 0 : 1;
+            for (var i = 1; i < sorted.Length; i++)
+            {
+                if (sorted[i] != sorted[count - 1])
+                {
+                    sorted[count++] = sorted[i];
+                }
+            }
+
+            return sorted[..count];
+        }
+
+        /// <summary>Selects the coding passes of a layer: every pass left when they fit the target, otherwise the passes of the smallest threshold whose output fits it.</summary>
+        private void ChooseLayer(TilePackets[] tiles, int layer, long target, LayerBudget budget, ReadOnlySpan<double> sorted, PooledPayloadWriter scratch)
+        {
+            // A layer that every coding pass left fits in holds them all, the passes off the hulls included
+            if (target == long.MaxValue || budget.GetSize(MeasureLayer(tiles, layer, double.NegativeInfinity, scratch, out var entries), entries) <= target)
+            {
+                SelectPasses(layer, double.NegativeInfinity);
+                return;
+            }
+
+            // The largest index of a threshold whose output fits, -1 when no threshold does: the layer then only holds the
+            // passes that add no byte. The size grows with the index
+            var low = -1;
+            var high = sorted.Length - 1;
+            if (high >= 0 && budget.GetSize(MeasureLayer(tiles, layer, sorted[high], scratch, out entries), entries) <= target)
+            {
+                low = high;
+            }
+            else
+            {
+                while (high - low > 1)
+                {
+                    var middle = low + ((high - low) / 2);
+                    if (budget.GetSize(MeasureLayer(tiles, layer, sorted[middle], scratch, out entries), entries) <= target)
+                    {
+                        low = middle;
+                    }
+                    else
+                    {
+                        high = middle;
+                    }
+                }
+            }
+
+            SelectPasses(layer, low < 0 ? double.PositiveInfinity : sorted[low]);
+        }
+
         /// <summary>
         /// Computes the convex hull of the rate and distortion of the coding passes of each code-block: the slope of each
         /// pass on the hull (decreasing along a code-block), 0 for the others.
@@ -1234,13 +1471,21 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             Span<double> rates = stackalloc double[MaxPasses + 1];
             Span<double> distortions = stackalloc double[MaxPasses + 1];
             var total = 0;
-            foreach (ref readonly var record in _blocks.Span[.._blockCount])
+            var records = _blocks.Span[.._blockCount];
+            for (var b = 0; b < records.Length; b++)
             {
+                ref readonly var record = ref records[b];
                 if (record.BitPlanes == 0)
                     continue;
 
                 var count = GetPassTotal(in record);
                 var block = passes.Slice(record.FirstPass, count);
+                if (_isHighThroughput)
+                {
+                    total += ComputeHighThroughputHull(block, slopes.Slice(record.FirstPass, count), _highThroughputSets is null ? 0 : _highThroughputSets.Span[b]);
+                    continue;
+                }
+
                 var points = 1;
                 hull[0] = 0;
                 rates[0] = 0;
@@ -1252,13 +1497,6 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                     double rate = block[i].Length;
                     if (distortion <= distortions[points - 1])
                         continue;
-
-                    // The segments of the high-throughput block coder are not truncations of each other: a point that is
-                    // not shorter than the new one is not on the hull
-                    while (_isHighThroughput && points > 1 && rate <= rates[points - 1])
-                    {
-                        points--;
-                    }
 
                     // A point that the new one leaves below the line from the previous point is not on the hull
                     while (points > 1 && GetSlope(rates[points - 1], distortions[points - 1], rate, distortion) >= GetSlope(rates[points - 2], distortions[points - 2], rates[points - 1], distortions[points - 1]))
@@ -1282,9 +1520,88 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             }
 
             return total;
+        }
 
-            static double GetSlope(double rate0, double distortion0, double rate1, double distortion1)
-                => rate1 == rate0 ? double.PositiveInfinity : (distortion1 - distortion0) / (rate1 - rate0);
+        private static double GetSlope(double rate0, double distortion0, double rate1, double distortion1)
+            => rate1 == rate0 ? double.PositiveInfinity : (distortion1 - distortion0) / (rate1 - rate0);
+
+        /// <summary>
+        /// Computes the convex hull of the truncation points of a code-block of the high-throughput block coder. A point is
+        /// an HT set and the refinement passes it keeps: the points are not truncations of each other, and are ordered by
+        /// their length. With <paramref name="set"/>, the code-block only has the point of its HT set.
+        /// </summary>
+        /// <param name="block">The coding passes of the code-block: the length of each point and what it adds to the reduction of the error of the previous one.</param>
+        /// <param name="slopes">Receives the slope of each point on the hull, 0 for the others.</param>
+        /// <param name="set">The number of coding passes of the HT set of the code-block, or 0 when any point can be chosen.</param>
+        /// <returns>The number of points on the hull.</returns>
+        private static int ComputeHighThroughputHull(ReadOnlySpan<Jpeg2000CodingPass> block, Span<double> slopes, int set)
+        {
+            Span<double> cumulative = stackalloc double[MaxPasses];
+            var distortion = 0.0;
+            for (var i = 0; i < block.Length; i++)
+            {
+                distortion += block[i].Distortion;
+                cumulative[i] = distortion;
+            }
+
+            if (set != 0)
+            {
+                // The HT set the code-block keeps, against nothing
+                if (cumulative[set - 1] <= 0)
+                    return 0;
+
+                slopes[set - 1] = GetSlope(0, 0, block[set - 1].Length, cumulative[set - 1]);
+                return 1;
+            }
+
+            // The points by length, the one that reduces the error most first among those of the same length
+            Span<int> order = stackalloc int[MaxPasses];
+            for (var i = 0; i < block.Length; i++)
+            {
+                var j = i;
+                for (; j > 0; j--)
+                {
+                    var previous = order[j - 1];
+                    if (block[previous].Length < block[i].Length || (block[previous].Length == block[i].Length && cumulative[previous] >= cumulative[i]))
+                        break;
+
+                    order[j] = previous;
+                }
+
+                order[j] = i;
+            }
+
+            Span<int> hull = stackalloc int[MaxPasses + 1];
+            Span<double> rates = stackalloc double[MaxPasses + 1];
+            Span<double> distortions = stackalloc double[MaxPasses + 1];
+            var points = 1;
+            hull[0] = -1;
+            rates[0] = 0;
+            distortions[0] = 0;
+            foreach (var i in order[..block.Length])
+            {
+                double rate = block[i].Length;
+                var value = cumulative[i];
+                if (value <= distortions[points - 1])
+                    continue;
+
+                while (points > 1 && GetSlope(rates[points - 1], distortions[points - 1], rate, value) >= GetSlope(rates[points - 2], distortions[points - 2], rates[points - 1], distortions[points - 1]))
+                {
+                    points--;
+                }
+
+                hull[points] = i;
+                rates[points] = rate;
+                distortions[points] = value;
+                points++;
+            }
+
+            for (var k = 1; k < points; k++)
+            {
+                slopes[hull[k]] = GetSlope(rates[k - 1], distortions[k - 1], rates[k], distortions[k]);
+            }
+
+            return points - 1;
         }
 
         /// <summary>
@@ -1295,6 +1612,8 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         {
             var layerPasses = _layerPasses!.Span;
             var slopes = _slopes is null ? default : _slopes.Span;
+            var passes = _passes is null ? default : _passes.Span;
+            var sets = _highThroughputSets is null ? default : _highThroughputSets.Span;
             var records = _blocks.Span[.._blockCount];
             for (var b = 0; b < records.Length; b++)
             {
@@ -1304,13 +1623,35 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 if (record.BitPlanes != 0)
                 {
                     var count = GetPassTotal(in record);
-                    if (double.IsNegativeInfinity(threshold))
+                    var block = slopes.Slice(record.FirstPass, count);
+                    if (!sets.IsEmpty)
+                    {
+                        // The HT set of the code-block, whole
+                        var set = sets[b];
+                        if (set != 0 && (double.IsNegativeInfinity(threshold) || (block[set - 1] >= threshold && block[set - 1] > 0)))
+                        {
+                            selected = set;
+                        }
+                    }
+                    else if (double.IsNegativeInfinity(threshold))
                     {
                         selected = count;
                     }
+                    else if (_isHighThroughput)
+                    {
+                        // The longest hull point whose slope is at least the threshold: the slopes decrease with the length
+                        var length = -1;
+                        for (var i = 0; i < count; i++)
+                        {
+                            if (block[i] >= threshold && block[i] > 0 && passes[record.FirstPass + i].Length > length)
+                            {
+                                length = passes[record.FirstPass + i].Length;
+                                selected = i + 1;
+                            }
+                        }
+                    }
                     else
                     {
-                        var block = slopes.Slice(record.FirstPass, count);
                         for (var i = previous; i < count; i++)
                         {
                             if (block[i] >= threshold && block[i] > 0)
@@ -1330,8 +1671,9 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         /// <param name="layer">The layer.</param>
         /// <param name="threshold">The threshold of the passes of the layer, or <see langword="null"/> when they are already selected.</param>
         /// <param name="scratch">A buffer for the packet headers.</param>
+        /// <param name="entries">Receives the number of bytes the lengths of the packets take in PLT marker segments.</param>
         /// <returns>The number of bytes of the packets.</returns>
-        private long MeasureLayer(TilePackets[] tiles, int layer, double? threshold, PooledPayloadWriter scratch)
+        private long MeasureLayer(TilePackets[] tiles, int layer, double? threshold, PooledPayloadWriter scratch, out long entries)
         {
             CancellationToken.ThrowIfCancellationRequested();
             if (threshold is { } value)
@@ -1340,6 +1682,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             }
 
             var length = 0L;
+            entries = 0;
             foreach (var tile in tiles)
             {
                 tile.Restore();
@@ -1351,7 +1694,9 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                         for (var precinct = 0; precinct < tile.Geometry.Resolutions[resolutionIndex].PrecinctCount; precinct++)
                         {
                             scratch.Reset();
-                            length += WritePacket(tile, component.Index, resolutionIndex, precinct, layer, scratch, emit: false);
+                            var packet = WritePacket(tile, component.Index, resolutionIndex, precinct, layer, scratch, emit: false);
+                            length += packet;
+                            entries += GetPacketLengthBytes(packet);
                         }
                     }
                 }
@@ -1411,33 +1756,48 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             }
         }
 
-        /// <summary>Writes the tile-parts (one per tile) and lists their pieces, then the EOC marker.</summary>
+        /// <summary>Writes the tile-parts of every tile and lists their pieces, then the EOC marker.</summary>
         /// <returns>The length of the codestream after its main header.</returns>
         private long WriteTiles()
         {
             var length = 0L;
+            _tilePartIndex = 0;
             for (var t = 0; t < _tileCount; t++)
             {
                 using var tile = CreateTilePackets(t);
+                using var order = RentPacketOrder(tile.Geometry, out var count);
+                var packets = order.Span[..count];
+                var components = tile.Geometry.Components;
+                var parts = GetTileParts(t);
+                var part = -1;
+                var header = 0;
+                var lengthPiece = -1;
+                var partLength = 0L;
+                for (var i = 0; i < packets.Length; i++)
+                {
+                    ref readonly var packet = ref packets[i];
+                    if (i == 0 || StartsTilePart(in packets[i - 1], in packet))
+                    {
+                        if (part >= 0)
+                        {
+                            length += EndTilePart(header, lengthPiece, partLength, isLast: false);
+                        }
 
-                // A.4.2: the only tile-part of the tile, whose length is patched once its packets are written; a length that
-                // does not fit in 32 bits is written as 0 in the last tile-part, which then extends to the EOC marker
-                var header = _packetHeaders.Length;
-                AddPiece(SourcePacketHeaders, header, TileHeaderLength);
-                var boxes = new HeifBoxWriter(_packetHeaders);
-                boxes.WriteUInt16(Jpeg2000Format.MarkerSot);
-                boxes.WriteUInt16(Jpeg2000Format.SotSegmentLength - 2);
-                boxes.WriteUInt16(t);
-                boxes.WriteUInt32(0);
-                boxes.WriteByte(0);
-                boxes.WriteByte(1);
-                boxes.WriteUInt16(Jpeg2000Format.MarkerSod);
-                var tilePartLength = TileHeaderLength + WriteTilePackets(tile);
-                if (tilePartLength > uint.MaxValue && t != _tileCount - 1)
-                    throw new InvalidOperationException("A JPEG 2000 tile is larger than 4 GiB: set a smaller TileWidth or TileHeight.");
+                        part++;
+                        BeginTilePart(t, part, parts, out header, out lengthPiece);
+                        partLength = 0;
+                    }
 
-                BinaryPrimitives.WriteUInt32BigEndian(_packetHeaders.WrittenSpan[(header + 6)..], tilePartLength > uint.MaxValue ? 0 : (uint)tilePartLength);
-                length += tilePartLength;
+                    CancellationToken.ThrowIfCancellationRequested();
+                    var packetLength = WritePacket(tile, packet.Component, components[packet.Component].FirstResolution + packet.Resolution, packet.Precinct, packet.Layer, _packetHeaders, emit: true);
+                    partLength += packetLength;
+                    if (_writesPacketLengths)
+                    {
+                        AddPacketLength(packetLength);
+                    }
+                }
+
+                length += EndTilePart(header, lengthPiece, partLength, isLast: t == _tileCount - 1);
             }
 
             // The EOC marker ends the codestream
@@ -1446,74 +1806,127 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             return length + 2;
         }
 
-        /// <summary>Writes the packet headers of a tile (B.10) and lists the pieces of its packets, in the progression order (B.12).</summary>
-        /// <returns>The length of the packets.</returns>
-        private long WriteTilePackets(TilePackets tile)
+        /// <summary>
+        /// Writes the SOT marker segment of a tile-part (A.4.2), whose length is patched once its packets are written, and
+        /// its SOD marker, and lists them; with PLT marker segments, a piece between them is kept for these segments.
+        /// </summary>
+        private void BeginTilePart(int tile, int part, int parts, out int header, out int lengthPiece)
         {
-            var geometry = tile.Geometry;
-            var components = geometry.Components;
-            var length = 0L;
-            switch (_progression)
+            header = _packetHeaders.Length;
+            var boxes = new HeifBoxWriter(_packetHeaders);
+            boxes.WriteUInt16(Jpeg2000Format.MarkerSot);
+            boxes.WriteUInt16(Jpeg2000Format.SotSegmentLength - 2);
+            boxes.WriteUInt16(tile);
+            boxes.WriteUInt32(0);
+            boxes.WriteByte((byte)part);
+            boxes.WriteByte((byte)parts);
+            boxes.WriteUInt16(Jpeg2000Format.MarkerSod);
+            _packetLengthCount = 0;
+            if (_writesPacketLengths)
             {
-                case Jpeg2000CodingDefaults.ProgressionLrcp:
-                    for (var layer = 0; layer < _layerCount; layer++)
-                    {
-                        for (var r = 0; r <= _levels; r++)
-                        {
-                            length += WriteResolutionLayer(tile, r, layer);
-                        }
-                    }
-
-                    break;
-
-                case Jpeg2000CodingDefaults.ProgressionRlcp:
-                    for (var r = 0; r <= _levels; r++)
-                    {
-                        for (var layer = 0; layer < _layerCount; layer++)
-                        {
-                            length += WriteResolutionLayer(tile, r, layer);
-                        }
-                    }
-
-                    break;
-
-                default:
-                {
-                    using var positions = Av1PooledArray<Jpeg2000PacketPosition>.Rent(_scope, geometry.PrecinctCount, clear: false, AllocationKind.Temporary);
-                    Jpeg2000PacketPosition.Fill(_siz, geometry, positions.Span);
-                    Jpeg2000PacketPosition.Sort(positions.Span, _progression);
-                    foreach (ref readonly var position in positions.Span)
-                    {
-                        var resolutionIndex = components[position.Component].FirstResolution + position.Resolution;
-                        for (var layer = 0; layer < _layerCount; layer++)
-                        {
-                            CancellationToken.ThrowIfCancellationRequested();
-                            length += WritePacket(tile, position.Component, resolutionIndex, position.Precinct, layer, _packetHeaders, emit: true);
-                        }
-                    }
-
-                    break;
-                }
+                AddPiece(SourcePacketHeaders, header, Jpeg2000Format.SotSegmentLength);
+                lengthPiece = _pieceCount;
+                AddPiece(SourcePacketHeaders, 0, 0);
+                AddPiece(SourcePacketHeaders, header + Jpeg2000Format.SotSegmentLength, 2);
             }
-
-            return length;
+            else
+            {
+                AddPiece(SourcePacketHeaders, header, TileHeaderLength);
+                lengthPiece = -1;
+            }
         }
 
-        private long WriteResolutionLayer(TilePackets tile, int r, int layer)
+        /// <summary>
+        /// Ends a tile-part: writes its PLT marker segments (A.7.3), patches the length of the tile-part in its SOT marker
+        /// segment and keeps it for the TLM marker segments. The length of the last tile-part of the codestream is written
+        /// as 0 when it does not fit in 32 bits: the tile-part then extends to the EOC marker.
+        /// </summary>
+        /// <returns>The length of the tile-part.</returns>
+        private long EndTilePart(int header, int lengthPiece, long packetsLength, bool isLast)
         {
-            var length = 0L;
-            foreach (var component in tile.Geometry.Components)
+            var tilePartLength = TileHeaderLength + packetsLength;
+            if (lengthPiece >= 0)
             {
-                var resolutionIndex = component.FirstResolution + r;
-                for (var precinct = 0; precinct < tile.Geometry.Resolutions[resolutionIndex].PrecinctCount; precinct++)
-                {
-                    CancellationToken.ThrowIfCancellationRequested();
-                    length += WritePacket(tile, component.Index, resolutionIndex, precinct, layer, _packetHeaders, emit: true);
-                }
+                var start = _packetHeaders.Length;
+                WritePacketLengthSegments();
+                ref var piece = ref _pieces!.Span[lengthPiece];
+                piece.Offset = start;
+                piece.Length = _packetHeaders.Length - start;
+                tilePartLength += piece.Length;
             }
 
-            return length;
+            if (tilePartLength > uint.MaxValue && (!isLast || _writesTilePartLengths))
+                throw new InvalidOperationException("A JPEG 2000 tile-part is larger than 4 GiB: set a smaller TileWidth or TileHeight, or a TilePartDivision.");
+
+            BinaryPrimitives.WriteUInt32BigEndian(_packetHeaders.WrittenSpan[(header + 6)..], tilePartLength > uint.MaxValue ? 0 : (uint)tilePartLength);
+            if (_writesTilePartLengths)
+            {
+                _tilePartLengths ??= Av1PooledArray<long>.Rent(_scope, _totalTileParts, clear: true, AllocationKind.Temporary);
+                _tilePartLengths.Span[_tilePartIndex] = tilePartLength;
+            }
+
+            _tilePartIndex++;
+            return tilePartLength;
         }
+
+        private void AddPacketLength(long length)
+        {
+            if (_packetLengths is null || _packetLengthCount == _packetLengths.Length)
+            {
+                var larger = Av1PooledArray<long>.Rent(_scope, _packetLengths is null ? 256 : checked(_packetLengths.Length * 2L), clear: false, AllocationKind.Temporary);
+                _packetLengths?.Span.CopyTo(larger.Span);
+                _packetLengths?.Dispose();
+                _packetLengths = larger;
+            }
+
+            _packetLengths.Span[_packetLengthCount++] = length;
+        }
+
+        /// <summary>
+        /// Writes the PLT marker segments of the packets of the current tile-part (A.7.3): each length in groups of seven
+        /// bits from the most significant one, the high bit of a byte set when a group follows. A length is never split
+        /// between two segments.
+        /// </summary>
+        private void WritePacketLengthSegments()
+        {
+            var lengths = _packetLengths is null ? default : _packetLengths.Span[.._packetLengthCount];
+            var index = 0;
+            var segment = 0;
+            Span<byte> bytes = stackalloc byte[10];
+            while (index < lengths.Length)
+            {
+                if (segment == MaxMarkerSegments)
+                    throw new InvalidOperationException("A JPEG 2000 tile-part has too many packets for its PLT marker segments: set WritePacketLengths to false, or use a TilePartDivision.");
+
+                var start = _packetHeaders.Length;
+                var boxes = new HeifBoxWriter(_packetHeaders);
+                boxes.WriteUInt16(Jpeg2000Format.MarkerPlt);
+                boxes.WriteUInt16(0);
+                boxes.WriteByte((byte)segment++);
+                var data = 0;
+                while (index < lengths.Length)
+                {
+                    var count = GetPacketLengthBytes(lengths[index]);
+                    if (data + count > MaxPltData)
+                        break;
+
+                    var value = lengths[index++];
+                    for (var i = count - 1; i >= 0; i--)
+                    {
+                        bytes[i] = (byte)((int)(value & 0x7F) | (i == count - 1 ? 0 : 0x80));
+                        value >>= 7;
+                    }
+
+                    _packetHeaders.Write(bytes[..count]);
+                    data += count;
+                }
+
+                BinaryPrimitives.WriteUInt16BigEndian(_packetHeaders.WrittenSpan[(start + 2)..], (ushort)(3 + data));
+            }
+        }
+
+        /// <summary>Gets the number of bytes of the length of a packet in a PLT marker segment: one per group of seven bits.</summary>
+        private static int GetPacketLengthBytes(long length) => Math.Max(1, (64 - BitOperations.LeadingZeroCount((ulong)length) + 6) / 7);
 
         /// <summary>
         /// Writes the header of a packet (B.10) and, when <paramref name="emit"/> is set, lists its pieces: the header, then
@@ -1592,7 +2005,9 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 if (_isHighThroughput)
                 {
                     // The empty bit-planes of a code-block of the high-throughput block coder give the lowest bit-plane of
-                    // its HT cleanup pass, which the rate control chooses: the only layer is the first one of every code-block
+                    // its HT cleanup pass, which the rate control chooses: with one layer, the passes of the layer; with
+                    // several, the HT set of the code-block, which every layer gives alike
+                    var sets = _highThroughputSets is null ? default : _highThroughputSets.Span;
                     var firstBand = geometry.Resolutions[geometry.Components[component].FirstResolution].FirstBand;
                     var bandBitPlanes = _bandMagnitudeBitPlanes[(component * ((3 * _levels) + 1)) + (resolution.FirstBand + b - firstBand)];
                     var zeroValues = values.Slice(zero, nodes);
@@ -1601,7 +2016,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                         for (var bx = 0; bx < wide; bx++)
                         {
                             var global = tile.FirstBlock + band.FirstBlock + ((precinctBand.BlockY + by) * band.BlocksWide) + precinctBand.BlockX + bx;
-                            var passes = GetPasses(global, layer);
+                            var passes = sets.IsEmpty ? GetPasses(global, layer) : sets[global];
                             zeroValues[(by * wide) + bx] = passes != 0 ? GetHighThroughputZeroBitPlanes(global, passes, bandBitPlanes) : int.MaxValue;
                         }
                     }
@@ -1638,38 +2053,51 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                         if (passes == previous)
                             continue;
 
-                        // A code-block of the high-throughput block coder has one coding pass, its HT cleanup pass, in the
-                        // only layer (T.814, B.3)
-                        int added;
                         int start;
                         int length;
                         if (_isHighThroughput)
                         {
-                            added = 1;
-                            GetHighThroughputSegment(global, passes, out start, out length);
+                            // T.814, B.3: the HT set of a code-block is in one packet, so that the code-block is in one layer;
+                            // the HT cleanup segment and the HT refinement segment have a length each
+                            if (previous != 0)
+                                throw new InvalidOperationException("An HT set of the JPEG 2000 encoder is split between layers.");
+
+                            GetHighThroughputSegments(global, passes, out start, out var cleanup, out var refinement);
+                            var refinementPasses = (passes - 1) % 3;
+                            WritePassCount(ref writer, 1 + refinementPasses);
+                            var refinementBits = refinementPasses == 0 ? 0 : BitOperations.Log2((uint)refinementPasses);
+                            var growth = Math.Max(0, GetBitLength(cleanup) - block.LengthBits);
+                            if (refinementPasses != 0)
+                            {
+                                growth = Math.Max(growth, GetBitLength(refinement) - block.LengthBits - refinementBits);
+                            }
+
+                            WriteLengthBits(ref writer, growth);
+                            block.LengthBits = (byte)(block.LengthBits + growth);
+                            writer.WriteBits(cleanup, block.LengthBits);
+                            if (refinementPasses != 0)
+                            {
+                                writer.WriteBits(refinement, block.LengthBits + refinementBits);
+                            }
+
+                            length = cleanup + refinement;
                         }
                         else
                         {
-                            added = passes - previous;
+                            var added = passes - previous;
                             start = GetSegmentLength(global, previous);
                             length = GetSegmentLength(global, passes) - start;
+                            WritePassCount(ref writer, added);
+
+                            // B.10.7.1: the length is written in Lblock bits plus those the number of passes adds; Lblock starts
+                            // at 3 and grows by the number of 1 bits written before a 0 bit
+                            var available = block.LengthBits + BitOperations.Log2((uint)added);
+                            var growth = Math.Max(0, GetBitLength(length) - available);
+                            WriteLengthBits(ref writer, growth);
+                            writer.WriteBits(length, available + growth);
+                            block.LengthBits = (byte)(block.LengthBits + growth);
                         }
 
-                        WritePassCount(ref writer, added);
-
-                        // B.10.7.1: the length is written in Lblock bits plus those the number of passes adds; Lblock starts at 3
-                        // and grows by the number of 1 bits written before a 0 bit
-                        var available = block.LengthBits + BitOperations.Log2((uint)added);
-                        var needed = 32 - BitOperations.LeadingZeroCount((uint)length);
-                        var growth = Math.Max(0, needed - available);
-                        for (var i = 0; i < growth; i++)
-                        {
-                            writer.WriteBit(1);
-                        }
-
-                        writer.WriteBit(0);
-                        writer.WriteBits(length, available + growth);
-                        block.LengthBits = (byte)(block.LengthBits + growth);
                         block.PassCount = (ushort)passes;
                         if (emit)
                         {
@@ -1689,6 +2117,19 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             }
 
             return headerLength + bodyLength;
+        }
+
+        private static int GetBitLength(int value) => 32 - BitOperations.LeadingZeroCount((uint)value);
+
+        /// <summary>Writes the increment of Lblock (B.10.7.1): as many 1 bits, then a 0 bit.</summary>
+        private static void WriteLengthBits(ref Jpeg2000PacketBitWriter writer, int growth)
+        {
+            for (var i = 0; i < growth; i++)
+            {
+                writer.WriteBit(1);
+            }
+
+            writer.WriteBit(0);
         }
 
         /// <summary>Writes the number of coding passes of a code-block in a packet (Table B.4).</summary>
@@ -1779,10 +2220,12 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 boxes.WriteUInt16(GetHighThroughputCapabilities());
             }
 
-            // A.6.1: no precinct, no SOP or EPH marker, the progression order and the layers, code-blocks of 64 by 64 without style
+            // A.6.1: the precincts, no SOP or EPH marker, the progression order and the layers, code-blocks of 64 by 64
+            // without style
+            var precinctBytes = _precinctSizes?.Length ?? 0;
             boxes.WriteUInt16(Jpeg2000Format.MarkerCod);
-            boxes.WriteUInt16(12);
-            boxes.WriteByte(0);
+            boxes.WriteUInt16(12 + precinctBytes);
+            boxes.WriteByte((byte)(_precinctSizes is null ? 0 : 1));
             boxes.WriteByte((byte)_progression);
             boxes.WriteUInt16(_layerCount);
             boxes.WriteByte((byte)(_colorCount == 3 ? 1 : 0));
@@ -1791,9 +2234,9 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             {
                 // A.6.2: the opacity keeps the reversible filter
                 boxes.WriteUInt16(Jpeg2000Format.MarkerCoc);
-                boxes.WriteUInt16(9);
+                boxes.WriteUInt16(9 + precinctBytes);
                 boxes.WriteByte((byte)_colorCount);
-                boxes.WriteByte(0);
+                boxes.WriteByte((byte)(_precinctSizes is null ? 0 : 1));
                 WriteComponentStyle(boxes, isReversible: true);
             }
 
@@ -1831,6 +2274,11 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 WriteReversibleQuantization(boxes, reversibleExponents);
             }
 
+            if (_writesTilePartLengths)
+            {
+                WriteTilePartLengthSegments(boxes);
+            }
+
             if (isFile)
             {
                 // The box holds the codestream to its EOC marker
@@ -1856,6 +2304,53 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             boxes.WriteByte(BlockExponent - 2);
             boxes.WriteByte((byte)BlockStyle);
             boxes.WriteByte((byte)(isReversible ? 1 : 0));
+            if (_precinctSizes is not null)
+            {
+                boxes.WriteBytes(_precinctSizes);
+            }
+        }
+
+        /// <summary>
+        /// Writes the TLM marker segments (A.7.1): the index of the tile and the length of each tile-part, in the order of
+        /// the codestream, on 32 bits. The lengths are 0 until the tile-parts are written.
+        /// </summary>
+        private void WriteTilePartLengthSegments(HeifBoxWriter boxes)
+        {
+            var indexLength = GetTlmTileIndexLength();
+            var perSegment = MaxTlmData / (indexLength + 4);
+            var lengths = _tilePartLengths is null ? default : _tilePartLengths.Span;
+            var index = 0;
+            var tile = 0;
+            var part = 0;
+            for (var segment = 0; index < _totalTileParts; segment++)
+            {
+                var count = Math.Min(perSegment, _totalTileParts - index);
+                boxes.WriteUInt16(Jpeg2000Format.MarkerTlm);
+                boxes.WriteUInt16(4 + (count * (indexLength + 4)));
+                boxes.WriteByte((byte)segment);
+                boxes.WriteByte((byte)((indexLength << 4) | 0x40));
+                for (var i = 0; i < count; i++)
+                {
+                    while (part == GetTileParts(tile))
+                    {
+                        tile++;
+                        part = 0;
+                    }
+
+                    if (indexLength == 1)
+                    {
+                        boxes.WriteByte((byte)tile);
+                    }
+                    else
+                    {
+                        boxes.WriteUInt16(tile);
+                    }
+
+                    boxes.WriteUInt32(lengths.IsEmpty ? 0 : (uint)lengths[index]);
+                    index++;
+                    part++;
+                }
+            }
         }
 
         private void WriteStepSizes(HeifBoxWriter boxes, int guardBits, int table, int bandCount)
@@ -2062,7 +2557,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             public PooledPayloadWriter Output { get; }
 
             /// <summary>Creates a worker with coders, coefficients and a scratch of its own.</summary>
-            public static BlockCoder Create(AllocationScope scope, long scratchLength, bool isHighThroughput)
+            public static BlockCoder Create(AllocationScope scope, long scratchLength, bool isHighThroughput, bool codesRefinementPasses)
             {
                 Jpeg2000Tier1Encoder? encoder = null;
                 Jpeg2000HtBlockEncoder? highThroughputEncoder = null;
@@ -2074,6 +2569,10 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                     if (isHighThroughput)
                     {
                         highThroughputEncoder = new Jpeg2000HtBlockEncoder(scope);
+                        if (codesRefinementPasses)
+                        {
+                            highThroughputEncoder.RentRefinementBuffers();
+                        }
                     }
 
                     samples = Av1PooledArray<int>.Rent(scope, Jpeg2000Tier1Tables.MaxSamples, clear: false, AllocationKind.Temporary);
@@ -2120,6 +2619,20 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             public byte BitPlanes;
         }
 
+        /// <summary>A packet of a tile: the layer of the code-blocks of a precinct of a resolution level of a component.</summary>
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PacketOrder
+        {
+            public int Component;
+
+            /// <summary>The resolution level, from the lowest one of the component.</summary>
+            public int Resolution;
+
+            public int Precinct;
+
+            public int Layer;
+        }
+
         /// <summary>A run of bytes of the output, in one of the buffers of the session.</summary>
         [StructLayout(LayoutKind.Sequential)]
         private struct Piece
@@ -2127,6 +2640,37 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             public int Source;
             public int Offset;
             public int Length;
+        }
+
+        /// <summary>
+        /// The size of the output up to a layer, for the rate control: the fixed part (the head, the tile-part headers, the
+        /// EOC marker and, with PLT marker segments, one segment per tile-part), the packets of the previous layers and,
+        /// with PLT marker segments, their lengths and a bound of the segments they add.
+        /// </summary>
+        private sealed class LayerBudget(long fixedLength, bool countsPacketLengths)
+        {
+            private long _packets;
+            private long _entries;
+
+            /// <summary>Gets the size of the output with the packets of one more layer.</summary>
+            public long GetSize(long packets, long entries)
+            {
+                var size = fixedLength + _packets + packets;
+                if (countsPacketLengths)
+                {
+                    // A segment of a tile-part that is not its last one holds more than its largest data less one length
+                    var total = _entries + entries;
+                    size += total + (PltSegmentOverhead * ((total + MaxPltData - 5) / (MaxPltData - 4)));
+                }
+
+                return size;
+            }
+
+            public void Add(long packets, long entries)
+            {
+                _packets += packets;
+                _entries += entries;
+            }
         }
 
         /// <summary>

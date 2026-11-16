@@ -1610,16 +1610,40 @@ internal static class Examples
         // Its readers must support Part 15 of the standard, as OpenJPEG 2.5, FFmpeg and OpenJPH do.
         image.Save(jphPath);
 
-        // A codestream (.jhc) of at most 100 KB: the rate control chooses the lowest bit-plane of each code-block, and the
-        // output has a single quality layer.
+        // A codestream (.jhc) of at most 100 KB in two layers: the rate control chooses, for each code-block, the lowest
+        // bit-plane of its HT cleanup pass and its HT SigProp and HT MagRef refinement passes, and the first layer holds
+        // the code-blocks that reduce the error most for their bytes, up to 30 KB.
         image.Save(codestreamPath, new Jpeg2000Encoder
         {
             BlockCoder = Jpeg2000BlockCoder.HighThroughput,
             Compression = Jpeg2000Compression.Lossy,
             Quality = 100,
             Container = Jpeg2000Container.Codestream,
-            QualityLayers = [Jpeg2000QualityLayer.FromSize(100_000)],
+            QualityLayers = [Jpeg2000QualityLayer.FromSize(30_000), Jpeg2000QualityLayer.FromSize(100_000)],
             MetadataHandling = MetadataHandling.DiscardUnsupported,
+        });
+    }
+    #endregion
+
+    /// <summary>JPEG 2000 for servers and viewers: precincts in a position progression, tile-parts and length markers.</summary>
+    #region Imaging_Jpeg2000PrecinctsAndTileParts
+    public static void SaveJpeg2000ForStreaming(string inputPath, string path)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Precincts of 256x256 coefficients at the full resolution and 128x128 below: the packets of each area of a tile
+        // are apart, and the RPCL order gives the image resolution by resolution, area by area. A tile-part starts at each
+        // resolution level, and the TLM and PLT marker segments list the lengths of the tile-parts and of the packets, so
+        // that a reader or a JPIP server finds the bytes of a resolution and of an area without reading the others.
+        image.Save(path, new Jpeg2000Encoder
+        {
+            PrecinctSizes = [new Size(256, 256), new Size(128, 128)],
+            ProgressionOrder = Jpeg2000ProgressionOrder.Rpcl,
+            TilePartDivision = Jpeg2000TilePartDivision.Resolution,
+            WriteTilePartLengths = true,
+            WritePacketLengths = true,
+            TileWidth = 1024,
+            TileHeight = 1024,
         });
     }
     #endregion

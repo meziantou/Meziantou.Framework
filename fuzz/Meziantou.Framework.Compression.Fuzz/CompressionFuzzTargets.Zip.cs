@@ -8,6 +8,7 @@ namespace Meziantou.Framework.CompressionFuzz;
 public static partial class CompressionFuzzTargets
 {
     private const string ZipTestDataPrefix = "TestData/Zip/";
+    private const string ZipLegacyTestDataPrefix = "TestData/ZipLegacy/";
 
     // The content read from an entry is at most 1 MB: deflate expands its input up to 1032 times
     private const int MaxZipEntryOutput = 1 << 20;
@@ -237,12 +238,12 @@ public static partial class CompressionFuzzTargets
     private static IEnumerable<(string Name, byte[] Data)> GetZipTestFiles()
     {
         var assembly = typeof(CompressionFuzzTargets).Assembly;
-        foreach (var resourceName in assembly.GetManifestResourceNames().Where(name => name.StartsWith(ZipTestDataPrefix, StringComparison.Ordinal)).Order(StringComparer.Ordinal))
+        foreach (var resourceName in assembly.GetManifestResourceNames().Where(name => name.StartsWith(ZipTestDataPrefix, StringComparison.Ordinal) || name.StartsWith(ZipLegacyTestDataPrefix, StringComparison.Ordinal)).Order(StringComparer.Ordinal))
         {
             using var stream = FuzzResources.Open(assembly, resourceName);
             using var memory = new MemoryStream();
             stream.CopyTo(memory);
-            yield return ("zip-" + resourceName[ZipTestDataPrefix.Length..], memory.ToArray());
+            yield return ("zip-" + resourceName["TestData/".Length..].Replace('/', '-'), memory.ToArray());
         }
     }
 

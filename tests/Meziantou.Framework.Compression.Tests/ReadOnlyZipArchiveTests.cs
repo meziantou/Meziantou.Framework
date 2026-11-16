@@ -95,6 +95,48 @@ public sealed class ReadOnlyZipArchiveTests
         }
     }
 
+    [Theory]
+    [InlineData("SHRUNK.ZIP", ZipCompressionMethod.Shrink)]
+    [InlineData("imploding-4Kdict-2trees.zip", ZipCompressionMethod.Implode)]
+    [InlineData("imploding-8Kdict-3trees.zip", ZipCompressionMethod.Implode)]
+    [InlineData("deflate64-text.zip", ZipCompressionMethod.Deflate64)]
+    [InlineData("deflate64-far.zip", ZipCompressionMethod.Deflate64)]
+    public void LegacyMethods(string fileName, ZipCompressionMethod method)
+    {
+        // The streams check the length and the CRC-32 of each entry; the forward-only reader returns the same contents
+        var data = File.ReadAllBytes(ZipTestData.GetLegacyPath(fileName));
+        using var archive = new ReadOnlyZipArchive(new MemoryStream(data));
+        using var reader = ReadOnlyZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(data, 7), options: null, leaveOpen: false);
+        Assert.NotEmpty(archive.Entries);
+        foreach (var entry in archive.Entries)
+        {
+            Assert.True(reader.MoveToNextEntry());
+            Assert.Equal(entry.FullName, reader.Entry!.FullName);
+            if (entry.IsDirectory)
+                continue;
+
+            Assert.Equal(method, entry.CompressionMethod);
+            var content = ZipTestData.ReadAll(entry.Open());
+            Assert.Equal(entry.Length, content.Length);
+            Assert.Equal(content, ZipTestData.ReadAll(reader.OpenEntryStream()));
+        }
+
+        Assert.False(reader.MoveToNextEntry());
+    }
+
+    [Theory]
+    [InlineData("deflate64-text.zip")]
+    [InlineData("deflate64-far.zip")]
+    public void Deflate64_MatchesZipArchive(string fileName)
+    {
+        using var archive = new ReadOnlyZipArchive(File.OpenRead(ZipTestData.GetLegacyPath(fileName)));
+        using var expected = new ZipArchive(File.OpenRead(ZipTestData.GetLegacyPath(fileName)), ZipArchiveMode.Read);
+        foreach (var expectedEntry in expected.Entries)
+        {
+            Assert.Equal(ZipTestData.ReadAll(expectedEntry.Open()), ZipTestData.ReadAll(archive.GetEntry(expectedEntry.FullName)!.Open()));
+        }
+    }
+
     [Fact]
     public void ReadOnlyZipArchive_Read()
     {

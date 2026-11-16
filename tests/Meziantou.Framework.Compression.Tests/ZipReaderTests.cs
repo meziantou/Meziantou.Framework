@@ -203,6 +203,18 @@ public sealed class ZipReaderTests
     }
 
     [Fact]
+    public void StreamedDeflate_TruncatedData()
+    {
+        // The deflate decoder of a streamed entry does not find the end of its data
+        var data = ZipTestData.ReadBytes("descriptor-python.zip");
+        var start = 30 + "hello.txt".Length;
+        var truncated = data.AsSpan(0, start + 5).ToArray();
+        using var reader = ReadOnlyZipArchive.CreateForwardReader(new MemoryStream(truncated), options: null, leaveOpen: false);
+        Assert.True(reader.MoveToNextEntry());
+        Assert.Throws<InvalidDataException>(() => ZipTestData.ReadAll(reader.OpenEntryStream()));
+    }
+
+    [Fact]
     public void WrongPassword()
     {
         using var reader = ReadOnlyZipArchive.CreateForwardReader(ZipTestData.OpenRead("aes-bsdtar.zip"), new ArchiveReaderOptions { Password = "wrong" }, leaveOpen: false);

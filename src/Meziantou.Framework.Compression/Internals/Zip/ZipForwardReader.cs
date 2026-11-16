@@ -121,6 +121,11 @@ internal sealed class ZipForwardReader : ArchiveReader
         {
             mode = DataMode.Known;
         }
+        else if (info.Encryption is ZipEncryption.None && (ZipCompressionMethod)info.Method is ZipCompressionMethod.Deflate or ZipCompressionMethod.Deflate64)
+        {
+            // The decoder finds the end of the data
+            mode = DataMode.Decoder;
+        }
         else if (info.CompressedSize > 0 && (info.CompressedSize != uint.MaxValue || info.HasZip64Extra))
         {
             // Info-ZIP sets the flag, and writes the sizes, when it writes to a seekable file
@@ -159,6 +164,9 @@ internal sealed class ZipForwardReader : ArchiveReader
 
         /// <summary>The content ends at the first data descriptor that matches it.</summary>
         Scan,
+
+        /// <summary>The content ends where the deflate decoder ends.</summary>
+        Decoder,
     }
 
     private sealed class EntryState
@@ -169,6 +177,7 @@ internal sealed class ZipForwardReader : ArchiveReader
         private readonly int _generation;
         private readonly long _dataStart;
         private Stream? _raw;
+        private ZipDeflateEndStream? _decoder;
         private bool _opened;
         private bool _finished;
         private ZipDataDescriptor? _descriptor;
@@ -197,8 +206,11 @@ internal sealed class ZipForwardReader : ArchiveReader
 
             ZipEntryOpener.ThrowIfNotSupported(_info);
             _opened = true;
-            var raw = GetRawStream();
             var uncompressedSize = _info.HasDataDescriptor ? -1 : _info.UncompressedSize;
+            if (_mode is DataMode.Decoder)
+                return ZipEntryOpener.Open(_info, Stream.Null, uncompressedSize, _reader._options, OnEnd, () => IsCurrent, _ => GetDecoder());
+
+            var raw = GetRawStream();
             return ZipEntryOpener.Open(_info, new NonClosingStream(raw), uncompressedSize, _reader._options, OnEnd, () => IsCurrent);
         }
 
@@ -209,6 +221,11 @@ internal sealed class ZipForwardReader : ArchiveReader
                 return null;
 
             return (descriptor.UncompressedSize, _info.ExpectedCrc is null ? null : descriptor.Crc);
+        }
+
+        private ZipDeflateEndStream GetDecoder()
+        {
+            return _decoder ??= new ZipDeflateEndStream(_reader._input, (ZipCompressionMethod)_info.Method is ZipCompressionMethod.Deflate64);
         }
 
         private Stream GetRawStream()
@@ -227,7 +244,20 @@ internal sealed class ZipForwardReader : ArchiveReader
                 return;
 
             _finished = true;
-            var raw = GetRawStream();
+            if (_mode is DataMode.Decoder)
+            {
+                var decoder = GetDecoder();
+                try
+                {
+                    decoder.SkipToEnd();
+                }
+                finally
+                {
+                    decoder.Release();
+                }
+            }
+
+            var raw = _mode is DataMode.Decoder ? null : GetRawStream();
             switch (raw)
             {
                 case BoundedReadStream bounded:

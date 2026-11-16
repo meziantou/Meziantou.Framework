@@ -1,4 +1,6 @@
 using System.IO.Compression;
+using Meziantou.Framework.Compression.Internals.Deflate64;
+using Meziantou.Framework.Compression.Internals.ZipLegacy;
 
 namespace Meziantou.Framework.Compression.Internals.Zip;
 
@@ -31,7 +33,8 @@ internal static class ZipEntryOpener
     /// <summary>Gets a value indicating whether a compression method is supported.</summary>
     public static bool IsSupported(ushort method) => (ZipCompressionMethod)method switch
     {
-        ZipCompressionMethod.Stored or ZipCompressionMethod.Deflate => true,
+        ZipCompressionMethod.Stored or ZipCompressionMethod.Deflate or ZipCompressionMethod.Deflate64 or ZipCompressionMethod.BZip2 => true,
+        ZipCompressionMethod.Shrink or ZipCompressionMethod.Reduce1 or ZipCompressionMethod.Reduce2 or ZipCompressionMethod.Reduce3 or ZipCompressionMethod.Reduce4 or ZipCompressionMethod.Implode => true,
 #if NET11_0_OR_GREATER
         ZipCompressionMethod.Zstandard => true,
 #endif
@@ -87,6 +90,15 @@ internal static class ZipEntryOpener
 #pragma warning restore CA2000
     }
 
+    /// <summary>The legacy methods do not mark the end of their data: they need the length of the content.</summary>
+    private static long GetKnownLength(ZipEntryInfo info, long uncompressedSize)
+    {
+        if (uncompressedSize < 0)
+            throw new NotSupportedException($"The zip entry '{info.FullName}' is compressed with the method {info.Method}, which does not mark the end of its data, and its length is not known before its data descriptor: read it from a seekable stream.");
+
+        return uncompressedSize;
+    }
+
     private static string GetPassword(ZipEntryInfo info, ArchiveReaderOptions options)
     {
         return options.Password ?? throw new ArchivePasswordException($"The zip entry '{info.FullName}' is encrypted: set the password in the options.");
@@ -94,12 +106,16 @@ internal static class ZipEntryOpener
 
     private static Stream CreateDecoder(ZipEntryInfo info, Stream input, long uncompressedSize, ArchiveReaderOptions options)
     {
-        _ = uncompressedSize;
         _ = options;
         return (ZipCompressionMethod)info.Method switch
         {
             ZipCompressionMethod.Stored => input,
             ZipCompressionMethod.Deflate => new DeflateStream(input, CompressionMode.Decompress, leaveOpen: false),
+            ZipCompressionMethod.Deflate64 => new Deflate64DecoderStream(input, deflate64: true, leaveOpen: false),
+            ZipCompressionMethod.BZip2 => new BZip2Stream(input, CompressionMode.Decompress, leaveOpen: false),
+            ZipCompressionMethod.Shrink => new ZipShrinkDecoderStream(input, GetKnownLength(info, uncompressedSize), leaveOpen: false),
+            ZipCompressionMethod.Reduce1 or ZipCompressionMethod.Reduce2 or ZipCompressionMethod.Reduce3 or ZipCompressionMethod.Reduce4 => new ZipReduceDecoderStream(input, info.Method - 1, GetKnownLength(info, uncompressedSize), leaveOpen: false),
+            ZipCompressionMethod.Implode => new ZipImplodeDecoderStream(input, largeWindow: (info.Flags & 2) != 0, literalTree: (info.Flags & 4) != 0, GetKnownLength(info, uncompressedSize), leaveOpen: false),
 #if NET11_0_OR_GREATER
             ZipCompressionMethod.Zstandard => new ZstandardStream(input, CompressionMode.Decompress, leaveOpen: false),
 #endif

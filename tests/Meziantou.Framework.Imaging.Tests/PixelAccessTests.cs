@@ -98,8 +98,6 @@ public sealed class PixelAccessTests
         Assert.Equal(0, tracking.LiveBytes);
     }
 
-    #region ICustomPixel_Bgr555
-    /// <summary>A pixel of 5-bit blue, green and red components packed in 16 bits (blue in the low bits), stored as <see cref="Rgb24"/>.</summary>
     [Fact]
     public void CustomPixelCopiesConvertCmykThroughTheEmbeddedProfileLikeCloneAs()
     {
@@ -116,6 +114,8 @@ public sealed class PixelAccessTests
         Assert.Equal(expected, actual);
     }
 
+    #region ICustomPixel_Bgr555
+    /// <summary>A pixel of 5-bit blue, green and red components packed in 16 bits (blue in the low bits), stored as <see cref="Rgb24"/>.</summary>
     private readonly record struct Bgr555(ushort Packed) : ICustomPixel<Bgr555>
     {
         public static PixelFormat StorageFormat => PixelFormat.Rgb24;

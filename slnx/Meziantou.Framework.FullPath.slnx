@@ -8,6 +8,7 @@
     <Project Path="../fuzz/Meziantou.Framework.BloomFilters.Fuzz/Meziantou.Framework.BloomFilters.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Charts.Fuzz/Meziantou.Framework.Charts.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.CodeOwners.Fuzz/Meziantou.Framework.CodeOwners.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Compression.Fuzz/Meziantou.Framework.Compression.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Csv.Fuzz/Meziantou.Framework.Csv.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.DependencyScanning.Fuzz/Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Diagrams.Fuzz/Meziantou.Framework.Diagrams.Fuzz.csproj" />
@@ -63,6 +64,7 @@
     <Project Path="../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
     <Project Path="../src/Meziantou.Framework.CodeOwners/Meziantou.Framework.CodeOwners.csproj" />
     <Project Path="../src/Meziantou.Framework.CommandLine/Meziantou.Framework.CommandLine.csproj" />
+    <Project Path="../src/Meziantou.Framework.Compression/Meziantou.Framework.Compression.csproj" />
     <Project Path="../src/Meziantou.Framework.Csv/Meziantou.Framework.Csv.csproj" />
     <Project Path="../src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
     <Project Path="../src/Meziantou.Framework.Diagrams/Meziantou.Framework.Diagrams.csproj" />

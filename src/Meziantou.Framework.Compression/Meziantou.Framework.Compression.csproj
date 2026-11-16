@@ -1,0 +1,32 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Compression</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Reads and writes 7z archives, reads RAR (RAR5 and RAR 2.9/4.x) and zip archives (BZip2, LZMA, PPMd, XZ, Zstandard, Deflate64, WinZip AES, ZipCrypto, multi-volume), and provides XZ, LZMA, LZMA2, LZip, BZip2 and Unix compress (.Z) streams, with an API similar to ZipArchive and ZipFile, and a reader that detects the format of an archive, including from non-seekable streams.</Description>
+    <PackageTags>compression;archive;7z;7zip;rar;zip;xz;lzma;lzma2;lzip;bzip2;ppmd;tar</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_COMPRESSION</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The fuzz targets call the codecs directly -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Compression.Fuzz" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Compression.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- CRC-32 and CRC-64/XZ (Crc64ParameterSet) -->
+    <PackageReference Include="System.IO.Hashing" Version="11.0.0" />
+  </ItemGroup>
+
+  <!-- The Zstandard decoder of Meziantou.Framework.Imaging, for the targets older than .NET 11 (which has ZstandardStream): the files are compiled here too, in the namespace of the library, so that they stay internal to both -->
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="../Meziantou.Framework.Imaging/Internals/Compression/ZstdDecoder.cs" Link="Internals/Shared/ZstdDecoder.cs" />
+    <Compile Include="../Meziantou.Framework.Imaging/Internals/Compression/XxHash64.cs" Link="Internals/Shared/XxHash64.cs" />
+  </ItemGroup>
+
+</Project>

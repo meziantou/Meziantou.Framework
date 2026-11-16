@@ -1,0 +1,32 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    External-tool interoperability tests: the archives and the streams that Meziantou.Framework.Compression writes are tested
+    and extracted by 7-Zip (7zz), and the ones 7-Zip writes are read by the library; the RAR test data of the unit tests are
+    extracted by unrar and by the library. The tools are downloaded from the meziantou/prebuilt release pinned by the
+    Meziantou.Prebuilt package: a download failure or a version mismatch fails the tests.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Compression.InteropTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Compression/Meziantou.Framework.Compression.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Meziantou.Prebuilt" Version="3.16.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The RAR archives of the unit tests, with their origin and license in README.md -->
+    <None Include="../Meziantou.Framework.Compression.Tests/TestData/Rar/*.rar" LinkBase="TestData/Rar" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The process runner of the Imaging harness: no shell, retries a start that fails with "Text file busy", posix_spawn on macOS before .NET 11 -->
+    <Compile Include="..\Meziantou.Framework.Imaging.TestHarness\ExternalTools\ProcessRunner.cs" Link="ExternalTools\Shared\ProcessRunner.cs" />
+    <Compile Include="..\Meziantou.Framework.Imaging.TestHarness\ExternalTools\ProcessResult.cs" Link="ExternalTools\Shared\ProcessResult.cs" />
+    <Compile Include="..\Meziantou.Framework.Imaging.TestHarness\ExternalTools\PosixSpawnProcess.cs" Link="ExternalTools\Shared\PosixSpawnProcess.cs" />
+  </ItemGroup>
+</Project>

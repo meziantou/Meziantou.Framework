@@ -127,7 +127,7 @@ Some formats need to know the number of frames in advance ([ExpectedFrameCount](
 | PNG and APNG | Required | Any |
 | AVIF, HEIC | Required | Seekable for an animation |
 | GIF | Optional | Any |
-| WebP | Optional | Seekable for an animation |
+| WebP | Optional | Any (a non-seekable stream receives an animation at completion, kept in memory until then) |
 | JPEG XL | Optional | Any |
 | ANI | Optional | Seekable |
 | TIFF | Optional, one frame | Seekable |

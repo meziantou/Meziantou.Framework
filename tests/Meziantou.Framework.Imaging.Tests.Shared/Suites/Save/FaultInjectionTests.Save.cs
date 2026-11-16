@@ -80,11 +80,12 @@ public sealed partial class FaultInjectionTests
 
                 audit.FailureInjector = null;
 
-                // Output failures at many positions of a non-seekable stream (a seekable stream for WebP animations, which
-                // patch their RIFF size, for AVIF and HEIC image sequences, which write their moov box last, and for compressed
-                // OpenEXR files, which patch the offsets of their chunks, and for DNG files, which patch the offset of their image
-                // file directory: they reject non-seekable output before writing anything)
-                var patched = (encoder is WebPEncoder && (image.Frames.Count > 1 || image.IsAnimated)) || (encoder is AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None } or DngEncoder;
+                // Output failures at many positions of a non-seekable stream (a seekable stream for AVIF and HEIC image sequences,
+                // which write their moov box last, for compressed OpenEXR files, which patch the offsets of their chunks, and for
+                // DNG files, which patch the offset of their image file directory: they reject non-seekable output before writing
+                // anything). WebP animations, which patch their RIFF size, keep their whole output in memory for a non-seekable
+                // stream and write it at completion: the failures happen there
+                var patched = (encoder is AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None } or DngEncoder;
                 if (patched)
                 {
                     await using var rejected = new TestOutputStream();

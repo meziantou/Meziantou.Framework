@@ -34,7 +34,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 | JPEG | JPEG-LS mapping tables (palettes) are not read. Writing stores one frame, and CMYK only as 8-bit Huffman-coded baseline. |
 | GIF | At most 256 colors per frame and one fully transparent color; plain-text extensions are rejected. |
 | PNG / APNG | Sub-byte grayscale requires [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) or [PngOptimization.Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) (still images), and APNG delta rectangles [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.OptimizeFrames) or MinimumSize; palettes are selected by [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize), [Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) or [PngPixelLayout.Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed). Sequential writers fix their layout and palette from the first image. |
-| WebP | 8-bit RGB(A) only; lossy output is 4:2:0; animations need a seekable destination. |
+| WebP | 8-bit RGB(A) only and lossy output in 4:2:0, both properties of the format ([what the format allows](10-Formats/05-WebP.md#what-the-format-cannot-store)); an animation written to a non-seekable stream is kept in memory until completion. |
 | QOI | 8-bit RGB(A) only, one still image, no metadata. |
 | BMP | No embedded JPEG/PNG payloads, no linked ICC profile; one still image is written. |
 | TGA | No premultiplied alpha; true-color and grayscale output only, no metadata. |

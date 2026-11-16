@@ -291,7 +291,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     the canvases, which hold alpha-reduced pixels before color reduction), so that its region can grow to cover the
     pixels that become transparent (`EnlargePreviousRegion`). APNG keeps the compressed chunks of a frame in a private
     buffer and writes its `fcTL` when the next frame chose its disposal; WebP patches the disposal bit of the previous
-    `ANMF` (animations need a seekable destination anyway).
+    `ANMF` (a patch of the output, like the RIFF size: applied to a seekable destination, or to the whole output that the
+    writer keeps in memory for a non-seekable stream).
   - Apple ImageIO restores a GIF frame to background with the opaque background color, not transparent pixels, when the
     image drawn next has no transparent entry: a frame that has transparent pixels always gets the transparent entry
     (`GifOutputVerifier` checks it), even when its region has none.

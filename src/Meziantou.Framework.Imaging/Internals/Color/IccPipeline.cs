@@ -42,6 +42,9 @@ internal sealed class IccPipeline
     private long _outputCurveColors;
     private QuantizationThresholds[]? _byteOutputTables;
 
+    // The scope that the decoded entries of the lookup tables are charged to, or null when they are read in place
+    private AllocationScope? _lookupTableScope;
+
     private IccPipeline(IccStage[] stages, int sourceChannelCount, int destinationChannelCount, bool isIdentity)
     {
         _stages = stages;
@@ -92,6 +95,23 @@ internal sealed class IccPipeline
         }
     }
 
+    /// <summary>Initializes a copy of a pipeline with other stages: the lookup tables of an owner (<see cref="BindLookupTables"/>).</summary>
+    private IccPipeline(IccPipeline other, IccStage[] stages, AllocationScope scope)
+    {
+        _stages = stages;
+        SourceChannelCount = other.SourceChannelCount;
+        DestinationChannelCount = other.DestinationChannelCount;
+        IsIdentity = other.IsIdentity;
+        HasLookupTable = other.HasLookupTable;
+        ByteInputTables = other.ByteInputTables;
+        _inputCurves = other._inputCurves;
+        _inputDecode = other._inputDecode;
+        _outputCurves = other._outputCurves;
+        _outputCurveColors = Interlocked.Read(ref other._outputCurveColors);
+        _byteOutputTables = Volatile.Read(ref other._byteOutputTables);
+        _lookupTableScope = scope;
+    }
+
     /// <summary>
     /// Gets, when the first stage is one curve per source channel, the value of that stage for each 8-bit sample of each
     /// channel; <see langword="null"/> otherwise. See <see cref="ApplyAfterInputCurves"/>.
@@ -103,6 +123,55 @@ internal sealed class IccPipeline
     /// than a matrix-based one, so remembering the colors already converted pays (<see cref="ColorConversionKernels"/>).
     /// </summary>
     public bool HasLookupTable { get; }
+
+    /// <summary>
+    /// Gets the conversion of one owner, whose lookup tables decode their entries once enough colors use them
+    /// (<see cref="IccClutStage.Reserve"/>), charged to <paramref name="scope"/>: the owner converts with the returned
+    /// pipeline and calls its <see cref="ReleaseLookupTables"/> once it is done. A pipeline may be shared (the transform of
+    /// an assumed CMYK profile), so the returned one has lookup tables of its own; a pipeline that is not bound reads the
+    /// entries in place.
+    /// </summary>
+    /// <param name="scope">The scope of the owner of the conversion.</param>
+    /// <returns>The pipeline of the owner: this one when it has no lookup table.</returns>
+    public IccPipeline BindLookupTables(AllocationScope scope)
+    {
+        if (!HasLookupTable)
+            return this;
+
+        var stages = Array.ConvertAll(_stages, stage => stage is IccClutStage table ? table.CloneWithoutEntries() : stage);
+        return new IccPipeline(this, stages, scope);
+    }
+
+    /// <summary>Releases the decoded entries of the lookup tables and their charges, after the last conversion of the owner of a pipeline returned by <see cref="BindLookupTables"/>.</summary>
+    public void ReleaseLookupTables()
+    {
+        if (Interlocked.Exchange(ref _lookupTableScope, null) is null)
+            return;
+
+        foreach (var stage in _stages)
+        {
+            if (stage is IccClutStage table)
+            {
+                table.Release();
+            }
+        }
+    }
+
+    /// <summary>Counts colors that are about to be converted, for the lookup tables that decode their entries once enough colors use them (<see cref="IccClutStage.Reserve"/>), when the pipeline is bound to a scope.</summary>
+    /// <param name="colors">The number of colors.</param>
+    public void ReserveLookupTables(int colors)
+    {
+        if (Volatile.Read(ref _lookupTableScope) is not { } scope)
+            return;
+
+        foreach (var stage in _stages)
+        {
+            if (stage is IccClutStage table)
+            {
+                table.Reserve(colors, scope);
+            }
+        }
+    }
 
     /// <summary>Gets the inverse tone curves of the last stage that <see cref="GetByteOutputTables"/> replaces, one per destination channel; <see langword="null"/> when it does not.</summary>
     internal IccInverseCurve[]? OutputCurves => _outputCurves;

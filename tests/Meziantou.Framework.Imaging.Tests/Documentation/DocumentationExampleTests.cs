@@ -1437,6 +1437,61 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveWebPWithOptionsWritesSharpLossyDitheredAndNonSeekableOutputs()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var chart = GetPath("chart.png");
+        using (var source = new Image<Rgba32>(32, 16, new Rgba32(0, 0, 255)))
+        {
+            source.Frames[0][10, 8] = new Rgba32(255, 0, 0);
+            source.Save(chart);
+        }
+
+        var gradientPath = GetPath("gradient.png");
+        using (var gradient = new Image<Rgba64>(64, 8))
+        {
+            for (var x = 0; x < 64; x++)
+            {
+                for (var y = 0; y < 8; y++)
+                {
+                    gradient.Frames[0][x, y] = new Rgba64((ushort)(30000 + (x * 3)), 30000, 30000, 65535);
+                }
+            }
+
+            gradient.Save(gradientPath);
+        }
+
+        var chartWebP = GetPath("chart.webp");
+        var gradientWebP = GetPath("gradient.webp");
+        using var response = new NonSeekableMemoryStream();
+        Examples.SaveWebPWithOptions(chart, chartWebP, gradientPath, gradientWebP, apngPath, response);
+
+        using (var image = Image.Load<Rgb24>(chartWebP))
+        {
+            Assert.InRange(image.Frames[0][2, 2].B, 230, 255); // lossy, close to the blue background
+        }
+
+        using (var image = Image.Load<Rgb24>(gradientWebP))
+        {
+            // Lossless: each sample within one 8-bit step of its 16-bit value
+            for (var x = 0; x < 64; x++)
+            {
+                Assert.InRange((image.Frames[0][x, 4].R * 257) - (30000 + (x * 3)), -257, 257);
+            }
+        }
+
+        // The animation reached the non-seekable stream at completion
+        using var animation = Image.Load<Rgba32>(response.ToArray());
+        Assert.Equal(2, animation.Frames.Count);
+    }
+
+    /// <summary>A memory stream that reports it cannot seek, like an HTTP response.</summary>
+    private sealed class NonSeekableMemoryStream : MemoryStream
+    {
+        public override bool CanSeek => false;
+    }
+
+    [Fact]
     public void SaveAvifWritesALossyPhotoALosslessImageAndAnImageSequence()
     {
         var (apngPath, _) = BuildAnimation();
@@ -1498,6 +1553,39 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(255, pixel.R);
         Assert.InRange(pixel.G, 120, 135);
         Assert.True(toneMapped.Frames[0][0, 0].B < 255);
+    }
+
+    [Fact]
+    public void SaveOpenExrTextureAndPreviewWritesATiledMipmapAndALossyFile()
+    {
+        var texturePath = GetPath("texture.exr");
+        var reviewPath = GetPath("review.exr");
+        using (var hdr = new Image<RgbaHalf>(80, 40, new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)2f)))
+        {
+            hdr.Frames[0][3, 2] = new RgbaHalf((Half)12f, (Half)6f, (Half)3f);
+            Examples.SaveOpenExrTextureAndPreview(hdr, texturePath, reviewPath);
+        }
+
+        // The tiled file keeps every sample; its header declares 64x64 tiles with mipmap levels
+        var texture = File.ReadAllBytes(texturePath);
+        Assert.Equal(0x02, texture[5] & 0x02);
+        Assert.True(texture.AsSpan().IndexOf("tiledesc\0"u8) > 0);
+        using (var decoded = Image.Load<RgbaHalf>(texture))
+        {
+            Assert.Equal(new RgbaHalf((Half)12f, (Half)6f, (Half)3f), decoded.Frames[0][3, 2]);
+            Assert.Equal(new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)2f), decoded.Frames[0][70, 30]);
+        }
+
+        // The review file declares DWAB (compression 9) and is close to the source away from the highlight
+        var review = File.ReadAllBytes(reviewPath);
+        var compression = review.AsSpan().IndexOf("compression\0compression\0"u8);
+        Assert.Equal(9, review[compression + 28]);
+        using (var decoded = Image.Load<RgbaFloat>(review))
+        {
+            Assert.Equal((80, 40), (decoded.Width, decoded.Height));
+            Assert.InRange(decoded.Frames[0][70, 30].B, 1.9f, 2.1f);
+            Assert.InRange(decoded.Frames[0][70, 30].R, 0.24f, 0.26f);
+        }
     }
 
     [Fact]
@@ -1591,9 +1679,44 @@ public sealed class DocumentationExampleTests : IDisposable
             Assert.Equal(pixels, decodedPixels);
         }
 
+        // Two layers: the first one alone decodes too
         Assert.InRange(new FileInfo(codestream).Length, 90_000, 100_000);
         using var lossy = Image.Load(codestream);
         Assert.Equal((640, 480), (lossy.Width, lossy.Height));
+        using var firstLayer = Image.Load(codestream, new ImageDecodeOptions { Configuration = new ImageConfiguration { Jpeg2000Decoding = new Jpeg2000DecodingOptions { QualityLayerLimit = 1 } } });
+        Assert.Equal((640, 480), (firstLayer.Width, firstLayer.Height));
+    }
+
+    [Fact]
+    public void SaveJpeg2000ForStreamingWritesPrecinctsTilePartsAndLengthMarkers()
+    {
+        var input = GetPath("pattern-streaming.png");
+        var pixels = new Rgb24[1200 * 700];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var (x, y) = (i % 1200, i / 1200);
+            pixels[i] = new Rgb24((byte)(x / 5), (byte)((x * y) >> 11), (byte)((x ^ y) & 0xFF));
+        }
+
+        using (var source = Image.ImportPixelData<Rgb24>(pixels, 1200, 700))
+        {
+            source.Save(input);
+        }
+
+        var path = GetPath("streaming.jp2");
+        Examples.SaveJpeg2000ForStreaming(input, path);
+
+        // Two tiles of six resolution levels: a tile-part per level; the file is lossless
+        var data = File.ReadAllBytes(path);
+        var structure = Meziantou.Framework.Imaging.TestHarness.Jpeg2000.ReferenceJpeg2000.Parse(data);
+        Assert.Equal(2, structure.TileCount);
+        Assert.Equal(12, structure.TileParts.Count);
+        Assert.True(structure.HasTilePartLengths && structure.HasPacketLengths);
+        Assert.All(structure.CodingStyles, style => Assert.True(style.HasPrecincts));
+        using var decoded = Image.Load<Rgb24>(path);
+        var decodedPixels = new Rgb24[pixels.Length];
+        decoded.Frames[0].CopyPixelDataTo(decodedPixels);
+        Assert.Equal(pixels, decodedPixels);
     }
 
     [Fact]
@@ -4526,6 +4649,34 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void LayOutWithType1FontAddsTheKerningOfTheAfmFile()
+    {
+        var pfbPath = GetPath("type1.pfb");
+        var afmPath = GetPath("type1.afm");
+        File.WriteAllBytes(pfbPath, CorpusGenerator.Common.FontType1Writer.Sample().WritePfb());
+        File.WriteAllText(afmPath, "StartFontMetrics 4.1\nStartKernData\nStartKernPairs 1\nKPX A O -50\nEndKernPairs\nEndKernData\nEndFontMetrics\n");
+
+        // A is 600 units wide and O 700, less 50 for the kerning pair, at 24 pixels per 1000 units
+        var layout = Examples.LayOutWithType1Font(pfbPath, afmPath, "AO");
+        Assert.Equal(1250 * 24 / 1000.0, layout.Width, 1e-9);
+    }
+
+    [Fact]
+    public void LayOutEvenlyFillsTheLinesOfAParagraphEvenly()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        const string Text = "The breaks of a paragraph are chosen together, so that its lines are evenly filled: a line can end before the text that would still fit.";
+        var layout = TextExamples.LayOutEvenly(fontPath, Text, 160);
+        var greedy = TextLayout.Create(Text, new TextStyle(Font.Load(fontPath), 16), new TextLayoutOptions { MaxWidth = 160 });
+
+        // Every line fits, and the room left at the end of the lines but the last one is not more than with greedy breaking
+        Assert.All(layout.Lines, line => Assert.True(line.Width <= 160));
+        Assert.True(GetRoom(layout) <= GetRoom(greedy) + 1e-9);
+
+        static double GetRoom(TextLayout layout) => layout.Lines.Take(layout.LineCount - 1).Sum(line => (160 - line.Width) * (160 - line.Width));
+    }
+
+    [Fact]
     public void DrawSyntheticStylesThickensAndSlantsTheRegularFont()
     {
         var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
@@ -4829,6 +4980,47 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.True(chunk.IsPrivate);
         Assert.Equal(PngChunkPosition.BeforeImageData, chunk.Position);
         Assert.Equal("settings"u8.ToArray(), chunk.Data.ToArray());
+    }
+
+    [Fact]
+    public void SaveJpegXlLayersWritesAndReadsTheLayers()
+    {
+        var photoPath = GetPath("layers-photo.png");
+        var logoPath = GetPath("layers-logo.png");
+        using (var photo = new Image<Rgba32>(64, 48, new Rgba32(10, 20, 30, 255)))
+        using (var logo = new Image<Rgba32>(16, 12, new Rgba32(200, 0, 0, 128)))
+        {
+            photo.Save(photoPath);
+            logo.Save(logoPath);
+        }
+
+        var layeredPath = GetPath("layers.jxl");
+        Assert.Equal("Photo 64x48 at 0,0 (Replace), Logo 16x12 at 40,8 (Blend)", FormatExamples.SaveJpegXlLayers(photoPath, logoPath, layeredPath));
+
+        // The image the layers make: the logo over the photo, half transparent
+        using var image = Image.Load<Rgba32>(layeredPath);
+        Assert.Equal((64, 48, 1), (image.Width, image.Height, image.Frames.Count));
+        Assert.Equal(new Rgba32(10, 20, 30, 255), image.Frames[0][10, 10]);
+        var blended = image.Frames[0][45, 12];
+        Assert.Equal(255, blended.A);
+        Assert.InRange(blended.R, 104, 106);
+    }
+
+    [Fact]
+    public void SaveOptimizedJpegXlAnimationKeepsTheFrames()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var jxlPath = GetPath("optimized.jxl");
+        Assert.True(FormatExamples.SaveOptimizedJpegXlAnimation(apngPath, jxlPath) > 0);
+
+        using var expected = Image.Load<Rgba32>(apngPath);
+        using var animation = Image.Load<Rgba32>(jxlPath);
+        Assert.Equal(expected.Frames.Count, animation.Frames.Count);
+        for (var i = 0; i < expected.Frames.Count; i++)
+        {
+            Assert.Equal(expected.Frames[i][63, 63], animation.Frames[i][63, 63]);
+            Assert.Equal(expected.Frames[i][0, 0], animation.Frames[i][0, 0]);
+        }
     }
 
     [Fact]

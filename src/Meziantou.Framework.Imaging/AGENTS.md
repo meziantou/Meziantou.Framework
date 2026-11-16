@@ -3,7 +3,7 @@
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
 progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
-vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
+vector drawing, font files (TrueType, OpenType, WOFF, WOFF2, PostScript Type 1), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
@@ -266,7 +266,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     the canvases, which hold alpha-reduced pixels before color reduction), so that its region can grow to cover the
     pixels that become transparent (`EnlargePreviousRegion`). APNG keeps the compressed chunks of a frame in a private
     buffer and writes its `fcTL` when the next frame chose its disposal; WebP patches the disposal bit of the previous
-    `ANMF` (animations need a seekable destination anyway).
+    `ANMF` (a patch of the output, like the RIFF size: applied to a seekable destination, or to the whole output that the
+    writer keeps in memory for a non-seekable stream).
   - Apple ImageIO restores a GIF frame to background with the opaque background color, not transparent pixels, when the
     image drawn next has no transparent entry: a frame that has transparent pixels always gets the transparent entry
     (`GifOutputVerifier` checks it), even when its region has none.
@@ -486,6 +487,27 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   distribution is longer than a small group. The effort only selects what is searched; `jxl-quality` shows the sizes
   per effort. A change of the encoder is checked by the interop tests (djxl and jxl-oxide must read the file like the
   decoder of the library does).
+- **JPEG XL layers and optimized frames** (`JpegXlLayeredImage`, `JpegXlLayeredIO`, `JpegXlFrameLayout`,
+  `JpegXlEncoder.OptimizeFrames`). A frame is compressed from a rectangle of its source (a layer: the whole image of the
+  layer; an optimized frame: the bounding box of the bytes that differ from the previous frame, copied to an image of
+  its own for VarDCT) and written with its layout: crop, one blend mode for the colors and the alpha channel (alpha
+  weights from extra channel 0, no clamping), source slot, `save_as_reference` and name. `JpegXlHeaderWriter` writes
+  the fields the reader of the decoder reads, under the same conditions (`source` only when the mode is not replace or
+  the frame does not cover the image, `save_before_ct` only for a frame that can be referenced and replaces the whole
+  image). Layers: every layer but the last is saved to slot 0 once blended and every layer is blended with slot 0;
+  optimized animations save each frame to slot 1 and blend the next one over it with replace, which is exact for every
+  pixel format. The layers of a file are read by `JpegXlDecoder` in layer mode: the renderer hands over each regular
+  frame after its color transform, before blending (`layerCapture`), and the decoder checks that the chain of slots is
+  the one of a list of layers (`ValidateLayer`); anything else is `UnsupportedImageFeatureException`, never a guess.
+  `JpegXlLayeredIO.PrepareLayers` checks everything before any output (one frame and no poster per layer, one pixel
+  format, the colors, the frame metadata policy, the conversion of every layer); a layer the encoder does not store as
+  it is is converted while it is encoded, in the scope of the save, one copy at a time. A loaded layer is charged as a
+  frame of its own size before it is decoded, and its sink does not charge it again.
+  djxl and jxl-oxide compose the layers exactly like the library for 8-bit samples; for 16-bit samples the three
+  decoders blend in single precision in their own order and differ by about 0.01 of a unit before rounding, so the
+  interop test accepts either rounding of a sample within 0.01 of a half. A 16-bit output sample is rounded from the
+  double product (`JpegXlDecoder.ToInteger`): the single-precision product, which keeps 1/512 of a unit, rounded 11 of
+  12 such samples the other way than both references.
   A lossy image labeled with an sRGB ICC profile keeps the profile, byte for byte, where cjxl replaces it with the
   enumerated sRGB encoding. The reference decoders read such a file differently from an enumerated one, and comparing
   their raw output with the library is wrong on both sides
@@ -796,9 +818,17 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     marker segment in the first tile-part), an HT cleanup magnitude may use every bit-plane (FFmpeg refuses it), a
     codestream of three components whose last two are sub-sampled alike is sYCC (both decoders read it so). The
     fixtures record each disagreement with its reason.
-  - The encoder (`Jpeg2000EncoderCodec`) codes tiles one at a time (one tile-part each, no precincts) and writes the
-    packets in any of the five progression orders (`Jpeg2000PacketPosition` orders the position progressions for the
-    decoder and the encoder alike); a lossy output codes the opacity reversibly through COC and QCC marker segments. Its
+  - The encoder (`Jpeg2000EncoderCodec`) codes tiles one at a time and writes the packets in any of the five
+    progression orders (`RentPacketOrder`; `Jpeg2000PacketPosition` orders the position progressions for the decoder and
+    the encoder alike); a lossy output codes the opacity reversibly through COC and QCC marker segments. Precincts
+    (`PrecinctSizes`, given from the highest level down) only change the COD and COC marker segments: the partition of
+    the tile, shared with the decoder (`Jpeg2000TileGeometry`), cuts the code-blocks to them (B-17, B-18) and gives each
+    precinct its packets. A tile-part starts at each packet whose divided dimension changes (`StartsTilePart`); the
+    number of tile-parts of every tile is counted in the constructor, so that more than 255 is an `ArgumentException`
+    before anything is written, and so that the TLM marker segments, written with the head, have their size. A PLT
+    piece is kept between the SOT and SOD markers of each tile-part and filled once its packets are written. The rate
+    control counts the tile-part headers and a bound of the PLT segments (`LayerBudget`). FFmpeg 9.0.2 reads at most 32
+    tile-parts per tile ("error during processing marker segment ff90"), fewer than the 255 T.800 allows. Its
     quantization steps come from the gains of the synthesis kernel of the library, measured, not from published tables
     (the 9-7 and 5-3 norms are measured up to 10 levels and extrapolated above).
   - Quality layers and targets (J.14, `AllocateLayers`): the block coder records, for each pass, the exact length of
@@ -811,22 +841,30 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     passes are not recorded and the output is byte-identical to the single-layer encoder; a target every pass fits in
     keeps every pass. At equal size the PSNR is the one of `opj_compress -r` within 0.05 dB on photographs.
   - The HTJ2K encoder (`Jpeg2000HtBlockEncoder`, `BlockCoder = HighThroughput`) is the reverse of the HT block decoder:
-    one HT cleanup pass per code-block (no refinement pass), written stream by stream with the bit-stuffing each reading
-    procedure of T.814 clause 7 expects, and the codeword of each quad chosen among the rows of Annex C that its
-    exponent bound allows (the shortest codeword plus MagSgn bits). It codes the quantization indices of the standard
-    coder, so a lossy HT output decodes to the samples of the standard output. P_blk is `Mb - 1 - p` for a pass that
-    ends at the bit-plane p (T.814, 7.6), and `Assemble` keeps one bit-plane above the largest magnitude, because FFmpeg
-    refuses an exponent bound that uses every bit-plane. The output has one layer; a target is reached by coding one HT
-    cleanup segment per candidate lowest bit-plane and giving them to the same hull and bisection as the coding passes
-    (`GetPassTotal`, `GetHighThroughputSegment`; the zero bit-plane tag tree is rebuilt in `WritePacket` for the chosen
-    planes). `EachHtCleanupSegmentOfTheEncoderDecodesToItsBitPlanes` checks every candidate against the decoder, and
-    `HighThroughputOutputIsReadAlikeByOpenJpegOpenJphAndFFmpeg` against the three reference decoders. FFmpeg's probe
-    takes a JPH file for an ISO base media file: the harness names its `j2k_pipe` demuxer for `.jph` and `.jhc`.
-    HT SigProp and HT MagRef candidates for the rate control (three per bit-plane, as the standard passes) were tried on
-    2026-10-31 and left out: at 0.25 to 4 bits per pixel they gained 0.0 to 0.25 dB of PSNR (HT still 0.3 to 0.65 dB below
-    the standard coder, its byte overhead), but coding with a target became 1.6 to 1.9 times slower (0.65 times the
-    speed of the standard coder) and decoding those files 1.7 times slower: the standard coder then beats it on speed
-    and quality, while the cleanup-only candidates keep HT 1.1 to 1.3 times faster to code and 1.5 to 4.9 times to decode.
+    the HT cleanup pass written stream by stream with the bit-stuffing each reading procedure of T.814 clause 7
+    expects, and the codeword of each quad chosen among the rows of Annex C that its exponent bound allows (the shortest
+    codeword plus MagSgn bits); the HT SigProp and HT MagRef passes (`EncodeRefinement`, the scans of 7.4 and 7.5 with
+    the contexts that are not vertically causal) in one HT refinement segment, the SigProp bytes first, so that the
+    segment of the SigProp pass alone is its start. It codes the quantization indices of the standard coder, so a lossy
+    HT output decodes to the samples of the standard output. P_blk is `Mb - 1 - p` for a cleanup pass that ends at the
+    bit-plane p (T.814, 7.6), and `Assemble` keeps one bit-plane above the largest magnitude, because FFmpeg refuses an
+    exponent bound that uses every bit-plane. Without a target, a code-block is one cleanup pass down to the bit-plane 0
+    (the default output did not change). With a target, every HT set is coded, numbered as the passes of the standard
+    coder (`3 * set + 1` for the cleanup pass of a set, plus its refinement passes: `GetPassTotal`,
+    `GetHighThroughputSegments`), and `ComputeHighThroughputHull` orders the points by length, since they are not
+    truncations of each other. No placeholder pass is written (the zero bit-plane tag tree gives the bit-plane of the
+    cleanup pass), and a code-block is in one layer with its whole HT set: OpenJPEG refuses placeholder passes and HT
+    refinement passes in a later packet than their cleanup pass. With several layers, `AllocateLayers` first chooses the
+    HT set of every code-block for the target of the last layer (less a byte per packet of the other layers), then the
+    layers share out the code-blocks at the slopes of their sets (`_highThroughputSets`; the zero bit-plane tag trees
+    then hold the sets, so that every layer gives them alike). `EachHtSetOfTheEncoderDecodesToItsBitPlanes` checks every
+    candidate against the decoder, `HighThroughputOutputIsReadAlikeByOpenJpegOpenJphAndFFmpeg` and
+    `HighThroughputRefinementPassesPrecinctsAndLayersAreReadAlikeByTheReferenceDecoders` against the three reference
+    decoders (OpenJPH 0.32.0 reads one layer only). FFmpeg's probe takes a JPH file for an ISO base media file: the
+    harness names its `j2k_pipe` demuxer for `.jph` and `.jhc`. The refinement candidates were measured on 2026-11-15
+    (crops of a photograph and 1/f noise images, 0.25 to 4 bits per pixel): they gain 0.0 to 0.4 dB of PSNR over the
+    cleanup candidates alone (HT then 0.1 to 0.4 dB below the standard coder); the timings of that machine were too
+    noisy to measure their cost, which an earlier attempt measured at 1.6 to 1.9 times the coding time with a target.
   - The lossy quality is calibrated on `JpegEncoder` (`Jpeg2000QuantizationDesign`): the base step of the luminance is
     `0.47 * s^(3/4)` levels, `s` being the scale of the JPEG quality, and the two chrominances have twice that step (a
     QCC marker segment each). The constants were fitted on photographs of several sizes, so that a quality has the SSIM
@@ -931,8 +969,17 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   into a staging image and converts it at the end (`Image.PrepareConversion`: a tone mapping needs the peak of the whole
   image). The compressions cite the sections of `ExrCompression.md`; they are bit-exact with OpenEXR, PXR24 and B44
   included (their loss happens when the file is written). The B44 table of pLinear channels is computed from
-  `Math.Log` in single precision and pinned by a hash (`ExrCompressionTests`). The encoder writes scan lines, and patches
-  the offset table once the chunks are written (seekable destination) unless the chunks are not compressed.
+  `Math.Log` in single precision and pinned by a hash (`ExrCompressionTests`). The encoder writes scan lines or tiles, and
+  patches the offset table once the chunks are written (seekable destination) unless the chunks are not compressed. Its
+  chunks are numbered in file order (`ExrEncoderCodec.GetChunk`: levels in table order, rows of chunks from the top, or
+  from the bottom for `DECREASING_Y`; a scan-line image is one level of one column), and the offset table is always in
+  table order. The levels below the full resolution are generated before their first chunk (`PrepareLevel`, an area
+  average of the samples the file stores for the previous level, in double precision, rounded to the sample type) into four buffers rented with the session:
+  a level stays while the levels generated from it are written. The lossy encoders are written from the same
+  description: PXR24 (`ExrPxr24.Encode`, section 6), B44 (`ExrB44.Encode`, section 7, the pLinear table E pinned by a
+  hash), and DWA (`ExrDwaEncoder`, section 8.14: the default rules, an orthonormal forward DCT in double precision, the
+  simple quantization of step 7, Huffman AC symbols but deflate for DWAA tiles as OpenEXR does). Every lossy output is
+  decoded by OpenEXR to the samples the library decodes (`ExrInteropTests`), since both decoders are exact.
   The common layouts (one HALF channel per color, a HALF alpha or none, no sub-sampled channel) are written to the
   pixels and read from them by `ExrLineKernels` in vectors (exact half conversions; the division by alpha and the
   product by the stored alpha give the bits of the scalar double-precision forms); `ExrPredictor` and the first level of
@@ -994,7 +1041,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   under the license rule of "Hard constraints" (Little CMS is MIT; Argyll CMS is AGPL and stays an oracle).
 - A profile is untrusted input. Validate every size against the tag before reading (64-bit arithmetic for table
   sizes), read color lookup tables in place (`ReadOnlyMemory<byte>`, no copy) so that a transform only copies
-  one-dimensional curves, and allocate nothing per conversion (`PerformanceContractTests`). A malformed profile is `InvalidImageContentException`; a valid profile that is not
+  one-dimensional curves, and allocate nothing per conversion (`PerformanceContractTests`). The one copy of a table is its decoded entries
+  (`IccClutStage.Reserve`), made only for a pipeline bound to the scope of its owner (`IccPipeline.BindLookupTables`, a
+  decoder or an image operation: a copy with lookup tables of its own, since a pipeline may be shared), charged before it is allocated and released with the owner
+  (`ReleaseLookupTables`); when the scope refuses it, the entries stay read in place. A malformed profile is `InvalidImageContentException`; a valid profile that is not
   supported or cannot be a destination is `UnsupportedImageFeatureException`. Nothing else may escape
   (`ColorProfileFuzzTests`).
 - A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
@@ -1357,6 +1407,11 @@ thin public types over its `FontFace`.
   `TextLayout`, the text members of `DrawingCanvas`), `FontExceptionTranslation` turns the exceptions of the font code
   into the four content exceptions with `ImageFormat.Unknown`, as for ICC profiles. An unsupported feature is named
   `"Font: <feature>"`. A new public member that reads a font translates them too.
+- **PostScript Type 1 fonts** are converted to OpenType fonts with CFF outlines by `Meziantou.Framework.Fonts` when
+  they are loaded (`FontLoader.Load` detects them, `FontLoader.LoadType1` takes the metrics of an AFM file): the rest
+  of the library only sees a CFF font. `Font.LoadType1` is the public entry for the AFM file. The oracle of their
+  outlines is FreeType, through MuPDF: `Type1FontInteropTests` embeds the sample font (`FontType1Writer.Sample`) in a
+  PDF file and compares the paths of `mutool draw -F svg -O text=path` with `TextLayout.ToPath`.
 
 ## Text
 
@@ -1409,7 +1464,12 @@ thin public types over its `FontFace`.
 - **Optimal line breaking** (`TextLineBreakStrategy.Optimal`, `FindOptimalBreaks`) is a dynamic program over the
   break opportunities of the rest of a paragraph, from the advances it has before its lines are shaped again; each
   line it plans is checked with the current advances before it is built, and a line that no longer fits plans the
-  rest again (a bounded number of times, then greedy). Greedy breaking stays the default and is not changed by it.
+  rest again (a bounded number of times, then greedy). Its work is bounded too: it counts the characters it measures
+  (`MaxOptimalWorkPerCharacter` per character of the rest of the paragraph, plus `MinOptimalWork`) and returns no plan
+  beyond them, and the rest of the paragraph is broken greedily: without it, a paragraph whose lines hold many break
+  opportunities (a wide layout) was quadratic. Greedy breaking stays the default and is not changed by it. The cost
+  model is documented on `TextLineBreakStrategy.Optimal` and in `docs/Imaging/08-Text/04-TextLayout.md`: change
+  both with it. `imaging-line-breaking` (SharpFuzz) checks it against greedy breaking.
 - **Justification between characters** (`TextLayoutOptions.Justification`) classifies each glyph in `BuildLine`
   (`JustificationClass`, only when it is used) and marks the opportunities in `Finish`
   (`MarkJustificationOpportunities`), in display order: the room goes after the last glyph of a cluster and its marks,
@@ -1581,7 +1641,8 @@ thin public types over its `FontFace`.
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`, and `PercentileFilter`, which shares the median's
   plan), `Sharpen`, `DetectEdges`, `BilateralFilter` and `RadialBlur` (every pixel computed alone from a
   `WorkingFrameCopy`), the `Pixelate`, `OilPaint` and
-  `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every
+  `Flatten` effects (`EffectScratch`), the color matrices of a drawing session outside a clip (`ApplyColorMatrix`, a row of
+  colors per worker), `CloneAs` from or to a floating-point format (the integer conversions cost about a copy), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every
   `SimilarityPrecision`) and the
   codec work listed below are parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
   `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split
@@ -1657,7 +1718,8 @@ thin public types over its `FontFace`.
     batch decoded before it asks for more input or throws (`ExrStructureParser.NeedChunkBytes`, the catch in `Parse`), so a
     pending chunk never outlives a `Parse` call; its requests read the next batch ahead, so a stream gives it whole. The
     encoder checks the samples by row bands (`RunParallelInBandOrder`) and compresses batches of chunks into slots as
-    large as the one-worker buffer, written in order (`ChunksDecodedByWorkersHaveThePixelsOfOneWorker`,
+    large as the one-worker buffer, written in order; a batch never crosses a level of a tiled image, whose generation
+    precedes it (`ChunksDecodedByWorkersHaveThePixelsOfOneWorker`,
     `WorkersReportTheErrorOfTheFirstChunkOfTheFileThatFails`, `FilesWrittenByWorkersAreTheFilesOfOneWorker`).
   - JPEG 2000 (`Jpeg2000Workers`): the packets are read in order on the calling thread; then each worker takes the next
     code-block of a tile with block decoders of its own (Tier-1, HT and its SigProp flags, the buffer that joins

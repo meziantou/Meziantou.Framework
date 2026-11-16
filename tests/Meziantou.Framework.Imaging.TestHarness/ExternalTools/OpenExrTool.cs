@@ -7,14 +7,27 @@ namespace Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 
 /// <summary>
 /// <c>exr-to-raw</c>, the OpenEXR reference library behind a command line: it writes the header of a file as JSON and the
-/// decoded samples of every channel of every part, in the type of the channel.
+/// decoded samples of every channel of every part, in the type of the channel. <c>exrcheck</c> of OpenEXR validates a
+/// file (every level of every part), and <c>oiiotool</c> of OpenImageIO (which reads OpenEXR files with the OpenEXR
+/// library) extracts the levels of a mipmap.
 /// </summary>
 public sealed class OpenExrTool
 {
-    private OpenExrTool(string exrToRaw) => ExrToRawPath = exrToRaw;
+    private OpenExrTool(string exrToRaw, string exrCheck, string oiioTool)
+    {
+        ExrToRawPath = exrToRaw;
+        ExrCheckPath = exrCheck;
+        OiioToolPath = oiioTool;
+    }
 
     /// <summary>Gets the path of <c>exr-to-raw</c>.</summary>
     public string ExrToRawPath { get; }
+
+    /// <summary>Gets the path of <c>exrcheck</c>.</summary>
+    public string ExrCheckPath { get; }
+
+    /// <summary>Gets the path of <c>oiiotool</c>.</summary>
+    public string OiioToolPath { get; }
 
     /// <summary>Gets the OpenEXR version the package declares.</summary>
     public static string Version => PrebuiltTools.ExrToRaw.Version;
@@ -35,7 +48,42 @@ public sealed class OpenExrTool
         if (!(result.StandardOutputText + result.StandardError).Contains("--header-only", StringComparison.Ordinal))
             throw new ExternalToolUnavailableException($"'{path}' does not run (exit code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardOutputText}{result.StandardError}");
 
-        return new OpenExrTool(path);
+        var exrCheck = await PrebuiltTools.ExrCheck.GetOrDownloadAsync(cancellationToken).ConfigureAwait(false);
+        var oiioTool = await PrebuiltTools.OiioTool.GetOrDownloadAsync(cancellationToken).ConfigureAwait(false);
+        result = await ProcessRunner.RunAsync(oiioTool, ["--version"], cancellationToken).ConfigureAwait(false);
+        if (result.ExitCode != 0)
+            throw new ExternalToolUnavailableException($"'{oiioTool}' does not run (exit code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardOutputText}{result.StandardError}");
+
+        return new OpenExrTool(path, exrCheck, oiioTool);
+    }
+
+    /// <summary>Checks a file with <c>exrcheck</c>, which reads every part and level of it with the OpenEXR library.</summary>
+    /// <param name="inputPath">The OpenEXR file.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="InvalidOperationException"><c>exrcheck</c> reported a problem.</exception>
+    public async Task CheckAsync(FullPath inputPath, CancellationToken cancellationToken)
+    {
+        var result = await ProcessRunner.RunAsync(ExrCheckPath, [inputPath], cancellationToken).ConfigureAwait(false);
+        if (result.ExitCode != 0 || result.StandardOutputText.Contains("bad", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"'exrcheck {inputPath}' failed (exit code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardOutputText}{result.StandardError}");
+    }
+
+    /// <summary>
+    /// Decodes a level of a mipmap: <c>oiiotool</c> extracts it to an uncompressed file, which <c>exr-to-raw</c> decodes.
+    /// </summary>
+    /// <param name="inputPath">The OpenEXR file.</param>
+    /// <param name="level">The level (0 for the full resolution).</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The channels of the level.</returns>
+    /// <exception cref="InvalidOperationException">A tool rejected the file.</exception>
+    public async Task<OpenExrDecodedPart> DecodeMipLevelAsync(FullPath inputPath, int level, CancellationToken cancellationToken)
+    {
+        var output = FullPath.FromPath(inputPath + string.Create(CultureInfo.InvariantCulture, $".level{level}.exr"));
+        var result = await ProcessRunner.RunAsync(OiioToolPath, [inputPath, "--selectmip", level.ToString(CultureInfo.InvariantCulture), "--compression", "none", "-o", output], cancellationToken).ConfigureAwait(false);
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException($"'oiiotool {inputPath} --selectmip {level.ToString(CultureInfo.InvariantCulture)}' failed (exit code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardError}{result.StandardOutputText}");
+
+        return await DecodeAsync(output, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Decodes the first part of a file with <c>exr-to-raw</c>.</summary>

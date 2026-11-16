@@ -1,7 +1,9 @@
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
+using Meziantou.Framework.Imaging.TestHarness.Pixels;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
 
@@ -248,6 +250,86 @@ public sealed class JpegXlLossyEncoderInteropTests
         var context = $"{patternName} (effort {effort})";
         AssertExactSamples(pattern, await jxl.DecodeFramesAsync(path, XunitCancellationToken), $"{context}: djxl {jxl.Version}");
         AssertExactSamples(pattern, await oxide.DecodeFramesAsync(path, XunitCancellationToken), $"{context}: jxl-oxide {oxide.Version}");
+    }
+
+    /// <summary>
+    /// Lossy layers (<see cref="JpegXlLayeredImage"/>), one of which is blended at an offset and extends beyond the canvas,
+    /// with an exact alpha channel: the reference decoders compose them into the image the library decodes.
+    /// </summary>
+    [Theory]
+    [InlineData("photo-rgba8", false)]
+    [InlineData("photo-rgb8", true)]
+    [InlineData("photo-gray16", false)]
+    public async Task LossyLayersDecodeLikeTheReferenceDecoders(string patternName, bool progressive)
+    {
+        var jxl = await RequiredTools.LibJxlAsync();
+        var pattern = JpegXlPattern.Get(patternName);
+        var name = $"{patternName}-layers{(progressive ? "-progressive" : "")}";
+        var path = InteropSettings.GetArtifactsDirectory(nameof(LossyLayersDecodeLikeTheReferenceDecoders)) / (name + ".jxl");
+        var offset = new Point(pattern.Width / 3, pattern.Height / 4);
+        using (var document = new JpegXlLayeredImage(pattern.Width, pattern.Height))
+        {
+            using var background = CreateImage(pattern, rowOffset: 0);
+            using var overlay = CreateImage(pattern, rowOffset: 37);
+            document.AddLayer(background, name: "Photo");
+            document.AddLayer(overlay, offset, JpegXlBlendMode.Blend, "Overlay");
+            document.Save(path, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = 80, Progressive = progressive });
+        }
+
+        var info = await jxl.GetInfoAsync(path, XunitCancellationToken);
+        Assert.True(info.IsXybEncoded);
+        Assert.Equal([(true, 0, 0, "Photo"), (true, offset.X, offset.Y, "Overlay")], info.Frames.Select(frame => (frame.IsLayer, frame.X, frame.Y, frame.Name)));
+        using var decoded = await JpegXlReferenceComparison.AssertDecodesLikeTheReferencesAsync(path, JpegXlReferenceComparison.DjxlTolerance, JpegXlReferenceComparison.OxideTolerance, name);
+        Assert.Single(decoded.Frames);
+    }
+
+    /// <summary>
+    /// A lossy animation written as the regions that change (<see cref="JpegXlEncoder.OptimizeFrames"/>): the reference
+    /// decoders show the frames the library shows, the pixels around each region being the ones of the previous frames.
+    /// </summary>
+    [Theory]
+    [InlineData("photo-rgba8", false)]
+    [InlineData("photo-rgb16", true)]
+    public async Task LossyOptimizedAnimationsDecodeLikeTheReferenceDecoders(string patternName, bool progressive)
+    {
+        var jxl = await RequiredTools.LibJxlAsync();
+        var pattern = JpegXlPattern.Get(patternName);
+        var name = $"{patternName}-optimized{(progressive ? "-progressive" : "")}";
+        var path = InteropSettings.GetArtifactsDirectory(nameof(LossyOptimizedAnimationsDecodeLikeTheReferenceDecoders)) / (name + ".jxl");
+        using (var animation = CreateImage(pattern, rowOffset: 0))
+        {
+            // Each frame copies a rectangle of the pattern with rotated rows over the previous one
+            var format = animation.PixelFormat;
+            var layout = ImageSnapshots.GetLayout(format);
+            var bytes = ImageSnapshots.CaptureFrame(animation.Frames[0]).Span.ToArray();
+            for (var i = 1; i < 4; i++)
+            {
+                using var shifted = CreateImage(pattern, rowOffset: i * 37);
+                var source = ImageSnapshots.CaptureFrame(shifted.Frames[0]).Span.ToArray();
+                var (x0, y0, width, height) = (i * pattern.Width / 5, i * pattern.Height / 6, pattern.Width / 4, pattern.Height / 5);
+                for (var y = y0; y < y0 + height; y++)
+                {
+                    var start = ((y * pattern.Width) + x0) * layout.BytesPerPixel;
+                    source.AsSpan(start, width * layout.BytesPerPixel).CopyTo(bytes.AsSpan(start));
+                }
+
+                using var frame = EncoderSources.CreateImage(RawPixelBuffer.Create(pattern.Width, pattern.Height, layout, bytes), format);
+                animation.AppendFrame(frame.Frames[0]);
+            }
+
+            foreach (var frame in animation.Frames)
+            {
+                frame.Metadata.Duration = new FrameDuration(1, 10);
+            }
+
+            await animation.SaveAsync(path, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = 80, Progressive = progressive, OptimizeFrames = true }, XunitCancellationToken);
+        }
+
+        var info = await jxl.GetInfoAsync(path, XunitCancellationToken);
+        Assert.True(info.IsAnimation);
+        Assert.Equal([true, false, false, false], info.Frames.Select(frame => frame.IsFullSize));
+        using var decoded = await JpegXlReferenceComparison.AssertDecodesLikeTheReferencesAsync(path, JpegXlReferenceComparison.DjxlTolerance, JpegXlReferenceComparison.OxideTolerance, name);
+        Assert.Equal(4, decoded.Frames.Count);
     }
 
     /// <summary>Every frame of a lossy animation is a full frame: the reference decoders show the frames the library shows, with their durations.</summary>

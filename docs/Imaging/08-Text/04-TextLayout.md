@@ -178,7 +178,58 @@ To use your own words, set [TextLayoutOptions.LineBreakDictionary](cref:Mezianto
 `Meziantou.Framework.Unicode`, loaded from a list of words: it replaces the word lists of ICU. A dictionary without
 words, `LineBreakDictionary.Parse("")`, only breaks such text at a space.
 
-Lines are broken one after the other, each as full as possible, not by optimizing the whole paragraph.
+## Optimal line breaking
+
+By default, each line takes as much of the text as fits, then the next line starts (greedy breaking). With
+[LineBreakStrategy](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineBreakStrategy) set to [Optimal](cref:Meziantou.Framework.Imaging.Typography.TextLineBreakStrategy.Optimal), the breaks of a whole paragraph are chosen together (total fit, after
+Knuth and Plass, "Breaking Paragraphs into Lines"), so that its lines are evenly filled: a line can end before the
+text that would still fit, when this leaves less room at the end of the lines after it.
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/TextExamples.cs;region=Imaging_OptimalLineBreaking;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static TextLayout LayOutEvenly(string fontPath, string text, double width)
+{
+    var font = Font.Load(fontPath);
+
+    // A line can end before the text that would still fit, when this leaves less room at the end of the lines
+    // after it. The last line of a paragraph can be short: it costs nothing
+    return TextLayout.Create(text, new TextStyle(font, 16), new TextLayoutOptions
+    {
+        MaxWidth = width,
+        LineBreakStrategy = TextLineBreakStrategy.Optimal,
+    });
+}
+```
+<!-- endref -->
+
+The breaks minimize the sum of the costs of the lines of the paragraph:
+
+| A line | Costs |
+| --- | --- |
+| The last line of the paragraph | Nothing |
+| Another line | The square of the room left at its end, in ems of the text at the start of the paragraph |
+| Another line of a justified paragraph | The square of the room left per place it is stretched at (its spaces, or its characters with [Justification](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Justification)), in thirds of an em |
+| A line that ends with a hyphen | 1 more, and 3 more again when the line before it ends with a hyphen too |
+| A line wider than the width, because nothing shorter can end it | 1,000,000, plus the square of how much it is too wide, in ems |
+
+- The places a line can end are those of greedy breaking: the break opportunities of the Unicode line breaking
+  algorithm (with [WordBreak](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.WordBreak), [LineBreak](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineBreak) and the dictionaries of the scripts without spaces), the soft hyphens,
+  and the hyphenation points when [Hyphenation](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Hyphenation) is [Automatic](cref:Meziantou.Framework.Imaging.Typography.TextHyphenation.Automatic). A word wider than the line is cut or
+  overflows as with greedy breaking.
+- Right-to-left and mixed directions, several fonts and sizes, vertical lines, indents and tabulations are measured as
+  greedy breaking measures them. A line never ends inside the base of a ruby.
+- The result is deterministic: among breaks of the same cost, the earliest ones are kept.
+- The breaks are found from the advances of the paragraph shaped as a whole. A line is shaped again once it is cut;
+  when a kerning pair or a ligature across the break makes it wider than its width, the breaks of the rest of the
+  paragraph are chosen again (up to 8 times, then greedily).
+- The work is bounded: choosing the breaks may measure 256 characters per character of the paragraph, plus a million.
+  A paragraph whose lines hold so many break opportunities that it would measure more, such as a long paragraph in a
+  very wide box, is broken greedily from there.
+- [MaxLines](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxLines) and [MaxHeight](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxHeight) cut the lines afterwards: the breaks are not chosen to fit them. The spaces are not
+  shrunk to fit more text on a line, and there are no fitness classes: a loose line can follow a tight one.
+
+Optimal breaking costs more than greedy breaking, and the lines of a paragraph depend on the text after them: a word
+added at its end can move the breaks of its first lines. That is why greedy breaking stays the default.
 
 ## Ruby
 

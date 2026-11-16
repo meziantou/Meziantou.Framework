@@ -58,13 +58,30 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
     public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return new Session(options);
+        return new Session(options, layers: null);
+    }
+
+    /// <summary>
+    /// Creates the session of a still image made of layers: frame <c>i</c> given to the session is written with
+    /// <paramref name="layers"/>[i], at the size of the frame; the frames may have any size.
+    /// </summary>
+    /// <param name="options">The options of a still image.</param>
+    /// <param name="layers">The layout of each frame: its position, its blending and the slots it uses.</param>
+    /// <returns>The session.</returns>
+    public static ImageEncoderSession CreateLayeredSession(ImageEncoderSessionOptions options, IReadOnlyList<JpegXlFrameLayout> layers)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(layers);
+        return new Session(options, layers);
     }
 
     private sealed class Session : ImageEncoderSession
     {
         private const int EmitPieceLength = 64 * 1024;
         private const int GroupDimension = 128 << JpegXlHeaderWriter.GroupSizeShift;
+
+        // The slot that holds the previous frame of an animation whose frames are the regions that change
+        private const int ReferenceSlot = 1;
 
         private readonly JpegXlEncoder _encoder;
         private readonly PixelFormat _sourceFormat;
@@ -84,7 +101,11 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
         private readonly byte[]? _exif;
         private readonly byte[]? _xmp;
         private readonly List<ReadOnlyMemory<byte>> _pieces = [];
+        private readonly IReadOnlyList<JpegXlFrameLayout>? _layers;
+        private readonly bool _optimizeFrames;
         private ImageFrame? _frame;
+        private int _frameIndex;
+        private PooledBuffer? _displayed;
         private EncodedFrame? _pending;
         private EncodedFrame? _emitting;
         private Step _step;
@@ -93,14 +114,16 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
         private bool _prefixWritten;
         private uint _partIndex;
 
-        public Session(ImageEncoderSessionOptions options)
+        public Session(ImageEncoderSessionOptions options, IReadOnlyList<JpegXlFrameLayout>? layers)
             : base(options)
         {
             _encoder = (JpegXlEncoder)options.Encoder;
+            _layers = layers;
             _sourceFormat = options.PixelFormat;
             _width = options.CanvasSize.Width;
             _height = options.CanvasSize.Height;
-            _isAnimated = options.Capabilities.IsAnimated;
+            _isAnimated = options.Capabilities.IsAnimated && layers is null;
+            _optimizeFrames = _isAnimated && _encoder.OptimizeFrames;
             _isGray = PixelFormats.IsGrayscale(_sourceFormat);
             _hasAlpha = PixelFormats.HasAlpha(_sourceFormat);
             _bitsPerSample = PixelFormats.GetBitsPerComponent(_sourceFormat);
@@ -112,6 +135,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 || _width > MaxLevel5Dimension
                 || _height > MaxLevel5Dimension
                 || (long)_width * _height > MaxLevel5PixelCount
+                || (layers?.Any(layer => layer.HasCrop && (layer.Width > MaxLevel5Dimension || layer.Height > MaxLevel5Dimension || (long)layer.Width * layer.Height > MaxLevel5PixelCount)) ?? false)
                 || _icc is { Length: > MaxLevel5IccProfileLength };
             _useContainer = _needsLevel10 || _exif is not null || _xmp is not null;
             if (_icc is not null)
@@ -178,10 +202,18 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
         public override void BeginFrame(ImageFrame frame, int index)
         {
             ArgumentNullException.ThrowIfNull(frame);
-            if (!_isAnimated && index != 0)
+            if (_layers is not null)
+            {
+                if (index >= _layers.Count)
+                    throw new InvalidOperationException("The JPEG XL image has more frames than layers.");
+            }
+            else if (!_isAnimated && index != 0)
+            {
                 throw new InvalidOperationException("A still JPEG XL image stores a single frame.");
+            }
 
             _frame = frame;
+            _frameIndex = index;
             _step = Step.Compress;
         }
 
@@ -254,6 +286,8 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 _emitting = null;
                 _pieces.Clear();
                 _frame = null;
+                _displayed?.Dispose();
+                _displayed = null;
             }
 
             base.Dispose(disposing);
@@ -339,7 +373,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             _emitting = frame;
 
             using var writer = new LsbBitWriter(Options.Scope);
-            JpegXlHeaderWriter.WriteFrameHeader(writer, _frameSettings, _isLossy, _hasAlpha, _isAnimated ? frame.Duration : null, isLast);
+            JpegXlHeaderWriter.WriteFrameHeader(writer, _frameSettings, _isLossy, _hasAlpha, _isAnimated ? frame.Duration : null, isLast, frame.Layout, Options.CanvasSize);
             JpegXlHeaderWriter.WriteToc(writer, CollectionsMarshal.AsSpan(frame.SectionSizes));
             var header = writer.WrittenSpan.ToArray();
             var sections = frame.Sections.WrittenMemory;
@@ -383,7 +417,11 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             BinaryPrimitives.WriteUInt32BigEndian(header[4..], type);
         }
 
-        /// <summary>Compresses a frame: its sections, one after the other, and their sizes.</summary>
+        /// <summary>
+        /// Compresses a frame: its sections, one after the other, and their sizes. A layer is the whole frame, at the
+        /// position of its layout; a frame of an animation with <see cref="JpegXlEncoder.OptimizeFrames"/> is the rectangle
+        /// that changes, blended over the previous frame.
+        /// </summary>
         private EncodedFrame CompressFrame(ImageFrame frame)
         {
             uint duration = 0;
@@ -392,17 +430,29 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 duration = AnimationTiming.ToJpegXlDuration(frame.Metadata.Duration, _encoder.DurationRounding);
             }
 
+            var storage = frame.GetStorage();
+            var region = new Rectangle(0, 0, storage.Width, storage.Height);
+            var layout = JpegXlFrameLayout.Full;
+            if (_layers is not null)
+            {
+                layout = _layers[_frameIndex];
+            }
+            else if (_optimizeFrames)
+            {
+                (region, layout) = PlanAnimationFrame(storage);
+            }
+
             if (_isLossy)
-                return CompressLossyFrame(frame, duration);
+                return CompressLossyFrame(frame, region, layout, duration);
 
             if (_encoder.Progressive)
-                return CompressProgressiveFrame(frame, duration);
+                return CompressProgressiveFrame(frame, region, layout, duration);
 
             var scope = Options.Scope;
-            var columns = (_width + GroupDimension - 1) / GroupDimension;
-            var rows = (_height + GroupDimension - 1) / GroupDimension;
+            var columns = (region.Width + GroupDimension - 1) / GroupDimension;
+            var rows = (region.Height + GroupDimension - 1) / GroupDimension;
             var lfDimension = GroupDimension * 8;
-            var lfGroupCount = ((_width + lfDimension - 1) / lfDimension) * ((_height + lfDimension - 1) / lfDimension);
+            var lfGroupCount = ((region.Width + lfDimension - 1) / lfDimension) * ((region.Height + lfDimension - 1) / lfDimension);
             var colorChannelCount = _isGray ? 1 : 3;
             LsbBitWriter? owned = null;
             try
@@ -416,8 +466,8 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 writer.WriteBool(true);
                 if (_encoder.Effort >= JpegXlLosslessFrameEncoder.MinEffort)
                 {
-                    var storage = lease.Storage;
-                    var encoder = new JpegXlLosslessFrameEncoder(_width, _height, colorChannelCount, _hasAlpha, _bitsPerSample, _encoder.Effort, Options.Configuration.MaxDegreeOfParallelism, (image, x, y, width, height) => LoadChannels(image, storage, x, y, width, height), scope, CancellationToken);
+                    var pixels = lease.Storage;
+                    var encoder = new JpegXlLosslessFrameEncoder(region.Width, region.Height, colorChannelCount, _hasAlpha, _bitsPerSample, _encoder.Effort, Options.Configuration.MaxDegreeOfParallelism, (image, x, y, width, height) => LoadChannels(image, pixels, region.X + x, region.Y + y, width, height), scope, CancellationToken);
                     encoder.Encode(writer, sizes, ref total, EndSection);
                     if (columns * rows == 1)
                     {
@@ -428,7 +478,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                         {
                             simple.WriteBool(true);
                             simple.WriteBool(false);
-                            EncodeGroup(simple, lease.Storage, 0, 0, colorChannelCount);
+                            EncodeGroup(simple, lease.Storage, region, 0, 0, colorChannelCount);
                             simple.ZeroPadToByte();
                             if (simple.Length < writer.Length)
                             {
@@ -449,7 +499,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 {
                     // A single group: no global tree, the global Modular data are the whole image, and the frame is one section
                     writer.WriteBool(false);
-                    EncodeGroup(writer, lease.Storage, 0, 0, colorChannelCount);
+                    EncodeGroup(writer, lease.Storage, region, 0, 0, colorChannelCount);
                     EndSection(writer, sizes, ref total);
                 }
                 else
@@ -469,11 +519,11 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                         sizes.Add(0);
                     }
 
-                    EncodeGroups(writer, sizes, ref total, lease.Storage, columns, rows, colorChannelCount);
+                    EncodeGroups(writer, sizes, ref total, lease.Storage, region, columns, rows, colorChannelCount);
                 }
 
                 owned = null;
-                return new EncodedFrame(writer, sizes, duration);
+                return new EncodedFrame(writer, sizes, duration, layout);
             }
             finally
             {
@@ -481,11 +531,90 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             }
         }
 
+        /// <summary>
+        /// Chooses how a frame of an animation is written with <see cref="JpegXlEncoder.OptimizeFrames"/>: the bounding box
+        /// of the pixels that differ from the previous frame, which replaces them over that frame (saved in slot 1), and
+        /// keeps a copy of the frame for the next one. The first frame, and a frame whose changes reach every edge of
+        /// the image, cover the image.
+        /// </summary>
+        private (Rectangle Region, JpegXlFrameLayout Layout) PlanAnimationFrame(PixelStorage storage)
+        {
+            var width = storage.Width;
+            var height = storage.Height;
+            var rowLength = width * storage.BytesPerPixel;
+            var full = new Rectangle(0, 0, width, height);
+            var fullLayout = new JpegXlFrameLayout { SaveAsReference = ReferenceSlot };
+            if ((long)rowLength * height > Array.MaxLength)
+                return (full, JpegXlFrameLayout.Full);
+
+            using var lease = storage.AcquireLease();
+            if (_displayed is null)
+            {
+                _displayed = Options.Scope.Rent(rowLength * height, AllocationKind.CompositorState, clear: false);
+                CopyRows(lease.Storage, _displayed.RawBuffer, rowLength, height);
+                return (full, fullLayout);
+            }
+
+            var displayed = _displayed.RawBuffer;
+            int left = width, top = height, right = -1, bottom = -1;
+            var bytesPerPixel = storage.BytesPerPixel;
+            for (var y = 0; y < height; y++)
+            {
+                var row = lease.Storage.GetRowSpanCore(y)[..rowLength];
+                var previous = displayed.AsSpan(y * rowLength, rowLength);
+                var first = row.CommonPrefixLength(previous);
+                if (first == rowLength)
+                    continue;
+
+                var last = rowLength - 1;
+                while (row[last] == previous[last])
+                {
+                    last--;
+                }
+
+                left = Math.Min(left, first / bytesPerPixel);
+                right = Math.Max(right, last / bytesPerPixel);
+                top = Math.Min(top, y);
+                bottom = y;
+            }
+
+            CopyRows(lease.Storage, displayed, rowLength, height);
+
+            // A frame equal to the previous one still has a pixel; a frame that changes the whole box covers the image
+            if (right < 0)
+            {
+                (left, top, right, bottom) = (0, 0, 0, 0);
+            }
+
+            var region = new Rectangle(left, top, right - left + 1, bottom - top + 1);
+            if (region == full)
+                return (full, fullLayout);
+
+            return (region, new JpegXlFrameLayout
+            {
+                HasCrop = true,
+                X0 = region.X,
+                Y0 = region.Y,
+                Width = region.Width,
+                Height = region.Height,
+                Source = ReferenceSlot,
+                SaveAsReference = ReferenceSlot,
+            });
+
+            static void CopyRows(PixelStorage source, byte[] destination, int rowLength, int height)
+            {
+                for (var y = 0; y < height; y++)
+                {
+                    source.GetRowSpanCore(y)[..rowLength].CopyTo(destination.AsSpan(y * rowLength, rowLength));
+                }
+            }
+        }
+
         /// <summary>Gets the header of a frame as the decoder reads it: the geometry of the frame is the one the decoder derives from it.</summary>
-        private JpegXlFrameHeader ReadFrameHeader(uint duration)
+        private JpegXlFrameHeader ReadFrameHeader(uint duration, JpegXlFrameLayout layout)
         {
             using var writer = new LsbBitWriter(Options.Scope);
-            JpegXlHeaderWriter.WriteFrameHeader(writer, _frameSettings, _isLossy, _hasAlpha, _isAnimated ? duration : null, isLast: true);
+            JpegXlHeaderWriter.WriteFrameHeader(writer, _frameSettings, _isLossy, _hasAlpha, _isAnimated ? duration : null, isLast: true, layout, Options.CanvasSize);
             writer.ZeroPadToByte();
             var bytes = writer.WrittenSpan.ToArray();
             return JpegXlFrameHeader.Read(new JpegXlBitReader(bytes, 0, bytes.Length), _imageHeader!, isPreview: false);
@@ -497,9 +626,9 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
         /// coarsest channels in <c>LfGlobal</c>, those reduced by 8 or more in the LF groups, the others in the groups of
         /// the pass of their resolution).
         /// </summary>
-        private EncodedFrame CompressProgressiveFrame(ImageFrame frame, uint duration)
+        private EncodedFrame CompressProgressiveFrame(ImageFrame frame, Rectangle region, JpegXlFrameLayout layout, uint duration)
         {
-            var header = ReadFrameHeader(duration);
+            var header = ReadFrameHeader(duration, layout);
             var scope = Options.Scope;
             var colorChannelCount = _isGray ? 1 : 3;
             LsbBitWriter? owned = null;
@@ -511,13 +640,13 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 using var image = new JpegXlModularImage(_bitsPerSample);
                 for (var i = 0; i < colorChannelCount + (_hasAlpha ? 1 : 0); i++)
                 {
-                    image.AddChannel(_width, _height, 0, 0);
+                    image.AddChannel(region.Width, region.Height, 0, 0);
                     image.Channels[i].Allocate(scope);
                 }
 
                 using (var lease = frame.GetStorage().AcquireLease())
                 {
-                    LoadChannels(image, lease.Storage, 0, 0, _width, _height);
+                    LoadChannels(image, lease.Storage, region.X, region.Y, region.Width, region.Height);
                 }
 
                 if (colorChannelCount == 3)
@@ -563,7 +692,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 }
 
                 owned = null;
-                return new EncodedFrame(writer, sizes, duration);
+                return new EncodedFrame(writer, sizes, duration, layout);
             }
             finally
             {
@@ -598,24 +727,41 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             JpegXlModularEncoder.EncodeChannels(writer, region.Channels, _encoder.Effort, Options.Scope, CancellationToken);
         }
 
-        /// <summary>Compresses a frame with VarDCT.</summary>
-        private EncodedFrame CompressLossyFrame(ImageFrame frame, uint duration)
+        /// <summary>Compresses a frame with VarDCT: a rectangle that is not the whole frame is copied to an image of its own first.</summary>
+        private EncodedFrame CompressLossyFrame(ImageFrame frame, Rectangle region, JpegXlFrameLayout layout, uint duration)
         {
-            var header = ReadFrameHeader(duration);
+            var header = ReadFrameHeader(duration, layout);
+            Image? copy = null;
             LsbBitWriter? owned = null;
             try
             {
+                var storage = frame.GetStorage();
+                if (region.Width != storage.Width || region.Height != storage.Height)
+                {
+                    copy = Image.CreateForDecoder(_sourceFormat, Options.Configuration, region.Size, Options.Scope);
+                    using var sourceLease = storage.AcquireLease();
+                    using var targetLease = copy.Frames[0].GetStorage().AcquireLease();
+                    var bytesPerPixel = storage.BytesPerPixel;
+                    for (var y = 0; y < region.Height; y++)
+                    {
+                        sourceLease.Storage.GetRowSpanCore(region.Y + y).Slice(region.X * bytesPerPixel, region.Width * bytesPerPixel).CopyTo(targetLease.Storage.GetRowSpanCore(y));
+                    }
+
+                    storage = copy.Frames[0].GetStorage();
+                }
+
                 var writer = owned = new LsbBitWriter(Options.Scope);
                 var sizes = new List<int>();
-                using var lease = frame.GetStorage().AcquireLease();
+                using var lease = storage.AcquireLease();
                 using var encoder = new JpegXlVarDctEncoder(_imageHeader!, header, _sourceFormat, _encoder.Quality, _encoder.Effort, Options.Configuration.MaxDegreeOfParallelism, Options.Scope, CancellationToken);
                 encoder.Encode(lease, writer, sizes, _hasAlpha ? EncodeAlpha : null);
                 owned = null;
-                return new EncodedFrame(writer, sizes, duration);
+                return new EncodedFrame(writer, sizes, duration, layout);
             }
             finally
             {
                 owned?.Dispose();
+                copy?.Dispose();
             }
         }
 
@@ -664,15 +810,15 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
         /// workers: each worker writes a group in a writer of its own, and the sections, which start at a byte boundary, are
         /// appended in order, so the bytes do not depend on the workers.
         /// </summary>
-        private void EncodeGroups(LsbBitWriter writer, List<int> sizes, ref int total, PixelStorage pixels, int columns, int rows, int colorChannelCount)
+        private void EncodeGroups(LsbBitWriter writer, List<int> sizes, ref int total, PixelStorage pixels, Rectangle region, int columns, int rows, int colorChannelCount)
         {
             var groupCount = columns * rows;
-            var workers = JpegXlGroupWorkers.GetWorkerCount(Options.Configuration.MaxDegreeOfParallelism, groupCount, (long)_width * _height);
+            var workers = JpegXlGroupWorkers.GetWorkerCount(Options.Configuration.MaxDegreeOfParallelism, groupCount, (long)region.Width * region.Height);
             if (workers == 1)
             {
                 for (var group = 0; group < groupCount; group++)
                 {
-                    EncodeGroup(writer, pixels, group % columns * GroupDimension, group / columns * GroupDimension, colorChannelCount);
+                    EncodeGroup(writer, pixels, region, group % columns * GroupDimension, group / columns * GroupDimension, colorChannelCount);
                     EndSection(writer, sizes, ref total);
                 }
 
@@ -686,7 +832,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 JpegXlGroupWorkers.Run(workers, groupCount, group =>
                 {
                     var section = sections[group] = new LsbBitWriter(scope);
-                    EncodeGroup(section, pixels, group % columns * GroupDimension, group / columns * GroupDimension, colorChannelCount);
+                    EncodeGroup(section, pixels, region, group % columns * GroupDimension, group / columns * GroupDimension, colorChannelCount);
                     section.ZeroPadToByte();
                 });
 
@@ -705,12 +851,12 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             }
         }
 
-        /// <summary>Compresses the samples of one group as a Modular sub-bitstream.</summary>
-        private void EncodeGroup(LsbBitWriter writer, PixelStorage pixels, int x0, int y0, int colorChannelCount)
+        /// <summary>Compresses the samples of one group of a rectangle of the frame as a Modular sub-bitstream.</summary>
+        private void EncodeGroup(LsbBitWriter writer, PixelStorage pixels, Rectangle region, int x0, int y0, int colorChannelCount)
         {
             CancellationToken.ThrowIfCancellationRequested();
-            var width = Math.Min(GroupDimension, _width - x0);
-            var height = Math.Min(GroupDimension, _height - y0);
+            var width = Math.Min(GroupDimension, region.Width - x0);
+            var height = Math.Min(GroupDimension, region.Height - y0);
             var scope = Options.Scope;
             using var image = new JpegXlModularImage(_bitsPerSample);
             var channelCount = colorChannelCount + (_hasAlpha ? 1 : 0);
@@ -720,7 +866,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 image.Channels[i].Allocate(scope);
             }
 
-            LoadChannels(image, pixels, x0, y0, width, height);
+            LoadChannels(image, pixels, region.X + x0, region.Y + y0, width, height);
             JpegXlModularEncoder.Encode(writer, image, colorChannelCount, _encoder.Effort, scope, CancellationToken);
         }
 
@@ -808,11 +954,12 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
         /// <summary>A compressed frame that waits to be written: its sections and their sizes.</summary>
         private sealed class EncodedFrame : IDisposable
         {
-            public EncodedFrame(LsbBitWriter sections, List<int> sectionSizes, uint duration)
+            public EncodedFrame(LsbBitWriter sections, List<int> sectionSizes, uint duration, JpegXlFrameLayout layout)
             {
                 Sections = sections;
                 SectionSizes = sectionSizes;
                 Duration = duration;
+                Layout = layout;
             }
 
             public LsbBitWriter Sections { get; }
@@ -820,6 +967,8 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             public List<int> SectionSizes { get; }
 
             public uint Duration { get; }
+
+            public JpegXlFrameLayout Layout { get; }
 
             public void Dispose() => Sections.Dispose();
         }

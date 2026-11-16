@@ -243,8 +243,9 @@ public sealed class ApiSurfaceTests
         Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
         Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
         Assert.Equal(
-            [nameof(JpegXlEncoder.Compression), nameof(JpegXlEncoder.DurationRounding), nameof(JpegXlEncoder.Effort), nameof(JpegXlEncoder.Format), nameof(JpegXlEncoder.Progressive), nameof(JpegXlEncoder.Quality)],
+            [nameof(JpegXlEncoder.Compression), nameof(JpegXlEncoder.DurationRounding), nameof(JpegXlEncoder.Effort), nameof(JpegXlEncoder.Format), nameof(JpegXlEncoder.OptimizeFrames), nameof(JpegXlEncoder.Progressive), nameof(JpegXlEncoder.Quality)],
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(bool), GetDeclaredProperty(type, nameof(JpegXlEncoder.OptimizeFrames)).PropertyType);
         Assert.Equal(typeof(int), GetDeclaredProperty(type, nameof(JpegXlEncoder.Effort)).PropertyType);
         Assert.Equal(typeof(FrameDurationRounding), GetDeclaredProperty(type, nameof(JpegXlEncoder.DurationRounding)).PropertyType);
         Assert.Equal(typeof(JpegXlCompression), GetDeclaredProperty(type, nameof(JpegXlEncoder.Compression)).PropertyType);
@@ -295,6 +296,36 @@ public sealed class ApiSurfaceTests
     }
 
     [Fact]
+    public void JpegXlLayersHaveTheirPublicShape()
+    {
+        // A layered image is neither an image nor a collection: it owns its layers, reads and writes them
+        var type = typeof(JpegXlLayeredImage);
+        Assert.Equal("Meziantou.Framework.Imaging", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && typeof(IDisposable).IsAssignableFrom(type) && !typeof(Image).IsAssignableFrom(type));
+        Assert.Equal(
+            [nameof(JpegXlLayeredImage.Configuration), nameof(JpegXlLayeredImage.Layers), nameof(JpegXlLayeredImage.Metadata), nameof(JpegXlLayeredImage.Size)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.All(type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly), property => Assert.Null(property.GetSetMethod()));
+        Assert.Equal(
+            [nameof(JpegXlLayeredImage.AddLayer), nameof(JpegXlLayeredImage.Dispose), nameof(JpegXlLayeredImage.InsertLayer), nameof(JpegXlLayeredImage.Load), nameof(JpegXlLayeredImage.RemoveLayerAt), nameof(JpegXlLayeredImage.Save)],
+            type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly).Where(method => !method.IsSpecialName).Select(method => method.Name).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(IReadOnlyList<JpegXlLayer>), GetDeclaredProperty(type, nameof(JpegXlLayeredImage.Layers)).PropertyType);
+
+        // A layer is created by its layered image; its image is get-only, its placement can change
+        var layer = typeof(JpegXlLayer);
+        Assert.True(layer.IsPublic && layer.IsSealed);
+        Assert.Empty(layer.GetConstructors());
+        Assert.Equal(
+            [nameof(JpegXlLayer.BlendMode), nameof(JpegXlLayer.Image), nameof(JpegXlLayer.Name), nameof(JpegXlLayer.Offset)],
+            layer.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Null(GetDeclaredProperty(layer, nameof(JpegXlLayer.Image)).GetSetMethod());
+
+        // The blend modes have the values of the format
+        Assert.Equal([nameof(JpegXlBlendMode.Replace), nameof(JpegXlBlendMode.Add), nameof(JpegXlBlendMode.Blend), nameof(JpegXlBlendMode.AlphaWeightedAdd), nameof(JpegXlBlendMode.Multiply)], Enum.GetNames<JpegXlBlendMode>());
+        Assert.Equal([0, 1, 2, 3, 4], Enum.GetValues<JpegXlBlendMode>().Select(value => (int)value));
+    }
+
+    [Fact]
     public void Jpeg2000AdditionsHaveTheirPublicShape()
     {
         // A new format is appended: the values of the existing members never change
@@ -306,7 +337,7 @@ public sealed class ApiSurfaceTests
         Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
         Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
         Assert.Equal(
-            [nameof(Jpeg2000Encoder.BlockCoder), nameof(Jpeg2000Encoder.Compression), nameof(Jpeg2000Encoder.Container), nameof(Jpeg2000Encoder.DecompositionLevels), nameof(Jpeg2000Encoder.Format), nameof(Jpeg2000Encoder.ProgressionOrder), nameof(Jpeg2000Encoder.Quality), nameof(Jpeg2000Encoder.QualityLayers), nameof(Jpeg2000Encoder.TileHeight), nameof(Jpeg2000Encoder.TileWidth)],
+            [nameof(Jpeg2000Encoder.BlockCoder), nameof(Jpeg2000Encoder.Compression), nameof(Jpeg2000Encoder.Container), nameof(Jpeg2000Encoder.DecompositionLevels), nameof(Jpeg2000Encoder.Format), nameof(Jpeg2000Encoder.PrecinctSizes), nameof(Jpeg2000Encoder.ProgressionOrder), nameof(Jpeg2000Encoder.Quality), nameof(Jpeg2000Encoder.QualityLayers), nameof(Jpeg2000Encoder.TileHeight), nameof(Jpeg2000Encoder.TilePartDivision), nameof(Jpeg2000Encoder.TileWidth), nameof(Jpeg2000Encoder.WritePacketLengths), nameof(Jpeg2000Encoder.WriteTilePartLengths)],
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
         Assert.Equal(typeof(Jpeg2000Compression), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.Compression)).PropertyType);
         Assert.Equal(typeof(Jpeg2000Container), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.Container)).PropertyType);
@@ -314,6 +345,10 @@ public sealed class ApiSurfaceTests
         Assert.Equal(typeof(IReadOnlyList<Jpeg2000QualityLayer>), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.QualityLayers)).PropertyType);
         Assert.Equal(typeof(Jpeg2000ProgressionOrder), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.ProgressionOrder)).PropertyType);
         Assert.Equal(typeof(Jpeg2000BlockCoder), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.BlockCoder)).PropertyType);
+        Assert.Equal(typeof(IReadOnlyList<Size>), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.PrecinctSizes)).PropertyType);
+        Assert.Equal(typeof(Jpeg2000TilePartDivision), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.TilePartDivision)).PropertyType);
+        Assert.Equal(typeof(bool), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.WriteTilePartLengths)).PropertyType);
+        Assert.Equal(typeof(bool), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.WritePacketLengths)).PropertyType);
 
         // The defaults are the zero values
         Assert.Equal([nameof(Jpeg2000Compression.Lossless), nameof(Jpeg2000Compression.Lossy)], Enum.GetNames<Jpeg2000Compression>());
@@ -322,6 +357,8 @@ public sealed class ApiSurfaceTests
         Assert.Equal(0, (int)Jpeg2000Container.Jp2);
         Assert.Equal([nameof(Jpeg2000BlockCoder.Standard), nameof(Jpeg2000BlockCoder.HighThroughput)], Enum.GetNames<Jpeg2000BlockCoder>());
         Assert.Equal(0, (int)Jpeg2000BlockCoder.Standard);
+        Assert.Equal([nameof(Jpeg2000TilePartDivision.None), nameof(Jpeg2000TilePartDivision.Resolution), nameof(Jpeg2000TilePartDivision.Layer), nameof(Jpeg2000TilePartDivision.Component)], Enum.GetNames<Jpeg2000TilePartDivision>());
+        Assert.Equal([0, 1, 2, 3], Enum.GetValues<Jpeg2000TilePartDivision>().Select(division => (int)division));
 
         // The progression orders have the values of the COD marker segment (T.800, Table A.16)
         Assert.Equal([0, 1, 2, 3, 4], Enum.GetValues<Jpeg2000ProgressionOrder>().Select(order => (int)order));
@@ -339,15 +376,28 @@ public sealed class ApiSurfaceTests
         Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
         Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
         Assert.Equal(
-            [nameof(OpenExrEncoder.AllowBitDepthReduction), nameof(OpenExrEncoder.Compression), nameof(OpenExrEncoder.Format), nameof(OpenExrEncoder.PixelType)],
+            [nameof(OpenExrEncoder.AllowBitDepthReduction), nameof(OpenExrEncoder.Compression), nameof(OpenExrEncoder.DwaCompressionLevel), nameof(OpenExrEncoder.Format), nameof(OpenExrEncoder.LineOrder), nameof(OpenExrEncoder.PixelType), nameof(OpenExrEncoder.Tiling)],
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
         Assert.Equal(typeof(OpenExrCompression), GetDeclaredProperty(type, nameof(OpenExrEncoder.Compression)).PropertyType);
         Assert.Equal(typeof(OpenExrPixelType?), GetDeclaredProperty(type, nameof(OpenExrEncoder.PixelType)).PropertyType);
 
         // The compressions have the values of the format; the pixel types have no default value but null
-        Assert.Equal([nameof(OpenExrCompression.None), nameof(OpenExrCompression.Rle), nameof(OpenExrCompression.Zips), nameof(OpenExrCompression.Zip), nameof(OpenExrCompression.Piz)], Enum.GetNames<OpenExrCompression>());
-        Assert.Equal([0, 1, 2, 3, 4], Enum.GetValues<OpenExrCompression>().Select(value => (int)value));
+        Assert.Equal(
+            [nameof(OpenExrCompression.None), nameof(OpenExrCompression.Rle), nameof(OpenExrCompression.Zips), nameof(OpenExrCompression.Zip), nameof(OpenExrCompression.Piz), nameof(OpenExrCompression.Pxr24), nameof(OpenExrCompression.B44), nameof(OpenExrCompression.B44A), nameof(OpenExrCompression.Dwaa), nameof(OpenExrCompression.Dwab)],
+            Enum.GetNames<OpenExrCompression>());
+        Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], Enum.GetValues<OpenExrCompression>().Select(value => (int)value));
         Assert.Equal([nameof(OpenExrPixelType.Half), nameof(OpenExrPixelType.Float)], Enum.GetNames<OpenExrPixelType>());
+
+        // The line orders and the level modes have the values of the format; the tiling is a sealed class of settings
+        Assert.Equal([0, 1, 2], Enum.GetValues<OpenExrLineOrder>().Select(value => (int)value));
+        Assert.Equal([nameof(OpenExrLineOrder.IncreasingY), nameof(OpenExrLineOrder.DecreasingY), nameof(OpenExrLineOrder.RandomY)], Enum.GetNames<OpenExrLineOrder>());
+        Assert.Equal([nameof(OpenExrLevelMode.OneLevel), nameof(OpenExrLevelMode.MipmapLevels), nameof(OpenExrLevelMode.RipmapLevels)], Enum.GetNames<OpenExrLevelMode>());
+        Assert.Equal([nameof(OpenExrLevelRounding.Down), nameof(OpenExrLevelRounding.Up)], Enum.GetNames<OpenExrLevelRounding>());
+        Assert.Equal(typeof(OpenExrTiling), GetDeclaredProperty(type, nameof(OpenExrEncoder.Tiling)).PropertyType);
+        Assert.True(typeof(OpenExrTiling).IsSealed);
+        Assert.Equal(
+            [nameof(OpenExrTiling.LevelMode), nameof(OpenExrTiling.LevelRounding), nameof(OpenExrTiling.TileHeight), nameof(OpenExrTiling.TileWidth)],
+            typeof(OpenExrTiling).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
@@ -931,10 +932,39 @@ internal static class Examples
             });
         }
 
-        // Every sample is kept, including the colors of fully transparent pixels. An animation needs a seekable
-        // destination (the file size is patched at the end): a path, a FileStream or a MemoryStream.
+        // Every sample is kept, including the colors of fully transparent pixels. An animation written to a seekable
+        // destination (a path, a FileStream or a MemoryStream) streams its frames and patches the file size at the end.
         using var animation = Image.Load(animatedPath);
         animation.Save(animatedWebPPath, new WebPEncoder { Compression = WebPCompression.Lossless });
+    }
+    #endregion
+
+    /// <summary>WebP output tuned for graphics and 16-bit sources, and an animation sent to a non-seekable stream.</summary>
+    #region Imaging_SaveWebpOptions
+    public static void SaveWebPWithOptions(string chartPath, string chartWebPPath, string sixteenBitPath, string gradientWebPPath, string animatedPath, Stream responseStream)
+    {
+        using (var chart = Image.Load(chartPath))
+        {
+            chart.Save(chartWebPPath, new WebPEncoder
+            {
+                Compression = WebPCompression.Lossy,
+                Quality = 85,
+                SharpYuv = true, // planes chosen for the chroma upsampling of the decoder: sharper colored edges and text
+            });
+        }
+
+        using (var gradient = Image.Load(sixteenBitPath))
+        {
+            gradient.Save(gradientWebPPath, new WebPEncoder
+            {
+                AllowBitDepthReduction = true,  // WebP stores 8-bit samples only
+                DitherBitDepthReduction = true, // error diffusion instead of rounding: no bands in smooth gradients
+            });
+        }
+
+        // A non-seekable stream (an HTTP response) receives the whole animation at the end: it is kept in memory until then
+        using var animation = Image.Load(animatedPath);
+        animation.Save(responseStream, new WebPEncoder());
     }
     #endregion
 
@@ -1580,16 +1610,40 @@ internal static class Examples
         // Its readers must support Part 15 of the standard, as OpenJPEG 2.5, FFmpeg and OpenJPH do.
         image.Save(jphPath);
 
-        // A codestream (.jhc) of at most 100 KB: the rate control chooses the lowest bit-plane of each code-block, and the
-        // output has a single quality layer.
+        // A codestream (.jhc) of at most 100 KB in two layers: the rate control chooses, for each code-block, the lowest
+        // bit-plane of its HT cleanup pass and its HT SigProp and HT MagRef refinement passes, and the first layer holds
+        // the code-blocks that reduce the error most for their bytes, up to 30 KB.
         image.Save(codestreamPath, new Jpeg2000Encoder
         {
             BlockCoder = Jpeg2000BlockCoder.HighThroughput,
             Compression = Jpeg2000Compression.Lossy,
             Quality = 100,
             Container = Jpeg2000Container.Codestream,
-            QualityLayers = [Jpeg2000QualityLayer.FromSize(100_000)],
+            QualityLayers = [Jpeg2000QualityLayer.FromSize(30_000), Jpeg2000QualityLayer.FromSize(100_000)],
             MetadataHandling = MetadataHandling.DiscardUnsupported,
+        });
+    }
+    #endregion
+
+    /// <summary>JPEG 2000 for servers and viewers: precincts in a position progression, tile-parts and length markers.</summary>
+    #region Imaging_Jpeg2000PrecinctsAndTileParts
+    public static void SaveJpeg2000ForStreaming(string inputPath, string path)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Precincts of 256x256 coefficients at the full resolution and 128x128 below: the packets of each area of a tile
+        // are apart, and the RPCL order gives the image resolution by resolution, area by area. A tile-part starts at each
+        // resolution level, and the TLM and PLT marker segments list the lengths of the tile-parts and of the packets, so
+        // that a reader or a JPIP server finds the bytes of a resolution and of an area without reading the others.
+        image.Save(path, new Jpeg2000Encoder
+        {
+            PrecinctSizes = [new Size(256, 256), new Size(128, 128)],
+            ProgressionOrder = Jpeg2000ProgressionOrder.Rpcl,
+            TilePartDivision = Jpeg2000TilePartDivision.Resolution,
+            WriteTilePartLengths = true,
+            WritePacketLengths = true,
+            TileWidth = 1024,
+            TileHeight = 1024,
         });
     }
     #endregion
@@ -1627,6 +1681,23 @@ internal static class Examples
         {
             Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
         });
+    }
+    #endregion
+
+    /// <summary>OpenEXR: a tiled texture with its mipmap levels, and a lossy DWAB file for review copies.</summary>
+    #region Imaging_OpenExrTiledLossy
+    public static void SaveOpenExrTextureAndPreview(Image hdr, string texturePath, string reviewPath)
+    {
+        // Tiles of 64x64 pixels, with the mipmap levels a renderer reads: the encoder generates them by area average
+        hdr.Save(texturePath, new OpenExrEncoder
+        {
+            Compression = OpenExrCompression.Zip,
+            Tiling = new OpenExrTiling { TileWidth = 64, TileHeight = 64, LevelMode = OpenExrLevelMode.MipmapLevels },
+        });
+
+        // A lossy compression is only used when it is chosen: DWAB codes the colors as DCT blocks (alpha stays exact);
+        // a larger level gives a smaller file and larger errors
+        hdr.Save(reviewPath, new OpenExrEncoder { Compression = OpenExrCompression.Dwab, DwaCompressionLevel = 45 });
     }
     #endregion
 
@@ -1997,6 +2068,18 @@ internal static class Examples
         return string.Create(
             CultureInfo.InvariantCulture,
             $"{font.FamilyName} {font.SubfamilyName}: {font.GlyphCount} glyphs, ascent {metrics.Ascent:0.##}, descent {metrics.Descent:0.##}, euro sign: {hasEuro}");
+    }
+    #endregion
+
+    /// <summary>A PostScript Type 1 font, with the kerning of its AFM file.</summary>
+    #region Imaging_LoadType1Font
+    public static TextLayout LayOutWithType1Font(string pfbPath, string afmPath, string text)
+    {
+        // Font.Load reads a PFB or a PFA file like any other font file. The widths and the kerning of the font are in a
+        // separate AFM file: LoadType1 adds its kerning pairs to the font
+        var metrics = AfmFontMetrics.Load(File.ReadAllBytes(afmPath));
+        var font = Font.LoadType1(pfbPath, metrics);
+        return TextLayout.Create(text, new TextStyle(font, 24));
     }
     #endregion
 

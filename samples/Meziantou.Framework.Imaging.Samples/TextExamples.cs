@@ -205,4 +205,20 @@ internal static class TextExamples
         image.Save(outputPath);
     }
     #endregion
+
+    /// <summary>Optimal line breaking: the breaks of a paragraph chosen together, so that its lines are evenly filled.</summary>
+    #region Imaging_OptimalLineBreaking
+    public static TextLayout LayOutEvenly(string fontPath, string text, double width)
+    {
+        var font = Font.Load(fontPath);
+
+        // A line can end before the text that would still fit, when this leaves less room at the end of the lines
+        // after it. The last line of a paragraph can be short: it costs nothing
+        return TextLayout.Create(text, new TextStyle(font, 16), new TextLayoutOptions
+        {
+            MaxWidth = width,
+            LineBreakStrategy = TextLineBreakStrategy.Optimal,
+        });
+    }
+    #endregion
 }

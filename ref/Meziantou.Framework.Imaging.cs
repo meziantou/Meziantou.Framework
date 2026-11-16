@@ -1619,6 +1619,44 @@ namespace Meziantou.Framework.Imaging
         public int? QualityLayerLimit { get => throw null; init { } }
     }
 
+    public enum JpegXlBlendMode
+    {
+        Replace = 0,
+        Add = 1,
+        Blend = 2,
+        AlphaWeightedAdd = 3,
+        Multiply = 4,
+    }
+
+    public sealed class JpegXlLayer
+    {
+        public const int MaxNameLength = 1071;
+        public const int MaxOffset = 536870911;
+        public const int MinOffset = -536870912;
+        public Meziantou.Framework.Imaging.JpegXlBlendMode BlendMode { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Image Image { get => throw null; }
+        public string? Name { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Point Offset { get => throw null; set { } }
+    }
+
+    public sealed class JpegXlLayeredImage : System.IDisposable
+    {
+        public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.JpegXlLayer> Layers { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.ImageMetadata Metadata { get => throw null; }
+        public Meziantou.Framework.Imaging.Size Size { get => throw null; }
+        public JpegXlLayeredImage(int width, int height, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) { }
+        public Meziantou.Framework.Imaging.JpegXlLayer AddLayer(Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Point offset = default, Meziantou.Framework.Imaging.JpegXlBlendMode blendMode = Meziantou.Framework.Imaging.JpegXlBlendMode.Replace, string? name = null) => throw null;
+        public void Dispose() { }
+        public Meziantou.Framework.Imaging.JpegXlLayer InsertLayer(int index, Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Point offset = default, Meziantou.Framework.Imaging.JpegXlBlendMode blendMode = Meziantou.Framework.Imaging.JpegXlBlendMode.Replace, string? name = null) => throw null;
+        public static Meziantou.Framework.Imaging.JpegXlLayeredImage Load(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public static Meziantou.Framework.Imaging.JpegXlLayeredImage Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public static Meziantou.Framework.Imaging.JpegXlLayeredImage Load(string path, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public void RemoveLayerAt(int index) { }
+        public void Save(System.IO.Stream stream, Meziantou.Framework.Imaging.Formats.JpegXlEncoder? encoder = null) { }
+        public void Save(string path, Meziantou.Framework.Imaging.Formats.JpegXlEncoder? encoder = null) { }
+    }
+
     public sealed class JpegXlTranscodeOptions
     {
         public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; init { } }
@@ -3496,11 +3534,15 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.Jpeg2000Container Container { get => throw null; init { } }
         public int DecompositionLevels { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Size> PrecinctSizes { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.Jpeg2000ProgressionOrder ProgressionOrder { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Formats.Jpeg2000QualityLayer> QualityLayers { get => throw null; init { } }
         public int TileHeight { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.Jpeg2000TilePartDivision TilePartDivision { get => throw null; init { } }
         public int TileWidth { get => throw null; init { } }
+        public bool WritePacketLengths { get => throw null; init { } }
+        public bool WriteTilePartLengths { get => throw null; init { } }
     }
 
     public enum Jpeg2000ProgressionOrder
@@ -3521,6 +3563,14 @@ namespace Meziantou.Framework.Imaging.Formats
         public static Meziantou.Framework.Imaging.Formats.Jpeg2000QualityLayer FromBitsPerPixel(double bitsPerPixel) => throw null;
         public static Meziantou.Framework.Imaging.Formats.Jpeg2000QualityLayer FromSize(long bytes) => throw null;
         public override string ToString() => throw null;
+    }
+
+    public enum Jpeg2000TilePartDivision
+    {
+        None = 0,
+        Resolution = 1,
+        Layer = 2,
+        Component = 3,
     }
 
     public enum JpegChromaSubsampling
@@ -3572,6 +3622,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
         public int Effort { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public bool OptimizeFrames { get => throw null; init { } }
         public bool Progressive { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
     }
@@ -3590,20 +3641,56 @@ namespace Meziantou.Framework.Imaging.Formats
         Zips = 2,
         Zip = 3,
         Piz = 4,
+        Pxr24 = 5,
+        B44 = 6,
+        B44A = 7,
+        Dwaa = 8,
+        Dwab = 9,
     }
 
     public sealed class OpenExrEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
         public bool AllowBitDepthReduction { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.OpenExrCompression Compression { get => throw null; init { } }
+        public float DwaCompressionLevel { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.OpenExrLineOrder LineOrder { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.OpenExrPixelType? PixelType { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.OpenExrTiling? Tiling { get => throw null; init { } }
+    }
+
+    public enum OpenExrLevelMode
+    {
+        OneLevel = 0,
+        MipmapLevels = 1,
+        RipmapLevels = 2,
+    }
+
+    public enum OpenExrLevelRounding
+    {
+        Down = 0,
+        Up = 1,
+    }
+
+    public enum OpenExrLineOrder
+    {
+        IncreasingY = 0,
+        DecreasingY = 1,
+        RandomY = 2,
     }
 
     public enum OpenExrPixelType
     {
         Half = 0,
         Float = 1,
+    }
+
+    public sealed class OpenExrTiling
+    {
+        public Meziantou.Framework.Imaging.Formats.OpenExrLevelMode LevelMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.OpenExrLevelRounding LevelRounding { get => throw null; init { } }
+        public int TileHeight { get => throw null; init { } }
+        public int TileWidth { get => throw null; init { } }
     }
 
     public enum PngAnimationMode
@@ -3757,12 +3844,14 @@ namespace Meziantou.Framework.Imaging.Formats
         public int AlphaQuality { get => throw null; init { } }
         public bool ClearTransparentColors { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.WebPCompression Compression { get => throw null; init { } }
+        public bool DitherBitDepthReduction { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
         public int Effort { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public int NearLossless { get => throw null; init { } }
         public bool OptimizeFrames { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
+        public bool SharpYuv { get => throw null; init { } }
     }
 }
 namespace Meziantou.Framework.Imaging.Metadata
@@ -4091,6 +4180,8 @@ namespace Meziantou.Framework.Imaging.Typography
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.Font> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.Font> LoadAsync(string path, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font? LoadInstalled(string familyName, int weight = 400, bool isItalic = false, Meziantou.Framework.Fonts.SystemFontCollection? fonts = null, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.Font LoadType1(System.ReadOnlySpan<byte> data, Meziantou.Framework.Fonts.AfmFontMetrics? metrics, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.Font LoadType1(string path, Meziantou.Framework.Fonts.AfmFontMetrics? metrics, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public Meziantou.Framework.Imaging.Typography.Font WithVariations(Meziantou.Framework.Imaging.Typography.FontNamedInstance instance) => throw null;
         public Meziantou.Framework.Imaging.Typography.Font WithVariations(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.FontVariationSetting> settings) => throw null;
     }

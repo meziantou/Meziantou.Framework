@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -57,12 +58,42 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
     // The number of complete passes at each checkpoint of the frame that is being received
     private readonly List<int> _stages = [];
 
+    // Layer mode (JpegXlLayeredImage): the layers decoded so far, and what each reference slot holds
+    private readonly List<JpegXlDecodedLayer>? _layers;
+    private readonly SlotContent[] _slots = new SlotContent[4];
+
     public JpegXlDecoder(ImageDecodeRequest request, ImageCodecContext context)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(context);
         _request = request;
         _context = context;
+    }
+
+    /// <summary>
+    /// Creates a decoder that gives the layers of a still image instead of the image they make: each regular frame is
+    /// rendered at its own size, before it is blended (see <see cref="OnLayerFrame"/>).
+    /// </summary>
+    /// <param name="context">The per-input context.</param>
+    /// <param name="layers">Receives the layers, from the bottom one up; the caller disposes their images.</param>
+    public JpegXlDecoder(ImageCodecContext context, List<JpegXlDecodedLayer> layers)
+        : this(ImageDecodeRequest.Create(new ImageDecodeOptions(), pixelFormat: null), context)
+    {
+        ArgumentNullException.ThrowIfNull(layers);
+        _layers = layers;
+    }
+
+    /// <summary>What a reference slot holds for the layers of a still image.</summary>
+    private enum SlotContent
+    {
+        /// <summary>Nothing: zeros.</summary>
+        Empty,
+
+        /// <summary>The layers decoded so far, blended.</summary>
+        Layers,
+
+        /// <summary>Anything else: fewer layers than were decoded, or a frame that is not a layer.</summary>
+        Other,
     }
 
     public override void OnHeaderComplete(JpegXlStructureParser structure)
@@ -76,12 +107,21 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
             // the one that labels the image
             var conversion = _request.CmykConversion ?? throw JpegXlFormat.Unsupported("The JPEG XL image has a black channel (CMYK): CMYK images are only loaded with a color conversion; set the CmykConversion property of the decode or reader options.", "CMYK");
             var transform = conversion.CreateTransform(profile) ?? throw JpegXlFormat.Unsupported("The JPEG XL image has a black channel (CMYK) and no CMYK color profile, and CmykConversionOptions.AssumedSourceProfile is null.", "CMYK without color profile");
-            _inkConversion = transform.Pipeline;
+            _inkConversion?.ReleaseLookupTables();
+            _inkConversion = transform.Pipeline.BindLookupTables(_context.Scope);
             profile = conversion.DestinationProfile;
         }
 
         _defaultPixelFormat = structure.DefaultPixelFormat;
         _profile = profile;
+        if (_layers is not null)
+        {
+            if (structure.Header.HasAnimation)
+                throw JpegXlFormat.Unsupported("The JPEG XL image is an animation: its frames are not the layers of a still image; load it with Image.Load.", "layers of an animation");
+
+            return;
+        }
+
         if (_request.IsScaled)
         {
             // Only a still image without extra channels may be decoded from the LF image of its frame, at 1/8 of its size:
@@ -124,6 +164,9 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         ArgumentNullException.ThrowIfNull(sections);
         var header = structure.Header;
         var isDisplayed = structure.IsDisplayed(frame);
+        if (_layers is not null)
+            return OnLayerFrame(structure, frame, toc, sections, isDisplayed);
+
         if (_mayDecodeLfImage)
         {
             // The first frame decides: the image is its LF image, or is decoded at full size
@@ -193,6 +236,160 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         // The still image ends in OnEnd, after the metadata boxes that follow the codestream
         _stillFramePending = true;
         return true;
+    }
+
+    /// <summary>
+    /// Decodes a frame in layer mode. A regular frame is a layer: it is rendered as usual, and its samples after the color
+    /// transform, before they are blended, are its image. A layer must be blended with the layers below it, and be saved for
+    /// the next one: it draws on the slot that holds the layers decoded so far (or on an empty slot, below the first layer),
+    /// with the same blending for its color and alpha channels, alpha weights from the alpha channel, and no clamping.
+    /// Other frames (LF frames, sources of patches) are rendered for the frames that refer to them.
+    /// </summary>
+    private bool OnLayerFrame(JpegXlStructureParser structure, JpegXlFrameHeader frame, JpegXlToc toc, WebPPayloadBuffer sections, bool isDisplayed)
+    {
+        var header = structure.Header;
+        var isLayer = frame.IsRegular && !(frame.SaveBeforeColorTransform && !frame.IsLast);
+        if (isLayer)
+        {
+            ValidateLayer(header, frame);
+        }
+
+        if (isDisplayed)
+        {
+            _visibleFrameIndex++;
+            _invisibleFrameIndex = 0;
+        }
+        else
+        {
+            _invisibleFrameIndex++;
+        }
+
+        // A layer is charged as a frame of its own size before it is decoded, and its image is created without charging it
+        // again (CreateLayerImage); its name is read first, so that an invalid name leaves no image behind
+        string? name = null;
+        if (isLayer)
+        {
+            name = DecodeName(frame.Name);
+            _context.Tracker.ChargeFrame(new Size(checked((int)frame.Width), checked((int)frame.Height)));
+        }
+        else
+        {
+            _context.Tracker.ChargeHiddenPixels((long)frame.Width * frame.Height);
+        }
+
+        JpegXlImageBuffer? layer = null;
+        try
+        {
+            using (var decoded = JpegXlFrameDecoder.Decode(header, frame, toc, sections.Data, _renderer?.GetLfFrame(frame.LfLevel), _context.Configuration.MaxDegreeOfParallelism, _context.Scope, _context.CancellationToken))
+            {
+                _renderer ??= new JpegXlFrameRenderer(header, structure.XybIccOutput, _context.Scope, _context.CancellationToken, _context.Configuration.MaxDegreeOfParallelism);
+                using var canvas = _renderer.Render(decoded, frame, isDisplayed, _visibleFrameIndex, _invisibleFrameIndex, layerCapture: isLayer ? buffer => layer = buffer.Clone(_context.Scope) : null);
+            }
+
+            if (layer is not null)
+            {
+                var image = CreateLayerImage(structure, layer);
+                try
+                {
+                    _layers!.Add(new JpegXlDecodedLayer(image, new Point(frame.X0, frame.Y0), (JpegXlBlendMode)frame.Blending.Mode, name));
+                }
+                catch
+                {
+                    image.Dispose();
+                    throw;
+                }
+            }
+        }
+        finally
+        {
+            layer?.Dispose();
+        }
+
+        // What the frame leaves in the slot it is saved to
+        if (JpegXlFrameRenderer.CanBeReferenced(frame))
+        {
+            if (isLayer)
+            {
+                for (var i = 0; i < _slots.Length; i++)
+                {
+                    if (_slots[i] == SlotContent.Layers)
+                    {
+                        _slots[i] = SlotContent.Other;
+                    }
+                }
+            }
+
+            _slots[frame.SaveAsReference] = isLayer ? SlotContent.Layers : SlotContent.Other;
+        }
+
+        return true;
+    }
+
+    /// <summary>Throws when a frame is not a layer that <see cref="JpegXlLayer"/> describes: see <see cref="OnLayerFrame"/>.</summary>
+    private void ValidateLayer(JpegXlImageHeader header, JpegXlFrameHeader frame)
+    {
+        var blending = frame.Blending;
+        var readsSource = blending.Mode != JpegXlBlendingInfo.ModeReplace || !frame.IsFullFrame;
+        if (readsSource)
+        {
+            var content = _slots[blending.Source];
+            if (content != SlotContent.Layers && !(content == SlotContent.Empty && _layers!.Count == 0))
+                throw JpegXlFormat.Unsupported("A frame of the JPEG XL image is blended with a reference frame that is not the layers below it: the image cannot be described as a list of layers.", "layer blended with another reference frame");
+        }
+
+        var alphaIndex = header.AlphaChannelIndex;
+        if (IsClamped(blending) || (UsesAlphaWeights(blending, header) && blending.AlphaChannel != alphaIndex))
+            throw JpegXlFormat.Unsupported("A frame of the JPEG XL image clamps its blending, or weights it with an extra channel that is not its alpha channel: the image cannot be described as a list of layers.", "layer blending");
+
+        if (alphaIndex >= 0)
+        {
+            var alpha = frame.ExtraChannelBlending[alphaIndex];
+            if (alpha.Mode != blending.Mode || (readsSource && alpha.Source != blending.Source) || IsClamped(alpha) || (UsesAlphaWeights(alpha, header) && alpha.AlphaChannel != alphaIndex))
+                throw JpegXlFormat.Unsupported("A frame of the JPEG XL image blends its alpha channel differently from its colors: the image cannot be described as a list of layers.", "layer blending of the alpha channel");
+        }
+
+        static bool UsesAlphaWeights(JpegXlBlendingInfo blending, JpegXlImageHeader header)
+            => header.ExtraChannels.Length > 0 && blending.Mode is JpegXlBlendingInfo.ModeBlend or JpegXlBlendingInfo.ModeMulAdd;
+
+        static bool IsClamped(JpegXlBlendingInfo blending) => blending.Clamp && blending.Mode is not (JpegXlBlendingInfo.ModeReplace or JpegXlBlendingInfo.ModeAdd);
+    }
+
+    /// <summary>Converts the samples of a layer, already charged as a frame (<see cref="OnLayerFrame"/>), to an image of the default pixel format of the file.</summary>
+    private Image CreateLayerImage(JpegXlStructureParser structure, JpegXlImageBuffer layer)
+    {
+        using var sink = DecodedFrameSink.Create(_context, _request with { IsEmbeddedPayload = true }, ImageFormat.JpegXl, new Size(layer.Width, layer.Height), _defaultPixelFormat, PixelFormatWidening.GetWidenedFormat(_defaultPixelFormat), _profile);
+        sink.BeginFrame(FrameDuration.Zero);
+        WriteCanvas(sink, structure.Header, layer, _renderer!.OutputColorChannelCount);
+        sink.EndImage();
+        return sink.Build(structure.Metadata, animation: null);
+    }
+
+    private static string? DecodeName(byte[] name)
+    {
+        if (name.Length == 0)
+            return null;
+
+        try
+        {
+            return JpegXlLayer.StrictUtf8.GetString(name);
+        }
+        catch (DecoderFallbackException)
+        {
+            throw JpegXlFormat.Invalid("the name of a frame is not UTF-8 text.");
+        }
+    }
+
+    /// <summary>Gets the row buffer of the pixel rows, at least of a length.</summary>
+    private Span<byte> RentRow(int length)
+    {
+        if (_row is null || _row.RawBuffer.Length < length)
+        {
+            _row?.Dispose();
+            _row = null;
+            _row = _context.Scope.Rent(length, AllocationKind.DecoderState, clear: false);
+        }
+
+        return _row.RawBuffer.AsSpan(0, length);
     }
 
     /// <summary>Decodes a still image at 1/8 of its size from the LF image of its only frame.</summary>
@@ -332,6 +529,9 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
 
     public override Image GetResult()
     {
+        if (_layers is not null)
+            throw new InvalidOperationException("A decoder of layers gives no image.");
+
         var structure = _structure ?? throw new InvalidOperationException("The JPEG XL file was not decoded.");
         return _sink!.Build(structure.Metadata, structure.Animation);
     }
@@ -341,6 +541,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         if (disposing)
         {
             _row?.Dispose();
+            _inkConversion?.ReleaseLookupTables();
             _row = null;
             _inks?.Dispose();
             _inks = null;
@@ -359,8 +560,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         var width = (int)header.Width;
         var height = (int)header.Height;
         var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
-        _row ??= _context.Scope.Rent(checked(width * bytesPerPixel), AllocationKind.DecoderState, clear: false);
-        var row = _row.RawBuffer.AsSpan(0, width * bytesPerPixel);
+        var row = RentRow(checked(width * bytesPerPixel));
 
         var colorCount = header.ColorChannelCount;
         var alphaIndex = header.AlphaChannelIndex;
@@ -530,8 +730,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         var width = canvas.Width;
         var height = canvas.Height;
         var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
-        _row ??= _context.Scope.Rent(checked(width * bytesPerPixel), AllocationKind.DecoderState, clear: false);
-        var row = _row.RawBuffer.AsSpan(0, width * bytesPerPixel);
+        var row = RentRow(checked(width * bytesPerPixel));
         var is16Bit = PixelFormats.GetBitsPerComponent(format) == 16;
         var targetMax = is16Bit ? ushort.MaxValue : byte.MaxValue;
         var isGrayFormat = PixelFormats.IsGrayscale(format);
@@ -600,8 +799,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         var width = canvas.Width;
         var height = canvas.Height;
         var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
-        _row ??= _context.Scope.Rent(checked(width * bytesPerPixel), AllocationKind.DecoderState, clear: false);
-        var row = _row.RawBuffer.AsSpan(0, width * bytesPerPixel);
+        var row = RentRow(checked(width * bytesPerPixel));
         var alphaIndex = header.AlphaChannelIndex;
         var alphaChannel = alphaIndex >= 0 ? canvas.ColorChannelCount + alphaIndex : -1;
 
@@ -656,8 +854,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         var width = canvas.Width;
         var height = canvas.Height;
         var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
-        _row ??= _context.Scope.Rent(checked(width * bytesPerPixel), AllocationKind.DecoderState, clear: false);
-        var row = _row.RawBuffer.AsSpan(0, width * bytesPerPixel);
+        var row = RentRow(checked(width * bytesPerPixel));
         var is16Bit = PixelFormats.GetBitsPerComponent(format) == 16;
         var max = is16Bit ? ushort.MaxValue : byte.MaxValue;
         var alphaIndex = header.AlphaChannelIndex;
@@ -802,9 +999,23 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         }
     }
 
-    /// <summary>Rounds a sample, where 1 is the largest value, to the nearest integer of a depth; a sample outside the range is clamped.</summary>
+    /// <summary>
+    /// Rounds a sample, where 1 is the largest value, to the nearest integer of a depth; a sample outside the range is
+    /// clamped. A 16-bit sample is rounded from the product in double precision: in single precision, <c>value * 65535</c>
+    /// keeps 1/512 of a unit, which rounds a blended sample just below a half up, where djxl and jxl-oxide round it down. An
+    /// 8-bit sample keeps the single-precision product of the vector path of <see cref="WriteCanvasRow"/>.
+    /// </summary>
     private static int ToInteger(float value, int max)
     {
+        if (max > byte.MaxValue)
+        {
+            var product = ((double)value * max) + 0.5;
+            if (!(product > 0))
+                return 0;
+
+            return product >= max ? max : (int)product;
+        }
+
         var scaled = (value * max) + 0.5f;
         if (!(scaled > 0))
             return 0;

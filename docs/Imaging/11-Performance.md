@@ -41,13 +41,13 @@ public static void SavePreview(string animationPath, string previewPath)
   [Image.Load\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.Load) converts while loading: ask for the format your code processes, so that you do not convert the
   image a second time. See [Pixel formats](04-Concepts/05-PixelFormats.md).
 - **Use ICC profiles for CMYK files only when the colors matter.** A CMYK file loaded as RGB is converted with ICC
-  profiles, through a four-dimensional table: on a 1920x1080 JPEG file it takes about 5 times as long as decoding.
+  profiles, through a four-dimensional table, which costs more than decoding the file.
   For thumbnails and previews, load the inks as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) and convert them with
   [CloneAs](cref:Meziantou.Framework.Imaging.Image.CloneAs) and a [CmykPixelConversionOptions](cref:Meziantou.Framework.Imaging.CmykPixelConversionOptions)
   without [CmykProfile](cref:Meziantou.Framework.Imaging.CmykPixelConversionOptions.CmykProfile): an image without
   profile (set [Metadata.IccProfile](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.IccProfile) to `null` to drop the
-  profile of the file) is converted with the device CMYK formulas, which are vectorized for 8-bit pixels and cost a
-  fraction of the decoding. See [Convert between CMYK and RGB pixels](09-Color/03-ColorManagement.md#convert-between-cmyk-and-rgb-pixels).
+  profile of the file) is converted with the device CMYK formulas, which are much cheaper but do not describe what a
+  press prints. See [Convert between CMYK and RGB pixels](09-Color/03-ColorManagement.md#convert-between-cmyk-and-rgb-pixels).
 
 ## Bound the memory
 

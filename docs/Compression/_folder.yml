@@ -1,0 +1,4 @@
+title: Compression
+description: Read and write 7z archives, read RAR and zip archives with every method, open any archive with one API, and compress with XZ, LZMA, lzip and bzip2.
+packageIds:
+- Meziantou.Framework.Compression

@@ -10,6 +10,164 @@ public sealed class PixelAccessTests
     private static readonly PixelStorageLayoutOptions SegmentedPadded = new() { RowAlignment = 16, TargetSlabBytes = 64 };
 
     [Fact]
+    public void CustomPixelsAreImportedCopiedAndProcessedThroughTheirStorageFormat()
+    {
+        #region ICustomPixel_Usage
+        // Bgr555 converts from and to Rgb24: an image of Rgb24 pixels is made from its pixels
+        Bgr555[] source = [Bgr555.FromColor(31, 0, 0), Bgr555.FromColor(0, 31, 0), Bgr555.FromColor(0, 0, 31), Bgr555.FromColor(31, 31, 31)];
+        using var image = Image.ImportCustomPixelData<Bgr555>(source, width: 2, height: 2);
+        Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
+
+        // The pixels of a frame of any format are converted to the storage format, then to the custom pixels
+        using var gray = image.CloneAs<Gray16>();
+        var copy = new Bgr555[4];
+        gray.Frames[0].CopyCustomPixelDataTo<Bgr555>(copy);
+
+        // A frame of the storage format is edited in place, row by row
+        image.Frames[0].ProcessCustomPixelRows<Bgr555>(static (row, y) =>
+        {
+            foreach (ref var pixel in row)
+            {
+                pixel = Bgr555.FromColor(pixel.Blue, pixel.Green, pixel.Red);
+            }
+        });
+        #endregion
+
+        var rgb = new Rgb24[4];
+        ((Image<Rgb24>)image).Frames[0].CopyPixelDataTo(rgb);
+        Assert.Equal([new Rgb24(0, 0, 255), new Rgb24(0, 255, 0), new Rgb24(255, 0, 0), new Rgb24(255, 255, 255)], rgb);
+
+        // The copy of the gray frame is its conversion to Rgb24, then to Bgr555
+        using var grayRgb = gray.CloneAs<Rgb24>();
+        var bytes = new byte[12];
+        grayRgb.Frames[0].CopyPixelBytesTo(bytes);
+        var expected = new Bgr555[4];
+        Bgr555.FromStorage(bytes, expected);
+        Assert.Equal(expected, copy);
+        Assert.All(copy, pixel => Assert.Equal((pixel.Red, pixel.Red), (pixel.Green, pixel.Blue)));
+    }
+
+    [Fact]
+    public void CustomPixelsKeepTheStrideOfTheCallerAndCheckTheirArguments()
+    {
+        // A stride of 3 pixels for rows of 2: the third pixel of each row is padding, never read nor written
+        var source = new Bgr555[] { Bgr555.FromColor(1, 2, 3), Bgr555.FromColor(4, 5, 6), new(0x7FFF), Bgr555.FromColor(7, 8, 9), Bgr555.FromColor(10, 11, 12) };
+        using var image = Image.ImportCustomPixelData<Bgr555>(source, 2, 2, strideInPixels: 3);
+        var copy = new Bgr555[5];
+        copy.AsSpan().Fill(new Bgr555(0x1234));
+        image.Frames[0].CopyCustomPixelDataTo<Bgr555>(copy, strideInPixels: 3);
+        Assert.Equal([Bgr555.FromColor(1, 2, 3), Bgr555.FromColor(4, 5, 6), new Bgr555(0x1234), Bgr555.FromColor(7, 8, 9), Bgr555.FromColor(10, 11, 12)], copy);
+
+        Assert.Throws<ArgumentException>("source", () => Image.ImportCustomPixelData<Bgr555>(source.AsSpan(0, 4), 2, 2, strideInPixels: 3));
+        Assert.Throws<ArgumentOutOfRangeException>("strideInPixels", () => Image.ImportCustomPixelData<Bgr555>(source, 2, 2, strideInPixels: 1));
+        Assert.Throws<ArgumentOutOfRangeException>("width", () => Image.ImportCustomPixelData<Bgr555>(source, 0, 2));
+        Assert.Throws<ArgumentException>("destination", () => image.Frames[0].CopyCustomPixelDataTo<Bgr555>(new Bgr555[3]));
+        Assert.Throws<ArgumentNullException>("action", () => image.Frames[0].ProcessCustomPixelRows<Bgr555>(null!));
+        Assert.Throws<NotSupportedException>(() => Image.ImportCustomPixelData<UnknownStoragePixel>([default], 1, 1));
+        Assert.Throws<ImageResourceLimitException>(() => Image.ImportCustomPixelData<Bgr555>(source, 2, 2, configuration: new ImageConfiguration { Limits = new ImageResourceLimits { MaxWidth = 1 } }));
+    }
+
+    [Fact]
+    public void ProcessingCustomPixelsNeedsTheStorageFormat()
+    {
+        using var image = new Image<Rgba32>(2, 1);
+        var exception = Assert.Throws<InvalidOperationException>(() => image.Frames[0].ProcessCustomPixelRows<Bgr555>(static (row, y) => { }));
+        Assert.Contains("Rgb24", exception.Message);
+    }
+
+    [Fact]
+    public void CopyingCustomPixelsFollowsTheConversionRules()
+    {
+        // Removing alpha without a background is rejected before any pixel is written, as CloneAs does
+        using var image = new Image<Rgba32>(2, 1);
+        image.Frames[0][1, 0] = new Rgba32(255, 0, 0, 128);
+        var copy = new Bgr555[2];
+        copy.AsSpan().Fill(new Bgr555(0x1234));
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.Frames[0].CopyCustomPixelDataTo<Bgr555>(copy));
+        Assert.All(copy, pixel => Assert.Equal(new Bgr555(0x1234), pixel));
+
+        image.Frames[0].CopyCustomPixelDataTo<Bgr555>(copy, options: new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) });
+        Assert.Equal([Bgr555.FromColor(0, 0, 0), Bgr555.FromColor(16, 0, 0)], copy);
+    }
+
+    [Fact]
+    public void AFailingCustomConversionReleasesTheImage()
+    {
+        using var tracking = new AllocationTracking();
+        Assert.Throws<InvalidOperationException>(() => Image.ImportCustomPixelData<FailingPixel>(new FailingPixel[4], 2, 2));
+        Assert.Equal(0, tracking.LiveBytes);
+    }
+
+    [Fact]
+    public void CustomPixelCopiesConvertCmykThroughTheEmbeddedProfileLikeCloneAs()
+    {
+        // The embedded profile converts the inks, not the device formulas: the same colors as CloneAs with the same options
+        using var image = new Image<Cmyk32>(2, 1, new Cmyk32(10, 200, 40, 30));
+        image.Frames[0][1, 0] = new Cmyk32(220, 15, 90, 5);
+        image.Metadata.IccProfile = Metadata.IccProfile.Cgats001CompatibleCmyk;
+        var options = new PixelConversionOptions { CmykConversion = CmykPixelConversionOptions.Default };
+        using var rgb = image.CloneAs<Rgb24>(options);
+        var expected = new Bgr555[2];
+        rgb.Frames[0].CopyCustomPixelDataTo<Bgr555>(expected);
+        var actual = new Bgr555[2];
+        image.Frames[0].CopyCustomPixelDataTo<Bgr555>(actual, options: options);
+        Assert.Equal(expected, actual);
+    }
+
+    #region ICustomPixel_Bgr555
+    /// <summary>A pixel of 5-bit blue, green and red components packed in 16 bits (blue in the low bits), stored as <see cref="Rgb24"/>.</summary>
+    private readonly record struct Bgr555(ushort Packed) : ICustomPixel<Bgr555>
+    {
+        public static PixelFormat StorageFormat => PixelFormat.Rgb24;
+
+        public int Blue => Packed & 31;
+
+        public int Green => (Packed >> 5) & 31;
+
+        public int Red => (Packed >> 10) & 31;
+
+        public static Bgr555 FromColor(int red, int green, int blue) => new((ushort)((red << 10) | (green << 5) | blue));
+
+        public static void FromStorage(ReadOnlySpan<byte> source, Span<Bgr555> destination)
+        {
+            for (var i = 0; i < destination.Length; i++)
+            {
+                // The nearest 5-bit component of each 8-bit sample
+                destination[i] = FromColor(((source[3 * i] * 31) + 127) / 255, ((source[(3 * i) + 1] * 31) + 127) / 255, ((source[(3 * i) + 2] * 31) + 127) / 255);
+            }
+        }
+
+        public static void ToStorage(ReadOnlySpan<Bgr555> source, Span<byte> destination)
+        {
+            for (var i = 0; i < source.Length; i++)
+            {
+                destination[3 * i] = (byte)(((source[i].Red * 255) + 15) / 31);
+                destination[(3 * i) + 1] = (byte)(((source[i].Green * 255) + 15) / 31);
+                destination[(3 * i) + 2] = (byte)(((source[i].Blue * 255) + 15) / 31);
+            }
+        }
+    }
+    #endregion
+
+    private readonly struct UnknownStoragePixel : ICustomPixel<UnknownStoragePixel>
+    {
+        public static PixelFormat StorageFormat => PixelFormat.Unknown;
+
+        public static void FromStorage(ReadOnlySpan<byte> source, Span<UnknownStoragePixel> destination) => throw new InvalidOperationException();
+
+        public static void ToStorage(ReadOnlySpan<UnknownStoragePixel> source, Span<byte> destination) => throw new InvalidOperationException();
+    }
+
+    private readonly struct FailingPixel : ICustomPixel<FailingPixel>
+    {
+        public static PixelFormat StorageFormat => PixelFormat.Gray8;
+
+        public static void FromStorage(ReadOnlySpan<byte> source, Span<FailingPixel> destination) => throw new InvalidOperationException();
+
+        public static void ToStorage(ReadOnlySpan<FailingPixel> source, Span<byte> destination) => throw new InvalidOperationException();
+    }
+
+    [Fact]
     public void IndexerReadsAndWritesSinglePixels()
     {
         using var image = new Image<Rgba64>(3, 2);
@@ -268,6 +426,10 @@ public sealed class PixelAccessTests
             case PixelFormat.Rgba1010102: CopyRoundTrip<Rgba1010102>(segmented); break;
             case PixelFormat.Cmyk32: CopyRoundTrip<Cmyk32>(segmented); break;
             case PixelFormat.Cmyk64: CopyRoundTrip<Cmyk64>(segmented); break;
+            case PixelFormat.GrayFloat: CopyRoundTrip<GrayFloat>(segmented); break;
+            case PixelFormat.GrayHalf: CopyRoundTrip<GrayHalf>(segmented); break;
+            case PixelFormat.LaFloat: CopyRoundTrip<LaFloat>(segmented); break;
+            case PixelFormat.LaHalf: CopyRoundTrip<LaHalf>(segmented); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }

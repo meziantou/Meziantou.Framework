@@ -264,4 +264,92 @@ internal static class ExtensibilityExamples
         ImageBufferPool.MaxRetainedBytes = 4 * 1024 * 1024;
     }
     #endregion
+
+    /// <summary>Exchanges pixels with an API that stores them in a layout of its own.</summary>
+    #region Imaging_CustomPixel
+    public static Yuv8[] ToYuv(string path)
+    {
+        // The pixels of any image are converted to Rgb24, the storage format of Yuv8, then to Yuv8
+        using var image = Image.Load(path);
+        var pixels = new Yuv8[image.Width * image.Height];
+        image.Frames[0].CopyCustomPixelDataTo<Yuv8>(pixels, options: new PixelConversionOptions { BackgroundColor = new Rgba64(65535, 65535, 65535) });
+
+        // An image is made from Yuv8 pixels, and its frames are edited as Yuv8 pixels, row by row
+        using var copy = Image.ImportCustomPixelData<Yuv8>(pixels, image.Width, image.Height);
+        copy.Frames[0].ProcessCustomPixelRows<Yuv8>(static (row, y) =>
+        {
+            foreach (ref var pixel in row)
+            {
+                pixel = pixel with { U = 128, V = 128 };
+            }
+        });
+
+        return pixels;
+    }
+
+    /// <summary>A full-range BT.601 Y'CbCr pixel, converted from and to the 8-bit RGB of the library.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly record struct Yuv8(byte Y, byte U, byte V) : ICustomPixel<Yuv8>
+    {
+        public static PixelFormat StorageFormat => PixelFormat.Rgb24;
+
+        public static void FromStorage(ReadOnlySpan<byte> source, Span<Yuv8> destination)
+        {
+            for (var i = 0; i < destination.Length; i++)
+            {
+                double r = source[3 * i], g = source[(3 * i) + 1], b = source[(3 * i) + 2];
+                var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
+                destination[i] = new(Clamp(y), Clamp(128 + ((b - y) * 0.564)), Clamp(128 + ((r - y) * 0.713)));
+            }
+        }
+
+        public static void ToStorage(ReadOnlySpan<Yuv8> source, Span<byte> destination)
+        {
+            for (var i = 0; i < source.Length; i++)
+            {
+                var (y, u, v) = (source[i].Y, source[i].U - 128.0, source[i].V - 128.0);
+                destination[3 * i] = Clamp(y + (1.402 * v));
+                destination[(3 * i) + 1] = Clamp(y - (0.344136 * u) - (0.714136 * v));
+                destination[(3 * i) + 2] = Clamp(y + (1.772 * u));
+            }
+        }
+
+        private static byte Clamp(double value) => (byte)Math.Clamp(Math.Round(value, MidpointRounding.AwayFromZero), 0, 255);
+    }
+    #endregion
+
+    /// <summary>Takes the memory of the images of a configuration from an allocator of the application.</summary>
+    #region Imaging_BufferAllocator
+    public static long ResizeWithPinnedMemory(string inputPath, string outputPath)
+    {
+        // Every buffer of the images and the operations of this configuration comes from the allocator; the resource
+        // limits are charged before it is asked for an array
+        var allocator = new PinnedBufferAllocator();
+        var configuration = new ImageConfiguration { BufferAllocator = allocator };
+        using (var image = Image.Load(inputPath, new ImageDecodeOptions { Configuration = configuration }))
+        {
+            image.Resize(new ResizeOptions(64, 64));
+            image.Save(outputPath);
+        }
+
+        // Every array was returned when the image was disposed
+        return allocator.LiveBytes; // 0
+    }
+
+    /// <summary>Gives pinned arrays (native code can read them without pinning them) and counts the bytes in use.</summary>
+    public sealed class PinnedBufferAllocator : ImageBufferAllocator
+    {
+        private long _liveBytes;
+
+        public long LiveBytes => Interlocked.Read(ref _liveBytes);
+
+        public override byte[] Rent(int length)
+        {
+            Interlocked.Add(ref _liveBytes, length);
+            return GC.AllocateArray<byte>(length, pinned: true);
+        }
+
+        public override void Return(byte[] buffer) => Interlocked.Add(ref _liveBytes, -buffer.Length);
+    }
+    #endregion
 }

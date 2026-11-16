@@ -31,6 +31,7 @@
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.CodeDom'">https://meziantou.github.io/Meziantou.Framework/codedom/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.CodeOwners'">https://meziantou.github.io/Meziantou.Framework/codeowners/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.CommandLine'">https://meziantou.github.io/Meziantou.Framework/commandline/</PackageProjectUrl>
+    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Compression'">https://meziantou.github.io/Meziantou.Framework/compression/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Csv'">https://meziantou.github.io/Meziantou.Framework/csv/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.DependencyScanning'">https://meziantou.github.io/Meziantou.Framework/dependencyscanning/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.DependencyScanning.Tool'">https://meziantou.github.io/Meziantou.Framework/dependencyscanning/</PackageProjectUrl>
@@ -100,6 +101,7 @@
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.OpenTelemetryCollector'">https://meziantou.github.io/Meziantou.Framework/opentelemetrycollector/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.OpenTelemetryCollector.InMemory'">https://meziantou.github.io/Meziantou.Framework/opentelemetrycollector/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Pdf'">https://meziantou.github.io/Meziantou.Framework/pdf/</PackageProjectUrl>
+    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Pdf.JavaScript'">https://meziantou.github.io/Meziantou.Framework/pdf/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Pdf.VectorGraphics'">https://meziantou.github.io/Meziantou.Framework/vector-graphics/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.PooledMemoryStream'">https://meziantou.github.io/Meziantou.Framework/pooledmemorystream/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.ProcessWrapper'">https://meziantou.github.io/Meziantou.Framework/processwrapper/</PackageProjectUrl>

@@ -46,15 +46,19 @@ public sealed class AccountingConformanceTests
             AssertBalanced(audit, "loaded image");
             Assert.True(audit.LiveBytes >= (long)image.Width * image.Height * PixelFormats.GetBytesPerPixel(image.PixelFormat) * image.Frames.Count);
 
-            using (var reader = Image.OpenReader<TPixel>(new MemoryStream(data), new ImageReaderOptions { Conversion = Conversion }))
+            // A random-access container is not read sequentially (FixtureTraits.IsReadByRandomAccessOnly)
+            if (!FixtureTraits.IsReadByRandomAccessOnly(GoldenCorpus.Default.Get(id)))
             {
-                AssertBalanced(audit, "open reader");
-                using var first = reader.ReadFrame();
-                Assert.NotNull(first);
-                AssertBalanced(audit, "reader and its first frame");
-            }
+                using (var reader = Image.OpenReader<TPixel>(new MemoryStream(data), new ImageReaderOptions { Conversion = Conversion }))
+                {
+                    AssertBalanced(audit, "open reader");
+                    using var first = reader.ReadFrame();
+                    Assert.NotNull(first);
+                    AssertBalanced(audit, "reader and its first frame");
+                }
 
-            AssertBalanced(audit, "disposed reader");
+                AssertBalanced(audit, "disposed reader");
+            }
 
             using var output = new MemoryStream();
             encoder ??= new PngEncoder { MetadataHandling = MetadataHandling.Strip, AnimationMode = image.Frames.Count > 1 ? PngAnimationMode.Animated : PngAnimationMode.Auto };

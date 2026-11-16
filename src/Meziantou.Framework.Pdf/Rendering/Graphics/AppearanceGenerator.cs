@@ -17,6 +17,8 @@ internal static class AppearanceGenerator
     // The flags of a field (12.7.4.1, 12.7.5.3)
     private const int Multiline = 1 << 12;
     private const int Password = 1 << 13;
+    private const int Comb = 1 << 24;
+    private const int RichTextFlag = 1 << 25;
 
     // The nesting of the fields whose entries a widget inherits
     private const int MaxFieldDepth = 32;
@@ -112,8 +114,10 @@ internal static class AppearanceGenerator
             return false;
 
         SetLine(content, annotation, width);
-        Append(content, line.GetNumber(0), line.GetNumber(1)).Append("m ");
-        Append(content, line.GetNumber(2), line.GetNumber(3)).Append("l S");
+        var (x1, y1, x2, y2) = (line.GetNumber(0), line.GetNumber(1), line.GetNumber(2), line.GetNumber(3));
+        Append(content, x1, y1).Append("m ");
+        Append(content, x2, y2).Append("l S ");
+        AppendLineEndings(content, annotation, width, (x2, y2, x1, y1), (x1, y1, x2, y2));
         return true;
     }
 
@@ -130,8 +134,124 @@ internal static class AppearanceGenerator
 
         SetLine(content, annotation, width);
         AppendPolyline(content, vertices);
-        content.Append(close ? "h " : "").Append(Paint(hasStroke, hasFill));
+        content.Append(close ? "h " : "").Append(Paint(hasStroke, hasFill)).Append(' ');
+        if (!close && hasStroke)
+        {
+            // The endings of a polyline are at its first and last vertices (12.5.6.9)
+            var count = Math.Min(vertices.Count, MaxPoints) / 2 * 2;
+            var start = (vertices.GetNumber(2), vertices.GetNumber(3), vertices.GetNumber(0), vertices.GetNumber(1));
+            var end = (vertices.GetNumber(count - 4), vertices.GetNumber(count - 3), vertices.GetNumber(count - 2), vertices.GetNumber(count - 1));
+            AppendLineEndings(content, annotation, width, start, end);
+        }
+
         return true;
+    }
+
+    /// <summary>
+    /// Draws the line endings of a line or a polyline (<c>/LE</c>, 12.5.6.7, table 179): each segment goes from the point
+    /// before the end to the end. The closed shapes are filled with the interior color (<c>/IC</c>) when the annotation has
+    /// one. The size of an ending grows with the width of the line.
+    /// </summary>
+    private static void AppendLineEndings(StringBuilder content, PdfDictionary annotation, double width, (double FromX, double FromY, double X, double Y) start, (double FromX, double FromY, double X, double Y) end)
+    {
+        if (annotation.Get<PdfArray>(PdfName.Create("LE")) is not { Count: 2 } endings)
+            return;
+
+        var fill = new StringBuilder();
+        var hasFill = SetColor(fill, annotation.Get<PdfArray>(PdfName.Create("IC")), stroke: false);
+        var size = (width * 3) + 4;
+        AppendLineEnding(content, (endings.GetResolved(0) as PdfName)?.Value, start, size, hasFill ? fill.ToString() : null);
+        AppendLineEnding(content, (endings.GetResolved(1) as PdfName)?.Value, end, size, hasFill ? fill.ToString() : null);
+    }
+
+    private static void AppendLineEnding(StringBuilder content, string? style, (double FromX, double FromY, double X, double Y) segment, double size, string? fill)
+    {
+        var (fromX, fromY, x, y) = segment;
+        var length = Math.Sqrt(((x - fromX) * (x - fromX)) + ((y - fromY) * (y - fromY)));
+        if (style is null or "None" || !(length > 0) || !double.IsFinite(length))
+            return;
+
+        // The direction of the segment at its end, and the normal to it
+        var (dx, dy) = ((x - fromX) / length, (y - fromY) / length);
+        var (nx, ny) = (-dy, dx);
+        (double X, double Y) Point(double along, double across) => (x + (dx * along) + (nx * across), y + (dy * along) + (ny * across));
+
+        // The arrows open at 30 degrees on each side of the line
+        var back = size * Math.Cos(Math.PI / 6);
+        var side = size * Math.Sin(Math.PI / 6);
+        var half = size / 2;
+        var closed = true;
+        var path = new StringBuilder();
+        switch (style)
+        {
+            case "OpenArrow" or "ClosedArrow":
+                MoveTo(Point(-back, side));
+                LineTo(Point(0, 0));
+                LineTo(Point(-back, -side));
+                closed = style == "ClosedArrow";
+                break;
+
+            case "ROpenArrow" or "RClosedArrow":
+                MoveTo(Point(back, side));
+                LineTo(Point(0, 0));
+                LineTo(Point(back, -side));
+                closed = style == "RClosedArrow";
+                break;
+
+            case "Butt":
+                MoveTo(Point(0, half));
+                LineTo(Point(0, -half));
+                closed = false;
+                break;
+
+            case "Slash":
+                // 30 degrees clockwise from the normal
+                var (sx, sy) = (half * Math.Sin(Math.PI / 6), half * Math.Cos(Math.PI / 6));
+                MoveTo(Point(sx, sy));
+                LineTo(Point(-sx, -sy));
+                closed = false;
+                break;
+
+            case "Square":
+                MoveTo(Point(-half, -half));
+                LineTo(Point(half, -half));
+                LineTo(Point(half, half));
+                LineTo(Point(-half, half));
+                break;
+
+            case "Diamond":
+                MoveTo(Point(-half, 0));
+                LineTo(Point(0, -half));
+                LineTo(Point(half, 0));
+                LineTo(Point(0, half));
+                break;
+
+            case "Circle":
+                const double Kappa = 0.5523;
+                MoveTo(Point(half, 0));
+                CurveTo(Point(half, half * Kappa), Point(half * Kappa, half), Point(0, half));
+                CurveTo(Point(-half * Kappa, half), Point(-half, half * Kappa), Point(-half, 0));
+                CurveTo(Point(-half, -half * Kappa), Point(-half * Kappa, -half), Point(0, -half));
+                CurveTo(Point(half * Kappa, -half), Point(half, -half * Kappa), Point(half, 0));
+                break;
+
+            default:
+                return;
+        }
+
+        // The color is set outside of the path object (8.5.1)
+        if (closed && fill is not null)
+        {
+            content.Append("q ").Append(fill).Append(path).Append("h B Q ");
+        }
+        else
+        {
+            content.Append(path).Append(closed ? "h S " : "S ");
+        }
+
+        void MoveTo((double X, double Y) point) => Append(path, point.X, point.Y).Append("m ");
+        void LineTo((double X, double Y) point) => Append(path, point.X, point.Y).Append("l ");
+        void CurveTo((double X, double Y) a, (double X, double Y) b, (double X, double Y) c) => Append(path, a.X, a.Y, b.X, b.Y, c.X, c.Y).Append("c ");
     }
 
     private static bool Ink(StringBuilder content, PdfDictionary annotation)
@@ -276,6 +396,39 @@ internal static class AppearanceGenerator
 
                     // The quadding (12.7.4.3): left, centered or right; the lines of a multiline field from the top
                     var alignment = Inherited(annotation, "Q") is PdfNumber q ? (int)q.DoubleValue : (form?.GetInteger(PdfName.Create("Q"), 0) ?? 0);
+                    if (type == "Tx" && (flags & RichTextFlag) != 0 && RichTextValue(annotation) is { } richText
+                        && RichText.TryParse(richText, (Inherited(annotation, "DS") as PdfString)?.ToText(), fontSize) is { Count: > 0 } paragraphs)
+                    {
+                        AppendRichText(content, resources, paragraphs, rectangle, padding, (int)alignment);
+                        return true;
+                    }
+
+                    if (type == "Tx" && (flags & (Comb | Multiline | Password)) == Comb && Inherited(annotation, "MaxLen") is PdfNumber { DoubleValue: >= 1 and <= 10_000 } maxLength)
+                    {
+                        // A comb field (12.7.5.3): the width is divided into as many cells as the maximum length, one
+                        // character centered in each
+                        var cells = (int)maxLength.DoubleValue;
+                        var cellWidth = width / cells;
+                        var baseline = rectangle.Bottom + ((height - fontSize) / 2) + (fontSize * 0.22);
+                        content.Append("/Tx BMC q ");
+                        Append(content, rectangle.Left + 1, rectangle.Bottom + 1, width - 2, height - 2).Append("re W n BT ");
+                        var index = 0;
+                        foreach (var rune in text.ReplaceLineEndings(" ").EnumerateRunes())
+                        {
+                            if (index >= cells)
+                                break;
+
+                            var character = rune.ToString();
+                            content.Append("1 0 0 1 ");
+                            Append(content, rectangle.Left + (index * cellWidth) + ((cellWidth - (fontSize * 0.5)) / 2), baseline).Append("Tm ");
+                            AppendString(content, character).Append(" Tj ");
+                            index++;
+                        }
+
+                        content.Append("ET Q EMC");
+                        return true;
+                    }
+
                     var lines = (flags & Multiline) != 0 ? text.Split('\n') : [text.ReplaceLineEndings(" ")];
                     content.Append("/Tx BMC q ");
                     Append(content, rectangle.Left + 1, rectangle.Bottom + 1, width - 2, height - 2).Append("re W n BT ");
@@ -316,6 +469,74 @@ internal static class AppearanceGenerator
             default:
                 return hasBackground || hasBorder;
         }
+    }
+
+    /// <summary>Gets the rich text value of a field (<c>/RV</c>, 12.7.4.3): a text string or a stream.</summary>
+    private static string? RichTextValue(PdfDictionary annotation)
+    {
+        try
+        {
+            return Inherited(annotation, "RV") switch
+            {
+                PdfString text => text.ToText(),
+                PdfStream stream => System.Text.Encoding.UTF8.GetString(stream.GetDecodedData()),
+                _ => null,
+            };
+        }
+        catch (PdfException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Draws the paragraphs of a rich text value from the top of the field, each run in the standard 14 font of its style,
+    /// its size and its color. The runs of a line follow each other: the text position advances with their glyphs.
+    /// </summary>
+    private static void AppendRichText(StringBuilder content, PdfDictionary resources, List<RichTextParagraph> paragraphs, PdfRectangle rectangle, double padding, int defaultAlignment)
+    {
+        var fonts = new PdfDictionary();
+        resources[PdfNames.Font] = fonts;
+        var names = new Dictionary<string, string>(StringComparer.Ordinal);
+        var width = rectangle.Right - rectangle.Left;
+        var height = rectangle.Top - rectangle.Bottom;
+        content.Append("/Tx BMC q ");
+        Append(content, rectangle.Left + 1, rectangle.Bottom + 1, width - 2, height - 2).Append("re W n BT ");
+        var y = rectangle.Top - padding;
+        foreach (var paragraph in paragraphs.Take(1024))
+        {
+            var lineHeight = paragraph.Runs.Count > 0 ? paragraph.Runs.Max(run => run.Style.Size) : 12;
+            y -= lineHeight;
+            var estimated = paragraph.Runs.Sum(run => run.Text.Length * run.Style.Size * 0.5);
+            var alignment = paragraph.Alignment != 0 ? paragraph.Alignment : defaultAlignment;
+            var x = alignment switch
+            {
+                1 => rectangle.Left + ((width - estimated) / 2),
+                2 => rectangle.Right - padding - estimated,
+                _ => rectangle.Left + padding,
+            };
+            content.Append("1 0 0 1 ");
+            Append(content, x, y).Append("Tm ");
+            foreach (var run in paragraph.Runs)
+            {
+                var baseFont = run.Style.BaseFont;
+                if (!names.TryGetValue(baseFont, out var name))
+                {
+                    name = "R" + names.Count.ToString(CultureInfo.InvariantCulture);
+                    names.Add(baseFont, name);
+                    fonts[PdfName.Create(name)] = new PdfDictionary { [PdfNames.Type] = PdfNames.Font, [PdfNames.Subtype] = PdfName.Create("Type1"), [PdfNames.BaseFont] = PdfName.Create(baseFont), [PdfNames.Encoding] = PdfName.Create("WinAnsiEncoding") };
+                }
+
+                var (red, green, blue) = run.Style.Color ?? (0, 0, 0);
+                Append(content, red, green, blue).Append("rg /").Append(name).Append(' ');
+                Append(content, run.Style.Size).Append("Tf ");
+                AppendString(content, run.Text).Append(" Tj ");
+            }
+
+            y -= lineHeight * 0.15;
+        }
+
+        content.Append("ET Q EMC");
     }
 
     /// <summary>Writes the default appearance of a field (12.7.4.3): its font and color, a size of 0 being the size that fits the height of the field, with the font of the resources of the form.</summary>

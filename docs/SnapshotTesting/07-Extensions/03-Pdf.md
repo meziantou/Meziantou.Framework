@@ -133,11 +133,17 @@ Snapshot.Validate(document, SnapshotType.Pdf, settings);
 | `Text` | The text of every page, one entry per line |
 | [Outlines](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.Outlines) | The bookmarks |
 | [Annotations](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.Annotations) | The subtype, rectangle and contents of the annotations, and the URI of links |
-| [All](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.All) | Everything above |
+| [Content](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.Content) | What every page shows, one line per element: the lines of text, the images, the paths and the shadings, with their positions |
+| [All](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.All) | Everything above, except [Content](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.Content) |
 
 The dates are not written by default: generators usually set them to the current time, so they change every time a
 document is generated. When you include them, scrub them: the JSON file is a text snapshot, so the
 [scrubbers](../03-WritingTests/06-DeterministicSnapshots.md) of the settings apply to it.
+
+[Content](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.Content) makes the JSON file a structural snapshot: when a page changes, the diff of the file tells what changed
+(a line of text, a path that moved, an image added) next to the pixels of the PNG files. It is verbose, so
+[All](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.All) does not include it. To compare two documents in code, see
+[Comparing documents](../../Pdf/09-InspectingAndTransforming/04-ComparingDocuments.md).
 
 ## Allow small rendering differences
 

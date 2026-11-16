@@ -86,7 +86,7 @@ internal static class CornerDetector
     }
 
     /// <summary>Computes the Harris or Shi-Tomasi response of every pixel and returns the largest one.</summary>
-    private static double ComputeStructureTensorResponses(AllocationScope scope, ReadOnlySpan<double> luma, Span<double> responses, int width, int height, CornerDetectionOptions options, CancellationToken cancellationToken)
+    internal static double ComputeStructureTensorResponses(AllocationScope scope, ReadOnlySpan<double> luma, Span<double> responses, int width, int height, CornerDetectionOptions options, CancellationToken cancellationToken)
     {
         var count = (long)width * height;
         using var tensorBuffer = ResampleWeights.Rent<double>(scope, 3 * count);

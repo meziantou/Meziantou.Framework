@@ -107,7 +107,7 @@ public static void ConvertHdrToSrgb(string avifPath, string pngPath)
 
 ## Keep CMYK images
 
-Print workflows keep the inks of an image: load a CMYK JPEG file or TIFF page as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) pixels and
+Print workflows keep the inks of an image: load a CMYK JPEG file, TIFF page or PSD file as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) pixels and
 save it as JPEG or TIFF, and nothing is converted:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadCmykPixels;format=md-fenced-code-block;dedent=true -->
@@ -131,11 +131,12 @@ public static void KeepCmykInks(string jpegPath, string tiffPath, string preview
 <!-- endref -->
 
 - A component is the amount of an ink: 0 is no ink, so paper white is `(0, 0, 0, 0)`. The decoder complements the
-  samples of Adobe JPEG files (255 is no ink there) and converts YCCK files to CMYK; TIFF pages store the amounts.
+  samples of Adobe JPEG files and of PSD files (255 is no ink there) and converts YCCK files to CMYK; TIFF pages store
+  the amounts.
 - The CMYK profile of the file labels the pixels ([IccProfile](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.IccProfile)), and the encoders write it back.
-- 12-bit and lossless JPEG files and 16-bit TIFF pages keep their precision as [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64). [CloneAs](cref:Meziantou.Framework.Imaging.Image.CloneAs) converts
+- 12-bit and lossless JPEG files, 16-bit TIFF pages and 16-bit PSD files keep their precision as [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64). [CloneAs](cref:Meziantou.Framework.Imaging.Image.CloneAs) converts
   between [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) and [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) like any change of precision.
-- CMYK pixels have no alpha: a TIFF page of inks with alpha is only loaded as RGBA, with [CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion).
+- CMYK pixels have no alpha: a TIFF page or a PSD file of inks with alpha is only loaded as RGBA, with [CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion).
 - Inks are not colors of light. [Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop), [Flip](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Flip), [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate) by quarter turns and [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) move the pixels;
   the other operations (resizing, filters, drawing...) and the encoders other than JPEG and TIFF throw an
   [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): convert the image to RGB first.
@@ -191,9 +192,9 @@ public static void SaveForPrint(Image image, IccProfile pressProfile, string pat
 
 ## Load CMYK files as RGB
 
-A CMYK image (a JPEG with four components, a TIFF page of separated data, a JPEG 2000 file or a JPEG XL file with a
-black channel) can also be converted to RGB while it is loaded. Without a conversion, the untyped [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an
-[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) (load the JPEG and TIFF files as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) to keep their inks); [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) always works and reports [ImageColorModel.Cmyk](cref:Meziantou.Framework.Imaging.ImageColorModel.Cmyk) or [Ycck](cref:Meziantou.Framework.Imaging.ImageColorModel.Ycck):
+A CMYK image (a JPEG with four components, a TIFF page of separated data, a JPEG 2000 file, a JPEG XL file with a
+black channel or a CMYK PSD file) can also be converted to RGB while it is loaded. Without a conversion, the untyped [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an
+[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) (load the JPEG, TIFF and PSD files as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) to keep their inks); [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) always works and reports [ImageColorModel.Cmyk](cref:Meziantou.Framework.Imaging.ImageColorModel.Cmyk) or [Ycck](cref:Meziantou.Framework.Imaging.ImageColorModel.Ycck):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadCmykJpeg;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -222,7 +223,7 @@ public static Image LoadCmykJpeg(string path)
   replaced by the assumed profile.
 - [IccProfile.Cgats001CompatibleCmyk](cref:Meziantou.Framework.Imaging.Metadata.IccProfile.Cgats001CompatibleCmyk) describes web offset printing on coated paper. It is a compact profile that
   reproduces the overall appearance of that printing condition, not the exact colors of a press profile.
-- The loaded image has [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) pixels. A TIFF page keeps its alpha ([Rgba32](cref:Meziantou.Framework.Imaging.Rgba32)) and its 16-bit precision ([Rgba64](cref:Meziantou.Framework.Imaging.Rgba64)).
+- The loaded image has [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) pixels. A TIFF page or a PSD file keeps its alpha ([Rgba32](cref:Meziantou.Framework.Imaging.Rgba32)) and its 16-bit precision ([Rgba64](cref:Meziantou.Framework.Imaging.Rgba64)).
 - Images that are not CMYK are loaded as usual: the setting can be used for every load.
 - Every pixel goes through the ICC conversion: a CMYK image is much slower to load than an RGB image of the same size.
 
@@ -231,7 +232,7 @@ public static Image LoadCmykJpeg(string path)
 
 ## Load CIE L\*a\*b\* images
 
-No pixel format holds L\*a\*b\* samples either, so a TIFF page of L\*a\*b\* colors is only loaded with
+No pixel format holds L\*a\*b\* samples either, so a TIFF page or an 8-bit PSD file of L\*a\*b\* colors is only loaded with
 [ImageDecodeOptions.CieLabConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CieLabConversion): `new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default }` converts
 it to sRGB. Without it, [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException); [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) reports
 [ImageColorModel.CieLab](cref:Meziantou.Framework.Imaging.ImageColorModel.CieLab).
@@ -241,7 +242,7 @@ it to sRGB. Without it, [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load
 | [DestinationProfile](cref:Meziantou.Framework.Imaging.CieLabConversionOptions.DestinationProfile) | [IccProfile.Srgb](cref:Meziantou.Framework.Imaging.Metadata.IccProfile.Srgb) | The RGB profile of the loaded pixels, which are labeled with it |
 | [Transform](cref:Meziantou.Framework.Imaging.CieLabConversionOptions.Transform) | [IccColorTransformOptions.Default](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.Default) | The rendering intent, the black point compensation and the gamut mapping |
 
-- The colors are relative to the white point of the file, D50 when it declares none. They are adapted to the D50 white
+- The colors are relative to the white point of the file, D50 when it declares none (always D50 for PSD files). They are adapted to the D50 white
   of the ICC profile connection space with the linear Bradford transform, then converted to the destination profile.
 - L\*a\*b\* holds colors that no RGB profile can show: the colors outside the gamut of the destination are clipped,
   or mapped as [IccColorTransformOptions.GamutMapping](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.GamutMapping) says. A profile embedded in the file is not used.

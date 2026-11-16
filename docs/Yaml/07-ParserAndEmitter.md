@@ -90,5 +90,9 @@ Assert.Equal("name: api\nports: [80, 443]\n", writer.ToString());
   (`bestWidth`, unlimited by default), and the canonical mode (`isCanonical`).
 - The emitter ends lines with the `NewLine` of the `TextWriter`; the example sets it to `\n` to get the same text on
   every platform.
+- The emitter keeps the data of the events, not always their presentation. When the requested style cannot write a
+  value, it uses another one: a multi-line plain scalar is written quoted, and a literal or folded scalar that a block
+  scalar cannot represent is written double-quoted. An empty plain scalar, which is a null, stays plain: as a mapping
+  key, it is written as an explicit key (`? `), because `''` would read back as an empty string.
 - A [node](05-DocumentObjectModel.md) writes its events to an emitter with [WriteTo](cref:Meziantou.Framework.Yaml.Model.YamlNode.WriteTo), and lists them with
   [EnumerateEvents](cref:Meziantou.Framework.Yaml.Model.YamlNode.EnumerateEvents).

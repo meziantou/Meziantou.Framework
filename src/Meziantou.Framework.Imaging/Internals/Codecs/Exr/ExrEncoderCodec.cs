@@ -75,6 +75,7 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
         private readonly bool _reducesFloats;
         private readonly bool _validatesSamples;
         private readonly bool _hasAlpha;
+        private readonly PixelFormat _source;
         private readonly byte _primaries;
         private readonly PixelConversionPlan? _plan;
         private PooledBuffer? _floats;
@@ -105,16 +106,18 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
         {
             var encoder = (OpenExrEncoder)options.Encoder;
             var source = options.PixelFormat;
-            var exact = source == PixelFormat.RgbaHalf || (!PixelFormats.IsFloatingPoint(source) && PixelFormats.GetBitsPerComponent(source) <= 8);
+            _source = source;
+            var isSingle = PixelFormats.IsFloatingPoint(source) && PixelFormats.GetBitsPerComponent(source) == 32;
+            var exact = PixelFormats.IsFloatingPoint(source) ? !isSingle : PixelFormats.GetBitsPerComponent(source) <= 8;
             var pixelType = encoder.PixelType ?? (exact ? OpenExrPixelType.Half : OpenExrPixelType.Float);
             if (pixelType == OpenExrPixelType.Half && !exact && !encoder.AllowBitDepthReduction)
                 throw new UnsupportedImageFeatureException($"Half samples cannot store {source} pixels exactly. Set OpenExrEncoder.AllowBitDepthReduction to round them, or write float samples (OpenExrPixelType.Float).", ImageFormat.OpenExr, "Bit depth reduction");
 
             _pixelType = pixelType == OpenExrPixelType.Half ? ExrPixelType.Half : ExrPixelType.Float;
-            _reducesFloats = _pixelType == ExrPixelType.Half && source == PixelFormat.RgbaFloat;
+            _reducesFloats = _pixelType == ExrPixelType.Half && isSingle;
 
             // Integer samples and their products are within [0, 1], and the product of two halves is within the range of floats
-            _validatesSamples = source == PixelFormat.RgbaFloat || (source == PixelFormat.RgbaHalf && _pixelType == ExrPixelType.Half);
+            _validatesSamples = isSingle || (PixelFormats.IsFloatingPoint(source) && _pixelType == ExrPixelType.Half);
             _compression = (ExrCompressionMethod)(int)encoder.Compression;
             _width = options.CanvasSize.Width;
             _height = options.CanvasSize.Height;
@@ -128,7 +131,7 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
 
             // The channels in name order, and the component of an RGBA pixel each one holds
             (string Name, int Component)[] channels = PixelFormats.IsGrayscale(source)
-                ? [("Y", 0)]
+                ? PixelFormats.HasAlpha(source) ? [("A", 3), ("Y", 0)] : [("Y", 0)]
                 : PixelFormats.HasAlpha(source) ? [("A", 3), ("B", 2), ("G", 1), ("R", 0)] : [("B", 2), ("G", 1), ("R", 0)];
             _hasAlpha = PixelFormats.HasAlpha(source);
             _channels = [.. channels.Select(channel => new ExrChannel(channel.Name, _pixelType, PLinear: false, XSampling: 1, YSampling: 1))];
@@ -291,6 +294,12 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
         /// </summary>
         private bool IsRowWithinRange(ReadOnlySpan<byte> row)
         {
+            if (_source is not (PixelFormat.RgbaFloat or PixelFormat.RgbaHalf))
+            {
+                // The rows of the gray formats are checked once converted
+                return false;
+            }
+
             if (_plan is null)
             {
                 // RgbaFloat pixels: 65,504 is the largest half, float.MaxValue the largest float

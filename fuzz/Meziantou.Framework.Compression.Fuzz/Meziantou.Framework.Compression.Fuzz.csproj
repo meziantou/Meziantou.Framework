@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Compression. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <RootNamespace>Meziantou.Framework.CompressionFuzz</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The archives and the compressed streams of the unit tests are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Compression.Tests\TestData\**\*" Exclude="..\..\tests\Meziantou.Framework.Compression.Tests\TestData\**\*.md;..\..\tests\Meziantou.Framework.Compression.Tests\TestData\**\*.txt" LogicalName="TestData/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(FileName)%(Extension)" Link="Seeds\%(RecursiveDir)%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Compression\Meziantou.Framework.Compression.csproj" />
+  </ItemGroup>
+</Project>

@@ -12,7 +12,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>
 /// Marker segments: SIZ comes first; COD and QCD are required in the main header; COD, COC, QCD, QCC and RGN are only
 /// allowed in the first tile-part header of a tile; a header has at most one of each per component and at most one POC.
-/// TLM, PLM, PLT, CRG, COM and CPF are skipped, like the marker segments this Recommendation does not define.
+/// TLM, PLM, PLT, CRG, COM and CPF are skipped, like the marker segments this Recommendation does not define, except the
+/// NLT marker segments of ISO/IEC 15444-2 (A.3.12), which are read for the formats that embed codestreams that use them.
 /// </description></item>
 /// <item><description>
 /// Tile-parts: those of a tile come in order, possibly separated by tile-parts of other tiles; every tile has at least one;
@@ -56,6 +57,10 @@ internal sealed class Jpeg2000CodestreamWalker : IDisposable
     private Jpeg2000Tile? _currentTile;
     private Jpeg2000HeaderSet? _currentHeaders;
 
+    // Non-linearity point transformations of the main header (NLT): the one of every component, then those of each one
+    private Jpeg2000NonLinearity? _nonLinearityDefault;
+    private Jpeg2000NonLinearity?[]? _nonLinearities;
+
     public Jpeg2000CodestreamWalker(AllocationScope scope, bool collect)
     {
         ArgumentNullException.ThrowIfNull(scope);
@@ -91,6 +96,9 @@ internal sealed class Jpeg2000CodestreamWalker : IDisposable
 
     /// <summary>Gets the features the codestream used so far.</summary>
     public Jpeg2000Tools Tools { get; private set; }
+
+    /// <summary>Gets a value indicating whether a tile-part header has an NLT marker segment.</summary>
+    public bool HasTileNonLinearity { get; private set; }
 
     /// <summary>Gets the tile of the last <see cref="Jpeg2000CodestreamEvent.Tile"/> event. The caller disposes it.</summary>
     public Jpeg2000Tile? CompletedTile { get; private set; }
@@ -238,6 +246,18 @@ internal sealed class Jpeg2000CodestreamWalker : IDisposable
                     return Jpeg2000CodestreamEvent.End;
             }
         }
+    }
+
+    /// <summary>
+    /// Gets the non-linearity point transformation of a component that the NLT marker segments of the main header give: the
+    /// segment of the component, or the one of every component, or <see langword="null"/> when there is none.
+    /// </summary>
+    public Jpeg2000NonLinearity? GetNonLinearity(int component)
+    {
+        if (_nonLinearities is not null && (uint)component < (uint)_nonLinearities.Length && _nonLinearities[component] is { } own)
+            return own;
+
+        return _nonLinearityDefault;
     }
 
     public void Dispose()
@@ -395,6 +415,28 @@ internal sealed class Jpeg2000CodestreamWalker : IDisposable
             case Jpeg2000Format.MarkerTlm:
                 Tools |= Jpeg2000Tools.TilePartLengths;
                 break;
+
+            case Jpeg2000Format.MarkerNlt:
+            {
+                var nonLinearity = Jpeg2000NonLinearity.Read(content, componentCount, out var component);
+                if (component < 0)
+                {
+                    if (_nonLinearityDefault is not null)
+                        throw Invalid("the main header has two NLT marker segments for every component.");
+
+                    _nonLinearityDefault = nonLinearity;
+                }
+                else
+                {
+                    _nonLinearities ??= new Jpeg2000NonLinearity?[componentCount];
+                    if (_nonLinearities[component] is not null)
+                        throw Invalid(string.Create(CultureInfo.InvariantCulture, $"the main header has two NLT marker segments for the component {component}."));
+
+                    _nonLinearities[component] = nonLinearity;
+                }
+
+                break;
+            }
 
             case Jpeg2000Format.MarkerSod or Jpeg2000Format.MarkerEoc or Jpeg2000Format.MarkerSoc or Jpeg2000Format.MarkerSop or Jpeg2000Format.MarkerEph or Jpeg2000Format.MarkerPlt or Jpeg2000Format.MarkerPpt:
                 throw Invalid(string.Create(CultureInfo.InvariantCulture, $"the marker {marker:X4} is not allowed in the main header."));
@@ -624,6 +666,10 @@ internal sealed class Jpeg2000CodestreamWalker : IDisposable
 
             case Jpeg2000Format.MarkerPlt:
                 Tools |= Jpeg2000Tools.PacketLengths;
+                break;
+
+            case Jpeg2000Format.MarkerNlt:
+                HasTileNonLinearity = true;
                 break;
 
             case Jpeg2000Format.MarkerSiz or Jpeg2000Format.MarkerCap or Jpeg2000Format.MarkerCpf or Jpeg2000Format.MarkerTlm or Jpeg2000Format.MarkerPlm or Jpeg2000Format.MarkerPpm or Jpeg2000Format.MarkerCrg

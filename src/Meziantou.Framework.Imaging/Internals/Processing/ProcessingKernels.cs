@@ -600,7 +600,7 @@ internal static class ProcessingKernels
     public static void Grayscale<TPixel>(scoped in PixelLease lease, CancellationToken cancellationToken)
         where TPixel : unmanaged
     {
-        if (typeof(TPixel) == typeof(Gray8) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(A8))
+        if (typeof(TPixel) == typeof(Gray8) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(A8) || PixelConverter.IsFloatGray<TPixel>())
         {
             cancellationToken.ThrowIfCancellationRequested();
             return;

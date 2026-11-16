@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
@@ -1177,5 +1178,73 @@ public sealed class PdfPageTests
     private static void AssertColor(Rgba32 pixel, int r, int g, int b, int tolerance = 2)
     {
         Assert.True(Math.Abs(pixel.R - r) <= tolerance && Math.Abs(pixel.G - g) <= tolerance && Math.Abs(pixel.B - b) <= tolerance, $"The pixel is ({pixel.R}, {pixel.G}, {pixel.B}), not ({r}, {g}, {b})");
+    }
+
+    [Fact]
+    public void PagesAreArrangedNUp()
+    {
+        var source = new PdfDocument();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        for (var i = 1; i <= 5; i++)
+        {
+            source.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawText("Page " + i.ToString(CultureInfo.InvariantCulture), font, 20, 50, 500);
+        }
+
+        source.Pages[1].Rotation = 90;
+
+        #region Pdf_NUp
+        var sheets = PdfImposition.CreateNUp(source, new PdfNUpOptions { Columns = 2, Rows = 2, SheetSize = PdfSize.A4, Margin = 20, Spacing = 10, DrawBorders = true });
+        #endregion
+
+        Assert.HasCount(2, sheets.Pages);
+        Assert.Equal(PdfSize.A4.Width, sheets.Pages[0].MediaBox.Width);
+        var read = PdfDocument.Open(sheets.ToByteArray());
+        var words = read.Pages[0].ExtractTextLayout().Lines.Where(line => line.Glyphs[0].Angle == 0).SelectMany(line => line.Words).ToList();
+        Assert.Equal(["1", "3", "4"], words.Where(word => word.Text != "Page").Select(word => word.Text).Order(StringComparer.Ordinal));
+        Assert.Equal("Page 5", read.Pages[1].ExtractText());
+
+        // The first page is in the top left cell, the fourth in the bottom right one
+        var page1 = words.Single(word => word.Text == "1").Bounds;
+        var page4 = words.Single(word => word.Text == "4").Bounds;
+        Assert.True(page1.Left < 297 && page1.Bottom > 421);
+        Assert.True(page4.Left > 297 && page4.Bottom < 421);
+
+        // Right to left: the first page on the right
+        var rightToLeft = PdfImposition.CreateNUp(source, new PdfNUpOptions { Columns = 2, Order = PdfNUpOrder.HorizontalRightToLeft });
+        var first = PdfDocument.Open(rightToLeft.ToByteArray()).Pages[0].ExtractTextLayout().Lines.SelectMany(line => line.Words).Single(word => word.Text == "1").Bounds;
+        Assert.True(first.Left > PdfSize.A5.Width);
+        Assert.Equal(PdfSize.A5.Width * 2, rightToLeft.Pages[0].MediaBox.Width, 0.001);
+    }
+
+    [Fact]
+    public void ScannedSpreadsAreSplit()
+    {
+        var document = new PdfDocument();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        document.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawText("Cover", font, 20, 50, 500);
+        var spread = document.Pages.Add(PdfSize.A4.ToLandscape());
+        spread.CreateContentBuilder().DrawText("Left", font, 20, 50, 300).DrawText("Right", font, 20, 500, 300);
+        var rotated = document.Pages.Add(PdfSize.A4);
+        rotated.Rotation = 90;
+        rotated.CreateContentBuilder().DrawText("Bottom", font, 20, 100, 100).DrawText("Top", font, 20, 100, 700);
+
+        #region Pdf_SplitSpreads
+        var count = PdfImposition.SplitSpreads(document);
+        #endregion
+
+        Assert.Equal(2, count);
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal(["Cover", "Left", "Right", "Bottom", "Top"], read.Pages.Select(Visible));
+        var crop = read.Pages[1].CropBox;
+        Assert.Equal(0, crop.Left);
+        Assert.Equal(PdfSize.A4.Height / 2, crop.Right, 0.001);
+        Assert.Equal(PdfSize.A4.Width, crop.Top, 0.001);
+        Assert.Equal(PdfSize.A4.Height / 2, read.Pages[2].DisplaySize.Width, 0.001);
+
+        static string Visible(PdfPage page)
+        {
+            var crop = page.CropBox;
+            return string.Join(" ", page.ExtractTextLayout().Lines.SelectMany(line => line.Words).Where(word => word.Bounds.Left >= crop.Left - 1 && word.Bounds.Right <= crop.Right + 1 && word.Bounds.Bottom >= crop.Bottom - 1 && word.Bounds.Top <= crop.Top + 1).Select(word => word.Text));
+        }
     }
 }

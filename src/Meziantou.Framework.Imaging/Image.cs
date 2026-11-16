@@ -238,6 +238,7 @@ public abstract partial class Image : IDisposable
     /// <param name="options">The conversion options, or <see langword="null"/> for <see cref="PixelConversionOptions.Default"/>.</param>
     /// <returns>A new image owned by the caller.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a supported pixel format.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new image is returned to the caller, which owns it.")]
     internal Image CloneAs(PixelFormat format, PixelConversionOptions? options) => format switch
     {
         PixelFormat.Rgba32 => CloneAs<Rgba32>(options),
@@ -258,6 +259,10 @@ public abstract partial class Image : IDisposable
         PixelFormat.Rgba1010102 => CloneAs<Rgba1010102>(options),
         PixelFormat.Cmyk32 => CloneAs<Cmyk32>(options),
         PixelFormat.Cmyk64 => CloneAs<Cmyk64>(options),
+        PixelFormat.GrayFloat => CloneAs<GrayFloat>(options),
+        PixelFormat.GrayHalf => CloneAs<GrayHalf>(options),
+        PixelFormat.LaFloat => CloneAs<LaFloat>(options),
+        PixelFormat.LaHalf => CloneAs<LaHalf>(options),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The pixel format is not supported."),
     };
 

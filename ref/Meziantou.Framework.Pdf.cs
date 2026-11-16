@@ -50,6 +50,43 @@ namespace Meziantou.Framework.Pdf
         public System.Collections.Generic.IReadOnlyList<string> Violations { get => throw null; }
     }
 
+    public static class PdfAccessibilityInspector
+    {
+        public static Meziantou.Framework.Pdf.PdfAccessibilityReport Inspect(Meziantou.Framework.Pdf.PdfDocument document) => throw null;
+    }
+
+    public sealed class PdfAccessibilityIssue
+    {
+        public Meziantou.Framework.Pdf.PdfAccessibilityIssueKind Kind { get => throw null; }
+        public string Message { get => throw null; }
+        public int? PageIndex { get => throw null; }
+        public string? StructureType { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum PdfAccessibilityIssueKind
+    {
+        MissingStructureTree = 0,
+        NotMarkedAsTagged = 1,
+        MissingLanguage = 2,
+        MissingTitle = 3,
+        TitleNotDisplayed = 4,
+        UntaggedContent = 5,
+        MissingAlternateText = 6,
+        UntaggedAnnotation = 7,
+        MissingTabOrder = 8,
+        ReadingOrder = 9,
+        UnknownStructureType = 10,
+        SkippedHeadingLevel = 11,
+    }
+
+    public sealed class PdfAccessibilityReport
+    {
+        public bool HasNoIssues { get => throw null; }
+        public bool IsTagged { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfAccessibilityIssue> Issues { get => throw null; }
+    }
+
     public class PdfAnnotation
     {
         public Meziantou.Framework.Pdf.PdfColor? Color { get => throw null; set { } }
@@ -114,6 +151,30 @@ namespace Meziantou.Framework.Pdf
         EncryptedPayload = 5,
         FormData = 6,
         Schema = 7,
+    }
+
+    public static class PdfBates
+    {
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfBatesRange> Apply(System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfDocument> documents, Meziantou.Framework.Pdf.PdfHeaderFooterOptions options) => throw null;
+    }
+
+    public sealed class PdfBatesNumbering
+    {
+        public int Digits { get => throw null; init { } }
+        public string Prefix { get => throw null; init { } }
+        public long StartNumber { get => throw null; init { } }
+        public string Suffix { get => throw null; init { } }
+        public string Format(long number) => throw null;
+    }
+
+    public sealed class PdfBatesRange
+    {
+        public Meziantou.Framework.Pdf.PdfDocument Document { get => throw null; }
+        public string First { get => throw null; }
+        public long FirstNumber { get => throw null; }
+        public string Last { get => throw null; }
+        public long LastNumber { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     public enum PdfBilevelCompression
@@ -216,6 +277,29 @@ namespace Meziantou.Framework.Pdf
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Pdf.PdfColor left, Meziantou.Framework.Pdf.PdfColor right) => throw null;
         public static bool operator !=(Meziantou.Framework.Pdf.PdfColor left, Meziantou.Framework.Pdf.PdfColor right) => throw null;
+    }
+
+    public sealed class PdfColorantUsage
+    {
+        public System.Collections.Generic.IReadOnlyList<string> ColorSpaces { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Colorants { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> ProcessColorants { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> SpotColorants { get => throw null; }
+        public bool UsesOverprint { get => throw null; }
+    }
+
+    public sealed class PdfComparisonOptions
+    {
+        public static Meziantou.Framework.Pdf.PdfComparisonOptions Default { get => throw null; }
+        public int MaxDetails { get => throw null; init { } }
+        public double Tolerance { get => throw null; init { } }
+    }
+
+    public sealed class PdfComparisonResult
+    {
+        public bool AreEquivalent { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfPageComparison> Pages { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     public sealed class PdfContentBuilder
@@ -360,6 +444,7 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfDocumentInformation Information { get => throw null; }
         public bool IsEncrypted { get => throw null; }
         public bool IsRepaired { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> JavaScripts { get => throw null; }
         public string? Language { get => throw null; set { } }
         public Meziantou.Framework.Pdf.Objects.PdfIndirectObjectCollection Objects { get => throw null; }
         public Meziantou.Framework.Pdf.PdfOutlineCollection Outlines { get => throw null; }
@@ -371,6 +456,7 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfStructureTree StructureTree { get => throw null; }
         public Meziantou.Framework.Pdf.Objects.PdfDictionary Trailer { get => throw null; }
         public Meziantou.Framework.Pdf.PdfVersion Version { get => throw null; set { } }
+        public void AddHeaderFooter(Meziantou.Framework.Pdf.PdfHeaderFooterOptions options) { }
         public void AddWatermark(string text, Meziantou.Framework.Pdf.PdfWatermarkOptions? options = null) { }
         public Meziantou.Framework.Pdf.PdfAConversionResult ConvertToPdfA(Meziantou.Framework.Pdf.PdfAConformance conformance, Meziantou.Framework.Pdf.PdfAConversionOptions? options = null) => throw null;
         public Meziantou.Framework.Pdf.PdfForm CreateForm(Meziantou.Framework.Pdf.PdfRectangle boundingBox, Meziantou.Framework.Pdf.PdfMatrix? matrix = null, Meziantou.Framework.Pdf.PdfTransparencyGroup? group = null) => throw null;
@@ -397,6 +483,12 @@ namespace Meziantou.Framework.Pdf
         public void UpdateXmpMetadata(int padding) { }
     }
 
+    public static class PdfDocumentComparer
+    {
+        public static Meziantou.Framework.Pdf.PdfComparisonResult Compare(Meziantou.Framework.Pdf.PdfDocument expected, Meziantou.Framework.Pdf.PdfDocument actual, Meziantou.Framework.Pdf.PdfComparisonOptions? options = null) => throw null;
+        public static Meziantou.Framework.Pdf.PdfPageComparison Compare(Meziantou.Framework.Pdf.PdfPageElements expected, Meziantou.Framework.Pdf.PdfPageElements actual, Meziantou.Framework.Pdf.PdfComparisonOptions? options = null) => throw null;
+    }
+
     public sealed class PdfDocumentInformation
     {
         public string? Author { get => throw null; set { } }
@@ -411,6 +503,16 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfTrapped? Trapped { get => throw null; set { } }
         public string? GetText(string key) => throw null;
         public void SetText(string key, string? value) { }
+    }
+
+    public sealed class PdfDocumentSummary
+    {
+        public string Digest { get => throw null; }
+        public int ObjectCount { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<Meziantou.Framework.Pdf.Objects.PdfObjectKind, int> ObjectKinds { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, int> ObjectTypes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfPageSummary> Pages { get => throw null; }
+        public static Meziantou.Framework.Pdf.PdfDocumentSummary Create(Meziantou.Framework.Pdf.PdfDocument document) => throw null;
     }
 
     public sealed class PdfEmbeddedFile
@@ -510,6 +612,24 @@ namespace Meziantou.Framework.Pdf
         public bool? TextKnockout { get => throw null; init { } }
     }
 
+    public sealed class PdfExtractedTable
+    {
+        public System.Collections.Generic.IReadOnlyList<double> ColumnBoundaries { get => throw null; }
+        public int ColumnCount { get => throw null; }
+        public string this[int row, int column] { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<double> RowBoundaries { get => throw null; }
+        public int RowCount { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<string>> Rows { get => throw null; }
+    }
+
+    public sealed class PdfFieldActions
+    {
+        public Meziantou.Framework.Pdf.PdfJavaScriptAction? Calculate { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfJavaScriptAction? Format { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfJavaScriptAction? Keystroke { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfJavaScriptAction? Validate { get => throw null; }
+    }
+
     public sealed class PdfFileAttachmentAnnotation : Meziantou.Framework.Pdf.PdfAnnotation
     {
         public Meziantou.Framework.Pdf.PdfEmbeddedFile? File { get => throw null; }
@@ -554,8 +674,31 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfContentBuilder CreateContentBuilder() => throw null;
     }
 
+    public sealed class PdfFormData
+    {
+        public System.Collections.Generic.IList<Meziantou.Framework.Pdf.PdfFormDataField> Fields { get => throw null; }
+        public string? SourceFile { get => throw null; set { } }
+        public static Meziantou.Framework.Pdf.PdfFormData ParseFdf(System.ReadOnlySpan<byte> data, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Pdf.PdfFormData ParseXfdf(System.IO.Stream stream) => throw null;
+        public static Meziantou.Framework.Pdf.PdfFormData ParseXfdf(string xml) => throw null;
+        public byte[] ToFdf() => throw null;
+        public string ToXfdf() => throw null;
+    }
+
+    public sealed class PdfFormDataField
+    {
+        public bool IsName { get => throw null; init { } }
+        public string Name { get => throw null; }
+        public string? Value { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Values { get => throw null; }
+        public PdfFormDataField(string name, System.Collections.Generic.IEnumerable<string> values) { }
+        public PdfFormDataField(string name, string? value) { }
+        public override string ToString() => throw null;
+    }
+
     public class PdfFormField
     {
+        public Meziantou.Framework.Pdf.PdfFieldActions Actions { get => throw null; }
         public string? AlternateName { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfFormField> Children { get => throw null; }
         public Meziantou.Framework.Pdf.Objects.PdfDictionary Dictionary { get => throw null; }
@@ -585,6 +728,13 @@ namespace Meziantou.Framework.Pdf
         public bool IsRequired { get => throw null; set { } }
         public bool SubsetFont { get => throw null; set { } }
         public Meziantou.Framework.Pdf.PdfColor? TextColor { get => throw null; set { } }
+    }
+
+    public sealed class PdfFormImportResult
+    {
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> RejectedFields { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> UnknownFields { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> UpdatedFields { get => throw null; }
     }
 
     public abstract class PdfFunction
@@ -618,6 +768,28 @@ namespace Meziantou.Framework.Pdf
         public static bool operator !=(Meziantou.Framework.Pdf.PdfGlyph left, Meziantou.Framework.Pdf.PdfGlyph right) => throw null;
     }
 
+    public sealed class PdfHeaderFooterOptions
+    {
+        public Meziantou.Framework.Pdf.PdfBatesNumbering? Bates { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfColor Color { get => throw null; init { } }
+        public System.DateTimeOffset? Date { get => throw null; init { } }
+        public string DateFormat { get => throw null; init { } }
+        public int FirstPageIndex { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfFont? Font { get => throw null; init { } }
+        public double FontSize { get => throw null; init { } }
+        public string? FooterCenter { get => throw null; init { } }
+        public string? FooterLeft { get => throw null; init { } }
+        public string? FooterRight { get => throw null; init { } }
+        public string? HeaderCenter { get => throw null; init { } }
+        public string? HeaderLeft { get => throw null; init { } }
+        public string? HeaderRight { get => throw null; init { } }
+        public int? LastPageIndex { get => throw null; init { } }
+        public double Margin { get => throw null; init { } }
+        public int? PageCount { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfContentPlacement Placement { get => throw null; init { } }
+        public int StartPageNumber { get => throw null; init { } }
+    }
+
     public sealed class PdfImage
     {
         public bool HasSoftMask { get => throw null; }
@@ -629,6 +801,22 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfImage FromJpeg(System.ReadOnlySpan<byte> data) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage Load(System.ReadOnlySpan<byte> data) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage Load(string path) => throw null;
+    }
+
+    public sealed class PdfImageElement : System.IEquatable<Meziantou.Framework.Pdf.PdfImageElement>
+    {
+        public Meziantou.Framework.Pdf.PdfRectangle Bounds { get => throw null; init { } }
+        public string Digest { get => throw null; init { } }
+        public int Height { get => throw null; init { } }
+        public int Width { get => throw null; init { } }
+        public PdfImageElement(Meziantou.Framework.Pdf.PdfRectangle Bounds, int Width, int Height, string Digest) { }
+        public void Deconstruct(out Meziantou.Framework.Pdf.PdfRectangle Bounds, out int Width, out int Height, out string Digest) => throw null;
+        public bool Equals(Meziantou.Framework.Pdf.PdfImageElement? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Pdf.PdfImageElement? left, Meziantou.Framework.Pdf.PdfImageElement? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Pdf.PdfImageElement? left, Meziantou.Framework.Pdf.PdfImageElement? right) => throw null;
     }
 
     public sealed class PdfImageOccurrence
@@ -651,8 +839,15 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32>? Decode() => throw null;
     }
 
+    public static class PdfImposition
+    {
+        public static Meziantou.Framework.Pdf.PdfDocument CreateNUp(Meziantou.Framework.Pdf.PdfDocument source, Meziantou.Framework.Pdf.PdfNUpOptions options) => throw null;
+        public static int SplitSpreads(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.PdfSpreadSplitOptions? options = null) => throw null;
+    }
+
     public sealed class PdfInteractiveForm
     {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfFormField> CalculationOrder { get => throw null; }
         public Meziantou.Framework.Pdf.Objects.PdfDictionary? Dictionary { get => throw null; }
         public Meziantou.Framework.Pdf.PdfDocument Document { get => throw null; }
         public bool Exists { get => throw null; }
@@ -665,9 +860,17 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfRadioButtonField AddRadioButtons(string name, System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfRadioButton> buttons, Meziantou.Framework.Pdf.PdfRadioButtonOptions? options = null) => throw null;
         public Meziantou.Framework.Pdf.PdfSignatureField AddSignatureField(Meziantou.Framework.Pdf.PdfPage page, string name, Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfFormFieldOptions? options = null) => throw null;
         public Meziantou.Framework.Pdf.PdfTextField AddTextField(Meziantou.Framework.Pdf.PdfPage page, string name, Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfTextFieldOptions? options = null) => throw null;
+        public Meziantou.Framework.Pdf.PdfFormData ExportData() => throw null;
         public Meziantou.Framework.Pdf.PdfFormField? FindField(string fullName) => throw null;
         public void Flatten() { }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfFormField> GetFields() => throw null;
+        public Meziantou.Framework.Pdf.PdfFormImportResult ImportData(Meziantou.Framework.Pdf.PdfFormData data) => throw null;
+    }
+
+    public sealed class PdfJavaScriptAction
+    {
+        public Meziantou.Framework.Pdf.Objects.PdfDictionary Dictionary { get => throw null; }
+        public string Script { get => throw null; }
     }
 
     public enum PdfLineCap
@@ -743,6 +946,91 @@ namespace Meziantou.Framework.Pdf
         public static bool operator !=(Meziantou.Framework.Pdf.PdfMeshVertex left, Meziantou.Framework.Pdf.PdfMeshVertex right) => throw null;
     }
 
+    public sealed class PdfNUpOptions
+    {
+        public int Columns { get => throw null; init { } }
+        public bool DrawBorders { get => throw null; init { } }
+        public double Margin { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfNUpOrder Order { get => throw null; init { } }
+        public int Rows { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfSize? SheetSize { get => throw null; init { } }
+        public double Spacing { get => throw null; init { } }
+    }
+
+    public enum PdfNUpOrder
+    {
+        Horizontal = 0,
+        Vertical = 1,
+        HorizontalRightToLeft = 2,
+    }
+
+    public sealed class PdfOptimizationAction
+    {
+        public string Description { get => throw null; }
+        public bool IsEnabled { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfOptimizationActionKind Kind { get => throw null; }
+        public int? ObjectNumber { get => throw null; }
+        public int? PageIndex { get => throw null; }
+        public string? ResourceName { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum PdfOptimizationActionKind
+    {
+        RemoveDocumentInformation = 0,
+        RemoveXmpMetadata = 1,
+        RemoveJavaScript = 2,
+        RemoveEmbeddedFiles = 3,
+        RemoveFileAttachmentAnnotation = 4,
+        RemovePageThumbnail = 5,
+        RemoveComment = 6,
+        RemoveOpenAction = 7,
+        RemoveXfa = 8,
+        RemoveFormFields = 9,
+        RemoveBookmarks = 10,
+        FlattenOptionalContent = 11,
+        RemoveOptionalContentProperties = 12,
+        PruneUnusedResource = 13,
+        PruneUnreachableObject = 14,
+        CompressStream = 15,
+        DownsampleImage = 16,
+    }
+
+    public sealed class PdfOptimizationOptions
+    {
+        public bool AllowSignatureInvalidation { get => throw null; init { } }
+        public bool CompressStreams { get => throw null; init { } }
+        public bool FlattenOptionalContent { get => throw null; init { } }
+        public double? MaxImageResolution { get => throw null; init { } }
+        public bool PruneUnreachableObjects { get => throw null; init { } }
+        public bool PruneUnusedResources { get => throw null; init { } }
+        public bool RemoveAttachments { get => throw null; init { } }
+        public bool RemoveBookmarks { get => throw null; init { } }
+        public bool RemoveComments { get => throw null; init { } }
+        public bool RemoveFormFields { get => throw null; init { } }
+        public bool RemoveJavaScript { get => throw null; init { } }
+        public bool RemoveMetadata { get => throw null; init { } }
+        public bool RemoveOpenAction { get => throw null; init { } }
+        public bool RemovePageThumbnails { get => throw null; init { } }
+        public bool RemoveXfa { get => throw null; init { } }
+    }
+
+    public sealed class PdfOptimizationPlan
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfOptimizationAction> Actions { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfDocument Document { get => throw null; }
+        public bool HasSignatures { get => throw null; }
+        public bool InvalidatesSignatures { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfOptimizationOptions Options { get => throw null; }
+        public string ToJson(bool indented = false) => throw null;
+    }
+
+    public static class PdfOptimizer
+    {
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfOptimizationAction> Apply(Meziantou.Framework.Pdf.PdfOptimizationPlan plan) => throw null;
+        public static Meziantou.Framework.Pdf.PdfOptimizationPlan CreatePlan(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.PdfOptimizationOptions options) => throw null;
+    }
+
     public sealed class PdfOutlineCollection : System.Collections.Generic.ICollection<Meziantou.Framework.Pdf.PdfOutlineItem>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfOutlineItem>, System.Collections.Generic.IList<Meziantou.Framework.Pdf.PdfOutlineItem>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Pdf.PdfOutlineItem>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfOutlineItem>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
@@ -771,6 +1059,16 @@ namespace Meziantou.Framework.Pdf
         public bool IsOpen { get => throw null; set { } }
         public string Title { get => throw null; set { } }
         public PdfOutlineItem(string title, Meziantou.Framework.Pdf.PdfDestination? destination = null) { }
+    }
+
+    public sealed class PdfOutputIntent
+    {
+        public string? Info { get => throw null; }
+        public string? OutputCondition { get => throw null; }
+        public string? OutputConditionIdentifier { get => throw null; }
+        public int? ProfileComponentCount { get => throw null; }
+        public string? RegistryName { get => throw null; }
+        public string? Subtype { get => throw null; }
     }
 
     public sealed class PdfPage
@@ -802,6 +1100,22 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfRedactionResult Redact(System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfRectangle> areas, Meziantou.Framework.Pdf.PdfRedactionOptions? options = null) => throw null;
     }
 
+    [System.Flags]
+    public enum PdfPageChangeKinds
+    {
+        None = 0,
+        Added = 1,
+        Removed = 2,
+        Size = 4,
+        Rotation = 8,
+        Text = 16,
+        TextGeometry = 32,
+        Images = 64,
+        ImagePlacements = 128,
+        Paths = 256,
+        Shadings = 512,
+    }
+
     public sealed class PdfPageCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfPage>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Pdf.PdfPage>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfPage>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
@@ -816,6 +1130,27 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfPage Insert(int index, Meziantou.Framework.Pdf.PdfSize size) => throw null;
         public void Move(int fromIndex, int toIndex) { }
         public void RemoveAt(int index) { }
+    }
+
+    public sealed class PdfPageComparison
+    {
+        public int? ActualPageIndex { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfPageChangeKinds Changes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Details { get => throw null; }
+        public int? ExpectedPageIndex { get => throw null; }
+        public bool HasChanges { get => throw null; }
+    }
+
+    public sealed class PdfPageElements
+    {
+        public double Height { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfImageElement> Images { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfPathElement> Paths { get => throw null; }
+        public int Rotation { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfShadingElement> Shadings { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfTextElement> Text { get => throw null; }
+        public double Width { get => throw null; }
+        public static Meziantou.Framework.Pdf.PdfPageElements Create(Meziantou.Framework.Pdf.PdfPage page) => throw null;
     }
 
     public sealed class PdfPageLabel : System.IEquatable<Meziantou.Framework.Pdf.PdfPageLabel>
@@ -854,6 +1189,33 @@ namespace Meziantou.Framework.Pdf
         LowercaseLetters = 5,
     }
 
+    public sealed class PdfPageProductionInfo
+    {
+        public Meziantou.Framework.Pdf.PdfRectangle? ArtBox { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRectangle? BleedBox { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfColorantUsage Colorants { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRectangle CropBox { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Issues { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRectangle MediaBox { get => throw null; }
+        public int PageIndex { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRectangle? TrimBox { get => throw null; }
+    }
+
+    public sealed class PdfPageSummary : System.IEquatable<Meziantou.Framework.Pdf.PdfPageSummary>
+    {
+        public int AnnotationCount { get => throw null; }
+        public string? ContentDigest { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRectangle CropBox { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRectangle MediaBox { get => throw null; }
+        public int Rotation { get => throw null; }
+        public bool Equals(Meziantou.Framework.Pdf.PdfPageSummary? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Pdf.PdfPageSummary? left, Meziantou.Framework.Pdf.PdfPageSummary? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Pdf.PdfPageSummary? left, Meziantou.Framework.Pdf.PdfPageSummary? right) => throw null;
+    }
+
     public sealed class PdfPasswordException : Meziantou.Framework.Pdf.PdfException
     {
         public PdfPasswordException(string? message) { }
@@ -866,6 +1228,29 @@ namespace Meziantou.Framework.Pdf
         public System.ReadOnlySpan<Meziantou.Framework.Pdf.PdfColor> Colors { get => throw null; }
         public System.ReadOnlySpan<Meziantou.Framework.Pdf.PdfPoint> InnerPoints { get => throw null; }
         public PdfPatch(System.ReadOnlySpan<Meziantou.Framework.Pdf.PdfPoint> boundaryPoints, System.ReadOnlySpan<Meziantou.Framework.Pdf.PdfColor> cornerColors, System.ReadOnlySpan<Meziantou.Framework.Pdf.PdfPoint> innerPoints = default) { }
+    }
+
+    public sealed class PdfPathElement : System.IEquatable<Meziantou.Framework.Pdf.PdfPathElement>
+    {
+        public Meziantou.Framework.Pdf.PdfRectangle Bounds { get => throw null; init { } }
+        public string? FillColor { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfPathPaint Paint { get => throw null; init { } }
+        public string? StrokeColor { get => throw null; init { } }
+        public PdfPathElement(Meziantou.Framework.Pdf.PdfRectangle Bounds, Meziantou.Framework.Pdf.PdfPathPaint Paint, string? FillColor, string? StrokeColor) { }
+        public void Deconstruct(out Meziantou.Framework.Pdf.PdfRectangle Bounds, out Meziantou.Framework.Pdf.PdfPathPaint Paint, out string? FillColor, out string? StrokeColor) => throw null;
+        public bool Equals(Meziantou.Framework.Pdf.PdfPathElement? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Pdf.PdfPathElement? left, Meziantou.Framework.Pdf.PdfPathElement? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Pdf.PdfPathElement? left, Meziantou.Framework.Pdf.PdfPathElement? right) => throw null;
+    }
+
+    public enum PdfPathPaint
+    {
+        Fill = 0,
+        Stroke = 1,
+        FillAndStroke = 2,
     }
 
     public abstract class PdfPattern
@@ -910,6 +1295,15 @@ namespace Meziantou.Framework.Pdf
         #nullable restore
         public static bool operator ==(Meziantou.Framework.Pdf.PdfPoint left, Meziantou.Framework.Pdf.PdfPoint right) => throw null;
         public static bool operator !=(Meziantou.Framework.Pdf.PdfPoint left, Meziantou.Framework.Pdf.PdfPoint right) => throw null;
+    }
+
+    public sealed class PdfPrintProductionReport
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfOutputIntent> OutputIntents { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfPageProductionInfo> Pages { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> SpotColorants { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfTrapped? Trapped { get => throw null; }
+        public static Meziantou.Framework.Pdf.PdfPrintProductionReport Create(Meziantou.Framework.Pdf.PdfDocument document) => throw null;
     }
 
     public sealed class PdfPushButtonField : Meziantou.Framework.Pdf.PdfFormField
@@ -996,6 +1390,67 @@ namespace Meziantou.Framework.Pdf
         public PdfResourceLimitException(string? message, System.Exception? innerException) { }
     }
 
+    public sealed class PdfRoundTripFailure
+    {
+        public Meziantou.Framework.Pdf.PdfRoundTripFailureKind Kind { get => throw null; }
+        public string Message { get => throw null; }
+        public int? PageIndex { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum PdfRoundTripFailureKind
+    {
+        ReadBackFailed = 0,
+        ReadBackRepaired = 1,
+        PageCountChanged = 2,
+        PageChanged = 3,
+        ObjectGraphChanged = 4,
+        OutputsDiffer = 5,
+    }
+
+    public sealed class PdfRoundTripResult
+    {
+        public bool AreOutputsIdentical { get => throw null; }
+        public bool AreOutputsStructurallyEquivalent { get => throw null; }
+        public bool ComparesBytes { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRoundTripFailure? Failure { get => throw null; }
+        public System.ReadOnlyMemory<byte> FirstOutput { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfDocumentSummary? FirstSummary { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfDocumentSummary OriginalSummary { get => throw null; }
+        public System.ReadOnlyMemory<byte>? SecondOutput { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfDocumentSummary? SecondSummary { get => throw null; }
+        public bool Succeeded { get => throw null; }
+    }
+
+    public static class PdfRoundTripValidator
+    {
+        public static Meziantou.Framework.Pdf.PdfRoundTripResult Validate(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.PdfSaveOptions? saveOptions = null, Meziantou.Framework.Pdf.PdfReadOptions? readOptions = null) => throw null;
+        public static Meziantou.Framework.Pdf.PdfRoundTripResult Validate(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Pdf.PdfReadOptions? readOptions = null, Meziantou.Framework.Pdf.PdfSaveOptions? saveOptions = null) => throw null;
+    }
+
+    public sealed class PdfSanitizationResult
+    {
+        public bool HasChanges { get => throw null; }
+        public System.ReadOnlyMemory<byte> Output { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfSanitizerRepair> Repairs { get => throw null; }
+    }
+
+    public sealed class PdfSanitizerRepair
+    {
+        public string Description { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfSanitizerRepairKind Kind { get => throw null; }
+        public int? PageIndex { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum PdfSanitizerRepairKind
+    {
+        DanglingOutlineRoot = 0,
+        EmptyOutlineRoot = 1,
+        DegenerateCropBox = 2,
+        CropBoxOutsideMediaBox = 3,
+    }
+
     public sealed class PdfSaveOptions
     {
         public bool CompressStreams { get => throw null; init { } }
@@ -1004,6 +1459,16 @@ namespace Meziantou.Framework.Pdf
         public bool UseObjectStreams { get => throw null; init { } }
         public Meziantou.Framework.Pdf.PdfVersion? Version { get => throw null; init { } }
         public int XmpPadding { get => throw null; init { } }
+    }
+
+    public static class PdfSaveSanitizer
+    {
+        public static Meziantou.Framework.Pdf.PdfSanitizationResult Sanitize(System.ReadOnlyMemory<byte> file, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
+    }
+
+    public static class PdfSeparations
+    {
+        public static Meziantou.Framework.Pdf.PdfColorantUsage GetColorants(Meziantou.Framework.Pdf.PdfPage page) => throw null;
     }
 
     public abstract class PdfShading
@@ -1018,6 +1483,21 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfShading Radial(Meziantou.Framework.Pdf.PdfDeviceColorSpace colorSpace, double x0, double y0, double r0, double x1, double y1, double r1, Meziantou.Framework.Pdf.PdfFunction function, bool extendStart = false, bool extendEnd = false) => throw null;
         public static Meziantou.Framework.Pdf.PdfShading TensorPatchMesh(Meziantou.Framework.Pdf.PdfDeviceColorSpace colorSpace, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfPatch> patches) => throw null;
         public static Meziantou.Framework.Pdf.PdfShading TriangleMesh(Meziantou.Framework.Pdf.PdfDeviceColorSpace colorSpace, System.Collections.Generic.IReadOnlyList<(Meziantou.Framework.Pdf.PdfMeshVertex A, Meziantou.Framework.Pdf.PdfMeshVertex B, Meziantou.Framework.Pdf.PdfMeshVertex C)> triangles) => throw null;
+    }
+
+    public sealed class PdfShadingElement : System.IEquatable<Meziantou.Framework.Pdf.PdfShadingElement>
+    {
+        public string Digest { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfMatrix Matrix { get => throw null; init { } }
+        public int ShadingType { get => throw null; init { } }
+        public PdfShadingElement(int ShadingType, Meziantou.Framework.Pdf.PdfMatrix Matrix, string Digest) { }
+        public void Deconstruct(out int ShadingType, out Meziantou.Framework.Pdf.PdfMatrix Matrix, out string Digest) => throw null;
+        public bool Equals(Meziantou.Framework.Pdf.PdfShadingElement? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Pdf.PdfShadingElement? left, Meziantou.Framework.Pdf.PdfShadingElement? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Pdf.PdfShadingElement? left, Meziantou.Framework.Pdf.PdfShadingElement? right) => throw null;
     }
 
     public sealed class PdfShadingPattern : Meziantou.Framework.Pdf.PdfPattern
@@ -1059,6 +1539,14 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfSoftMask None { get => throw null; }
         public static Meziantou.Framework.Pdf.PdfSoftMask FromAlpha(Meziantou.Framework.Pdf.PdfForm group, Meziantou.Framework.Pdf.PdfFunction? transfer = null) => throw null;
         public static Meziantou.Framework.Pdf.PdfSoftMask FromLuminosity(Meziantou.Framework.Pdf.PdfForm group, Meziantou.Framework.Pdf.PdfColor? backdrop = null, Meziantou.Framework.Pdf.PdfFunction? transfer = null) => throw null;
+    }
+
+    public sealed class PdfSpreadSplitOptions
+    {
+        public static Meziantou.Framework.Pdf.PdfSpreadSplitOptions Default { get => throw null; }
+        public double Gutter { get => throw null; init { } }
+        public bool OnlyLandscapePages { get => throw null; init { } }
+        public bool RightToLeft { get => throw null; init { } }
     }
 
     public enum PdfStandardFont
@@ -1169,6 +1657,35 @@ namespace Meziantou.Framework.Pdf
         public int RowCount { get => throw null; }
     }
 
+    public enum PdfTableExtractionFailureKind
+    {
+        NoGrid = 0,
+        MergedCells = 1,
+        NonHorizontalText = 2,
+        ImageOnly = 3,
+    }
+
+    public sealed class PdfTableExtractionOptions
+    {
+        public static Meziantou.Framework.Pdf.PdfTableExtractionOptions Default { get => throw null; }
+        public double MaxRuleThickness { get => throw null; init { } }
+        public double Tolerance { get => throw null; init { } }
+    }
+
+    public sealed class PdfTableExtractionResult
+    {
+        public Meziantou.Framework.Pdf.PdfTableExtractionFailureKind? Failure { get => throw null; }
+        public string? Message { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "Table")]
+        public bool Succeeded { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfExtractedTable? Table { get => throw null; }
+    }
+
+    public static class PdfTableExtractor
+    {
+        public static Meziantou.Framework.Pdf.PdfTableExtractionResult Extract(Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Pdf.PdfRectangle region, Meziantou.Framework.Pdf.PdfTableExtractionOptions? options = null) => throw null;
+    }
+
     public sealed class PdfTableRow
     {
         public Meziantou.Framework.Pdf.PdfColor? Background { get => throw null; set { } }
@@ -1203,6 +1720,20 @@ namespace Meziantou.Framework.Pdf
         public double LineHeight { get => throw null; set { } }
     }
 
+    public sealed class PdfTextElement : System.IEquatable<Meziantou.Framework.Pdf.PdfTextElement>
+    {
+        public Meziantou.Framework.Pdf.PdfRectangle Bounds { get => throw null; init { } }
+        public string Text { get => throw null; init { } }
+        public PdfTextElement(string Text, Meziantou.Framework.Pdf.PdfRectangle Bounds) { }
+        public void Deconstruct(out string Text, out Meziantou.Framework.Pdf.PdfRectangle Bounds) => throw null;
+        public bool Equals(Meziantou.Framework.Pdf.PdfTextElement? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Pdf.PdfTextElement? left, Meziantou.Framework.Pdf.PdfTextElement? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Pdf.PdfTextElement? left, Meziantou.Framework.Pdf.PdfTextElement? right) => throw null;
+    }
+
     public sealed class PdfTextExtractionOptions
     {
         public static Meziantou.Framework.Pdf.PdfTextExtractionOptions Default { get => throw null; }
@@ -1217,6 +1748,7 @@ namespace Meziantou.Framework.Pdf
         public bool IsPassword { get => throw null; }
         public int? MaxLength { get => throw null; }
         public override string? Value { get => throw null; set { } }
+        public void SetValue(string? value, string? displayText) { }
     }
 
     public sealed class PdfTextFieldOptions : Meziantou.Framework.Pdf.PdfFormFieldOptions
@@ -1594,8 +2126,10 @@ namespace Meziantou.Framework.Pdf.Rendering
         public string? OptionalContentConfiguration { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyDictionary<string, bool>? OptionalContentGroupStates { get => throw null; init { } }
         public bool PathAntialiasing { get => throw null; init { } }
+        public string? Plate { get => throw null; init { } }
         public Meziantou.Framework.Pdf.PdfRectangle? Region { get => throw null; init { } }
         public bool RenderAnnotations { get => throw null; init { } }
+        public bool SimulateOverprint { get => throw null; init { } }
         public bool TextAntialiasing { get => throw null; init { } }
         public bool UseHalftones { get => throw null; init { } }
         public bool UseSystemFonts { get => throw null; init { } }

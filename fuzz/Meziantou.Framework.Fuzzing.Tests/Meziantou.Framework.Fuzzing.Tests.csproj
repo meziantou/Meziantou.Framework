@@ -18,6 +18,7 @@
     <ProjectReference Include="..\Meziantou.Framework.BloomFilters.Fuzz\Meziantou.Framework.BloomFilters.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Charts.Fuzz\Meziantou.Framework.Charts.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.CodeOwners.Fuzz\Meziantou.Framework.CodeOwners.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Compression.Fuzz\Meziantou.Framework.Compression.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Csv.Fuzz\Meziantou.Framework.Csv.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.DependencyScanning.Fuzz\Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Diagrams.Fuzz\Meziantou.Framework.Diagrams.Fuzz.csproj" />
@@ -42,6 +43,7 @@
     <ProjectReference Include="..\Meziantou.Framework.Markdown.Fuzz\Meziantou.Framework.Markdown.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.MediaTags.Fuzz\Meziantou.Framework.MediaTags.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Ntp.Fuzz\Meziantou.Framework.Ntp.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Pdf.Fuzz\Meziantou.Framework.Pdf.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Pdf.VectorGraphics.Fuzz\Meziantou.Framework.Pdf.VectorGraphics.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.PublicApiGenerator.Fuzz\Meziantou.Framework.PublicApiGenerator.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.RobotsTxt.Fuzz\Meziantou.Framework.RobotsTxt.Fuzz.csproj" />

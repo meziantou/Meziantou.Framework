@@ -5,9 +5,10 @@ using Meziantou.Framework.Imaging.Internals;
 namespace Meziantou.Framework.Imaging;
 
 /// <summary>
-/// A disposable collection of images that are not animation frames: the pages of a document (TIFF, BigTIFF) or the
-/// alternative representations of a drawing (ICO, CUR). Entries may differ in size, pixel format and metadata, and are
-/// never resized or converted implicitly.
+/// A disposable collection of images that are not animation frames: the pages of a document (TIFF, BigTIFF, Netpbm), the
+/// alternative representations of a drawing (ICO, CUR), or the surfaces of a texture (DDS, KTX 2.0: mipmap levels, cube
+/// map faces, array elements and depth slices). Entries may differ in size, pixel format and metadata, and are never
+/// resized or converted implicitly.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -113,14 +114,18 @@ public sealed class ImageCollection : IDisposable
     }
 
     /// <summary>Creates an empty collection to be filled with images and saved.</summary>
-    /// <param name="kind">What the entries will be: <see cref="ImageCollectionKind.Pages"/> for a document, <see cref="ImageCollectionKind.Representations"/> for an icon or a cursor.</param>
+    /// <param name="kind">
+    /// What the entries will be: <see cref="ImageCollectionKind.Pages"/> for a document,
+    /// <see cref="ImageCollectionKind.Representations"/> for an icon or a cursor, <see cref="ImageCollectionKind.TextureSurfaces"/>
+    /// for a texture (DDS, KTX 2.0), whose entries are added with <see cref="Add(Image, TextureSurface)"/>.
+    /// </param>
     /// <param name="configuration">The configuration, or <see langword="null"/> for <see cref="ImageConfiguration.Default"/>.</param>
     /// <returns>An empty collection owned by the caller.</returns>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="kind"/> is not <see cref="ImageCollectionKind.Pages"/> or <see cref="ImageCollectionKind.Representations"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="kind"/> is <see cref="ImageCollectionKind.Unknown"/> or not a defined value.</exception>
     public static ImageCollection Create(ImageCollectionKind kind, ImageConfiguration? configuration = null)
     {
-        if (kind is not (ImageCollectionKind.Pages or ImageCollectionKind.Representations))
-            throw new ArgumentOutOfRangeException(nameof(kind), kind, "A collection is created for pages or for representations.");
+        if (kind is not (ImageCollectionKind.Pages or ImageCollectionKind.Representations or ImageCollectionKind.TextureSurfaces))
+            throw new ArgumentOutOfRangeException(nameof(kind), kind, "A collection is created for pages, representations or texture surfaces.");
 
         return new ImageCollection(reader: null, ImageFormat.Unknown, kind, configuration ?? ImageConfiguration.Default);
     }
@@ -252,6 +257,30 @@ public sealed class ImageCollection : IDisposable
         return entry;
     }
 
+    /// <summary>Appends a copy of an image as a surface of a texture.</summary>
+    /// <param name="image">The image. It is copied; the caller keeps its own image and disposes it.</param>
+    /// <param name="surface">Where the surface is in the texture: its array element, cube map face and mipmap level.</param>
+    /// <returns>The new entry, whose <see cref="ImageCollectionEntry.TextureSurface"/> is <paramref name="surface"/>.</returns>
+    /// <remarks>
+    /// The entries can be added in any order: the encoders write them in the order of their container. The structure of the
+    /// texture (complete cube maps, mipmap levels of the right size) is checked when the collection is saved.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> or <paramref name="surface"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="image"/> is animated or has a poster frame.</exception>
+    /// <exception cref="InvalidOperationException">The collection does not hold <see cref="ImageCollectionKind.TextureSurfaces"/>.</exception>
+    /// <exception cref="ObjectDisposedException">The collection or the image is disposed.</exception>
+    public ImageCollectionEntry Add(Image image, TextureSurface surface)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(surface);
+        if (Kind != ImageCollectionKind.TextureSurfaces)
+            throw new InvalidOperationException($"The collection holds {Kind}: only a collection of texture surfaces has entries with a TextureSurface.");
+
+        var entry = CreateOwnedEntry(image, hotspot: null, surface);
+        _entries.Add(entry);
+        return entry;
+    }
+
     /// <summary>Inserts a copy of an image at an index.</summary>
     /// <param name="index">The zero-based index, from 0 to <see cref="Count"/>.</param>
     /// <param name="image">The image. It is copied.</param>
@@ -306,7 +335,7 @@ public sealed class ImageCollection : IDisposable
 
     /// <summary>Encodes the collection to a file, published atomically.</summary>
     /// <param name="path">The destination path.</param>
-    /// <param name="encoder">The encoder, or <see langword="null"/> to select it from the extension (<c>.tif</c>, <c>.tiff</c>, <c>.ico</c>, <c>.cur</c>).</param>
+    /// <param name="encoder">The encoder, or <see langword="null"/> to select it from the extension (<c>.tif</c>, <c>.tiff</c>, <c>.ico</c>, <c>.cur</c>, <c>.dds</c>, <c>.ktx2</c>).</param>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty, or the extension does not select a multi-entry encoder.</exception>
     /// <exception cref="InvalidOperationException">The collection is empty.</exception>
     /// <exception cref="UnsupportedImageFeatureException">An entry cannot be encoded without a loss the encoder settings do not allow.</exception>
@@ -341,7 +370,7 @@ public sealed class ImageCollection : IDisposable
     /// <see cref="Save(string, ImageEncoder?)"/>.
     /// </summary>
     /// <param name="path">The destination path.</param>
-    /// <param name="encoder">The encoder, or <see langword="null"/> to select it from the extension (<c>.tif</c>, <c>.tiff</c>, <c>.ico</c>, <c>.cur</c>).</param>
+    /// <param name="encoder">The encoder, or <see langword="null"/> to select it from the extension (<c>.tif</c>, <c>.tiff</c>, <c>.ico</c>, <c>.cur</c>, <c>.dds</c>, <c>.ktx2</c>).</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, no file is published.</param>
     /// <returns>A task that completes when the file has been published.</returns>
     /// <remarks>
@@ -461,9 +490,15 @@ public sealed class ImageCollection : IDisposable
         if (IcoFormat.MatchesSignature(prefix[..available], IcoFormat.IconType) || IcoFormat.MatchesSignature(prefix[..available], IcoFormat.CursorType))
             return IcoCollectionReader.Create(input, configuration);
 
+        if (Ktx2Format.MatchesSignature(prefix[..available]))
+            return Ktx2CollectionReader.Create(input, configuration);
+
         var format = Image.DetectFormat(prefix[..available]);
         if (format == ImageFormat.Pnm)
             return PnmCollectionReader.Create(input, configuration);
+
+        if (format == ImageFormat.Dds)
+            return DdsCollectionReader.Create(input, configuration);
 
         if (format == ImageFormat.Ani)
             throw new UnsupportedImageFeatureException("ANI stores an animation, not a collection of pages or representations: its frames are played in order. Use Image.Load instead.", format, "Image collection");
@@ -471,13 +506,16 @@ public sealed class ImageCollection : IDisposable
         if (format != ImageFormat.Unknown)
             throw new UnsupportedImageFeatureException($"{ImageFormatNames.Get(format)} stores a single image, not a collection of pages or representations. Use Image.Load instead.", format, "Image collection");
 
-        throw new UnknownImageFormatException("The image format is not recognized: the data does not start with the signature of a supported multi-entry format (TIFF, BigTIFF, ICO, CUR or Netpbm).");
+        throw new UnknownImageFormatException("The image format is not recognized: the data does not start with the signature of a supported multi-entry format (TIFF, BigTIFF, ICO, CUR, Netpbm, DDS or KTX 2.0).");
     }
 
-    private ImageCollectionEntry CreateOwnedEntry(Image image, Point? hotspot)
+    private ImageCollectionEntry CreateOwnedEntry(Image image, Point? hotspot, TextureSurface? surface = null)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(image);
+        if (surface is null && Kind == ImageCollectionKind.TextureSurfaces)
+            throw new InvalidOperationException("The entries of a collection of texture surfaces say where they are in the texture: add them with Add(Image, TextureSurface).");
+
         if (image.IsAnimated || image.PosterFrame is not null || image.Frames.Count != 1)
             throw new ArgumentException("A page or a representation is a still image; extract a frame with CloneFrame or remove the animation settings first.", nameof(image));
 
@@ -488,6 +526,6 @@ public sealed class ImageCollection : IDisposable
         var copy = image.Clone();
         var effective = hotspot ?? copy.Frames[0].Metadata.Hotspot;
         Image.GetFrameForDecoder(copy, 0).MetadataCore.SetHotspotUnchecked(effective);
-        return new ImageCollectionEntry(this, copy, effective);
+        return new ImageCollectionEntry(this, copy, effective, surface);
     }
 }

@@ -70,6 +70,33 @@ public sealed class PdfRenderOptions
     /// </remarks>
     public bool UseHalftones { get; init; }
 
+    /// <summary>
+    /// Gets or initializes whether overprinting is simulated (ISO 32000-2, 8.6.7), as a print preview shows it: the page
+    /// is separated into the plates of its colorants (<see cref="Plate"/>), and the inks of the plates are combined on
+    /// white paper. The process inks are cyan, magenta, yellow and black; a spot ink has the color of its alternate color
+    /// space. The default is <see langword="false"/>: the page is composited in RGB, and overprinting is ignored, as viewers
+    /// do for a screen.
+    /// </summary>
+    /// <remarks>
+    /// The page is rendered once per colorant, and the background of the options is not painted. The colors of the
+    /// images and shadings are separated into the process colorants from their RGB colors: their spot colorants are not
+    /// separated. <see cref="PdfSeparations.GetColorants(PdfPage)"/> lists the colorants of a page.
+    /// </remarks>
+    public bool SimulateOverprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the colorant whose plate is rendered, or <see langword="null"/> (the default) for the colors of
+    /// the page: <c>Cyan</c>, <c>Magenta</c>, <c>Yellow</c>, <c>Black</c>, or the name of a spot colorant of a separation or
+    /// DeviceN color space. The plate is rendered in gray, as a film: black for full ink, white for none.
+    /// </summary>
+    /// <remarks>
+    /// Each object paints the tint of the colorant in its color, and erases the plate where its color does not have the
+    /// colorant, unless it overprints (<c>OP</c>, <c>op</c> and the overprint mode <c>OPM</c>, 8.6.7), which leaves the
+    /// plate unchanged. Gray is separated as black, RGB with a full gray component replacement. The background of the
+    /// options is not painted.
+    /// </remarks>
+    public string? Plate { get; init; }
+
     /// <summary>Gets or initializes whether the edges of the paths, the images and the shadings are antialiased; <see langword="false"/> draws them with hard edges.</summary>
     public bool PathAntialiasing { get; init; } = true;
 

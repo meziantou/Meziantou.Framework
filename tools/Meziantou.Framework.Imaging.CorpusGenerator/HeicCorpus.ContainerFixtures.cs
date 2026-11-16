@@ -339,6 +339,23 @@ internal static partial class HeicCorpus
         Still(context, "lossy-422-bt2020-full-12bit", color12, "-q 70 -b 12 " + Half + " " + Bt2020Pq, ["heic.subsampling=4:2:2", "heic.bitDepth=12", "heic.matrix=9"]);
         Still(context, "lossy-422-alpha", WithAlpha(smooth), "-q 70 " + Half, ["heic.subsampling=4:2:2", "heic.alpha"]);
 
+        // Premultiplied alpha (a prem reference from the color image to its alpha plane, as heif-enc --premultiplied-alpha
+        // writes it): the colors are divided by the alpha of their pixel once they are converted
+        Still(context, "premultiplied-alpha", WithAlpha(CommonCorpus.PatternDetailColor(8, 6, 3)), "-L --premultiplied-alpha", ["heic.premultiplied", "heic.alpha", "heic.lossless"],
+            notes: "Lossless premultiplied colors: the division by the alpha rounds to the nearest sample, and a color under an alpha of 0 is 0.", excluded: SmallLossless);
+        Still(context, "premultiplied-alpha-lossy-420", WithAlpha(smooth), "-q 70 --premultiplied-alpha " + Left, ["heic.premultiplied", "heic.alpha", "heic.subsampling=4:2:0"],
+            notes: "Premultiplied colors that are matrixed and subsampled, under a lossy alpha plane: a color that the coding left above its alpha is clipped.");
+
+        // The matrix coefficients that are not a line of the table of ITU-T H.273: the chromaticity-derived ones (12, 13),
+        // the luminance of the primaries of the file, and the constant luminance ones (10, 13), which go through the
+        // transfer characteristics. heif-enc converts the RGB source with them
+        Still(context, "lossy-444-chromaticity-bt2020", smooth, "-q 70 -p chroma=444 --matrix_coefficients 12 --colour_primaries 9 --transfer_characteristic 14", ["heic.matrix=12", "heic.subsampling=4:4:4"],
+            notes: "Chromaticity-derived matrix coefficients with the BT.2020 primaries: KR and KB are the luminance of the red and of the blue primary.");
+        Still(context, "lossy-420-bt2020-constant-luminance-10bit", color10, "-q 70 -b 10 " + Left + " --matrix_coefficients 10 --colour_primaries 9 --transfer_characteristic 14", ["heic.matrix=10", "heic.bitDepth=10", "heic.subsampling=4:2:0"],
+            notes: "BT.2020 constant luminance matrix coefficients: the luma is the transfer characteristics function of the luminance.");
+        Still(context, "lossy-444-chromaticity-constant-luminance-p3", smooth, "-q 70 -p chroma=444 --matrix_coefficients 13 --colour_primaries 12 --transfer_characteristic 13", ["heic.matrix=13", "heic.subsampling=4:4:4"],
+            notes: "Chromaticity-derived constant luminance matrix coefficients with the Display P3 primaries and the sRGB transfer characteristics.");
+
         // Grids: tiles of 64x64, the smallest ones heif-enc writes without a clap property on each tile
         var blocks = Blocks(128, 128, alpha: false);
         Still(context, "grid-2x2-lossless", blocks, "-L --cut-tiles 64", ["heic.grid=2x2", "heic.lossless"], blocks);
@@ -637,6 +654,15 @@ internal static partial class HeicCorpus
             "No colr box: the video signal description of the sequence parameter set (BT.709, limited range) applies.");
         Wrapped(context, "nclx-overrides-bitstream", limited, WrapStill(limited, colr: HeifFileBuilder.ColorNclx(1, 13, 6, fullRange: true)), ["heic.colr=nclx", "heic.matrix=6", "heic.range=full"],
             "The bitstream signals BT.709 limited range and the colr box BT.601 full range: the colr box describes the colors.");
+
+        // The matrix coefficients heif-enc does not convert (SMPTE ST 2085, ICtCp): a colr box labels arbitrary planes with
+        // them, which include colors outside of the gamut (they are clipped)
+        Wrapped(context, "nclx-ictcp-pq", limited, WrapStill(limited, colr: HeifFileBuilder.ColorNclx(9, 16, 14, fullRange: true)), ["heic.colr=nclx", "heic.matrix=14"],
+            "ICtCp with the PQ transfer characteristics (Rec. ITU-R BT.2100) on arbitrary 4:4:4 planes: the colr box describes the colors.");
+        Wrapped(context, "nclx-ictcp-hlg", limited, WrapStill(limited, colr: HeifFileBuilder.ColorNclx(9, 18, 14, fullRange: true)), ["heic.colr=nclx", "heic.matrix=14"],
+            "ICtCp with the HLG transfer characteristics, whose coefficients are not the ones of PQ, on arbitrary 4:4:4 planes.");
+        Wrapped(context, "nclx-smpte2085", limited, WrapStill(limited, colr: HeifFileBuilder.ColorNclx(9, 16, 11, fullRange: true)), ["heic.colr=nclx", "heic.matrix=11"],
+            "SMPTE ST 2085 matrix coefficients (Y'D'zD'x) on arbitrary 4:4:4 planes.");
 
         // A video signal description that only gives the range
         var rangeOnly = X265(context, "vui-range-limited", [smooth], "yuv444p", "keyint=1:qp=20:range=limited", fullRange: false);

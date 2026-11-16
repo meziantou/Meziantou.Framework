@@ -5,6 +5,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <c>Image.Load</c> describe and decode its <em>first page</em>, and the whole document is reached through
 /// <see cref="ImageCollection"/>, which never materializes a page it was not asked for.
 /// </summary>
+/// <remarks>
+/// A DNG file is a TIFF file whose first image file directory has a <c>DNGVersion</c> tag: the signatures are the same,
+/// so this codec reads that directory and hands DNG files to <see cref="DngDecoder"/>, whose results have the format
+/// <see cref="ImageFormat.Dng"/>. <see cref="GetDetectedFormat"/> reports DNG when the prefix holds the whole first directory.
+/// </remarks>
 internal sealed class TiffCodec : ImageCodec
 {
     private TiffCodec()
@@ -31,14 +36,21 @@ internal sealed class TiffCodec : ImageCodec
 
     public override bool IsMatch(ReadOnlySpan<byte> prefix) => MatchesSignature(prefix);
 
+    /// <summary>Gets <see cref="ImageFormat.Dng"/> when the prefix holds a first image file directory with a <c>DNGVersion</c> tag.</summary>
+    public override ImageFormat GetDetectedFormat(ReadOnlySpan<byte> prefix) => DngDocument.IsDngPrefix(prefix) ? ImageFormat.Dng : ImageFormat.Tiff;
+
     public override ImageInfo IdentifyRandomAccess(RandomAccessSource source, ImageIdentifyMode mode, ImageCodecContext context)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(context);
         var header = TiffHeader.Read(source);
+        var ifd0 = TiffDirectory.Read(source, header, header.FirstDirectoryOffset);
+        if (DngDocument.IsDng(ifd0))
+            return DngDecoder.Identify(source, header, ifd0, mode, context);
+
         TiffPage? first = null;
         var count = 0;
-        foreach (var directory in TiffDirectoryChain.Enumerate(source, header, context.Limits))
+        foreach (var directory in TiffDirectoryChain.Enumerate(source, header, context.Limits, ifd0))
         {
             var page = TiffPage.Resolve(directory, count, context);
             first ??= page;
@@ -73,6 +85,9 @@ internal sealed class TiffCodec : ImageCodec
         ArgumentNullException.ThrowIfNull(context);
         var header = TiffHeader.Read(source);
         var directory = TiffDirectory.Read(source, header, header.FirstDirectoryOffset);
+        if (DngDocument.IsDng(directory))
+            return DngDecoder.Decode(source, header, directory, request, context);
+
         var page = TiffPage.Resolve(directory, index: 0, context);
         return request.IsScaled ? TiffResolutionLevels.Decode(source, page, request, context) : TiffPageDecoder.Decode(source, page, request, context);
     }

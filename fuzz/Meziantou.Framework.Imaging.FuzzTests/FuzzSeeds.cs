@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// <summary>Seed groups of the fuzz tests: every corpus input (valid, invalid, unsupported and limit fixtures) of a codec variant, and the generated seeds of the formats the corpus has no fixture of (<see cref="FuzzGeneratedSeeds"/>).</summary>
 internal static class FuzzSeeds
 {
-    public static IReadOnlyList<string> Groups { get; } = ["png", "apng", "gif", "jpeg-baseline", "jpeg-progressive", "jpeg-lossless", "webp-lossless", "webp-lossy", "webp-animated", "qoi", "bmp", "tga", "pnm", "avif-still", "avif-sequence", "av1-intra", "av1-inter", "heic-still", "heic-sequence", "hevc-intra", "hevc-inter", "jxl-lossless", "jxl-lossy", "jxl-animated", "jp2-reversible", "jp2-irreversible", "jp2-file", "jp2-ht", .. FuzzGeneratedSeeds.Groups];
+    public static IReadOnlyList<string> Groups { get; } = ["png", "apng", "gif", "jpeg-baseline", "jpeg-progressive", "jpeg-lossless", "webp-lossless", "webp-lossy", "webp-animated", "qoi", "bmp", "tga", "pnm", "avif-still", "avif-sequence", "av1-intra", "av1-inter", "heic-still", "heic-sequence", "hevc-intra", "hevc-inter", "jxl-lossless", "jxl-lossy", "jxl-animated", "jp2-reversible", "jp2-irreversible", "jp2-file", "jp2-ht", "dds", .. FuzzGeneratedSeeds.Groups];
 
     public static IReadOnlyList<FuzzSeed> Get(string group)
     {

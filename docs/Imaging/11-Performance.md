@@ -67,6 +67,47 @@ public static void ConfigureForSmallContainer()
 ```
 <!-- endref -->
 
+- **Bring your own memory.** [ImageConfiguration.BufferAllocator](cref:Meziantou.Framework.Imaging.ImageConfiguration.BufferAllocator) replaces the pool for the images and the operations
+  of a configuration: every array comes from your [ImageBufferAllocator](cref:Meziantou.Framework.Imaging.ImageBufferAllocator), for instance pinned arrays shared with native
+  code, or a pool of your own. The resource limits are charged before it is asked for an array, and every array is
+  returned once:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ExtensibilityExamples.cs;region=Imaging_BufferAllocator;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static long ResizeWithPinnedMemory(string inputPath, string outputPath)
+{
+    // Every buffer of the images and the operations of this configuration comes from the allocator; the resource
+    // limits are charged before it is asked for an array
+    var allocator = new PinnedBufferAllocator();
+    var configuration = new ImageConfiguration { BufferAllocator = allocator };
+    using (var image = Image.Load(inputPath, new ImageDecodeOptions { Configuration = configuration }))
+    {
+        image.Resize(new ResizeOptions(64, 64));
+        image.Save(outputPath);
+    }
+
+    // Every array was returned when the image was disposed
+    return allocator.LiveBytes; // 0
+}
+
+/// <summary>Gives pinned arrays (native code can read them without pinning them) and counts the bytes in use.</summary>
+public sealed class PinnedBufferAllocator : ImageBufferAllocator
+{
+    private long _liveBytes;
+
+    public long LiveBytes => Interlocked.Read(ref _liveBytes);
+
+    public override byte[] Rent(int length)
+    {
+        Interlocked.Add(ref _liveBytes, length);
+        return GC.AllocateArray<byte>(length, pinned: true);
+    }
+
+    public override void Return(byte[] buffer) => Interlocked.Add(ref _liveBytes, -buffer.Length);
+}
+```
+<!-- endref -->
+
 - **Process memory you already have.** [Image.WrapMemory](cref:Meziantou.Framework.Imaging.Image.WrapMemory) works on a
   buffer of another component without copying it. See [Ownership and lifetimes](04-Concepts/04-OwnershipAndLifetimes.md).
 

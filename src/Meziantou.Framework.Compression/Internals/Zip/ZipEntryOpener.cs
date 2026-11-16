@@ -4,6 +4,8 @@ using Meziantou.Framework.Compression.Internals.Lzma;
 using Meziantou.Framework.Compression.Internals.Ppmd;
 using Meziantou.Framework.Compression.Internals.ZipLegacy;
 
+using Meziantou.Framework.Compression.Internals.Zstandard;
+
 namespace Meziantou.Framework.Compression.Internals.Zip;
 
 /// <summary>Builds the stream of the content of an entry: the decryption, the decompression, and the checks.</summary>
@@ -23,11 +25,6 @@ internal static class ZipEntryOpener
             throw new NotSupportedException($"The encryption of the zip entry '{info.FullName}' is not supported (PKWARE strong encryption, or an unknown AES version).");
         }
 
-#if !NET11_0_OR_GREATER
-        if ((ZipCompressionMethod)info.Method is ZipCompressionMethod.Zstandard)
-            throw new NotSupportedException($"The zip entry '{info.FullName}' is compressed with Zstandard (method 93), which needs .NET 11 or later.");
-#endif
-
         if (!IsSupported(info.Method))
             throw new NotSupportedException($"The compression method {info.Method} of the zip entry '{info.FullName}' is not supported.");
     }
@@ -37,9 +34,7 @@ internal static class ZipEntryOpener
     {
         ZipCompressionMethod.Stored or ZipCompressionMethod.Deflate or ZipCompressionMethod.Deflate64 or ZipCompressionMethod.BZip2 or ZipCompressionMethod.Ppmd or ZipCompressionMethod.Lzma or ZipCompressionMethod.Xz => true,
         ZipCompressionMethod.Shrink or ZipCompressionMethod.Reduce1 or ZipCompressionMethod.Reduce2 or ZipCompressionMethod.Reduce3 or ZipCompressionMethod.Reduce4 or ZipCompressionMethod.Implode => true,
-#if NET11_0_OR_GREATER
         ZipCompressionMethod.Zstandard => true,
-#endif
         _ => false,
     };
 
@@ -171,9 +166,7 @@ internal static class ZipEntryOpener
             ZipCompressionMethod.Shrink => new ZipShrinkDecoderStream(input, GetKnownLength(info, uncompressedSize), leaveOpen: false),
             ZipCompressionMethod.Reduce1 or ZipCompressionMethod.Reduce2 or ZipCompressionMethod.Reduce3 or ZipCompressionMethod.Reduce4 => new ZipReduceDecoderStream(input, info.Method - 1, GetKnownLength(info, uncompressedSize), leaveOpen: false),
             ZipCompressionMethod.Implode => new ZipImplodeDecoderStream(input, largeWindow: (info.Flags & 2) != 0, literalTree: (info.Flags & 4) != 0, GetKnownLength(info, uncompressedSize), leaveOpen: false),
-#if NET11_0_OR_GREATER
-            ZipCompressionMethod.Zstandard => new ZstandardStream(input, CompressionMode.Decompress, leaveOpen: false),
-#endif
+            ZipCompressionMethod.Zstandard => ZstandardDecoderFactory.Create(input, uncompressedSize, options.MaxMemoryUsage, leaveOpen: false),
             _ => throw new NotSupportedException($"The compression method {info.Method} of the zip entry '{info.FullName}' is not supported."),
         };
     }

@@ -103,18 +103,6 @@ internal static class ZipTestData
         }
     }
 
-    /// <summary>Gets a value indicating whether the archive uses a method that is not supported on this framework.</summary>
-    public static bool IsNotSupported(string fileName)
-    {
-        // ZstandardStream is new in .NET 11
-#if NET11_0_OR_GREATER
-        _ = fileName;
-        return false;
-#else
-        return fileName is "zstd.zip";
-#endif
-    }
-
     public static string GetPath(string fileName) => Path.Combine(AppContext.BaseDirectory, "TestData", "Zip", fileName);
 
     public static string GetLegacyPath(string fileName) => Path.Combine(AppContext.BaseDirectory, "TestData", "ZipLegacy", fileName);

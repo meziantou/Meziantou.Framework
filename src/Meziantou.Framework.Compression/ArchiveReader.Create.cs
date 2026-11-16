@@ -56,7 +56,7 @@ public abstract partial class ArchiveReader
                     reader = new TarForwardReader(source, readerLeaveOpen, CompressionFormat.None);
                     break;
                 case (_, not CompressionFormat.None):
-                    reader = CreateCompressedTarReader(source, compression, readerLeaveOpen);
+                    reader = CreateCompressedTarReader(source, compression, readerLeaveOpen, options?.MaxMemoryUsage ?? new ArchiveReaderOptions().MaxMemoryUsage);
                     break;
                 default:
                     throw new InvalidDataException("The data are not an archive of a supported format.");
@@ -85,9 +85,9 @@ public abstract partial class ArchiveReader
         return Create(File.OpenRead(path), options, leaveOpen: false);
     }
 
-    private static TarForwardReader CreateCompressedTarReader(Stream source, CompressionFormat compression, bool leaveOpen)
+    private static TarForwardReader CreateCompressedTarReader(Stream source, CompressionFormat compression, bool leaveOpen, long maxMemoryUsage)
     {
-        var decompressed = FormatDetector.CreateDecompressionStream(compression, source, leaveOpen);
+        var decompressed = FormatDetector.CreateDecompressionStream(compression, source, leaveOpen, maxMemoryUsage);
         var block = new byte[512];
         int read;
         try

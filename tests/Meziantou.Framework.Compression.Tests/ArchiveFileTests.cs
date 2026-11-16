@@ -18,11 +18,7 @@ public sealed class ArchiveFileTests
         { "Archive/sample.tar.lzma", ArchiveFormat.Tar, CompressionFormat.Lzma },
         { "Archive/sample.tar.lz", ArchiveFormat.Tar, CompressionFormat.LZip },
         { "Archive/sample.tar.Z", ArchiveFormat.Tar, CompressionFormat.UnixCompress },
-#if NET11_0_OR_GREATER
         { "Archive/sample.tar.zst", ArchiveFormat.Tar, CompressionFormat.Zstandard },
-#else
-        { "Archive/sample.tar.zst", ArchiveFormat.Unknown, CompressionFormat.Zstandard },
-#endif
         { "Archive/hello.txt.gz", ArchiveFormat.Unknown, CompressionFormat.GZip },
         { "Zip/deflate.zip", ArchiveFormat.Zip, CompressionFormat.None },
         { "Zip/sfx.zip", ArchiveFormat.Zip, CompressionFormat.None },
@@ -41,9 +37,7 @@ public sealed class ArchiveFileTests
         "Archive/sample.tar.lzma",
         "Archive/sample.tar.lz",
         "Archive/sample.tar.Z",
-#if NET11_0_OR_GREATER
         "Archive/sample.tar.zst",
-#endif
     ];
 
     [Theory]

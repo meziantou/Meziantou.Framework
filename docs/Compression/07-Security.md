@@ -26,6 +26,9 @@ The size of the dictionary of LZMA, the model of PPMd and the window of RAR come
 what a decoder allocates (2 GiB by default): an archive that needs more throws an `InvalidDataException`. The LZ windows
 grow with the data they produce, so a small archive that declares a large dictionary allocates little.
 
+Before .NET 11, which has a streaming Zstandard decoder, the Zstandard data (zip entries and `.tar.zst` archives) are
+decoded whole in memory: the compressed data and the decoded data are both limited by `MaxMemoryUsage`.
+
 ## Size of the content
 
 An entry can decompress to much more than its compressed size. [Length](cref:Meziantou.Framework.Compression.ArchiveEntry.Length)

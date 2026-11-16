@@ -19,12 +19,6 @@ public sealed class ZipReaderTests
                     continue;
 
                 files.Add(entry.FullName);
-                if (ZipTestData.IsNotSupported(fileName) && entry.CompressionMethod is not ZipCompressionMethod.Stored)
-                {
-                    Assert.Throws<NotSupportedException>(() => reader.OpenEntryStream());
-                    continue;
-                }
-
                 var content = ZipTestData.ReadAll(reader.OpenEntryStream());
                 Assert.Equal(ZipTestData.GetExpectedHash(entry.FullName), ZipTestData.Hash(content));
                 Assert.Equal(content.Length, entry.Length);
@@ -54,10 +48,7 @@ public sealed class ZipReaderTests
             Assert.Equal(expected.CompressionMethod, entry.CompressionMethod);
             Assert.Equal(expected.EncryptionMethod, entry.EncryptionMethod);
             Assert.Equal(expected.IsEncrypted, entry.IsEncrypted);
-            if (!ZipTestData.IsNotSupported(fileName))
-            {
-                Assert.Equal(ZipTestData.ReadAll(expected.Open()), ZipTestData.ReadAll(entry.Open()));
-            }
+            Assert.Equal(ZipTestData.ReadAll(expected.Open()), ZipTestData.ReadAll(entry.Open()));
 
             // Once the content is read, the data descriptor gives the sizes of a streamed entry
             Assert.Equal(expected.Length, entry.Length);

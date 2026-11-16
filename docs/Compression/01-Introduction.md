@@ -22,7 +22,7 @@ native library and works with Native AOT.
 - RAR: the compression of RAR5 (including the larger dictionaries of RAR 7) and of RAR 2.9/4.x (LZ, PPMd and the standard
   filters), AES encryption of the content and of the headers, solid and multi-volume archives, self-extracting archives,
   symbolic and hard links.
-- zip: Stored, Deflate, Deflate64, BZip2, LZMA, PPMd, XZ, Zstandard (on .NET 11), and the old Shrink, Reduce and Implode
+- zip: Stored, Deflate, Deflate64, BZip2, LZMA, PPMd, XZ, Zstandard, and the old Shrink, Reduce and Implode
   methods; ZipCrypto and WinZip AES encryption; Zip64; split archives (`.z01`, ..., `.zip`, and `.zip.001`, ...).
 
 [ArchiveFile](cref:Meziantou.Framework.Compression.ArchiveFile) opens an archive of any of these formats, detected from

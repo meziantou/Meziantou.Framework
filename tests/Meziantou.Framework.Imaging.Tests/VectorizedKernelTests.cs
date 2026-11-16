@@ -3399,6 +3399,68 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FloatSolidSourceOverMatchesTheGeneralLoop()
+    {
+        var random = new Random(17);
+        const int Width = 37;
+        const int Height = 23;
+        for (var round = 0; round < 32; round++)
+        {
+            // Opaque, transparent and translucent pixels and paints; colors out of [0, 1], which floating-point pixels keep
+            var pixels = new RgbaFloat[Width * Height];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                var alpha = random.Next(4) switch
+                {
+                    0 => 0f,
+                    1 => 1f,
+                    _ => random.NextSingle(),
+                };
+                pixels[i] = new RgbaFloat((random.NextSingle() * 2) - 0.5f, random.NextSingle(), random.NextSingle() * 1.5f, alpha);
+            }
+
+            var paintAlpha = (round % 4) switch
+            {
+                0 => ushort.MaxValue,
+                1 => (ushort)0,
+                _ => (ushort)random.Next(1, ushort.MaxValue),
+            };
+            var paint = new Rgba64((ushort)random.Next(ushort.MaxValue + 1), (ushort)random.Next(ushort.MaxValue + 1), (ushort)random.Next(ushort.MaxValue + 1), paintAlpha);
+            var center = new PointD(random.NextDouble() * Width, random.NextDouble() * Height);
+            var radiusX = 2 + (random.NextDouble() * Width);
+            var radiusY = 2 + (random.NextDouble() * Height);
+            Assert.Equal(Draw(forceGeneral: true), Draw(forceGeneral: false));
+
+            byte[] Draw(bool forceGeneral)
+            {
+                using var image = new Image<RgbaFloat>(Width, Height);
+                image.Frames[0].ProcessPixelRows(pixels, static (accessor, pixels) =>
+                {
+                    for (var y = 0; y < accessor.Height; y++)
+                    {
+                        pixels.AsSpan(y * Width, Width).CopyTo(accessor.GetRowSpan(y));
+                    }
+                });
+
+                FloatDrawingKernels.TestForceGeneral = forceGeneral;
+                try
+                {
+                    image.Draw(canvas => canvas.FillEllipse(new SolidBrush(paint), center, radiusX, radiusY));
+                }
+                finally
+                {
+                    FloatDrawingKernels.TestForceGeneral = false;
+                }
+
+                var result = new byte[Width * Height * 16];
+                image.Frames[0].CopyPixelBytesTo(result);
+                return result;
+            }
+        }
+    }
+
     public static TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace> ResizeCases()
     {
         var data = new TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace>();

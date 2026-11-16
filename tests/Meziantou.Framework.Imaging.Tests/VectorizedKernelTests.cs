@@ -11963,6 +11963,31 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    public void CoverageRasterizerIndexOfNonZeroMatchesIndexOfAnyExcept()
+    {
+        // The zeros between the boundaries of a row, tested 8 entries at a time: a value before, inside or after a group
+        // of 8, -0 (whose bits are not zero), and no value at all
+        foreach (var length in new[] { 0, 1, 7, 8, 9, 15, 16, 17, 63, 64, 65, 200 })
+        {
+            Assert.Equal(-1, CoverageRasterizer.IndexOfNonZero(new ulong[length]));
+            for (var position = 0; position < length; position++)
+            {
+                foreach (var value in new[] { 1UL, (ulong)BitConverter.DoubleToInt64Bits(-0.0), ulong.MaxValue })
+                {
+                    var values = new ulong[length];
+                    values[position] = value;
+                    if (position + 3 < length)
+                    {
+                        values[position + 3] = 1;
+                    }
+
+                    Assert.Equal(values.AsSpan().IndexOfAnyExcept(0UL), CoverageRasterizer.IndexOfNonZero(values));
+                }
+            }
+        }
+    }
+
     private static int[] ToBits(float[] values) => Array.ConvertAll(values, BitConverter.SingleToInt32Bits);
 
     /// <summary>A finite single-precision number: an integer, a fraction, a large or a tiny magnitude, or a zero of either sign.</summary>

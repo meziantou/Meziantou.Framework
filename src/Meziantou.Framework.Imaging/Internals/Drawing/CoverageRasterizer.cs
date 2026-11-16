@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -1820,7 +1821,7 @@ internal sealed class CoverageRasterizer : IDisposable
             var end = column + 1;
             if (end <= last && bits[end] == 0)
             {
-                var next = bits[end..(last + 1)].IndexOfAnyExcept(0UL);
+                var next = IndexOfNonZero(bits[end..(last + 1)]);
                 end = next < 0 ? last + 1 : end + next;
                 coverage[(column + 1)..end].Fill(value);
             }
@@ -1839,6 +1840,34 @@ internal sealed class CoverageRasterizer : IDisposable
         }
 
         return area;
+    }
+
+    /// <summary>
+    /// Gets the index of the first value that is not zero, or -1: <see cref="MemoryExtensions.IndexOfAnyExcept{T}(ReadOnlySpan{T}, T)"/>,
+    /// with 64 bytes per test. The zeros between two boundaries far apart (the inside of a large stroked shape) are
+    /// most of what a row reads.
+    /// </summary>
+    internal static int IndexOfNonZero(ReadOnlySpan<ulong> values)
+    {
+        var index = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            ref var first = ref unsafe(MemoryMarshal.GetReference(values));
+            for (; index + 8 <= values.Length; index += 8)
+            {
+                var any = unsafe(Vector128.LoadUnsafe(ref first, (nuint)index) | Vector128.LoadUnsafe(ref first, (nuint)index + 2) | Vector128.LoadUnsafe(ref first, (nuint)index + 4) | Vector128.LoadUnsafe(ref first, (nuint)index + 6));
+                if (any != Vector128<ulong>.Zero)
+                    break;
+            }
+        }
+
+        for (; index < values.Length; index++)
+        {
+            if (values[index] != 0)
+                return index;
+        }
+
+        return -1;
     }
 
     private void Touch(int first, int last)

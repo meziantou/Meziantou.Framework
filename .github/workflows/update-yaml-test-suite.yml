@@ -51,6 +51,40 @@ jobs:
             dotnet test --project "$PWD/tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj" -mt --configuration Release
             $testsPassed = $LASTEXITCODE -eq 0
 
+            # The cases are also the seeds of the YAML fuzz targets, with emitter options the unit tests do not use.
+            # Replay the seeds and the regressions of every target, as Meziantou.Framework.Fuzzing.Tests does in CI.
+            $fuzzProject = "fuzz/Meziantou.Framework.Yaml.Fuzz"
+            $fuzzFramework = "net10.0"
+            dotnet build $fuzzProject -mt --configuration Release --framework $fuzzFramework
+            if ($LASTEXITCODE -ne 0) {
+              $testsPassed = $false
+            } else {
+              $fuzzTargets = dotnet run --project $fuzzProject --configuration Release --framework $fuzzFramework --no-build -- --list
+              if ($LASTEXITCODE -ne 0 -or -not $fuzzTargets) {
+                $testsPassed = $false
+              }
+              foreach ($fuzzTarget in $fuzzTargets) {
+                $seeds = Join-Path $env:RUNNER_TEMP "yaml-fuzz-seeds/$fuzzTarget"
+                dotnet run --project $fuzzProject --configuration Release --framework $fuzzFramework --no-build -- $fuzzTarget --seeds $seeds
+                if ($LASTEXITCODE -ne 0) {
+                  $testsPassed = $false
+                  continue
+                }
+
+                $inputs = @($seeds)
+                $regressions = "$fuzzProject/Regressions/$fuzzTarget"
+                if (Test-Path $regressions) {
+                  $inputs += $regressions
+                }
+
+                dotnet run --project $fuzzProject --configuration Release --framework $fuzzFramework --no-build -- $fuzzTarget @inputs
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Host "::error::The fuzz target $fuzzTarget fails on its seeds or regressions"
+                  $testsPassed = $false
+                }
+              }
+            }
+
             git config --global user.email "git@meziantou.net"
             git config --global user.name "meziantou"
             git checkout -b $branch
@@ -65,9 +99,9 @@ jobs:
             git push origin $branch --force
             $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             if ($testsPassed) {
-              $body = "$title`n`nThe Meziantou.Framework.Yaml tests pass with the new cases.`n`nCreated by: $runUrl"
+              $body = "$title`n`nThe Meziantou.Framework.Yaml tests and the seeds of the YAML fuzz targets pass with the new cases.`n`nCreated by: $runUrl"
             } else {
-              $body = "$title`n`n**The Meziantou.Framework.Yaml tests fail with the new cases**: the parser, the emitter or the loader needs an update before this can be merged. See the test output of the run.`n`nCreated by: $runUrl"
+              $body = "$title`n`n**The Meziantou.Framework.Yaml tests or the seeds of the YAML fuzz targets fail with the new cases**: the parser, the emitter or the loader needs an update before this can be merged. See the test output of the run.`n`nCreated by: $runUrl"
             }
 
             # The branch is reused every week, so update the pull request when one is already open

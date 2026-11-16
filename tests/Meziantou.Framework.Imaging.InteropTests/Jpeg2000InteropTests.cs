@@ -203,6 +203,163 @@ public sealed class Jpeg2000InteropTests
     }
 
     /// <summary>
+    /// Precincts, tile-parts and the TLM and PLT marker segments in every progression order: <c>opj_dump</c> finds the
+    /// precinct sizes of each resolution level and the tile-parts of each tile, and OpenJPEG decodes the samples the library
+    /// decodes, the image for a lossless output, at every number of layers.
+    /// </summary>
+    [Theory]
+    [InlineData(Jpeg2000ProgressionOrder.Lrcp, false)]
+    [InlineData(Jpeg2000ProgressionOrder.Rlcp, false)]
+    [InlineData(Jpeg2000ProgressionOrder.Rpcl, false)]
+    [InlineData(Jpeg2000ProgressionOrder.Pcrl, false)]
+    [InlineData(Jpeg2000ProgressionOrder.Cprl, false)]
+    [InlineData(Jpeg2000ProgressionOrder.Lrcp, true)]
+    [InlineData(Jpeg2000ProgressionOrder.Rpcl, true)]
+    [InlineData(Jpeg2000ProgressionOrder.Pcrl, true)]
+    public async Task PrecinctsTilePartsAndLengthMarkersAreReadAlikeByOpenJpeg(Jpeg2000ProgressionOrder order, bool isLossy)
+    {
+        var openJpeg = await RequiredTools.OpenJpegAsync();
+        var format = isLossy ? PixelFormat.Rgb24 : PixelFormat.Rgba32;
+        var layout = ImageSnapshots.GetLayout(format);
+        var source = CreatePattern(150, 97, layout, seed: 10 + (int)order);
+        using var image = EncoderSources.CreateImage(source, format);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(PrecinctsTilePartsAndLengthMarkersAreReadAlikeByOpenJpeg));
+        var path = directory / $"{order}-{(isLossy ? "lossy" : "lossless")}.j2k";
+        Jpeg2000QualityLayer[] layers = [Jpeg2000QualityLayer.FromBitsPerPixel(0.5), Jpeg2000QualityLayer.FromBitsPerPixel(2), isLossy ? Jpeg2000QualityLayer.FromBitsPerPixel(6) : Jpeg2000QualityLayer.Complete];
+        var encoder = new Jpeg2000Encoder
+        {
+            Compression = isLossy ? Jpeg2000Compression.Lossy : Jpeg2000Compression.Lossless,
+            Quality = 100,
+            Container = Jpeg2000Container.Codestream,
+            ProgressionOrder = order,
+            TileWidth = 128,
+            TileHeight = 64,
+            DecompositionLevels = 4,
+            PrecinctSizes = [new Size(32, 32), new Size(16, 16), new Size(8, 8)],
+            TilePartDivision = order switch
+            {
+                Jpeg2000ProgressionOrder.Lrcp => Jpeg2000TilePartDivision.Layer,
+                Jpeg2000ProgressionOrder.Rlcp or Jpeg2000ProgressionOrder.Rpcl => Jpeg2000TilePartDivision.Resolution,
+                _ => Jpeg2000TilePartDivision.Component,
+            },
+            WriteTilePartLengths = true,
+            WritePacketLengths = true,
+            QualityLayers = layers,
+        };
+        await image.SaveAsync(path, encoder, XunitCancellationToken);
+        var context = $"{order} {(isLossy ? "lossy" : "lossless")}";
+        var structure = ReferenceJpeg2000.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.True(structure.HasTilePartLengths && structure.HasPacketLengths, context);
+
+        // opj_dump gives the exponents of the precinct sizes from the lowest resolution level, and the tile-parts of each tile
+        var dump = await openJpeg.DumpAsync(path, XunitCancellationToken);
+        Assert.Contains("preccintsize (w,h)=(3,3) (3,3) (3,3) (4,4) (5,5) ", dump, StringComparison.Ordinal);
+        Assert.Contains("type=0xff55", dump, StringComparison.Ordinal);
+        foreach (var tile in structure.TileParts.GroupBy(part => part.Tile))
+        {
+            Assert.HasCountGreaterThan(1, tile.ToArray(), $"{context}: the tile {tile.Key} has one tile-part.");
+            Assert.Contains(string.Create(CultureInfo.InvariantCulture, $"nb of tile-part in tile [{tile.Key}]={tile.Count()}"), dump, StringComparison.Ordinal);
+        }
+
+        using var decoded = await Image.LoadAsync(path, cancellationToken: XunitCancellationToken);
+        var library = ImageSnapshots.Capture(decoded).Frames[0].Pixels;
+        AssertChannels(isLossy ? library : source, await openJpeg.DecodeComponentsAsync(path, XunitCancellationToken), tolerance: isLossy ? 1 : 0, $"{context}: OpenJPEG {openJpeg.Version} decodes other samples.");
+        if (!isLossy)
+        {
+            Assert.Equal(0, GetMaxDifference(source, library, layout.ChannelCount));
+        }
+
+        var errors = new List<double>();
+        for (var layer = 1; layer <= layers.Length; layer++)
+        {
+            var prefix = await openJpeg.DecodeComponentsAsync(path, ["-l", layer.ToString(CultureInfo.InvariantCulture)], XunitCancellationToken);
+            errors.Add(GetMeanDifference(source, ToPixels(prefix, layout), layout.ChannelCount));
+            using var limited = Image.Load(await File.ReadAllBytesAsync(path, XunitCancellationToken), LayerLimit(layer));
+            AssertChannels(ImageSnapshots.Capture(limited).Frames[0].Pixels, prefix, tolerance: isLossy ? 1 : 0, $"{context}, {layer} layer(s): OpenJPEG {openJpeg.Version} decodes other samples than the library.");
+        }
+
+        var description = string.Join(", ", errors.Select(error => error.ToString("0.###", CultureInfo.InvariantCulture)));
+        Assert.True(errors[1] < errors[0] && errors[2] < errors[1], $"{context}: the mean errors of the layers are {description}.");
+    }
+
+    /// <summary>
+    /// The new outputs of the high-throughput block coder: a target reached with HT refinement passes, precincts in a
+    /// position progression with tile-parts and length markers, and several layers. OpenJPEG, OpenJPH and FFmpeg decode the
+    /// samples the library decodes (OpenJPEG at every number of layers; OpenJPH reads codestreams of one layer only). FFmpeg
+    /// 9.0.2 reads at most 32 tile-parts per tile: the division follows the resolution levels here.
+    /// </summary>
+    [Theory]
+    [InlineData(PixelFormat.Gray8, false)]
+    [InlineData(PixelFormat.Rgb24, false)]
+    [InlineData(PixelFormat.Rgba32, false)]
+    [InlineData(PixelFormat.Gray8, true)]
+    [InlineData(PixelFormat.Rgb24, true)]
+    [InlineData(PixelFormat.Rgba32, true)]
+    public async Task HighThroughputRefinementPassesPrecinctsAndLayersAreReadAlikeByTheReferenceDecoders(PixelFormat format, bool isLossy)
+    {
+        var openJpeg = await RequiredTools.OpenJpegAsync();
+        var openJph = await RequiredTools.OpenJphAsync();
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var layout = ImageSnapshots.GetLayout(format);
+        var source = CreatePattern(150, 97, layout, seed: 20 + (int)format);
+        using var image = EncoderSources.CreateImage(source, format);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(HighThroughputRefinementPassesPrecinctsAndLayersAreReadAlikeByTheReferenceDecoders));
+        var compression = isLossy ? Jpeg2000Compression.Lossy : Jpeg2000Compression.Lossless;
+        Jpeg2000QualityLayer[] layers = [Jpeg2000QualityLayer.FromBitsPerPixel(0.5), Jpeg2000QualityLayer.FromBitsPerPixel(2), isLossy ? Jpeg2000QualityLayer.FromBitsPerPixel(6) : Jpeg2000QualityLayer.Complete];
+        var configurations = new (string Name, Jpeg2000Encoder Encoder)[]
+        {
+            ("target", new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = compression, Quality = 100, Container = Jpeg2000Container.Codestream, QualityLayers = [Jpeg2000QualityLayer.FromBitsPerPixel(1.5)] }),
+            ("precincts", new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = compression, Container = Jpeg2000Container.Codestream, PrecinctSizes = [new Size(32, 32), new Size(16, 16)], ProgressionOrder = Jpeg2000ProgressionOrder.Rpcl, TilePartDivision = Jpeg2000TilePartDivision.Resolution, WriteTilePartLengths = true, WritePacketLengths = true }),
+            ("layers", new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = compression, Quality = 100, Container = Jpeg2000Container.Codestream, QualityLayers = layers, PrecinctSizes = [new Size(64, 64)], ProgressionOrder = Jpeg2000ProgressionOrder.Rpcl }),
+        };
+        foreach (var (name, encoder) in configurations)
+        {
+            var path = directory / $"{format}-{(isLossy ? "lossy" : "lossless")}-{name}.jhc";
+            await image.SaveAsync(path, encoder, XunitCancellationToken);
+            var context = $"{format} {(isLossy ? "lossy" : "lossless")} {name}";
+            using var decoded = await Image.LoadAsync(path, cancellationToken: XunitCancellationToken);
+            var library = ImageSnapshots.Capture(decoded).Frames[0].Pixels;
+            var isExact = !isLossy && name != "target";
+            if (isExact)
+            {
+                Assert.Equal(0, GetMaxDifference(source, library, layout.ChannelCount));
+            }
+
+            var tolerance = isLossy ? layout.ScaleFrom8Bit : 0;
+            AssertChannels(library, await openJpeg.DecodeComponentsAsync(path, XunitCancellationToken), tolerance, $"{context}: OpenJPEG {openJpeg.Version} and the library decode different samples.");
+            var frame = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, GetFFmpegFormat(format), source.Width, source.Height, XunitCancellationToken));
+            Assert.True(GetMaxDifference(library, RawPixelBuffer.Create(source.Width, source.Height, layout, frame), layout.ChannelCount) <= tolerance, $"{context}: FFmpeg {ffmpeg.Version} and the library decode different samples.");
+            if (name == "layers")
+            {
+                for (var layer = 1; layer < layers.Length; layer++)
+                {
+                    var prefix = await openJpeg.DecodeComponentsAsync(path, ["-l", layer.ToString(CultureInfo.InvariantCulture)], XunitCancellationToken);
+                    using var limited = Image.Load(await File.ReadAllBytesAsync(path, XunitCancellationToken), LayerLimit(layer));
+                    AssertChannels(ImageSnapshots.Capture(limited).Frames[0].Pixels, prefix, tolerance, $"{context}, {layer} layer(s): OpenJPEG {openJpeg.Version} decodes other samples than the library.");
+                }
+            }
+            else if (layout.ChannelCount is 1 or 3)
+            {
+                var reference = await openJph.DecodeAsync(path, layout.ChannelCount, XunitCancellationToken);
+                var samples = reference.Rgba.Span;
+                var maximum = 0;
+                for (var y = 0; y < source.Height; y++)
+                {
+                    for (var x = 0; x < source.Width; x++)
+                    {
+                        for (var channel = 0; channel < layout.ChannelCount; channel++)
+                        {
+                            maximum = Math.Max(maximum, Math.Abs(library.GetSample(x, y, channel) - samples[(4 * ((y * source.Width) + x)) + channel]));
+                        }
+                    }
+                }
+
+                Assert.True(maximum <= tolerance, $"{context}: OpenJPH {OpenJphTool.Version} and the library decode samples {maximum} apart.");
+            }
+        }
+    }
+
+    /// <summary>
     /// Scaled decodes and regions against <c>opj_decompress -r</c> and <c>-d</c>, on codestreams of the library (one tile,
     /// tiles whose last column and row are cut) and of OpenJPEG (precincts in the PCRL order, tiles with layers, small
     /// code-blocks in the RPCL order): the same size at every reduction, and the same samples, exactly for the reversible

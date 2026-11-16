@@ -128,7 +128,7 @@ public static class ArchiveFile
                     archive = new TarRandomAccessArchive(stream, leaveOpen, CompressionFormat.None);
                     break;
                 case { Format: ArchiveFormat.Tar }:
-                    archive = OpenCompressedTar(stream, info.CompressionFormat, leaveOpen);
+                    archive = OpenCompressedTar(stream, info.CompressionFormat, leaveOpen, options?.MaxMemoryUsage ?? new ArchiveReaderOptions().MaxMemoryUsage);
                     break;
                 case { CompressionFormat: not CompressionFormat.None }:
                     throw new InvalidDataException($"The data are a {info.CompressionFormat} stream that does not contain a tar archive. Decompress it with a stream, such as XzStream or BZip2Stream.");
@@ -179,13 +179,13 @@ public static class ArchiveFile
         }
     }
 
-    private static TarRandomAccessArchive OpenCompressedTar(Stream stream, CompressionFormat compression, bool leaveOpen)
+    private static TarRandomAccessArchive OpenCompressedTar(Stream stream, CompressionFormat compression, bool leaveOpen, long maxMemoryUsage)
     {
         var path = Path.Combine(Path.GetTempPath(), "Meziantou.Framework.Compression-" + Guid.NewGuid().ToString("N") + ".tar");
         var temporary = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, bufferSize: 81920, FileOptions.DeleteOnClose);
         try
         {
-            using (var decompressed = FormatDetector.CreateDecompressionStream(compression, stream, leaveOpen))
+            using (var decompressed = FormatDetector.CreateDecompressionStream(compression, stream, leaveOpen, maxMemoryUsage))
             {
                 decompressed.CopyTo(temporary);
             }

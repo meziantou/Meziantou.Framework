@@ -33,7 +33,7 @@ Assert.Equal("Hello, world!", reader.ReadToEnd());
 ```
 <!-- endref -->
 
-- Methods: Stored, Deflate, Deflate64, BZip2, LZMA, PPMd, XZ, Zstandard (on .NET 11 only), Shrink, Reduce and Implode. The
+- Methods: Stored, Deflate, Deflate64, BZip2, LZMA, PPMd, XZ, Zstandard, Shrink, Reduce and Implode. The
   method of an entry is [CompressionMethod](cref:Meziantou.Framework.Compression.ReadOnlyZipArchiveEntry.CompressionMethod).
 - Zip64 archives, and the archives that follow an executable (self-extracting archives).
 - [ReadOnlyZipArchive.Open](cref:Meziantou.Framework.Compression.ReadOnlyZipArchive.Open) finds the volumes of a split

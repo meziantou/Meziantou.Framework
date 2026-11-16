@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
 using Meziantou.Framework.Compression.Internals.IO;
+using Meziantou.Framework.Compression.Internals.Zstandard;
 
 namespace Meziantou.Framework.Compression.Internals;
 
@@ -11,6 +12,12 @@ internal static class FormatDetector
     public const int PeekLength = 1024;
 
     private const int TarBlockSize = 512;
+
+    private const long DefaultMaxMemoryUsage = 2L * 1024 * 1024 * 1024;
+
+#if !NET11_0_OR_GREATER
+    private const long MaxZstandardDetectionLength = 64 * 1024 * 1024;
+#endif
 
     /// <summary>Detects the format of the outer layer: an archive, a compressed stream, or nothing known.</summary>
     public static (ArchiveFormat Format, CompressionFormat Compression) DetectOuter(ReadOnlySpan<byte> header)
@@ -120,7 +127,7 @@ internal static class FormatDetector
         return size == ulong.MaxValue || size < (1UL << 38);
     }
 
-    public static Stream CreateDecompressionStream(CompressionFormat format, Stream stream, bool leaveOpen)
+    public static Stream CreateDecompressionStream(CompressionFormat format, Stream stream, bool leaveOpen, long maxMemoryUsage = DefaultMaxMemoryUsage)
     {
         return format switch
         {
@@ -130,11 +137,7 @@ internal static class FormatDetector
             CompressionFormat.Lzma => new LzmaStream(stream, CompressionMode.Decompress, leaveOpen),
             CompressionFormat.LZip => new LZipStream(stream, CompressionMode.Decompress, leaveOpen),
             CompressionFormat.UnixCompress => new UnixCompressStream(stream, leaveOpen),
-#if NET11_0_OR_GREATER
-            CompressionFormat.Zstandard => new ZstandardStream(stream, CompressionMode.Decompress, leaveOpen),
-#else
-            CompressionFormat.Zstandard => throw new NotSupportedException("Zstandard requires .NET 11 or later."),
-#endif
+            CompressionFormat.Zstandard => ZstandardDecoderFactory.Create(stream, outputLength: -1, maxMemoryUsage, leaveOpen),
             _ => throw new ArgumentOutOfRangeException(nameof(format)),
         };
     }
@@ -143,6 +146,12 @@ internal static class FormatDetector
     public static bool IsCompressedTar(CompressionFormat compression, Stream seekableStream)
     {
         var position = seekableStream.Position;
+#if !NET11_0_OR_GREATER
+        // Before .NET 11, Zstandard data are decoded whole: a large file is taken for a tar archive rather than decoded twice
+        if (compression is CompressionFormat.Zstandard && seekableStream.Length - position > MaxZstandardDetectionLength)
+            return true;
+#endif
+
         try
         {
             using var decompressed = CreateDecompressionStream(compression, seekableStream, leaveOpen: true);

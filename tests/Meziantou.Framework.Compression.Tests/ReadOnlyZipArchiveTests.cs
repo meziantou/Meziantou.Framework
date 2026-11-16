@@ -11,13 +11,6 @@ public sealed class ReadOnlyZipArchiveTests
     [MemberData(nameof(ZipTestData.Fixtures), MemberType = typeof(ZipTestData))]
     public void ReadEntries(string fileName, string? password, string[] expectedFiles)
     {
-        if (ZipTestData.IsNotSupported(fileName))
-        {
-            using var unsupported = new ReadOnlyZipArchive(ZipTestData.OpenRead(fileName), new ArchiveReaderOptions { Password = password });
-            Assert.Throws<NotSupportedException>(() => unsupported.Entries.First(entry => !entry.IsDirectory && entry.Length > 0).Open());
-            return;
-        }
-
         using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead(fileName), new ArchiveReaderOptions { Password = password });
         Assert.Equal(ArchiveFormat.Zip, archive.Format);
         var files = new List<string>();
@@ -41,9 +34,6 @@ public sealed class ReadOnlyZipArchiveTests
     [MemberData(nameof(ZipTestData.Fixtures), MemberType = typeof(ZipTestData))]
     public async Task ReadEntriesAsync(string fileName, string? password, string[] expectedFiles)
     {
-        if (ZipTestData.IsNotSupported(fileName))
-            return;
-
         await using var archive = new ReadOnlyZipArchive(ZipTestData.OpenRead(fileName), new ArchiveReaderOptions { Password = password });
         var files = new List<string>();
         foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
@@ -82,7 +72,7 @@ public sealed class ReadOnlyZipArchiveTests
 
             // ZipArchive reads the MS-DOS time only
             Assert.Equal(expectedEntry.LastWriteTime, ZipEntryInfo.DecodeDosTime(entry.Info.DosDate, entry.Info.DosTime));
-            if (entry.IsDirectory || ZipTestData.IsNotSupported(fileName))
+            if (entry.IsDirectory)
                 continue;
 
 #if NET11_0_OR_GREATER

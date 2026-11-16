@@ -18,6 +18,9 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     private Dictionary<string, MarkdownAbbreviationDefinitionSyntax>? _abbreviations;
     private Dictionary<string, MarkdownFootnoteDefinitionSyntax>? _footnotes;
     private Dictionary<MarkdownHeadingSyntax, string>? _headingIdentifiers;
+
+    // Whether the document has generic attributes: 0 when not computed yet, 1 when it has none, 2 when it has some
+    private int _hasGenericAttributes;
     private Dictionary<string, MarkdownHeadingSyntax>? _headings;
 
     /// <summary>Gets the blocks of the document, in the order of the text.</summary>
@@ -161,6 +164,21 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
 
     internal MarkdownParseOptions Options => (SyntaxTree as MarkdownSyntaxTree)?.Options ?? MarkdownParseOptions.Default;
 
+    /// <summary>Gets a value indicating whether the document has generic attributes, which most documents have none of.</summary>
+    /// <remarks>The green tree is searched: it skips the tokens and creates no red node.</remarks>
+    internal bool HasGenericAttributes
+    {
+        get
+        {
+            if (_hasGenericAttributes == 0)
+            {
+                _hasGenericAttributes = Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes) && ContainsKind(Green, SyntaxKind.GenericAttributes) ? 2 : 1;
+            }
+
+            return _hasGenericAttributes == 2;
+        }
+    }
+
     /// <summary>Gets the identifier of a heading of the document: the id of its generic attributes, or the one of auto-identifiers.</summary>
     internal string? GetHeadingIdentifier(MarkdownHeadingSyntax heading)
     {
@@ -168,7 +186,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
         {
             var options = Options;
             var identifiers = new Dictionary<MarkdownHeadingSyntax, string>();
-            if (options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes))
+            if (HasGenericAttributes)
             {
                 // The id of the last attributes wins
                 MarkdownGenericAttributesSyntax.FindTargets(this, (attributes, target) =>
@@ -288,5 +306,28 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
         ArgumentNullException.ThrowIfNull(visitor);
 
         return visitor.VisitMarkdownDocument(this);
+    }
+
+    private static bool ContainsKind(GreenNode root, SyntaxKind kind)
+    {
+        var stack = new Stack<GreenNode>();
+        stack.Push(root);
+        while (stack.TryPop(out var node))
+        {
+            if (node.RawKind == (int)kind)
+            {
+                return true;
+            }
+
+            for (var i = 0; i < node.SlotCount; i++)
+            {
+                if (node.GetSlot(i) is { IsToken: false } child)
+                {
+                    stack.Push(child);
+                }
+            }
+        }
+
+        return false;
     }
 }

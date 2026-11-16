@@ -1,4 +1,7 @@
 using System.Text;
+using GreenNode = Meziantou.Framework.Language.InternalSyntax.GreenNode;
+using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
+using GreenTrivia = Meziantou.Framework.Language.InternalSyntax.SyntaxTrivia;
 
 namespace Meziantou.Framework.Markdown;
 
@@ -87,10 +90,10 @@ public static class MarkdownFormatter
     public static MarkdownSyntaxTree Format(MarkdownSyntaxTree tree, MarkdownFormattingOptions? options)
     {
         ArgumentNullException.ThrowIfNull(tree);
-        var text = WriteText(tree, options);
+        var text = WriteText(tree, options, out var original);
 
         // A document that is already formatted is written as it is
-        if (string.Equals(text, tree.GetRoot().ToFullString(), StringComparison.Ordinal))
+        if (string.Equals(text, original, StringComparison.Ordinal))
         {
             return tree;
         }
@@ -107,8 +110,7 @@ public static class MarkdownFormatter
     public static string FormatText(MarkdownSyntaxTree tree, MarkdownFormattingOptions? options)
     {
         ArgumentNullException.ThrowIfNull(tree);
-        var text = WriteText(tree, options);
-        var original = tree.GetRoot().ToFullString();
+        var text = WriteText(tree, options, out var original);
         if (string.Equals(text, original, StringComparison.Ordinal))
         {
             return text;
@@ -126,7 +128,10 @@ public static class MarkdownFormatter
     }
 
     /// <summary>Writes the formatted text, without checking that it renders as the same HTML.</summary>
-    internal static string WriteText(MarkdownSyntaxTree tree, MarkdownFormattingOptions? options)
+    /// <param name="tree">The document.</param>
+    /// <param name="options">How to write the document.</param>
+    /// <param name="original">The text of the document.</param>
+    internal static string WriteText(MarkdownSyntaxTree tree, MarkdownFormattingOptions? options, out string original)
     {
         ArgumentNullException.ThrowIfNull(tree);
         options ??= MarkdownFormattingOptions.Default;
@@ -134,6 +139,7 @@ public static class MarkdownFormatter
 
         var root = tree.GetRoot();
         var text = root.ToFullString();
+        original = text;
         var lines = new Writer(tree.Options, options, text).WriteBlocks(root.Blocks, BlankLines.Always);
         if (lines.Count == 0)
         {
@@ -241,7 +247,7 @@ public static class MarkdownFormatter
                 {
                     previousBulletMarker = null;
                     var start = lines.Count;
-                    WriteBlock(lines, block, previous, blankLine, previousStart);
+                    WriteBlock(lines, block, previous, i + 1 < blocks.Count ? blocks[i + 1] : null, blankLine, previousStart);
                     previousStart = start;
                 }
             }
@@ -347,12 +353,16 @@ public static class MarkdownFormatter
             return false;
         }
 
-        private void WriteBlock(List<string> lines, MarkdownBlockSyntax block, MarkdownBlockSyntax? previous, bool blankLine, int previousStart)
+        private void WriteBlock(List<string> lines, MarkdownBlockSyntax block, MarkdownBlockSyntax? previous, MarkdownBlockSyntax? next, bool blankLine, int previousStart)
         {
             switch (block)
             {
                 case MarkdownParagraphSyntax or MarkdownLinkReferenceDefinitionSyntax:
-                    WriteParagraphLines(lines, GetLines(block.DescendantTokens()), GetContinuedBlock(lines, previousStart, previous, blankLine), block.Kind());
+                    // A paragraph of a container can have lazy lines, which would be a block on their own, such as a setext
+                    // underline, and a paragraph before a table can be the lines that Markdig reads before the table in the same
+                    // paragraph
+                    var sourceParagraph = block is MarkdownParagraphSyntax { Parent: MarkdownDocumentSyntax } paragraph && next is not (MarkdownTableSyntax or MarkdownGridTableSyntax) ? paragraph : null;
+                    WriteParagraphLines(lines, GetLines(block), GetContinuedBlock(lines, previousStart, previous, blankLine), block.Kind(), sourceParagraph: sourceParagraph);
                     break;
 
                 case MarkdownHeadingSyntax heading:
@@ -421,7 +431,7 @@ public static class MarkdownFormatter
                     }
                     else
                     {
-                        tableLines.AddRange(GetLines(table.DescendantTokens()));
+                        tableLines.AddRange(GetLines(table));
 
                         // A row of whitespace other than spaces, such as \v, has no token when it ends the document
                         if (table.ChildNodes().LastOrDefault() is MarkdownTableRowSyntax { FullSpan.Length: 0 })
@@ -452,12 +462,12 @@ public static class MarkdownFormatter
 
                 // A math block that the end of its container closes would contain the blank line after it
                 case MarkdownMathBlockSyntax math when math.ClosingFenceToken.RawKind == 0:
-                    lines.AddRange(GetLines(block.DescendantTokens()));
+                    lines.AddRange(GetLines(block));
                     lines.Add(math.OpeningFenceToken.Text);
                     break;
 
                 default:
-                    lines.AddRange(GetLines(block.DescendantTokens()));
+                    lines.AddRange(GetLines(block));
                     break;
             }
         }
@@ -497,7 +507,16 @@ public static class MarkdownFormatter
 
         // The lines after the first one of a paragraph are written without their indentation, unless they would start a block
         // without it: 4 spaces make them lines of the paragraph, as an indented code block cannot interrupt a paragraph.
-        private void WriteParagraphLines(List<string> lines, List<string> paragraph, ContinuedBlock? continuedBlock = null, SyntaxKind kind = SyntaxKind.Paragraph, string? underline = null)
+        /// <param name="lines">The lines of the document, which the lines of the paragraph are added to.</param>
+        /// <param name="paragraph">The lines of the paragraph.</param>
+        /// <param name="continuedBlock">The block whose paragraph the lines continue, or <see langword="null"/>.</param>
+        /// <param name="kind">The kind of the block that the lines are.</param>
+        /// <param name="underline">The underline of a setext heading, or <see langword="null"/>.</param>
+        /// <param name="sourceParagraph">
+        /// The paragraph of the document that the lines are, when they are a single paragraph if they are its text: lines that were
+        /// a paragraph of the document, not of a container, are one on their own, unless a table follows them.
+        /// </param>
+        private void WriteParagraphLines(List<string> lines, List<string> paragraph, ContinuedBlock? continuedBlock = null, SyntaxKind kind = SyntaxKind.Paragraph, string? underline = null, MarkdownParagraphSyntax? sourceParagraph = null)
         {
             // The spaces that start a line of a paragraph are not part of it, even the ones that a token has
             for (var i = 0; i < paragraph.Count; i++)
@@ -507,7 +526,7 @@ public static class MarkdownFormatter
 
             // Most paragraphs are a paragraph without the indentation of their lines, after the block whose paragraph they continue
             var text = string.Join('\n', paragraph);
-            if (continuedBlock is null ? paragraph.Count < 2 || IsSingleParagraph(text) : IsContinuation(continuedBlock, text, kind, underline))
+            if (continuedBlock is null ? paragraph.Count < 2 || IsSourceText(sourceParagraph, text) || IsSingleParagraph(text) : IsContinuation(continuedBlock, text, kind, underline))
             {
                 lines.AddRange(paragraph);
                 return;
@@ -537,6 +556,10 @@ public static class MarkdownFormatter
         }
 
         private bool IsSingleParagraph(string text) => IsSingleParagraph(text, parseOptions);
+
+        // Whether the lines of a paragraph are its text in the document, without indentation or the markers of a container between
+        // them: the parser read them as a single paragraph already
+        private static bool IsSourceText(MarkdownParagraphSyntax? paragraph, string text) => paragraph is not null && paragraph.Span.Length == text.Length && paragraph.ToString() == text;
 
         private bool IsContinuation(ContinuedBlock continuedBlock, string text, SyntaxKind kind, string? underline)
         {
@@ -591,7 +614,7 @@ public static class MarkdownFormatter
                 : new ContinuedBlock(string.Join('\n', lines.Skip(previousStart)), previous.Kind());
         }
 
-        private static List<string> GetHeadingLines(MarkdownHeadingSyntax heading) => GetLines(heading.DescendantTokens().Where(token => token.RawKind is not ((int)SyntaxKind.AtxHeadingMarkerToken or (int)SyntaxKind.AtxHeadingClosingSequenceToken or (int)SyntaxKind.SetextHeadingUnderlineToken)));
+        private static List<string> GetHeadingLines(MarkdownHeadingSyntax heading) => GetLines(heading, SyntaxKind.AtxHeadingMarkerToken, SyntaxKind.AtxHeadingClosingSequenceToken, SyntaxKind.SetextHeadingUnderlineToken);
 
         // Markdig reads the attributes of a setext heading in its text, and the ones of an ATX heading at its end, and keeps the
         // whitespace at the end of the text of a setext heading
@@ -614,7 +637,7 @@ public static class MarkdownFormatter
             // Markdig reads the attributes at the end of an ATX heading, before its closing sequence: the heading is kept
             if (!heading.IsSetext && heading.DescendantNodes().OfType<MarkdownGenericAttributesSyntax>().Any())
             {
-                lines.AddRange(GetLines(heading.DescendantTokens()));
+                lines.AddRange(GetLines(heading));
                 return;
             }
 
@@ -631,8 +654,8 @@ public static class MarkdownFormatter
 
         private void WriteCodeBlock(List<string> lines, MarkdownCodeBlockSyntax code, bool fenced)
         {
-            var codeLines = code.Code.Split('\n');
-            var count = codeLines.Length - 1;
+            var codeLines = code.GetCodeLines();
+            var count = codeLines.Count;
             if (!fenced)
             {
                 for (var i = 0; i < count; i++)
@@ -675,7 +698,7 @@ public static class MarkdownFormatter
             }
 
             var next = new List<string>();
-            WriteBlock(next, blocks[index + 1], blocks[index], blankLine: true, previousStart: 0);
+            WriteBlock(next, blocks[index + 1], blocks[index], index + 2 < blocks.Count ? blocks[index + 2] : null, blankLine: true, previousStart: 0);
             return next.Count == 0 ? 0 : next[0].Length - next[0].TrimStart(' ').Length;
         }
 
@@ -855,7 +878,7 @@ public static class MarkdownFormatter
             if (closingFence.RawKind != 0)
             {
                 var closing = closingFence.Text;
-                if (caption is not null && GetLines(caption.DescendantTokens()) is [var text, ..])
+                if (caption is not null && GetLines(caption) is [var text, ..])
                 {
                     closing += " " + text;
                 }
@@ -876,7 +899,7 @@ public static class MarkdownFormatter
                 }
 
                 // The terms are the lines of a paragraph
-                WriteParagraphLines(lines, [.. item.Terms.SelectMany(term => GetLines(term.DescendantTokens()))]);
+                WriteParagraphLines(lines, [.. item.Terms.SelectMany(term => GetLines(term))]);
 
                 if (item.MarkerToken.RawKind != 0)
                 {
@@ -932,7 +955,7 @@ public static class MarkdownFormatter
                     }
 
                     // The whitespace other than spaces and tabs, such as \v, is text that the formatter would move
-                    var text = GetLines(cell.DescendantTokens()) is [var line] ? line.Trim(' ', '\t') : "";
+                    var text = GetLines(cell) is [var line] ? line.Trim(' ', '\t') : "";
                     if (text.Length > 0 && (char.IsWhiteSpace(text[0]) || char.IsWhiteSpace(text[^1])))
                     {
                         return false;
@@ -966,7 +989,7 @@ public static class MarkdownFormatter
                     continue;
                 }
 
-                rows.Add([.. row.Cells.Select(cell => GetLines(cell.DescendantTokens()) is [var text] ? text.Trim(' ', '\t') : "")]);
+                rows.Add([.. row.Cells.Select(cell => GetLines(cell) is [var text] ? text.Trim(' ', '\t') : "")]);
             }
 
             var widths = new List<int>();
@@ -1014,50 +1037,66 @@ public static class MarkdownFormatter
         // The lines of the tokens, without the markers of their containers and the indentation, which the writer adds again
         private static List<string> GetLines(IEnumerable<SyntaxToken> tokens)
         {
-            var lines = new List<string>();
-            var line = new StringBuilder();
-            var atLineStart = true;
-
-            void EndLine()
+            var builder = new LineBuilder();
+            foreach (var token in tokens)
             {
-                lines.Add(line.ToString());
-                line.Clear();
-                atLineStart = true;
+                builder.AddToken((GreenToken)token.Node!);
             }
 
-            void AppendTrivia(SyntaxTriviaList triviaList)
+            return builder.Complete();
+        }
+
+        /// <summary>
+        /// Gets the lines of the tokens of a node, without the tokens of the kinds to skip. The tokens are read from the green tree,
+        /// which creates no red node or token.
+        /// </summary>
+        private static List<string> GetLines(SyntaxNode node, SyntaxKind skippedKind = SyntaxKind.None, SyntaxKind otherSkippedKind = SyntaxKind.None, SyntaxKind lastSkippedKind = SyntaxKind.None)
+        {
+            var builder = new LineBuilder();
+            var stack = new Stack<(GreenNode Node, int Slot)>();
+            stack.Push((node.Green, 0));
+            while (stack.TryPop(out var item))
             {
-                foreach (var trivia in triviaList)
+                var (green, slot) = item;
+                if (slot >= green.SlotCount)
                 {
-                    switch ((SyntaxKind)trivia.RawKind)
-                    {
-                        case SyntaxKind.EndOfLineTrivia:
-                            if (!atLineStart)
-                            {
-                                EndLine();
-                            }
+                    continue;
+                }
 
-                            break;
+                // The rest of the slots of the node are read after the current one, which can be a node or a list
+                stack.Push((green, slot + 1));
+                switch (green.GetSlot(slot))
+                {
+                    case GreenToken token:
+                        if (skippedKind == SyntaxKind.None || (SyntaxKind)token.RawKind is var kind && kind != skippedKind && kind != otherSkippedKind && kind != lastSkippedKind)
+                        {
+                            builder.AddToken(token);
+                        }
 
-                        // The indentation is spaces and tabs: other whitespace, such as \v, is text
-                        case SyntaxKind.BlockQuoteMarkerTrivia or SyntaxKind.ListItemIndentTrivia or SyntaxKind.FooterMarkerTrivia when atLineStart:
-                        case SyntaxKind.WhitespaceTrivia when atLineStart && !trivia.ToString().AsSpan().ContainsAnyExcept(' ', '\t'):
-                            break;
+                        break;
 
-                        default:
-                            line.Append(trivia.ToString());
-                            atLineStart = false;
-                            break;
-                    }
+                    case { } child:
+                        stack.Push((child, 0));
+                        break;
                 }
             }
 
-            foreach (var token in tokens)
+            return builder.Complete();
+        }
+
+        // The lines of tokens: their text and the trivia that is not the indentation or the markers of a container
+        private sealed class LineBuilder
+        {
+            private readonly List<string> _lines = [];
+            private readonly StringBuilder _line = new();
+            private bool _atLineStart = true;
+
+            public void AddToken(GreenToken token)
             {
-                AppendTrivia(token.LeadingTrivia);
-                if (token.RawKind is (int)SyntaxKind.CodeLineToken or (int)SyntaxKind.MathLineToken && token.Value is int virtualSpaces)
+                AddTrivia(token.LeadingTrivia);
+                if (token.RawKind is (int)SyntaxKind.CodeLineToken or (int)SyntaxKind.MathLineToken && token.GetValue() is int virtualSpaces)
                 {
-                    line.Append(' ', virtualSpaces);
+                    _line.Append(' ', virtualSpaces);
                 }
 
                 var text = token.Text.AsSpan();
@@ -1066,26 +1105,80 @@ public static class MarkdownFormatter
                     var index = text.IndexOfAny('\r', '\n');
                     if (index < 0)
                     {
-                        line.Append(text);
-                        atLineStart = false;
+                        _line.Append(text);
+                        _atLineStart = false;
                         break;
                     }
 
-                    line.Append(text[..index]);
+                    _line.Append(text[..index]);
                     EndLine();
                     var length = text[index] == '\r' && index + 1 < text.Length && text[index + 1] == '\n' ? 2 : 1;
                     text = text[(index + length)..];
                 }
 
-                AppendTrivia(token.TrailingTrivia);
+                AddTrivia(token.TrailingTrivia);
             }
 
-            if (!atLineStart)
+            public List<string> Complete()
             {
-                EndLine();
+                if (!_atLineStart)
+                {
+                    EndLine();
+                }
+
+                return _lines;
             }
 
-            return lines;
+            private void EndLine()
+            {
+                _lines.Add(_line.ToString());
+                _line.Clear();
+                _atLineStart = true;
+            }
+
+            // A list of trivia, a single trivia, or none
+            private void AddTrivia(GreenNode? trivia)
+            {
+                if (trivia is null)
+                {
+                    return;
+                }
+
+                if (!trivia.IsList)
+                {
+                    AddTrivia((GreenTrivia)trivia);
+                    return;
+                }
+
+                for (var i = 0; i < trivia.SlotCount; i++)
+                {
+                    AddTrivia((GreenTrivia)trivia.GetSlot(i)!);
+                }
+            }
+
+            private void AddTrivia(GreenTrivia trivia)
+            {
+                switch ((SyntaxKind)trivia.RawKind)
+                {
+                    case SyntaxKind.EndOfLineTrivia:
+                        if (!_atLineStart)
+                        {
+                            EndLine();
+                        }
+
+                        break;
+
+                    // The indentation is spaces and tabs: other whitespace, such as \v, is text
+                    case SyntaxKind.BlockQuoteMarkerTrivia or SyntaxKind.ListItemIndentTrivia or SyntaxKind.FooterMarkerTrivia when _atLineStart:
+                    case SyntaxKind.WhitespaceTrivia when _atLineStart && !trivia.Text.AsSpan().ContainsAnyExcept(' ', '\t'):
+                        break;
+
+                    default:
+                        _line.Append(trivia.Text);
+                        _atLineStart = false;
+                        break;
+                }
+            }
         }
     }
 }

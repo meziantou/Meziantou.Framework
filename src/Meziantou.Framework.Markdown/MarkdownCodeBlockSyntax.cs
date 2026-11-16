@@ -1,6 +1,7 @@
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
 using System.Text;
+using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
 
 namespace Meziantou.Framework.Markdown;
@@ -68,6 +69,31 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
         }
 
         return default;
+    }
+
+    /// <summary>Gets the lines of the code, as <see cref="Code"/> has them, read from the green tokens.</summary>
+    internal List<string> GetCodeLines()
+    {
+        var lines = new List<string>();
+        if (Green.GetSlot(0) is not { } children)
+        {
+            return lines;
+        }
+
+        var count = children.IsList ? children.SlotCount : 1;
+        for (var i = 0; i < count; i++)
+        {
+            if ((children.IsList ? children.GetSlot(i) : children) is not GreenToken { RawKind: (int)SyntaxKind.CodeLineToken } token)
+            {
+                continue;
+            }
+
+            // The columns of a tab that a container took part of are spaces of the code
+            var line = MarkdownText.TrimLineEnding(token.Text);
+            lines.Add(token.GetValue() is int virtualSpaces ? new string(' ', virtualSpaces) + line.ToString() : line.Length == token.Text.Length ? token.Text : line.ToString());
+        }
+
+        return lines;
     }
 
     /// <summary>Gets the tokens of the lines of the code, with their line endings.</summary>

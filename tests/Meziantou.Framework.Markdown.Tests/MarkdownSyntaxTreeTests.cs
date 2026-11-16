@@ -1349,6 +1349,8 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a\n    # b\n", "a\n    # b\n")]
     [InlineData("> a\n    # b\n", "> a\n>     # b\n")]
     [InlineData("> a\n===\n", "> a\n>     ===\n")]
+    [InlineData("> a\nb\n===\n", "> a\n> b\n>     ===\n")]
+    [InlineData("a\nb\n===\n", "a\nb\n===\n")]
     [InlineData("- a\n* b\n", "- a\n\n* b\n")]
     [InlineData("* --\n", "* --\n")]
     [InlineData("* a\n  ***\n", "- a\n  ***\n")]

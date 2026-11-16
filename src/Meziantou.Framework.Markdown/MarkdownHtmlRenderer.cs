@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Markdown.Parsing;
-using GreenNode = Meziantou.Framework.Language.InternalSyntax.GreenNode;
 using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
 
 namespace Meziantou.Framework.Markdown;
@@ -47,7 +46,7 @@ public static class MarkdownHtmlRenderer
 
         var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default) { PlainText = plainText };
         // Finding the targets of the attributes walks every node and token: skip it for the documents that have none
-        if (tree.Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes) && ContainsKind(tree.GetRoot().Green, SyntaxKind.GenericAttributes))
+        if (tree.GetRoot().HasGenericAttributes)
         {
             writer.CollectAttributes(tree.GetRoot());
         }
@@ -77,29 +76,6 @@ public static class MarkdownHtmlRenderer
     }
 
     // Whether a node of the kind is under the node, read from the green tree, which does not create the nodes it visits
-    private static bool ContainsKind(GreenNode root, SyntaxKind kind)
-    {
-        var stack = new Stack<GreenNode>();
-        stack.Push(root);
-        while (stack.TryPop(out var node))
-        {
-            if (node.RawKind == (int)kind)
-            {
-                return true;
-            }
-
-            for (var i = 0; i < node.SlotCount; i++)
-            {
-                if (node.GetSlot(i) is { IsToken: false } child)
-                {
-                    stack.Push(child);
-                }
-            }
-        }
-
-        return false;
-    }
-
     private sealed class Writer(int sourceLength, MarkdownParseOptions options, MarkdownHtmlRendererOptions rendererOptions)
     {
         // The generic attributes of the nodes, merged as Markdig merges them, and the classes of the attributes of the first line of a
@@ -1310,7 +1286,7 @@ public static class MarkdownHtmlRenderer
         private string RenderCell(MarkdownSyntaxTree content)
         {
             var writer = new Writer(content.GetText().Length, content.Options, rendererOptions) { PlainText = PlainText };
-            if (content.Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes) && ContainsKind(content.GetRoot().Green, SyntaxKind.GenericAttributes))
+            if (content.GetRoot().HasGenericAttributes)
             {
                 writer.CollectAttributes(content.GetRoot());
             }

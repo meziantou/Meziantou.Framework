@@ -9,5 +9,5 @@ namespace Meziantou.Framework.CompressionFuzz;
 /// </summary>
 public static partial class CompressionFuzzTargets
 {
-    public static IReadOnlyList<FuzzTarget> All { get; } = [.. BZip2Targets, .. LzmaTargets, .. PpmdTargets, .. RarTargets, .. ZipTargets];
+    public static IReadOnlyList<FuzzTarget> All { get; } = [.. BZip2Targets, .. LzmaTargets, .. PpmdTargets, .. RarTargets, .. SevenZipTargets, .. ZipTargets];
 }

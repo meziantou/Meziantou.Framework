@@ -3426,6 +3426,20 @@ public sealed class PdfDocumentTests
         inverted.Pages[0].GetImages()[0].Dictionary[PdfName.Create("Decode")] = PdfArray.FromNumbers(1, 0, 1, 0, 1, 0);
         Assert.Equal(PdfPageChangeKinds.Images, PdfDocumentComparer.Compare(expected, PdfPageElements.Create(inverted.Pages[0])).Changes);
 
+        // The same image, with a name and other entries that do not change what it shows
+        var renamed = PdfDocument.Open(bytes);
+        var dictionary = renamed.Pages[0].GetImages()[0].Dictionary;
+        var entries = dictionary.ToList();
+        dictionary.Clear();
+        dictionary[PdfNames.Name] = PdfName.Create("Logo");
+        foreach (var (key, value) in Enumerable.Reverse(entries))
+        {
+            dictionary[key] = value;
+        }
+
+        dictionary[PdfName.Create("Interpolate")] = PdfBoolean.True;
+        Assert.Equal(PdfPageChangeKinds.None, PdfDocumentComparer.Compare(expected, PdfPageElements.Create(renamed.Pages[0])).Changes);
+
         // The same shading, sheared: the bounds of the unit square do not show it
         var sheared = new PdfDocument();
         sheared.Pages.Add(new PdfSize(200, 200)).CreateContentBuilder()

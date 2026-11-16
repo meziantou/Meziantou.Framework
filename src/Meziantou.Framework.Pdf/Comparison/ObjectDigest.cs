@@ -88,7 +88,8 @@ internal static class ObjectDigest
     private static void AppendDictionary(IncrementalHash hash, PdfDictionary dictionary, int depth, HashSet<PdfObject> visited, ref int count)
     {
         hash.AppendData("<"u8);
-        foreach (var (key, item) in dictionary)
+        // In the order of the keys: the order a writer chose does not change the object
+        foreach (var (key, item) in dictionary.OrderBy(entry => entry.Key.Value, StringComparer.Ordinal))
         {
             // The length depends on the filters a writer chose, not on the object
             if (key == PdfNames.Length)

@@ -49,6 +49,9 @@ public sealed class PdfPageElements
     /// <summary>Gets the shadings painted, in the order of the content, forms included.</summary>
     public IReadOnlyList<PdfShadingElement> Shadings { get; }
 
+    // The entries of an image dictionary that change what it shows (8.9.5), inline abbreviations included (8.9.7)
+    private static readonly PdfName[] ImageDisplayKeys = [.. new[] { "ColorSpace", "CS", "BitsPerComponent", "BPC", "Decode", "D", "ImageMask", "IM", "Mask", "SMask", "SMaskInData", "Filter", "F", "DecodeParms", "DP" }.Select(PdfName.Create)];
+
     /// <summary>Reads the elements of a page. The parts of the content that cannot be read are skipped.</summary>
     /// <param name="page">The page.</param>
     /// <returns>The elements.</returns>
@@ -93,12 +96,24 @@ public sealed class PdfPageElements
         return new PdfPageElements(crop.Width, crop.Height, page.Rotation, text, images, walker.Paths, walker.Shadings);
     }
 
-    /// <summary>The digest of the data of an image and of its dictionary, with the objects it refers to: the decode array, the masks, the color space change what it shows.</summary>
+    /// <summary>
+    /// The digest of the data of an image and of the entries of its dictionary that change what it shows, with the objects
+    /// they refer to: its metadata, its name or the order of its entries do not change it.
+    /// </summary>
     private static string GetImageDigest(PdfImageOccurrence image)
     {
+        var display = new PdfDictionary();
+        foreach (var key in ImageDisplayKeys)
+        {
+            if (image.Dictionary[key] is { } value)
+            {
+                display[key] = value;
+            }
+        }
+
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         hash.AppendData(image.EncodedData.Span);
-        hash.AppendData(Encoding.ASCII.GetBytes(ObjectDigest.Compute(image.Dictionary)));
+        hash.AppendData(Encoding.ASCII.GetBytes(ObjectDigest.Compute(display)));
         return Convert.ToHexStringLower(hash.GetHashAndReset());
     }
 

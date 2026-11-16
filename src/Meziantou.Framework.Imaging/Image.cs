@@ -204,6 +204,7 @@ public abstract partial class Image : IDisposable
             ? RowBands.GetWorkerCount(_size, _configuration.MaxDegreeOfParallelism)
             : 1;
         PrepareConversion(plan, GetAllFrames(), workers);
+        plan.MarkSourceValidated();
 
         var result = new Image<TPixel>(_configuration, _size, scope: null, LayoutOptions);
         try

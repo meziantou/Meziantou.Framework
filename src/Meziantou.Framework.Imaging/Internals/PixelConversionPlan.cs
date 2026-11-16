@@ -26,6 +26,9 @@ internal sealed class PixelConversionPlan
 {
     private readonly PixelConversionOptions _options;
 
+    // Set once the rows to convert were checked: removing alpha does not check them again
+    private bool _sourceIsOpaque;
+
     // The color conversion between CMYK and another kind of pixels; null for the other conversions
     private readonly CmykColorConversion? _cmyk;
 
@@ -67,6 +70,13 @@ internal sealed class PixelConversionPlan
 
     /// <summary>Gets a value indicating whether a source row can be rejected: <see cref="RequiresOpaqueSource"/> or <see cref="ChecksFloatSamples"/>.</summary>
     public bool RequiresValidation => RequiresOpaqueSource || ChecksFloatSamples;
+
+    /// <summary>
+    /// Records that every row this plan converts from now on was checked with <see cref="ValidateRow"/>: when alpha is
+    /// removed, the rows are known to be opaque and <see cref="ConvertRow(ReadOnlySpan{byte}, Span{byte})"/> does not
+    /// check them again.
+    /// </summary>
+    public void MarkSourceValidated() => _sourceIsOpaque = RequiresOpaqueSource;
 
     /// <summary>Gets a value indicating whether the tone mapping needs the peak of the source pixels (<see cref="SetPeak"/>) before any row is converted or validated.</summary>
     public bool RequiresPeak => SourceLayout is { } layout ? layout.RequiresPeak : ChecksFloatSamples && !PixelFormats.IsFloatingPoint(DestinationFormat) && FloatSampleConversion.NeedsPeak(_options);
@@ -230,7 +240,7 @@ internal sealed class PixelConversionPlan
     public int ConvertRow(ReadOnlySpan<byte> source, Span<byte> destination)
     {
         if (_cmyk is null)
-            return PixelConverter.ConvertRow(SourceFormat, source, DestinationFormat, destination, Background, Format, Floats);
+            return PixelConverter.ConvertRow(SourceFormat, source, DestinationFormat, destination, Background, Format, Floats, _sourceIsOpaque);
 
         var sourceBytesPerPixel = PixelFormats.GetBytesPerPixel(SourceFormat);
         var destinationBytesPerPixel = PixelFormats.GetBytesPerPixel(DestinationFormat);

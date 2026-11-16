@@ -106,12 +106,12 @@ internal static class ColorConversionKernels
             else if (typeof(TPixel) == typeof(GrayFloat) || typeof(TPixel) == typeof(LaFloat))
             {
                 var channels = typeof(TPixel) == typeof(LaFloat) ? 2 : 1;
-                Convert<float, IccSingleSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, float>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, float>(destination.GetRowBytes(y))), channels, channels);
+                Convert<float, IccSingleSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, float>(source.GetRowSpanCore(y))), unsafe(MemoryMarshal.Cast<byte, float>(destination.GetRowSpanCore(y))), channels, channels);
             }
             else if (typeof(TPixel) == typeof(GrayHalf) || typeof(TPixel) == typeof(LaHalf))
             {
                 var channels = typeof(TPixel) == typeof(LaHalf) ? 2 : 1;
-                Convert<Half, IccHalfSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, Half>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, Half>(destination.GetRowBytes(y))), channels, channels);
+                Convert<Half, IccHalfSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, Half>(source.GetRowSpanCore(y))), unsafe(MemoryMarshal.Cast<byte, Half>(destination.GetRowSpanCore(y))), channels, channels);
             }
             else
             {

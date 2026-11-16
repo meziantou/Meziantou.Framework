@@ -219,16 +219,16 @@ internal static partial class PixelConverter
                 ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgba1010102>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.GrayFloat:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, GrayFloat>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, GrayFloat>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.GrayHalf:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, GrayHalf>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, GrayHalf>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.LaFloat:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, LaFloat>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, LaFloat>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.LaHalf:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, LaHalf>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, LaHalf>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             default:
                 throw new UnreachableException();

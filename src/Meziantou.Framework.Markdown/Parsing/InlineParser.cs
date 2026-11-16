@@ -47,6 +47,10 @@ internal sealed class InlineParser
     private readonly bool _disableHtml;
     private Subject _subject = null!;
     private string _text = "";
+
+    // Where the subject starts and ends in _text, which is the source when the subject copies nothing
+    private int _textStart;
+    private int _textEnd;
     private int _pos;
     private int _end;
     private InlineNode _root = null!;
@@ -161,7 +165,10 @@ internal sealed class InlineParser
     }
 
     /// <summary>Parses the inlines of the subject from <paramref name="start"/>, without the whitespace around them, or only before them.</summary>
-    public void Parse(Subject subject, int start, TreeBuffer output, bool trimEnd = true) => Parse(subject, start, subject.Length, output, trimEnd, inContext: false);
+    public void Parse(Subject subject, int start, TreeBuffer output, bool trimEnd = true) => Parse(subject, start, subject.End, output, trimEnd, inContext: false);
+
+    /// <summary>Parses the inlines of the whole subject.</summary>
+    public void Parse(Subject subject, TreeBuffer output, bool trimEnd = true) => Parse(subject, subject.Start, output, trimEnd);
 
     /// <summary>
     /// Parses the inlines of a range of the subject, a cell of a pipe table, which has no whitespace around it. The delimiters of
@@ -202,8 +209,8 @@ internal sealed class InlineParser
         Begin(subject, start, end, trimEnd);
         if (inContext)
         {
-            _inlineStart = 0;
-            _lookaheadEnd = _text.Length;
+            _inlineStart = _textStart;
+            _lookaheadEnd = _textEnd;
             _pipeTableCell = true;
             _cellStart = _pos;
         }
@@ -283,7 +290,7 @@ internal sealed class InlineParser
     /// </summary>
     public PipeTableScan? ScanPipeTable(Subject subject, int start, TreeBuffer paragraph, bool trimEnd = true)
     {
-        Begin(subject, start, subject.Length, trimEnd);
+        Begin(subject, start, subject.End, trimEnd);
         _scanningPipeTable = true;
         _table = null;
         _colonLineStart = -1;
@@ -528,15 +535,15 @@ internal sealed class InlineParser
             return false;
         }
 
-        var lineStart = _text.AsSpan(0, _pos).LastIndexOf('\n') + 1;
+        var lineStart = _textStart + _text.AsSpan(_textStart, _pos - _textStart).LastIndexOf('\n') + 1;
         if (lineStart == _colonLineStart)
         {
             return _colonLineResult;
         }
 
-        var lineEnd = _text.AsSpan(_pos).IndexOf('\n') is >= 0 and var length ? _pos + length : _text.Length;
+        var lineEnd = _text.AsSpan(_pos, _textEnd - _pos).IndexOf('\n') is >= 0 and var length ? _pos + length : _textEnd;
 
-        var result = lineStart > 0;
+        var result = lineStart > _textStart;
         var hasPipe = false;
         var hasDash = false;
         for (var i = lineStart; i < lineEnd && result; i++)
@@ -557,7 +564,7 @@ internal sealed class InlineParser
 
         if (result && hasPipe && hasDash)
         {
-            var previousLineStart = _text.AsSpan(0, lineStart - 1).LastIndexOf('\n') + 1;
+            var previousLineStart = _textStart + _text.AsSpan(_textStart, lineStart - 1 - _textStart).LastIndexOf('\n') + 1;
             result = _text.AsSpan(previousLineStart, lineStart - 1 - previousLineStart).Contains('|');
         }
         else
@@ -904,6 +911,8 @@ internal sealed class InlineParser
     {
         _subject = subject;
         _text = subject.Text;
+        _textStart = subject.Start;
+        _textEnd = subject.End;
         _end = end;
         while (trimEnd && _end > start && _text[_end - 1] is ' ' or '\t' or '\n')
         {
@@ -936,7 +945,9 @@ internal sealed class InlineParser
     {
         _subject = subject;
         _text = subject.Text;
-        _end = _text.Length;
+        _textStart = subject.Start;
+        _textEnd = subject.End;
+        _end = subject.End;
         _pos = start;
 
         var labelLength = ScanLinkLabel();
@@ -1712,7 +1723,7 @@ internal sealed class InlineParser
         if (isVariation)
         {
             var mainEnd = start - before.Utf16SequenceLength;
-            main = mainEnd > 0 ? GetRuneBefore(mainEnd) : new Rune('\n');
+            main = mainEnd > _textStart ? GetRuneBefore(mainEnd) : new Rune('\n');
         }
 
         var beforeIsPunctuation = Scanners.IsUnicodePunctuation(main);
@@ -1812,7 +1823,7 @@ internal sealed class InlineParser
         }
 
         // The extra emphasis read an entity as the character it stands for, and some punctuation as text: 10^-18^
-        var before = start == 0 ? new Rune('\n') : extra && _root.LastChild is { Kind: SyntaxKind.EntityToken } entity && entity.End == start ? GetLastRune(HtmlEntities.Decode(_text[entity.Start..entity.End])) : GetRuneBefore(start);
+        var before = start == _textStart ? new Rune('\n') : extra && _root.LastChild is { Kind: SyntaxKind.EntityToken } entity && entity.End == start ? GetLastRune(HtmlEntities.Decode(_text[entity.Start..entity.End])) : GetRuneBefore(start);
         var after = _pos >= _end ? (_pos < _lookaheadEnd ? GetRuneAt(_pos) : new Rune('\n')) : extra && Match(Scanners.EntityRegex()) is > 0 and var entityLength ? GetFirstRune(HtmlEntities.Decode(_text.Substring(_pos, entityLength))) : GetRuneAt(_pos);
         var afterIsWhitespace = Scanners.IsUnicodeWhitespace(after);
         var afterIsPunctuation = Scanners.IsUnicodePunctuation(after) && !(extra && IsPunctuationException(after));
@@ -1930,7 +1941,7 @@ internal sealed class InlineParser
         }
 
         var text = content.ToString();
-        var after = run[^1].End < _text.Length ? _text[run[^1].End] : '\0';
+        var after = run[^1].End < _textEnd ? _text[run[^1].End] : '\0';
         var ranges = new List<(int Start, int End)>();
         var start = 0;
         for (var i = 0; i < text.Length; i++)
@@ -2028,7 +2039,7 @@ internal sealed class InlineParser
     private bool ParseMath()
     {
         var open = _pos;
-        var previous = open == 0 ? '\0' : _text[open - 1];
+        var previous = open == _textStart ? '\0' : _text[open - 1];
         if (previous == '$' || !(IsMathWhitespace(previous) || IsMathPunctuation(previous)))
         {
             return false;
@@ -2185,7 +2196,7 @@ internal sealed class InlineParser
             _attributesOutcomes = AttributesScanner.ComputeOutcomes(_text, _pos, _end);
         }
 
-        if (!AttributesScanner.IsValid(_attributesOutcomes, _attributesOutcomesStart, _pos) || AttributesScanner.TryParse(_text, _pos, _end, out _) is not (>= 0 and var end))
+        if (!AttributesScanner.IsValid(_attributesOutcomes, _attributesOutcomesStart, _pos) || AttributesScanner.TryParse(_text, _pos, _end, out _, _textStart) is not (>= 0 and var end))
         {
             return false;
         }
@@ -2237,7 +2248,7 @@ internal sealed class InlineParser
 
         // Markdig gives the attributes after a column delimiter of a table to the delimiter, which is then text, and the ones at the
         // start of a row to its line break: they are for no element
-        if (attributes.FirstChild is { } attributesToken && (_scanningPipeTable ? _root.LastChild is { Kind: SyntaxKind.PipeToken } pipe && pipe.End == _pos : _pipeTableCell && _pos == _cellStart && _pos > 0 && _text[_pos - 1] is '|' or '\n'))
+        if (attributes.FirstChild is { } attributesToken && (_scanningPipeTable ? _root.LastChild is { Kind: SyntaxKind.PipeToken } pipe && pipe.End == _pos : _pipeTableCell && _pos == _cellStart && _pos > _textStart && _text[_pos - 1] is '|' or '\n'))
         {
             attributesToken.Value = 1;
         }
@@ -2598,7 +2609,7 @@ internal sealed class InlineParser
 
     private Rune GetRuneBefore(int index)
     {
-        if (index >= 2 && char.IsLowSurrogate(_text[index - 1]) && char.IsHighSurrogate(_text[index - 2]))
+        if (index - 2 >= _textStart && char.IsLowSurrogate(_text[index - 1]) && char.IsHighSurrogate(_text[index - 2]))
         {
             return new Rune(_text[index - 2], _text[index - 1]);
         }
@@ -2608,7 +2619,7 @@ internal sealed class InlineParser
 
     private Rune GetRuneAt(int index)
     {
-        if (index + 1 < _text.Length && char.IsHighSurrogate(_text[index]) && char.IsLowSurrogate(_text[index + 1]))
+        if (index + 1 < _textEnd && char.IsHighSurrogate(_text[index]) && char.IsLowSurrogate(_text[index + 1]))
         {
             return new Rune(_text[index], _text[index + 1]);
         }
@@ -2669,7 +2680,7 @@ internal sealed class InlineParser
                 SkipSpacesAndNewline();
                 var titleStart = -1;
                 var titleEnd = -1;
-                if (_pos > beforeTitle && _pos - 1 >= 0 && _text[_pos - 1] is ' ' or '\t' or '\n' && ScanLinkTitle() is > 0 and var titleLength)
+                if (_pos > beforeTitle && _pos - 1 >= _textStart && _text[_pos - 1] is ' ' or '\t' or '\n' && ScanLinkTitle() is > 0 and var titleLength)
                 {
                     titleStart = _pos;
                     titleEnd = _pos + titleLength;
@@ -3108,7 +3119,7 @@ internal sealed class InlineParser
     // An extended www autolink: www. and a domain, after the start of the text, whitespace, or one of *, _, ~ and (
     private bool ParseWwwAutolink()
     {
-        if (_brackets is not null || (_pos > 0 && _text[_pos - 1] is not ('*' or '_' or '~' or '(') && !IsSpace(_text[_pos - 1])))
+        if (_brackets is not null || (_pos > _textStart && _text[_pos - 1] is not ('*' or '_' or '~' or '(') && !IsSpace(_text[_pos - 1])))
         {
             return false;
         }

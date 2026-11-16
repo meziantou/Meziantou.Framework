@@ -1434,6 +1434,32 @@ public sealed class MarkdownSyntaxTreeTests
         }
     }
 
+    [Theory]
+    [InlineData("a *b* c\nd **e**\nf")]
+    [InlineData("*a*\n_b_ c")]
+    [InlineData("www.example.com\nwww.example.com")]
+    [InlineData("$x$ and $y$\n$z$")]
+    [InlineData("# a\n{g}\n\"|{.c}|-|\n|:-|")]
+    [InlineData("{.c} a | b\n- | -\n{.d} c | d")]
+    [InlineData("# a {#b}\nc {.d}\n")]
+    [InlineData("a\n\n  b\n  c\n\n> d\n> e")]
+    [InlineData("<a@b.c>\na@b.c\n:smile: x")]
+    public void LineEndingsDoNotChangeTheTree(string text)
+    {
+        // The inlines of the lines that follow each other with \n are read in the text itself, and the others in a copy
+        var options = new MarkdownParseOptions { Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension) };
+        foreach (var parseOptions in new[] { MarkdownParseOptions.Default, MarkdownParseOptions.GitHubFlavored, options })
+        {
+            var lfTree = MarkdownSyntaxTree.ParseText(text, parseOptions);
+            var crlfTree = MarkdownSyntaxTree.ParseText(text.Replace("\n", "\r\n", StringComparison.Ordinal), parseOptions);
+
+            Assert.Equal(MarkdownHtmlRenderer.ToHtml(lfTree), MarkdownHtmlRenderer.ToHtml(crlfTree).Replace("\r\n", "\n", StringComparison.Ordinal));
+            Assert.Equal(GetKindsAndValues(lfTree), GetKindsAndValues(crlfTree));
+        }
+
+        static List<string> GetKindsAndValues(MarkdownSyntaxTree tree) => [.. tree.GetRoot().DescendantTokens().Select(token => $"{token.RawKind} {(token.Value is int value ? value : null)}")];
+    }
+
     [Fact]
     public void RepeatedTokensKeepTheirPositionsAndTrivia()
     {

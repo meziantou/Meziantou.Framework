@@ -89,6 +89,8 @@ public static class MarkdownFuzzTargets
         CheckEqualsIgnoringLineEndings(text, text.Replace("\r\n", "\r", StringComparison.Ordinal));
     }
 
+    private static IEnumerable<string> GetKindsAndValues(MarkdownSyntaxTree tree) => tree.GetRoot().DescendantTokens().Select(token => $"{token.RawKind} {(token.Value is int value ? value : null)}");
+
     private static void CheckEqualsIgnoringLineEndings(string text, string other)
     {
         static string Normalize(string value) => value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
@@ -162,6 +164,16 @@ public static class MarkdownFuzzTargets
         }
 
         _ = MarkdownHtmlRenderer.ToHtml(tree);
+
+        // The inlines of the lines that follow each other with \n are read in the text itself, and the others in a copy: the
+        // line endings do not change the tokens, their values, or the HTML
+        var lf = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        var lfTree = MarkdownSyntaxTree.ParseText(lf, options);
+        var crlfTree = MarkdownSyntaxTree.ParseText(lf.Replace("\n", "\r\n", StringComparison.Ordinal), options);
+        var lfHtml = MarkdownHtmlRenderer.ToHtml(lfTree).Replace("\r\n", "\n", StringComparison.Ordinal);
+        var crlfHtml = MarkdownHtmlRenderer.ToHtml(crlfTree).Replace("\r\n", "\n", StringComparison.Ordinal);
+        FuzzAssert.True(lfHtml == crlfHtml, $"The text renders as {FuzzAssert.Format(lfHtml)} with \\n and as {FuzzAssert.Format(crlfHtml)} with \\r\\n: {FuzzAssert.Format(text)}");
+        FuzzAssert.True(GetKindsAndValues(lfTree).SequenceEqual(GetKindsAndValues(crlfTree), StringComparer.Ordinal), $"The tokens of the text are not the same with \\n and with \\r\\n: {FuzzAssert.Format(text)}");
 
         // The formatter finds whether a text is a single paragraph from its blocks, without parsing its inlines
         if (Parsing.BlockParser.IsSingleParagraph(text, options) is { } single)

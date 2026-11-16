@@ -18,10 +18,11 @@ internal static class AttributesScanner
     /// Reads the attributes whose <c>{</c> is at <paramref name="start"/>. Returns where they end, after the <c>}</c> and the line
     /// ending that follows it, or -1.
     /// </summary>
-    public static int TryParse(string text, int start, int end, out ParsedAttributes? attributes)
+    /// <param name="textStart">Where the text that the attributes are read in starts: the characters before it are not read.</param>
+    public static int TryParse(string text, int start, int end, out ParsedAttributes? attributes, int textStart = 0)
     {
         attributes = null;
-        if (start > 0 && text[start - 1] == '{')
+        if (start > textStart && text[start - 1] == '{')
         {
             return -1;
         }

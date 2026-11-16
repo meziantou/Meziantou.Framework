@@ -6,15 +6,23 @@ namespace Meziantou.Framework.Markdown.Parsing;
 /// <summary>
 /// The text of the inlines of a leaf block: its lines joined by <c>\n</c>, without the markers of the containers and the
 /// indentation that are between them in the source. Each character knows where it is in the source, so the tokens found in
-/// the subject are ranges of the source.
+/// the subject are ranges of the source. The characters of the subject are the ones of <see cref="Text"/> from
+/// <see cref="Start"/> to <see cref="End"/>.
 /// </summary>
 /// <remarks>
-/// The positions are kept by segment, a run of characters that are consecutive in the source: a line, or the line ending
-/// between two lines. Most subjects have a few of them.
+/// <para>
+/// When the lines follow each other in the source, each one ended by <c>\n</c>, as the lines of most paragraphs and headings
+/// outside containers do, the text is the source and the positions are the ones of the source: the subject copies nothing.
+/// </para>
+/// <para>
+/// Otherwise the text is a copy, and the positions are kept by segment, a run of characters that are consecutive in the
+/// source: a line, or the line ending between two lines. Most subjects have a few of them.
+/// </para>
 /// </remarks>
 internal sealed class Subject
 {
-    private readonly Segment[] _segments;
+    // The segments of a copy, or null when the text is the source
+    private readonly Segment[]? _segments;
 
     // Where a subject without characters is in the source
     private readonly int _emptyPosition;
@@ -22,19 +30,33 @@ internal sealed class Subject
     // The segment of the last position asked for: the tokens are asked for in the order of the text
     private int _lastSegment;
 
-    private Subject(string text, Segment[] segments, int emptyPosition)
+    private Subject(string text, int start, int end, Segment[]? segments, int emptyPosition)
     {
         Text = text;
+        Start = start;
+        End = end;
         _segments = segments;
         _emptyPosition = emptyPosition;
     }
 
     public string Text { get; }
 
-    public int Length => Text.Length;
+    /// <summary>Gets where the subject starts in <see cref="Text"/>.</summary>
+    public int Start { get; }
+
+    /// <summary>Gets where the subject ends in <see cref="Text"/>.</summary>
+    public int End { get; }
+
+    /// <summary>Gets the characters of the subject from <paramref name="start"/> to its end.</summary>
+    public ReadOnlySpan<char> From(int start) => Text.AsSpan(start, End - start);
 
     public static Subject FromLines(string source, ReadOnlySpan<Line> lines)
     {
+        if (IsContiguous(source, lines))
+        {
+            return new Subject(source, lines[0].Start, lines[^1].End, segments: null, lines[0].Start);
+        }
+
         var length = lines.Length - 1;
         var segmentCount = 0;
         foreach (var line in lines)
@@ -87,7 +109,27 @@ internal sealed class Subject
             ArrayPool<char>.Shared.Return(buffer);
         }
 
-        return new Subject(text, segmentIndex == segments.Length ? segments : segments[..segmentIndex], lines.IsEmpty ? 0 : lines[0].Start);
+        return new Subject(text, 0, text.Length, segmentIndex == segments.Length ? segments : segments[..segmentIndex], lines.IsEmpty ? 0 : lines[0].Start);
+    }
+
+    // Whether the lines follow each other in the source, each one ended by \n: the subject is then the source between them
+    private static bool IsContiguous(string source, ReadOnlySpan<Line> lines)
+    {
+        if (lines.IsEmpty)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < lines.Length - 1; i++)
+        {
+            var line = lines[i];
+            if (line.EolEnd != line.End + 1 || source[line.End] != '\n' || lines[i + 1].Start != line.EolEnd)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -99,7 +141,7 @@ internal sealed class Subject
         var content = source.AsSpan(start, end - start);
         if (!content.Contains("\\|", StringComparison.Ordinal))
         {
-            return new Subject(content.ToString(), [new Segment(0, start, end - start, StartAdjust: 0, EndAdjust: 0)], start);
+            return new Subject(content.ToString(), 0, end - start, [new Segment(0, start, end - start, StartAdjust: 0, EndAdjust: 0)], start);
         }
 
         var text = new char[end - start];
@@ -126,15 +168,21 @@ internal sealed class Subject
         }
 
         segments.Add(new Segment(length - (end - segmentStart), segmentStart, end - segmentStart, startAdjust, EndAdjust: 0));
-        return new Subject(new string(text, 0, length), [.. segments], start);
+        return new Subject(new string(text, 0, length), 0, length, [.. segments], start);
     }
 
     /// <summary>Where the character at <paramref name="index"/> starts in the source, or where the subject ends.</summary>
     public int ToSourceStart(int index)
     {
-        if (index >= Length)
+        // The text of a subject without segments is the source
+        if (_segments is null)
         {
-            return Length == 0 ? _emptyPosition : ToSourceEnd(Length);
+            return Math.Min(index, End);
+        }
+
+        if (index >= End)
+        {
+            return End == 0 ? _emptyPosition : ToSourceEnd(End);
         }
 
         var segment = FindSegment(index);
@@ -144,6 +192,11 @@ internal sealed class Subject
     /// <summary>Where the character before <paramref name="endIndex"/> ends in the source.</summary>
     public int ToSourceEnd(int endIndex)
     {
+        if (_segments is null)
+        {
+            return Math.Min(endIndex, End);
+        }
+
         if (endIndex == 0)
         {
             return ToSourceStart(0);
@@ -156,18 +209,19 @@ internal sealed class Subject
 
     private Segment FindSegment(int index)
     {
-        var last = _segments[_lastSegment];
+        var segments = _segments!;
+        var last = segments[_lastSegment];
         if (index >= last.SubjectStart && index < last.SubjectStart + last.Length)
         {
             return last;
         }
 
         var low = 0;
-        var high = _segments.Length - 1;
+        var high = segments.Length - 1;
         while (low < high)
         {
             var middle = low + ((high - low + 1) / 2);
-            if (_segments[middle].SubjectStart <= index)
+            if (segments[middle].SubjectStart <= index)
             {
                 low = middle;
             }
@@ -178,7 +232,7 @@ internal sealed class Subject
         }
 
         _lastSegment = low;
-        return _segments[low];
+        return segments[low];
     }
 
     /// <param name="StartAdjust">How many characters of the source before the first character belong to it: the backslash of an escaped pipe.</param>

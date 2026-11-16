@@ -125,7 +125,7 @@ internal sealed class BlockParser
             }
 
             // The pipe tables of Markdig are found in the inlines of a paragraph
-            return parser.HasExtension(MarkdownExtensions.PipeTables) && paragraph.Subject!.Text.AsSpan(paragraph.ContentStart).Contains('|') ? null : true;
+            return parser.HasExtension(MarkdownExtensions.PipeTables) && paragraph.Subject!.From(paragraph.ContentStart).Contains('|') ? null : true;
         }
         finally
         {
@@ -1750,9 +1750,9 @@ internal sealed class BlockParser
 
                 case SyntaxKind.SetextHeading:
                 {
-                    var text = child.Subject!.Text;
-                    var end = text.IndexOf('\n', child.ContentStart, StringComparison.Ordinal);
-                    AddHeadingLabel(text, child.ContentStart, end < 0 ? text.Length : end);
+                    var subject = child.Subject!;
+                    var end = subject.From(child.ContentStart).IndexOf('\n');
+                    AddHeadingLabel(subject.Text, child.ContentStart, end < 0 ? subject.End : child.ContentStart + end);
                     break;
                 }
 
@@ -1776,9 +1776,11 @@ internal sealed class BlockParser
     // The link reference definitions at the start of a paragraph are blocks of their own
     private void ParseDefinitions(Block paragraph)
     {
+        // The definitions read by an earlier call are at the start of the lines, whose characters are the same in the new
+        // subject: the content starts at the same offset from the start of the subject
         var subject = Subject.FromLines(_text, GetLines(paragraph));
-        var position = paragraph.ContentStart;
-        while (position < subject.Length && subject.Text[position] == '[')
+        var position = subject.Start + (paragraph.Subject is { } previous ? paragraph.ContentStart - previous.Start : 0);
+        while (position < subject.End && subject.Text[position] == '[')
         {
             var definitions = paragraph.DefinitionsOrNull;
             var end = _inlineParser.ParseReference(subject, position, ref definitions);
@@ -1792,9 +1794,9 @@ internal sealed class BlockParser
         }
 
         paragraph.ContentStart = position;
-        paragraph.DefinitionLineCount = position == subject.Length ? paragraph.LineCount : subject.Text.AsSpan(0, position).Count('\n');
+        paragraph.DefinitionLineCount = position == subject.End ? paragraph.LineCount : subject.Text.AsSpan(subject.Start, position - subject.Start).Count('\n');
         paragraph.Subject = subject;
-        paragraph.IsEmpty = subject.Text.AsSpan(position).Trim(" \t\n").IsEmpty;
+        paragraph.IsEmpty = subject.From(position).Trim(" \t\n").IsEmpty;
     }
 
     private void Convert(Block block)
@@ -1813,7 +1815,7 @@ internal sealed class BlockParser
                     _tree.EndNode(node);
                     _alertParagraph = null;
                 }
-                else if (block.Kind == SyntaxKind.Paragraph && !block.IsEmpty && HasExtension(MarkdownExtensions.PipeTables) && block.Subject!.Text.AsSpan(block.ContentStart).Contains('|'))
+                else if (block.Kind == SyntaxKind.Paragraph && !block.IsEmpty && HasExtension(MarkdownExtensions.PipeTables) && block.Subject!.From(block.ContentStart).Contains('|'))
                 {
                     ConvertPipeTables(block.Subject, block.ContentStart, trimEnd: block.GridLineCount != block.LineCount);
                 }
@@ -1831,7 +1833,7 @@ internal sealed class BlockParser
             {
                 var node = _tree.StartNode(block.Kind);
                 _tree.AddRange(block.LeadingOrNull);
-                _inlineParser.Parse(Subject.FromLines(_text, GetLines(block)), 0, _tree);
+                _inlineParser.Parse(Subject.FromLines(_text, GetLines(block)), _tree);
                 _tree.AddRange(block.TrailingOrNull);
                 _tree.EndNode(node);
                 return;
@@ -1867,7 +1869,7 @@ internal sealed class BlockParser
                 {
                     // Markdig keeps the whitespace at the end of a term, except at the end of a paragraph that was closed
                     var term = _tree.StartNode(SyntaxKind.DefinitionTerm);
-                    _inlineParser.Parse(Subject.FromLines(_text, [terms[i]]), 0, _tree, trimEnd: block.TermsTrimmed && i == terms.Length - 1);
+                    _inlineParser.Parse(Subject.FromLines(_text, [terms[i]]), _tree, trimEnd: block.TermsTrimmed && i == terms.Length - 1);
                     _tree.EndNode(term);
                 }
 
@@ -1934,36 +1936,37 @@ internal sealed class BlockParser
             }
 
             var text = subject.Text;
+            var end = subject.End;
             var start = child.ContentStart;
-            while (start < text.Length && text[start] is ' ' or '\t')
+            while (start < end && text[start] is ' ' or '\t')
             {
                 start++;
             }
 
             var position = start + 2;
-            if (position > text.Length || text[start] != '[' || text[start + 1] != '!')
+            if (position > end || text[start] != '[' || text[start + 1] != '!')
             {
                 continue;
             }
 
-            while (position < text.Length && char.IsAsciiLetter(text[position]))
+            while (position < end && char.IsAsciiLetter(text[position]))
             {
                 position++;
             }
 
-            if (position == start + 2 || position >= text.Length || text[position] != ']')
+            if (position == start + 2 || position >= end || text[position] != ']')
             {
                 continue;
             }
 
             var kindEnd = position + 1;
             position = kindEnd;
-            while (position < text.Length && text[position] is ' ' or '\t')
+            while (position < end && text[position] is ' ' or '\t')
             {
                 position++;
             }
 
-            if (position < text.Length && text[position] != '\n')
+            if (position < end && text[position] != '\n')
             {
                 continue;
             }
@@ -1981,7 +1984,7 @@ internal sealed class BlockParser
         if (caption.End > caption.Start)
         {
             var node = _tree.StartNode(SyntaxKind.FigureCaption);
-            _inlineParser.Parse(Subject.FromLines(_text, [new Line(caption.Start, caption.End, caption.End, 0)]), 0, _tree, trimEnd: false);
+            _inlineParser.Parse(Subject.FromLines(_text, [new Line(caption.Start, caption.End, caption.End, 0)]), _tree, trimEnd: false);
             _tree.EndNode(node);
         }
     }
@@ -2014,7 +2017,7 @@ internal sealed class BlockParser
             }
 
             // The text after the table is a paragraph unless it is whitespace that is trivia: Unicode whitespace is text
-            if (scan.TrailingStart < 0 || subject.Text.AsSpan(scan.TrailingStart).Trim(" \t\n\v\f\r").IsEmpty)
+            if (scan.TrailingStart < 0 || subject.From(scan.TrailingStart).Trim(" \t\n\v\f\r").IsEmpty)
             {
                 return;
             }
@@ -2163,7 +2166,7 @@ internal sealed class BlockParser
                     var cell = _tree.StartNode(SyntaxKind.TableCell);
                     if (end > start)
                     {
-                        _inlineParser.Parse(Subject.FromTableCell(_text, start, end), 0, _tree);
+                        _inlineParser.Parse(Subject.FromTableCell(_text, start, end), _tree);
                     }
 
                     _tree.EndNode(cell);

@@ -44,6 +44,7 @@
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.DnsServer'">https://meziantou.github.io/Meziantou.Framework/dns/dnsserver/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.EmbeddedConstantsGenerator'">https://meziantou.github.io/Meziantou.Framework/embeddedconstantsgenerator/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.FastEnumGenerator'">https://meziantou.github.io/Meziantou.Framework/fastenumgenerator/</PackageProjectUrl>
+    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.FileConversion.Tool'">https://meziantou.github.io/Meziantou.Framework/file-conversion/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.FixedStringBuilder'">https://meziantou.github.io/Meziantou.Framework/fixedstringbuilder/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.FixedStringBuilder.Generator'">https://meziantou.github.io/Meziantou.Framework/fixedstringbuilder/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Fonts'">https://meziantou.github.io/Meziantou.Framework/fonts/</PackageProjectUrl>

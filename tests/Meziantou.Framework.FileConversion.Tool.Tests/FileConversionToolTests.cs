@@ -1,0 +1,949 @@
+using System.IO.Compression;
+using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Pdf;
+
+namespace Meziantou.Framework.FileConversionTool.Tests;
+
+public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
+{
+    private async Task<(int ExitCode, ConsoleHelper Console)> RunAsync(params string[] args)
+    {
+        var console = new ConsoleHelper(testOutputHelper);
+        var exitCode = await Program.MainImpl(args, console.ConfigureConsole);
+        return (exitCode, console);
+    }
+
+    private static async Task<FullPath> WriteFileAsync(TemporaryDirectory temp, string name, byte[] content)
+    {
+        var path = temp.GetFullPath(name);
+        path.CreateParentDirectory();
+        await File.WriteAllBytesAsync(path, content, XunitCancellationToken);
+        return path;
+    }
+
+    private static ImageInfo Identify(FullPath path) => Image.Identify(File.ReadAllBytes(path));
+
+    /// <summary>Reads the entries of an archive of any format: the content of the files as text, null for the directories, and "-> target" for the links.</summary>
+    private static Dictionary<string, string?> ReadArchive(FullPath path, string? password = null)
+    {
+        using var archive = Compression.ArchiveFile.Open(path, new Compression.ArchiveReaderOptions { Password = password });
+        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var entry in archive.Entries)
+        {
+            if (entry.IsDirectory)
+            {
+                result.Add(entry.FullName.TrimEnd('/'), null);
+            }
+            else if (entry.LinkTarget is { } target)
+            {
+                result.Add(entry.FullName, "-> " + target);
+            }
+            else
+            {
+                using var stream = entry.Open();
+                using var reader = new StreamReader(stream);
+                result.Add(entry.FullName, reader.ReadToEnd());
+            }
+        }
+
+        return result;
+    }
+
+    [Fact]
+    public async Task PngToJpeg_NextToTheInput()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "photo.png", TestFiles.CreateImage(30, 20, ImageFormat.Png));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "jpg");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        var info = Identify(temp.GetFullPath("photo.jpg"));
+        Assert.Equal(ImageFormat.Jpeg, info.Format);
+        Assert.Equal(new Size(30, 20), info.Size);
+    }
+
+    [Fact]
+    public async Task JpegQuality_ChangesTheSize()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        using (var image = new Image<Rgba32>(64, 64))
+        {
+            for (var y = 0; y < 64; y++)
+            {
+                for (var x = 0; x < 64; x++)
+                {
+                    image.Frames[0][x, y] = new Rgba32((byte)(x * 4), (byte)(y * 4), (byte)((x * y) % 256));
+                }
+            }
+
+            image.Save(temp.GetFullPath("gradient.png"));
+        }
+
+        var input = temp.GetFullPath("gradient.png");
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("low.jpg"), "--jpeg-quality", "10")).ExitCode);
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("high.jpg"), "--jpeg-quality", "100")).ExitCode);
+
+        Assert.True(new FileInfo(temp.GetFullPath("low.jpg")).Length < new FileInfo(temp.GetFullPath("high.jpg")).Length);
+    }
+
+    [Fact]
+    public async Task TransparentPngToJpeg_UsesTheBackground()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "transparent.png", TestFiles.CreateImage(4, 4, ImageFormat.Png, new Rgba32(0, 0, 0, 0)));
+
+        var (exitCode, _) = await RunAsync(input, "-o", temp.GetFullPath("out.jpg"), "--background", "#00ff00");
+
+        Assert.Equal(0, exitCode);
+        using var image = Image.Load(temp.GetFullPath("out.jpg"));
+        using var rgba = image.CloneAs<Rgba32>();
+        var pixel = rgba.Frames[0][1, 1];
+        Assert.True(pixel.G > 200 && pixel.R < 50 && pixel.B < 50);
+    }
+
+    [Fact]
+    public async Task PngToAvif_WithOptions()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "image.png", TestFiles.CreateImage(16, 16, ImageFormat.Png));
+
+        var (exitCode, _) = await RunAsync(input, "-o", "{dir}/converted/{name}.{ext}", "--output-format", "avif", "--avif-quality", "50", "--avif-effort", "0");
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(ImageFormat.Avif, Identify(temp.GetFullPath("converted/image.avif")).Format);
+    }
+
+    [Fact]
+    public async Task MaxWidth_ShrinksKeepingTheAspectRatio()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "large.png", TestFiles.CreateImage(200, 100, ImageFormat.Png));
+
+        var (exitCode, _) = await RunAsync(input, "-o", temp.GetFullPath("small.webp"), "--max-width", "50");
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(new Size(50, 25), Identify(temp.GetFullPath("small.webp")).Size);
+    }
+
+    [Fact]
+    public async Task PdfToPng_OneFilePerPage()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "doc.pdf", TestFiles.CreatePdf(12));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "png", "--dpi", "36");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        Assert.True(File.Exists(temp.GetFullPath("doc-01.png")));
+        Assert.True(File.Exists(temp.GetFullPath("doc-12.png")));
+
+        // A5 at 36 DPI
+        Assert.Equal(new Size(209, 297), Identify(temp.GetFullPath("doc-01.png")).Size);
+    }
+
+    [Fact]
+    public async Task PdfToPng_TemplateAndPages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "doc.pdf", TestFiles.CreatePdf(5));
+
+        var (exitCode, _) = await RunAsync(input, "-o", temp.GetFullPath("out/page-{page:000}-of-{count}.png"), "--pages", "2-3,5", "--dpi", "20");
+
+        Assert.Equal(0, exitCode);
+        var files = Directory.GetFiles(temp.GetFullPath("out")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToArray();
+        Assert.Equal(["page-002-of-5.png", "page-003-of-5.png", "page-005-of-5.png"], files);
+    }
+
+    [Fact]
+    public async Task ImagesToPdf_NaturalOrderAndJpegPassthrough()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var jpeg = TestFiles.CreateImage(96, 48, ImageFormat.Jpeg);
+        await WriteFileAsync(temp, "scans/page10.jpg", jpeg);
+        await WriteFileAsync(temp, "scans/page2.png", TestFiles.CreateImage(48, 96, ImageFormat.Png));
+        await WriteFileAsync(temp, "scans/page1.jpg", jpeg);
+
+        var (exitCode, console) = await RunAsync(temp.GetFullPath("scans") + "/*.*", "-o", temp.GetFullPath("book.pdf"));
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("book.pdf")));
+        Assert.HasCount(3, document.Pages);
+
+        // page1, page2, page10: the size of each page is the size of its image at 96 DPI
+        Assert.Equal(72, document.Pages[0].MediaBox.Width, 0.01);
+        Assert.Equal(36, document.Pages[1].MediaBox.Width, 0.01);
+        Assert.Equal(72, document.Pages[2].MediaBox.Width, 0.01);
+
+        // The JPEG file is embedded as it is
+        var embedded = document.Pages[0].GetImages().Single();
+        Assert.Equal(jpeg, embedded.EncodedData.ToArray());
+    }
+
+    [Fact]
+    public async Task ImagesToPdf_FixedPageSize()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var portrait = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(10, 20, ImageFormat.Png));
+        var landscape = await WriteFileAsync(temp, "b.png", TestFiles.CreateImage(20, 10, ImageFormat.Png));
+
+        var (exitCode, _) = await RunAsync(portrait, landscape, "-o", temp.GetFullPath("out.pdf"), "--page-size", "A4", "--page-margin", "10");
+
+        Assert.Equal(0, exitCode);
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("out.pdf")));
+        Assert.Equal(PdfSize.A4.Width, document.Pages[0].MediaBox.Width, 0.01);
+        Assert.Equal(PdfSize.A4.Height, document.Pages[1].MediaBox.Width, 0.01);
+    }
+
+    [Fact]
+    public async Task PdfMerge_ImportsThePages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var first = await WriteFileAsync(temp, "a.pdf", TestFiles.CreatePdf(2));
+        var second = await WriteFileAsync(temp, "b.pdf", TestFiles.CreatePdf(3));
+
+        var (exitCode, _) = await RunAsync(first, second, "-o", temp.GetFullPath("merged.pdf"), "--pages", "1-2");
+
+        Assert.Equal(0, exitCode);
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("merged.pdf")));
+        Assert.HasCount(4, document.Pages);
+        Assert.Equal(PdfSize.A5.Width, document.Pages[0].MediaBox.Width, 0.01);
+    }
+
+    [Fact]
+    public async Task PerPage_SplitsAPdf()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "doc.pdf", TestFiles.CreatePdf(3));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf", "--per-page", "--pages", "2-");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        Assert.False(File.Exists(temp.GetFullPath("doc-1.pdf")));
+        Assert.HasCount(1, PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("doc-2.pdf"))).Pages);
+        var last = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("doc-3.pdf")));
+        Assert.HasCount(1, last.Pages);
+
+        // The third page of the input: its rectangle is 2 points wider than the one of the first page
+        Assert.Contains("102 100 re", System.Text.Encoding.ASCII.GetString(last.Pages[0].GetContentData()));
+    }
+
+    [Fact]
+    public async Task PdfConformance_SavesAPdfA()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var image = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(20, 10, ImageFormat.Png));
+        var pdf = await WriteFileAsync(temp, "b.pdf", TestFiles.CreatePdf(1));
+
+        var (exitCode, console) = await RunAsync(image, pdf, "-o", temp.GetFullPath("out.pdf"), "--pdf-conformance", "PdfA2B", "--pdf-linearize");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        var bytes = File.ReadAllBytes(temp.GetFullPath("out.pdf"));
+        var text = System.Text.Encoding.Latin1.GetString(bytes);
+        Assert.Contains("pdfaid:part", text);
+        Assert.Contains("/Linearized", text[..1024]);
+        Assert.HasCount(2, PdfDocument.Open(bytes).Pages);
+    }
+
+    [Fact]
+    public async Task PdfOutputPassword_EncryptsTheOutput()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "doc.pdf", TestFiles.CreatePdf(1));
+
+        var (exitCode, _) = await RunAsync(input, "-o", temp.GetFullPath("out.pdf"), "--pdf-output-password", "user", "--pdf-owner-password", "owner", "--pdf-permissions", "Print, CopyContent");
+
+        Assert.Equal(0, exitCode);
+        var bytes = File.ReadAllBytes(temp.GetFullPath("out.pdf"));
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(bytes));
+        var document = PdfDocument.Open(bytes, new PdfReadOptions { Password = "user" });
+        Assert.True(document.IsEncrypted);
+        Assert.Equal(PdfPermissions.Print | PdfPermissions.CopyContent, document.Permissions);
+        Assert.Equal(PdfPermissions.All, PdfDocument.Open(bytes, new PdfReadOptions { Password = "owner" }).Permissions);
+    }
+
+    [Fact]
+    public async Task PdfOwnerPassword_OpensWithoutAPassword()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "doc.pdf", TestFiles.CreatePdf(1));
+
+        var (exitCode, _) = await RunAsync(input, "-o", temp.GetFullPath("out.pdf"), "--pdf-owner-password", "owner", "--pdf-permissions", "none");
+
+        Assert.Equal(0, exitCode);
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("out.pdf")));
+        Assert.True(document.IsEncrypted);
+        Assert.Equal(PdfPermissions.None, document.Permissions);
+    }
+
+    [Fact]
+    public async Task PdfMaxImageDpi_ResamplesTheImages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(400, 400, ImageFormat.Png));
+
+        // 400 pixels on a page of 2 inches: 200 DPI
+        var (exitCode, console) = await RunAsync(input, "-o", temp.GetFullPath("out.pdf"), "--page-size", "2x2in", "--pdf-max-image-dpi", "100", "--pdf-optimize");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        var image = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("out.pdf"))).Pages[0].GetImages().Single();
+        Assert.InRange(image.Width, 150, 250);
+    }
+
+    [Fact]
+    public async Task PdfFlattenForms_KeepsTheValues()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "form.pdf", TestFiles.CreatePdfForm("Hello form"));
+
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("plain.pdf"))).ExitCode);
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("flat.pdf"), "--pdf-flatten-forms")).ExitCode);
+
+        Assert.DoesNotContain("Hello form", PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("plain.pdf"))).Pages[0].ExtractText());
+        Assert.Contains("Hello form", PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("flat.pdf"))).Pages[0].ExtractText());
+    }
+
+    [Theory]
+    [InlineData("--pdf-conformance PdfA2U --pdf-output-password x", "PDF/A does not allow encryption")]
+    [InlineData("--pdf-linearize --pdf-owner-password x", "cannot be encrypted")]
+    [InlineData("--pdf-output-password x --pdf-permissions Print", "--pdf-owner-password")]
+    [InlineData("--pdf-output-intent missing.icc", "--pdf-conformance")]
+    [InlineData("--pdf-owner-password x --pdf-permissions Print,4", "'4' is not valid")]
+    public async Task Error_InvalidPdfOutputOptions(string options, string expectedError)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "doc.pdf", TestFiles.CreatePdf(1));
+
+        var (exitCode, console) = await RunAsync([input, "-o", temp.GetFullPath("out.pdf"), .. options.Split(' ')]);
+
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains(expectedError, console.Error);
+        Assert.False(File.Exists(temp.GetFullPath("out.pdf")));
+    }
+
+    [Theory]
+    [InlineData("All", PdfPermissions.All)]
+    [InlineData("none", PdfPermissions.None)]
+    [InlineData("print,PrintHighQuality", PdfPermissions.Print | PdfPermissions.PrintHighQuality)]
+    public void ParsePermissions(string value, PdfPermissions expected)
+    {
+        Assert.Equal(expected, Program.ParsePermissions(value));
+    }
+
+    [Fact]
+    public async Task PerInput_OneOutputPerInput()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var first = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+        var second = await WriteFileAsync(temp, "b.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+
+        var (exitCode, _) = await RunAsync(first, second, "--output-format", "pdf", "--per-input");
+
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(temp.GetFullPath("a.pdf")));
+        Assert.True(File.Exists(temp.GetFullPath("b.pdf")));
+    }
+
+    [Fact]
+    public async Task ImagesToTiff_MultiPage()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var first = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+        var second = await WriteFileAsync(temp, "b.png", TestFiles.CreateImage(20, 10, ImageFormat.Png));
+
+        Assert.Equal(0, (await RunAsync(first, second, "-o", temp.GetFullPath("pages.tiff"))).ExitCode);
+        using (var collection = ImageCollection.Load(temp.GetFullPath("pages.tiff")))
+        {
+            Assert.HasCount(2, collection.Entries);
+        }
+
+        // Each page of a multi-page TIFF file is an image
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("pages.tiff"), "--output-format", "png")).ExitCode);
+        Assert.Equal(new Size(20, 10), Identify(temp.GetFullPath("pages-2.png")).Size);
+    }
+
+    [Fact]
+    public async Task ImagesToCbz_AndBackToPdf()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var jpeg = TestFiles.CreateImage(30, 40, ImageFormat.Jpeg);
+        await WriteFileAsync(temp, "in/1.jpg", jpeg);
+        await WriteFileAsync(temp, "in/2.bmp", TestFiles.CreateImage(30, 40, ImageFormat.Bmp));
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("in") + "/*", "-o", temp.GetFullPath("comic.cbz"))).ExitCode);
+        using (var archive = ZipFile.OpenRead(temp.GetFullPath("comic.cbz")))
+        {
+            Assert.Equal(["0001.jpg", "0002.png"], archive.Entries.Select(entry => entry.FullName).ToArray());
+
+            // The JPEG file is copied as it is, the BMP file is written as PNG
+            using var stream = archive.Entries[0].Open();
+            using var copy = new MemoryStream();
+            stream.CopyTo(copy);
+            Assert.Equal(jpeg, copy.ToArray());
+        }
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("comic.cbz"), "--output-format", "pdf")).ExitCode);
+        Assert.HasCount(2, PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("comic.pdf"))).Pages);
+    }
+
+    [Fact]
+    public async Task ComicImageFormat_ConvertsThePages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(30, 40, ImageFormat.Png));
+
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("a.cbz"), "--comic-image-format", "webp")).ExitCode);
+
+        using var archive = ZipFile.OpenRead(temp.GetFullPath("a.cbz"));
+        Assert.Equal("0001.webp", archive.Entries.Single().FullName);
+    }
+
+    [Fact]
+    public async Task ImageEpubToCbz_CopiesTheImages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "comic.epub", TestFiles.CreateImageEpub());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "cbz");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        using var archive = ZipFile.OpenRead(temp.GetFullPath("comic.cbz"));
+        Assert.Equal(["0001.png", "0002.png", "0003.png"], archive.Entries.Select(entry => entry.FullName).ToArray());
+    }
+
+    [Fact]
+    public async Task ImageEpubToPdf_OnePagePerImage()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "comic.epub", TestFiles.CreateImageEpub());
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "pdf")).ExitCode);
+
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("comic.pdf")));
+        Assert.HasCount(3, document.Pages);
+        Assert.Equal("Test book", document.Information.Title);
+        Assert.Equal("Test author", document.Information.Author);
+    }
+
+    [Fact]
+    public async Task TextEpubToPdf_RendersTheText()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "book.epub", TestFiles.CreateTextEpub());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf", "--epub-page-size", "A6x", "--dpi", "50");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("A6x", console.Error);
+
+        (exitCode, console) = await RunAsync(input, "--output-format", "pdf", "--epub-font-size", "14");
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+
+        // Each document of the reading order starts a page
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("book.pdf")));
+        Assert.HasCount(2, document.Pages);
+        Assert.Equal(PdfSize.A5.Width, document.Pages[0].MediaBox.Width, 0.5);
+        Assert.Contains("Chapter one", document.Pages[0].ExtractText());
+        Assert.Contains("second chapter", document.Pages[1].ExtractText());
+    }
+
+    [Fact]
+    public async Task TextEpubToPng_RendersThePages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "book.epub", TestFiles.CreateTextEpub());
+
+        var (exitCode, _) = await RunAsync(input, "--output-format", "png", "--dpi", "48");
+
+        Assert.Equal(0, exitCode);
+
+        // The number of pages is not known before the rendering: the numbers have 4 digits
+        Assert.Equal(new Size(280, 397), Identify(temp.GetFullPath("book-0001.png")).Size);
+        Assert.True(File.Exists(temp.GetFullPath("book-0002.png")));
+    }
+
+    [Fact]
+    public async Task TextEpub_ImagesModeFails()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "book.epub", TestFiles.CreateTextEpub());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "cbz", "--epub-mode", "images");
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("--epub-mode render", console.Error);
+    }
+
+    [Fact]
+    public async Task Error_ExistingOutput()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+        await WriteFileAsync(temp, "a.jpg", [1, 2, 3]);
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "jpg");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("--overwrite", console.Error);
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "jpg", "--overwrite")).ExitCode);
+        Assert.Equal(ImageFormat.Jpeg, Identify(temp.GetFullPath("a.jpg")).Format);
+    }
+
+    [Fact]
+    public async Task Error_SameOutputForSeveralPages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "doc.pdf", TestFiles.CreatePdf(2));
+
+        var (exitCode, console) = await RunAsync(input, "-o", temp.GetFullPath("page.png"), "--dpi", "10");
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("{page}", console.Error);
+    }
+
+    [Fact]
+    public async Task Error_SeveralInputsToOneFileWithoutOutput()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var first = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+        var second = await WriteFileAsync(temp, "b.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+
+        var (exitCode, console) = await RunAsync(first, second, "--output-format", "pdf");
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("--per-input", console.Error);
+    }
+
+    [Fact]
+    public async Task Error_UnknownFormat()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "docx");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("--list-formats", console.Error);
+
+        await WriteFileAsync(temp, "notes.txt", "hello"u8.ToArray());
+        (exitCode, console) = await RunAsync(temp.GetFullPath("notes.txt"), "--output-format", "png");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("is not supported", console.Error);
+    }
+
+    [Fact]
+    public async Task Error_OutputIsTheInput()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "png", "--overwrite");
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("is the input file", console.Error);
+    }
+
+    [Fact]
+    public async Task ListFormats()
+    {
+        var (exitCode, console) = await RunAsync("--list-formats");
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("Jpeg (.jpg, .jpeg): read, write", console.Output);
+        Assert.Contains("--jpeg-quality", console.Output);
+        Assert.Contains("EPUB (.epub): read", console.Output);
+        Assert.Contains("--epub-page-size", console.Output);
+        Assert.Contains("TarGz (.tar.gz, .tgz): read, write", console.Output);
+        Assert.Contains("CBR (.cbr): read", console.Output);
+        Assert.Contains("--7z-password", console.Output);
+        Assert.Contains("Markdown (.md, .markdown): read, write", console.Output);
+        Assert.Contains("HTML (.html, .htm): read, write", console.Output);
+        Assert.Contains("--html-stylesheet", console.Output);
+    }
+
+    [Theory]
+    [InlineData("readme.md", "BM is also the start of a BMP file", "Markdown")]
+    [InlineData("notes.markdown", "%PDF- is the start of a PDF file", "Markdown")]
+    [InlineData("page.htm", "<p>Hello</p>", "HTML")]
+    [InlineData("page", "\uFEFF  <!DOCTYPE html><html></html>", "HTML")]
+    [InlineData("page", "<HTML lang=en>", "HTML")]
+    [InlineData("page", "<p>Hello</p>", null)]
+    public void DetectFormat_TextDocuments(string fileName, string content, string? expected)
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(System.Text.RegularExpressions.Regex.Unescape(content)));
+        Assert.Equal(expected, Converter.DetectFormat(stream, fileName)?.Name);
+    }
+
+    [Fact]
+    public async Task MarkdownToHtml_CompleteDocument()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "docs/readme.md", Encoding.UTF8.GetBytes("""
+            ---
+            title: "Front & title"
+            ---
+            # Heading
+
+            | a | b |
+            |---|---|
+            | 1 | 2 |
+
+            - [x] done
+            """));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "html", "--html-stylesheet", "site.css", "--html-stylesheet", "print.css?a=1&b=2");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        var html = File.ReadAllText(temp.GetFullPath("docs/readme.html"));
+        Assert.StartsWith("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">", html);
+        Assert.Contains("<title>Front &amp; title</title>", html);
+        Assert.Contains("<link rel=\"stylesheet\" href=\"site.css\">", html);
+        Assert.Contains("<link rel=\"stylesheet\" href=\"print.css?a=1&amp;b=2\">", html);
+        Assert.Contains("<table>", html);
+        Assert.Contains("type=\"checkbox\"", html);
+        Assert.DoesNotContain("title:", html);
+        Assert.EndsWith("</body>\n</html>\n", html);
+    }
+
+    [Theory]
+    [InlineData("# Tom & *Jerry*\n\nText", null, "Tom &amp; Jerry")]
+    [InlineData("Title\n=====\n\nText", null, "Title")]
+    [InlineData("Text only", null, "notes")]
+    [InlineData("# Heading", "Custom <title>", "Custom &lt;title&gt;")]
+    public async Task MarkdownToHtml_Title(string markdown, string? title, string expected)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "notes.md", Encoding.UTF8.GetBytes(System.Text.RegularExpressions.Regex.Unescape(markdown)));
+
+        string[] args = title is null ? [input, "-o", temp.GetFullPath("out.html")] : [input, "-o", temp.GetFullPath("out.html"), "--html-title", title];
+        Assert.Equal(0, (await RunAsync(args)).ExitCode);
+
+        Assert.Contains("<title>" + expected + "</title>", File.ReadAllText(temp.GetFullPath("out.html")));
+    }
+
+    [Fact]
+    public async Task MarkdownToHtml_FragmentAndOptions()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "a.md", Encoding.UTF8.GetBytes("<script>alert(1)</script>\n\n| a | b |\n|---|---|\n| 1 | 2 |\n"));
+
+        var (exitCode, _) = await RunAsync(input, "-o", temp.GetFullPath("a.html"), "--html-fragment", "--markdown-disable-html", "--markdown-extensions", "common");
+
+        Assert.Equal(0, exitCode);
+        var html = File.ReadAllText(temp.GetFullPath("a.html"));
+        Assert.StartsWith("<p>&lt;script&gt;", html);
+        Assert.DoesNotContain("<table>", html);
+        Assert.DoesNotContain("<html>", html);
+    }
+
+    [Fact]
+    public async Task HtmlToMarkdown_ConvertsTheBody()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var first = await WriteFileAsync(temp, "pages/a.html", Encoding.UTF8.GetBytes("<!DOCTYPE html><html><head><title>Head title</title></head><body><h1>Hello</h1><p>Some <b>bold</b> text</p><ul><li>item</li></ul></body></html>"));
+        await WriteFileAsync(temp, "pages/b.htm", Encoding.UTF8.GetBytes("<p>Fragment</p>"));
+
+        var (exitCode, console) = await RunAsync(temp.GetFullPath("pages") + "/*.htm*", "-o", temp.GetFullPath("out") + "/{name}.{ext}", "--output-format", "md", "--markdown-heading-style", "Setext", "--markdown-list-marker", "*");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        Assert.Equal("Hello\n=====\n\nSome **bold** text\n\n* item\n", File.ReadAllText(temp.GetFullPath("out/a.md")));
+        Assert.Equal("Fragment\n", File.ReadAllText(temp.GetFullPath("out/b.md")));
+        Assert.True(File.Exists(first));
+    }
+
+    [Theory]
+    [InlineData("doc.md", "pdf", "can be converted only to HTML or Markdown")]
+    [InlineData("doc.html", "png", "can be converted only to HTML or Markdown")]
+    [InlineData("doc.md", "md", "only HTML documents can")]
+    [InlineData("doc.png", "html", "only Markdown documents can")]
+    public async Task Error_TextDocumentConversions(string inputName, string outputFormat, string expectedError)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var content = inputName.EndsWith(".png", StringComparison.Ordinal) ? TestFiles.CreateImage(1, 1, ImageFormat.Png) : Encoding.UTF8.GetBytes("# Title");
+        var input = await WriteFileAsync(temp, inputName, content);
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", outputFormat, "-o", temp.GetFullPath("out/{name}.{ext}"));
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains(expectedError, console.Error);
+    }
+
+    [Theory]
+    [InlineData("--markdown-extensions", "advanced+unknown")]
+    [InlineData("--markdown-list-marker", "#")]
+    public async Task Error_InvalidMarkdownOptions(string option, string value)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "doc.md", Encoding.UTF8.GetBytes("# Title"));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "html", option, value);
+
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains(option, console.Error + (value == "#" ? "--markdown-list-marker" : ""));
+        Assert.False(File.Exists(temp.GetFullPath("doc.html")));
+    }
+
+    [Theory]
+    [InlineData("{name}-{page}.{ext}", "doc-07.png")]
+    [InlineData("{name}-{page:0000}.{ext}", "doc-0007.png")]
+    [InlineData("{index:0}_{count}", "3_12")]
+    [InlineData("{{literal}}-{name}", "{literal}-doc")]
+    [InlineData("{dir}/x", "/in/x")]
+    public void OutputNameTemplate_Format(string template, string expected)
+    {
+        var values = new OutputNameValues("doc", "png", "/in", Page: 7, PageCount: 12, Index: 3, IndexCount: 20);
+
+        Assert.Equal(expected, OutputNameTemplate.Parse(template).Format(values));
+    }
+
+    [Theory]
+    [InlineData("{page")]
+    [InlineData("page}")]
+    [InlineData("{unknown}")]
+    [InlineData("{page:abc}")]
+    [InlineData("{name:00}")]
+    public void OutputNameTemplate_Invalid(string template)
+    {
+        Assert.Throws<FormatException>(() => OutputNameTemplate.Parse(template));
+    }
+
+    [Theory]
+    [InlineData("1-3,7,10-", new[] { 1, 2, 3, 7, 10, 11 }, new[] { 4, 6, 8, 9 })]
+    [InlineData("5", new[] { 5 }, new[] { 4, 6 })]
+    public void PageRange_Contains(string value, int[] included, int[] excluded)
+    {
+        var range = PageRange.Parse(value);
+
+        Assert.All(included, page => Assert.True(range.Contains(page)));
+        Assert.All(excluded, page => Assert.False(range.Contains(page)));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("0")]
+    [InlineData("3-1")]
+    [InlineData("a")]
+    [InlineData("1,,2")]
+    public void PageRange_Invalid(string value)
+    {
+        Assert.Throws<FormatException>(() => PageRange.Parse(value));
+    }
+
+    [Fact]
+    public void NaturalStringComparer_SortsNumbers()
+    {
+        string[] names = ["page10.jpg", "Page2.jpg", "page1.jpg", "page01.jpg", "cover.jpg"];
+
+        Assert.Equal(["cover.jpg", "page1.jpg", "page01.jpg", "Page2.jpg", "page10.jpg"], names.Order(NaturalStringComparer.Instance).ToArray());
+    }
+
+    [Theory]
+    [InlineData("OEBPS/content.opf", "text/ch1.xhtml", "OEBPS/text/ch1.xhtml")]
+    [InlineData("OEBPS/text/ch1.xhtml", "../images/a%20b.png#frag", "OEBPS/images/a b.png")]
+    [InlineData("content.opf", "./a.xhtml", "a.xhtml")]
+    [InlineData("OEBPS/content.opf", "../../escape.xhtml", null)]
+    [InlineData("OEBPS/content.opf", "/absolute.xhtml", null)]
+    [InlineData("OEBPS/content.opf", "https://example.com/a.png", null)]
+    public void EpubPackage_ResolvePath(string basePath, string reference, string? expected)
+    {
+        Assert.Equal(expected, Epub.EpubPackage.ResolvePath(basePath, reference));
+    }
+
+    [Theory]
+    [InlineData("tiny.png", "PNG")]
+    [InlineData("doc.bin", "PDF")]
+    [InlineData("book.bin", "EPUB")]
+    [InlineData("archive.zip", "Zip")]
+    [InlineData("archive.bin", "Zip")]
+    [InlineData("comic.cbz", "CBZ")]
+    [InlineData("comic.cb7", "CB7")]
+    [InlineData("comic.cbt", "CBT")]
+    [InlineData("comic.cbr", "CBR")]
+    [InlineData("data.bin", "7z")]
+    [InlineData("data.dat", "RAR")]
+    [InlineData("data.tar", "Tar")]
+    [InlineData("data.tgz", "TarGz")]
+    [InlineData("renamed.cbz", "CBR")]
+    public void DetectFormat(string fileName, string expected)
+    {
+        (string, byte[])[] entries = [("a.png", TestFiles.CreateImage(1, 1, ImageFormat.Png))];
+        var content = (expected, Path.GetExtension(fileName)) switch
+        {
+            ("PNG", _) => TestFiles.CreateImage(1, 1, ImageFormat.Png),
+            ("PDF", _) => TestFiles.CreatePdf(1),
+            ("EPUB", _) => TestFiles.CreateImageEpub(),
+            ("7z" or "CB7", _) => TestFiles.CreateSevenZip(entries),
+            ("RAR" or "CBR", _) => TestFiles.CreateRar(entries),
+            ("Tar" or "CBT", _) => TestFiles.CreateTar(gzip: false, entries),
+            ("TarGz", _) => TestFiles.CreateTar(gzip: true, entries),
+            _ => TestFiles.CreateZip(entries),
+        };
+
+        using var stream = new MemoryStream(content);
+        Assert.Equal(expected, Converter.DetectFormat(stream, fileName)?.Name, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("book.tar.gz", "book", "TarGz")]
+    [InlineData("book.TGZ", "book", "TarGz")]
+    [InlineData("book.tar", "book", "Tar")]
+    [InlineData("my.book.cb7", "my.book", "CB7")]
+    [InlineData("notes.txt", "notes", null)]
+    public void FileFormat_FromFileName(string fileName, string expectedName, string? expectedFormat)
+    {
+        Assert.Equal(expectedFormat, FileFormat.FromFileName(fileName)?.Name);
+        Assert.Equal(expectedName, FileFormat.GetNameWithoutExtension(fileName));
+    }
+
+    [Theory]
+    [InlineData("zip")]
+    [InlineData("7z")]
+    [InlineData("tar")]
+    [InlineData("tar.gz")]
+    [InlineData("tar.bz2")]
+    [InlineData("tar.xz")]
+    [InlineData("tar.lzma")]
+    [InlineData("tar.lz")]
+    public async Task Archive_CopiesTheEntries(string extension)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "data.zip", TestFiles.CreateZip(("docs/", []), ("docs/readme.txt", "Hello"u8.ToArray()), ("a.txt", "Content of a"u8.ToArray())));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", extension, "-o", temp.GetFullPath("out/{name}.{ext}"));
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        var output = temp.GetFullPath("out/data." + extension);
+        Assert.Equal(output.Value, console.Output.Trim());
+        Assert.Equal(new Dictionary<string, string?>(StringComparer.Ordinal) { ["docs"] = null, ["docs/readme.txt"] = "Hello", ["a.txt"] = "Content of a" }, ReadArchive(output));
+    }
+
+    [Fact]
+    public async Task Archive_KeepsTheTimesAndTheLinks()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "data.tar.gz", TestFiles.CreateTar(gzip: true, ("a.txt", "A"u8.ToArray()), ("link -> a.txt", [])));
+
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("{name}.zip"))).ExitCode);
+
+        Assert.Equal(new Dictionary<string, string?>(StringComparer.Ordinal) { ["a.txt"] = "A", ["link"] = "-> a.txt" }, ReadArchive(temp.GetFullPath("data.zip")));
+        using var archive = Compression.ArchiveFile.Open(temp.GetFullPath("data.zip"));
+        Assert.Equal(new DateTimeOffset(2024, 5, 6, 7, 8, 10, TimeSpan.Zero), archive.GetEntry("a.txt")!.LastWriteTime?.ToUniversalTime());
+    }
+
+    [Fact]
+    public async Task Archive_SkipsTheLinksTheOutputCannotStore()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "data.tar", TestFiles.CreateTar(gzip: false, ("a.txt", "A"u8.ToArray()), ("link -> a.txt", [])));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "7z");
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("The symbolic link 'link' is skipped", console.Error);
+        Assert.Equal(new Dictionary<string, string?>(StringComparer.Ordinal) { ["a.txt"] = "A" }, ReadArchive(temp.GetFullPath("data.7z")));
+    }
+
+    [Fact]
+    public async Task RarToZip()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "data.rar", TestFiles.CreateRar(("a.txt", "A"u8.ToArray()), ("dir/b.txt", "B"u8.ToArray())));
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "zip")).ExitCode);
+
+        Assert.Equal(new Dictionary<string, string?>(StringComparer.Ordinal) { ["a.txt"] = "A", ["dir/b.txt"] = "B" }, ReadArchive(temp.GetFullPath("data.zip")));
+    }
+
+    [Fact]
+    public async Task Archive_WithPassword()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "data.zip", TestFiles.CreateZip(("a.txt", "Secret"u8.ToArray())));
+
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("encrypted.zip"), "--zip-password", "pass")).ExitCode);
+        Assert.Throws<Compression.ArchivePasswordException>(() => ReadArchive(temp.GetFullPath("encrypted.zip")));
+        Assert.Equal("Secret", ReadArchive(temp.GetFullPath("encrypted.zip"), password: "pass")["a.txt"]);
+
+        // The password of the input is needed to read it
+        var (exitCode, console) = await RunAsync(temp.GetFullPath("encrypted.zip"), "--output-format", "7z");
+        Assert.Equal(1, exitCode);
+        Assert.NotEmpty(console.Error);
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("encrypted.zip"), "--output-format", "7z", "--archive-password", "pass", "--7z-password", "other", "--7z-encrypt-headers")).ExitCode);
+        Assert.Throws<Compression.ArchivePasswordException>(() => ReadArchive(temp.GetFullPath("encrypted.7z")));
+        Assert.Equal("Secret", ReadArchive(temp.GetFullPath("encrypted.7z"), password: "other")["a.txt"]);
+    }
+
+    [Fact]
+    public async Task Archive_FromAFileThatIsNotAnArchive()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "doc.pdf", TestFiles.CreatePdf(1));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "zip");
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("cannot be converted to an archive", console.Error);
+    }
+
+    [Fact]
+    public async Task CbrToPdfAndCbz()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var jpeg = TestFiles.CreateImage(30, 40, ImageFormat.Jpeg);
+        var input = await WriteFileAsync(temp, "comic.cbr", TestFiles.CreateRar(("page10.jpg", jpeg), ("page2.png", TestFiles.CreateImage(30, 40, ImageFormat.Png)), ("ComicInfo.xml", "<ComicInfo/>"u8.ToArray())));
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "pdf")).ExitCode);
+        Assert.HasCount(2, PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("comic.pdf"))).Pages);
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "cbz")).ExitCode);
+        using var archive = ZipFile.OpenRead(temp.GetFullPath("comic.cbz"));
+        Assert.Equal(["0001.png", "0002.jpg"], archive.Entries.Select(entry => entry.FullName).ToArray());
+    }
+
+    [Theory]
+    [InlineData("cb7", Compression.ArchiveFormat.SevenZip)]
+    [InlineData("cbt", Compression.ArchiveFormat.Tar)]
+    [InlineData("cbz", Compression.ArchiveFormat.Zip)]
+    public async Task ImagesToComic(string extension, Compression.ArchiveFormat expectedFormat)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var jpeg = TestFiles.CreateImage(30, 40, ImageFormat.Jpeg);
+        await WriteFileAsync(temp, "in/1.jpg", jpeg);
+        await WriteFileAsync(temp, "in/2.jpg", jpeg);
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("in") + "/*", "-o", temp.GetFullPath("comic." + extension))).ExitCode);
+
+        var output = temp.GetFullPath("comic." + extension);
+        Assert.Equal(expectedFormat, Compression.ArchiveFile.DetectFormat(output).Format);
+        using (var archive = Compression.ArchiveFile.Open(output))
+        {
+            Assert.Equal(["0001.jpg", "0002.jpg"], archive.Entries.Select(entry => entry.FullName).ToArray());
+        }
+
+        // The comic book archive converts back to images
+        Assert.Equal(0, (await RunAsync(output, "-o", temp.GetFullPath("out/{page}.png"))).ExitCode);
+        Assert.True(File.Exists(temp.GetFullPath("out/1.png")));
+        Assert.True(File.Exists(temp.GetFullPath("out/2.png")));
+    }
+
+    [Fact]
+    public async Task ComicToArchive_CopiesTheEntries()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "comic.cbr", TestFiles.CreateRar(("1.png", TestFiles.CreateImage(2, 2, ImageFormat.Png)), ("ComicInfo.xml", "<ComicInfo/>"u8.ToArray())));
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "zip")).ExitCode);
+
+        Assert.Equal(["1.png", "ComicInfo.xml"], ReadArchive(temp.GetFullPath("comic.zip")).Keys.ToArray());
+    }
+}

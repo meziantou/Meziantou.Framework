@@ -6738,6 +6738,34 @@ public sealed class VectorizedKernelTests
             matrices.Add(new ColorMatrix(Enumerable.Range(0, 20).Select(_ => (random.NextDouble() * 4) - 2).ToArray()));
         }
 
+        // Without a constant column, and matrices whose rows each read one sample (looked up in tables on Arm64): with
+        // and without a constant column, the alpha kept or not, and coefficients that are negative zeros
+        for (var i = 0; i < 5; i++)
+        {
+            matrices.Add(new ColorMatrix(Enumerable.Range(0, 20).Select(index => index % 5 == 4 ? 0 : (random.NextDouble() * 4) - 2).ToArray()));
+        }
+
+        matrices.Add(ColorMatrix.CreateBrightness(1.7));
+        matrices.Add(ColorMatrix.CreateContrast(1.3));
+        matrices.Add(new([1, -0.0, 0, -0.0, 0, 0, 1, 0, 0, 0, -0.0, 0, 1, 0, 0, 0, 0, -0.0, 1, 0]));
+        for (var i = 0; i < 10; i++)
+        {
+            var values = new double[20];
+            for (var row = 0; row < 4; row++)
+            {
+                values[(row * 5) + row] = (random.NextDouble() * 6) - 3;
+                values[(row * 5) + 4] = i % 2 == 0 ? 0 : (random.NextDouble() * 2) - 1;
+            }
+
+            if (i % 3 == 0)
+            {
+                values[18] = 1;
+                values[19] = 0;
+            }
+
+            matrices.Add(new ColorMatrix(values));
+        }
+
         CheckColorMatrix<Rgba32>(random, matrices, 4);
         CheckColorMatrix<Bgra32>(random, matrices, 4);
         CheckColorMatrix<Rgb24>(random, matrices, 3);
@@ -6750,7 +6778,7 @@ public sealed class VectorizedKernelTests
         {
             foreach (var matrix in matrices)
             {
-                var count = random.Next(1, 40);
+                var count = random.Next(1, 80);
                 var x = random.Next(0, 3);
                 var row = new byte[(count + x) * bytesPerPixel];
                 random.NextBytes(row);
@@ -6760,6 +6788,17 @@ public sealed class VectorizedKernelTests
                 ColorMatrixKernel.ApplyVector<TPixel>(row, x, matrix, actual);
                 Assert.Equal(expected, actual);
             }
+        }
+    }
+
+    [Fact]
+    public void DrawingColorMatrixDivisionBy255MatchesTheDivision()
+    {
+        // Every value of (c a + 127) for 8-bit samples, which the colors over black of RGB pixels divide by 255
+        for (var i = 0; i <= (byte.MaxValue * byte.MaxValue) + (byte.MaxValue / 2); i += 8)
+        {
+            var values = Vector128.Create((ushort)i, (ushort)(i + 1), (ushort)(i + 2), (ushort)(i + 3), (ushort)(i + 4), (ushort)(i + 5), (ushort)(i + 6), (ushort)(i + 7));
+            Assert.Equal(Vector128.Create((ushort)(i / 255), (ushort)((i + 1) / 255), (ushort)((i + 2) / 255), (ushort)((i + 3) / 255), (ushort)((i + 4) / 255), (ushort)((i + 5) / 255), (ushort)((i + 6) / 255), (ushort)((i + 7) / 255)), ColorMatrixKernel.DivideBy255(values));
         }
     }
 

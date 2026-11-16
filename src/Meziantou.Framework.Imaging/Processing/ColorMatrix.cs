@@ -47,6 +47,9 @@ public sealed class ColorMatrix
 
     private readonly double[] _values;
 
+    /// <summary>The 8-bit lookup tables of a matrix whose rows each read one sample, computed once by <see cref="ColorMatrixKernel"/>.</summary>
+    internal byte[]? _diagonalTables8;
+
     /// <summary>Initializes a new instance of the <see cref="ColorMatrix"/> class.</summary>
     /// <param name="values">
     /// The twenty coefficients, row by row: the row of the red of the result first, then green, blue and alpha; in

@@ -1391,6 +1391,33 @@ public sealed class TiffEncoderTests
         TestImages.AssertSamePixels(source, (Image<Rgba32>)second);
     }
 
+    [Theory]
+    [InlineData(TiffCompression.None)]
+    [InlineData(TiffCompression.Deflate)]
+    public void TheTablesOfManyBlocksAreChargedToTheLimit(TiffCompression compression)
+    {
+        // 32,768 strips of one row in four planes: the tables of their offsets and lengths, and their copies in the
+        // directory, take about 4 MB, which a limit of 2 MB rejects before they are allocated; the same page in chunky
+        // strips fits in it
+        var pixels = new Rgba32[32_768];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new Rgba32((byte)i, (byte)(i >> 8), (byte)(i >> 16), 255);
+        }
+
+        var encoder = new TiffEncoder { Compression = compression, SeparatePlanes = true, RowsPerStrip = 1 };
+        using (var limited = Image.ImportPixelData<Rgba32>(pixels, 1, pixels.Length, configuration: new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 2L << 20 } }))
+        using (var stream = new MemoryStream())
+        {
+            Assert.Throws<ImageResourceLimitException>(() => limited.Save(stream, encoder));
+            limited.Save(stream, new TiffEncoder { Compression = compression, RowsPerStrip = 1 });
+        }
+
+        using var image = Image.ImportPixelData<Rgba32>(pixels, 1, pixels.Length, configuration: new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 64L << 20 } });
+        using var decoded = RoundTrip(image, encoder);
+        TestImages.AssertSamePixels(image, (Image<Rgba32>)decoded);
+    }
+
     [Fact]
     public void JpegCompressionCannotBeWrittenInSeparatePlanes()
     {

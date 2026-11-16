@@ -82,6 +82,7 @@ internal sealed class TiffDocumentWriter : IDisposable
     private PooledBuffer? _predictorRow;
     private PooledBuffer? _converted;
     private PooledBuffer? _chunkyRow;
+    private AllocationCharge? _tablesCharge;
     private PooledBuffer? _changes;
     private TiffLzwEncoder? _lzw;
     private ImageEncoderSession? _jpeg;
@@ -344,6 +345,11 @@ internal sealed class TiffDocumentWriter : IDisposable
 
         var blocksAcross = (size.Width + blockWidth - 1) / blockWidth;
         var blocksDown = (size.Height + blockHeight - 1) / blockHeight;
+        var blockCount = (long)blocksAcross * blocksDown * planes;
+        if (blockCount > CheckedSizes.MaxBufferLength / sizeof(ulong))
+            throw CheckedSizes.CreateOverflowException(_scope.Limits);
+
+        ChargeBlockTables((int)blockCount);
         _page = new PageState(frame, size, pixelFormat, layout, metadata, (int)rowLength, isTiled, blockWidth, blockHeight, (int)blockRowLength, blocksAcross, blocksDown, planes, prepared.Palette, prepared.PaletteIndexes);
         _blocksWritten = 0;
         _directoryWritten = false;
@@ -351,8 +357,6 @@ internal sealed class TiffDocumentWriter : IDisposable
         _workers?.Dispose();
         _workers = null;
         _workersChosen = false;
-        _blockOffsets.Clear();
-        _blockByteCounts.Clear();
         if (isJpeg)
         {
             BeginJpeg(frame, size, pixelFormat);
@@ -482,7 +486,27 @@ internal sealed class TiffDocumentWriter : IDisposable
 
         _directoryWritten = false;
         _page = default;
+        _tablesCharge?.Dispose();
+        _tablesCharge = null;
         PageCount++;
+    }
+
+    /// <summary>
+    /// Charges the tables of the offsets and the lengths of the blocks of a page, before they grow to hold
+    /// <paramref name="blockCount"/> entries, and their copies in the values of the directory fields (two copies, since a
+    /// directory written before its blocks is measured first): many small strips, or separate planes, make them large.
+    /// The charge is held until the directory of the page is written.
+    /// </summary>
+    private void ChargeBlockTables(int blockCount)
+    {
+        _tablesCharge?.Dispose();
+        _tablesCharge = null;
+        _blockOffsets.Clear();
+        _blockByteCounts.Clear();
+        var entries = (long)Math.Max(blockCount, _blockOffsets.Capacity) + Math.Max(blockCount, _blockByteCounts.Capacity);
+        _tablesCharge = _scope.Charge((entries * sizeof(ulong)) + (4L * blockCount * OffsetSize), AllocationKind.Temporary);
+        _blockOffsets.EnsureCapacity(blockCount);
+        _blockByteCounts.EnsureCapacity(blockCount);
     }
 
     /// <summary>
@@ -536,6 +560,8 @@ internal sealed class TiffDocumentWriter : IDisposable
         _converted = null;
         _chunkyRow?.Dispose();
         _chunkyRow = null;
+        _tablesCharge?.Dispose();
+        _tablesCharge = null;
         _changes?.Dispose();
         _changes = null;
         _lzw?.Dispose();

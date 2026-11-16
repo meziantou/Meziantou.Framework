@@ -357,7 +357,7 @@ public sealed class SevenZipArchive : Archive
         if (_writer is null)
         {
             // Update mode: the new entries are compressed to a temporary file, whose folders are copied when the archive is disposed
-            _stagingStream = CreateTemporaryStream();
+            _stagingStream = TemporaryFileStream.Create();
             _writer = new SevenZipFolderWriter(_stagingStream, _writerSettings!);
         }
 
@@ -367,10 +367,6 @@ public sealed class SevenZipArchive : Archive
         return stream;
     }
 
-    private static FileStream CreateTemporaryStream()
-    {
-        return new FileStream(Path.GetTempFileName(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize: 81920, FileOptions.DeleteOnClose);
-    }
 
     /// <inheritdoc/>
     protected override void Dispose(bool disposing)
@@ -431,7 +427,7 @@ public sealed class SevenZipArchive : Archive
     private void Rewrite()
     {
         PrepareNewItems();
-        using var temporary = CreateTemporaryStream();
+        using var temporary = TemporaryFileStream.Create();
         SevenZipArchiveFormat.WriteSignaturePlaceholder(temporary);
         var writer = new SevenZipFolderWriter(temporary, _writerSettings!);
         var outputItems = new Dictionary<SevenZipArchiveEntry, SevenZipFileItem>();

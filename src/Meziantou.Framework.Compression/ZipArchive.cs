@@ -483,17 +483,13 @@ public sealed class ZipArchive : Archive
         if (_writer is null)
         {
             // Update mode: the new entries are written to a temporary file, and copied when the archive is disposed
-            _stagingStream = CreateTemporaryStream();
+            _stagingStream = TemporaryFileStream.Create();
             _writer = new ZipWriter(_stagingStream, _compressionOptions.Zip64);
         }
 
         return _writer;
     }
 
-    private static FileStream CreateTemporaryStream()
-    {
-        return new FileStream(Path.GetTempFileName(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize: 81920, FileOptions.DeleteOnClose);
-    }
 
     private protected override IReadOnlyList<ArchiveEntry> GetEntries() => Entries;
 
@@ -653,7 +649,7 @@ public sealed class ZipArchive : Archive
     /// <summary>Writes the updated archive to a temporary file, then copies it over the archive.</summary>
     private void Rewrite(byte[] comment)
     {
-        using var temporary = CreateTemporaryStream();
+        using var temporary = TemporaryFileStream.Create();
 
         // The data before the first entry (the stub of a self-extracting archive) are kept
         var prefix = long.MaxValue;

@@ -259,6 +259,7 @@ public sealed class ArchiveFileTests
     [Theory]
     [InlineData("Archive/traversal.tar")]
     [InlineData("Archive/symlink-escape.tar")]
+    [InlineData("Archive/symlink-chain.tar")]
     public void ExtractToDirectory_RejectsPathsOutsideOfTheDirectory(string name)
     {
         var directory = Directory.CreateTempSubdirectory();
@@ -275,6 +276,39 @@ public sealed class ArchiveFileTests
         {
             directory.Delete(recursive: true);
         }
+    }
+
+    [Fact]
+    public void ExtractToDirectory_ReplacesALinkInsteadOfWritingToItsTarget()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var outside = Path.Combine(directory.FullName, "outside.txt");
+            File.WriteAllText(outside, "unchanged");
+            var destination = Directory.CreateDirectory(Path.Combine(directory.FullName, "out")).FullName;
+            File.CreateSymbolicLink(Path.Combine(destination, "hello.txt"), outside);
+
+            Assert.Throws<IOException>(() => ArchiveFile.ExtractToDirectory(GetPath("Archive/sample.tar"), destination));
+            ArchiveFile.ExtractToDirectory(GetPath("Archive/sample.tar"), destination, overwriteFiles: true);
+
+            Assert.Equal("unchanged", File.ReadAllText(outside));
+            Assert.Null(new FileInfo(Path.Combine(destination, "hello.txt")).LinkTarget);
+            Assert.Equal("Hello, archive!\n", File.ReadAllText(Path.Combine(destination, "hello.txt")));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DetectFormat_ExecutableThatContainsTheEndOfCentralDirectorySignature()
+    {
+        // "MZ", then data that contain "PK\u0005\u0006" without being the end of central directory record that ends a zip file
+        byte[] data = [(byte)'M', (byte)'Z', .. new byte[100], (byte)'P', (byte)'K', 5, 6, .. new byte[100]];
+        using var stream = new MemoryStream(data);
+        Assert.Equal(new ArchiveFormatInfo(ArchiveFormat.Unknown, CompressionFormat.None), ArchiveFile.DetectFormat(stream));
     }
 
     [Fact]

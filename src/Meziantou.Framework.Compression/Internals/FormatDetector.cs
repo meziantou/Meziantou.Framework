@@ -186,7 +186,7 @@ internal static class FormatDetector
                 var tail = new byte[tailLength];
                 stream.Position = stream.Length - tailLength;
                 stream.ReadExactlyOrThrow(tail);
-                if (tail.AsSpan().LastIndexOf("PK\u0005\u0006"u8) >= 0)
+                if (HasEndOfCentralDirectory(tail))
                     return ArchiveFormat.Zip;
             }
 
@@ -196,5 +196,17 @@ internal static class FormatDetector
         {
             stream.Position = position;
         }
+    }
+
+    /// <summary>Gets whether the end of a file is the end of central directory record of zip: its comment ends the file.</summary>
+    private static bool HasEndOfCentralDirectory(ReadOnlySpan<byte> tail)
+    {
+        for (var i = tail.Length - 22; i >= 0; i--)
+        {
+            if (tail[i..].StartsWith("PK\u0005\u0006"u8) && BinaryPrimitives.ReadUInt16LittleEndian(tail[(i + 20)..]) == tail.Length - i - 22)
+                return true;
+        }
+
+        return false;
     }
 }

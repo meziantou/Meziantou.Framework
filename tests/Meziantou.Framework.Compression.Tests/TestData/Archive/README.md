@@ -16,5 +16,6 @@ with the tools listed below, from a directory with `hello.txt` (16 bytes), `docs
 | `sample.tar.Z` | `compress` (macOS) |
 | `traversal.tar` | Python `tarfile`: `ok.txt`, then `../evil.txt` |
 | `symlink-escape.tar` | Python `tarfile`: a symbolic link to `../../etc/passwd` |
+| `symlink-chain.tar` | Python `tarfile`: the links `b` to `.` and `a` to `b/..`, then the file `a/evil.txt`, which `a` would put next to the destination directory |
 | `hardlink.tar` | Python `tarfile`, GNU format: `original.txt` and the hard link `copy.txt` |
 | `hello.txt.gz` | Python `gzip.compress`: a gzip file that is not a tar archive |

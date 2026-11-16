@@ -10,7 +10,11 @@ destination directory:
 
 - its path is rooted, or goes up with `..` (the "zip slip" attack);
 - it is a symbolic link whose target is absolute or outside of the directory;
-- it is a hard link to a file outside of the directory.
+- it is a hard link to a file outside of the directory;
+- it would be written through a link, such as a link the archive created before it to a directory.
+
+A link that already exists where a file is extracted is replaced by the file, so that the file is not written to the
+target of the link.
 
 The links whose target is inside the directory are created. The setuid, setgid and sticky bits of the Unix permissions are
 not restored.

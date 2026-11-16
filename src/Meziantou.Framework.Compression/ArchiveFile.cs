@@ -181,8 +181,7 @@ public static class ArchiveFile
 
     private static TarRandomAccessArchive OpenCompressedTar(Stream stream, CompressionFormat compression, bool leaveOpen, long maxMemoryUsage)
     {
-        var path = Path.Combine(Path.GetTempPath(), "Meziantou.Framework.Compression-" + Guid.NewGuid().ToString("N") + ".tar");
-        var temporary = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, bufferSize: 81920, FileOptions.DeleteOnClose);
+        var temporary = TemporaryFileStream.Create();
         try
         {
             using (var decompressed = FormatDetector.CreateDecompressionStream(compression, stream, leaveOpen, maxMemoryUsage))

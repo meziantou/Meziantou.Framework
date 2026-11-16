@@ -44,6 +44,7 @@ internal sealed class ArchiveExtractor
             return;
         }
 
+        DeleteExistingLink(path);
         ExtractFile(entry, path, _overwrite);
     }
 
@@ -72,6 +73,7 @@ internal sealed class ArchiveExtractor
             return;
         }
 
+        DeleteExistingLink(path);
         await ExtractFileAsync(entry, path, _overwrite, cancellationToken).ConfigureAwait(false);
     }
 
@@ -132,7 +134,37 @@ internal sealed class ArchiveExtractor
         if (string.Equals(path, _root, PathComparison))
             return null;
 
+        EnsureNoLinkInPath(path, name);
         return path;
+    }
+
+    /// <summary>
+    /// Ensures that the directories between the root and a path are not links. The paths are checked as text, so an
+    /// archive could otherwise write through a link it created before: a link <c>b</c> to <c>.</c>, a link <c>a</c> to
+    /// <c>b/..</c> (inside of the directory as text), then a file <c>a/evil</c> is written next to the directory.
+    /// </summary>
+    private void EnsureNoLinkInPath(string path, string entryName)
+    {
+        var directory = Path.GetDirectoryName(path);
+        while (directory is not null && directory.Length > _root.Length)
+        {
+            if (new FileInfo(directory).LinkTarget is not null)
+                throw new IOException($"The entry '{entryName}' would be extracted through the link '{directory}'.");
+
+            directory = Path.GetDirectoryName(directory);
+        }
+    }
+
+    /// <summary>Deletes a link at the path of a file to extract, so that the file replaces the link instead of being written to its target.</summary>
+    private void DeleteExistingLink(string path)
+    {
+        if (new FileInfo(path).LinkTarget is null)
+            return;
+
+        if (!_overwrite)
+            throw new IOException($"The file '{path}' already exists.");
+
+        File.Delete(path);
     }
 
     private bool IsUnderRoot(string path)
@@ -181,6 +213,12 @@ internal sealed class ArchiveExtractor
         var source = Path.GetFullPath(Path.Join(_root, relative));
         if (!IsUnderRoot(source))
             throw new IOException($"The hard link '{entry.FullName}' points outside of the destination directory, to '{target}'.");
+
+        EnsureNoLinkInPath(source, entry.FullName);
+        if (new FileInfo(source).LinkTarget is not null)
+            throw new IOException($"The hard link '{entry.FullName}' points to the link '{target}'.");
+
+        DeleteExistingLink(path);
 
         if (!File.Exists(source))
             throw new IOException($"The hard link '{entry.FullName}' points to '{target}', which is not extracted before it.");

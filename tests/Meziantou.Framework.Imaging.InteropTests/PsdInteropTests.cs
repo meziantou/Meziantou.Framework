@@ -501,10 +501,12 @@ public sealed class PsdInteropTests
         if (expected.Size != actual.Size)
             return false;
 
-        if (expected.PixelFormat == PixelFormat.RgbaFloat)
+        // 32-bit documents decode to RgbaFloat, or GrayFloat for gray ones, with samples outside [0, 1]
+        if (PixelFormats.IsFloatingPoint(expected.PixelFormat) || PixelFormats.IsFloatingPoint(actual.PixelFormat))
         {
-            using var floats = actual.CloneAs<RgbaFloat>();
-            return GetBytes(expected).AsSpan().SequenceEqual(GetBytes(floats));
+            using var expectedFloats = expected.CloneAs<RgbaFloat>();
+            using var actualFloats = actual.CloneAs<RgbaFloat>();
+            return GetBytes(expectedFloats).AsSpan().SequenceEqual(GetBytes(actualFloats));
         }
 
         using var left = expected.CloneAs<Rgba64>();

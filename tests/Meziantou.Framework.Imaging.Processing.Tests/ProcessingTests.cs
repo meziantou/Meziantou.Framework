@@ -1430,6 +1430,30 @@ public sealed class ProcessingTests
             gray16.Grayscale(Ct);
             Assert.Equal(new Gray16(0x1235), gray16.Frames[0][0, 0]);
         }
+
+        using (var grayHalf = new Image<GrayHalf>(1, 1, new GrayHalf((Half)4.25f)))
+        {
+            grayHalf.Grayscale(Ct);
+            Assert.Equal(new GrayHalf((Half)4.25f), grayHalf.Frames[0][0, 0]);
+        }
+
+        using (var grayFloat = new Image<GrayFloat>(1, 1, new GrayFloat(-0.5f)))
+        {
+            grayFloat.Grayscale(Ct);
+            Assert.Equal(new GrayFloat(-0.5f), grayFloat.Frames[0][0, 0]);
+        }
+
+        using (var laHalf = new Image<LaHalf>(1, 1, new LaHalf((Half)2f, (Half)0.5f)))
+        {
+            laHalf.Grayscale(Ct);
+            Assert.Equal(new LaHalf((Half)2f, (Half)0.5f), laHalf.Frames[0][0, 0]);
+        }
+
+        using (var laFloat = new Image<LaFloat>(1, 1, new LaFloat(3f, 0.25f)))
+        {
+            laFloat.Grayscale(Ct);
+            Assert.Equal(new LaFloat(3f, 0.25f), laFloat.Frames[0][0, 0]);
+        }
     }
 
     [Fact]

@@ -150,7 +150,12 @@
     "total": 8
   },
   "html/cross-origin-embedder-policy/cross-origin-isolated-permission-worker.https.window.js": {
-    "total": 15
+    "harness": "TIMEOUT",
+    "total": 15,
+    "failures": {
+      "service_worker (withCoopCoep: false) cross origin isolated permission test": "TIMEOUT",
+      "service_worker (withCoopCoep: true) cross origin isolated permission test": "TIMEOUT"
+    }
   },
   "html/cross-origin-embedder-policy/data.https.html": {
     "total": 1
@@ -334,6 +339,9 @@
   },
   "html/cross-origin-embedder-policy/require-corp-load-from-cache-storage.https.html": {
     "total": 29
+  },
+  "html/cross-origin-embedder-policy/require-corp-redirect.https.html": {
+    "total": 1
   },
   "html/cross-origin-embedder-policy/require-corp-revalidated-images.https.html": {
     "total": 5

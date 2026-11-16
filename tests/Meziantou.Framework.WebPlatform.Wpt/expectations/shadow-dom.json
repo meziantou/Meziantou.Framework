@@ -728,6 +728,9 @@
   "shadow-dom/focus-navigation/reading-flow/normal.html": {
     "total": 2
   },
+  "shadow-dom/focus-navigation/reading-flow/simplified-layout.html": {
+    "total": 1
+  },
   "shadow-dom/focus-navigation/reading-flow/source-order-invalid.html": {
     "total": 1
   },
@@ -940,6 +943,9 @@
   "shadow-dom/focus/focus-click-on-shadow-host.html": {
     "total": 1
   },
+  "shadow-dom/focus/focus-delegatesFocus-display-contents.html": {
+    "total": 4
+  },
   "shadow-dom/focus/focus-method-delegatesFocus-nested-browsing-context.html": {
     "total": 1
   },
@@ -1131,6 +1137,9 @@
   },
   "shadow-dom/offsetTop-offsetLeft-across-shadow-boundaries.html": {
     "total": 3
+  },
+  "shadow-dom/pointer-event-retargeting-leak.https.html": {
+    "total": 8
   },
   "shadow-dom/reference-target/tentative/aria-labelledby.html": {
     "total": 5,
@@ -1427,7 +1436,7 @@
     "total": 26
   },
   "shadow-dom/touch-event-retargeting-leak.html": {
-    "total": 1
+    "total": 2
   },
   "shadow-dom/untriaged/elements-and-dom-objects/extensions-to-element-interface/attributes/test-006.html": {
     "total": 1

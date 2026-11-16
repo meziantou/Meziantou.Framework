@@ -1052,6 +1052,12 @@
   "websockets/binary/001.html?wpt_flags=h2": {
     "total": 1
   },
+  "websockets/binary/001.html?wpt_flags=websocket-h3": {
+    "total": 1,
+    "failures": {
+      "WebSockets: Send/Receive blob, blob size less than network array buffer": "FAIL"
+    }
+  },
   "websockets/binary/001.html?wss": {
     "total": 1
   },

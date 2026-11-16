@@ -468,11 +468,20 @@
   "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-load-as-html.xhtml": {
     "total": 1
   },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-nested-history.html": {
+    "total": 1
+  },
   "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-no-beforeunload.window.js": {
     "total": 8
   },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-object-embed-history.html": {
+    "total": 2
+  },
   "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-query-fragment-components.html": {
     "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-reentrant-navigation.html": {
+    "total": 2
   },
   "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-referrer.window.js": {
     "total": 3
@@ -1019,6 +1028,9 @@
       "Reload preserves scroll position for non-ASCII fragment": "FAIL"
     }
   },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-to-anchor-name-quirks-case.html": {
+    "total": 6
+  },
   "html/browsers/browsing-the-web/scroll-to-fragid/scroll-to-anchor-name.html": {
     "total": 1
   },
@@ -1408,6 +1420,9 @@
   "html/browsers/history/the-location-interface/document_location.html": {
     "total": 4
   },
+  "html/browsers/history/the-location-interface/location-ancestor-origins-csp-sandbox.sub.html": {
+    "total": 1
+  },
   "html/browsers/history/the-location-interface/location-ancestor-origins-inactive-document.sub.html": {
     "total": 2
   },
@@ -1724,8 +1739,68 @@
   "html/browsers/origin/cross-origin-objects/window-location-and-location-href-cross-realm-set.html": {
     "total": 11
   },
+  "html/browsers/origin/inheritance/about-blank-history-state-after-traversal.window.js?cross-site": {
+    "total": 2
+  },
+  "html/browsers/origin/inheritance/about-blank-history-state-after-traversal.window.js?same-site": {
+    "total": 2
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-ancestor.window.js?cross-site&1-4": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-ancestor.window.js?cross-site&5-last": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-ancestor.window.js?same-origin&1-4": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-ancestor.window.js?same-origin&5-last": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-ancestor.window.js?same-site&1-4": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-ancestor.window.js?same-site&5-last": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-itself.window.js?cross-site&1-4": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-itself.window.js?cross-site&5-last": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-itself.window.js?same-origin&1-4": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-itself.window.js?same-origin&5-last": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-itself.window.js?same-site&1-4": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe-navigated-by-itself.window.js?same-site&5-last": {
+    "total": 4
+  },
   "html/browsers/origin/inheritance/about-blank-iframe.html": {
     "total": 1
+  },
+  "html/browsers/origin/inheritance/about-blank-popup-navigated-by-non-opener.window.js?cross-site&1-4": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-popup-navigated-by-non-opener.window.js?cross-site&5-last": {
+    "total": 3
+  },
+  "html/browsers/origin/inheritance/about-blank-popup-navigated-by-non-opener.window.js?same-origin&1-4": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-popup-navigated-by-non-opener.window.js?same-origin&5-last": {
+    "total": 3
+  },
+  "html/browsers/origin/inheritance/about-blank-popup-navigated-by-non-opener.window.js?same-site&1-4": {
+    "total": 4
+  },
+  "html/browsers/origin/inheritance/about-blank-popup-navigated-by-non-opener.window.js?same-site&5-last": {
+    "total": 3
   },
   "html/browsers/origin/inheritance/about-blank-window.html": {
     "total": 1
@@ -1831,6 +1906,9 @@
   },
   "html/browsers/origin/origin-keyed-agent-clusters/about-blank.https.sub.html": {
     "total": 8
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/csp-sandboxed-iframe-keying.sub.https.html": {
+    "total": 3
   },
   "html/browsers/origin/origin-keyed-agent-clusters/data-frame-child.https.sub.html": {
     "total": 1
@@ -1964,6 +2042,9 @@
   "html/browsers/origin/origin-keyed-agent-clusters/removing-iframes.sub.https.html": {
     "total": 13
   },
+  "html/browsers/origin/origin-keyed-agent-clusters/sandboxed-iframe-keying.sub.https.html": {
+    "total": 3
+  },
   "html/browsers/origin/origin-of-data-document.html": {
     "total": 1
   },
@@ -2035,6 +2116,9 @@
   },
   "html/browsers/sandboxing/sandbox-new-execution-context.html": {
     "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-parent-event-listener-in-script-disabled-iframe.html": {
+    "total": 4
   },
   "html/browsers/sandboxing/sandbox-parse-noscript.html": {
     "reftest": "PASS"

@@ -1,4 +1,18 @@
 {
+  "subresource-integrity/integrity-policy/blocked-url-redirect.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "blockedURL is the request URL, not the URL a cross-origin redirect led to": "TIMEOUT"
+    }
+  },
+  "subresource-integrity/integrity-policy/blocked-url-service-worker.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "blockedURL is the request URL, not the URL of the opaque response the service worker provided": "TIMEOUT"
+    }
+  },
   "subresource-integrity/integrity-policy/parsing.html?type=enforce": {
     "total": 11
   },

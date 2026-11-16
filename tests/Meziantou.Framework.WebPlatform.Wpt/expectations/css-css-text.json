@@ -55,6 +55,18 @@
   "css/css-text/bidi/bidi-lines-002.html": {
     "reftest": "PASS"
   },
+  "css/css-text/bidi/bidi-plaintext-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/bidi/bidi-plaintext-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/bidi/bidi-plaintext-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/bidi/bidi-plaintext-004.html": {
+    "reftest": "PASS"
+  },
   "css/css-text/bidi/bidi-tab-001.html": {
     "reftest": "PASS"
   },
@@ -5151,6 +5163,9 @@
   "css/css-text/white-space/text-wrap-balance-before-after-002.html": {
     "reftest": "PASS"
   },
+  "css/css-text/white-space/text-wrap-balance-bidi-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-text/white-space/text-wrap-balance-dynamic-001.html": {
     "reftest": "PASS"
   },
@@ -5192,6 +5207,21 @@
   },
   "css/css-text/white-space/text-wrap-balance-line-clamp-007.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/white-space/text-wrap-balance-line-clamp-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/text-wrap-balance-line-clamp-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/text-wrap-balance-line-clamp-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/text-wrap-balance-line-clamp-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/text-wrap-balance-line-clamp-012.html": {
+    "reftest": "FAIL"
   },
   "css/css-text/white-space/text-wrap-balance-narrow-crash.html": {
     "crashtest": "PASS"
@@ -5332,6 +5362,15 @@
     "reftest": "PASS"
   },
   "css/css-text/white-space/trailing-ideographic-space-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/trailing-ideographic-space-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/trailing-ideographic-space-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/trailing-ideographic-space-028.html": {
     "reftest": "PASS"
   },
   "css/css-text/white-space/trailing-ideographic-space-break-spaces-001.html": {
@@ -5670,8 +5709,14 @@
   "css/css-text/white-space/white-space-trim-discard-inner-001.xht": {
     "reftest": "PASS"
   },
-  "css/css-text/white-space/white-space-trim-discard-inner.html": {
+  "css/css-text/white-space/white-space-trim-discard-inner-block.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/white-space/white-space-trim-discard-inner-preserved.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-discard-inner.html": {
+    "reftest": "FAIL"
   },
   "css/css-text/white-space/white-space-trim-dynamic.html": {
     "reftest": "PASS"
@@ -5959,13 +6004,13 @@
     "reftest": "PASS"
   },
   "css/css-text/word-break/word-break-keep-all-001.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-text/word-break/word-break-keep-all-002.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-text/word-break/word-break-keep-all-003.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-text/word-break/word-break-keep-all-005.html": {
     "reftest": "PASS"

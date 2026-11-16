@@ -527,6 +527,9 @@
   "css/css-position/position-absolute-in-inline-vertical-lr.html": {
     "total": 16
   },
+  "css/css-position/position-absolute-in-inline-vertical-writing-modes.html": {
+    "total": 24
+  },
   "css/css-position/position-absolute-large-negative-inset.html": {
     "reftest": "PASS"
   },
@@ -593,6 +596,9 @@
   },
   "css/css-position/position-fixed-at-bottom-right-on-viewport.html": {
     "total": 1
+  },
+  "css/css-position/position-fixed-dynamic-containing-block.html": {
+    "total": 4
   },
   "css/css-position/position-fixed-dynamic-transformed-sibling.html": {
     "reftest": "PASS"
@@ -750,6 +756,9 @@
   "css/css-position/static-position/htb-rtl-rtl.html": {
     "reftest": "PASS"
   },
+  "css/css-position/static-position/inline-containing-block-with-border.html": {
+    "total": 22
+  },
   "css/css-position/static-position/inline-level-absolute-in-block-level-context-001.html": {
     "reftest": "PASS"
   },
@@ -791,6 +800,9 @@
   },
   "css/css-position/static-position/inline-level-absolute-in-block-level-context-014.html": {
     "reftest": "PASS"
+  },
+  "css/css-position/static-position/static-position-through-absolute-in-inline-containing-block.html": {
+    "total": 6
   },
   "css/css-position/static-position/top-layer-box-uses-icb-htb-ltr.html": {
     "reftest": "PASS"

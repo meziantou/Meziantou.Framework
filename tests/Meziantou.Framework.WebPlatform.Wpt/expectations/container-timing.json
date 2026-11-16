@@ -20,6 +20,18 @@
   "container-timing/tentative/containertiming-body-with-child-img.html": {
     "total": 1
   },
+  "container-timing/tentative/containertiming-continue-after-pointermove.html": {
+    "total": 1
+  },
+  "container-timing/tentative/containertiming-continue-after-untrusted-events.html": {
+    "total": 1
+  },
+  "container-timing/tentative/containertiming-dropped-entries-count.html": {
+    "total": 1
+  },
+  "container-timing/tentative/containertiming-first-render-time-kept.html": {
+    "total": 1
+  },
   "container-timing/tentative/containertiming-identifier-changed.html": {
     "total": 1,
     "failures": {
@@ -75,6 +87,21 @@
   "container-timing/tentative/containertiming-root-removed-element-null.html": {
     "total": 1
   },
+  "container-timing/tentative/containertiming-stop-after-click.html": {
+    "total": 1
+  },
+  "container-timing/tentative/containertiming-stop-after-keydown.html": {
+    "total": 1
+  },
+  "container-timing/tentative/containertiming-stop-after-scroll.html": {
+    "total": 1,
+    "failures": {
+      "Container timing stops recording after a user scroll.": "FAIL"
+    }
+  },
+  "container-timing/tentative/containertiming-svg-and-mathml-not-root.html": {
+    "total": 2
+  },
   "container-timing/tentative/containertiming-text-itself.html": {
     "total": 1
   },
@@ -86,6 +113,18 @@
   },
   "container-timing/tentative/containertiming-with-child-img.html": {
     "total": 1
+  },
+  "container-timing/tentative/containertiming-with-child-svg-ignore.html": {
+    "total": 1,
+    "failures": {
+      "containertimingignore on an SVG element does not stop propagation to an HTML container root.": "FAIL"
+    }
+  },
+  "container-timing/tentative/containertiming-with-child-svg-image.html": {
+    "total": 1,
+    "failures": {
+      "Paint of an SVG image inside a container timing root is reported.": "FAIL"
+    }
   },
   "container-timing/tentative/containertiming-with-child-text.html": {
     "total": 1

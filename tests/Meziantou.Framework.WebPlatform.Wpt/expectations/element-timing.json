@@ -26,6 +26,9 @@
   "element-timing/disconnect-image.html": {
     "total": 1
   },
+  "element-timing/dropped-entries-count.html": {
+    "total": 1
+  },
   "element-timing/element-only-when-fully-active.html": {
     "total": 1
   },

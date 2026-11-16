@@ -50,6 +50,27 @@
   "css/css-animations/Element-getAnimations.tentative.html": {
     "total": 22
   },
+  "css/css-animations/KeyframeEffect-getKeyframes-cross-document.html": {
+    "total": 6,
+    "failures": {
+      "CSSAnimation.effect.getKeyframes() flushes pending slot reassignment for a cross-document target": "FAIL",
+      "CSSAnimation.effect.getKeyframes() flushes style across sibling iframes": "FAIL",
+      "CSSAnimation.effect.getKeyframes() flushes style after owning element is moved into a child iframe": "FAIL",
+      "CSSAnimation.effect.getKeyframes() flushes style for a cross-document target in a child iframe": "FAIL",
+      "CSSAnimation.effect.getKeyframes() flushes style for a cross-document target inside a display-locked container": "FAIL",
+      "CSSAnimation.effect.getKeyframes() flushes style for a target in a display-locked subtree": "FAIL"
+    }
+  },
+  "css/css-animations/KeyframeEffect-getKeyframes-non-css-animation.html": {
+    "total": 5,
+    "failures": {
+      "KeyframeEffect.getKeyframes() does not return computed CSS keyframes after detaching effect from a CSSAnimation": "FAIL",
+      "KeyframeEffect.getKeyframes() does not return computed CSS keyframes after moving effect from a CSSAnimation to an Animation": "FAIL",
+      "KeyframeEffect.getKeyframes() does not return computed CSS keyframes after re-attaching a detached effect to a CSSAnimation": "FAIL",
+      "KeyframeEffect.getKeyframes() does not synthesize empty keyframes when target has no computed style": "FAIL",
+      "KeyframeEffect.getKeyframes() on an effect moved from a CSSAnimation does not trigger a style change event": "FAIL"
+    }
+  },
   "css/css-animations/KeyframeEffect-getKeyframes.tentative.html": {
     "total": 32,
     "failures": {

@@ -696,7 +696,7 @@
     "total": 18
   },
   "css/css-align/parsing/align-content-invalid.html": {
-    "total": 23
+    "total": 37
   },
   "css/css-align/parsing/align-content-valid.html": {
     "total": 19
@@ -705,7 +705,7 @@
     "total": 19
   },
   "css/css-align/parsing/align-items-invalid.html": {
-    "total": 26
+    "total": 30
   },
   "css/css-align/parsing/align-items-valid.html": {
     "total": 20
@@ -714,7 +714,7 @@
     "total": 20
   },
   "css/css-align/parsing/align-self-invalid.html": {
-    "total": 24
+    "total": 28
   },
   "css/css-align/parsing/align-self-valid.html": {
     "total": 21
@@ -774,7 +774,7 @@
     "total": 18
   },
   "css/css-align/parsing/justify-content-invalid.html": {
-    "total": 24
+    "total": 36
   },
   "css/css-align/parsing/justify-content-valid.html": {
     "total": 18
@@ -783,7 +783,7 @@
     "total": 26
   },
   "css/css-align/parsing/justify-items-invalid.html": {
-    "total": 21
+    "total": 24
   },
   "css/css-align/parsing/justify-items-valid.html": {
     "total": 26
@@ -792,7 +792,7 @@
     "total": 22
   },
   "css/css-align/parsing/justify-self-invalid.html": {
-    "total": 22
+    "total": 23
   },
   "css/css-align/parsing/justify-self-valid.html": {
     "total": 23

@@ -419,6 +419,12 @@
   "html/cross-origin-opener-policy/reporting/access-reporting/report-to-both_coop-ro.https.html": {
     "total": 2
   },
+  "html/cross-origin-opener-policy/reporting/access-reporting/reporting-observer-no-endpoint.tentative.html": {
+    "total": 2,
+    "failures": {
+      "ReportingObserver is notified without a reporting endpoint": "FAIL"
+    }
+  },
   "html/cross-origin-opener-policy/reporting/access-reporting/reporting-observer.html": {
     "total": 4
   },

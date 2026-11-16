@@ -746,6 +746,9 @@
   "css/filter-effects/filter-cb-dynamic-1b.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/filter-cb-fixedpos-inline-001.html": {
+    "total": 4
+  },
   "css/filter-effects/filter-chained-url-url-001.html": {
     "reftest": "PASS"
   },
@@ -1017,13 +1020,16 @@
     "reftest": "PASS"
   },
   "css/filter-effects/parsing/backdrop-filter-computed.html": {
-    "total": 28
+    "total": 74
   },
   "css/filter-effects/parsing/backdrop-filter-parsing-invalid.html": {
-    "total": 25
+    "total": 91,
+    "failures": {
+      "e.style['backdrop-filter'] = \"drop-shadow(10px 10px -1px red)\" should not set the property value": "FAIL"
+    }
   },
   "css/filter-effects/parsing/backdrop-filter-parsing-valid.html": {
-    "total": 37
+    "total": 94
   },
   "css/filter-effects/parsing/color-interpolation-filters-computed.html": {
     "total": 3
@@ -1035,13 +1041,16 @@
     "total": 4
   },
   "css/filter-effects/parsing/filter-computed.html": {
-    "total": 83
+    "total": 128
   },
   "css/filter-effects/parsing/filter-parsing-invalid.html": {
-    "total": 25
+    "total": 91,
+    "failures": {
+      "e.style['filter'] = \"drop-shadow(10px 10px -1px red)\" should not set the property value": "FAIL"
+    }
   },
   "css/filter-effects/parsing/filter-parsing-valid.html": {
-    "total": 87
+    "total": 144
   },
   "css/filter-effects/parsing/flood-color-computed.html": {
     "total": 8

@@ -266,6 +266,18 @@
   "css/css-overflow/line-clamp/block-ellipsis-041.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/block-ellipsis-042.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-043.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-044.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-045.tentative.html": {
+    "reftest": "FAIL"
+  },
   "css/css-overflow/line-clamp/block-ellipsis-bidi-001.html": {
     "reftest": "PASS"
   },
@@ -301,6 +313,9 @@
   },
   "css/css-overflow/line-clamp/continue-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/crashtests/line-clamp-empty-line.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/line-clamp/crashtests/line-clamp-form-input-auto-height.html": {
     "crashtest": "PASS"
@@ -719,6 +734,18 @@
   "css/css-overflow/line-clamp/line-clamp-auto-068.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/line-clamp-auto-069.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-alt-writingmode-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-alt-writingmode-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-alt-writingmode-003.html": {
+    "reftest": "PASS"
+  },
   "css/css-overflow/line-clamp/line-clamp-auto-with-ruby-001.html": {
     "reftest": "PASS"
   },
@@ -786,6 +813,9 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-dynamic-width-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-empty-line-001.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-form-button-001.tentative.html": {
@@ -1680,10 +1710,9 @@
     "total": 7
   },
   "css/css-overflow/parsing/line-clamp-valid.html": {
-    "total": 20,
+    "total": 25,
     "failures": {
-      "e.style['line-clamp'] = \"3 ellipsis auto -webkit-legacy\" should set the property value": "FAIL",
-      "e.style['line-clamp'] = \"3 ellipsis auto\" should set the property value": "FAIL"
+      "e.style['line-clamp'] = \"no-ellipsis -webkit-legacy\" should set the property value": "FAIL"
     }
   },
   "css/css-overflow/parsing/max-lines-invalid.html": {
@@ -1765,7 +1794,7 @@
     "total": 30
   },
   "css/css-overflow/parsing/webkit-line-clamp-computed.html": {
-    "total": 5
+    "total": 6
   },
   "css/css-overflow/parsing/webkit-line-clamp-invalid.html": {
     "total": 7
@@ -1814,6 +1843,9 @@
   },
   "css/css-overflow/scroll-axis-lock-not-propagated-from-body-quirks.html": {
     "total": 2
+  },
+  "css/css-overflow/scroll-inside-with-border-radius.html": {
+    "total": 1
   },
   "css/css-overflow/scroll-marker-group-display-none.html": {
     "total": 1
@@ -2473,7 +2505,7 @@
     "total": 1
   },
   "css/css-overflow/scrollable-overflow-abspos-in-inline-containing-block.html": {
-    "total": 3
+    "total": 8
   },
   "css/css-overflow/scrollable-overflow-empty-newline-span.html": {
     "reftest": "PASS"
@@ -2652,6 +2684,18 @@
     "reftest": "PASS"
   },
   "css/css-overflow/scrollbar-gutter-fixedpos-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-fullscreen-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/scrollbar-gutter-fullscreen-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/scrollbar-gutter-fullscreen-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/scrollbar-gutter-fullscreen-004.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/scrollbar-gutter-propagation-001.html": {

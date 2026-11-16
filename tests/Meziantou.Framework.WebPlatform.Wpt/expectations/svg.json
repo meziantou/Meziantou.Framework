@@ -1225,6 +1225,12 @@
   "svg/embedded/image-preserveaspectratio-slice-svg.html": {
     "reftest": "PASS"
   },
+  "svg/embedded/image-referrerpolicy-reflection.html": {
+    "total": 12
+  },
+  "svg/embedded/image-referrerpolicy.html": {
+    "total": 4
+  },
   "svg/embedded/image-remove-href-1.svg": {
     "reftest": "PASS"
   },
@@ -1663,6 +1669,9 @@
   "svg/interact/scripted/module-02.html": {
     "total": 1
   },
+  "svg/interact/scripted/non-scaling-stroke-ancestor-transform-change-hittest.html": {
+    "total": 4
+  },
   "svg/interact/scripted/non-scaling-stroke-transform-change-hittest.html": {
     "total": 2
   },
@@ -1678,8 +1687,17 @@
   "svg/interact/scripted/rect-hittest-002.html": {
     "total": 53
   },
+  "svg/interact/scripted/script-crossorigin-reflection.html": {
+    "total": 8
+  },
+  "svg/interact/scripted/script-crossorigin.html": {
+    "total": 3
+  },
   "svg/interact/scripted/script-referrerpolicy-idl.html": {
     "total": 1
+  },
+  "svg/interact/scripted/script-referrerpolicy.html": {
+    "total": 3
   },
   "svg/interact/scripted/svg-pointer-events-bbox.html": {
     "total": 31
@@ -1726,6 +1744,9 @@
     "reftest": "PASS"
   },
   "svg/layout/svg-intrinsic-size-min-size.html": {
+    "reftest": "PASS"
+  },
+  "svg/layout/svg-negative-viewbox.html": {
     "reftest": "PASS"
   },
   "svg/layout/svg-use-symbol-animateMotion-print.html": {
@@ -2388,8 +2409,17 @@
   "svg/painting/reftests/non-scaling-stroke-non-uniform-scale.html": {
     "reftest": "PASS"
   },
+  "svg/painting/reftests/non-scaling-stroke-outer-svg-transform.html": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/non-scaling-stroke-paint-server-transform.html": {
+    "reftest": "PASS"
+  },
   "svg/painting/reftests/non-scaling-stroke-precision-loss.html": {
     "reftest": "PASS"
+  },
+  "svg/painting/reftests/non-scaling-stroke-text-css-transform.html": {
+    "reftest": "FAIL"
   },
   "svg/painting/reftests/non-scaling-stroke-with-none-preserve-aspect-ratio.html": {
     "reftest": "PASS"
@@ -2416,6 +2446,132 @@
     "reftest": "PASS"
   },
   "svg/painting/reftests/paint-context-008.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-a98-rgb.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-a98-rgb.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-display-p3.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-hex.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-hsl-legacy.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-hsl.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-hwb.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-lab.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-lch.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-oklab.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-oklch.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-prophoto-rgb.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-rec2020.svg": {
+    "reftest": "FAIL"
+  },
+  "svg/painting/reftests/paint-fill-attr-rgb-legacy-percent.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-rgb-legacy.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-rgb-modern.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-rgb-percent-rounding.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-srgb-linear.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-srgb.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-xyz-d50.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-xyz-d65.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-attr-xyz.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-display-p3.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-hex.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-hsl-legacy.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-hsl.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-hwb.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-lab.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-lch.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-oklab.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-oklch.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-prophoto-rgb.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-rec2020.svg": {
+    "reftest": "FAIL"
+  },
+  "svg/painting/reftests/paint-fill-rgb-legacy-percent.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-rgb-legacy.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-rgb-modern.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-rgb-percent-rounding.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-srgb-linear.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-srgb.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-xyz-d50.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-xyz-d65.svg": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/paint-fill-xyz.svg": {
     "reftest": "PASS"
   },
   "svg/painting/reftests/paint-order-001.svg": {
@@ -2629,7 +2785,21 @@
     "total": 1
   },
   "svg/path/interfaces/setPathData-malformed.html": {
-    "total": 10
+    "total": 22,
+    "failures": {
+      "setPathData() rejects A large-arc flag -1": "FAIL",
+      "setPathData() rejects A large-arc flag 0.5": "FAIL",
+      "setPathData() rejects A large-arc flag 2": "FAIL",
+      "setPathData() rejects A sweep flag -1": "FAIL",
+      "setPathData() rejects A sweep flag 0.5": "FAIL",
+      "setPathData() rejects A sweep flag 2": "FAIL",
+      "setPathData() rejects a large-arc flag -1": "FAIL",
+      "setPathData() rejects a large-arc flag 0.5": "FAIL",
+      "setPathData() rejects a large-arc flag 2": "FAIL",
+      "setPathData() rejects a sweep flag -1": "FAIL",
+      "setPathData() rejects a sweep flag 0.5": "FAIL",
+      "setPathData() rejects a sweep flag 2": "FAIL"
+    }
   },
   "svg/path/interfaces/setPathData-mutation-observer.html": {
     "total": 2
@@ -3104,6 +3274,15 @@
     "reftest": "PASS"
   },
   "svg/struct/reftests/nested-svg-through-display-contents.svg": {
+    "reftest": "PASS"
+  },
+  "svg/struct/reftests/outer-svg-css-transform-in-html-scale.html": {
+    "reftest": "PASS"
+  },
+  "svg/struct/reftests/outer-svg-transform-in-html-scale.html": {
+    "reftest": "PASS"
+  },
+  "svg/struct/reftests/outer-svg-transform-in-html.html": {
     "reftest": "PASS"
   },
   "svg/struct/reftests/outer-svg-transform.svg": {

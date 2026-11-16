@@ -59,6 +59,12 @@
   "custom-elements/builtin-coverage.html": {
     "total": 444
   },
+  "custom-elements/connected-callback-before-insertion-steps.html": {
+    "total": 1,
+    "failures": {
+      "Inserting an open details element into a group with another open one calls connectedCallback before attributeChangedCallback": "FAIL"
+    }
+  },
   "custom-elements/connected-callbacks-html-fragment-parsing.html": {
     "total": 8
   },
@@ -185,6 +191,20 @@
   "custom-elements/form-associated/focusability.html": {
     "total": 1
   },
+  "custom-elements/form-associated/form-associated-callback-form-attribute-removal.html": {
+    "total": 3
+  },
+  "custom-elements/form-associated/form-associated-callback-order.html": {
+    "total": 6,
+    "failures": {
+      "Inserting a control into a form calls connectedCallback before formAssociatedCallback": "FAIL",
+      "Inserting a control with a form attribute calls connectedCallback before formAssociatedCallback": "FAIL",
+      "Removing a control from a form calls disconnectedCallback before formAssociatedCallback": "FAIL",
+      "Removing a control with a form attribute calls disconnectedCallback before formAssociatedCallback": "FAIL",
+      "Removing a custom element containing a control from a form calls the control's callbacks after the custom element's": "FAIL",
+      "Removing an element containing two controls from a form calls each control's callbacks in tree order": "FAIL"
+    }
+  },
   "custom-elements/form-associated/form-associated-callback.html": {
     "total": 5
   },
@@ -273,6 +293,9 @@
     "total": 3
   },
   "custom-elements/parser/xml-parser-custom-element-reparents-during-construction.xhtml": {
+    "total": 2
+  },
+  "custom-elements/parser/xml-parser-customized-builtin-input.xhtml": {
     "total": 2
   },
   "custom-elements/perform-microtask-checkpoint-before-construction-xml-parser.xhtml": {
@@ -505,6 +528,9 @@
   "custom-elements/registries/Document-importNode.html": {
     "total": 20
   },
+  "custom-elements/registries/Element-attachShadow-disabled-shadow.window.js": {
+    "total": 7
+  },
   "custom-elements/registries/Element-customElementRegistry-exceptions.html": {
     "total": 3
   },
@@ -515,7 +541,7 @@
     "total": 12
   },
   "custom-elements/registries/ShadowRoot-init-customElementRegistry.html": {
-    "total": 12
+    "total": 13
   },
   "custom-elements/registries/ShadowRoot-init-declarative.html": {
     "total": 3
@@ -523,11 +549,31 @@
   "custom-elements/registries/ShadowRoot-innerHTML.html": {
     "total": 4
   },
+  "custom-elements/registries/adoption-before-upgrade.window.js": {
+    "total": 5,
+    "failures": {
+      "Upgrade after adoption with global registry (null registry target)": "FAIL",
+      "Upgrade after adoption with global registry (scoped registry target)": "FAIL",
+      "Upgrade after adoption with global registry (template contents target)": "FAIL"
+    }
+  },
+  "custom-elements/registries/adoption-global-registry.window.js": {
+    "total": 16
+  },
+  "custom-elements/registries/adoption-null-registry-element.window.js": {
+    "total": 3
+  },
+  "custom-elements/registries/adoption-null-registry-shadow-root.window.js": {
+    "total": 7
+  },
   "custom-elements/registries/adoption.window.js": {
     "total": 36
   },
   "custom-elements/registries/constructor-direct-call-fallback-registry.window.js": {
     "total": 2
+  },
+  "custom-elements/registries/constructor-from-another-window.window.js": {
+    "total": 3
   },
   "custom-elements/registries/constructor-reentry-createElement.window.js": {
     "total": 4
@@ -542,16 +588,19 @@
     "total": 70
   },
   "custom-elements/registries/element-mutation-null-registry-removal.html": {
-    "total": 1
+    "total": 2
   },
   "custom-elements/registries/element-mutation.html": {
     "total": 15
+  },
+  "custom-elements/registries/global-registry-access-timing.window.js": {
+    "total": 16
   },
   "custom-elements/registries/global.window.js": {
     "total": 5
   },
   "custom-elements/registries/initial-about-blank.window.js": {
-    "total": 1
+    "total": 4
   },
   "custom-elements/registries/per-document.html": {
     "total": 4
@@ -586,6 +635,9 @@
   "custom-elements/registries/scoped-registry-registry-define-get-etc.html": {
     "total": 7
   },
+  "custom-elements/registries/scoped-registry-static-clone-print.html": {
+    "reftest": "PASS"
+  },
   "custom-elements/registries/template.window.js": {
     "total": 10
   },
@@ -593,7 +645,7 @@
     "total": 5
   },
   "custom-elements/registries/valid-custom-element-names.html": {
-    "total": 1975
+    "total": 2371
   },
   "custom-elements/shadow-descendant-lifecycle-order.html": {
     "total": 2

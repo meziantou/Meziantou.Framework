@@ -773,6 +773,9 @@
   "css/selectors/invalidation/has-nested-pseudo-003-crash.html": {
     "crashtest": "PASS"
   },
+  "css/selectors/invalidation/has-non-identifying-compound-insertion.html": {
+    "total": 6
+  },
   "css/selectors/invalidation/has-pseudo-element-subject-child-mutation.html": {
     "total": 4
   },

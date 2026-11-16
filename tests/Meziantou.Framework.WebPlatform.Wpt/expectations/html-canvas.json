@@ -923,7 +923,13 @@
   "html/canvas/element/fill-and-stroke-styles/2d.fillStyle.parse.current.changed.html": {
     "total": 1
   },
+  "html/canvas/element/fill-and-stroke-styles/2d.fillStyle.parse.current.inherited.html": {
+    "total": 1
+  },
   "html/canvas/element/fill-and-stroke-styles/2d.fillStyle.parse.current.removed.html": {
+    "total": 1
+  },
+  "html/canvas/element/fill-and-stroke-styles/2d.fillStyle.parse.current.stylesheet.html": {
     "total": 1
   },
   "html/canvas/element/fill-and-stroke-styles/2d.fillStyle.parse.hex3.html": {
@@ -2260,6 +2266,12 @@
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-mix-blend-mode-and-opacity.tentative.html": {
     "reftest": "FAIL"
   },
+  "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-mix-blend-mode-and-sibling.tentative.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage preserves sibling content after CSS backdrop-filter with mix-blend-mode": "FAIL"
+    }
+  },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-mix-blend-mode.tentative.html": {
     "reftest": "FAIL"
   },
@@ -2358,9 +2370,10 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/draw-element-image-different-canvas.tentative.html": {
+    "harness": "ERROR",
     "total": 2,
     "failures": {
-      "Prevent drawing ElementImage into a different canvas in a worker thread": "FAIL",
+      "Prevent drawing ElementImage into a different canvas in a worker thread": "NOTRUN",
       "Prevent drawing ElementImage into a different canvas on main thread": "FAIL"
     }
   },
@@ -2523,10 +2536,12 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-update-element-geometry-offscreen.tentative.html": {
-    "total": 9,
+    "harness": "ERROR",
+    "total": 10,
     "failures": {
       "Canvas descendants are hit in reverse update order.": "FAIL",
       "Canvas descendants are hittable after OffscreenCanvas.updateElementGeometry.": "FAIL",
+      "OffscreenCanvas.updateElementGeometry and clearElementGeometry throw InvalidStateError for ineligible elements and ElementImages.": "FAIL",
       "Re-updating an element moves it to the top of the hit testing list.": "FAIL",
       "preserveHitTestOrder works when updating via ElementImage on OffscreenCanvas.": "FAIL",
       "preserveHitTestOrder: false moves element to top of the hit testing list.": "FAIL",
@@ -3476,11 +3491,14 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/update-element-geometry-get-bounding-client-rect.tentative.html": {
-    "total": 6,
+    "harness": "ERROR",
+    "total": 8,
     "failures": {
       "canvas.updateElementGeometry and clearElementGeometry are defined": "FAIL",
+      "clearElementGeometry throws InvalidStateError for ineligible elements": "FAIL",
       "clearElementGeometry() unsets canvas transform on canvas child": "FAIL",
       "updateElementGeometry and clearElementGeometry accept ElementImage": "FAIL",
+      "updateElementGeometry and clearElementGeometry throw InvalidStateError for ineligible ElementImage": "FAIL",
       "updateElementGeometry throws InvalidStateError for ineligible elements": "FAIL",
       "updateElementGeometry() with canvasTransform affects getBoundingClientRect() on canvas child": "FAIL",
       "updateElementGeometry() with clip does not affect getBoundingClientRect()": "FAIL"
@@ -3490,6 +3508,13 @@
     "total": 1,
     "failures": {
       "drawElementImage repaints video frames": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/drawing-images-to-the-canvas/desynchronized-crossorigin-snapshot-isolation.html": {
+    "total": 10,
+    "failures": {
+      "WebCodecs VideoFrame drawImage snapshot isolation (alpha=false)": "FAIL",
+      "WebCodecs VideoFrame drawImage snapshot isolation (alpha=true)": "FAIL"
     }
   },
   "html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_canvas.html": {
@@ -3509,6 +3534,9 @@
   },
   "html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_svg_image_1.html": {
     "total": 1
+  },
+  "html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_svg_image_nonuniform_scale.html": {
+    "total": 6
   },
   "html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_svg_image_with_foreign_object_does_not_taint.html": {
     "total": 1
@@ -3845,7 +3873,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/shadows/shadowBlur_gaussian_tolerance.1.html": {
-    "total": 3
+    "total": 4
   },
   "html/canvas/element/manual/text/canvas.2d.direction.inherit.canvas.html": {
     "reftest": "PASS"

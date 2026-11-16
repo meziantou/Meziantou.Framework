@@ -152,7 +152,7 @@
     "total": 1
   },
   "css/css-values/attr-security-animation.html": {
-    "total": 6
+    "total": 9
   },
   "css/css-values/attr-security-if.html": {
     "total": 14
@@ -868,13 +868,16 @@
     "total": 1
   },
   "css/css-values/inherit-function-basic.html": {
-    "total": 6
+    "total": 7
   },
   "css/css-values/inherit-function-invalidation.html": {
-    "total": 3
+    "total": 4
   },
   "css/css-values/inherit-function-parsing.html": {
     "total": 8
+  },
+  "css/css-values/inherit-function-rule-recovery.html": {
+    "total": 6
   },
   "css/css-values/inline-cache-base-uri-cssom.html": {
     "reftest": "PASS"
@@ -1046,7 +1049,14 @@
     "total": 1
   },
   "css/css-values/random-computed.tentative.html": {
-    "total": 172
+    "total": 177,
+    "failures": {
+      "random() in typed attr() is indexed separately from the rest of the declaration": "FAIL",
+      "random() in typed attr() is substituted into the final property declaration": "FAIL",
+      "random() in typed attr() uses ua-early indices that increase across the declaration": "FAIL",
+      "random() shared by property in chained typed attr()": "FAIL",
+      "random() shared by property in typed attr() uses a distinct ua-early prefix": "FAIL"
+    }
   },
   "css/css-values/random-in-animations.tentative.html": {
     "total": 37

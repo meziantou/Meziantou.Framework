@@ -99,7 +99,11 @@
     "total": 1
   },
   "css/css-font-loading/idlharness.https.html": {
-    "total": 143
+    "total": 147,
+    "failures": {
+      "FontFace interface: attribute variant": "FAIL",
+      "FontFace interface: fontFace must inherit property \"variant\" with the proper type": "FAIL"
+    }
   },
   "css/css-font-loading/nonexistent-file-url.html": {
     "total": 1

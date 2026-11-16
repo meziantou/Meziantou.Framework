@@ -15,10 +15,7 @@
     }
   },
   "longtask-timing/idlharness.window.js": {
-    "total": 1,
-    "failures": {
-      "idl_test setup": "FAIL"
-    }
+    "total": 50
   },
   "longtask-timing/long-microtask.window.js": {
     "total": 1

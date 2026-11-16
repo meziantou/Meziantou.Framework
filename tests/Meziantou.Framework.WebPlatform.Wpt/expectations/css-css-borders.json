@@ -1,18 +1,426 @@
 {
+  "css/css-borders/animations/border-bottom-left-radius-composition.html": {
+    "total": 42
+  },
+  "css/css-borders/animations/border-bottom-right-radius-composition.html": {
+    "total": 42
+  },
+  "css/css-borders/animations/border-bottom-width-composition.html": {
+    "total": 40
+  },
+  "css/css-borders/animations/border-color-interpolation.html": {
+    "total": 144
+  },
+  "css/css-borders/animations/border-image-outset-composition.html": {
+    "total": 112
+  },
+  "css/css-borders/animations/border-image-outset-interpolation.html": {
+    "total": 168
+  },
+  "css/css-borders/animations/border-image-slice-composition.html": {
+    "total": 112
+  },
+  "css/css-borders/animations/border-image-slice-interpolation-stability.html": {
+    "total": 1
+  },
+  "css/css-borders/animations/border-image-slice-interpolation.html": {
+    "total": 434
+  },
+  "css/css-borders/animations/border-image-source-interpolation.html": {
+    "total": 294
+  },
+  "css/css-borders/animations/border-image-width-composition.html": {
+    "total": 112
+  },
+  "css/css-borders/animations/border-image-width-interpolation.html": {
+    "total": 558
+  },
+  "css/css-borders/animations/border-left-width-composition.html": {
+    "total": 40
+  },
+  "css/css-borders/animations/border-radius-interpolation.html": {
+    "total": 196
+  },
+  "css/css-borders/animations/border-right-width-composition.html": {
+    "total": 40
+  },
+  "css/css-borders/animations/border-top-left-radius-composition.html": {
+    "total": 42
+  },
+  "css/css-borders/animations/border-top-right-radius-composition.html": {
+    "total": 42
+  },
+  "css/css-borders/animations/border-top-width-composition.html": {
+    "total": 40
+  },
+  "css/css-borders/animations/border-width-interpolation.html": {
+    "total": 256
+  },
+  "css/css-borders/animations/border-width-transition-with-style-change.html": {
+    "total": 1
+  },
+  "css/css-borders/border-bottom-left-radius-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-left-radius-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-left-radius-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-left-radius-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-left-radius-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-left-radius-014.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-right-radius-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-right-radius-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-right-radius-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-right-radius-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-right-radius-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-right-radius-014.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-width-medium.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-width-thick.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-bottom-width-thin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-color-currentcolor.html": {
+    "total": 1
+  },
+  "css/css-borders/border-color.html": {
+    "total": 1
+  },
+  "css/css-borders/border-image-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-017.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-018.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-019.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-020.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-calc.html": {
+    "reftest": "PASS"
+  },
   "css/css-borders/border-image-color-scheme.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-displayed-with-transparent-border-color.html": {
     "reftest": "PASS"
   },
   "css/css-borders/border-image-gradient-zero-size-transform-crash.html": {
     "crashtest": "PASS"
   },
+  "css/css-borders/border-image-image-type-001.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-image-type-002.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-image-type-003.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-image-type-004.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-image-type-005.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-outset-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-outset-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-002.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-004.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-repeat-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-round-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-round-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-round-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-round-stretch-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-round.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-4-ref-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-5-ref-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-5.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-6.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-7.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-8.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-space-9.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat-stretch-round-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-repeat_repeatnegx_none_50px.html": {
+    "total": 1
+  },
+  "css/css-borders/border-image-round-and-stretch.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-shorthand-001.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-shorthand-002.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-shorthand-003.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-004.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-005.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-006.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-007.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-fill-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-fill-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-fill-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-percentage.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-slice-shorthand-reset.html": {
+    "total": 1
+  },
+  "css/css-borders/border-image-space-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-width-001.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-width-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-width-006.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-width-007.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-width-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-width-009.html": {
+    "reftest": "PASS"
+  },
   "css/css-borders/border-image-width-interpolation-math-functions.html": {
     "total": 48
+  },
+  "css/css-borders/border-image-width-should-extend-to-padding.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-left-width-medium.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-left-width-thick.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-left-width-thin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-006.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-007.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-008.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-009.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-clip-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-clip-002.htm": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/border-radius-clipping-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-clipping-with-transform-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-css-text.html": {
+    "total": 1
   },
   "css/css-borders/border-radius-currentcolor.html": {
     "reftest": "PASS"
   },
+  "css/css-borders/border-radius-dynamic-from-no-radius.html": {
+    "reftest": "PASS"
+  },
   "css/css-borders/border-radius-greater-than-width.html": {
     "reftest": "FAIL"
+  },
+  "css/css-borders/border-radius-horizontal-value-is-zero.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-shorthand-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-shorthand.html": {
+    "total": 3
+  },
+  "css/css-borders/border-right-width-medium.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-right-width-thick.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-right-width-thin.html": {
+    "reftest": "PASS"
   },
   "css/css-borders/border-shape-absolute-coords-shape.tentative.html": {
     "reftest": "PASS"
@@ -197,13 +605,100 @@
   "css/css-borders/border-shape/crashtests/border-shape-shape-arc-animation-crash.html": {
     "crashtest": "PASS"
   },
+  "css/css-borders/border-shorthand-keyword.html": {
+    "total": 6
+  },
+  "css/css-borders/border-shorthands.html": {
+    "total": 6
+  },
+  "css/css-borders/border-style-length.html": {
+    "total": 2
+  },
+  "css/css-borders/border-top-left-radius-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-left-radius-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-left-radius-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-left-radius-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-left-radius-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-left-radius-014.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-right-radius-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-right-radius-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-right-radius-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-right-radius-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-right-radius-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-right-radius-014.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-width-medium.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-width-thick.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-top-width-thin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-width-computed.html": {
+    "total": 6
+  },
+  "css/css-borders/border-width-cssom.html": {
+    "total": 12
+  },
   "css/css-borders/border-width-hairline.html": {
     "total": 5
+  },
+  "css/css-borders/border-width-pixel-snapping-001-a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-width-pixel-snapping-001-b.html": {
+    "reftest": "PASS"
   },
   "css/css-borders/border-width-rounding.tentative.html": {
     "total": 22
   },
+  "css/css-borders/border-width-small-values-001-a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-width-small-values-001-b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-width-small-values-001-c.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-width-small-values-001-d.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-width-small-values-001-e.html": {
+    "reftest": "PASS"
+  },
   "css/css-borders/borders-on-sub-unit-sized-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/color-mix-currentcolor-border-repaint-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/color-mix-currentcolor-border-repaint.html": {
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/corner-block-start-computed.html": {
@@ -243,6 +738,9 @@
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/corner-shape-bevel.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-border-side-colors.html": {
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/corner-shape-box-shadow-spread-bevel.html": {
@@ -354,10 +852,7 @@
     "total": 5
   },
   "css/css-borders/corner-shape/corner-shape-outside-left.html": {
-    "total": 8,
-    "failures": {
-      "corner-shape: superellipse(-.8) with shape-outside": "FAIL"
-    }
+    "total": 8
   },
   "css/css-borders/corner-shape/corner-shape-outside-margin-box.html": {
     "total": 7
@@ -815,6 +1310,33 @@
   "css/css-borders/corner-shape/render-corner-shape.html?width=50&height=30&corner-top-left-shape=0&corner-top-right-shape=notch&corner-bottom-right-shape=2&corner-bottom-left-shape=-1&shadow-spread=50&border-radius=5": {
     "reftest": "PASS"
   },
+  "css/css-borders/crashtests/border-image-fill.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-borders/crashtests/border-radius-constraint.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-borders/crashtests/parse-border-image-repeat-null.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-borders/css-border-radius-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/css3-border-image-repeat-repeat.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/css3-border-image-repeat-stretch.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/css3-border-image-source.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/currentcolor-border-repaint-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/inner-border-non-renderable.html": {
+    "reftest": "PASS"
+  },
   "css/css-borders/outline-offset-rounding.tentative.html": {
     "total": 30,
     "failures": {
@@ -840,6 +1362,120 @@
       "2.75px": "FAIL",
       "2.75px snaps the same way as outline-width": "FAIL"
     }
+  },
+  "css/css-borders/parsing/border-color-computed.html": {
+    "total": 8
+  },
+  "css/css-borders/parsing/border-color-invalid.html": {
+    "total": 3
+  },
+  "css/css-borders/parsing/border-color-shorthand.html": {
+    "total": 20
+  },
+  "css/css-borders/parsing/border-color-valid.html": {
+    "total": 7
+  },
+  "css/css-borders/parsing/border-image-invalid.html": {
+    "total": 17
+  },
+  "css/css-borders/parsing/border-image-outset-computed.html": {
+    "total": 7
+  },
+  "css/css-borders/parsing/border-image-outset-invalid.html": {
+    "total": 5
+  },
+  "css/css-borders/parsing/border-image-outset-valid.html": {
+    "total": 3
+  },
+  "css/css-borders/parsing/border-image-repeat-computed.html": {
+    "total": 3
+  },
+  "css/css-borders/parsing/border-image-repeat-invalid.html": {
+    "total": 2
+  },
+  "css/css-borders/parsing/border-image-repeat-valid.html": {
+    "total": 3
+  },
+  "css/css-borders/parsing/border-image-shorthand.sub.html": {
+    "total": 30
+  },
+  "css/css-borders/parsing/border-image-slice-computed.html": {
+    "total": 7
+  },
+  "css/css-borders/parsing/border-image-slice-invalid.html": {
+    "total": 6
+  },
+  "css/css-borders/parsing/border-image-slice-valid.html": {
+    "total": 4
+  },
+  "css/css-borders/parsing/border-image-source-computed.sub.html": {
+    "total": 10
+  },
+  "css/css-borders/parsing/border-image-source-invalid.html": {
+    "total": 2
+  },
+  "css/css-borders/parsing/border-image-source-valid.html": {
+    "total": 2
+  },
+  "css/css-borders/parsing/border-image-valid.html": {
+    "total": 30
+  },
+  "css/css-borders/parsing/border-image-width-computed.html": {
+    "total": 12
+  },
+  "css/css-borders/parsing/border-image-width-invalid.html": {
+    "total": 5
+  },
+  "css/css-borders/parsing/border-image-width-valid.html": {
+    "total": 5
+  },
+  "css/css-borders/parsing/border-invalid.html": {
+    "total": 3
+  },
+  "css/css-borders/parsing/border-radius-computed.html": {
+    "total": 14
+  },
+  "css/css-borders/parsing/border-radius-invalid.html": {
+    "total": 15
+  },
+  "css/css-borders/parsing/border-radius-shorthand.html": {
+    "total": 50
+  },
+  "css/css-borders/parsing/border-radius-valid.html": {
+    "total": 23
+  },
+  "css/css-borders/parsing/border-shorthand.html": {
+    "total": 36
+  },
+  "css/css-borders/parsing/border-style-computed.html": {
+    "total": 8
+  },
+  "css/css-borders/parsing/border-style-invalid.html": {
+    "total": 2
+  },
+  "css/css-borders/parsing/border-style-shorthand.html": {
+    "total": 20
+  },
+  "css/css-borders/parsing/border-style-valid.html": {
+    "total": 8
+  },
+  "css/css-borders/parsing/border-valid.html": {
+    "total": 6
+  },
+  "css/css-borders/parsing/border-width-computed.html": {
+    "total": 11
+  },
+  "css/css-borders/parsing/border-width-invalid.html": {
+    "total": 3
+  },
+  "css/css-borders/parsing/border-width-shorthand.html": {
+    "total": 20
+  },
+  "css/css-borders/parsing/border-width-valid.html": {
+    "total": 6
+  },
+  "css/css-borders/parsing/webkit-border-radius-valid.html": {
+    "total": 25
   },
   "css/css-borders/subpixel-border-width.tentative.html": {
     "reftest": "PASS"
@@ -946,7 +1582,10 @@
     "total": 12
   },
   "css/css-borders/tentative/parsing/border-shape-valid.html": {
-    "total": 12
+    "total": 12,
+    "failures": {
+      "e.style['border-shape'] = \"circle() border-box circle() content-box\" should set the property value": "FAIL"
+    }
   },
   "css/css-borders/tentative/parsing/border-top-radius-computed.html": {
     "total": 6
@@ -1018,5 +1657,11 @@
     "failures": {
       "e.style['box-shadow-spread'] = \"0\" should set the property value": "FAIL"
     }
+  },
+  "css/css-borders/tiny-foreignObject-double-border-radius-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-borders/ttwf-reftest-borderRadius.html": {
+    "reftest": "PASS"
   }
 }

@@ -4345,6 +4345,16 @@
       "Levels beyond log2(MAX_3D_TEXTURE_SIZE) are rejected": "FAIL"
     }
   },
+  "webgl/texStorage-format-checks.html": {
+    "total": 5,
+    "failures": {
+      "texStorage2D accepts S3TC formats once the extension is enabled": "FAIL",
+      "texStorage2D rejects S3TC formats before the extension is enabled": "FAIL",
+      "texStorage3D accepts depth formats for TEXTURE_2D_ARRAY": "FAIL",
+      "texStorage3D rejects S3TC formats before the extension is enabled": "FAIL",
+      "texStorage3D rejects depth formats for TEXTURE_3D": "FAIL"
+    }
+  },
   "webgl/texSubImage2D.html": {
     "total": 1,
     "failures": {

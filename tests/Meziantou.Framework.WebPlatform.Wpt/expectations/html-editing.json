@@ -47,8 +47,14 @@
   "html/editing/dnd/datastore/datatransferitemlist-clear.html": {
     "total": 2
   },
+  "html/editing/dnd/datastore/datatransferitemlist-dragstart-after-dispatch.html": {
+    "total": 1
+  },
   "html/editing/dnd/datastore/datatransferitemlist-indexed-getter.html": {
     "total": 6
+  },
+  "html/editing/dnd/datastore/datatransferitemlist-remove-file.html": {
+    "total": 3
   },
   "html/editing/dnd/datastore/datatransferitemlist-remove.html": {
     "total": 2
@@ -66,12 +72,11 @@
     "total": 3
   },
   "html/editing/dnd/drop/002.xhtml": {
-    "harness": "TIMEOUT",
     "total": 3,
     "failures": {
-      "Text input selection drag and drop: allowed effects\n    'copy','move','link'": "TIMEOUT",
-      "Text input selection drag and drop: allowed effects\n    'copy','move','link' 1": "NOTRUN",
-      "Text input selection drag and drop: allowed effects\n    'copy','move','link' 2": "NOTRUN"
+      "Text input selection drag and drop: allowed effects\n    'copy','move','link'": "FAIL",
+      "Text input selection drag and drop: allowed effects\n    'copy','move','link' 1": "FAIL",
+      "Text input selection drag and drop: allowed effects\n    'copy','move','link' 2": "FAIL"
     }
   },
   "html/editing/dnd/drop/003.xhtml": {
@@ -571,7 +576,6 @@
     "total": 2
   },
   "html/editing/dnd/js-file-fallback-text-only.html": {
-    "harness": "ERROR",
     "total": 1,
     "failures": {
       "JS File falls back to text/plain filename when DragAndDropJSFileObjects is disabled": "FAIL"
@@ -657,10 +661,9 @@
     "total": 1
   },
   "html/editing/dnd/remove/004.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Removing input element during drag and drop of selection": "TIMEOUT"
+      "Removing input element during drag and drop of selection": "FAIL"
     }
   },
   "html/editing/dnd/remove/005.html": {

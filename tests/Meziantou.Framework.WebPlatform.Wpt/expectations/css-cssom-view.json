@@ -441,7 +441,7 @@
     "total": 3
   },
   "css/cssom-view/offsetTopLeft-inline-offsetParent.html": {
-    "total": 19,
+    "total": 37,
     "failures": {
       "direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box at its static position": "FAIL",
       "direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'left: 0'": "FAIL",
@@ -454,7 +454,19 @@
       "direction: rtl; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'left: 0; top: 0'": "FAIL",
       "direction: rtl; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'right: 0; bottom: 0'": "FAIL",
       "direction: rtl; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'top: 0'": "FAIL",
-      "direction: rtl; inline box 'position: relative; border: 10px solid; padding: 5px'; in-flow inline-block": "FAIL"
+      "direction: rtl; inline box 'position: relative; border: 10px solid; padding: 5px'; in-flow inline-block": "FAIL",
+      "writing-mode: vertical-lr; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box at its static position": "FAIL",
+      "writing-mode: vertical-lr; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'left: 0'": "FAIL",
+      "writing-mode: vertical-lr; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'left: 0; top: 0'": "FAIL",
+      "writing-mode: vertical-lr; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'right: 0; bottom: 0'": "FAIL",
+      "writing-mode: vertical-lr; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'top: 0'": "FAIL",
+      "writing-mode: vertical-lr; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; in-flow inline-block": "FAIL",
+      "writing-mode: vertical-rl; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box at its static position": "FAIL",
+      "writing-mode: vertical-rl; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'left: 0'": "FAIL",
+      "writing-mode: vertical-rl; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'left: 0; top: 0'": "FAIL",
+      "writing-mode: vertical-rl; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'right: 0; bottom: 0'": "FAIL",
+      "writing-mode: vertical-rl; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'top: 0'": "FAIL",
+      "writing-mode: vertical-rl; direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; in-flow inline-block": "FAIL"
     }
   },
   "css/cssom-view/offsetTopLeft-inline.html": {
@@ -670,6 +682,9 @@
   "css/cssom-view/scrollIntoView-stuck.tentative.html": {
     "total": 1
   },
+  "css/cssom-view/scrollIntoView-svg-container.html": {
+    "total": 8
+  },
   "css/cssom-view/scrollIntoView-svg-shape.html": {
     "total": 3
   },
@@ -752,6 +767,9 @@
   },
   "css/cssom-view/scrollWidthHeight-overflow-visible-negative-margins.html": {
     "total": 50
+  },
+  "css/cssom-view/scrollWidthHeight-subpixel-position.tentative.html": {
+    "total": 36
   },
   "css/cssom-view/scrollWidthHeight.xht": {
     "total": 12

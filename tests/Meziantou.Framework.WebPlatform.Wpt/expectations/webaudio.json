@@ -3,7 +3,7 @@
     "total": 7
   },
   "webaudio/idlharness.https.window.js": {
-    "total": 1166,
+    "total": 1168,
     "failures": {
       "AudioContext interface: calling createMediaElementSource(HTMLMediaElement) on context with too few arguments must throw TypeError": "FAIL",
       "AudioContext interface: calling createMediaStreamSource(MediaStream) on context with too few arguments must throw TypeError": "FAIL",
@@ -62,6 +62,8 @@
       "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
       "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
       "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
+      "DynamicsCompressorNode interface: attribute makeupGain": "FAIL",
+      "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"makeupGain\" with the proper type": "FAIL",
       "MediaElementAudioSourceNode interface object length": "FAIL",
       "MediaElementAudioSourceNode interface object name": "FAIL",
       "MediaElementAudioSourceNode interface: attribute mediaElement": "FAIL",
@@ -527,7 +529,7 @@
     "total": 4
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-rendersizehint.html": {
-    "total": 18
+    "total": 19
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-sinkid-constructor.https.html": {
     "harness": "ERROR",
@@ -836,6 +838,9 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletglobalscope-creation-time.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletglobalscope-event-timestamp.https.html": {
     "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletglobalscope-sample-rate.https.html": {

@@ -164,6 +164,9 @@
   "css/css-tables/col_removal.html": {
     "total": 1
   },
+  "css/css-tables/collapsed-border-background-inset-spanning-and-missing-cells.html": {
+    "reftest": "PASS"
+  },
   "css/css-tables/collapsed-border-background-inset.html": {
     "reftest": "PASS"
   },
@@ -428,8 +431,7 @@
   "css/css-tables/height-distribution/percentage-sizing-of-table-cell-children.html": {
     "total": 10,
     "failures": {
-      "Unresolvable percentage heights are resolved as auto in first pass (replaced elements)": "FAIL",
-      "Unresolvable percentage widths are resolved as auto in first pass (replaced elements)": "FAIL"
+      "Unresolvable percentage heights are resolved as auto in first pass (replaced elements)": "FAIL"
     }
   },
   "css/css-tables/height-distribution/percentage-sizing-of-table-cell-replaced-children-001.html": {
@@ -696,6 +698,12 @@
     "reftest": "PASS"
   },
   "css/css-tables/table-cell-overflow-explicit-height-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-percent-height-row-groups-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-percent-height-rowspan-fragmented-print.html": {
     "reftest": "PASS"
   },
   "css/css-tables/table-cell-scroll-height.html": {

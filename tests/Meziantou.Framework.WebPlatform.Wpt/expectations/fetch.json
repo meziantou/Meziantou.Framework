@@ -487,6 +487,18 @@
   "fetch/api/cors/cors-preflight-response-validation.any.js#dedicatedworker": {
     "total": 2
   },
+  "fetch/api/cors/cors-preflight-safelist-value-size.any.js": {
+    "total": 5,
+    "failures": {
+      "Combined Content-Language value size above 1024 bytes needs a CORS-preflight": "FAIL"
+    }
+  },
+  "fetch/api/cors/cors-preflight-safelist-value-size.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "Combined Content-Language value size above 1024 bytes needs a CORS-preflight": "FAIL"
+    }
+  },
   "fetch/api/cors/cors-preflight-star.any.js": {
     "total": 34
   },

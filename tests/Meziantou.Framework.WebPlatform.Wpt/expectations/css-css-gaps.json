@@ -20,6 +20,12 @@
   "css/css-gaps/agnostic/gap-decorations-011-crash.html": {
     "crashtest": "PASS"
   },
+  "css/css-gaps/agnostic/gap-rule-layout-invalidation-row.html": {
+    "reftest": "PASS"
+  },
+  "css/css-gaps/agnostic/gap-rule-layout-invalidation.html": {
+    "reftest": "PASS"
+  },
   "css/css-gaps/animation/column-rule-inset-interpolation.html": {
     "total": 672
   },
@@ -600,6 +606,12 @@
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-break-stacking-axis-noop.html": {
+    "reftest": "PASS"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-coincident-aligned-spanner-edges-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-coincident-item-spanner.html": {
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-inset-across-spanner.html": {

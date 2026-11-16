@@ -306,6 +306,9 @@
   "html/rendering/non-replaced-elements/tables/table-attribute-cellspacing-dynamic.html": {
     "reftest": "PASS"
   },
+  "html/rendering/non-replaced-elements/tables/table-attribute-rules-dynamic.html": {
+    "reftest": "PASS"
+  },
   "html/rendering/non-replaced-elements/tables/table-attribute.html": {
     "total": 58
   },
@@ -384,6 +387,18 @@
   },
   "html/rendering/non-replaced-elements/tables/table-rules-computed-style.html": {
     "total": 35
+  },
+  "html/rendering/non-replaced-elements/tables/table-rules-none-rendering.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-rules-rendering.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-rules-rows-vertical.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-rules-separate.html": {
+    "reftest": "PASS"
   },
   "html/rendering/non-replaced-elements/tables/table-ua-stylesheet.html": {
     "total": 5
@@ -1447,6 +1462,27 @@
   },
   "html/rendering/widgets/input-checkbox-switch-rtl.tentative.html": {
     "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states-checked-disabled.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states-checked.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states-disabled.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states-rtl-checked.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states-rtl-disabled.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states-rtl.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states.tentative.html": {
+    "reftest": "FAIL"
   },
   "html/rendering/widgets/input-checkbox-switch.tentative.html": {
     "reftest": "PASS"

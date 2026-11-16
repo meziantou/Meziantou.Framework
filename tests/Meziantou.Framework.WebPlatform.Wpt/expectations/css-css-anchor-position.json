@@ -413,6 +413,9 @@
   "css/css-anchor-position/anchor-position-multicol-fixed-001.html": {
     "reftest": "PASS"
   },
+  "css/css-anchor-position/anchor-position-multicol-inline-containing-block.html": {
+    "total": 2
+  },
   "css/css-anchor-position/anchor-position-multicol-nested-001.html": {
     "reftest": "PASS"
   },
@@ -1411,6 +1414,66 @@
   "css/css-anchor-position/position-visibility-anchor-valid.tentative.html": {
     "reftest": "PASS"
   },
+  "css/css-anchor-position/position-visibility-anchor-visible-after-scroll-in-document.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-after-scroll-in.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-after-scroll-out.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-both-position-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-chained-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-chained-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-chained-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-chained-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-change-anchor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-change-css-visibility.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-css-visibility.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-dynamic-anchor-toggle.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-in-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-inline-cb.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-non-intervening-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-position-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-stacked-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-stacked-child.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible-with-position.html": {
+    "reftest": "PASS"
+  },
   "css/css-anchor-position/position-visibility-anchor-visible.html": {
     "reftest": "PASS"
   },
@@ -1493,6 +1556,9 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/position-visibility-no-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-remove-anchor-visible.html": {
     "reftest": "PASS"
   },
   "css/css-anchor-position/position-visibility-remove-anchors-visible.html": {

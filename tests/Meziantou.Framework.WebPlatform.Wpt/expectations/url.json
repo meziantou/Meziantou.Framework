@@ -6,13 +6,13 @@
     "total": 2676
   },
   "url/a-element-origin-xhtml.xhtml": {
-    "total": 417
+    "total": 423
   },
   "url/a-element-origin.html": {
-    "total": 417
+    "total": 423
   },
   "url/a-element-xhtml.xhtml?exclude=(file|javascript|mailto)": {
-    "total": 741
+    "total": 747
   },
   "url/a-element-xhtml.xhtml?include=file": {
     "total": 137
@@ -24,7 +24,7 @@
     "total": 14
   },
   "url/a-element.html?exclude=(file|javascript|mailto)": {
-    "total": 742
+    "total": 748
   },
   "url/a-element.html?include=file": {
     "total": 138
@@ -63,7 +63,7 @@
     "total": 784
   },
   "url/url-constructor.any.js#dedicatedworker?exclude=(file|javascript|mailto)": {
-    "total": 743
+    "total": 749
   },
   "url/url-constructor.any.js#dedicatedworker?include=file": {
     "total": 137
@@ -75,7 +75,7 @@
     "total": 14
   },
   "url/url-constructor.any.js?exclude=(file|javascript|mailto)": {
-    "total": 743
+    "total": 749
   },
   "url/url-constructor.any.js?include=file": {
     "total": 137
@@ -87,10 +87,10 @@
     "total": 14
   },
   "url/url-origin.any.js": {
-    "total": 418
+    "total": 424
   },
   "url/url-origin.any.js#dedicatedworker": {
-    "total": 418
+    "total": 424
   },
   "url/url-searchparams.any.js": {
     "total": 4
@@ -99,16 +99,22 @@
     "total": 4
   },
   "url/url-setters-a-area.window.js?exclude=(file|javascript|mailto)": {
-    "total": 491
+    "total": 499
   },
   "url/url-setters-a-area.window.js?include=file": {
-    "total": 43
+    "total": 47
   },
   "url/url-setters-a-area.window.js?include=javascript": {
     "total": 13
   },
   "url/url-setters-a-area.window.js?include=mailto": {
     "total": 13
+  },
+  "url/url-setters-lone-surrogates.any.js": {
+    "total": 5
+  },
+  "url/url-setters-lone-surrogates.any.js#dedicatedworker": {
+    "total": 5
   },
   "url/url-setters-stripping.any.js": {
     "total": 320
@@ -117,10 +123,10 @@
     "total": 320
   },
   "url/url-setters.any.js#dedicatedworker?exclude=(file|javascript|mailto)": {
-    "total": 246
+    "total": 250
   },
   "url/url-setters.any.js#dedicatedworker?include=file": {
-    "total": 22
+    "total": 24
   },
   "url/url-setters.any.js#dedicatedworker?include=javascript": {
     "total": 7
@@ -129,10 +135,10 @@
     "total": 7
   },
   "url/url-setters.any.js?exclude=(file|javascript|mailto)": {
-    "total": 246
+    "total": 250
   },
   "url/url-setters.any.js?include=file": {
-    "total": 22
+    "total": 24
   },
   "url/url-setters.any.js?include=javascript": {
     "total": 7
@@ -171,10 +177,10 @@
     "total": 4
   },
   "url/urlsearchparams-constructor.any.js": {
-    "total": 27
+    "total": 32
   },
   "url/urlsearchparams-constructor.any.js#dedicatedworker": {
-    "total": 27
+    "total": 32
   },
   "url/urlsearchparams-delete.any.js": {
     "total": 8

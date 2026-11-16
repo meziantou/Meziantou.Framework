@@ -266,6 +266,9 @@
   "css/css-conditional/container-queries/animation-container-type-dynamic.html": {
     "total": 1
   },
+  "css/css-conditional/container-queries/animation-custom-property-style-query.html": {
+    "total": 1
+  },
   "css/css-conditional/container-queries/animation-nested-animation.html": {
     "total": 1
   },
@@ -482,6 +485,9 @@
   },
   "css/css-conditional/container-queries/container-units-typed-om.html": {
     "total": 24
+  },
+  "css/css-conditional/container-queries/content-box-size-invalidation-border-box.html": {
+    "total": 4
   },
   "css/css-conditional/container-queries/counters-flex-circular.html": {
     "total": 4
@@ -739,7 +745,7 @@
     "total": 1
   },
   "css/css-conditional/container-queries/idlharness.html": {
-    "total": 28,
+    "total": 43,
     "failures": {
       "CSSSupportsConditionRule interface object length": "FAIL",
       "CSSSupportsConditionRule interface object name": "FAIL",
@@ -747,7 +753,9 @@
       "CSSSupportsConditionRule interface: existence and properties of interface object": "FAIL",
       "CSSSupportsConditionRule interface: existence and properties of interface prototype object": "FAIL",
       "CSSSupportsConditionRule interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "CSSSupportsConditionRule interface: existence and properties of interface prototype object's @@unscopables property": "FAIL"
+      "CSSSupportsConditionRule interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "ContainerQueryList interface: existence and properties of interface object": "FAIL",
+      "ContainerQueryList interface: existence and properties of interface prototype object": "FAIL"
     }
   },
   "css/css-conditional/container-queries/iframe-in-container-invalidation.html": {
@@ -946,7 +954,7 @@
     "total": 2
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-initially-scrollable.html": {
-    "total": 8
+    "total": 10
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-initially-snapped.html": {
     "total": 1
@@ -975,7 +983,7 @@
     "total": 3
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-container-type-change.html": {
-    "total": 3
+    "total": 5
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-layout-change-002.html": {
     "total": 2
@@ -987,7 +995,7 @@
     "total": 2
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-root.html": {
-    "total": 3
+    "total": 4
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-wm.html": {
     "total": 12
@@ -1159,7 +1167,7 @@
     "total": 2
   },
   "css/css-conditional/container-queries/style-query-custom-attr-nested-name-change.html": {
-    "total": 2
+    "total": 10
   },
   "css/css-conditional/container-queries/style-query-document-element.html": {
     "total": 1

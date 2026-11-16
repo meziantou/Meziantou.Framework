@@ -16,6 +16,12 @@
   "visual-viewport/viewport-no-resize-event-on-overflow-recalc.html": {
     "total": 1
   },
+  "visual-viewport/viewport-no-scroll-event-on-layout-viewport-scroll.html": {
+    "total": 1
+  },
+  "visual-viewport/viewport-no-scroll-event-on-layout-viewport-smooth-scroll-to-fractional-offset.html": {
+    "total": 1
+  },
   "visual-viewport/viewport-read-size-causes-layout.html": {
     "total": 1
   },

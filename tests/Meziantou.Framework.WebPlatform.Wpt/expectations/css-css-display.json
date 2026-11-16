@@ -2,6 +2,9 @@
   "css/css-display/accessibility/display-contents-role-and-label.html": {
     "total": 112
   },
+  "css/css-display/accessibility/display-contents-widget-container-roles.html": {
+    "total": 93
+  },
   "css/css-display/animations/display-interpolation-none.html": {
     "total": 25
   },
@@ -328,6 +331,9 @@
   },
   "css/css-display/display-on-svg-text-content-element.html": {
     "reftest": "PASS"
+  },
+  "css/css-display/display-table-cell-on-button.html": {
+    "reftest": "FAIL"
   },
   "css/css-display/display-with-float-dynamic.html": {
     "total": 1

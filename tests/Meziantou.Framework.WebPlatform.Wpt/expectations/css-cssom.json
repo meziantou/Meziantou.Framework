@@ -66,7 +66,7 @@
     "total": 6
   },
   "css/cssom/CSSKeyframesRule.html": {
-    "total": 2
+    "total": 3
   },
   "css/cssom/CSSNamespaceRule.html": {
     "total": 1
@@ -356,7 +356,11 @@
     "total": 1
   },
   "css/cssom/cssom-getPropertyValue-common-checks.html": {
-    "total": 11
+    "total": 11,
+    "failures": {
+      "Properties serialize their computed initial value when representable": "FAIL",
+      "Shorthands serialize independently initial longhands only when representable": "FAIL"
+    }
   },
   "css/cssom/cssom-pagerule.html": {
     "total": 22
@@ -613,6 +617,9 @@
   "css/cssom/getComputedStyle-root.html": {
     "total": 1
   },
+  "css/cssom/getComputedStyle-ruby-width-height.html": {
+    "total": 5
+  },
   "css/cssom/getComputedStyle-shadow-host.html": {
     "total": 1
   },
@@ -821,7 +828,10 @@
     "total": 7
   },
   "css/cssom/shorthand-values.html": {
-    "total": 21
+    "total": 21,
+    "failures": {
+      "The serialization of -webkit-line-clamp: none; should be canonical.": "FAIL"
+    }
   },
   "css/cssom/style-attr-clone.html": {
     "reftest": "PASS"
@@ -887,7 +897,10 @@
     "total": 1
   },
   "css/cssom/style-set-property.html": {
-    "total": 21
+    "total": 21,
+    "failures": {
+      "set toString() returning whitespace for div.style.setProperty custom property": "FAIL"
+    }
   },
   "css/cssom/style-sheet-interfaces-001.html": {
     "total": 7

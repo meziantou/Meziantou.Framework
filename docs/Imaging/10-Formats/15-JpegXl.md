@@ -91,8 +91,8 @@ public static string SaveJpegXl(string inputPath, string jxlPath, string lossyPa
 <!-- endref -->
 
 Lossless output keeps every sample, 16-bit samples and the colors of fully transparent pixels included. Lossy output
-keeps the alpha channel lossless. Unlike WebP, AVIF and HEIC, an animation does not need a seekable destination: frames
-are written as they come, whatever their number.
+keeps the alpha channel lossless. Unlike AVIF and HEIC, an animation does not need a seekable destination, and unlike
+WebP it is not kept in memory for a non-seekable one: frames are written as they come, whatever their number.
 
 ## Options
 

@@ -6,7 +6,8 @@ using static Meziantou.Framework.Imaging.Tests.Conformance.LosslessEncoderAssert
 namespace Meziantou.Framework.Imaging.Tests.Conformance;
 
 /// <summary>
-/// OpenEXR encoding of every raw reference of the golden corpus, with every compression: the library reads every 8-bit
+/// OpenEXR encoding of every raw reference of the golden corpus, with every lossless compression, as scan lines and as tiles:
+/// the library reads every 8-bit
 /// and 16-bit sample back exactly (the colors of fully transparent pixels included), through the floating-point samples
 /// the file stores (half samples for 8-bit pixels, float samples for 16-bit ones, colors premultiplied by alpha). OpenEXR
 /// and FFmpeg read the output in <c>InteropTests/ExrInteropTests</c>.
@@ -21,12 +22,21 @@ public sealed class ExrEncoderConformanceTests
     {
         var fixture = GoldenCorpus.Default.Get(id);
         var pixelFormat = Enum.Parse<PixelFormat>(format);
-        foreach (var compression in Enum.GetValues<OpenExrCompression>())
+        foreach (var (compression, tiling) in new (OpenExrCompression, OpenExrTiling?)[]
         {
-            var encoder = new OpenExrEncoder { Compression = compression, MetadataHandling = MetadataHandling.Strip };
+            (OpenExrCompression.None, null),
+            (OpenExrCompression.Rle, null),
+            (OpenExrCompression.Zips, null),
+            (OpenExrCompression.Zip, null),
+            (OpenExrCompression.Piz, null),
+            (OpenExrCompression.Zip, new OpenExrTiling { TileWidth = 16, TileHeight = 8, LevelMode = OpenExrLevelMode.MipmapLevels }),
+            (OpenExrCompression.Piz, new OpenExrTiling { TileWidth = 7, TileHeight = 5, LevelMode = OpenExrLevelMode.RipmapLevels, LevelRounding = OpenExrLevelRounding.Up }),
+        })
+        {
+            var encoder = new OpenExrEncoder { Compression = compression, Tiling = tiling, MetadataHandling = MetadataHandling.Strip };
             foreach (var (name, source) in EncoderSources.GetStills(fixture, pixelFormat))
             {
-                var context = $"{id} {name} as {pixelFormat} ({compression})";
+                var context = $"{id} {name} as {pixelFormat} ({compression}{(tiling is null ? "" : ", tiled")})";
                 using var image = EncoderSources.CreateImage(source, pixelFormat);
                 var data = Encode(image, encoder);
                 AssertLibraryReadsBack(data, PixelFormats.GetBitsPerComponent(pixelFormat) > 8 ? ToRgba16(source) : ToRgba8(source), context);

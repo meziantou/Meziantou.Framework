@@ -932,10 +932,39 @@ internal static class Examples
             });
         }
 
-        // Every sample is kept, including the colors of fully transparent pixels. An animation needs a seekable
-        // destination (the file size is patched at the end): a path, a FileStream or a MemoryStream.
+        // Every sample is kept, including the colors of fully transparent pixels. An animation written to a seekable
+        // destination (a path, a FileStream or a MemoryStream) streams its frames and patches the file size at the end.
         using var animation = Image.Load(animatedPath);
         animation.Save(animatedWebPPath, new WebPEncoder { Compression = WebPCompression.Lossless });
+    }
+    #endregion
+
+    /// <summary>WebP output tuned for graphics and 16-bit sources, and an animation sent to a non-seekable stream.</summary>
+    #region Imaging_SaveWebpOptions
+    public static void SaveWebPWithOptions(string chartPath, string chartWebPPath, string sixteenBitPath, string gradientWebPPath, string animatedPath, Stream responseStream)
+    {
+        using (var chart = Image.Load(chartPath))
+        {
+            chart.Save(chartWebPPath, new WebPEncoder
+            {
+                Compression = WebPCompression.Lossy,
+                Quality = 85,
+                SharpYuv = true, // planes chosen for the chroma upsampling of the decoder: sharper colored edges and text
+            });
+        }
+
+        using (var gradient = Image.Load(sixteenBitPath))
+        {
+            gradient.Save(gradientWebPPath, new WebPEncoder
+            {
+                AllowBitDepthReduction = true,  // WebP stores 8-bit samples only
+                DitherBitDepthReduction = true, // error diffusion instead of rounding: no bands in smooth gradients
+            });
+        }
+
+        // A non-seekable stream (an HTTP response) receives the whole animation at the end: it is kept in memory until then
+        using var animation = Image.Load(animatedPath);
+        animation.Save(responseStream, new WebPEncoder());
     }
     #endregion
 
@@ -1628,6 +1657,23 @@ internal static class Examples
         {
             Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
         });
+    }
+    #endregion
+
+    /// <summary>OpenEXR: a tiled texture with its mipmap levels, and a lossy DWAB file for review copies.</summary>
+    #region Imaging_OpenExrTiledLossy
+    public static void SaveOpenExrTextureAndPreview(Image hdr, string texturePath, string reviewPath)
+    {
+        // Tiles of 64x64 pixels, with the mipmap levels a renderer reads: the encoder generates them by area average
+        hdr.Save(texturePath, new OpenExrEncoder
+        {
+            Compression = OpenExrCompression.Zip,
+            Tiling = new OpenExrTiling { TileWidth = 64, TileHeight = 64, LevelMode = OpenExrLevelMode.MipmapLevels },
+        });
+
+        // A lossy compression is only used when it is chosen: DWAB codes the colors as DCT blocks (alpha stays exact);
+        // a larger level gives a smaller file and larger errors
+        hdr.Save(reviewPath, new OpenExrEncoder { Compression = OpenExrCompression.Dwab, DwaCompressionLevel = 45 });
     }
     #endregion
 

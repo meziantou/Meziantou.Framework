@@ -4,12 +4,13 @@ using Meziantou.Framework.Fuzzing;
 namespace Meziantou.Framework.Imaging.Fuzz;
 
 /// <summary>
-/// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, the image data of PNG files (inflation and
+/// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, the OpenEXR encoder (its tiles, levels and compressions), the image data of PNG files (inflation and
 /// reconstruction), the lossy compression of its GIF encoder, and its processing operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
-/// homography estimation and resizing; the merging of the pieces of strokes; the optimal line breaking of text
-/// layouts; and the ICC profiles that the color conversions read (named colors, the processing elements of iccMAX
-/// profiles). The inputs of the processing targets are
+/// homography estimation and resizing; the merging of the pieces of strokes; the optimal line breaking of text layouts;
+/// the ICC profiles that the color conversions read (named colors, the processing elements of iccMAX profiles); and the
+/// options of the WebP encoder that change its pixels or its output (bit-depth dithering, sharp YUV, non-seekable
+/// animations). The inputs of the processing targets are
 /// small images whose pixel format, size, frames and bytes come from the fuzzer, followed by the options of the operation.
 /// </summary>
 public static partial class ImagingFuzzTargets
@@ -31,6 +32,7 @@ public static partial class ImagingFuzzTargets
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("imaging-radiance", RadianceTarget) { Seeds = GetRadianceSeeds, Dictionary = RadianceTokens },
+        new("imaging-openexr-encoder", OpenExrEncoderTarget) { Seeds = GetOpenExrEncoderSeeds, Dictionary = Tokens },
         new("imaging-png-image-data", PngImageDataTarget) { Seeds = GetPngImageDataSeeds, Dictionary = PngImageDataTokens },
         new("imaging-gif-lossy", GifLossyTarget) { Seeds = GetGifLossySeeds, Dictionary = Tokens },
         new("imaging-processor", ProcessorTarget) { Seeds = GetProcessorSeeds, Dictionary = Tokens },
@@ -47,6 +49,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-line-breaking", LineBreakingTarget) { Seeds = GetLineBreakingSeeds, Dictionary = LineBreakingTokens },
         new("imaging-color-matrix", ColorMatrixTarget) { Seeds = GetColorMatrixSeeds, Dictionary = Tokens },
         new("imaging-resize-float", ResizeFloatTarget) { Seeds = GetResizeFloatSeeds, Dictionary = Tokens },
+        new("imaging-webp-encoder", WebPEncoderTarget) { Seeds = GetWebPEncoderSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>

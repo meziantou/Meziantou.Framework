@@ -3624,20 +3624,56 @@ namespace Meziantou.Framework.Imaging.Formats
         Zips = 2,
         Zip = 3,
         Piz = 4,
+        Pxr24 = 5,
+        B44 = 6,
+        B44A = 7,
+        Dwaa = 8,
+        Dwab = 9,
     }
 
     public sealed class OpenExrEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
         public bool AllowBitDepthReduction { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.OpenExrCompression Compression { get => throw null; init { } }
+        public float DwaCompressionLevel { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.OpenExrLineOrder LineOrder { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.OpenExrPixelType? PixelType { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.OpenExrTiling? Tiling { get => throw null; init { } }
+    }
+
+    public enum OpenExrLevelMode
+    {
+        OneLevel = 0,
+        MipmapLevels = 1,
+        RipmapLevels = 2,
+    }
+
+    public enum OpenExrLevelRounding
+    {
+        Down = 0,
+        Up = 1,
+    }
+
+    public enum OpenExrLineOrder
+    {
+        IncreasingY = 0,
+        DecreasingY = 1,
+        RandomY = 2,
     }
 
     public enum OpenExrPixelType
     {
         Half = 0,
         Float = 1,
+    }
+
+    public sealed class OpenExrTiling
+    {
+        public Meziantou.Framework.Imaging.Formats.OpenExrLevelMode LevelMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.OpenExrLevelRounding LevelRounding { get => throw null; init { } }
+        public int TileHeight { get => throw null; init { } }
+        public int TileWidth { get => throw null; init { } }
     }
 
     public enum PngAnimationMode
@@ -3791,12 +3827,14 @@ namespace Meziantou.Framework.Imaging.Formats
         public int AlphaQuality { get => throw null; init { } }
         public bool ClearTransparentColors { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.WebPCompression Compression { get => throw null; init { } }
+        public bool DitherBitDepthReduction { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
         public int Effort { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public int NearLossless { get => throw null; init { } }
         public bool OptimizeFrames { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
+        public bool SharpYuv { get => throw null; init { } }
     }
 }
 namespace Meziantou.Framework.Imaging.Metadata

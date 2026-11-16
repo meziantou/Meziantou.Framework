@@ -250,8 +250,47 @@
         "partial": false,
         "href": "https://wicg.github.io/js-self-profiling/#dom-profilertrace"
       },
+      "ProfilerMarker": {
+        "fragment": "enum ProfilerMarker { \"script\", \"gc\", \"style\", \"layout\", \"paint\", \"other\" };",
+        "type": "enum",
+        "name": "ProfilerMarker",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "script",
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilermarker-script"
+          },
+          {
+            "type": "enum-value",
+            "value": "gc",
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilermarker-gc"
+          },
+          {
+            "type": "enum-value",
+            "value": "style",
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilermarker-style"
+          },
+          {
+            "type": "enum-value",
+            "value": "layout",
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilermarker-layout"
+          },
+          {
+            "type": "enum-value",
+            "value": "paint",
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilermarker-paint"
+          },
+          {
+            "type": "enum-value",
+            "value": "other",
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilermarker-other"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/js-self-profiling/#dom-profilermarker"
+      },
       "ProfilerSample": {
-        "fragment": "dictionary ProfilerSample {\n  required DOMHighResTimeStamp timestamp;\n  unsigned long long stackId;\n};",
+        "fragment": "dictionary ProfilerSample {\n  required DOMHighResTimeStamp timestamp;\n  unsigned long long stackId;\n  ProfilerMarker? marker;\n};",
         "type": "dictionary",
         "name": "ProfilerSample",
         "inheritance": null,
@@ -287,6 +326,22 @@
             "default": null,
             "required": false,
             "href": "https://wicg.github.io/js-self-profiling/#dom-profilersample-stackid"
+          },
+          {
+            "type": "field",
+            "name": "marker",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ProfilerMarker"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilersample-marker"
           }
         ],
         "extAttrs": [],
@@ -479,7 +534,8 @@
         "ProfilerSample"
       ],
       "ProfilerSample": [
-        "DOMHighResTimeStamp"
+        "DOMHighResTimeStamp",
+        "ProfilerMarker"
       ],
       "ProfilerStack": [],
       "ProfilerFrame": [],

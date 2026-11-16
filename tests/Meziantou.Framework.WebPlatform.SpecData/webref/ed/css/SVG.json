@@ -37,7 +37,7 @@
     {
       "name": "r",
       "href": "https://w3c.github.io/svgwg/svg2-draft/geometry.html#RProperty",
-      "value": "<length-percentage>",
+      "value": "<length-percentage [0,∞]>",
       "initial": "0",
       "appliesTo": "‘circle’ element",
       "inherited": "no",
@@ -52,7 +52,7 @@
     {
       "name": "rx",
       "href": "https://w3c.github.io/svgwg/svg2-draft/geometry.html#RxProperty",
-      "value": "<length-percentage> | auto",
+      "value": "<length-percentage [0,∞]> | auto",
       "initial": "auto",
       "appliesTo": "‘ellipse’, ‘rect’ elements",
       "inherited": "no",
@@ -67,7 +67,7 @@
     {
       "name": "ry",
       "href": "https://w3c.github.io/svgwg/svg2-draft/geometry.html#RyProperty",
-      "value": "<length-percentage> | auto",
+      "value": "<length-percentage [0,∞]> | auto",
       "initial": "auto",
       "appliesTo": "‘ellipse’, ‘rect’",
       "inherited": "no",
@@ -289,7 +289,7 @@
     {
       "name": "color-interpolation",
       "href": "https://w3c.github.io/svgwg/svg2-draft/painting.html#ColorInterpolationProperty",
-      "value": "auto | sRGB | linearRGB",
+      "value": "auto | sRGB | linearRGB | <color-interpolation-method>",
       "initial": "sRGB",
       "appliesTo": "container elements, graphics elements, gradient elements, ‘use’ and ‘animate’",
       "inherited": "yes",
@@ -380,13 +380,13 @@
     },
     {
       "name": "<dasharray>",
-      "value": "[ [ <length-percentage> | <number> ]+ ]#",
+      "prose": "<dasharray>",
       "href": "https://w3c.github.io/svgwg/svg2-draft/painting.html#DataTypeDasharray",
       "type": "type"
     },
     {
       "name": "<marker-ref>",
-      "value": "<url>",
+      "prose": "<marker-ref>",
       "href": "https://w3c.github.io/svgwg/svg2-draft/painting.html#DataTypeMarkerRef",
       "type": "type"
     }

@@ -84,14 +84,30 @@
     {
       "name": "outline-offset",
       "href": "https://drafts.csswg.org/css-ui-4/#propdef-outline-offset",
-      "value": "<length>",
+      "value": "<length> | inset",
       "initial": "0",
       "appliesTo": "all elements",
       "inherited": "no",
       "percentages": "N/A",
-      "computedValue": "absolute length",
+      "computedValue": "absolute length or inset keyword.",
       "canonicalOrder": "per grammar",
       "animationType": "by computed value",
+      "values": [
+        {
+          "name": "<length>",
+          "prose": "Outsets the outline from the border edge by the specified amount. For example, to leave 2 pixels of space between a focus outline and the element that has the focus or is active, the following rule can be used: :focus,:active { outline-offset: 2px }",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-outline-offset-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "inset",
+          "prose": "Insets the outline from the border edge using the used outline thickness as amount. When outline-style is set to auto, it can be used to display the user agent’s default outline inside the border-box, rather than outside where it would usually appear. Otherwise, it is equivalent to setting outline-offset to the negative of the outline-width value. To protect the user from fingerprinting of the user agent’s default outline style thickness, this value must always compute to itself rather than to an absolute length, regardless of the outline-style value.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-outline-offset-inset",
+          "type": "value",
+          "value": "inset"
+        }
+      ],
       "styleDeclaration": [
         "outline-offset",
         "outlineOffset"
@@ -108,6 +124,50 @@
       "computedValue": "specified keyword",
       "canonicalOrder": "per grammar",
       "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The UA does not present a resizing mechanism on the element, and the user is given no direct manipulation mechanism to resize the element.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-resize-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "both",
+          "prose": "The UA presents a bidirectional resizing mechanism to allow the user to adjust both the height and the width of the element.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-resize-both",
+          "type": "value",
+          "value": "both"
+        },
+        {
+          "name": "horizontal",
+          "prose": "The UA presents a unidirectional horizontal resizing mechanism to allow the user to adjust only the width of the element.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-resize-horizontal",
+          "type": "value",
+          "value": "horizontal"
+        },
+        {
+          "name": "vertical",
+          "prose": "The UA presents a unidirectional vertical resizing mechanism to allow the user to adjust only the height of the element.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-resize-vertical",
+          "type": "value",
+          "value": "vertical"
+        },
+        {
+          "name": "block",
+          "prose": "The UA presents a unidirectional block-axis resizing mechanism to allow the user to adjust only the block size of the element.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-resize-block",
+          "type": "value",
+          "value": "block"
+        },
+        {
+          "name": "inline",
+          "prose": "The UA presents a unidirectional inline-axis resizing mechanism to allow the user to adjust only the inline size of the element.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-resize-inline",
+          "type": "value",
+          "value": "inline"
+        }
+      ],
       "styleDeclaration": [
         "resize"
       ]
@@ -126,9 +186,9 @@
       "values": [
         {
           "name": "<cursor-image>",
-          "value": "[ <url> | <url-set> ] <number>{2}?",
           "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-cursor-image",
-          "type": "value"
+          "type": "value",
+          "value": "[ <url> | <url-set> ] <number>{2}?"
         },
         {
           "name": "<cursor-image>",

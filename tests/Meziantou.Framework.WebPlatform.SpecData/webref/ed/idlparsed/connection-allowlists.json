@@ -1,7 +1,7 @@
 {
   "spec": {
     "title": "Connection Allowlists",
-    "url": "https://wicg.github.io/connection-allowlists/"
+    "url": "https://w3c.github.io/connection-allowlists/"
   },
   "idlparsed": {
     "jsNames": {
@@ -17,16 +17,16 @@
           {
             "type": "enum-value",
             "value": "enforce",
-            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistdisposition-enforce"
+            "href": "https://w3c.github.io/connection-allowlists/#dom-connectionallowlistdisposition-enforce"
           },
           {
             "type": "enum-value",
             "value": "report",
-            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistdisposition-report"
+            "href": "https://w3c.github.io/connection-allowlists/#dom-connectionallowlistdisposition-report"
           }
         ],
         "extAttrs": [],
-        "href": "https://wicg.github.io/connection-allowlists/#enumdef-connectionallowlistdisposition"
+        "href": "https://w3c.github.io/connection-allowlists/#enumdef-connectionallowlistdisposition"
       },
       "ConnectionAllowlistViolationReport": {
         "fragment": "dictionary ConnectionAllowlistViolationReport : ReportBody {\n  USVString url;\n  USVString connection;\n  sequence<DOMString> allowlist;\n  ConnectionAllowlistDisposition disposition;\n};",
@@ -48,7 +48,7 @@
             },
             "default": null,
             "required": false,
-            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-url"
+            "href": "https://w3c.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-url"
           },
           {
             "type": "field",
@@ -64,7 +64,7 @@
             },
             "default": null,
             "required": false,
-            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-connection"
+            "href": "https://w3c.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-connection"
           },
           {
             "type": "field",
@@ -89,7 +89,7 @@
             },
             "default": null,
             "required": false,
-            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-allowlist"
+            "href": "https://w3c.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-allowlist"
           },
           {
             "type": "field",
@@ -105,12 +105,12 @@
             },
             "default": null,
             "required": false,
-            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-disposition"
+            "href": "https://w3c.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-disposition"
           }
         ],
         "extAttrs": [],
         "partial": false,
-        "href": "https://wicg.github.io/connection-allowlists/#dictdef-connectionallowlistviolationreport"
+        "href": "https://w3c.github.io/connection-allowlists/#dictdef-connectionallowlistviolationreport"
       }
     },
     "idlExtendedNames": {
@@ -142,7 +142,7 @@
               ],
               "special": "",
               "readonly": false,
-              "href": "https://wicg.github.io/connection-allowlists/#dom-htmliframeelement-connectionallowlist"
+              "href": "https://w3c.github.io/connection-allowlists/#dom-htmliframeelement-connectionallowlist"
             }
           ],
           "extAttrs": [],

@@ -378,9 +378,9 @@
         },
         {
           "name": "<try-tactic>",
-          "value": "flip-block || flip-inline || flip-start || flip-x || flip-y",
           "href": "https://drafts.csswg.org/css-anchor-position-1/#valdef-position-try-fallbacks-try-tactic",
-          "type": "value"
+          "type": "value",
+          "value": "flip-block || flip-inline || flip-start || flip-x || flip-y"
         },
         {
           "name": "<try-tactic>",

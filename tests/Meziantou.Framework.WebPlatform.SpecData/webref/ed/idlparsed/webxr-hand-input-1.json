@@ -15,6 +15,55 @@
       }
     },
     "idlNames": {
+      "XRHandTrackingFrequencyHint": {
+        "fragment": "enum XRHandTrackingFrequencyHint {\n  \"default\",\n  \"high\"\n};",
+        "type": "enum",
+        "name": "XRHandTrackingFrequencyHint",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "default",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandtrackingfrequencyhint-default"
+          },
+          {
+            "type": "enum-value",
+            "value": "high",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandtrackingfrequencyhint-high"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/webxr-hand-input/#enumdef-xrhandtrackingfrequencyhint"
+      },
+      "XRHandTrackingStateInit": {
+        "fragment": "dictionary XRHandTrackingStateInit {\n  XRHandTrackingFrequencyHint frequencyHint = \"default\";\n};",
+        "type": "dictionary",
+        "name": "XRHandTrackingStateInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "frequencyHint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRHandTrackingFrequencyHint"
+            },
+            "default": {
+              "type": "string",
+              "value": "default"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandtrackingstateinit-frequencyhint"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/webxr-hand-input/#dictdef-xrhandtrackingstateinit"
+      },
       "XRHandJoint": {
         "fragment": "enum XRHandJoint {\n  \"wrist\",\n\n  \"thumb-metacarpal\",\n  \"thumb-phalanx-proximal\",\n  \"thumb-phalanx-distal\",\n  \"thumb-tip\",\n\n  \"index-finger-metacarpal\",\n  \"index-finger-phalanx-proximal\",\n  \"index-finger-phalanx-intermediate\",\n  \"index-finger-phalanx-distal\",\n  \"index-finger-tip\",\n\n  \"middle-finger-metacarpal\",\n  \"middle-finger-phalanx-proximal\",\n  \"middle-finger-phalanx-intermediate\",\n  \"middle-finger-phalanx-distal\",\n  \"middle-finger-tip\",\n\n  \"ring-finger-metacarpal\",\n  \"ring-finger-phalanx-proximal\",\n  \"ring-finger-phalanx-intermediate\",\n  \"ring-finger-phalanx-distal\",\n  \"ring-finger-tip\",\n\n  \"pinky-finger-metacarpal\",\n  \"pinky-finger-phalanx-proximal\",\n  \"pinky-finger-phalanx-intermediate\",\n  \"pinky-finger-phalanx-distal\",\n  \"pinky-finger-tip\"\n};",
         "type": "enum",
@@ -320,6 +369,34 @@
       }
     },
     "idlExtendedNames": {
+      "XRSessionInit": [
+        {
+          "fragment": "partial dictionary XRSessionInit {\n  XRHandTrackingStateInit handTracking;\n};",
+          "type": "dictionary",
+          "name": "XRSessionInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "handTracking",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRHandTrackingStateInit"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrsessioninit-handtracking"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
       "XRInputSource": [
         {
           "fragment": "partial interface XRInputSource {\n   [SameObject] readonly attribute XRHand? hand;\n};",
@@ -558,6 +635,12 @@
       ]
     },
     "dependencies": {
+      "XRHandTrackingStateInit": [
+        "XRHandTrackingFrequencyHint"
+      ],
+      "XRSessionInit": [
+        "XRHandTrackingStateInit"
+      ],
       "XRInputSource": [
         "XRHand"
       ],
@@ -580,6 +663,7 @@
       ]
     },
     "externalDependencies": [
+      "XRSessionInit",
       "XRInputSource",
       "XRSpace",
       "XRFrame",

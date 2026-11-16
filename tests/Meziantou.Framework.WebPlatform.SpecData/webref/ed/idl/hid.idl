@@ -27,7 +27,7 @@ dictionary HIDDeviceRequestOptions {
 };
 
 dictionary HIDDeviceFilter {
-    unsigned long vendorId;
+    unsigned short vendorId;
     unsigned short productId;
     unsigned short usagePage;
     unsigned short usage;

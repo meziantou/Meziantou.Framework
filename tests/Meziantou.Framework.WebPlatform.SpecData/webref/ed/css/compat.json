@@ -12,7 +12,7 @@
       "appliesTo": "all elements",
       "inherited": "yes",
       "percentages": "N/A",
-      "computedValue": "an RGBA color",
+      "computedValue": "computed color",
       "canonicalOrder": "per grammar",
       "animationType": "by computed value type",
       "media": "visual",
@@ -30,7 +30,7 @@
       "appliesTo": "all elements",
       "inherited": "yes",
       "percentages": "N/A",
-      "computedValue": "an RGBA color",
+      "computedValue": "computed color",
       "canonicalOrder": "per grammar",
       "animationType": "by computed value type",
       "media": "visual",
@@ -872,7 +872,13 @@
       ]
     }
   ],
-  "selectors": [],
+  "selectors": [
+    {
+      "name": "::-webkit-input-placeholder",
+      "href": "https://compat.spec.whatwg.org/#selectordef--webkit-input-placeholder",
+      "value": "::-webkit-input-placeholder"
+    }
+  ],
   "values": [],
   "warnings": [
     {

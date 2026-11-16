@@ -10,17 +10,14 @@
         "Window": [
           "CrossOriginStorageManager"
         ],
-        "DedicatedWorker": [
-          "CrossOriginStorageManager"
-        ],
-        "SharedWorker": [
+        "Worker": [
           "CrossOriginStorageManager"
         ]
       }
     },
     "idlNames": {
       "CrossOriginStorageManager": {
-        "fragment": "[Exposed=(Window,DedicatedWorker,SharedWorker), SecureContext]\ninterface CrossOriginStorageManager {\n  Promise<FileSystemFileHandle> getFileHandle(\n      CrossOriginStorageGetFileHandleHash hash,\n      optional CrossOriginStorageGetFileHandleOptions options = {});\n};",
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface CrossOriginStorageManager {\n  Promise<FileSystemFileHandle> getFileHandle(\n      CrossOriginStorageGetFileHandleHash hash,\n      optional CrossOriginStorageGetFileHandleOptions options = {});\n};",
         "type": "interface",
         "name": "CrossOriginStorageManager",
         "inheritance": null,
@@ -97,10 +94,7 @@
                   "value": "Window"
                 },
                 {
-                  "value": "DedicatedWorker"
-                },
-                {
-                  "value": "SharedWorker"
+                  "value": "Worker"
                 }
               ]
             },
@@ -232,7 +226,7 @@
         "href": "https://wicg.github.io/cross-origin-storage/#dictdef-crossoriginstoragegetfilehandleoptions"
       },
       "NavigatorCrossOriginStorage": {
-        "fragment": "interface mixin NavigatorCrossOriginStorage {\n  [Exposed=(Window,DedicatedWorker,SharedWorker), SameObject, SecureContext]\n  readonly attribute CrossOriginStorageManager crossOriginStorage;\n};",
+        "fragment": "interface mixin NavigatorCrossOriginStorage {\n  [Exposed=(Window,Worker), SameObject, SecureContext]\n  readonly attribute CrossOriginStorageManager crossOriginStorage;\n};",
         "type": "interface mixin",
         "name": "NavigatorCrossOriginStorage",
         "inheritance": null,
@@ -259,10 +253,7 @@
                       "value": "Window"
                     },
                     {
-                      "value": "DedicatedWorker"
-                    },
-                    {
-                      "value": "SharedWorker"
+                      "value": "Worker"
                     }
                   ]
                 },
@@ -316,10 +307,7 @@
       "Window": [
         "CrossOriginStorageManager"
       ],
-      "DedicatedWorker": [
-        "CrossOriginStorageManager"
-      ],
-      "SharedWorker": [
+      "Worker": [
         "CrossOriginStorageManager"
       ]
     },

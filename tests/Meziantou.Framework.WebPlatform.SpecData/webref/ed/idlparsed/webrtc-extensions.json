@@ -1,0 +1,1100 @@
+{
+  "spec": {
+    "title": "WebRTC Extensions",
+    "url": "https://w3c.github.io/webrtc-extensions/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "RTCIceCandidatePairEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "RTCDataChannel",
+          "RTCPeerConnection"
+        ],
+        "Worker": [
+          "RTCDataChannel"
+        ]
+      }
+    },
+    "idlNames": {
+      "RTCResolutionRestriction": {
+        "fragment": "dictionary RTCResolutionRestriction {\n    unsigned long maxWidth;\n    unsigned long maxHeight;\n};",
+        "type": "dictionary",
+        "name": "RTCResolutionRestriction",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "maxWidth",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcresolutionrestriction-maxwidth"
+          },
+          {
+            "type": "field",
+            "name": "maxHeight",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcresolutionrestriction-maxheight"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcresolutionrestriction"
+      },
+      "RTCEncodingOptions": {
+        "fragment": "dictionary RTCEncodingOptions {\n  boolean keyFrame = false;\n};",
+        "type": "dictionary",
+        "name": "RTCEncodingOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "keyFrame",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcencodingoptions-keyframe"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcencodingoptions"
+      },
+      "RTCIceCandidatePairEvent": {
+        "fragment": "[Exposed=Window]\ninterface RTCIceCandidatePairEvent : Event {\n  constructor(DOMString type, RTCIceCandidatePairEventInit eventInitDict);\n  readonly attribute RTCIceCandidatePair candidatePair;\n};",
+        "type": "interface",
+        "name": "RTCIceCandidatePairEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RTCIceCandidatePairEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcicecandidatepairevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "candidatePair",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIceCandidatePair"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcicecandidatepairevent-candidatepair"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcicecandidatepairevent"
+      },
+      "RTCIceCandidatePairEventInit": {
+        "fragment": "dictionary RTCIceCandidatePairEventInit : EventInit {\n  required RTCIceCandidatePair candidatePair;\n};",
+        "type": "dictionary",
+        "name": "RTCIceCandidatePairEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "candidatePair",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIceCandidatePair"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcicecandidatepaireventinit-candidatepair"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcicecandidatepaireventinit"
+      },
+      "RTCRtpHeaderEncryptionPolicy": {
+        "fragment": "enum RTCRtpHeaderEncryptionPolicy {\n  \"disable\",\n  \"negotiate\",\n  \"require\"\n};",
+        "type": "enum",
+        "name": "RTCRtpHeaderEncryptionPolicy",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "disable",
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpheaderencryptionpolicy-disable"
+          },
+          {
+            "type": "enum-value",
+            "value": "negotiate",
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpheaderencryptionpolicy-negotiate"
+          },
+          {
+            "type": "enum-value",
+            "value": "require",
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpheaderencryptionpolicy-require"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpheaderencryptionpolicy"
+      },
+      "RTCConfigurationTargetLatency": {
+        "fragment": "enum RTCConfigurationTargetLatency {\n  \"lowest\",\n  \"none\"\n};",
+        "type": "enum",
+        "name": "RTCConfigurationTargetLatency",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "lowest",
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcconfigurationtargetlatency-lowest"
+          },
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcconfigurationtargetlatency-none"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcconfigurationtargetlatency"
+      },
+      "RTCDiagnosticLoggingOptions": {
+        "fragment": "dictionary RTCDiagnosticLoggingOptions {\n  record<DOMString, DOMString> metadata;\n};",
+        "type": "dictionary",
+        "name": "RTCDiagnosticLoggingOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "metadata",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "record",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcdiagnosticloggingoptions-metadata"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcdiagnosticloggingoptions"
+      }
+    },
+    "idlExtendedNames": {
+      "RTCRtpHeaderExtensionCapability": [
+        {
+          "fragment": "partial dictionary RTCRtpHeaderExtensionCapability {\n  required RTCRtpTransceiverDirection direction;\n};",
+          "type": "dictionary",
+          "name": "RTCRtpHeaderExtensionCapability",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "direction",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RTCRtpTransceiverDirection"
+              },
+              "default": null,
+              "required": true,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpheaderextensioncapability-direction"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCRtpTransceiver": [
+        {
+          "fragment": "partial interface RTCRtpTransceiver {\n  sequence<RTCRtpHeaderExtensionCapability> getHeaderExtensionsToNegotiate();\n  undefined setHeaderExtensionsToNegotiate(\n      sequence<RTCRtpHeaderExtensionCapability> extensions);\n  sequence<RTCRtpHeaderExtensionCapability> getNegotiatedHeaderExtensions();\n};",
+          "type": "interface",
+          "name": "RTCRtpTransceiver",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getHeaderExtensionsToNegotiate",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCRtpHeaderExtensionCapability"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtptransceiver-getheaderextensionstonegotiate"
+            },
+            {
+              "type": "operation",
+              "name": "setHeaderExtensionsToNegotiate",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "extensions",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "RTCRtpHeaderExtensionCapability"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtptransceiver-setheaderextensionstonegotiate"
+            },
+            {
+              "type": "operation",
+              "name": "getNegotiatedHeaderExtensions",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCRtpHeaderExtensionCapability"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtptransceiver-getnegotiatedheaderextensions"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCRtpEncodingParameters": [
+        {
+          "fragment": "partial dictionary RTCRtpEncodingParameters {\n    RTCResolutionRestriction scaleResolutionDownTo;\n    unsigned long            ptime;\n    boolean                  adaptivePtime = false;\n};",
+          "type": "dictionary",
+          "name": "RTCRtpEncodingParameters",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "scaleResolutionDownTo",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RTCResolutionRestriction"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpencodingparameters-scaleresolutiondownto"
+            },
+            {
+              "type": "field",
+              "name": "ptime",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpencodingparameters-ptime"
+            },
+            {
+              "type": "field",
+              "name": "adaptivePtime",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": false
+              },
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpencodingparameters-adaptiveptime"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCSetParameterOptions": [
+        {
+          "fragment": "partial dictionary RTCSetParameterOptions {\n  sequence<RTCEncodingOptions> encodingOptions = [];\n};",
+          "type": "dictionary",
+          "name": "RTCSetParameterOptions",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "encodingOptions",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCEncodingOptions"
+                  }
+                ]
+              },
+              "default": {
+                "type": "sequence",
+                "value": []
+              },
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcsetparameteroptions-encodingoptions"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCIceTransport": [
+        {
+          "fragment": "partial interface RTCIceTransport {\n  attribute EventHandler onicecandidatepairadd;\n  attribute EventHandler onicecandidatepairremove;\n  attribute EventHandler onicecandidatepairnominate;\n  Promise<undefined> selectCandidatePair(RTCIceCandidatePair candidatePair);\n  Promise<undefined> removeCandidatePair(RTCIceCandidatePair candidatePair);\n};",
+          "type": "interface",
+          "name": "RTCIceTransport",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onicecandidatepairadd",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcicetransport-onicecandidatepairadd"
+            },
+            {
+              "type": "attribute",
+              "name": "onicecandidatepairremove",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcicetransport-onicecandidatepairremove"
+            },
+            {
+              "type": "attribute",
+              "name": "onicecandidatepairnominate",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcicetransport-onicecandidatepairnominate"
+            },
+            {
+              "type": "operation",
+              "name": "selectCandidatePair",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "candidatePair",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCIceCandidatePair"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcicetransport-selectcandidatepair"
+            },
+            {
+              "type": "operation",
+              "name": "removeCandidatePair",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "candidatePair",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCIceCandidatePair"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcicetransport-removecandidatepair"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCRtpContributingSource": [
+        {
+          "fragment": "partial dictionary RTCRtpContributingSource {\n  DOMHighResTimeStamp captureTimestamp;\n  DOMHighResTimeStamp senderCaptureTimeOffset;\n};",
+          "type": "dictionary",
+          "name": "RTCRtpContributingSource",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "captureTimestamp",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMHighResTimeStamp"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpcontributingsource-capturetimestamp"
+            },
+            {
+              "type": "field",
+              "name": "senderCaptureTimeOffset",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMHighResTimeStamp"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpcontributingsource-sendercapturetimeoffset"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCDataChannel": [
+        {
+          "fragment": "[Exposed=(Window,Worker), Transferable]\n  partial interface RTCDataChannel {\n};",
+          "type": "interface",
+          "name": "RTCDataChannel",
+          "inheritance": null,
+          "members": [],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  },
+                  {
+                    "value": "Worker"
+                  }
+                ]
+              },
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "Transferable",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "RTCConfiguration": [
+        {
+          "fragment": "partial dictionary RTCConfiguration {\n  RTCRtpHeaderEncryptionPolicy rtpHeaderEncryptionPolicy = \"negotiate\";\n};",
+          "type": "dictionary",
+          "name": "RTCConfiguration",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "rtpHeaderEncryptionPolicy",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RTCRtpHeaderEncryptionPolicy"
+              },
+              "default": {
+                "type": "string",
+                "value": "negotiate"
+              },
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcconfiguration-rtpheaderencryptionpolicy"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial dictionary RTCConfiguration {\n    boolean alwaysNegotiateDataChannels = false;\n};",
+          "type": "dictionary",
+          "name": "RTCConfiguration",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "alwaysNegotiateDataChannels",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": false
+              },
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcconfiguration-alwaysnegotiatedatachannels"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial dictionary RTCConfiguration {\n  RTCConfigurationTargetLatency targetLatency = \"lowest\";\n};",
+          "type": "dictionary",
+          "name": "RTCConfiguration",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "targetLatency",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RTCConfigurationTargetLatency"
+              },
+              "default": {
+                "type": "string",
+                "value": "lowest"
+              },
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcconfiguration-targetlatency"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCRtpReceiver": [
+        {
+          "fragment": "partial interface RTCRtpReceiver {\n  attribute EventHandler onssrcchange;\n  attribute EventHandler oncsrcchange;\n};",
+          "type": "interface",
+          "name": "RTCRtpReceiver",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onssrcchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtptransceiver-onssrcchange"
+            },
+            {
+              "type": "attribute",
+              "name": "oncsrcchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtptransceiver-oncsrcchange"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial interface RTCRtpReceiver {\n  static undefined disableHardwareDecoding();\n};",
+          "type": "interface",
+          "name": "RTCRtpReceiver",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "disableHardwareDecoding",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpreceiver-disablehardwaredecoding"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCRtpSender": [
+        {
+          "fragment": "partial interface RTCRtpSender {\n  static undefined disableHardwareEncoding();\n};",
+          "type": "interface",
+          "name": "RTCRtpSender",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "disableHardwareEncoding",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcrtpsender-disablehardwareencoding"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCPeerConnection": [
+        {
+          "fragment": "[\n  Exposed=Window\n] partial interface RTCPeerConnection {\n  static DOMString startDiagnosticLogging(optional RTCDiagnosticLoggingOptions options = {});\n  static undefined stopDiagnosticLogging();\n  static undefined cancelDiagnosticLogging();\n};",
+          "type": "interface",
+          "name": "RTCPeerConnection",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "startDiagnosticLogging",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCDiagnosticLoggingOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcpeerconnection-startdiagnosticlogging"
+            },
+            {
+              "type": "operation",
+              "name": "stopDiagnosticLogging",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcpeerconnection-stopdiagnosticlogging"
+            },
+            {
+              "type": "operation",
+              "name": "cancelDiagnosticLogging",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://w3c.github.io/webrtc-extensions/#dom-rtcpeerconnection-canceldiagnosticlogging"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "RTCIceCandidatePairEvent",
+        "RTCDataChannel",
+        "RTCPeerConnection"
+      ],
+      "Worker": [
+        "RTCDataChannel"
+      ]
+    },
+    "dependencies": {
+      "RTCRtpHeaderExtensionCapability": [
+        "RTCRtpTransceiverDirection"
+      ],
+      "RTCRtpTransceiver": [
+        "RTCRtpHeaderExtensionCapability"
+      ],
+      "RTCRtpEncodingParameters": [
+        "RTCResolutionRestriction"
+      ],
+      "RTCResolutionRestriction": [],
+      "RTCSetParameterOptions": [
+        "RTCEncodingOptions"
+      ],
+      "RTCEncodingOptions": [],
+      "RTCIceTransport": [
+        "EventHandler",
+        "RTCIceCandidatePair"
+      ],
+      "RTCIceCandidatePairEvent": [
+        "Event",
+        "RTCIceCandidatePairEventInit",
+        "RTCIceCandidatePair"
+      ],
+      "RTCIceCandidatePairEventInit": [
+        "EventInit",
+        "RTCIceCandidatePair"
+      ],
+      "RTCRtpContributingSource": [
+        "DOMHighResTimeStamp"
+      ],
+      "RTCDataChannel": [],
+      "RTCConfiguration": [
+        "RTCRtpHeaderEncryptionPolicy",
+        "RTCConfigurationTargetLatency"
+      ],
+      "RTCRtpReceiver": [
+        "EventHandler"
+      ],
+      "RTCRtpSender": [],
+      "RTCPeerConnection": [
+        "RTCDiagnosticLoggingOptions"
+      ],
+      "RTCDiagnosticLoggingOptions": []
+    },
+    "externalDependencies": [
+      "RTCRtpHeaderExtensionCapability",
+      "RTCRtpTransceiverDirection",
+      "RTCRtpTransceiver",
+      "RTCRtpEncodingParameters",
+      "RTCSetParameterOptions",
+      "RTCIceTransport",
+      "EventHandler",
+      "RTCIceCandidatePair",
+      "Event",
+      "EventInit",
+      "RTCRtpContributingSource",
+      "DOMHighResTimeStamp",
+      "RTCDataChannel",
+      "RTCConfiguration",
+      "RTCRtpReceiver",
+      "RTCRtpSender",
+      "RTCPeerConnection"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

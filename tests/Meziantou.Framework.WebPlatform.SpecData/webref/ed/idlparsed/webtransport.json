@@ -111,7 +111,7 @@
         "href": "https://w3c.github.io/webtransport/#webtransportdatagramswritable"
       },
       "WebTransportDatagramDuplexStream": {
-        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface WebTransportDatagramDuplexStream {\n  WebTransportDatagramsWritable createWritable(\n      optional WebTransportSendOptions options = {});\n  readonly attribute ReadableStream readable;\n\n  readonly attribute unsigned long maxDatagramSize;\n  attribute unrestricted double? incomingMaxAge;\n  attribute unrestricted double? outgoingMaxAge;\n  attribute unsigned long incomingMaxBufferedDatagrams;\n  attribute unsigned long outgoingMaxBufferedDatagrams;\n};",
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface WebTransportDatagramDuplexStream {\n  WebTransportDatagramsWritable createWritable(\n      optional WebTransportSendOptions options = {});\n  readonly attribute ReadableStream readable;\n\n  readonly attribute unsigned long maxDatagramSize;\n  attribute unrestricted double? incomingMaxAge;\n  attribute unrestricted double outgoingMaxAge;\n  attribute unsigned long incomingMaxBufferedDatagrams;\n  attribute unsigned long outgoingMaxBufferedDatagrams;\n};",
         "type": "interface",
         "name": "WebTransportDatagramDuplexStream",
         "inheritance": null,
@@ -206,7 +206,7 @@
               "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
-              "nullable": true,
+              "nullable": false,
               "union": false,
               "idlType": "unrestricted double"
             },

@@ -17,7 +17,7 @@
           "initial": "n/a (see prose)"
         }
       ],
-      "value": "@function <function-token> <function-parameter>#? ) [ returns <css-type> ]? { <declaration-rule-list> }",
+      "value": "@function <function-token> <function-parameter>#? ','? ) [ returns <css-type> ]? { <declaration-rule-list> }",
       "values": [
         {
           "name": "type()",
@@ -31,7 +31,7 @@
       "name": "@mixin",
       "href": "https://drafts.csswg.org/css-mixins-1/#at-ruledef-mixin",
       "descriptors": [],
-      "value": "@mixin [<function-token> <function-parameter>#? ) | <ident-token> ] { <block-contents> }"
+      "value": "@mixin [<function-token> <function-parameter>#? ','? ) | <ident-token> ] { <block-contents> }"
     },
     {
       "name": "@contents",
@@ -70,7 +70,7 @@
       "name": "<default-value>",
       "href": "https://drafts.csswg.org/css-mixins-1/#typedef-default-value",
       "type": "type",
-      "value": "<declaration-value>"
+      "value": "<declaration-value>?"
     },
     {
       "name": "<dashed-function>",

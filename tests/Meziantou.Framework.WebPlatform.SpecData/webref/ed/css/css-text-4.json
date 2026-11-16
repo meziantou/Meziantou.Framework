@@ -1288,44 +1288,79 @@
       "appliesTo": "text",
       "inherited": "yes",
       "percentages": "N/A",
-      "computedValue": "specified keyword(s)",
+      "computedValue": "the keyword auto, the keyword trim-all, or three keywords, one per controlled position (start, adjacent, end)",
       "canonicalOrder": "per grammar",
       "animationType": "discrete",
       "values": [
         {
           "name": "space-all",
-          "prose": "All fullwidth punctuation characters are set with full-width glyphs (spaced).",
+          "prose": "All fullwidth punctuation characters are set with full-width glyphs (spaced). Equivalent to space-start space-adjacent space-end.",
           "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-space-all",
           "type": "value",
           "value": "space-all"
         },
         {
-          "name": "normal",
-          "prose": "Set fullwidth opening punctuation with full-width glyphs (spaced) at the start of each line; set fullwidth closing punctuation with half-width glyphs (flush) at the end of each line if it does not otherwise fit prior to justification, else set the punctuation with full-width glyphs; and collapse spacing between punctuation glyphs as described below.",
-          "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-normal",
-          "type": "value",
-          "value": "normal"
-        },
-        {
           "name": "trim-both",
-          "prose": "Set fullwidth opening punctuation with half-width glyphs (flush) at the start of each line; set fullwidth closing punctuation with half-width glyphs (flush) at the end of each line; and collapse spacing between punctuation glyphs as described below.",
+          "prose": "All fullwidth punctuation characters are trimmed at the start and end of the line (flush), and adjacent pairs are collapsed (contextually kerned). Equivalent to trim-start trim-adjacent trim-end.",
           "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-trim-both",
           "type": "value",
           "value": "trim-both"
         },
         {
+          "name": "normal",
+          "prose": "Equivalent to space-start trim-adjacent allow-end.",
+          "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "trim-start",
+          "prose": "Set fullwidth opening punctuation with half-width glyphs (flush) at the start of each line.",
+          "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-trim-start",
+          "type": "value",
+          "value": "trim-start"
+        },
+        {
+          "name": "space-start",
+          "prose": "Set fullwidth opening punctuation with full-width glyphs (spaced) at the start of each line.",
+          "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-space-start",
+          "type": "value",
+          "value": "space-start"
+        },
+        {
           "name": "space-first",
-          "prose": "Set fullwidth opening punctuation with full-width glyphs (spaced) on the first line of the block container and each line after a forced line break. Otherwise as normal.",
+          "prose": "Set fullwidth opening punctuation with full-width glyphs (spaced) on the first line of the block container and each line after a forced line break. Otherwise as space-start.",
           "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-space-first",
           "type": "value",
           "value": "space-first"
         },
         {
-          "name": "trim-start",
-          "prose": "Set fullwidth opening punctuation with half-width glyphs (flush) at the start of each line. Otherwise as normal.",
-          "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-trim-start",
+          "name": "trim-adjacent",
+          "prose": "Collapse spacing between punctuation glyphs as described below.",
+          "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-trim-adjacent",
           "type": "value",
-          "value": "trim-start"
+          "value": "trim-adjacent"
+        },
+        {
+          "name": "space-adjacent",
+          "prose": "Set fullwidth punctuation with full-width glyphs (spaced) when not at the start or end of a line.",
+          "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-space-adjacent",
+          "type": "value",
+          "value": "space-adjacent"
+        },
+        {
+          "name": "trim-end",
+          "prose": "Set fullwidth closing punctuation with half-width glyphs (flush) at the end of each line.",
+          "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-trim-end",
+          "type": "value",
+          "value": "trim-end"
+        },
+        {
+          "name": "allow-end",
+          "prose": "Set fullwidth closing punctuation with half-width glyphs (flush) at the end of each line if it does not otherwise fit prior to justification, else set the punctuation with full-width glyphs.",
+          "href": "https://drafts.csswg.org/css-text-4/#valdef-text-spacing-trim-allow-end",
+          "type": "value",
+          "value": "allow-end"
         },
         {
           "name": "trim-all",
@@ -1520,7 +1555,7 @@
       "name": "<spacing-trim>",
       "href": "https://drafts.csswg.org/css-text-4/#typedef-spacing-trim",
       "type": "type",
-      "value": "space-all | normal | space-first | trim-start | trim-both | trim-all"
+      "value": "[ trim-start | space-start | space-first ] || [ trim-adjacent | space-adjacent ] || [ trim-end | space-end | allow-end ] | trim-both | space-all | trim-all"
     }
   ]
 }

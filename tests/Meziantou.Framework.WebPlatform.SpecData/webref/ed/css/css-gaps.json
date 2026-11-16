@@ -96,7 +96,7 @@
       "values": [
         {
           "name": "none",
-          "prose": "Gap decorations do not start or end at visible \"T\" or \"cross\" intersections. Instead, a single continuous decoration is painted from one end of the gap to the other.",
+          "prose": "Gap decorations do not start or end at visible \"T\" or \"cross\" intersections. Instead, a single gap decoration segment spans from one end of the gap to the other.",
           "href": "https://drafts.csswg.org/css-gaps-1/#valdef-column-rule-break-none",
           "type": "value",
           "value": "none"
@@ -135,7 +135,7 @@
       "values": [
         {
           "name": "none",
-          "prose": "Gap decorations do not start or end at visible \"T\" or \"cross\" intersections. Instead, a single continuous decoration is painted from one end of the gap to the other.",
+          "prose": "Gap decorations do not start or end at visible \"T\" or \"cross\" intersections. Instead, a single gap decoration segment spans from one end of the gap to the other.",
           "href": "https://drafts.csswg.org/css-gaps-1/#valdef-column-rule-break-none",
           "type": "value",
           "value": "none"
@@ -524,7 +524,8 @@
         "ruleInsetCap"
       ],
       "longhands": [
-        "column-rule-inset-cap"
+        "column-rule-inset-cap",
+        "row-rule-inset-cap"
       ]
     },
     {
@@ -543,7 +544,8 @@
         "ruleInsetJunction"
       ],
       "longhands": [
-        "column-rule-inset-junction"
+        "column-rule-inset-junction",
+        "row-rule-inset-junction"
       ]
     },
     {
@@ -615,7 +617,7 @@
       "href": "https://drafts.csswg.org/css-gaps-1/#propdef-column-rule-visibility-items",
       "value": "all | around | between | normal",
       "initial": "normal",
-      "appliesTo": "grid containers and multicol containers",
+      "appliesTo": "grid containers, multicol containers, and grid lanes containers",
       "inherited": "no",
       "percentages": "n/a",
       "computedValue": "as specified",
@@ -638,7 +640,7 @@
         },
         {
           "name": "between",
-          "prose": "Paint decorations in a gap segment if both adjacent areas are occupied by items.",
+          "prose": "Paint decorations in a gap segment if both adjacent areas are occupied by items. For grid axis gaps in a grid lanes container, paint only at positions along the gap that lie between the leading and trailing edges of an adjacent item on each side, using the items' positions after stacking-axis self-alignment. Space available for alignment is empty where no item is present. Space occupied by crossing gutters does not count as empty space for this purpose. See the alignment example and the crossing-gutter example below.",
           "href": "https://drafts.csswg.org/css-gaps-1/#valdef-column-rule-visibility-items-between",
           "type": "value",
           "value": "between"
@@ -661,7 +663,7 @@
       "href": "https://drafts.csswg.org/css-gaps-1/#propdef-row-rule-visibility-items",
       "value": "all | around | between | normal",
       "initial": "normal",
-      "appliesTo": "grid containers and multicol containers",
+      "appliesTo": "grid containers, multicol containers, and grid lanes containers",
       "inherited": "no",
       "percentages": "n/a",
       "computedValue": "as specified",
@@ -684,7 +686,7 @@
         },
         {
           "name": "between",
-          "prose": "Paint decorations in a gap segment if both adjacent areas are occupied by items.",
+          "prose": "Paint decorations in a gap segment if both adjacent areas are occupied by items. For grid axis gaps in a grid lanes container, paint only at positions along the gap that lie between the leading and trailing edges of an adjacent item on each side, using the items' positions after stacking-axis self-alignment. Space available for alignment is empty where no item is present. Space occupied by crossing gutters does not count as empty space for this purpose. See the alignment example and the crossing-gutter example below.",
           "href": "https://drafts.csswg.org/css-gaps-1/#valdef-column-rule-visibility-items-between",
           "type": "value",
           "value": "between"
@@ -718,7 +720,8 @@
         "ruleVisibilityItems"
       ],
       "longhands": [
-        "column-rule-visibility-items"
+        "column-rule-visibility-items",
+        "row-rule-visibility-items"
       ]
     },
     {

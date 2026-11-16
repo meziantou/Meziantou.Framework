@@ -14,7 +14,7 @@
     },
     "idlNames": {
       "IdleRequestOptions": {
-        "fragment": "dictionary IdleRequestOptions {\n  unsigned long timeout;\n};",
+        "fragment": "dictionary IdleRequestOptions {\n  unsigned long timeout = 0;\n};",
         "type": "dictionary",
         "name": "IdleRequestOptions",
         "inheritance": null,
@@ -31,7 +31,10 @@
               "union": false,
               "idlType": "unsigned long"
             },
-            "default": null,
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
             "required": false,
             "href": "https://w3c.github.io/requestidlecallback/#dom-idlerequestoptions-timeout"
           }

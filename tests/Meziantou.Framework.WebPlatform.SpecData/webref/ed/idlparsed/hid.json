@@ -263,7 +263,7 @@
         "href": "https://hid.spec.whatwg.org/#dom-hiddevicerequestoptions"
       },
       "HIDDeviceFilter": {
-        "fragment": "dictionary HIDDeviceFilter {\n    unsigned long vendorId;\n    unsigned short productId;\n    unsigned short usagePage;\n    unsigned short usage;\n};",
+        "fragment": "dictionary HIDDeviceFilter {\n    unsigned short vendorId;\n    unsigned short productId;\n    unsigned short usagePage;\n    unsigned short usage;\n};",
         "type": "dictionary",
         "name": "HIDDeviceFilter",
         "inheritance": null,
@@ -278,7 +278,7 @@
               "generic": "",
               "nullable": false,
               "union": false,
-              "idlType": "unsigned long"
+              "idlType": "unsigned short"
             },
             "default": null,
             "required": false,

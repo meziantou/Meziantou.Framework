@@ -2026,6 +2026,24 @@ public sealed partial class HtmlEmbedElement : HtmlElement
         get => Reflection.GetString(this, "name");
         set => Reflection.SetString(this, "name", value);
     }
+
+    /// <summary>Gets or sets the value of the <c>hspace</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-embed-hspace"/>
+    [IdlMember("hspace", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-embed-hspace")]
+    public uint Hspace
+    {
+        get => Reflection.GetUnsignedLong(this, "hspace", positive: false, defaultValue: null);
+        set => Reflection.SetUnsignedLong(this, "hspace", positive: false, positiveWithFallback: false, defaultValue: null, value);
+    }
+
+    /// <summary>Gets or sets the value of the <c>vspace</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-embed-vspace"/>
+    [IdlMember("vspace", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-embed-vspace")]
+    public uint Vspace
+    {
+        get => Reflection.GetUnsignedLong(this, "vspace", positive: false, defaultValue: null);
+        set => Reflection.SetUnsignedLong(this, "vspace", positive: false, positiveWithFallback: false, defaultValue: null, value);
+    }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmlfieldsetelement</summary>

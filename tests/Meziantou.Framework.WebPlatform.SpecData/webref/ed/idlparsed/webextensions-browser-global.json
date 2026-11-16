@@ -1,0 +1,129 @@
+{
+  "spec": {
+    "title": "window.browser",
+    "url": "https://w3c.github.io/webextensions/specification/window.browser.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Browser"
+        ],
+        "Worker": [
+          "Browser"
+        ]
+      }
+    },
+    "idlNames": {
+      "Browser": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface Browser {\n  // Intentionally left blank.\n};",
+        "type": "interface",
+        "name": "Browser",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webextensions/specification/window.browser.html#browser"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n attribute Browser browser;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "browser",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Browser"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/webextensions/specification/window.browser.html#dom-window-browser"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "ServiceWorkerGlobalScope": [
+        {
+          "fragment": "partial interface ServiceWorkerGlobalScope {\n  attribute Browser browser;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "browser",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Browser"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/webextensions/specification/window.browser.html#dom-serviceworkerglobalscope-browser"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Browser"
+      ],
+      "Worker": [
+        "Browser"
+      ]
+    },
+    "dependencies": {
+      "Browser": [],
+      "Window": [
+        "Browser"
+      ],
+      "ServiceWorkerGlobalScope": [
+        "Browser"
+      ]
+    },
+    "externalDependencies": [
+      "Window",
+      "ServiceWorkerGlobalScope"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -3,7 +3,7 @@
 // (https://github.com/w3c/webref)
 // Source: Cross-Origin Storage (https://wicg.github.io/cross-origin-storage/)
 
-[Exposed=(Window,DedicatedWorker,SharedWorker), SecureContext]
+[Exposed=(Window,Worker), SecureContext]
 interface CrossOriginStorageManager {
   Promise<FileSystemFileHandle> getFileHandle(
       CrossOriginStorageGetFileHandleHash hash,
@@ -21,7 +21,7 @@ dictionary CrossOriginStorageGetFileHandleOptions {
 };
 
 interface mixin NavigatorCrossOriginStorage {
-  [Exposed=(Window,DedicatedWorker,SharedWorker), SameObject, SecureContext]
+  [Exposed=(Window,Worker), SameObject, SecureContext]
   readonly attribute CrossOriginStorageManager crossOriginStorage;
 };
 Navigator includes NavigatorCrossOriginStorage;

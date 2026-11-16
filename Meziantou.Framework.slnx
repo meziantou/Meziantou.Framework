@@ -537,6 +537,7 @@
     <Project Path="tests/Meziantou.Framework.ChromiumTracing.Tests/Meziantou.Framework.ChromiumTracing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.CodeDom.Tests/Meziantou.Framework.CodeDom.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.CodeOwners.Tests/Meziantou.Framework.CodeOwners.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Compression.InteropTests/Meziantou.Framework.Compression.InteropTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Compression.Tests/Meziantou.Framework.Compression.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Csv.Tests/Meziantou.Framework.Csv.Tests.csproj" />

@@ -499,6 +499,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   pixel format. The layers of a file are read by `JpegXlDecoder` in layer mode: the renderer hands over each regular
   frame after its color transform, before blending (`layerCapture`), and the decoder checks that the chain of slots is
   the one of a list of layers (`ValidateLayer`); anything else is `UnsupportedImageFeatureException`, never a guess.
+  `JpegXlLayeredIO.PrepareLayers` checks everything before any output (one frame and no poster per layer, one pixel
+  format, the colors, the frame metadata policy, the conversion of every layer); a layer the encoder does not store as
+  it is is converted while it is encoded, in the scope of the save, one copy at a time. A loaded layer is charged as a
+  frame of its own size before it is decoded, and its sink does not charge it again.
   djxl and jxl-oxide compose the layers exactly like the library for 8-bit samples; for 16-bit samples the three
   decoders blend in single precision in their own order and differ by about 0.01 of a unit before rounding, so the
   interop test accepts either rounding of a sample within 0.01 of a half. A 16-bit output sample is rounded from the

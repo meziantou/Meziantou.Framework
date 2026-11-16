@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -39,7 +38,7 @@ internal static class JpegXlLayeredIO
     public static void Save(JpegXlLayeredImage image, string path, JpegXlEncoder encoder)
     {
         // Everything is validated before the temporary file exists
-        using var layers = PrepareLayers(image, encoder);
+        var layers = PrepareLayers(image, encoder);
         var output = AtomicFileOutput.Create(path, asynchronous: false);
         try
         {
@@ -55,18 +54,17 @@ internal static class JpegXlLayeredIO
 
     private static void Write(JpegXlLayeredImage image, Stream stream, JpegXlEncoder encoder)
     {
-        using var layers = PrepareLayers(image, encoder);
-        Write(image, layers, stream, encoder);
+        Write(image, PrepareLayers(image, encoder), stream, encoder);
     }
 
     private static void Write(JpegXlLayeredImage image, PreparedLayers layers, Stream stream, JpegXlEncoder encoder)
     {
-        var count = layers.Images.Count;
+        var count = image.Layers.Count;
         var layouts = new JpegXlFrameLayout[count];
         for (var i = 0; i < count; i++)
         {
             var layer = image.Layers[i];
-            var size = layers.Images[i].Size;
+            var size = layer.Image.Size;
             var name = layer.Name is { } text ? JpegXlLayer.StrictUtf8.GetBytes(text) : [];
             layouts[i] = new JpegXlFrameLayout
             {
@@ -87,8 +85,25 @@ internal static class JpegXlLayeredIO
         using var output = new ImageOutputBuffer(scope);
         for (var i = 0; i < count; i++)
         {
-            session.BeginFrame(layers.Images[i].Frames[0], i);
-            Pump(session, output, stream);
+            // A layer the encoder does not store as it is is converted while it is encoded, in the scope of the save: one
+            // copy at a time counts toward the allocation limit. The session compresses the frame before Pump returns
+            var source = image.Layers[i].Image.FrameCore(0);
+            Image? converted = null;
+            try
+            {
+                if (layers.Conversion is { } plan)
+                {
+                    converted = Image.CreateForDecoder(layers.PixelFormat, image.Configuration, source.Size, scope);
+                    Image.ConvertFramePixels(source, converted.FrameCore(0), plan);
+                }
+
+                session.BeginFrame(converted?.FrameCore(0) ?? source, i);
+                Pump(session, output, stream);
+            }
+            finally
+            {
+                converted?.Dispose();
+            }
         }
 
         session.BeginComplete(count);
@@ -111,17 +126,17 @@ internal static class JpegXlLayeredIO
     }
 
     /// <summary>
-    /// Validates the layers and gives the images the session encodes: the images of the layers, or their lossless widening
-    /// to a pixel format the encoder stores, or the 16-bit reduction of floating-point samples
-    /// (<see cref="ImageEncoder.FloatingPointConversion"/>).
+    /// Validates the layers before any output exists, and gives the pixel format the session encodes: the one of the layers,
+    /// its lossless widening to a pixel format the encoder stores, or 16-bit integers for floating-point samples
+    /// (<see cref="ImageEncoder.FloatingPointConversion"/>), with the conversion every layer goes through.
     /// </summary>
-    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The converted images are owned by the returned value, which the caller disposes.")]
     private static PreparedLayers PrepareLayers(JpegXlLayeredImage image, JpegXlEncoder encoder)
     {
         if (image.Layers.Count == 0)
             throw new InvalidOperationException("The JPEG XL image has no layer: add one with AddLayer.");
 
         var format = image.Layers[0].Image.PixelFormat;
+        var frames = new List<ImageFrame>(image.Layers.Count);
         foreach (var layer in image.Layers)
         {
             // Frames or a poster added to the image of a layer after it was added would not be written
@@ -132,6 +147,11 @@ internal static class JpegXlLayeredIO
                 throw new InvalidOperationException($"The layers of a JPEG XL image have the same pixel format: the first one is {format}, another one {layer.Image.PixelFormat}. Convert them with CloneAs.");
 
             EnsureSameColors(image.Metadata, layer.Image.Metadata);
+            var frame = layer.Image.FrameCore(0);
+
+            // The settings of the frame (a cursor hotspot) follow the metadata policy, like the frames of Image.Save
+            MetadataWritePlan.ValidateFrameMetadata(frame.MetadataCore, ImageFormat.JpegXl, encoder.MetadataHandling);
+            frames.Add(frame);
         }
 
         if (PixelFormats.IsCmyk(format))
@@ -142,31 +162,17 @@ internal static class JpegXlLayeredIO
 
         var encodedFormat = PixelFormats.IsFloatingPoint(format) ? PixelFormat.Rgba64 : PixelFormatWidening.GetEncodedFormat(encoder, format);
 
-        // The metadata are validated against the samples the encoder writes, before any conversion
+        // The metadata are validated against the samples the encoder writes, and the samples of every layer against the
+        // conversion (out-of-range or non-numeric floating-point samples), before any conversion
         var metadata = MetadataWritePlan.Create(image.Metadata, ImageFormat.JpegXl, encoder.MetadataHandling, image.Size, encodedFormat, encoder);
-        var images = new List<Image>(image.Layers.Count);
-        var owned = encodedFormat != format;
-        try
+        PixelConversionPlan? conversion = null;
+        if (encodedFormat != format)
         {
-            foreach (var layer in image.Layers)
-            {
-                images.Add(!owned ? layer.Image : PixelFormats.IsFloatingPoint(format) ? layer.Image.CloneAs<Rgba64>(encoder.FloatingPointConversion) : layer.Image.CloneAs(encodedFormat, options: null));
-            }
-
-            return new PreparedLayers(images, owned, encodedFormat, metadata);
+            conversion = PixelConversionPlan.Create(format, encodedFormat, encoder.FloatingPointConversion, sourceProfile: null, ImageFormat.JpegXl);
+            Image.PrepareConversion(conversion, frames);
         }
-        catch
-        {
-            if (owned)
-            {
-                foreach (var converted in images)
-                {
-                    converted.Dispose();
-                }
-            }
 
-            throw;
-        }
+        return new PreparedLayers(encodedFormat, conversion, metadata);
     }
 
     /// <summary>Throws when the samples of a layer are labeled with another color space than the image.</summary>
@@ -179,25 +185,8 @@ internal static class JpegXlLayeredIO
             throw new UnsupportedImageFeatureException("The image of a layer has another color profile, CICP description or transfer function than JpegXlLayeredImage.Metadata, which describes the samples of every layer: convert the layer to the color space of the image, or set the metadata of the image.", ImageFormat.JpegXl, "layers in different color spaces");
     }
 
-    private sealed class PreparedLayers(List<Image> images, bool ownsImages, PixelFormat pixelFormat, MetadataWritePlan metadata) : IDisposable
-    {
-        public List<Image> Images => images;
-
-        public PixelFormat PixelFormat => pixelFormat;
-
-        public MetadataWritePlan Metadata => metadata;
-
-        public void Dispose()
-        {
-            if (!ownsImages)
-                return;
-
-            foreach (var image in images)
-            {
-                image.Dispose();
-            }
-        }
-    }
+    /// <summary>What the session encodes: the pixel format, the conversion of the layers to it (or none), and the metadata.</summary>
+    private sealed record PreparedLayers(PixelFormat PixelFormat, PixelConversionPlan? Conversion, MetadataWritePlan Metadata);
 
     /// <summary>Runs the structure parser with the decoder in layer mode, and keeps the layers until a layered image takes them over.</summary>
     private sealed class LayerParser : ImageParser<LayerParser>

@@ -392,6 +392,54 @@ public sealed class JpegXlLayeredImageTests
     }
 
     [Fact]
+    public void TheHotspotOfALayerFollowsTheMetadataPolicy()
+    {
+        using var document = new JpegXlLayeredImage(4, 4);
+        using var image = new Image<Rgba32>(4, 4);
+        var layer = document.AddLayer(image);
+        layer.Image.Frames[0].Metadata.Hotspot = new Point(1, 2);
+
+        Assert.Throws<UnsupportedImageFeatureException>(() => Save(document, new JpegXlEncoder()));
+        using var decoded = JpegXlLayeredImage.Load(Save(document, new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip }));
+        Assert.Single(decoded.Layers);
+    }
+
+    /// <summary>
+    /// A layer converted for the encoder is a copy of the save, which counts toward the allocation limit of the layered
+    /// image: a gray layer with alpha, widened to RGBA, needs at least its 360,000-byte RGBA copy more than the same pixels
+    /// given as RGBA.
+    /// </summary>
+    [Fact]
+    public void ConvertedLayersCountTowardTheAllocationLimit()
+    {
+        using var gray = new Image<La16>(300, 300, new La16(40, 200));
+        using var rgba = gray.CloneAs<Rgba32>();
+        Assert.True(GetSmallestLimit(gray) - GetSmallestLimit(rgba) >= 300 * 300 * 4);
+
+        static long GetSmallestLimit(Image layer)
+        {
+            var (low, high) = (1L, 64L << 20);
+            while (low < high)
+            {
+                var limit = (low + high) / 2;
+                using var document = new JpegXlLayeredImage(300, 300, new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = limit } });
+                document.AddLayer(layer);
+                try
+                {
+                    Save(document, new JpegXlEncoder { Effort = 0 });
+                    high = limit;
+                }
+                catch (ImageResourceLimitException)
+                {
+                    low = limit + 1;
+                }
+            }
+
+            return low;
+        }
+    }
+
+    [Fact]
     public void AnImageWithoutLayersCannotBeSaved()
     {
         using var document = new JpegXlLayeredImage(4, 4);

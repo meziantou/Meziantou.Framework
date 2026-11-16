@@ -67,6 +67,9 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>The winding number of an edge that just entered the sweep line and was not walked yet.</summary>
     private const int UnknownWinding = int.MinValue;
 
+    /// <summary>The number of events of a row up to which they are sorted by insertion.</summary>
+    private const int MaxInsertionSortLength = 16;
+
     /// <summary>The number of columns of a row from which the entries of the difference row that are zero are skipped.</summary>
     private const int MinZeroSkipWidth = 32;
 
@@ -869,20 +872,68 @@ internal sealed class CoverageRasterizer : IDisposable
 
     /// <summary>
     /// Sorts the events of a row by height, then by slot: a total order (the slots of a row are distinct), so that the
-    /// result does not depend on the sorting algorithm. An introspective sort: partitions around a median of three, sorts
-    /// short ranges by insertion, and falls back to a heap sort when the partitions go too deep. In place, without
-    /// allocation, and never quadratic.
+    /// result does not depend on the sorting algorithm. The heights of a row are positive and close to each other: the
+    /// pair is packed into one integer when it fits (<see cref="TrySortPacked"/>). Otherwise, an introspective sort:
+    /// partitions around a median of three, sorts short ranges by insertion, and falls back to a heap sort when the
+    /// partitions go too deep. In place, without allocation, and never quadratic.
     /// </summary>
     internal static void SortEvents(Span<double> keys, Span<int> slots)
     {
+        if (keys.Length > MaxInsertionSortLength && TrySortPacked(keys, slots))
+            return;
+
         IntroSortEvents(keys, slots, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+    }
+
+    /// <summary>
+    /// Sorts events as integers made of the bits of the height (a positive double is ordered as its bits), minus those of
+    /// the lowest one, followed by the bits of the slot: their order is the order of the events.
+    /// </summary>
+    /// <returns><see langword="false"/>, and nothing changed, when a height is negative or not a number, a slot is negative, or the integers do not fit in 64 bits.</returns>
+    internal static bool TrySortPacked(Span<double> keys, Span<int> slots)
+    {
+        var bits = unsafe(MemoryMarshal.Cast<double, long>(keys));
+        slots = slots[..bits.Length];
+        var lowest = long.MaxValue;
+        var highest = long.MinValue;
+        var slotMask = 0;
+        for (var i = 0; i < bits.Length; i++)
+        {
+            lowest = Math.Min(lowest, bits[i]);
+            highest = Math.Max(highest, bits[i]);
+            slotMask |= slots[i];
+        }
+
+        // -0 and the negative heights have the sign bit, the NaNs are above the infinity
+        if (lowest < 0 || highest > BitConverter.DoubleToInt64Bits(double.PositiveInfinity) || slotMask < 0)
+            return false;
+
+        var slotBits = Math.Max(32 - BitOperations.LeadingZeroCount((uint)slotMask), 1);
+        if (((ulong)(highest - lowest) >> (64 - slotBits)) != 0)
+            return false;
+
+        var packed = unsafe(MemoryMarshal.Cast<double, ulong>(keys));
+        for (var i = 0; i < packed.Length; i++)
+        {
+            packed[i] = ((ulong)(bits[i] - lowest) << slotBits) | (uint)slots[i];
+        }
+
+        packed.Sort();
+        var slotMaskBits = (1UL << slotBits) - 1;
+        for (var i = 0; i < packed.Length; i++)
+        {
+            var value = packed[i];
+            slots[i] = (int)(value & slotMaskBits);
+            bits[i] = lowest + (long)(value >> slotBits);
+        }
+
+        return true;
     }
 
     /// <summary>Sorts events, with a heap sort once <paramref name="depthLimit"/> partitions are nested.</summary>
     internal static void IntroSortEvents(Span<double> keys, Span<int> slots, int depthLimit)
     {
-        const int InsertionSortThreshold = 16;
-        while (keys.Length > InsertionSortThreshold)
+        while (keys.Length > MaxInsertionSortLength)
         {
             if (depthLimit-- == 0)
             {
